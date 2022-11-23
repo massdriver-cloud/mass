@@ -19,11 +19,15 @@ func TestMarshalJSON(t *testing.T) {
 }
 
 func TestUnmarshalJSON(t *testing.T) {
+	want := map[string]interface{}{"foo": "bar"}
+
 	data := []byte(`"{\"foo\":\"bar\"}"`)
 	got := map[string]interface{}{}
+	err := scalars.UnmarshalJSON(data, &got)
 
-	scalars.UnmarshalJSON(data, &got)
-	want := map[string]interface{}{"foo": "bar"}
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, wanted %v", got, want)
