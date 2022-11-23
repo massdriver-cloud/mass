@@ -1,0 +1,28 @@
+name: Generate release-artifacts
+on:
+  release:
+    types:
+      - created
+      - released
+jobs:
+  generate:
+    name: Generate cross-platform builds
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin]
+        goarch: [amd64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Release
+        uses: wangyoucao577/go-release-action@v1.31
+        with:
+          overwrite: TRUE
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          goversion: 1.18
+          binary_name: mass
+          # ldflags is the canonical way of setting dynamic values (like version) at compile time
+          ldflags: -X github.com/massdriver-cloud/mass/pkg/version.version=${{github.ref_name}} -X github.com/massdriver-cloud/mass/pkg/version.gitSHA=${{github.sha}}

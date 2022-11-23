@@ -1,0 +1,31 @@
+query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
+  artifacts(organizationId: $organizationId, input: {filter: {type: $artifactType}}) {
+    next
+    items {
+      name
+      id
+    }
+  }
+}
+
+query getProjectById($organizationId: ID!, $id: ID!){
+  project(organizationId: $organizationId, id: $id){
+    id, defaultParams, slug
+  }
+}
+
+query getDeploymentById($organizationId: ID!, $id: ID!){
+  deployment(organizationId: $organizationId, id: $id){
+    id, status
+  }
+}
+
+mutation deployPreviewEnvironment($orgId: ID!, $projectId: ID!, $input: PreviewEnvironmentInput!) {
+  deployPreviewEnvironment(projectId: $projectId, organizationId: $orgId, input: $input) {
+    successful
+    result {id, slug}
+    messages {
+      message
+    }
+  }
+}

@@ -1,0 +1,20 @@
+name: pre-commit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+    - uses: pre-commit/action@v2.0.3
+      env:
+        # this check prevents devs from commit to main.
+        # however, we don't want it to fail on commits to main in CI.
+        # we use the golangci-lint gh action in lint.yaml because it generates useful comments.
+        SKIP: no-commit-to-branch,golangci-lint
+        INSTALL_MASS_LINUX: "true"
