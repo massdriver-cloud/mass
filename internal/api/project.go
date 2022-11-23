@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -20,7 +19,6 @@ func GetProject(client graphql.Client, orgID string, idOrSlug string) (Project, 
 }
 
 func (p *getProjectByIdProject) toProject() Project {
-	fmt.Printf("What is %v", p)
 	return Project{
 		ID:            p.Id,
 		Slug:          p.Slug,

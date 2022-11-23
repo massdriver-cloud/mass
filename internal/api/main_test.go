@@ -27,6 +27,14 @@ func (l localRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	return w.Result(), nil
 }
 
+func mustMarshalJSON(v map[string]interface{}) []byte {
+	data, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
 func mustWrite(w io.Writer, s string) {
 	_, err := io.WriteString(w, s)
 	if err != nil {

@@ -132,15 +132,123 @@ func (v *PreviewEnvironmentInput) __premarshalJSON() (*__premarshalPreviewEnviro
 	return &retval, nil
 }
 
-// __deployPreviewEnvironmentInput is used internally by genqlient
-type __deployPreviewEnvironmentInput struct {
-	OrgId     string                  `json:"orgId"`
-	ProjectId string                  `json:"projectId"`
-	Input     PreviewEnvironmentInput `json:"input"`
+// __configurePackageInput is used internally by genqlient
+type __configurePackageInput struct {
+	OrganizationId string                 `json:"organizationId"`
+	TargetId       string                 `json:"targetId"`
+	ManifestId     string                 `json:"manifestId"`
+	Params         map[string]interface{} `json:"-"`
 }
 
-// GetOrgId returns __deployPreviewEnvironmentInput.OrgId, and is useful for accessing the field via an interface.
-func (v *__deployPreviewEnvironmentInput) GetOrgId() string { return v.OrgId }
+// GetOrganizationId returns __configurePackageInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__configurePackageInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetTargetId returns __configurePackageInput.TargetId, and is useful for accessing the field via an interface.
+func (v *__configurePackageInput) GetTargetId() string { return v.TargetId }
+
+// GetManifestId returns __configurePackageInput.ManifestId, and is useful for accessing the field via an interface.
+func (v *__configurePackageInput) GetManifestId() string { return v.ManifestId }
+
+// GetParams returns __configurePackageInput.Params, and is useful for accessing the field via an interface.
+func (v *__configurePackageInput) GetParams() map[string]interface{} { return v.Params }
+
+func (v *__configurePackageInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*__configurePackageInput
+		Params json.RawMessage `json:"params"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.__configurePackageInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Params
+		src := firstPass.Params
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal __configurePackageInput.Params: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshal__configurePackageInput struct {
+	OrganizationId string `json:"organizationId"`
+
+	TargetId string `json:"targetId"`
+
+	ManifestId string `json:"manifestId"`
+
+	Params json.RawMessage `json:"params"`
+}
+
+func (v *__configurePackageInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *__configurePackageInput) __premarshalJSON() (*__premarshal__configurePackageInput, error) {
+	var retval __premarshal__configurePackageInput
+
+	retval.OrganizationId = v.OrganizationId
+	retval.TargetId = v.TargetId
+	retval.ManifestId = v.ManifestId
+	{
+
+		dst := &retval.Params
+		src := v.Params
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal __configurePackageInput.Params: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// __deployPackageInput is used internally by genqlient
+type __deployPackageInput struct {
+	OrganizationId string `json:"organizationId"`
+	TargetId       string `json:"targetId"`
+	ManifestId     string `json:"manifestId"`
+}
+
+// GetOrganizationId returns __deployPackageInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deployPackageInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetTargetId returns __deployPackageInput.TargetId, and is useful for accessing the field via an interface.
+func (v *__deployPackageInput) GetTargetId() string { return v.TargetId }
+
+// GetManifestId returns __deployPackageInput.ManifestId, and is useful for accessing the field via an interface.
+func (v *__deployPackageInput) GetManifestId() string { return v.ManifestId }
+
+// __deployPreviewEnvironmentInput is used internally by genqlient
+type __deployPreviewEnvironmentInput struct {
+	OrganizationId string                  `json:"organizationId"`
+	ProjectId      string                  `json:"projectId"`
+	Input          PreviewEnvironmentInput `json:"input"`
+}
+
+// GetOrganizationId returns __deployPreviewEnvironmentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deployPreviewEnvironmentInput) GetOrganizationId() string { return v.OrganizationId }
 
 // GetProjectId returns __deployPreviewEnvironmentInput.ProjectId, and is useful for accessing the field via an interface.
 func (v *__deployPreviewEnvironmentInput) GetProjectId() string { return v.ProjectId }
@@ -172,6 +280,18 @@ func (v *__getDeploymentByIdInput) GetOrganizationId() string { return v.Organiz
 // GetId returns __getDeploymentByIdInput.Id, and is useful for accessing the field via an interface.
 func (v *__getDeploymentByIdInput) GetId() string { return v.Id }
 
+// __getPackageByNamingConventionInput is used internally by genqlient
+type __getPackageByNamingConventionInput struct {
+	OrganizationId string `json:"organizationId"`
+	Name           string `json:"name"`
+}
+
+// GetOrganizationId returns __getPackageByNamingConventionInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getPackageByNamingConventionInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetName returns __getPackageByNamingConventionInput.Name, and is useful for accessing the field via an interface.
+func (v *__getPackageByNamingConventionInput) GetName() string { return v.Name }
+
 // __getProjectByIdInput is used internally by genqlient
 type __getProjectByIdInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -183,6 +303,231 @@ func (v *__getProjectByIdInput) GetOrganizationId() string { return v.Organizati
 
 // GetId returns __getProjectByIdInput.Id, and is useful for accessing the field via an interface.
 func (v *__getProjectByIdInput) GetId() string { return v.Id }
+
+// configurePackageConfigurePackagePackagePayload includes the requested fields of the GraphQL type PackagePayload.
+type configurePackageConfigurePackagePackagePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result configurePackageConfigurePackagePackagePayloadResultPackage `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []configurePackageConfigurePackagePackagePayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns configurePackageConfigurePackagePackagePayload.Result, and is useful for accessing the field via an interface.
+func (v *configurePackageConfigurePackagePackagePayload) GetResult() configurePackageConfigurePackagePackagePayloadResultPackage {
+	return v.Result
+}
+
+// GetSuccessful returns configurePackageConfigurePackagePackagePayload.Successful, and is useful for accessing the field via an interface.
+func (v *configurePackageConfigurePackagePackagePayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns configurePackageConfigurePackagePackagePayload.Messages, and is useful for accessing the field via an interface.
+func (v *configurePackageConfigurePackagePackagePayload) GetMessages() []configurePackageConfigurePackagePackagePayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// configurePackageConfigurePackagePackagePayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type configurePackageConfigurePackagePackagePayloadMessagesValidationMessage struct {
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetMessage returns configurePackageConfigurePackagePackagePayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *configurePackageConfigurePackagePackagePayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// configurePackageConfigurePackagePackagePayloadResultPackage includes the requested fields of the GraphQL type Package.
+type configurePackageConfigurePackagePackagePayloadResultPackage struct {
+	Id string `json:"id"`
+	// Package configuration parameters
+	Params map[string]interface{} `json:"-"`
+}
+
+// GetId returns configurePackageConfigurePackagePackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
+func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetId() string { return v.Id }
+
+// GetParams returns configurePackageConfigurePackagePackagePayloadResultPackage.Params, and is useful for accessing the field via an interface.
+func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetParams() map[string]interface{} {
+	return v.Params
+}
+
+func (v *configurePackageConfigurePackagePackagePayloadResultPackage) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*configurePackageConfigurePackagePackagePayloadResultPackage
+		Params json.RawMessage `json:"params"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.configurePackageConfigurePackagePackagePayloadResultPackage = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Params
+		src := firstPass.Params
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal configurePackageConfigurePackagePackagePayloadResultPackage.Params: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalconfigurePackageConfigurePackagePackagePayloadResultPackage struct {
+	Id string `json:"id"`
+
+	Params json.RawMessage `json:"params"`
+}
+
+func (v *configurePackageConfigurePackagePackagePayloadResultPackage) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *configurePackageConfigurePackagePackagePayloadResultPackage) __premarshalJSON() (*__premarshalconfigurePackageConfigurePackagePackagePayloadResultPackage, error) {
+	var retval __premarshalconfigurePackageConfigurePackagePackagePayloadResultPackage
+
+	retval.Id = v.Id
+	{
+
+		dst := &retval.Params
+		src := v.Params
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal configurePackageConfigurePackagePackagePayloadResultPackage.Params: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// configurePackageResponse is returned by configurePackage on success.
+type configurePackageResponse struct {
+	// Update a Package's parameters
+	ConfigurePackage configurePackageConfigurePackagePackagePayload `json:"configurePackage"`
+}
+
+// GetConfigurePackage returns configurePackageResponse.ConfigurePackage, and is useful for accessing the field via an interface.
+func (v *configurePackageResponse) GetConfigurePackage() configurePackageConfigurePackagePackagePayload {
+	return v.ConfigurePackage
+}
+
+// deployPackageDeployPackageDeploymentPayload includes the requested fields of the GraphQL type DeploymentPayload.
+type deployPackageDeployPackageDeploymentPayload struct {
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result deployPackageDeployPackageDeploymentPayloadResultDeployment `json:"result"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetSuccessful returns deployPackageDeployPackageDeploymentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *deployPackageDeployPackageDeploymentPayload) GetSuccessful() bool { return v.Successful }
+
+// GetResult returns deployPackageDeployPackageDeploymentPayload.Result, and is useful for accessing the field via an interface.
+func (v *deployPackageDeployPackageDeploymentPayload) GetResult() deployPackageDeployPackageDeploymentPayloadResultDeployment {
+	return v.Result
+}
+
+// GetMessages returns deployPackageDeployPackageDeploymentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *deployPackageDeployPackageDeploymentPayload) GetMessages() []deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage struct {
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetMessage returns deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// deployPackageDeployPackageDeploymentPayloadResultDeployment includes the requested fields of the GraphQL type Deployment.
+type deployPackageDeployPackageDeploymentPayloadResultDeployment struct {
+	Id string `json:"id"`
+}
+
+// GetId returns deployPackageDeployPackageDeploymentPayloadResultDeployment.Id, and is useful for accessing the field via an interface.
+func (v *deployPackageDeployPackageDeploymentPayloadResultDeployment) GetId() string { return v.Id }
+
+// deployPackageResponse is returned by deployPackage on success.
+type deployPackageResponse struct {
+	// Enqueues a package for deployment
+	DeployPackage deployPackageDeployPackageDeploymentPayload `json:"deployPackage"`
+}
+
+// GetDeployPackage returns deployPackageResponse.DeployPackage, and is useful for accessing the field via an interface.
+func (v *deployPackageResponse) GetDeployPackage() deployPackageDeployPackageDeploymentPayload {
+	return v.DeployPackage
+}
 
 // deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload includes the requested fields of the GraphQL type TargetPayload.
 type deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload struct {
@@ -288,15 +633,15 @@ func (v *getArtifactsByTypeArtifactsPaginatedArtifacts) GetItems() []getArtifact
 
 // getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact includes the requested fields of the GraphQL type Artifact.
 type getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact struct {
-	Name string `json:"name"`
 	Id   string `json:"id"`
+	Name string `json:"name"`
 }
-
-// GetName returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
 
 // GetId returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Id, and is useful for accessing the field via an interface.
 func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetId() string { return v.Id }
+
+// GetName returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
 
 // getArtifactsByTypeResponse is returned by getArtifactsByType on success.
 type getArtifactsByTypeResponse struct {
@@ -328,6 +673,186 @@ type getDeploymentByIdResponse struct {
 
 // GetDeployment returns getDeploymentByIdResponse.Deployment, and is useful for accessing the field via an interface.
 func (v *getDeploymentByIdResponse) GetDeployment() getDeploymentByIdDeployment { return v.Deployment }
+
+// getPackageByNamingConventionGetPackageByNamingConventionPackage includes the requested fields of the GraphQL type Package.
+type getPackageByNamingConventionGetPackageByNamingConventionPackage struct {
+	Id               string                                                                          `json:"id"`
+	NamePrefix       string                                                                          `json:"namePrefix"`
+	Manifest         getPackageByNamingConventionGetPackageByNamingConventionPackageManifest         `json:"manifest"`
+	ActiveDeployment getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment `json:"activeDeployment"`
+	// The target this package will be deployed to
+	Target       getPackageByNamingConventionGetPackageByNamingConventionPackageTarget `json:"target"`
+	ParamsSchema map[string]interface{}                                                `json:"-"`
+}
+
+// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Id, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetId() string { return v.Id }
+
+// GetNamePrefix returns getPackageByNamingConventionGetPackageByNamingConventionPackage.NamePrefix, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetNamePrefix() string {
+	return v.NamePrefix
+}
+
+// GetManifest returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Manifest, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetManifest() getPackageByNamingConventionGetPackageByNamingConventionPackageManifest {
+	return v.Manifest
+}
+
+// GetActiveDeployment returns getPackageByNamingConventionGetPackageByNamingConventionPackage.ActiveDeployment, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetActiveDeployment() getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment {
+	return v.ActiveDeployment
+}
+
+// GetTarget returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Target, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetTarget() getPackageByNamingConventionGetPackageByNamingConventionPackageTarget {
+	return v.Target
+}
+
+// GetParamsSchema returns getPackageByNamingConventionGetPackageByNamingConventionPackage.ParamsSchema, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetParamsSchema() map[string]interface{} {
+	return v.ParamsSchema
+}
+
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPackageByNamingConventionGetPackageByNamingConventionPackage
+		ParamsSchema json.RawMessage `json:"paramsSchema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPackageByNamingConventionGetPackageByNamingConventionPackage = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.ParamsSchema
+		src := firstPass.ParamsSchema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal getPackageByNamingConventionGetPackageByNamingConventionPackage.ParamsSchema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage struct {
+	Id string `json:"id"`
+
+	NamePrefix string `json:"namePrefix"`
+
+	Manifest getPackageByNamingConventionGetPackageByNamingConventionPackageManifest `json:"manifest"`
+
+	ActiveDeployment getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment `json:"activeDeployment"`
+
+	Target getPackageByNamingConventionGetPackageByNamingConventionPackageTarget `json:"target"`
+
+	ParamsSchema json.RawMessage `json:"paramsSchema"`
+}
+
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) __premarshalJSON() (*__premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage, error) {
+	var retval __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage
+
+	retval.Id = v.Id
+	retval.NamePrefix = v.NamePrefix
+	retval.Manifest = v.Manifest
+	retval.ActiveDeployment = v.ActiveDeployment
+	retval.Target = v.Target
+	{
+
+		dst := &retval.ParamsSchema
+		src := v.ParamsSchema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal getPackageByNamingConventionGetPackageByNamingConventionPackage.ParamsSchema: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment includes the requested fields of the GraphQL type Deployment.
+type getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment struct {
+	Id     string `json:"id"`
+	Status string `json:"status"`
+}
+
+// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment.Id, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment) GetId() string {
+	return v.Id
+}
+
+// GetStatus returns getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment.Status, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment) GetStatus() string {
+	return v.Status
+}
+
+// getPackageByNamingConventionGetPackageByNamingConventionPackageManifest includes the requested fields of the GraphQL type Manifest.
+type getPackageByNamingConventionGetPackageByNamingConventionPackageManifest struct {
+	Id string `json:"id"`
+}
+
+// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Id, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetId() string {
+	return v.Id
+}
+
+// getPackageByNamingConventionGetPackageByNamingConventionPackageTarget includes the requested fields of the GraphQL type Target.
+type getPackageByNamingConventionGetPackageByNamingConventionPackageTarget struct {
+	Id      string                                                                       `json:"id"`
+	Project getPackageByNamingConventionGetPackageByNamingConventionPackageTargetProject `json:"project"`
+}
+
+// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageTarget.Id, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageTarget) GetId() string {
+	return v.Id
+}
+
+// GetProject returns getPackageByNamingConventionGetPackageByNamingConventionPackageTarget.Project, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageTarget) GetProject() getPackageByNamingConventionGetPackageByNamingConventionPackageTargetProject {
+	return v.Project
+}
+
+// getPackageByNamingConventionGetPackageByNamingConventionPackageTargetProject includes the requested fields of the GraphQL type Project.
+type getPackageByNamingConventionGetPackageByNamingConventionPackageTargetProject struct {
+	Id string `json:"id"`
+}
+
+// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageTargetProject.Id, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageTargetProject) GetId() string {
+	return v.Id
+}
+
+// getPackageByNamingConventionResponse is returned by getPackageByNamingConvention on success.
+type getPackageByNamingConventionResponse struct {
+	// Finds a package by its naming convention, the name prefix (project-target-manifest) without the random unique suffix.
+	GetPackageByNamingConvention getPackageByNamingConventionGetPackageByNamingConventionPackage `json:"getPackageByNamingConvention"`
+}
+
+// GetGetPackageByNamingConvention returns getPackageByNamingConventionResponse.GetPackageByNamingConvention, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionResponse) GetGetPackageByNamingConvention() getPackageByNamingConventionGetPackageByNamingConventionPackage {
+	return v.GetPackageByNamingConvention
+}
 
 // getProjectByIdProject includes the requested fields of the GraphQL type Project.
 type getProjectByIdProject struct {
@@ -422,18 +947,105 @@ type getProjectByIdResponse struct {
 // GetProject returns getProjectByIdResponse.Project, and is useful for accessing the field via an interface.
 func (v *getProjectByIdResponse) GetProject() getProjectByIdProject { return v.Project }
 
+func configurePackage(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	targetId string,
+	manifestId string,
+	params map[string]interface{},
+) (*configurePackageResponse, error) {
+	req := &graphql.Request{
+		OpName: "configurePackage",
+		Query: `
+mutation configurePackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $params: JSON!) {
+	configurePackage(organizationId: $organizationId, targetId: $targetId, manifestId: $manifestId, params: $params) {
+		result {
+			id
+			params
+		}
+		successful
+		messages {
+			message
+		}
+	}
+}
+`,
+		Variables: &__configurePackageInput{
+			OrganizationId: organizationId,
+			TargetId:       targetId,
+			ManifestId:     manifestId,
+			Params:         params,
+		},
+	}
+	var err error
+
+	var data configurePackageResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func deployPackage(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	targetId string,
+	manifestId string,
+) (*deployPackageResponse, error) {
+	req := &graphql.Request{
+		OpName: "deployPackage",
+		Query: `
+mutation deployPackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID!) {
+	deployPackage(organizationId: $organizationId, manifestId: $manifestId, targetId: $targetId) {
+		successful
+		result {
+			id
+		}
+		messages {
+			message
+		}
+	}
+}
+`,
+		Variables: &__deployPackageInput{
+			OrganizationId: organizationId,
+			TargetId:       targetId,
+			ManifestId:     manifestId,
+		},
+	}
+	var err error
+
+	var data deployPackageResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func deployPreviewEnvironment(
 	ctx context.Context,
 	client graphql.Client,
-	orgId string,
+	organizationId string,
 	projectId string,
 	input PreviewEnvironmentInput,
 ) (*deployPreviewEnvironmentResponse, error) {
 	req := &graphql.Request{
 		OpName: "deployPreviewEnvironment",
 		Query: `
-mutation deployPreviewEnvironment ($orgId: ID!, $projectId: ID!, $input: PreviewEnvironmentInput!) {
-	deployPreviewEnvironment(projectId: $projectId, organizationId: $orgId, input: $input) {
+mutation deployPreviewEnvironment ($organizationId: ID!, $projectId: ID!, $input: PreviewEnvironmentInput!) {
+	deployPreviewEnvironment(projectId: $projectId, organizationId: $organizationId, input: $input) {
 		successful
 		result {
 			id
@@ -446,9 +1058,9 @@ mutation deployPreviewEnvironment ($orgId: ID!, $projectId: ID!, $input: Preview
 }
 `,
 		Variables: &__deployPreviewEnvironmentInput{
-			OrgId:     orgId,
-			ProjectId: projectId,
-			Input:     input,
+			OrganizationId: organizationId,
+			ProjectId:      projectId,
+			Input:          input,
 		},
 	}
 	var err error
@@ -478,8 +1090,8 @@ query getArtifactsByType ($organizationId: ID!, $artifactType: String!) {
 	artifacts(organizationId: $organizationId, input: {filter:{type:$artifactType}}) {
 		next
 		items {
-			name
 			id
+			name
 		}
 	}
 }
@@ -527,6 +1139,55 @@ query getDeploymentById ($organizationId: ID!, $id: ID!) {
 	var err error
 
 	var data getDeploymentByIdResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func getPackageByNamingConvention(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	name string,
+) (*getPackageByNamingConventionResponse, error) {
+	req := &graphql.Request{
+		OpName: "getPackageByNamingConvention",
+		Query: `
+query getPackageByNamingConvention ($organizationId: ID!, $name: String!) {
+	getPackageByNamingConvention(organizationId: $organizationId, name: $name) {
+		id
+		namePrefix
+		manifest {
+			id
+		}
+		activeDeployment {
+			id
+			status
+		}
+		target {
+			id
+			project {
+				id
+			}
+		}
+		paramsSchema
+	}
+}
+`,
+		Variables: &__getPackageByNamingConventionInput{
+			OrganizationId: organizationId,
+			Name:           name,
+		},
+	}
+	var err error
+
+	var data getPackageByNamingConventionResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

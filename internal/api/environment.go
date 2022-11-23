@@ -30,7 +30,7 @@ func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID str
 	}
 
 	if response.DeployPreviewEnvironment.Successful {
-		return response.toEnvironment(), nil
+		return response.DeployPreviewEnvironment.Result.toEnvironment(), nil
 	}
 
 	msgs, err := json.Marshal(response.DeployPreviewEnvironment.Messages)
@@ -42,9 +42,9 @@ func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID str
 	return env, fmt.Errorf("failed to deploy environment: %v", string(msgs))
 }
 
-func (r *deployPreviewEnvironmentResponse) toEnvironment() Environment {
+func (e *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget) toEnvironment() Environment {
 	return Environment{
-		ID:   r.DeployPreviewEnvironment.Result.Id,
-		Slug: r.DeployPreviewEnvironment.Result.Slug,
+		ID:   e.Id,
+		Slug: e.Slug,
 	}
 }

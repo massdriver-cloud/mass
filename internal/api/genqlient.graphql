@@ -2,28 +2,80 @@ query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
   artifacts(organizationId: $organizationId, input: {filter: {type: $artifactType}}) {
     next
     items {
-      name
       id
+      name
     }
   }
 }
 
-query getProjectById($organizationId: ID!, $id: ID!){
-  project(organizationId: $organizationId, id: $id){
-    id, defaultParams, slug
+query getProjectById($organizationId: ID!, $id: ID!) {
+  project(organizationId: $organizationId, id: $id) {
+    id
+    defaultParams
+    slug
   }
 }
 
-query getDeploymentById($organizationId: ID!, $id: ID!){
-  deployment(organizationId: $organizationId, id: $id){
-    id, status
+query getDeploymentById($organizationId: ID!, $id: ID!) {
+  deployment(organizationId: $organizationId, id: $id) {
+    id
+    status
   }
 }
 
-mutation deployPreviewEnvironment($orgId: ID!, $projectId: ID!, $input: PreviewEnvironmentInput!) {
-  deployPreviewEnvironment(projectId: $projectId, organizationId: $orgId, input: $input) {
+mutation deployPreviewEnvironment($organizationId: ID!, $projectId: ID!, $input: PreviewEnvironmentInput!) {
+  deployPreviewEnvironment(projectId: $projectId, organizationId: $organizationId, input: $input) {
     successful
-    result {id, slug}
+    result {
+      id
+      slug
+    }
+    messages {
+      message
+    }
+  }
+}
+
+query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
+  getPackageByNamingConvention(organizationId: $organizationId, name: $name) {
+    id
+    namePrefix
+    manifest {
+      id
+    }
+    activeDeployment {
+      id
+      status
+    }
+    target {
+      id
+      project {
+        id
+      }
+    }
+    paramsSchema
+  }
+}
+
+mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!) {
+  deployPackage(organizationId: $organizationId, manifestId: $manifestId, targetId: $targetId) {
+    successful
+    result {
+      id
+    }
+    messages {
+      message
+    }
+  }
+}
+
+mutation configurePackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $params: JSON!) {
+  configurePackage(organizationId: $organizationId, targetId: $targetId, manifestId: $manifestId, params: $params) {
+    result {
+      id
+      params
+    }
+    successful
     messages {
       message
     }
