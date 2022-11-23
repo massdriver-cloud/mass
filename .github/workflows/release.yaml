@@ -22,7 +22,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
-          goversion: 1.18
+          goversion: 1.19
           binary_name: mass
           # ldflags is the canonical way of setting dynamic values (like version) at compile time
           ldflags: -X github.com/massdriver-cloud/mass/pkg/version.version=${{github.ref_name}} -X github.com/massdriver-cloud/mass/pkg/version.gitSHA=${{github.sha}}
