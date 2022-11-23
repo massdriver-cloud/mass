@@ -3,11 +3,11 @@ package api_test
 import (
 	"testing"
 
-	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/internal/api"
 )
 
 func TestGetProject(t *testing.T) {
-	mux := muxWithJSONResponse(map[string]interface{}{
+	client := mockClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"project": map[string]string{
 				"id":            "uuid1",
@@ -16,7 +16,7 @@ func TestGetProject(t *testing.T) {
 			},
 		},
 	})
-	client := mockClient(mux)
+
 	project, err := api.GetProject(client, "faux-org-id", "sluggy")
 
 	if err != nil {

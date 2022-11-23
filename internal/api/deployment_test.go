@@ -3,11 +3,11 @@ package api_test
 import (
 	"testing"
 
-	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/internal/api"
 )
 
 func TestGetDeployment(t *testing.T) {
-	mux := muxWithJSONResponse(map[string]interface{}{
+	client := mockClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"deployment": map[string]interface{}{
 				"id":     "uuid1",
@@ -16,7 +16,6 @@ func TestGetDeployment(t *testing.T) {
 		},
 	})
 
-	client := mockClient(mux)
 	deployment, err := api.GetDeployment(client, "faux-org-id", "uuid1")
 
 	if err != nil {

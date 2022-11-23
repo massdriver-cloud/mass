@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/internal/api"
 )
 
 func TestDeployPreviewEnvironment(t *testing.T) {
 	prNumber := 69
 	slug := fmt.Sprintf("p%d", prNumber)
 
-	mux := muxWithJSONResponse(map[string]interface{}{
+	client := mockClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"deployPreviewEnvironment": map[string]interface{}{
 				"result": map[string]interface{}{
@@ -22,8 +22,6 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 			},
 		},
 	})
-
-	client := mockClient(mux)
 
 	confMap := map[string]interface{}{
 		"network": map[string]interface{}{

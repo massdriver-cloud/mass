@@ -3,11 +3,11 @@ package api_test
 import (
 	"testing"
 
-	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/internal/api"
 )
 
 func TestListCredentials(t *testing.T) {
-	mux := muxWithJSONResponse(map[string]interface{}{
+	client := mockClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"artifacts": map[string]interface{}{
 				"items": []map[string]interface{}{
@@ -24,7 +24,6 @@ func TestListCredentials(t *testing.T) {
 		},
 	})
 
-	client := mockClient(mux)
 	credentials, err := api.ListCredentials(client, "faux-org-id", "massdriver/aws-iam-role")
 
 	if err != nil {

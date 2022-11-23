@@ -5,11 +5,11 @@ LD_FLAGS := "-X github.com/massdriver-cloud/mass/pkg/version.version=dev -X gith
 MASSDRIVER_PATH?=../massdriver
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(dir $(MKFILE_PATH))
-API_DIR := pkg/api
+API_DIR := internal/api
 
 .PHONY: clean
 clean:
-	rm -rf pkg/api/{schema.graphql,zz_generated.go}
+	rm -rf internal/api/{schema.graphql,zz_generated.go}
 
 .PHONY: generate
 generate: clean ${API_DIR}/zz_generated.go

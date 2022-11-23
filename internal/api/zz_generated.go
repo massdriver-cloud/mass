@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/massdriver-cloud/mass/pkg/api/scalars"
+	"github.com/massdriver-cloud/mass/internal/api/scalars"
 )
 
 type Credential struct {
