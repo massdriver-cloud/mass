@@ -11,6 +11,9 @@ API_DIR := pkg/api
 clean:
 	rm -rf pkg/api/{schema.graphql,zz_generated.go}
 
+.PHONY: generate
+generate: clean ${API_DIR}/zz_generated.go
+
 .PHONY: test
 test:
 	go test ./cmd
@@ -38,6 +41,6 @@ install.linux: build.linux
 
 ${API_DIR}/schema.graphql:
 	cd ${MASSDRIVER_PATH} && mix absinthe.schema.sdl ${MKFILE_DIR}/${API_DIR}/schema.graphql
-	
+
 ${API_DIR}/zz_generated.go: ${API_DIR}/schema.graphql
 	cd ${API_DIR} && go generate

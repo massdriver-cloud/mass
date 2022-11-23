@@ -2,16 +2,12 @@
 # https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
 
 schema: schema.graphql
-
 operations:
   - genqlient.graphql
-
 generated: zz_generated.go
-
-package: api2
-
+package: api
 bindings:
   JSON:
     type: map[string]interface{}
     marshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.MarshalJSON
-    # unmarshaler: github.com/massdriver-cloud/massdriver-cli/pkg/api2/jsonscalar.Unmarshal
+    unmarshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.UnmarshalJSON

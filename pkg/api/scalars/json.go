@@ -13,7 +13,7 @@ func MarshalJSON(v interface{}) ([]byte, error) {
 	return json.Marshal(string(bytes))
 }
 
-func UnmarshalJSON(data []byte, v interface{}) error {
+func UnmarshalJSON(data []byte, v *map[string]interface{}) error {
 	var stringRep string
 	err := json.Unmarshal(data, &stringRep)
 	if err != nil {
@@ -21,4 +21,5 @@ func UnmarshalJSON(data []byte, v interface{}) error {
 	}
 
 	return json.Unmarshal([]byte(stringRep), v)
+
 }
