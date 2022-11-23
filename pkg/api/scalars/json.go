@@ -21,5 +21,4 @@ func UnmarshalJSON(data []byte, v *map[string]interface{}) error {
 	}
 
 	return json.Unmarshal([]byte(stringRep), v)
-
 }
