@@ -12,9 +12,11 @@ type Package struct {
 	ID         string
 	NamePrefix string
 	Params     map[string]interface{}
+	Manifest   Manifest
+	Target     Target
 }
 
-func GetPackage(client graphql.Client, orgID string, name string) (Package, error) {
+func GetPackageByName(client graphql.Client, orgID string, name string) (Package, error) {
 	ctx := context.Background()
 	response, err := getPackageByNamingConvention(ctx, client, orgID, name)
 
@@ -28,6 +30,12 @@ func GetPackage(client graphql.Client, orgID string, name string) (Package, erro
 func (p *getPackageByNamingConventionGetPackageByNamingConventionPackage) toPackage() Package {
 	return Package{
 		NamePrefix: p.NamePrefix,
+		Manifest: Manifest{
+			ID: p.Manifest.Id,
+		},
+		Target: Target{
+			ID: p.Target.Id,
+		},
 	}
 }
 
@@ -58,33 +66,5 @@ func (p *configurePackageConfigurePackagePackagePayloadResultPackage) toPackage(
 	return Package{
 		ID:     p.Id,
 		Params: p.Params,
-	}
-}
-
-func DeployPackage(client graphql.Client, orgID string, targetID string, manifestID string) (Package, error) {
-	ctx := context.Background()
-	pkg := Package{}
-	response, err := deployPackage(ctx, client, orgID, targetID, manifestID)
-
-	if err != nil {
-		return pkg, err
-	}
-
-	if response.DeployPackage.Successful {
-		return response.DeployPackage.Result.toPackage(), nil
-	}
-
-	msgs, err := json.Marshal(response.DeployPackage.Messages)
-	if err != nil {
-		return pkg, fmt.Errorf("failed to deploy package and couldn't marshal error messages: %w", err)
-	}
-
-	// TODO: better formatting of errors - custom mutation Error type
-	return pkg, fmt.Errorf("failed to deploy package: %v", string(msgs))
-}
-
-func (p *deployPackageDeployPackageDeploymentPayloadResultDeployment) toPackage() Package {
-	return Package{
-		ID: p.Id,
 	}
 }

@@ -8,51 +8,41 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api"
 )
 
-func TestGetPackage(t *testing.T) {
+func TestGetPackageByName(t *testing.T) {
 	pkgName := "ecomm-prod-cache"
 
 	client := mockClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"getPackageByNamingConvention": map[string]interface{}{
 				"namePrefix": fmt.Sprintf("%s-0000", pkgName),
-			},
-		},
-	})
-
-	pkg, err := api.GetPackage(client, "faux-org-id", pkgName)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if got, want := pkg.NamePrefix, "ecomm-prod-cache-0000"; got != want {
-		t.Errorf("got pkg.NamePrefix: %q, want: %q", got, want)
-	}
-}
-
-func TestDeployPackage(t *testing.T) {
-	want := "pkg-uuid1"
-	client := mockClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"deployPackage": map[string]interface{}{
-				"result": map[string]interface{}{
-					"id": want,
+				"manifest": map[string]interface{}{
+					"id": "manifest-id",
 				},
-				"successful": true,
+				"target": map[string]interface{}{
+					"id": "target-id",
+				},
 			},
 		},
 	})
 
-	pkg, err := api.DeployPackage(client, "faux-org-id", "target-id", "manifest-id")
+	got, err := api.GetPackageByName(client, "faux-org-id", pkgName)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	got := pkg.ID
+	want := api.Package{
+		NamePrefix: "ecomm-prod-cache-0000",
+		Manifest: api.Manifest{
+			ID: "manifest-id",
+		},
+		Target: api.Target{
+			ID: "target-id",
+		},
+	}
 
-	if got != want {
-		t.Errorf("got %s , wanted %s", got, want)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, wanted %v", got, want)
 	}
 }
 
