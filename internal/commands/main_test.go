@@ -54,8 +54,43 @@ func muxWithJSONResponse(response map[string]interface{}) *http.ServeMux {
 	return mux
 }
 
-func mockClientWithSingleJSONResponse(response map[string]interface{}) graphql.Client {
-	mux := muxWithJSONResponse(response)
+func muxWithJSONResponseMap(responses map[string]interface{}) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc(mockEndpoint, func(w http.ResponseWriter, req *http.Request) {
+		var parsedReq graphQLRequest
+		json.NewDecoder(req.Body).Decode(&parsedReq)
+
+		response := responses[parsedReq.OperationName]
+		data, _ := json.Marshal(response)
+		mustWrite(w, string(data))
+	})
+
+	return mux
+}
+
+// Takes a map of graphql operation names to JSON responses and creates a GraphQL client that returns based on operation name
+func mockClientWithJSONResponseMap(responses map[string]interface{}) graphql.Client {
+	mux := muxWithJSONResponseMap(responses)
+	client := mockClient(mux)
+	return client
+}
+
+func muxWithJSONResponseArray(responses []interface{}) *http.ServeMux {
+	mux := http.NewServeMux()
+	counter := 0
+	mux.HandleFunc(mockEndpoint, func(w http.ResponseWriter, req *http.Request) {
+		response := responses[counter]
+		counter++
+		data, _ := json.Marshal(response)
+		mustWrite(w, string(data))
+	})
+
+	return mux
+}
+
+// Takes an array of responses and creates a graphql client that returns them in order
+func mockClientWithJSONResponseArray(responses []interface{}) graphql.Client {
+	mux := muxWithJSONResponseArray(responses)
 	client := mockClient(mux)
 	return client
 }

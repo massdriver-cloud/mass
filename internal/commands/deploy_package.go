@@ -1,13 +1,18 @@
 package commands
 
 import (
-	"fmt"
+	"errors"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/internal/api"
 )
 
+var DeploymentStatusSleep time.Duration = time.Duration(10) * time.Second
+var DeploymentTimeout time.Duration = time.Duration(5) * time.Minute
+
 func DeployPackage(client graphql.Client, orgID string, name string) (api.Deployment, error) {
+	// TOOD: return pointers to structs so we dont have to initialize them
 	deployment := api.Deployment{}
 
 	pkg, err := api.GetPackageByName(client, orgID, name)
@@ -20,9 +25,25 @@ func DeployPackage(client graphql.Client, orgID string, name string) (api.Deploy
 		return deployment, err
 	}
 
-	// TODO: internal & loop
-	deployment, err = api.GetDeployment(client, orgID, deployment.ID)
+	return checkDeploymentStatus(client, orgID, deployment.ID, DeploymentTimeout)
+}
 
-	fmt.Printf("Err3 %v", err)
-	return deployment, err
+func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeout time.Duration) (api.Deployment, error) {
+	deployment := api.Deployment{}
+	deployment, err := api.GetDeployment(client, orgID, id)
+
+	if err != nil {
+		return deployment, err
+	}
+
+	timeout -= DeploymentStatusSleep
+	switch deployment.Status {
+	case "COMPLETED":
+		return deployment, nil
+	case "FAILED":
+		return deployment, errors.New("deployment failed")
+	default:
+		time.Sleep(DeploymentStatusSleep)
+		return checkDeploymentStatus(client, orgID, id, timeout)
+	}
 }
