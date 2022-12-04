@@ -11,16 +11,13 @@ import (
 var DeploymentStatusSleep time.Duration = time.Duration(10) * time.Second
 var DeploymentTimeout time.Duration = time.Duration(5) * time.Minute
 
-func DeployPackage(client graphql.Client, orgID string, name string) (api.Deployment, error) {
-	// TOOD: return pointers to structs so we dont have to initialize them
-	deployment := api.Deployment{}
-
+func DeployPackage(client graphql.Client, orgID string, name string) (*api.Deployment, error) {
 	pkg, err := api.GetPackageByName(client, orgID, name)
 	if err != nil {
-		return deployment, err
+		return nil, err
 	}
 
-	deployment, err = api.DeployPackage(client, orgID, pkg.Target.ID, pkg.Manifest.ID)
+	deployment, err := api.DeployPackage(client, orgID, pkg.Target.ID, pkg.Manifest.ID)
 	if err != nil {
 		return deployment, err
 	}
@@ -28,12 +25,11 @@ func DeployPackage(client graphql.Client, orgID string, name string) (api.Deploy
 	return checkDeploymentStatus(client, orgID, deployment.ID, DeploymentTimeout)
 }
 
-func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeout time.Duration) (api.Deployment, error) {
-	deployment := api.Deployment{}
+func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeout time.Duration) (*api.Deployment, error) {
 	deployment, err := api.GetDeployment(client, orgID, id)
 
 	if err != nil {
-		return deployment, err
+		return nil, err
 	}
 
 	timeout -= DeploymentStatusSleep
@@ -41,7 +37,7 @@ func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeo
 	case "COMPLETED":
 		return deployment, nil
 	case "FAILED":
-		return deployment, errors.New("deployment failed")
+		return nil, errors.New("deployment failed")
 	default:
 		time.Sleep(DeploymentStatusSleep)
 		return checkDeploymentStatus(client, orgID, id, timeout)

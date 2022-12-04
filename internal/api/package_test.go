@@ -31,7 +31,7 @@ func TestGetPackageByName(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := api.Package{
+	want := &api.Package{
 		NamePrefix: "ecomm-prod-cache-0000",
 		Manifest: api.Manifest{
 			ID: "manifest-id",

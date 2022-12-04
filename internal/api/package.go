@@ -16,19 +16,19 @@ type Package struct {
 	Target     Target
 }
 
-func GetPackageByName(client graphql.Client, orgID string, name string) (Package, error) {
+func GetPackageByName(client graphql.Client, orgID string, name string) (*Package, error) {
 	ctx := context.Background()
 	response, err := getPackageByNamingConvention(ctx, client, orgID, name)
 
 	if err != nil {
-		return Package{}, err
+		return nil, err
 	}
 
 	return response.GetPackageByNamingConvention.toPackage(), nil
 }
 
-func (p *getPackageByNamingConventionGetPackageByNamingConventionPackage) toPackage() Package {
-	return Package{
+func (p *getPackageByNamingConventionGetPackageByNamingConventionPackage) toPackage() *Package {
+	return &Package{
 		NamePrefix: p.NamePrefix,
 		Manifest: Manifest{
 			ID: p.Manifest.Id,
@@ -39,14 +39,12 @@ func (p *getPackageByNamingConventionGetPackageByNamingConventionPackage) toPack
 	}
 }
 
-func ConfigurePackage(client graphql.Client, orgID string, targetID string, manifestID string, params map[string]interface{}) (Package, error) {
+func ConfigurePackage(client graphql.Client, orgID string, targetID string, manifestID string, params map[string]interface{}) (*Package, error) {
 	ctx := context.Background()
-	pkg := Package{}
-
 	response, err := configurePackage(ctx, client, orgID, targetID, manifestID, params)
 
 	if err != nil {
-		return pkg, err
+		return nil, err
 	}
 
 	if response.ConfigurePackage.Successful {
@@ -55,15 +53,15 @@ func ConfigurePackage(client graphql.Client, orgID string, targetID string, mani
 
 	msgs, err := json.Marshal(response.ConfigurePackage.Messages)
 	if err != nil {
-		return pkg, fmt.Errorf("failed to configure package and couldn't marshal error messages: %w", err)
+		return nil, fmt.Errorf("failed to configure package and couldn't marshal error messages: %w", err)
 	}
 
 	// TODO: better formatting of errors - custom mutation Error type
-	return pkg, fmt.Errorf("failed to configure package: %v", string(msgs))
+	return nil, fmt.Errorf("failed to configure package: %v", string(msgs))
 }
 
-func (p *configurePackageConfigurePackagePackagePayloadResultPackage) toPackage() Package {
-	return Package{
+func (p *configurePackageConfigurePackagePackagePayloadResultPackage) toPackage() *Package {
+	return &Package{
 		ID:     p.Id,
 		Params: p.Params,
 	}

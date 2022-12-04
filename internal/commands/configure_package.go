@@ -6,11 +6,11 @@ import (
 )
 
 // Updates a packages configuration parameters.
-func ConfigurePackage(client graphql.Client, orgID string, name string, params map[string]interface{}) (api.Package, error) {
+func ConfigurePackage(client graphql.Client, orgID string, name string, params map[string]interface{}) (*api.Package, error) {
 	pkg, err := api.GetPackageByName(client, orgID, name)
 
 	if err != nil {
-		return pkg, err
+		return nil, err
 	}
 
 	return api.ConfigurePackage(client, orgID, pkg.Target.ID, pkg.Manifest.ID, params)
