@@ -20,3 +20,13 @@ Queries can be copy/pasted from the [GraphQL playground](https://api.massdriver.
 ```shell
 make generate
 ```
+
+## CLI
+
+```
+mass app # application config & deploy
+mass infra # infrastructure config & deploy
+mass bundle # managed app and infra bundles
+mass preview # preview environments
+mass templates # bundle templates
+```
