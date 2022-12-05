@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/spf13/cobra"
 )
 
@@ -32,4 +33,12 @@ func Execute() {
 	if err != nil {
 		os.Exit(1)
 	}
+}
+
+func mustRender(in string) string {
+	out, err := glamour.Render(in, "auto")
+	if err != nil {
+		panic(err)
+	}
+	return out
 }

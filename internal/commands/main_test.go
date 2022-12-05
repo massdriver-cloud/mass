@@ -9,7 +9,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-// TODO: backout this main_test and api/main_test into a api_test helper pkg
+// TODO: backout this main_test and api/main_test into a api_test helper
 const mockEndpoint string = "/graphql"
 
 func mockClient(mux *http.ServeMux) graphql.Client {

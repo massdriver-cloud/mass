@@ -19,6 +19,6 @@ type authedTransport struct {
 }
 
 func (t *authedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Add("authorization", "Bearer "+t.apiKey)
+	req.Header.Add("Authorization", "Bearer "+t.apiKey)
 	return t.wrapped.RoundTrip(req)
 }

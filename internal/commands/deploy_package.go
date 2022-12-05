@@ -2,6 +2,7 @@ package commands
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
@@ -26,6 +27,7 @@ func DeployPackage(client graphql.Client, orgID string, name string) (*api.Deplo
 }
 
 func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeout time.Duration) (*api.Deployment, error) {
+
 	deployment, err := api.GetDeployment(client, orgID, id)
 
 	if err != nil {
@@ -33,6 +35,10 @@ func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeo
 	}
 
 	timeout -= DeploymentStatusSleep
+
+	// TODO: replace w/ bubbletea (human) & zerolog (json)
+	fmt.Printf("Checking deployment status for %s: %s\n", id, deployment.Status)
+
 	switch deployment.Status {
 	case "COMPLETED":
 		return deployment, nil
