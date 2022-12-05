@@ -13,9 +13,8 @@ type Environment struct {
 	Slug string
 }
 
-func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID string, credentials []Credential, packageParams map[string]interface{}, ciContext map[string]interface{}) (Environment, error) {
+func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID string, credentials []Credential, packageParams map[string]interface{}, ciContext map[string]interface{}) (*Environment, error) {
 	ctx := context.Background()
-	env := Environment{}
 
 	input := PreviewEnvironmentInput{
 		Credentials:   credentials,
@@ -26,7 +25,7 @@ func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID str
 	response, err := deployPreviewEnvironment(ctx, client, orgID, projectID, input)
 
 	if err != nil {
-		return env, err
+		return nil, err
 	}
 
 	if response.DeployPreviewEnvironment.Successful {
@@ -35,15 +34,15 @@ func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID str
 
 	msgs, err := json.Marshal(response.DeployPreviewEnvironment.Messages)
 	if err != nil {
-		return env, fmt.Errorf("failed to deploy preview environment and couldn't marshal error messages: %w", err)
+		return nil, fmt.Errorf("failed to deploy preview environment and couldn't marshal error messages: %w", err)
 	}
 
 	// TODO: better formatting of errors - custom mutation Error type
-	return env, fmt.Errorf("failed to deploy environment: %v", string(msgs))
+	return nil, fmt.Errorf("failed to deploy environment: %v", string(msgs))
 }
 
-func (e *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget) toEnvironment() Environment {
-	return Environment{
+func (e *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget) toEnvironment() *Environment {
+	return &Environment{
 		ID:   e.Id,
 		Slug: e.Slug,
 	}

@@ -7,9 +7,17 @@ MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(dir $(MKFILE_PATH))
 API_DIR := internal/api
 
+.PHONY: check
+check: clean generate test ## Run tests and linter locally
+	golangci-lint run
+
 .PHONY: clean
 clean:
-	rm -rf internal/api/{schema.graphql,zz_generated.go}
+	rm -rf internal/api/{zz_generated.go}
+
+.PHONY: clean!
+clean!: clean ## Removes graphql schema
+	rm -rf internal/api/{schema.graphql}
 
 .PHONY: generate
 generate: clean ${API_DIR}/zz_generated.go

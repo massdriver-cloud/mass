@@ -53,6 +53,7 @@ func muxWithJSONResponse(response map[string]interface{}) *http.ServeMux {
 	return mux
 }
 
+// Takes a JSON map and creates a GraphQL client that always returns it
 func mockClientWithSingleJSONResponse(response map[string]interface{}) graphql.Client {
 	mux := muxWithJSONResponse(response)
 	client := mockClient(mux)
