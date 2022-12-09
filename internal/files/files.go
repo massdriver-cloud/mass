@@ -2,7 +2,7 @@ package files
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 )
 
 const USER_RW = 0600
@@ -14,5 +14,5 @@ func Write(path string, data interface{}) error {
 		return err
 	}
 
-	return ioutil.WriteFile(path, json, USER_RW)
+	return os.WriteFile(path, json, USER_RW)
 }
