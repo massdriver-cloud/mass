@@ -43,22 +43,12 @@ func mustWrite(w io.Writer, s string) {
 	}
 }
 
-func muxWithJSONResponse(response map[string]interface{}) *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc(mockEndpoint, func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		data, _ := json.Marshal(response)
-		mustWrite(w, string(data))
-	})
-
-	return mux
-}
-
 func muxWithJSONResponseMap(responses map[string]interface{}) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc(mockEndpoint, func(w http.ResponseWriter, req *http.Request) {
 		var parsedReq graphQLRequest
-		json.NewDecoder(req.Body).Decode(&parsedReq)
+		err := json.NewDecoder(req.Body).Decode(&parsedReq)
+		_ = err
 
 		response := responses[parsedReq.OperationName]
 		data, _ := json.Marshal(response)
