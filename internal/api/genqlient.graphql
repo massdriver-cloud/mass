@@ -29,6 +29,10 @@ mutation deployPreviewEnvironment($organizationId: ID!, $projectId: ID!, $input:
     result {
       id
       slug
+      project{
+        id
+        slug
+      }
     }
     messages {
       message

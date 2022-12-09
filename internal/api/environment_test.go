@@ -15,7 +15,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 		"data": map[string]interface{}{
 			"deployPreviewEnvironment": map[string]interface{}{
 				"result": map[string]interface{}{
-					"id":   "env-uuid1",
+					"id":   "envuuid1",
 					"slug": slug,
 				},
 				"successful": true,

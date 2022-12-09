@@ -7,7 +7,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/commands"
 )
 
-func TestInitializePreview(t *testing.T) {
+func TestInitializePreviewEnvironment(t *testing.T) {
 	projectSlug := "ecomm"
 	responses := []interface{}{
 		mockQueryResponse("project", map[string]interface{}{
@@ -20,7 +20,7 @@ func TestInitializePreview(t *testing.T) {
 	client := mockClientWithJSONResponseArray(responses)
 
 	// TODO: this previously took the file writing path, where do we want to handle that?
-	previewCfg, err := commands.InitializePreview(client, "faux-org-id", projectSlug)
+	previewCfg, err := commands.InitializePreviewEnvironment(client, "faux-org-id", projectSlug)
 
 	if err != nil {
 		t.Fatal(err)

@@ -10,7 +10,7 @@ type PreviewConfig struct {
 	PackageParams map[string]interface{} `json:"packageParams"`
 }
 
-func InitializePreview(client graphql.Client, orgID string, projectSlug string) (*PreviewConfig, error) {
+func InitializePreviewEnvironment(client graphql.Client, orgID string, projectSlug string) (*PreviewConfig, error) {
 	project, err := api.GetProject(client, orgID, projectSlug)
 
 	if err != nil {

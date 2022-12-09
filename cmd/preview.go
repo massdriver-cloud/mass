@@ -46,7 +46,7 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 
 	// TODO: write config to file
 	// TODO: send stdin
-	cfg, err := commands.InitializePreview(client, c.OrgID, projectSlug)
+	cfg, err := commands.InitializePreviewEnvironment(client, c.OrgID, projectSlug)
 
 	if err != nil {
 		return err
