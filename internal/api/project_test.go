@@ -9,10 +9,12 @@ import (
 func TestGetProject(t *testing.T) {
 	client := mockClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
-			"project": map[string]string{
-				"id":            "uuid1",
-				"slug":          "sluggy",
-				"defaultParams": `{"foo":"bar"}`,
+			"project": map[string]interface{}{
+				"id":   "uuid1",
+				"slug": "sluggy",
+				"defaultParams": map[string]interface{}{
+					"foo": "bar",
+				},
 			},
 		},
 	})

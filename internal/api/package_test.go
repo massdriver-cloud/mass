@@ -56,7 +56,7 @@ func TestConfigurePackage(t *testing.T) {
 			"configurePackage": map[string]interface{}{
 				"result": map[string]interface{}{
 					"id":     "pkg-uuid1",
-					"params": string(mustMarshalJSON(params)),
+					"params": params,
 				},
 				"successful": true,
 			},

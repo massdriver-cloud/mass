@@ -21,7 +21,7 @@ func TestMarshalJSON(t *testing.T) {
 func TestUnmarshalJSON(t *testing.T) {
 	want := map[string]interface{}{"foo": "bar"}
 
-	data := []byte(`"{\"foo\":\"bar\"}"`)
+	data := []byte(`{"foo": "bar"}`)
 	got := map[string]interface{}{}
 	err := scalars.UnmarshalJSON(data, &got)
 

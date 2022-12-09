@@ -23,7 +23,7 @@ func TestConfigurePackage(t *testing.T) {
 				"configurePackage": map[string]interface{}{
 					"result": map[string]interface{}{
 						"id":     "pkg-id",
-						"params": string(mustMarshalJSON(params)),
+						"params": params,
 					},
 					"successful": true,
 				},
