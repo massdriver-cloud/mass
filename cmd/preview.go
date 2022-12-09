@@ -15,7 +15,9 @@ Massdriver preview environments can deploy infrastructure and applications as a 
 `)
 
 var previewInitParamsPath string
-var previewInitCmdHelp = mustRender(`# WIP`)
+var previewDeployCiContextPath string
+var previewInitCmdHelp = mustRender(`# TODO`)
+var previewDeployCmdHelp = mustRender(`# TODO`)
 
 var previewCmd = &cobra.Command{
 	Use:     "preview",
@@ -32,11 +34,23 @@ var previewInitCmd = &cobra.Command{
 	RunE:  runPreviewInit,
 }
 
+var previewDeployCmd = &cobra.Command{
+	Use:   "deploy projectSlug",
+	Short: "Deploys a preview environment in your project",
+	Long:  previewDeployCmdHelp,
+	RunE:  runPreviewDeploy,
+	Args:  cobra.ExactArgs(1),
+}
+
 func init() {
 	rootCmd.AddCommand(previewCmd)
 
 	previewInitCmd.Flags().StringVarP(&previewInitParamsPath, "output", "o", "./preview.json", "Output path for preview environment params file. This file supports bash interpolation and can be manually edited or programatically modified during CI.")
 	previewCmd.AddCommand(previewInitCmd)
+
+	previewCmd.AddCommand(previewDeployCmd)
+	previewDeployCmd.Flags().StringVarP(&previewInitParamsPath, "params", "p", "./preview.json", "Path to preview params file. This file supports bash interpolation.")
+	previewDeployCmd.Flags().StringVarP(&previewDeployCiContextPath, "ci-context", "c", "", "Path to GitHub Actions event.json")
 }
 
 func runPreviewInit(cmd *cobra.Command, args []string) error {
@@ -44,7 +58,6 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 	c := config.Get()
 	client := api.NewClient(c.URL, c.APIKey)
 
-	// TODO: write config to file
 	// TODO: send stdin
 	cfg, err := commands.InitializePreviewEnvironment(client, c.OrgID, projectSlug)
 
@@ -53,4 +66,15 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 	}
 
 	return files.Write(previewInitParamsPath, cfg)
+}
+
+func runPreviewDeploy(cmd *cobra.Command, args []string) error {
+	projectSlug := args[0]
+	c := config.Get()
+	client := api.NewClient(c.URL, c.APIKey)
+
+	// TODO: parse and pass in files...
+	_, err := commands.DeployPreviewEnvironment(client, c.OrgID, projectSlug)
+
+	return err
 }
