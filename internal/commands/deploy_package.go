@@ -9,8 +9,8 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api"
 )
 
-var DeploymentStatusSleep time.Duration = time.Duration(10) * time.Second
-var DeploymentTimeout time.Duration = time.Duration(5) * time.Minute
+var DeploymentStatusSleep = time.Duration(10) * time.Second
+var DeploymentTimeout = time.Duration(5) * time.Minute
 
 func DeployPackage(client graphql.Client, orgID string, name string) (*api.Deployment, error) {
 	pkg, err := api.GetPackageByName(client, orgID, name)
@@ -27,7 +27,6 @@ func DeployPackage(client graphql.Client, orgID string, name string) (*api.Deplo
 }
 
 func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeout time.Duration) (*api.Deployment, error) {
-
 	deployment, err := api.GetDeployment(client, orgID, id)
 
 	if err != nil {

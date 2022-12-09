@@ -11,13 +11,7 @@ var appCmdHelp = mustRender(`
 # Configure and deploy applications managed with Massdriver.
 `)
 
-var appDeployCmdHelp = mustRender(`
-# Deploy applications on Massdriver.
-
-This application must be published as a [bundle](https://docs.massdriver.cloud/applications) to Massdriver first and be configured for a given environment (target).
-
-For more info see [deploying](https://docs.massdriver.cloud/applications/deploying-application).
-`)
+var appDeployCmdHelp = mustRenderFromFile("helpdocs/app-deploy.md")
 
 var appCmd = &cobra.Command{
 	Use:     "application",

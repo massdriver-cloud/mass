@@ -1,11 +1,15 @@
 package cmd
 
 import (
+	"embed"
 	"os"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/spf13/cobra"
 )
+
+//go:embed helpdocs/*.md
+var helpdocs embed.FS
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -41,4 +45,12 @@ func mustRender(in string) string {
 		panic(err)
 	}
 	return out
+}
+
+func mustRenderFromFile(path string) string {
+	data, err := helpdocs.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return mustRender(string(data))
 }
