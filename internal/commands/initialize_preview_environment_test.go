@@ -17,9 +17,8 @@ func TestInitializePreviewEnvironment(t *testing.T) {
 			},
 		}),
 	}
-	client := mockClientWithJSONResponseArray(responses)
 
-	// TODO: this previously took the file writing path, where do we want to handle that?
+	client := mockClientWithJSONResponseArray(responses)
 	previewCfg, err := commands.InitializePreviewEnvironment(client, "faux-org-id", projectSlug)
 
 	if err != nil {

@@ -23,9 +23,8 @@ func TestUnmarshalJSON(t *testing.T) {
 
 	data := []byte(`{"foo": "bar"}`)
 	got := map[string]interface{}{}
-	err := scalars.UnmarshalJSON(data, &got)
 
-	if err != nil {
+	if err := scalars.UnmarshalJSON(data, &got); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 

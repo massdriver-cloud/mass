@@ -36,6 +36,13 @@ func mustMarshalJSON(v map[string]interface{}) []byte {
 	return data
 }
 
+func mustUnmarshalJSON(data []byte, v any) {
+	err := json.Unmarshal(data, &v)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func mustWrite(w io.Writer, s string) {
 	_, err := io.WriteString(w, s)
 	if err != nil {

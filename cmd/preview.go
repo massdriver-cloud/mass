@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
 	"github.com/massdriver-cloud/mass/internal/config"
@@ -14,8 +16,8 @@ var previewCmdHelp = mustRender(`
 Massdriver preview environments can deploy infrastructure and applications as a cohesive unit.
 `)
 
-var previewInitParamsPath string
-var previewDeployCiContextPath string
+var previewInitParamsPath = "./preview.json"
+var previewDeployCiContextPath = "/home/runner/work/_temp/_github_workflow/event.json"
 var previewInitCmdHelp = mustRender(`# TODO`)
 var previewDeployCmdHelp = mustRender(`# TODO`)
 
@@ -49,8 +51,8 @@ func init() {
 	previewCmd.AddCommand(previewInitCmd)
 
 	previewCmd.AddCommand(previewDeployCmd)
-	previewDeployCmd.Flags().StringVarP(&previewInitParamsPath, "params", "p", "./preview.json", "Path to preview params file. This file supports bash interpolation.")
-	previewDeployCmd.Flags().StringVarP(&previewDeployCiContextPath, "ci-context", "c", "", "Path to GitHub Actions event.json")
+	previewDeployCmd.Flags().StringVarP(&previewInitParamsPath, "params", "p", previewInitParamsPath, "Path to preview environment configuration file. This file supports bash interpolation.")
+	previewDeployCmd.Flags().StringVarP(&previewDeployCiContextPath, "ci-context", "c", previewDeployCiContextPath, "Path to GitHub Actions event.json")
 }
 
 func runPreviewInit(cmd *cobra.Command, args []string) error {
@@ -72,9 +74,25 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 	projectSlug := args[0]
 	c := config.Get()
 	client := api.NewClient(c.URL, c.APIKey)
+	previewCfg := commands.PreviewConfig{}
+	ciContext := map[string]interface{}{}
 
-	// TODO: parse and pass in files...
-	_, err := commands.DeployPreviewEnvironment(client, c.OrgID, projectSlug)
+	if err := files.Read(previewInitParamsPath, &previewCfg); err != nil {
+		return err
+	}
 
-	return err
+	if err := files.Read(previewDeployCiContextPath, &ciContext); err != nil {
+		return err
+	}
+
+	env, err := commands.DeployPreviewEnvironment(client, c.OrgID, projectSlug, &previewCfg, &ciContext)
+
+	if err != nil {
+		return err
+	}
+
+	// TODO: bubbletea v zerolog
+	fmt.Printf("Deploying @ %s", env.URL)
+
+	return nil
 }
