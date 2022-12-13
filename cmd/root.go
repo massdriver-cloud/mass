@@ -11,30 +11,31 @@ import (
 //go:embed helpdocs/*.md
 var helpdocs embed.FS
 
+var rootCmdHelp = `
+███    ███  █████  ███████ ███████
+████  ████ ██   ██ ██      ██
+██ ████ ██ ███████ ███████ ███████
+██  ██  ██ ██   ██      ██      ██
+██      ██ ██   ██ ███████ ███████
+
+Massdriver Cloud CLI
+
+Develop and publish private bundles.
+
+Configure and deploying infrastructure and applications.
+`
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "mass",
 	Short: "Massdriver Cloud CLI",
-	Long: `
-	███    ███  █████  ███████ ███████
-	████  ████ ██   ██ ██      ██
-	██ ████ ██ ███████ ███████ ███████
-	██  ██  ██ ██   ██      ██      ██
-	██      ██ ██   ██ ███████ ███████
-
-	Massdriver Cloud CLI
-
-	Develop and publish private bundles.
-
-	Configure and deploying infrastructure and applications.
-	`,
+	Long:  rootCmdHelp,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

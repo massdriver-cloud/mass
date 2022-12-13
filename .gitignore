@@ -25,3 +25,5 @@ mass
 .DS_Store
 preview.json
 env
+event.json
+preview.demo.json

@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
 func TestListCredentials(t *testing.T) {
-	client := mockClientWithSingleJSONResponse(map[string]interface{}{
+	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"artifacts": map[string]interface{}{
 				"items": []map[string]interface{}{

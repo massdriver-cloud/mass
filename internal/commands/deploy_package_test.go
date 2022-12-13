@@ -5,29 +5,30 @@ import (
 
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
+	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
 func TestDeployPackage(t *testing.T) {
 	responses := []interface{}{
-		mockQueryResponse("getPackageByNamingConvention", api.Package{
+		gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
 			Manifest: api.Manifest{ID: "manifest-id"},
 			Target:   api.Target{ID: "target-id"},
 		}),
-		mockMutationResponse("deployPackage", api.Deployment{
+		gqlmock.MockMutationResponse("deployPackage", api.Deployment{
 			ID:     "deployment-id",
 			Status: "STARTED",
 		}),
-		mockQueryResponse("deployment", api.Deployment{
+		gqlmock.MockQueryResponse("deployment", api.Deployment{
 			ID:     "deployment-id",
 			Status: "PENDING",
 		}),
-		mockQueryResponse("deployment", api.Deployment{
+		gqlmock.MockQueryResponse("deployment", api.Deployment{
 			ID:     "deployment-id",
 			Status: "COMPLETED",
 		}),
 	}
 
-	client := mockClientWithJSONResponseArray(responses)
+	client := gqlmock.NewClientWithJSONResponseArray(responses)
 	commands.DeploymentStatusSleep = 0
 
 	deployment, err := commands.DeployPackage(client, "faux-org-id", "ecomm-prod-cache")

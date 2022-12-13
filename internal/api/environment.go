@@ -11,7 +11,10 @@ import (
 type Environment struct {
 	ID   string
 	Slug string
+	URL  string
 }
+
+const urlTemplate = "https://app.massdriver.cloud/projects/%s/targets/%v"
 
 func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID string, credentials []Credential, packageParams map[string]interface{}, ciContext map[string]interface{}) (*Environment, error) {
 	ctx := context.Background()
@@ -45,5 +48,7 @@ func (e *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarg
 	return &Environment{
 		ID:   e.Id,
 		Slug: e.Slug,
+		// TODO: use slugs for proj & env once front end has resolved the issues there.
+		URL: fmt.Sprintf(urlTemplate, e.Project.Id, e.Id),
 	}
 }

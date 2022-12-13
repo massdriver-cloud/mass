@@ -6,6 +6,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
+	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
 func TestConfigurePackage(t *testing.T) {
@@ -13,8 +14,8 @@ func TestConfigurePackage(t *testing.T) {
 		"cidr": "10.0.0.0/16",
 	}
 
-	client := mockClientWithJSONResponseMap(map[string]interface{}{
-		"getPackageByNamingConvention": mockQueryResponse("getPackageByNamingConvention", api.Package{
+	client := gqlmock.NewClientWithJSONResponseMap(map[string]interface{}{
+		"getPackageByNamingConvention": gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
 			Manifest: api.Manifest{ID: "manifest-id"},
 			Target:   api.Target{ID: "target-id"},
 		}),
@@ -23,7 +24,7 @@ func TestConfigurePackage(t *testing.T) {
 				"configurePackage": map[string]interface{}{
 					"result": map[string]interface{}{
 						"id":     "pkg-id",
-						"params": string(mustMarshalJSON(params)),
+						"params": params,
 					},
 					"successful": true,
 				},

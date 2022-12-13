@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
 func TestGetPackageByName(t *testing.T) {
 	pkgName := "ecomm-prod-cache"
 
-	client := mockClientWithSingleJSONResponse(map[string]interface{}{
+	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"getPackageByNamingConvention": map[string]interface{}{
 				"namePrefix": fmt.Sprintf("%s-0000", pkgName),
@@ -51,12 +52,12 @@ func TestConfigurePackage(t *testing.T) {
 		"cidr": "10.0.0.0/16",
 	}
 
-	client := mockClientWithSingleJSONResponse(map[string]interface{}{
+	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"configurePackage": map[string]interface{}{
 				"result": map[string]interface{}{
 					"id":     "pkg-uuid1",
-					"params": string(mustMarshalJSON(params)),
+					"params": params,
 				},
 				"successful": true,
 			},
