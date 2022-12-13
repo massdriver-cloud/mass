@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/commands"
+	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
 func TestInitializePreviewEnvironment(t *testing.T) {
 	projectSlug := "ecomm"
 	responses := []interface{}{
-		mockQueryResponse("project", map[string]interface{}{
+		gqlmock.MockQueryResponse("project", map[string]interface{}{
 			"slug": projectSlug,
 			"defaultParams": map[string]interface{}{
 				"database": map[string]interface{}{"username": "root"},
@@ -18,7 +19,7 @@ func TestInitializePreviewEnvironment(t *testing.T) {
 		}),
 	}
 
-	client := mockClientWithJSONResponseArray(responses)
+	client := gqlmock.NewClientWithJSONResponseArray(responses)
 	previewCfg, err := commands.InitializePreviewEnvironment(client, "faux-org-id", projectSlug)
 
 	if err != nil {

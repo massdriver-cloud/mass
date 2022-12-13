@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
 func TestGetProject(t *testing.T) {
-	client := mockClientWithSingleJSONResponse(map[string]interface{}{
+	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"project": map[string]interface{}{
 				"id":   "uuid1",

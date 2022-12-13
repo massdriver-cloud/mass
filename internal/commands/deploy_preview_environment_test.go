@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/commands"
+	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
 func TestDeployPreviewEnvironment(t *testing.T) {
 	projectSlug := "ecomm"
 	envSlug := "p9000"
 	responses := []interface{}{
-		mockMutationResponse("deployPreviewEnvironment", map[string]interface{}{
+		gqlmock.MockMutationResponse("deployPreviewEnvironment", map[string]interface{}{
 			"id":   "envUUID",
 			"slug": envSlug,
 			"project": map[string]interface{}{
@@ -24,7 +25,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 		}),
 	}
 
-	client := mockClientWithJSONResponseArray(responses)
+	client := gqlmock.NewClientWithJSONResponseArray(responses)
 
 	previewCfg := commands.PreviewConfig{
 		Credentials:   map[string]string{},
@@ -52,8 +53,8 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 	envSlug := "p9000"
 
 	mux := http.NewServeMux()
-	mux.HandleFunc(mockEndpoint, func(w http.ResponseWriter, req *http.Request) {
-		var parsedReq graphQLRequest
+	mux.HandleFunc(gqlmock.MockEndpoint, func(w http.ResponseWriter, req *http.Request) {
+		var parsedReq gqlmock.GraphQLRequest
 		if err := json.NewDecoder(req.Body).Decode(&parsedReq); err != nil {
 			t.Error(err)
 		}
@@ -62,7 +63,7 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 		paramsJSON := []byte((input["packageParams"]).(string))
 
 		got := map[string]interface{}{}
-		mustUnmarshalJSON(paramsJSON, &got)
+		gqlmock.MustUnmarshalJSON(paramsJSON, &got)
 
 		want := map[string]interface{}{
 			"myApp": map[string]interface{}{
@@ -74,7 +75,7 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 			t.Errorf("got %v, wanted %v", got, want)
 		}
 
-		response := mockMutationResponse("deployPreviewEnvironment", map[string]interface{}{
+		response := gqlmock.MockMutationResponse("deployPreviewEnvironment", map[string]interface{}{
 			"id":   "envUUID",
 			"slug": envSlug,
 			"project": map[string]interface{}{
@@ -84,10 +85,10 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 		})
 
 		data, _ := json.Marshal(response)
-		mustWrite(w, string(data))
+		gqlmock.MustWrite(w, string(data))
 	})
 
-	client := mockClient(mux)
+	client := gqlmock.NewClient(mux)
 
 	previewCfg := commands.PreviewConfig{
 		Credentials: map[string]string{},

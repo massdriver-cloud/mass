@@ -1,4 +1,4 @@
-package commands_test
+package gqlmock
 
 import (
 	"encoding/json"
@@ -9,11 +9,10 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-// TODO: backout this main_test and api/main_test into a api_test helper
-const mockEndpoint string = "/graphql"
+const MockEndpoint string = "/graphql"
 
-func mockClient(mux *http.ServeMux) graphql.Client {
-	return graphql.NewClient(mockEndpoint, &http.Client{Transport: localRoundTripper{handler: mux}})
+func NewClient(mux *http.ServeMux) graphql.Client {
+	return graphql.NewClient(MockEndpoint, &http.Client{Transport: localRoundTripper{handler: mux}})
 }
 
 // localRoundTripper is an http.RoundTripper that executes HTTP transactions
@@ -28,7 +27,7 @@ func (l localRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	return w.Result(), nil
 }
 
-func mustMarshalJSON(v map[string]interface{}) []byte {
+func MustMarshalJSON(v map[string]interface{}) []byte {
 	data, err := json.Marshal(v)
 	if err != nil {
 		panic(err)
@@ -36,73 +35,87 @@ func mustMarshalJSON(v map[string]interface{}) []byte {
 	return data
 }
 
-func mustUnmarshalJSON(data []byte, v any) {
+func MustUnmarshalJSON(data []byte, v any) {
 	err := json.Unmarshal(data, &v)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func mustWrite(w io.Writer, s string) {
+func MustWrite(w io.Writer, s string) {
 	_, err := io.WriteString(w, s)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func muxWithJSONResponseMap(responses map[string]interface{}) *http.ServeMux {
+func MuxWithJSONResponseMap(responses map[string]interface{}) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc(mockEndpoint, func(w http.ResponseWriter, req *http.Request) {
-		var parsedReq graphQLRequest
+	mux.HandleFunc(MockEndpoint, func(w http.ResponseWriter, req *http.Request) {
+		var parsedReq GraphQLRequest
 		err := json.NewDecoder(req.Body).Decode(&parsedReq)
 		_ = err
 
 		response := responses[parsedReq.OperationName]
 		data, _ := json.Marshal(response)
-		mustWrite(w, string(data))
+		MustWrite(w, string(data))
 	})
 
 	return mux
 }
 
 // Takes a map of graphql operation names to JSON responses and creates a GraphQL client that returns based on operation name
-func mockClientWithJSONResponseMap(responses map[string]interface{}) graphql.Client {
-	mux := muxWithJSONResponseMap(responses)
-	client := mockClient(mux)
+func NewClientWithJSONResponseMap(responses map[string]interface{}) graphql.Client {
+	mux := MuxWithJSONResponseMap(responses)
+	client := NewClient(mux)
 	return client
 }
 
-func muxWithJSONResponseArray(responses []interface{}) *http.ServeMux {
+func MuxWithJSONResponseArray(responses []interface{}) *http.ServeMux {
 	mux := http.NewServeMux()
 	counter := 0
-	mux.HandleFunc(mockEndpoint, func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc(MockEndpoint, func(w http.ResponseWriter, req *http.Request) {
 		response := responses[counter]
 		counter++
 		data, _ := json.Marshal(response)
-		mustWrite(w, string(data))
+		MustWrite(w, string(data))
 	})
 
 	return mux
 }
 
-// Takes an array of responses and creates a graphql client that returns them in order
-func mockClientWithJSONResponseArray(responses []interface{}) graphql.Client {
-	mux := muxWithJSONResponseArray(responses)
-	client := mockClient(mux)
+func MuxWithJSONResponse(response map[string]interface{}) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc(MockEndpoint, func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		data, _ := json.Marshal(response)
+		MustWrite(w, string(data))
+	})
+
+	return mux
+}
+
+// Takes a JSON map and creates a GraphQL client that always returns it
+func NewClientWithSingleJSONResponse(response map[string]interface{}) graphql.Client {
+	mux := MuxWithJSONResponse(response)
+	client := NewClient(mux)
 	return client
 }
 
-type graphQLRequest struct {
+// Takes an array of responses and creates a graphql client that returns them in order
+func NewClientWithJSONResponseArray(responses []interface{}) graphql.Client {
+	mux := MuxWithJSONResponseArray(responses)
+	client := NewClient(mux)
+	return client
+}
+
+type GraphQLRequest struct {
 	OperationName string                 `json:"operationName"`
 	Query         string                 `json:"query"`
 	Variables     map[string]interface{} `json:"variables"`
 }
 
-type queryResponse struct {
-	Data map[string]interface{} `json:"data"`
-}
-
-func mockQueryResponse(operationName string, responseData interface{}) queryResponse {
+func MockQueryResponse(operationName string, responseData interface{}) queryResponse {
 	r := queryResponse{
 		Data: map[string]interface{}{},
 	}
@@ -112,7 +125,7 @@ func mockQueryResponse(operationName string, responseData interface{}) queryResp
 	return r
 }
 
-func mockMutationResponse(operationName string, result interface{}) mutationResponse {
+func MockMutationResponse(operationName string, result interface{}) mutationResponse {
 	r := mutationResponse{
 		Data: map[string]mutationResponseData{},
 	}
@@ -121,6 +134,10 @@ func mockMutationResponse(operationName string, result interface{}) mutationResp
 		Result:     result,
 	}
 	return r
+}
+
+type queryResponse struct {
+	Data map[string]interface{} `json:"data"`
 }
 
 type mutationResponseMessage struct {

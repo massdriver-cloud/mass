@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
 func TestDeployPreviewEnvironment(t *testing.T) {
 	prNumber := 69
 	slug := fmt.Sprintf("p%d", prNumber)
 
-	client := mockClientWithSingleJSONResponse(map[string]interface{}{
+	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"deployPreviewEnvironment": map[string]interface{}{
 				"result": map[string]interface{}{

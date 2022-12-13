@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
 func TestGetDeployment(t *testing.T) {
-	client := mockClientWithSingleJSONResponse(map[string]interface{}{
+	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"deployment": map[string]interface{}{
 				"id":     "uuid1",
@@ -32,7 +33,7 @@ func TestGetDeployment(t *testing.T) {
 
 func TestDeployPackage(t *testing.T) {
 	want := "deployment-uuid1"
-	client := mockClientWithSingleJSONResponse(map[string]interface{}{
+	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"deployPackage": map[string]interface{}{
 				"result": map[string]interface{}{
