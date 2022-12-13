@@ -75,6 +75,8 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 	client := api.NewClient(c.URL, c.APIKey)
 
 	// TODO: send stdin
+	// commands.WithStdin(os.Stdin)
+
 	cfg, err := commands.InitializePreviewEnvironment(client, c.OrgID, projectSlug)
 
 	if err != nil {
