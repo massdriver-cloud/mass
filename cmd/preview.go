@@ -16,10 +16,24 @@ var previewCmdHelp = mustRender(`
 Massdriver preview environments can deploy infrastructure and applications as a cohesive unit.
 `)
 
+var previewInitCmdHelp = mustRender(`
+# Initialize a Preview Environment Config File
+
+The preview environment config file should be checked into your source repository. The file supports bash interpolation.
+`)
+
+var previewDeployCmdHelp = mustRender(`
+# Deploy a Preview Environment
+
+Deploys a prevew environment in your project.
+
+A configuration file with authentication artifacts and package configuration is required.
+
+Currently only GitHub Action workflow events are supported for deploying preview environments.
+`)
+
 var previewInitParamsPath = "./preview.json"
 var previewDeployCiContextPath = "/home/runner/work/_temp/_github_workflow/event.json"
-var previewInitCmdHelp = mustRender(`# TODO`)
-var previewDeployCmdHelp = mustRender(`# TODO`)
 
 var previewCmd = &cobra.Command{
 	Use:     "preview",

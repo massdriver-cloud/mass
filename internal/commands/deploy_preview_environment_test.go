@@ -3,7 +3,6 @@ package commands_test
 import (
 	"encoding/json"
 	"net/http"
-	"os"
 	"reflect"
 	"testing"
 
@@ -59,8 +58,11 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 			t.Error(err)
 		}
 
-		input := (parsedReq.Variables["input"]).(map[string]interface{})
-		paramsJSON := []byte((input["packageParams"]).(string))
+		input := parsedReq.Variables["input"]
+		inputMap, ok := input.(map[string]interface{})
+		_ = ok
+
+		paramsJSON := []byte((inputMap["packageParams"]).(string))
 
 		got := map[string]interface{}{}
 		gqlmock.MustUnmarshalJSON(paramsJSON, &got)
@@ -101,7 +103,7 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 
 	ciContext := map[string]interface{}{}
 
-	os.Setenv("PR_NUMBER", "9000")
+	t.Setenv("PR_NUMBER", "9000")
 	_, err := commands.DeployPreviewEnvironment(client, "faux-org-id", projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {

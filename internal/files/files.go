@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-const USER_RW = 0600
+const UserRW = 0600
 
 func Write(path string, data interface{}) error {
 	var formattedData []byte
@@ -24,7 +24,7 @@ func Write(path string, data interface{}) error {
 		return fmt.Errorf("unsupported file type: %s", ext)
 	}
 
-	return os.WriteFile(path, formattedData, USER_RW)
+	return os.WriteFile(path, formattedData, UserRW)
 }
 
 func Read(path string, v any) error {
@@ -37,7 +37,7 @@ func Read(path string, v any) error {
 
 	switch ext {
 	case ".json":
-		if err := json.Unmarshal(contents, &v); err != nil {
+		if err = json.Unmarshal(contents, &v); err != nil {
 			return err
 		}
 	default:

@@ -115,8 +115,8 @@ type GraphQLRequest struct {
 	Variables     map[string]interface{} `json:"variables"`
 }
 
-func MockQueryResponse(operationName string, responseData interface{}) queryResponse {
-	r := queryResponse{
+func MockQueryResponse(operationName string, responseData interface{}) QueryResponse {
+	r := QueryResponse{
 		Data: map[string]interface{}{},
 	}
 
@@ -125,31 +125,31 @@ func MockQueryResponse(operationName string, responseData interface{}) queryResp
 	return r
 }
 
-func MockMutationResponse(operationName string, result interface{}) mutationResponse {
-	r := mutationResponse{
-		Data: map[string]mutationResponseData{},
+func MockMutationResponse(operationName string, result interface{}) MutationResponse {
+	r := MutationResponse{
+		Data: map[string]MutationResponseData{},
 	}
-	r.Data[operationName] = mutationResponseData{
+	r.Data[operationName] = MutationResponseData{
 		Successful: true,
 		Result:     result,
 	}
 	return r
 }
 
-type queryResponse struct {
+type QueryResponse struct {
 	Data map[string]interface{} `json:"data"`
 }
 
-type mutationResponseMessage struct {
+type MutationResponseMessage struct {
 	Message string `json:"message"`
 }
 
-type mutationResponseData struct {
+type MutationResponseData struct {
 	Successful bool                      `json:"successful"`
 	Result     interface{}               `json:"result"`
-	Messages   []mutationResponseMessage `json:"messages"`
+	Messages   []MutationResponseMessage `json:"messages"`
 }
 
-type mutationResponse struct {
-	Data map[string]mutationResponseData `json:"data"`
+type MutationResponse struct {
+	Data map[string]MutationResponseData `json:"data"`
 }
