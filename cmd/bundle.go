@@ -14,13 +14,11 @@ var bundleCmdHelp = mustRender(`
 # Generate and publish Massdriver bundles.
 `)
 
-var bundleTemplateCmdHelp = mustRender(`
-_This_ is where the help file goes
-`)
+var bundleTemplateCmdHelp = mustRenderFromFile("helpdocs/templates.md")
 
-var templateListCmdHelp = mustRender(`
-_This_ is where the help file goes
-`)
+var templateListCmdHelp = mustRenderFromFile("helpdocs/list-templates.md")
+
+var templateRefreshCmdHelp = mustRenderFromFile("helpdocs/refresh-templates.md")
 
 var bundleCmd = &cobra.Command{
 	Use:   "bundle",
@@ -44,7 +42,7 @@ var templateListCmd = &cobra.Command{
 var templateRefreshCmd = &cobra.Command{
 	Use:   "refresh",
 	Short: "Update template list from the official Massdriver Github",
-	Long:  templateListCmdHelp,
+	Long:  templateRefreshCmdHelp,
 	RunE:  runTemplateRefresh,
 }
 
