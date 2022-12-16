@@ -29,6 +29,10 @@ test:
 bin:
 	mkdir bin
 
+.PHONY: lint
+lint:
+	golangci-lint run
+
 .PHONY: build.macos
 build.macos: bin
 	GOOS=darwin GOARCH=arm64 go build -o bin/mass-darwin-arm64 -ldflags=${LD_FLAGS}
