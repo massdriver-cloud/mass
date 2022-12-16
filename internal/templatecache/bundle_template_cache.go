@@ -1,4 +1,4 @@
-package template_cache
+package templatecache
 
 import (
 	"fmt"
@@ -94,10 +94,10 @@ func getOrCreateTemplateDirectory(fs afero.Fs) (string, error) {
 			return "", err
 		}
 		return templatesPath, nil
-	} else {
-		fmt.Printf("Reading templates for local development path: %s", localDevTemplatesPath)
-		return localDevTemplatesPath, nil
 	}
+
+	fmt.Printf("Reading templates for local development path: %s", localDevTemplatesPath)
+	return localDevTemplatesPath, nil
 }
 
 func doGetOrCreate(fs afero.Fs) (string, error) {

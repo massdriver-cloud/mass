@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/massdriver-cloud/mass/internal/commands"
-	"github.com/massdriver-cloud/mass/internal/template_cache"
+	"github.com/massdriver-cloud/mass/internal/templatecache"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -54,16 +54,16 @@ func init() {
 }
 
 func runTemplateList(cmd *cobra.Command, args []string) error {
-	var fs afero.Fs = afero.NewOsFs()
-	cache, _ := template_cache.NewBundleTemplateCache(template_cache.GithubTemplatesFetcher, fs)
+	var fs = afero.NewOsFs()
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	templateList, err := commands.ListTemplates(cache)
 	fmt.Printf("Application templates:\n  %s\n", strings.Join(templateList, "\n  "))
 	return err
 }
 
 func runTemplateRefresh(cmd *cobra.Command, args []string) error {
-	var fs afero.Fs = afero.NewOsFs()
-	cache, _ := template_cache.NewBundleTemplateCache(template_cache.GithubTemplatesFetcher, fs)
+	var fs = afero.NewOsFs()
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	err := commands.RefreshTemplates(cache)
 
 	return err

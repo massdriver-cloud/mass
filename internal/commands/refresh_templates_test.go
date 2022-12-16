@@ -4,15 +4,19 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/commands"
-	"github.com/massdriver-cloud/mass/internal/template_cache"
+	"github.com/massdriver-cloud/mass/internal/templatecache"
 )
 
 func TestRefreshTemplates(t *testing.T) {
-	cacheClient := &template_cache.MockCacheClient{
-		Calls: make(map[string]*template_cache.CallTracker),
+	cacheClient := &templatecache.MockCacheClient{
+		Calls: make(map[string]*templatecache.CallTracker),
 	}
 
-	commands.RefreshTemplates(cacheClient)
+	err := commands.RefreshTemplates(cacheClient)
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	got := cacheClient.Calls["RefreshTemplates"].Calls
 	want := 1

@@ -4,15 +4,19 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/commands"
-	"github.com/massdriver-cloud/mass/internal/template_cache"
+	"github.com/massdriver-cloud/mass/internal/templatecache"
 )
 
 func TestListTemplates(t *testing.T) {
-	cacheClient := &template_cache.MockCacheClient{
-		Calls: make(map[string]*template_cache.CallTracker),
+	cacheClient := &templatecache.MockCacheClient{
+		Calls: make(map[string]*templatecache.CallTracker),
 	}
 
-	commands.ListTemplates(cacheClient)
+	_, err := commands.ListTemplates(cacheClient)
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	got := cacheClient.Calls["ListTemplates"].Calls
 	want := 1

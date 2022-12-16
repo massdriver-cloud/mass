@@ -1,4 +1,4 @@
-package template_cache
+package templatecache
 
 /*
 Simple test spy created to defer picking a Mocking framework.

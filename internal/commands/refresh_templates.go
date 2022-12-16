@@ -1,7 +1,7 @@
 package commands
 
-import "github.com/massdriver-cloud/mass/internal/template_cache"
+import "github.com/massdriver-cloud/mass/internal/templatecache"
 
-func RefreshTemplates(cache template_cache.TemplateCache) error {
+func RefreshTemplates(cache templatecache.TemplateCache) error {
 	return cache.RefreshTemplates()
 }
