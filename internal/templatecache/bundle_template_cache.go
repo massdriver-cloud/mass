@@ -7,11 +7,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/spf13/afero"
 )
 
-const MassdriverApplicationTemplatesRepository = "https://github.com/massdriver-cloud/application-templates"
+/*
+Adding additional repositories will create the appropriate subdirectories and list
+them accordingly in bunde templates list. In the future this should be read form .massrc.
+*/
+var massdriverApplicationTemplatesRepositories = []string{
+	"https://github.com/massdriver-cloud/application-templates",
+}
+
+const gitOrg = "*"
+const repoName = "*"
+const template = "*"
 
 type BundleTemplateCache struct {
 	TemplatePath string
@@ -19,15 +28,14 @@ type BundleTemplateCache struct {
 	Fs           afero.Fs
 }
 
-func GithubTemplatesFetcher(writePath string) error {
-	_, cloneErr := git.PlainClone(writePath, false, &git.CloneOptions{
-		// URL:      common.Config().Application.Templates.Repository,
-		URL: MassdriverApplicationTemplatesRepository,
-		// Progress: os.Stdout,
-		Depth: 1,
-	})
+type TemplateList struct {
+	Repository string
+	Templates  []string
+}
 
-	return cloneErr
+type CloneError struct {
+	Repository string
+	Error      string
 }
 
 // Refresh available templates from Massdriver official Github repository.
@@ -48,8 +56,13 @@ func (b *BundleTemplateCache) RefreshTemplates() error {
 }
 
 // List all templates available in cache
-func (b *BundleTemplateCache) ListTemplates() ([]string, error) {
-	matches, err := afero.Glob(b.Fs, fmt.Sprintf("%s/**/*", b.TemplatePath))
+func (b *BundleTemplateCache) ListTemplates() ([]TemplateList, error) {
+	/*
+		Go does not support ** glob matching: https://github.com/golang/go/issues/11862
+		If we want to support arbitrarily nested matching we will likely have to introduce this library: https://github.com/bmatcuk/doublestar
+		Issue here: https://linear.app/massdriver/issue/PLAT-262/support-glob-in-mass-cli-for-arbitrarily-nested-template-repositories
+	*/
+	matches, err := afero.Glob(b.Fs, fmt.Sprintf("%s/%s/%s/%s/massdriver.yaml", b.TemplatePath, gitOrg, repoName, template))
 
 	if err != nil {
 		return nil, err
@@ -86,7 +99,7 @@ func NewBundleTemplateCache(fetch Fetcher, fs afero.Fs) (TemplateCache, error) {
 }
 
 func getOrCreateTemplateDirectory(fs afero.Fs) (string, error) {
-	localDevTemplatesPath := os.Getenv("MD_DEV_TEMPLATES_PATH")
+	localDevTemplatesPath := os.Getenv("MD_TEMPLATES_PATH")
 
 	if localDevTemplatesPath == "" {
 		templatesPath, err := doGetOrCreate(fs)
@@ -96,6 +109,7 @@ func getOrCreateTemplateDirectory(fs afero.Fs) (string, error) {
 		return templatesPath, nil
 	}
 
+	//TODO: BubbleTea vs NIZ
 	fmt.Printf("Reading templates for local development path: %s", localDevTemplatesPath)
 	return localDevTemplatesPath, nil
 }
@@ -115,13 +129,27 @@ func doGetOrCreate(fs afero.Fs) (string, error) {
 	return cacheDir, nil
 }
 
-func formatTemplateList(templateDirs []string, rootPath string) []string {
-	templates := []string{}
+func formatTemplateList(templateDirs []string, rootPath string) []TemplateList {
+	templatesMap := make(map[string][]string)
 	replacement := fmt.Sprintf("%s/", rootPath)
 	for _, match := range templateDirs {
 		formattedDirectory := strings.Replace(match, replacement, "", 1)
-		templates = append(templates, formattedDirectory)
+		pathParts := strings.Split(formattedDirectory, "/")
+		repository := fmt.Sprintf("%s/%s", pathParts[0], pathParts[1])
+		templatesMap[repository] = append(templatesMap[repository], pathParts[2])
 	}
 
-	return templates
+	templateList := buildTemplateList(templatesMap)
+
+	return templateList
+}
+
+func buildTemplateList(templateMap map[string][]string) []TemplateList {
+	templateList := []TemplateList{}
+
+	for k, v := range templateMap {
+		templateList = append(templateList, TemplateList{Repository: k, Templates: v})
+	}
+
+	return templateList
 }

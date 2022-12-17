@@ -2,7 +2,7 @@ package templatecache
 
 type TemplateCache interface {
 	RefreshTemplates() error
-	ListTemplates() ([]string, error)
+	ListTemplates() ([]TemplateList, error)
 	GetTemplatePath() (string, error)
 }
 

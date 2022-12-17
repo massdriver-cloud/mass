@@ -32,36 +32,44 @@ var bundleTemplateCmd = &cobra.Command{
 	Long:  bundleTemplateCmdHelp,
 }
 
-var templateListCmd = &cobra.Command{
+var bundleTemplateListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List bundle templates",
 	Long:  templateListCmdHelp,
-	RunE:  runTemplateList,
+	RunE:  runBundleTemplateList,
 }
 
-var templateRefreshCmd = &cobra.Command{
+var bundleTemplateRefreshCmd = &cobra.Command{
 	Use:   "refresh",
 	Short: "Update template list from the official Massdriver Github",
 	Long:  templateRefreshCmdHelp,
-	RunE:  runTemplateRefresh,
+	RunE:  runBundleTemplateRefresh,
 }
 
 func init() {
 	rootCmd.AddCommand(bundleCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
-	bundleTemplateCmd.AddCommand(templateListCmd)
-	bundleTemplateCmd.AddCommand(templateRefreshCmd)
+	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
+	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
 }
 
-func runTemplateList(cmd *cobra.Command, args []string) error {
+func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	templateList, err := commands.ListTemplates(cache)
-	fmt.Printf("Application templates:\n  %s\n", strings.Join(templateList, "\n  "))
+	// TODO: BubbleTea a nice data grid for this. Repo title row with template list sub rows.
+
+	view := ""
+	for _, repo := range templateList {
+		templates := strings.Join(repo.Templates, "\n")
+		view = fmt.Sprintf("Repository: %s\nTemplates:\n%s", repo.Repository, templates)
+	}
+
+	fmt.Println(view)
 	return err
 }
 
-func runTemplateRefresh(cmd *cobra.Command, args []string) error {
+func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	err := commands.RefreshTemplates(cache)

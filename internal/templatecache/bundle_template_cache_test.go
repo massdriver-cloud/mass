@@ -21,11 +21,11 @@ func TestBundleTemplateRefresh(t *testing.T) {
 		t.Error(err)
 	}
 
-	got, _ := afero.Glob(fs, fmt.Sprintf("%s/**/*", rootTemplateDir))
+	got, _ := afero.Glob(fs, fmt.Sprintf("%s/**/**/*", rootTemplateDir))
 
 	want := []string{
-		fmt.Sprintf("%s/applications/aws-lambda", rootTemplateDir),
-		fmt.Sprintf("%s/applications/aws-vm", rootTemplateDir),
+		"/home/md-cloud/massdriver-cloud/application-templates/aws-lambda",
+		"/home/md-cloud/massdriver-cloud/application-templates/aws-vm",
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -39,9 +39,9 @@ func TestListTemplates(t *testing.T) {
 
 	directories := []string{
 		rootTemplateDir,
-		fmt.Sprintf("%s/applications/kubernetes-cronjob", rootTemplateDir),
-		fmt.Sprintf("%s/infrastructure/terraform", rootTemplateDir),
-		fmt.Sprintf("%s/infrastructure/palumi", rootTemplateDir),
+		fmt.Sprintf("%s/massdriver-cloud/application-templates/kubernetes-cronjob", rootTemplateDir),
+		fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/terraform", rootTemplateDir),
+		fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/palumi", rootTemplateDir),
 	}
 
 	makeTemplateDirectories(directories, fs, t)
@@ -50,7 +50,16 @@ func TestListTemplates(t *testing.T) {
 
 	got, _ := bundleCache.ListTemplates()
 
-	want := []string{"applications/kubernetes-cronjob", "infrastructure/palumi", "infrastructure/terraform"}
+	want := []templatecache.TemplateList{
+		{
+			Repository: "massdriver-cloud/application-templates",
+			Templates:  []string{"kubernetes-cronjob"},
+		},
+		{
+			Repository: "massdriver-cloud/infrastructure-templates",
+			Templates:  []string{"palumi", "terraform"},
+		},
+	}
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, wanted %v", got, want)
@@ -74,8 +83,8 @@ func newMockClient(rootTemplateDir string, fs afero.Fs, t *testing.T) templateca
 	fetcher := func(filePath string) error {
 		directories := []string{
 			filePath,
-			fmt.Sprintf("%s/applications/aws-lambda", filePath),
-			fmt.Sprintf("%s/applications/aws-vm", filePath),
+			fmt.Sprintf("%s/massdriver-cloud/application-templates/aws-lambda", filePath),
+			fmt.Sprintf("%s/massdriver-cloud/application-templates/aws-vm", filePath),
 		}
 
 		makeTemplateDirectories(directories, fs, t)
@@ -93,6 +102,13 @@ func newMockClient(rootTemplateDir string, fs afero.Fs, t *testing.T) templateca
 func makeTemplateDirectories(names []string, fs afero.Fs, t *testing.T) {
 	for _, name := range names {
 		err := fs.Mkdir(name, 0755)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		massdriverConfigFileLocation := fmt.Sprintf("%s/massdriver.yaml", name)
+		_, err = fs.Create(massdriverConfigFileLocation)
+
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -16,10 +16,15 @@ type MockCacheClient struct {
 	Calls map[string]*CallTracker
 }
 
-func (b *MockCacheClient) ListTemplates() ([]string, error) {
+func (b *MockCacheClient) ListTemplates() ([]TemplateList, error) {
 	b.addOrCreateTracker("ListTemplates")
 
-	return []string{"applications/aws-lambda", "infrastructure/terraform"}, nil
+	return []TemplateList{
+		{
+			Repository: "massdriver-cloud/application-templates",
+			Templates:  []string{"applications/aws-lambda", "infrastructure/terraform"},
+		},
+	}, nil
 }
 
 func (b *MockCacheClient) RefreshTemplates() error {
