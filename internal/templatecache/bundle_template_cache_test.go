@@ -3,6 +3,7 @@ package templatecache_test
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/templatecache"
@@ -60,6 +61,8 @@ func TestListTemplates(t *testing.T) {
 			Templates:  []string{"palumi", "terraform"},
 		},
 	}
+
+	sort.Slice(got, func(i int, j int) bool { return got[i].Repository < got[j].Repository })
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, wanted %v", got, want)
