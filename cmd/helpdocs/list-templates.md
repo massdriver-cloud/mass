@@ -5,5 +5,5 @@ List all available templates in your local cached directory. The cache directory
 ## Examples
 
 ```shell
-mass bundle template list 
+mass bundle template list
 ```

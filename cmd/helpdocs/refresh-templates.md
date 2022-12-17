@@ -6,7 +6,7 @@ setting the `MD_TEMPLATES_PATH` to your desired directory
 ## Examples
 
 ```shell
-mass bundle template refresh 
+mass bundle template refresh
 ```
 
 ### With developer override
