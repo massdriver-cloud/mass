@@ -24,16 +24,14 @@ type templateFileManager struct {
 Copies a bundle template in to the desired directory and writes templated values.
 */
 func (f *templateFileManager) CopyTemplate() error {
-	return afero.Walk(f.fs, f.readDirectory, func(filePath string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		return f.mkDirOrWriteFile(filePath, info)
-	})
+	return afero.Walk(f.fs, f.readDirectory, f.mkDirOrWriteFile)
 }
 
-func (f *templateFileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo) error {
+func (f *templateFileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkErr error) error {
+	if walkErr != nil {
+		return walkErr
+	}
+
 	if notWritingToCurrentDirectory(f.writeDirectory) {
 		return makeWriteDirectoryAndParents(f.writeDirectory, f.fs)
 	}
