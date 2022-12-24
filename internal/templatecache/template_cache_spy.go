@@ -39,6 +39,10 @@ func (b *MockCacheClient) GetTemplatePath() (string, error) {
 	return "/home/", nil
 }
 
+func (b *MockCacheClient) RenderTemplate(writePath string, templateData *TemplateData) error {
+	return nil
+}
+
 func (b *MockCacheClient) addOrCreateTracker(calledFunction string) {
 	val, exists := b.Calls[calledFunction]
 

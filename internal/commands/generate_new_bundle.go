@@ -8,6 +8,7 @@ type TemplateData struct {
 	Access         string
 	Location       string
 	TemplateName   string
+	TemplateRepo   string
 	TemplateSource string
 	OutputDir      string
 	Type           string
