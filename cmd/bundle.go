@@ -58,7 +58,7 @@ var bundleNewCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(bundleCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
-	//bundleCmd.AddCommand(bundleNewCmd)
+	// bundleCmd.AddCommand(bundleNewCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
 }
