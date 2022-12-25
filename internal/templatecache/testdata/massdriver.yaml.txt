@@ -4,7 +4,7 @@ name: "<md .Name md>"
 description: "<md .Description md>"
 source_url: github.com/YOUR_NAME_HERE/<md .Name md>
 access: "<md .Access md>"
-type: infrastructure 
+type: infrastructure
 
 # schema-params.json
 # JSON Schema sans-fields above

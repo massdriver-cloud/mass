@@ -29,7 +29,7 @@ func SetupBundle(rootTemplateDir string, fs afero.Fs) error {
 		path.Join(rootTemplateDir, repoPath, templatePath, srcPath),
 	}
 
-	massdriverYamlTemplate, err := os.ReadFile("../templatecache/testdata/massdriver.yaml")
+	massdriverYamlTemplate, err := os.ReadFile("../templatecache/testdata/massdriver.yaml.txt")
 
 	if err != nil {
 		return err
