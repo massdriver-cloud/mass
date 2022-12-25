@@ -17,7 +17,7 @@ func TestPreviewConfigGetCredentials(t *testing.T) {
 
 	got := cfg.GetCredentials()
 	want := []api.Credential{
-		api.Credential{ArtifactDefinitionType: "massdriver/aws-iam-role", ArtifactId: "foo"},
+		{ArtifactDefinitionType: "massdriver/aws-iam-role", ArtifactId: "foo"},
 	}
 
 	if !reflect.DeepEqual(got, want) {

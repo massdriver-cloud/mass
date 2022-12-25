@@ -82,16 +82,16 @@ func (b *BundleTemplateCache) GetTemplatePath() (string, error) {
 /*
 Clones the desired template to the directory specified by the user and renders the massdriver YAML with user supplied values.
 */
-func (b *BundleTemplateCache) RenderTemplate(writeDirectory string, data *TemplateData) error {
-	fileEditor := &templateFileManager{
+func (b *BundleTemplateCache) RenderTemplate(data *TemplateData) error {
+	fileManager := &fileManager{
 		fs:                    b.Fs,
 		readDirectory:         path.Join(data.TemplateSource, data.TemplateRepo, data.TemplateName),
-		writeDirectory:        writeDirectory,
+		writeDirectory:        data.OutputDir,
 		templateData:          data,
 		templateRootDirectory: b.TemplatePath,
 	}
 
-	err := fileEditor.CopyTemplate()
+	err := fileManager.CopyTemplate()
 
 	if err != nil {
 		return err

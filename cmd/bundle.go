@@ -89,11 +89,6 @@ func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 
 /*
 func runBundleNew(cmd *cobra.Command, args []string) error {
-	var hostFs = afero.NewMemMapFs()
-	var virtualFs = afero.NewMemMapFs()
-
-	err := commands.GenerateNewBundle()
-
-	return err
+	return nil
 }
 */

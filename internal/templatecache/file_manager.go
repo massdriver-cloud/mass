@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-type templateFileManager struct {
+type fileManager struct {
 	fs                    afero.Fs
 	readDirectory         string
 	writeDirectory        string
@@ -23,25 +23,21 @@ type templateFileManager struct {
 /*
 Copies a bundle template in to the desired directory and writes templated values.
 */
-func (f *templateFileManager) CopyTemplate() error {
+func (f *fileManager) CopyTemplate() error {
 	return afero.Walk(f.fs, f.readDirectory, f.mkDirOrWriteFile)
 }
 
-func (f *templateFileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkErr error) error {
+func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkErr error) error {
 	if walkErr != nil {
 		return walkErr
-	}
-
-	if notWritingToCurrentDirectory(f.writeDirectory) {
-		return makeWriteDirectoryAndParents(f.writeDirectory, f.fs)
 	}
 
 	relativeWritePath := relativeWritePath(filePath, f.readDirectory)
 	outputPath := path.Join(f.writeDirectory, relativeWritePath)
 
 	if info.IsDir() {
-		if isCurrentDirectory(relativeWritePath) {
-			return f.fs.MkdirAll(".", 0755)
+		if isBundleRootDirectory(relativeWritePath) {
+			return makeWriteDirectoryAndParents(f.writeDirectory, f.fs)
 		}
 
 		return f.fs.Mkdir(outputPath, 0755)
@@ -56,7 +52,7 @@ func (f *templateFileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo
 	return f.promptAndWrite(file, outputPath)
 }
 
-func (f *templateFileManager) promptAndWrite(file []byte, outputPath string) error {
+func (f *fileManager) promptAndWrite(file []byte, outputPath string) error {
 	tmpl, errTmpl := template.New("tmpl").Delims("<md", "md>").Parse(string(file))
 
 	if errTmpl != nil {
@@ -76,7 +72,7 @@ func (f *templateFileManager) promptAndWrite(file []byte, outputPath string) err
 	return f.writeToFile(outputPath, tmpl)
 }
 
-func (f *templateFileManager) writeToFile(outputPath string, tmpl *template.Template) error {
+func (f *fileManager) writeToFile(outputPath string, tmpl *template.Template) error {
 	outputFile, err := f.fs.Create(outputPath)
 
 	if err != nil {
@@ -96,20 +92,14 @@ func relativeWritePath(currentFilePath, readDirectory string) string {
 	return path
 }
 
-func notWritingToCurrentDirectory(writeDirectory string) bool {
-	return writeDirectory != "" && writeDirectory != "."
-}
-
 func makeWriteDirectoryAndParents(writeDirectory string, fs afero.Fs) error {
-	_, err := fs.Stat(writeDirectory)
-
-	if err != nil {
-		return err
+	if _, err := fs.Stat(writeDirectory); err != nil {
+		return fs.MkdirAll(writeDirectory, 0755)
 	}
 
-	return fs.Mkdir(writeDirectory, 0755)
+	return nil
 }
 
-func isCurrentDirectory(realtiveWritePath string) bool {
+func isBundleRootDirectory(realtiveWritePath string) bool {
 	return realtiveWritePath == "."
 }

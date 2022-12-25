@@ -4,7 +4,7 @@ type TemplateCache interface {
 	RefreshTemplates() error
 	ListTemplates() ([]TemplateList, error)
 	GetTemplatePath() (string, error)
-	RenderTemplate(string, *TemplateData) error
+	RenderTemplate(*TemplateData) error
 }
 
 type TemplateData struct {
