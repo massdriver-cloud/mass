@@ -1,0 +1,40 @@
+schema: draft-07
+name: draft-node
+description: A resource that can be used to visually design architecture without provisioning real infrastructure.
+ref: github.com/massdriver-cloud/massdriver-bundles
+access: public
+type: bundle
+
+steps:
+  - path: src
+    provisioner: terraform
+
+params:
+  examples:
+    - __name: Network
+      resource_type: Network
+  properties:
+    resource_name:
+      type: string
+      title: Resource Name
+      description: An immutable name field
+      $md.immutable: true
+
+connections:
+  required:
+    - draft_node_foo
+  properties:
+    draft_node_foo:
+      $ref: massdriver/draft-node
+
+artifacts:
+  required:
+    - draft_node
+  properties:
+    draft_node:
+      $ref: massdriver/draft-node
+
+ui:
+  ui:order:
+    - resource_name
+    - "*"
