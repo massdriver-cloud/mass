@@ -18,7 +18,7 @@ func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 
 	var fs = afero.NewMemMapFs()
 
-	err := mockfilesystem.SetupBundle(rootTemplateDir, fs)
+	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir, fs)
 	checkErr(err, t)
 
 	bundleCache := &templatecache.BundleTemplateCache{
@@ -56,7 +56,7 @@ func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
 
 	var fs = afero.NewMemMapFs()
 
-	err := mockfilesystem.SetupBundle(rootTemplateDir, fs)
+	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir, fs)
 
 	checkErr(err, t)
 
@@ -94,7 +94,7 @@ func TestTemplateRender(t *testing.T) {
 
 	var fs = afero.NewMemMapFs()
 
-	err := mockfilesystem.SetupBundle(rootTemplateDir, fs)
+	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir, fs)
 
 	checkErr(err, t)
 
