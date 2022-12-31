@@ -46,9 +46,19 @@ var bundleTemplateRefreshCmd = &cobra.Command{
 	RunE:  runBundleTemplateRefresh,
 }
 
+/*
+var bundleNewCmd = &cobra.Command{
+	Use:   "new",
+	Short: "Generate a new bundle from a template",
+	// TODO: Helpdoc
+	RunE: runBundleNew,
+}
+*/
+
 func init() {
 	rootCmd.AddCommand(bundleCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
+	// bundleCmd.AddCommand(bundleNewCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
 }
@@ -76,3 +86,9 @@ func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 
 	return err
 }
+
+/*
+func runBundleNew(cmd *cobra.Command, args []string) error {
+	return nil
+}
+*/

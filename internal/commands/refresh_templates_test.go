@@ -1,27 +1,35 @@
 package commands_test
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/commands"
 	"github.com/massdriver-cloud/mass/internal/templatecache"
+	"github.com/spf13/afero"
 )
 
 func TestRefreshTemplates(t *testing.T) {
-	cacheClient := &templatecache.MockCacheClient{
-		Calls: make(map[string]*templatecache.CallTracker),
-	}
+	rootTemplateDir := "/home/md-cloud"
+	var fs = afero.NewMemMapFs()
 
-	err := commands.RefreshTemplates(cacheClient)
+	bundleCache := templatecache.NewMockClient(rootTemplateDir, fs)
+
+	err := commands.RefreshTemplates(bundleCache)
 
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
-	got := cacheClient.Calls["RefreshTemplates"].Calls
-	want := 1
+	got, _ := afero.Glob(fs, fmt.Sprintf("%s/**/**/*", rootTemplateDir))
 
-	if got != want {
-		t.Errorf("Expected bundle cache client to be called %d times but it was called %d", want, got)
+	want := []string{
+		"/home/md-cloud/massdriver-cloud/application-templates/aws-lambda",
+		"/home/md-cloud/massdriver-cloud/application-templates/aws-vm",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, wanted %v", got, want)
 	}
 }

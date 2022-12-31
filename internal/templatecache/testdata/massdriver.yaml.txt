@@ -1,0 +1,73 @@
+# This file will be used to generate all of the schema-*.json files in a bundle
+schema: draft-07
+name: "<md .Name md>"
+description: "<md .Description md>"
+source_url: github.com/YOUR_NAME_HERE/<md .Name md>
+access: "<md .Access md>"
+type: infrastructure
+
+# schema-params.json
+# JSON Schema sans-fields above
+params:
+  # Examples will show up as configuration presets in the UI _and_
+  # they will be used to test configurations of the bundle.
+  examples:
+    - __name: Development
+      foo: bar
+    - __name: Production
+      foo: foo
+  required:
+    - foo
+  properties:
+    foo:
+      type: string
+      title: Foo
+      description: Name of <md .Name md>
+      default: ""
+      examples:
+        - US-West 2 VPC
+        - US-East 1 VPC
+
+# schema-connections.json
+# Named list of input connections (artifacts) (map[name]artifact)
+<md if not .Connections md>
+connections:
+  properties: {}
+<md end -md>
+
+<md if .Connections md>
+connections:
+  required:
+  <md- range $key, $art:= .Connections md>
+    - <md $key md>
+  <md- end md>
+  properties:
+  <md- range $key, $art:= .Connections md>
+    <md $key md>:
+      $ref: <md $art md>
+  <md- end md>
+<md- end md>
+
+# schema-artifacts.json
+# Named list of output artifacts  (map[name]artifact)
+artifacts:
+  properties: {}
+  # required:
+  #   - network
+  # properties:
+  #   network:
+  #     $ref: massdriver/aws-vpc
+
+# schema-ui.json
+# List of form customizations for params-schema
+ui:
+  ui:order:
+    - "*"
+  ## set top level ui:wiget
+  # secret_key:
+  #    ui:widget: "password"
+  ## Set key in an array of objects
+  # secrets:
+  #   items:
+  #     mdKeyId:
+  #       ui:widget: "hidden"

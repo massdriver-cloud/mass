@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -20,7 +21,7 @@ var massdriverApplicationTemplatesRepositories = []string{
 
 const gitOrg = "*"
 const repoName = "*"
-const template = "*"
+const templateDir = "*"
 
 type BundleTemplateCache struct {
 	TemplatePath string
@@ -62,7 +63,7 @@ func (b *BundleTemplateCache) ListTemplates() ([]TemplateList, error) {
 		If we want to support arbitrarily nested matching we will likely have to introduce this library: https://github.com/bmatcuk/doublestar
 		Issue here: https://linear.app/massdriver/issue/PLAT-262/support-glob-in-mass-cli-for-arbitrarily-nested-template-repositories
 	*/
-	matches, err := afero.Glob(b.Fs, fmt.Sprintf("%s/%s/%s/%s/massdriver.yaml", b.TemplatePath, gitOrg, repoName, template))
+	matches, err := afero.Glob(b.Fs, fmt.Sprintf("%s/%s/%s/%s/massdriver.yaml", b.TemplatePath, gitOrg, repoName, templateDir))
 
 	if err != nil {
 		return nil, err
@@ -76,6 +77,27 @@ func (b *BundleTemplateCache) ListTemplates() ([]TemplateList, error) {
 // Get the path to the template directory
 func (b *BundleTemplateCache) GetTemplatePath() (string, error) {
 	return b.TemplatePath, nil
+}
+
+/*
+Clones the desired template to the directory specified by the user and renders the massdriver YAML with user supplied values.
+*/
+func (b *BundleTemplateCache) RenderTemplate(data *TemplateData) error {
+	fileManager := &fileManager{
+		fs:                    b.Fs,
+		readDirectory:         path.Join(data.TemplateSource, data.TemplateRepo, data.TemplateName),
+		writeDirectory:        data.OutputDir,
+		templateData:          data,
+		templateRootDirectory: b.TemplatePath,
+	}
+
+	err := fileManager.CopyTemplate()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 /*
