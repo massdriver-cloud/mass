@@ -19,9 +19,9 @@ type TemplateData struct {
 	Type           string
 	Connections    map[string]string
 	// Specificaly for the README
-	CloudPrefix     string
-	RepoName        string
-	RepoNameEncoded string
+	CloudAbbreviation string
+	RepoName          string
+	RepoNameEncoded   string
 }
 
 type Fetcher func(writePath string) error

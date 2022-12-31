@@ -151,9 +151,9 @@ func mockTemplateData(writePath string) *templatecache.TemplateData {
 		Connections: map[string]string{
 			"massdriver/aws-authentication": "auth",
 		},
-		CloudPrefix:     "aws",
-		RepoName:        "massdriver-cloud/bundle-templates",
-		RepoNameEncoded: "massdriver-cloud/bundle-templates",
+		CloudAbbreviation: "aws",
+		RepoName:          "massdriver-cloud/bundle-templates",
+		RepoNameEncoded:   "massdriver-cloud/bundle-templates",
 	}
 }
 
