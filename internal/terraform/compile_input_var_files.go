@@ -40,20 +40,20 @@ Before we were looping through required properties to determine if a proptery is
 required for every single property. This map with a tiny value allows us to figure out
 if a property is required in an efficient manner.
 */
-func createRequiredPropertiesMap(properties map[string]interface{}, label string) (map[string]bool, error) {
+func createRequiredPropertiesMap(properties map[string]interface{}) map[string]bool {
 	requiredPropertiesMap := make(map[string]bool)
 
 	requiredArray, ok := properties["required"].([]string)
 
 	if !ok {
-		return make(map[string]bool), nil
+		return requiredPropertiesMap
 	}
 
 	for _, property := range requiredArray {
 		requiredPropertiesMap[property] = true
 	}
 
-	return requiredPropertiesMap, nil
+	return requiredPropertiesMap
 }
 
 /*

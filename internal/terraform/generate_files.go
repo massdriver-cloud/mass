@@ -35,7 +35,9 @@ func GenerateFiles(buildPath string, b *bundle.Bundle, fs afero.Fs) error {
 	for _, step := range stepsOrDefault {
 		switch step.Provisioner {
 		case "terraform":
-			_ = generateFilesForStep(buildPath, step.Path, b, fs)
+			return generateFilesForStep(buildPath, step.Path, b, fs)
+		default:
+			return fmt.Errorf("%s is not a supported provisioner", step.Provisioner)
 		}
 	}
 	return nil
@@ -85,11 +87,7 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 	}
 
 	for _, task := range varFileTasks {
-		schemaRequiredProperties, err := createRequiredPropertiesMap(task.schema, task.label)
-
-		if err != nil {
-			return err
-		}
+		schemaRequiredProperties := createRequiredPropertiesMap(task.schema)
 
 		content, err := compile(task.schema["properties"].(map[string]interface{}), schemaRequiredProperties)
 

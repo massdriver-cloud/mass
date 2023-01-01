@@ -27,10 +27,10 @@ type TestCase struct {
 
 func TestDereference(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	err := setupMockFiles(fs)
+	mockFilesErr := setupMockFiles(fs)
 
-	if err != nil {
-		t.Fatal(err)
+	if mockFilesErr != nil {
+		t.Fatal(mockFilesErr)
 	}
 
 	cases := []TestCase{

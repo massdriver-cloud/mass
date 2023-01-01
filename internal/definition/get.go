@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path"
 
@@ -26,7 +26,7 @@ func GetDefinition(c *restclient.MassdriverClient, definitionType string) (map[s
 	}
 	defer resp.Body.Close()
 
-	respBodyBytes, err := ioutil.ReadAll(resp.Body)
+	respBodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return definition, err
 	}

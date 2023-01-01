@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 
 	"github.com/massdriver-cloud/mass/internal/restclient"
 )
@@ -26,7 +26,7 @@ func (art *Definition) Publish(c *restclient.MassdriverClient) error {
 	defer resp.Body.Close()
 
 	if resp.Status != "200 OK" {
-		respBodyBytes, err2 := ioutil.ReadAll(resp.Body)
+		respBodyBytes, err2 := io.ReadAll(resp.Body)
 		if err2 != nil {
 			return err2
 		}

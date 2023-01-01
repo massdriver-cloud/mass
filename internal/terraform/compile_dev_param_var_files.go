@@ -94,7 +94,10 @@ func getExistingVars(path string, fs afero.Fs) (map[string]interface{}, error) {
 	content, err := afero.ReadFile(fs, path)
 
 	if err != nil {
-		return result, nil
+		if len(content) == 0 {
+			return result, nil
+		}
+		return nil, err
 	}
 
 	marshalErr := json.Unmarshal(content, &result)
@@ -139,6 +142,7 @@ var placeholderValue = "TODO: REPLACE ME"
 func fillDevParam(name string, prop, existingVal, exampleVal interface{}) (interface{}, error) {
 	// the base case is we fall back to a placeholder to indicate to the developer they should replace this value.
 	var ret interface{} = placeholderValue
+	var ok bool
 
 	schemaProperty, ok := prop.(map[string]interface{})
 
@@ -148,15 +152,15 @@ func fillDevParam(name string, prop, existingVal, exampleVal interface{}) (inter
 
 	// handle nested objects recursively
 	if schemaProperty["type"] == "object" {
-		nestedSchemaProperties, ok := schemaProperty["properties"].(map[string]interface{})
+		nestedSchemaProperties, propertiesCastOk := schemaProperty["properties"].(map[string]interface{})
 
-		if !ok {
+		if !propertiesCastOk {
 			return nil, fmt.Errorf("properties block of param %s was not an object", name)
 		}
 
-		nestedExampleValuesMap, ok := exampleVal.(map[string]interface{})
+		nestedExampleValuesMap, exampleCastOk := exampleVal.(map[string]interface{})
 
-		if !ok {
+		if !exampleCastOk {
 			nestedExampleValuesMap = make(map[string]interface{})
 		}
 
@@ -183,7 +187,7 @@ func fillDevParam(name string, prop, existingVal, exampleVal interface{}) (inter
 	}
 
 	if schemaProperty["type"] == "number" || schemaProperty["type"] == "integer" {
-		if minimum, ok := schemaProperty["minimum"]; ok {
+		if minimum, hasMinimum := schemaProperty["minimum"]; hasMinimum {
 			return minimum, nil
 		}
 

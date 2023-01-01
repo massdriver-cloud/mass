@@ -42,10 +42,6 @@ func (b *Bundle) DereferenceSchemas(path string, c *restclient.MassdriverClient,
 		if !ok {
 			return fmt.Errorf("hydrated %s is not a map", task.label)
 		}
-
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

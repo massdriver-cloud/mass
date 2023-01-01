@@ -1,7 +1,7 @@
 package definition_test
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -32,7 +32,7 @@ func TestPublish(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var gotBody string
 			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				bytes, err := ioutil.ReadAll(r.Body)
+				bytes, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatalf("%d, unexpected error", err)
 				}

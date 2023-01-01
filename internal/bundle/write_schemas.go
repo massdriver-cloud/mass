@@ -17,10 +17,10 @@ type WriteTarget struct {
 }
 
 func (b *Bundle) WriteSchemas(buildPath string, fs afero.Fs) error {
-	err := fs.MkdirAll(buildPath, 0755)
+	mkdirErr := fs.MkdirAll(buildPath, 0755)
 
-	if err != nil {
-		return err
+	if mkdirErr != nil {
+		return mkdirErr
 	}
 
 	tasks := []WriteTarget{
