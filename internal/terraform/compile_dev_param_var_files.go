@@ -1,0 +1,194 @@
+package terraform
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+
+	"github.com/massdriver-cloud/mass/internal/bundle"
+	"github.com/spf13/afero"
+)
+
+func compileAndWriteDevParams(path string, b *bundle.Bundle, fs afero.Fs) error {
+	emptyParams := checkEmptySchema(b.Params)
+
+	if emptyParams {
+		if err := afero.WriteFile(fs, path, []byte("{}"), 0755); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	existingParams, err := getExistingVars(path, fs)
+
+	if err != nil {
+		return err
+	}
+
+	example, err := getFirstExample(b.Params["examples"].([]interface{}))
+
+	if err != nil {
+		return err
+	}
+
+	paramsSchemaProperties, ok := b.Params["properties"].(map[string]interface{})
+
+	if !ok {
+		return fmt.Errorf("expected params schema properties to be an object")
+	}
+
+	result, err := setValuesIfNotExists(paramsSchemaProperties, existingParams, example)
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	resultWithMdMetadata := mergeMdMetadata(result, b.Name)
+
+	bytes, err := json.MarshalIndent(resultWithMdMetadata, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	err = afero.WriteFile(fs, path, bytes, 0755)
+
+	return err
+}
+
+func mergeMdMetadata(params map[string]interface{}, bundleName string) map[string]interface{} {
+	namePrefix := fmt.Sprintf("local-dev-%s-000", bundleName)
+	defaultMetadata := map[string]interface{}{
+		"name_prefix": namePrefix,
+		"default_tags": map[string]interface{}{
+			"md-project":  "local",
+			"md-target":   "dev",
+			"md-manifest": bundleName,
+			"md-package":  namePrefix,
+		},
+		"deployment": map[string]interface{}{
+			"id": "local-dev-id",
+		},
+		"observability": map[string]interface{}{
+			"alarm_webhook_url": "https://placeholder.com",
+		},
+	}
+
+	// if md_metadata is not set, initialize it to a reasonable starting point
+	if _, ok := params["md_metadata"]; !ok {
+		params["md_metadata"] = defaultMetadata
+	} else {
+		// merge md metadata ties go to existing values
+		for k, v := range defaultMetadata {
+			if _, ok2 := params["md_metadata"].(map[string]interface{})[k]; !ok2 {
+				params["md_metadata"].(map[string]interface{})[k] = v
+			}
+		}
+	}
+
+	return params
+}
+
+func getExistingVars(path string, fs afero.Fs) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	content, err := afero.ReadFile(fs, path)
+
+	if err != nil {
+		return result, nil
+	}
+
+	marshalErr := json.Unmarshal(content, &result)
+
+	return result, marshalErr
+}
+
+func checkEmptySchema(schema map[string]interface{}) bool {
+	return len(schema) == 0
+}
+
+func getFirstExample(examples []interface{}) (map[string]interface{}, error) {
+	if len(examples) == 0 {
+		return nil, errors.New("bundle examples is empty")
+	}
+
+	firstExample, ok := examples[0].(map[string]interface{})
+
+	if !ok {
+		return nil, fmt.Errorf("expected examples array to contain a list of objects")
+	}
+	return firstExample, nil
+}
+
+func setValuesIfNotExists(paramsSchemaProperties, existingParams map[string]interface{}, example map[string]interface{}) (map[string]interface{}, error) {
+	paramsWithExampleOrExistingValue := make(map[string]interface{})
+	for propertyName, property := range paramsSchemaProperties {
+		result, err := fillDevParam(propertyName, property, existingParams[propertyName], example[propertyName])
+
+		if err != nil {
+			return nil, err
+		}
+
+		paramsWithExampleOrExistingValue[propertyName] = result
+	}
+
+	return paramsWithExampleOrExistingValue, nil
+}
+
+var placeholderValue = "TODO: REPLACE ME"
+
+func fillDevParam(name string, prop, existingVal, exampleVal interface{}) (interface{}, error) {
+	// the base case is we fall back to a placeholder to indicate to the developer they should replace this value.
+	var ret interface{} = placeholderValue
+
+	schemaProperty, ok := prop.(map[string]interface{})
+
+	if !ok {
+		return nil, fmt.Errorf("param %s was not an object", name)
+	}
+
+	// handle nested objects recursively
+	if schemaProperty["type"] == "object" {
+		nestedSchemaProperties, ok := schemaProperty["properties"].(map[string]interface{})
+
+		if !ok {
+			return nil, fmt.Errorf("properties block of param %s was not an object", name)
+		}
+
+		nestedExampleValuesMap, ok := exampleVal.(map[string]interface{})
+
+		if !ok {
+			nestedExampleValuesMap = make(map[string]interface{})
+		}
+
+		existingValue, _ := existingVal.(map[string]interface{})
+
+		return setValuesIfNotExists(nestedSchemaProperties, existingValue, nestedExampleValuesMap)
+	}
+
+	if existingVal != nil {
+		return existingVal, nil
+	}
+
+	if exampleVal != nil {
+		return exampleVal, nil
+	}
+
+	if schemaProperty["default"] != nil {
+		return schemaProperty["default"], nil
+	}
+
+	// fall back to an empty array
+	if schemaProperty["type"] == "array" {
+		return []interface{}{}, nil
+	}
+
+	if schemaProperty["type"] == "number" || schemaProperty["type"] == "integer" {
+		if minimum, ok := schemaProperty["minimum"]; ok {
+			return minimum, nil
+		}
+
+		return 0, nil
+	}
+
+	return ret, nil
+}

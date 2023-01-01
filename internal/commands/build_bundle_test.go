@@ -33,13 +33,43 @@ var expectedSchemaContents = map[string][]byte{
         }
     ],
     "properties": {
+        "foo": {
+            "description": "A map of Foos",
+            "properties": {
+                "bar": {
+                    "default": 1,
+                    "description": "Testing numbers",
+                    "title": "A whole number",
+                    "type": "integer"
+                },
+                "qux": {
+                    "description": "Testing numbers",
+                    "minimum": 2,
+                    "title": "A whole number that is not required",
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "bar"
+            ],
+            "title": "Foo",
+            "type": "object"
+        },
         "resource_name": {
             "$md.immutable": true,
             "description": "An immutable name field",
             "title": "Resource Name",
             "type": "string"
+        },
+        "resource_type": {
+            "description": "The type of resource",
+            "title": "Resource Type",
+            "type": "string"
         }
     },
+    "required": [
+        "resource_type"
+    ],
     "title": "draft-node"
 }
 `),
@@ -50,7 +80,19 @@ var expectedSchemaContents = map[string][]byte{
     "properties": {
         "draft_node_foo": {
             "properties": {
-                "foo": "bar"
+                "foo": {
+                    "properties": {
+                        "infrastructure": {
+                            "properties": {
+                                "arn": {
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "type": "object"
+                }
             },
             "type": "object"
         }
@@ -68,7 +110,19 @@ var expectedSchemaContents = map[string][]byte{
     "properties": {
         "draft_node": {
             "properties": {
-                "foo": "bar"
+                "foo": {
+                    "properties": {
+                        "infrastructure": {
+                            "properties": {
+                                "arn": {
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "type": "object"
+                }
             },
             "type": "object"
         }
@@ -102,13 +156,53 @@ var expectedTFContent = map[string][]byte{
 `),
 	"_params_variables.tf.json": []byte(`{
     "variable": {
+        "foo": {
+            "type": "any",
+            "default": null
+        },
         "resource_name": {
+            "type": "string",
+            "default": null
+        },
+        "resource_type": {
             "type": "string",
             "default": null
         }
     }
 }
 `),
+	"_params.auto.tfvars.json": []byte(`{
+    "foo": {
+        "bar": 1,
+        "qux": 2
+    },
+    "md_metadata": {
+        "default_tags": {
+            "md-manifest": "draft-node",
+            "md-package": "local-dev-draft-node-000",
+            "md-project": "local",
+            "md-target": "dev"
+        },
+        "deployment": {
+            "id": "local-dev-id"
+        },
+        "name_prefix": "local-dev-draft-node-000",
+        "observability": {
+            "alarm_webhook_url": "https://placeholder.com"
+        }
+    },
+    "resource_name": "TODO: REPLACE ME",
+    "resource_type": "Network"
+}`),
+	"_connections.auto.tfvars.json": []byte(`{
+    "draft_node_foo": {
+        "foo": {
+            "infrastructure": {
+                "arn": "TODO: REPLACE ME"
+            }
+        }
+    }
+}`),
 }
 
 func TestBundleBuildSchemas(t *testing.T) {
@@ -139,11 +233,15 @@ func TestBundleBuildSchemas(t *testing.T) {
 
 	c := restclient.NewClient()
 	c.WithBaseURL(testServer.URL)
+	c.WithAPIKey("dummy")
 
 	commands.BuildBundle(writeDir, unmarshalledBundle, c, fs)
 
 	for fileName, expectedFileContent := range expectedSchemaContents {
-		gotContent, _ := afero.ReadFile(fs, path.Join(writeDir, fileName))
+		gotContent, err := afero.ReadFile(fs, path.Join(writeDir, fileName))
+		if err != nil {
+			t.Fatal(err)
+		}
 		if string(gotContent) != string(expectedFileContent) {
 			t.Errorf("Expected file content for %s to be %s but got %s", fileName, string(expectedFileContent), string(gotContent))
 		}
@@ -178,23 +276,29 @@ func TestBundleBuildTFVars(t *testing.T) {
 
 	c := restclient.NewClient()
 	c.WithBaseURL(testServer.URL)
+	c.WithAPIKey("dummy")
 
 	commands.BuildBundle(writeDir, unmarshalledBundle, c, fs)
 
 	for fileName, expectedContent := range expectedTFContent {
-		gotContent, _ := afero.ReadFile(fs, path.Join(writeDir, "src", fileName))
+		gotContent, err := afero.ReadFile(fs, path.Join(writeDir, "src", fileName))
+		if err != nil {
+			t.Fatal(err)
+		}
 		if string(gotContent) != string(expectedContent) {
 			t.Errorf("Expected file content for %s to be %s but got %s", fileName, string(expectedContent), string(gotContent))
 		}
 	}
 }
 
+var draftNodeAD = []byte(`{"type": "object", "properties": {"foo": {"type": "object", "properties": {"infrastructure": {"type": "object", "properties": {"arn": {"type": "string"}}}}}}}`)
+
 func setupMockServer(t *testing.T) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		urlPath := r.URL.Path
 		switch urlPath {
 		case "/artifact-definitions/massdriver/draft-node":
-			if _, err := w.Write([]byte(`{"type": "object", "properties": {"foo": "bar"}}`)); err != nil {
+			if _, err := w.Write(draftNodeAD); err != nil {
 				t.Fatalf("Failed to write response: %v", err)
 			}
 		default:
