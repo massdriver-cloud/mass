@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"embed"
+	"fmt"
 	"os"
 
 	"github.com/charmbracelet/glamour"
@@ -48,7 +49,8 @@ func mustRender(in string) string {
 	return out
 }
 
-func mustRenderFromFile(path string) string {
+func mustRenderHelpDoc(name string) string {
+	path := fmt.Sprintf("helpdocs/%s.md", name)
 	data, err := helpdocs.ReadFile(path)
 	if err != nil {
 		panic(err)

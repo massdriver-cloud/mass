@@ -11,7 +11,7 @@ var appCmdHelp = mustRender(`
 # Configure and deploy applications managed with Massdriver.
 `)
 
-var appDeployCmdHelp = mustRenderFromFile("helpdocs/app-deploy.md")
+var appDeployCmdHelp = mustRenderHelpDoc("app-deploy")
 
 var appCmd = &cobra.Command{
 	Use:     "application",
