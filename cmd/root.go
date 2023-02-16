@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:embed helpdocs/*.md
+//go:embed helpdocs/*.md helpdocs/**
 var helpdocs embed.FS
 
 var rootCmdHelp = `
@@ -41,19 +41,16 @@ func Execute() {
 	}
 }
 
-func mustRender(in string) string {
-	out, err := glamour.Render(in, "auto")
-	if err != nil {
-		panic(err)
-	}
-	return out
-}
-
 func mustRenderHelpDoc(name string) string {
 	path := fmt.Sprintf("helpdocs/%s.md", name)
 	data, err := helpdocs.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
-	return mustRender(string(data))
+
+	out, err := glamour.Render(string(data), "auto")
+	if err != nil {
+		panic(err)
+	}
+	return out
 }

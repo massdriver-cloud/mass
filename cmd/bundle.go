@@ -10,15 +10,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var bundleCmdHelp = mustRender(`
-# Generate and publish Massdriver bundles.
-`)
+var bundleCmdHelp = mustRenderHelpDoc("bundle")
 
-var bundleTemplateCmdHelp = mustRenderFromFile("helpdocs/templates.md")
+var bundleTemplateCmdHelp = mustRenderHelpDoc("bundle/template")
 
-var templateListCmdHelp = mustRenderFromFile("helpdocs/list-templates.md")
+var templateListCmdHelp = mustRenderHelpDoc("bundle/template-list")
 
-var templateRefreshCmdHelp = mustRenderFromFile("helpdocs/refresh-templates.md")
+var templateRefreshCmdHelp = mustRenderHelpDoc("bundle/template-refresh")
 
 var bundleCmd = &cobra.Command{
 	Use:   "bundle",

@@ -11,8 +11,8 @@ import (
 )
 
 var previewCmdHelp = mustRenderHelpDoc("preview")
-var previewInitCmdHelp = mustRenderHelpDoc("preview-init")
-var previewDeployCmdHelp = mustRenderHelpDoc("preview-deploy")
+var previewInitCmdHelp = mustRenderHelpDoc("preview/init")
+var previewDeployCmdHelp = mustRenderHelpDoc("preview/deploy")
 
 var previewInitParamsPath = "./preview.json"
 var previewDeployCiContextPath = "/home/runner/work/_temp/_github_workflow/event.json"
