@@ -11,13 +11,7 @@ const infraCmdHelp = `
 # Configure and deploy infrastructure managed with Massdriver.
 `
 
-var infraDeployCmdHelp = mustRender(`
-# Deploy infrastructure on Massdriver.
-
-This infrastructure must be published as a [bundle](https://docs.massdriver.cloud/applications) to Massdriver first and be configured for a given environment (target).
-
-Learn more in the [docs](https://docs.massdriver.cloud/bundles).
-`)
+var infraDeployCmdHelp = mustRenderHelpDoc("infra/deploy")
 
 var infraCmd = &cobra.Command{
 	Use:     "infrastructure",

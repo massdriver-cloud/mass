@@ -13,6 +13,18 @@ type TargetConnection {
   updatedAt: DateTime
 }
 
+"A cloud provider region"
+type CloudRegion {
+  "Region's human-friendly name, e.g.: US West 2"
+  name: String!
+
+  "Region's code, e.g.: us-west-2"
+  code: String!
+
+  "Restrictions on use of this region."
+  restrictions: String
+}
+
 type DnsZone {
   id: ID
   name: String
@@ -21,10 +33,24 @@ type DnsZone {
   cloudProviderId: ID
 }
 
+type Metric {
+  name: String!
+  namespace: String!
+  statistic: String
+  dimensions: [Dimension]
+  timeSeries: [Sample]
+}
+
 type RootSubscriptionType {
   deploymentProgress(organizationId: ID!, packageId: ID!): ProvisioningLifecycleEvents
   packageAlerts(organizationId: ID!, packageId: ID!): PackageAlert
 }
+
+"""
+The `Markdown` scalar type represents base64 encoded string data used to represent markdown files
+which can be retrieved in decoded form.
+"""
+scalar Markdown
 
 type ManifestResource {
   "Manifest name"
@@ -60,10 +86,35 @@ type ArtifactResource {
 "The source end of a blueprint link"
 type BlueprintLinkSource {
   "The fully qualified name of the bundle to link to."
-  bundleFqn: String!
+  bundle: String!
 
   "The field to link to on the upstream manifest."
   srcField: String!
+}
+
+"""
+Application secret definitions. These fields are defined in your applications massdriver.yaml file.
+
+Secrets are only applied to `application` type bundles.
+"""
+type SecretField {
+  "The name of the secret. Generally in the form of an environment variable."
+  name: String!
+
+  "Is the secret required?"
+  required: Boolean!
+
+  "Is the secret a JSON object?"
+  json: Boolean!
+
+  "Secret field definition friendly display name."
+  title: String
+
+  "Secret field definition description."
+  description: String
+
+  "Metadata for the secret value set on this field."
+  valueMetadata: SecretMetadata
 }
 
 input ArtifactsInput {
@@ -84,11 +135,11 @@ type BlueprintPart {
   "The description of this template manifest."
   description: String
 
-  "The fully qualified name of the bundle used by manifests created from this template manifest. Example: massdriver\/aws-aurora-serverless-postgres"
-  bundleFqn: String!
-
   "Links to upstream dependency template manifests of this template manifest."
   links: [BlueprintLink]
+
+  "The bundle for this template manifest."
+  bundle: Bundle
 }
 
 type TargetDeletionLifecyclePackageError {
@@ -296,13 +347,18 @@ input DnsZoneInput {
   filter: DnsZoneFilters
 }
 
-"Container Repository filters"
+"Arguments required to get container repositories"
 input ContainerRepositoryInput {
-  filter: ContainerRepositoryFilters
+  location: String!
+  imageName: String!
 }
 
 type Member {
   email: String
+}
+
+type BundleDeletionLifecycleError {
+  message: String!
 }
 
 type Group {
@@ -312,6 +368,7 @@ type Group {
   updatedAt: DateTime
   members: [Member]
   invited: [Member]
+  organizationName: String
 }
 
 type ValidationOption {
@@ -362,6 +419,15 @@ type InvitationPayload {
   result: Invitation
 }
 
+input ContainerRepositoriesInput {
+  location: String!
+}
+
+"Supported cloud information"
+type Cloud {
+  regions: [CloudRegion]
+}
+
 type ArtifactPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -378,6 +444,11 @@ type ApiKey {
   name: String!
   active: Boolean!
   secret: String!
+}
+
+type ContainerRepositoryAuth {
+  repoUri: String!
+  token: String!
 }
 
 type PackageDeletionLifecycle {
@@ -398,6 +469,9 @@ type Package {
   createdAt: DateTime!
 
   updatedAt: DateTime!
+
+  "Secret configuration for application packages"
+  secretFields: [SecretField]
 
   activeDeployment: Deployment
 
@@ -427,6 +501,11 @@ type Package {
   remoteReferences: [RemoteReference]
 }
 
+type BundleDeletionLifecycle {
+  result: Boolean!
+  messages: [BundleDeletionLifecycleError]
+}
+
 "A choice between two or more template manifests with specific roles in the architecture"
 type BlueprintChoice {
   "The name of this choice."
@@ -437,23 +516,6 @@ type BlueprintChoice {
 
   "The template manifests that can be used in this choice. Only one can be chosen."
   choices: [BlueprintPart]!
-}
-
-type ContainerRepositoryPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: ContainerRepository
-}
-
-"A part of a blueprint input. Only one of `:choice` or `:part` may be set."
-input BlueprintInput {
-  choice: BlueprintInputChoice
-  part: BlueprintInputPart
 }
 
 input GraphPositionParams {
@@ -513,11 +575,6 @@ type RootQueryType {
     organizationId: ID!
   ): [DefaultableTargetConnectionGroup]
 
-  containerRepositoryCredentialArtifactDefinitions(
-    "List artifact definitions which can be used to provision and connect container repositories"
-    organizationId: ID!
-  ): [ArtifactDefinition]
-
   compareTargets(organizationId: ID!, fromTargetId: ID!, toTargetId: ID!): Changeset
 
   compareDeployments(organizationId: ID!, fromDeploymentId: ID!, toDeploymentId: ID!): Changeset
@@ -526,6 +583,8 @@ type RootQueryType {
 
   bundles(organizationId: ID!): [Bundle]
 
+  bundle(organizationId: ID!, id: ID!): Bundle
+
   searchBundles(
     organizationId: ID!
 
@@ -533,14 +592,28 @@ type RootQueryType {
     input: BundleSearchFilters
   ): [Bundle]
 
-  containerRepositories(
+  cloud(
+    "Clouds supported by Massdriver"
     organizationId: ID!
 
-    "Filter Container Repository results"
-    input: ContainerRepositoryInput
-  ): [ContainerRepository]
+    "Cloud identifier (aws, gcp, or azure)"
+    id: String!
+  ): Cloud!
 
-  cloudContainerRepositories(organizationId: ID!, location: String!, artifactId: ID!): [ContainerRepository]
+  containerRepository(organizationId: ID!, artifactId: ID!, input: ContainerRepositoryInput!): ContainerRepositoryAuth
+
+  containerRepositories(organizationId: ID!, artifactId: ID!, input: ContainerRepositoriesInput!): [ContainerRepository]
+
+  "Find bundles and manifests that provide a dependency."
+  recommendManifestDependencies(
+    organizationId: ID!
+
+    "Manifest ID or slug."
+    id: ID!
+
+    "The field to find dependencies for."
+    fieldName: String!
+  ): DependencyRecommendations
 
   deployment(
     organizationId: ID!
@@ -567,6 +640,9 @@ type RootQueryType {
 
   cloudDnsZones(organizationId: ID!, location: String!, artifactId: ID!): [DnsZone]
 
+  "Gets all VM instance types for a given region"
+  instanceTypes(organizationId: ID!, artifactId: ID!, packageId: ID!, input: InstanceTypeInput!): [InstanceType]
+
   "Gets supported regions for cloud services"
   supportedLocations(organizationId: ID!, cloudService: String!): LocationList
 
@@ -583,7 +659,12 @@ type RootQueryType {
   package(organizationId: ID!, manifestId: ID!, targetId: ID!): Package
 
   "Finds a package by its naming convention, the name prefix (project-target-manifest) without the random unique suffix."
-  getPackageByNamingConvention(organizationId: ID!, name: String!): Package
+  getPackageByNamingConvention(
+    organizationId: ID!
+
+    "Package ID or {project.slug}-{target.slug}-{manifest.slug} i.e.: ecomm-staging-database"
+    name: String!
+  ): Package
 
   projects(organizationId: ID!): [Project]
 
@@ -632,20 +713,40 @@ scalar DateTime
 
 type Manifest {
   id: ID!
+
   name: String!
+
   slug: String!
+
   suffix: String!
+
   description: String
+
   position: GraphPosition
+
+  "Fields & values for managing default secret values in preview environments."
+  secretFields: [SecretField]
+
   deletable: ManifestDeletionLifecycle!
+
   createdAt: DateTime!
+
   updatedAt: DateTime!
+
   bundle: Bundle!
+
   packages: [Package]
+
   linkableFields: [LinkableField]
 }
 
-union BlueprintComponent = BlueprintPart | BlueprintChoice
+input InstanceTypeInput {
+  "A JQ like query for accessing the region in a package"
+  query: String!
+
+  "Cloud service to get instances for"
+  service: String!
+}
 
 input BlueprintInputPart {
   "The role of this template manifest."
@@ -655,7 +756,7 @@ input BlueprintInputPart {
   description: String
 
   "The fully qualified name of the bundle used by manifests created from this template manifest. Example: massdriver\/aws-aurora-serverless-postgres"
-  bundleFqn: String!
+  bundle: String!
 
   "Links to upstream dependency template manifests of this template manifest."
   links: [BlueprintInputLink!]!
@@ -677,6 +778,11 @@ type DefaultTargetConnection {
 
 type Invitation {
   id: ID
+}
+
+type ManifestRecommendation {
+  fieldName: String!
+  manifest: Manifest!
 }
 
 type ArtifactDefinition {
@@ -718,7 +824,9 @@ type Architecture {
   access: String!
 
   "The manifests and links to build this architecture."
-  blueprint: [BlueprintComponent]!
+  blueprint: [BlueprintChoice]!
+
+  deletable: ArchitectureDeletionLifecycle!
 }
 
 type PlanLimit {
@@ -728,6 +836,8 @@ type PlanLimit {
   maxArtifactDefinitions: Int!
   maxPublicBundles: Int!
   maxPrivateBundles: Int!
+  maxPublicArchitectures: Int!
+  maxPrivateArchitectures: Int!
 }
 
 type ProjectPayload {
@@ -752,6 +862,17 @@ type DnsZonePayload {
   result: DnsZone
 }
 
+type BundlePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Bundle
+}
+
 type BillingSubscriptionPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -771,6 +892,22 @@ enum DownloadFormat {
 
 type RenderedArtifact {
   renderedArtifact: String!
+}
+
+type InstantiatedArchitecturePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: InstantiatedArchitecture
+}
+
+type DependencyRecommendations {
+  bundles: [BundleRecommendation]
+  manifests: [ManifestRecommendation]
 }
 
 enum TargetMode {
@@ -833,12 +970,6 @@ type PaginatedProviderResources {
   items: [ProviderResource]
 }
 
-"Container Repository filters"
-input ContainerRepositoryFilters {
-  "The cloud in which to filter by"
-  cloud: String
-}
-
 type PackageDeletionLifecycleArtifactError {
   artifact: Artifact!
   message: String!
@@ -854,6 +985,7 @@ type RemoteReference {
   field: String!
   package: Package!
   id: ID!
+  unsettable: UnsettableResult!
 }
 
 type ArtifactDeletionLifecycle {
@@ -886,6 +1018,20 @@ input ManifestParams {
   role: String!
 }
 
+type ArchitectureDeletionLifecycleError {
+  message: String!
+}
+
+type Dimension {
+  name: String!
+  value: String!
+}
+
+type BundleRecommendation {
+  fieldName: String!
+  bundle: Bundle!
+}
+
 """
 The `JSON` scalar type represents arbitrary json string data, represented as UTF-8
 character sequences. The Json type is most often used to represent a free-form
@@ -902,6 +1048,20 @@ type OnboardingTask {
 type ManifestDeletionLifecycle {
   result: Boolean!
   messages: [ManifestDeletionLifecyclePackageError]
+}
+
+"A VM type in the cloud"
+type InstanceType {
+  name: String!
+
+  "Compute class defined by the cloud"
+  size: String
+
+  memoryGb: String!
+
+  vCpus: String!
+
+  iops: String
 }
 
 type TargetConnectionPayload {
@@ -986,6 +1146,11 @@ type ResourceLifecycleEvent {
   action: String!
 }
 
+type UnsettableResult {
+  result: Boolean!
+  messages: [String]
+}
+
 "Error encountered during provisioning or decommissioning"
 type DeploymentError {
   "Brief overview of error"
@@ -1013,6 +1178,17 @@ enum AlarmState {
   INSUFFICIENT_DATA
 }
 
+type SecretMetadataPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: SecretMetadata
+}
+
 input ProviderResourcesInput {
   "The number of items to return."
   limit: Int
@@ -1028,6 +1204,7 @@ type PackageAlert {
   occurredAt: String
   providerResourceId: ID
   displayName: String
+  metric: Metric
   state: Boolean @deprecated(reason: "This field will be removed after cutover to the new package alert format")
   packageAlertState: PackageAlertState
 }
@@ -1092,10 +1269,16 @@ type Session {
   url: String!
 }
 
+type Sample {
+  "Milliseconds since epoch"
+  timestamp: Int!
+
+  value: Float!
+}
+
 type Bundle {
   id: ID!
 
-  "The short name of the bundle"
   name: String!
 
   "Application or bundle"
@@ -1118,9 +1301,14 @@ type Bundle {
 
   uiSchema: JSON!
 
+  "The operator guide for the bundle in markdown."
+  operatorGuide: Markdown
+
   createdAt: DateTime!
 
   updatedAt: DateTime!
+
+  deletable: BundleDeletionLifecycle!
 
   compliance: [Compliance]
 
@@ -1142,7 +1330,7 @@ input BlueprintInputChoice {
 "The source end of a blueprint link"
 input BlueprintInputLinkSource {
   "The fully qualified name of the bundle to link to."
-  bundleFqn: String!
+  bundle: String!
 
   "The field to link to on the upstream manifest."
   srcField: String!
@@ -1238,6 +1426,21 @@ type ArtifactDeletionLifecycleArtifactError {
   message: String!
 }
 
+"Metadata for a secret. Values are not viewable\/retrievable once set."
+type SecretMetadata {
+  "A unique identifier for the secret value."
+  id: ID!
+
+  "The secret name from the massdriver.yaml file."
+  name: String!
+
+  "SHA-256 of the secret value."
+  sha256: String!
+
+  "When the secret was set."
+  createdAt: DateTime!
+}
+
 type RootMutationType {
   "Creates an API key"
   createApiKey(organizationId: ID!, name: String!): ApiKeyPayload
@@ -1261,33 +1464,20 @@ type RootMutationType {
   """
   deleteArtifact(organizationId: ID!, id: ID!): ArtifactPayload
 
-  "Create an architecture with the given parameters."
-  createArchitecture(
-    organizationId: ID!, name: String!, description: String, blueprint: [BlueprintInput!]!, access: String!
-  ): ArchitecturePayload
-
-  "Update an architecture with the given ID and parameters. May change any part of the architecture."
-  updateArchitecture(
-    id: ID!, organizationId: ID!, name: String, description: String, blueprint: [BlueprintInput!], access: String
+  "Publishes an architecture."
+  publishArchitecture(
+    organizationId: ID!, name: String!, description: String, blueprint: [BlueprintInputChoice!]!, access: String!
   ): ArchitecturePayload
 
   "Delete the architecture with the given ID."
   deleteArchitecture(id: ID!, organizationId: ID!): ArchitecturePayload
 
   "Instantiate the architecture with the provided ID into the given project with the provided set of manifest configurations."
-  instantiateArchitecture(id: ID!, organizationId: ID!, projectId: ID!, manifests: [ManifestParams!]!): InstantiatedArchitecture
+  instantiateArchitecture(id: ID!, organizationId: ID!, projectId: ID!, manifests: [ManifestParams!]!): InstantiatedArchitecturePayload
 
-  diagramToArchitecture(organizationId: ID!, projectId: ID!): ArchitecturePayload!
+  deleteBundle(organizationId: ID!, id: ID!): BundlePayload
 
   createBillingSubscription(organizationId: ID!, planId: ID!): BillingSubscriptionPayload
-
-  createContainerRepository(organizationId: ID!, name: String!, location: String!, artifactId: ID!, cloud: String!): ContainerRepositoryPayload
-
-  disconnectContainerRepository(organizationId: ID!, id: ID!): ContainerRepositoryPayload
-
-  connectContainerRepository(
-    organizationId: ID!, name: String!, location: String!, cloudProviderId: ID!, cloud: String!
-  ): ContainerRepositoryPayload
 
   "Enqueues a package for deployment"
   deployPackage(organizationId: ID!, targetId: ID!, manifestId: ID!): DeploymentPayload
@@ -1318,13 +1508,60 @@ type RootMutationType {
   deleteManifest(organizationId: ID!, id: ID!): ManifestPayload
 
   "Set the manifest position in the graph page"
-  setManifestPosition(organizationId: ID!, id: ID!, params: GraphPositionParams!): ManifestPayload
+  setManifestPosition(
+    organizationId: ID!
+
+    "Manifest ID or {project.slug}-{manifest.slug} i.e.: ecomm-database"
+    id: ID!
+
+    params: GraphPositionParams!
+  ): ManifestPayload
+
+  "Sets a default secret value for this manifest in all preview environments. This value can be overridden by setting a secret value on a package in your preview environment."
+  setDefaultSecretForPreviewEnvironments(
+    organizationId: ID!
+
+    "Manifest ID or {project.slug}-{manifest.slug} i.e.: ecomm-database"
+    id: ID!
+
+    input: SetSecretValueInput!
+  ): SecretMetadataPayload
+
+  "Removes a default secret value for this manifest in all preview environments."
+  unsetDefaultSecretForPreviewEnvironments(
+    organizationId: ID!
+
+    "Manifest ID or {project.slug}-{manifest.slug} i.e.: ecomm-database"
+    id: ID!
+
+    input: UnsetSecretValueInput!
+  ): SecretMetadataPayload
 
   "Create an organization"
   createOrganization(name: String!, slug: String!): OrganizationPayload
 
   "Update a Package's parameters"
   configurePackage(organizationId: ID!, manifestId: ID!, targetId: ID!, params: JSON!): PackagePayload
+
+  "Set a secret value for the package."
+  setPackageSecret(
+    organizationId: ID!
+
+    "Package ID or {project.slug}-{target.slug}-{manifest.slug} i.e.: ecomm-staging-database"
+    id: ID!
+
+    input: SetSecretValueInput!
+  ): SecretMetadataPayload
+
+  "Remove a secret value from the package."
+  unsetPackageSecret(
+    organizationId: ID!
+
+    "Package ID or {project.slug}-{target.slug}-{manifest.slug} i.e.: ecomm-staging-database"
+    id: ID!
+
+    input: UnsetSecretValueInput!
+  ): SecretMetadataPayload
 
   "Create a project"
   createProject(organizationId: ID!, name: String!, description: String, slug: String!): ProjectPayload
@@ -1352,6 +1589,8 @@ type RootMutationType {
   "Deploy a Preview Environment"
   deployPreviewEnvironment(organizationId: ID!, projectId: ID!, input: PreviewEnvironmentInput!): TargetPayload
 
+  decommissionPreviewEnvironment(organizationId: ID!, targetId: ID!): TargetPayload
+
   "Update a target"
   updateTarget(organizationId: ID!, id: ID!, name: String!, description: String): TargetPayload
 
@@ -1371,7 +1610,7 @@ type RootMutationType {
   assignRemoteReference(organizationId: ID!, artifactId: ID!, packageId: ID!, params: RemoteReferenceParams!): RemoteReferencePayload
 
   "Removes a remote reference from a package's field"
-  dismissRemoteReference(organizationId: ID!, remoteReferenceId: ID!): RemoteReferencePayload
+  unsetRemoteReference(organizationId: ID!, remoteReferenceId: ID!): RemoteReferencePayload
 }
 
 type Diagram {
@@ -1381,6 +1620,11 @@ type Diagram {
 
 "Artifact and manifest nodes"
 union Resource = ManifestResource | PackageResource | ArtifactResource
+
+input UnsetSecretValueInput {
+  "Name defined in applications massdriver.yaml file."
+  name: String!
+}
 
 type LinkPayload {
   "Indicates if the mutation completed successfully or not."
@@ -1411,6 +1655,7 @@ enum PackageStatus {
   PROVISIONED
   DECOMMISSIONED
   FAILED
+  EXTERNAL
 }
 
 type SubscriptionPlan {
@@ -1442,9 +1687,21 @@ type Connection {
 }
 
 type ContainerRepository {
-  id: ID
-  name: String
-  cloud: String
-  location: String
-  cloudProviderId: ID
+  name: String!
+  cloud: String!
+  location: String!
+  cloudProviderId: ID!
+}
+
+type ArchitectureDeletionLifecycle {
+  result: Boolean!
+  errors: [ArchitectureDeletionLifecycleError]
+}
+
+input SetSecretValueInput {
+  "Name defined in applications massdriver.yaml file."
+  name: String!
+
+  "The secret value."
+  value: String!
 }

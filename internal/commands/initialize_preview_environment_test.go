@@ -10,6 +10,7 @@ import (
 
 func TestInitializePreviewEnvironment(t *testing.T) {
 	projectSlug := "ecomm"
+
 	responses := []interface{}{
 		gqlmock.MockQueryResponse("project", map[string]interface{}{
 			"slug": projectSlug,

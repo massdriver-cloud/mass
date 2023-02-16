@@ -7,11 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var appCmdHelp = mustRender(`
-# Configure and deploy applications managed with Massdriver.
-`)
+var appCmdHelp = mustRenderHelpDoc("app")
 
-var appDeployCmdHelp = mustRenderFromFile("helpdocs/app-deploy.md")
+var appDeployCmdHelp = mustRenderHelpDoc("app/deploy")
 
 var appCmd = &cobra.Command{
 	Use:     "application",

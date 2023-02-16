@@ -7,20 +7,20 @@ MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(dir $(MKFILE_PATH))
 API_DIR := internal/api
 
+all.macos: clean generate install.macos
+all.linux: clean generate install.linux
+
 .PHONY: check
 check: clean generate test ## Run tests and linter locally
 	golangci-lint run
 
 .PHONY: clean
 clean:
-	rm -rf internal/api/{zz_generated.go}
-
-.PHONY: clean!
-clean!: clean ## Removes graphql schema
-	rm -rf internal/api/{schema.graphql}
+	rm -rf ${API_DIR}/schema.graphql
+	rm -rf ${API_DIR}/zz_generated.go
 
 .PHONY: generate
-generate: clean ${API_DIR}/zz_generated.go
+generate: ${API_DIR}/zz_generated.go
 
 .PHONY: test
 test:
@@ -54,4 +54,5 @@ ${API_DIR}/schema.graphql:
 	cd ${MASSDRIVER_PATH} && mix absinthe.schema.sdl ${MKFILE_DIR}/${API_DIR}/schema.graphql
 
 ${API_DIR}/zz_generated.go: ${API_DIR}/schema.graphql
+	go get github.com/Khan/genqlient/generate@v0.5.0
 	cd ${API_DIR} && go generate

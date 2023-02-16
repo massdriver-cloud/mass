@@ -10,27 +10,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var previewCmdHelp = mustRender(`
-# Preview Environments
-
-Massdriver preview environments can deploy infrastructure and applications as a cohesive unit.
-`)
-
-var previewInitCmdHelp = mustRender(`
-# Initialize a Preview Environment Config File
-
-The preview environment config file should be checked into your source repository. The file supports bash interpolation.
-`)
-
-var previewDeployCmdHelp = mustRender(`
-# Deploy a Preview Environment
-
-Deploys a prevew environment in your project.
-
-A configuration file with authentication artifacts and package configuration is required.
-
-Currently only GitHub Action workflow events are supported for deploying preview environments.
-`)
+var previewCmdHelp = mustRenderHelpDoc("preview")
+var previewInitCmdHelp = mustRenderHelpDoc("preview/init")
+var previewDeployCmdHelp = mustRenderHelpDoc("preview/deploy")
 
 var previewInitParamsPath = "./preview.json"
 var previewDeployCiContextPath = "/home/runner/work/_temp/_github_workflow/event.json"
@@ -38,12 +20,12 @@ var previewDeployCiContextPath = "/home/runner/work/_temp/_github_workflow/event
 var previewCmd = &cobra.Command{
 	Use:     "preview",
 	Aliases: []string{"pv"},
-	Short:   "Preview Environments",
+	Short:   "Create & deploy preview environments",
 	Long:    previewCmdHelp,
 }
 
 var previewInitCmd = &cobra.Command{
-	Use:   `init projectSlug`,
+	Use:   `init $projectSlug`,
 	Short: "Generate a preview enviroment configuration file",
 	Long:  previewInitCmdHelp,
 	Args:  cobra.ExactArgs(1),
@@ -51,7 +33,7 @@ var previewInitCmd = &cobra.Command{
 }
 
 var previewDeployCmd = &cobra.Command{
-	Use:   "deploy projectSlug",
+	Use:   "deploy $projectSlug",
 	Short: "Deploys a preview environment in your project",
 	Long:  previewDeployCmdHelp,
 	RunE:  runPreviewDeploy,

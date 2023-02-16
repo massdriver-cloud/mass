@@ -17,7 +17,5 @@ func InitializePreviewEnvironment(client graphql.Client, orgID string, projectSl
 		// TODO: return Credentials...
 	}
 
-	// TODO: Take stdin & prompt w/ bubbletea
-
 	return &cfg, nil
 }
