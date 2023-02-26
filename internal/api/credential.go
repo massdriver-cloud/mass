@@ -20,9 +20,9 @@ func ListCredentialTypes() []ArtifactDefinition {
 }
 
 // Get the first page of credentials for an artifact type
-func ListCredentials(client graphql.Client, orgID string, artifacType string) ([]*Artifact, error) {
+func ListCredentials(client graphql.Client, orgID string, artifactType string) ([]*Artifact, error) {
 	artifactList := []*Artifact{}
-	response, err := getArtifactsByType(context.Background(), client, orgID, artifacType)
+	response, err := getArtifactsByType(context.Background(), client, orgID, artifactType)
 
 	for _, artifactRecord := range response.Artifacts.Items {
 		artifactList = append(artifactList, artifactRecord.toArtifact())

@@ -34,6 +34,7 @@ mutation deployPreviewEnvironment($organizationId: ID!, $projectId: ID!, $input:
         slug
       }
     }
+    # @genqlient(typename: "MutationValidationError")
     messages {
       message
     }
@@ -66,6 +67,7 @@ mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!) {
     result {
       id
     }
+    # @genqlient(typename: "MutationValidationError")
     messages {
       message
     }
@@ -79,6 +81,7 @@ mutation configurePackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!
       params
     }
     successful
+    # @genqlient(typename: "MutationValidationError")
     messages {
       message
     }

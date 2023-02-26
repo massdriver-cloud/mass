@@ -35,7 +35,7 @@ func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeo
 
 	timeout -= DeploymentStatusSleep
 
-	// TODO: replace w/ bubbletea (human) & zerolog (json)
+	// TODO: bubbletea status
 	fmt.Printf("Checking deployment status for %s: %s\n", id, deployment.Status)
 
 	switch deployment.Status {

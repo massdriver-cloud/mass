@@ -22,6 +22,38 @@ func (v *Credential) GetArtifactDefinitionType() string { return v.ArtifactDefin
 // GetArtifactId returns Credential.ArtifactId, and is useful for accessing the field via an interface.
 func (v *Credential) GetArtifactId() string { return v.ArtifactId }
 
+// MutationValidationError includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type MutationValidationError struct {
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetMessage returns MutationValidationError.Message, and is useful for accessing the field via an interface.
+func (v *MutationValidationError) GetMessage() string { return v.Message }
+
 type PreviewEnvironmentInput struct {
 	Credentials []Credential `json:"credentials"`
 	// GitHub Action event payload.
@@ -311,7 +343,7 @@ type configurePackageConfigurePackagePackagePayload struct {
 	// Indicates if the mutation completed successfully or not.
 	Successful bool `json:"successful"`
 	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []configurePackageConfigurePackagePackagePayloadMessagesValidationMessage `json:"messages"`
+	Messages []MutationValidationError `json:"messages"`
 }
 
 // GetResult returns configurePackageConfigurePackagePackagePayload.Result, and is useful for accessing the field via an interface.
@@ -323,42 +355,8 @@ func (v *configurePackageConfigurePackagePackagePayload) GetResult() configurePa
 func (v *configurePackageConfigurePackagePackagePayload) GetSuccessful() bool { return v.Successful }
 
 // GetMessages returns configurePackageConfigurePackagePackagePayload.Messages, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayload) GetMessages() []configurePackageConfigurePackagePackagePayloadMessagesValidationMessage {
+func (v *configurePackageConfigurePackagePackagePayload) GetMessages() []MutationValidationError {
 	return v.Messages
-}
-
-// configurePackageConfigurePackagePackagePayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
-// The GraphQL type's documentation follows.
-//
-// Validation messages are returned when mutation input does not meet the requirements.
-// While client-side validation is highly recommended to provide the best User Experience,
-// All inputs will always be validated server-side.
-//
-// Some examples of validations are:
-//
-// * Username must be at least 10 characters
-// * Email field does not contain an email address
-// * Birth Date is required
-//
-// While GraphQL has support for required values, mutation data fields are always
-// set to optional in our API. This allows 'required field' messages
-// to be returned in the same manner as other validations. The only exceptions
-// are id fields, which may be required to perform updates or deletes.
-type configurePackageConfigurePackagePackagePayloadMessagesValidationMessage struct {
-	// A friendly error message, appropriate for display to the end user.
-	//
-	// The message is interpolated to include the appropriate variables.
-	//
-	// Example: `Username must be at least 10 characters`
-	//
-	// This message may change without notice, so we do not recommend you match against the text.
-	// Instead, use the *code* field for matching.
-	Message string `json:"message"`
-}
-
-// GetMessage returns configurePackageConfigurePackagePackagePayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayloadMessagesValidationMessage) GetMessage() string {
-	return v.Message
 }
 
 // configurePackageConfigurePackagePackagePayloadResultPackage includes the requested fields of the GraphQL type Package.
@@ -460,7 +458,7 @@ type deployPackageDeployPackageDeploymentPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
 	Result deployPackageDeployPackageDeploymentPayloadResultDeployment `json:"result"`
 	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage `json:"messages"`
+	Messages []MutationValidationError `json:"messages"`
 }
 
 // GetSuccessful returns deployPackageDeployPackageDeploymentPayload.Successful, and is useful for accessing the field via an interface.
@@ -472,42 +470,8 @@ func (v *deployPackageDeployPackageDeploymentPayload) GetResult() deployPackageD
 }
 
 // GetMessages returns deployPackageDeployPackageDeploymentPayload.Messages, and is useful for accessing the field via an interface.
-func (v *deployPackageDeployPackageDeploymentPayload) GetMessages() []deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage {
+func (v *deployPackageDeployPackageDeploymentPayload) GetMessages() []MutationValidationError {
 	return v.Messages
-}
-
-// deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
-// The GraphQL type's documentation follows.
-//
-// Validation messages are returned when mutation input does not meet the requirements.
-// While client-side validation is highly recommended to provide the best User Experience,
-// All inputs will always be validated server-side.
-//
-// Some examples of validations are:
-//
-// * Username must be at least 10 characters
-// * Email field does not contain an email address
-// * Birth Date is required
-//
-// While GraphQL has support for required values, mutation data fields are always
-// set to optional in our API. This allows 'required field' messages
-// to be returned in the same manner as other validations. The only exceptions
-// are id fields, which may be required to perform updates or deletes.
-type deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage struct {
-	// A friendly error message, appropriate for display to the end user.
-	//
-	// The message is interpolated to include the appropriate variables.
-	//
-	// Example: `Username must be at least 10 characters`
-	//
-	// This message may change without notice, so we do not recommend you match against the text.
-	// Instead, use the *code* field for matching.
-	Message string `json:"message"`
-}
-
-// GetMessage returns deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
-func (v *deployPackageDeployPackageDeploymentPayloadMessagesValidationMessage) GetMessage() string {
-	return v.Message
 }
 
 // deployPackageDeployPackageDeploymentPayloadResultDeployment includes the requested fields of the GraphQL type Deployment.
@@ -536,7 +500,7 @@ type deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
 	Result deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget `json:"result"`
 	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadMessagesValidationMessage `json:"messages"`
+	Messages []MutationValidationError `json:"messages"`
 }
 
 // GetSuccessful returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload.Successful, and is useful for accessing the field via an interface.
@@ -550,42 +514,8 @@ func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload) GetResul
 }
 
 // GetMessages returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload.Messages, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload) GetMessages() []deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadMessagesValidationMessage {
+func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload) GetMessages() []MutationValidationError {
 	return v.Messages
-}
-
-// deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
-// The GraphQL type's documentation follows.
-//
-// Validation messages are returned when mutation input does not meet the requirements.
-// While client-side validation is highly recommended to provide the best User Experience,
-// All inputs will always be validated server-side.
-//
-// Some examples of validations are:
-//
-// * Username must be at least 10 characters
-// * Email field does not contain an email address
-// * Birth Date is required
-//
-// While GraphQL has support for required values, mutation data fields are always
-// set to optional in our API. This allows 'required field' messages
-// to be returned in the same manner as other validations. The only exceptions
-// are id fields, which may be required to perform updates or deletes.
-type deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadMessagesValidationMessage struct {
-	// A friendly error message, appropriate for display to the end user.
-	//
-	// The message is interpolated to include the appropriate variables.
-	//
-	// Example: `Username must be at least 10 characters`
-	//
-	// This message may change without notice, so we do not recommend you match against the text.
-	// Instead, use the *code* field for matching.
-	Message string `json:"message"`
-}
-
-// GetMessage returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadMessagesValidationMessage) GetMessage() string {
-	return v.Message
 }
 
 // deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget includes the requested fields of the GraphQL type Target.

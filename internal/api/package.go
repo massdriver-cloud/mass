@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -51,13 +49,7 @@ func ConfigurePackage(client graphql.Client, orgID string, targetID string, mani
 		return response.ConfigurePackage.Result.toPackage(), nil
 	}
 
-	msgs, err := json.Marshal(response.ConfigurePackage.Messages)
-	if err != nil {
-		return nil, fmt.Errorf("failed to configure package and couldn't marshal error messages: %w", err)
-	}
-
-	// TODO: better formatting of errors - custom mutation Error type
-	return nil, fmt.Errorf("failed to configure package: %v", string(msgs))
+	return nil, NewMutationError("failed to configure package", response.ConfigurePackage.Messages)
 }
 
 func (p *configurePackageConfigurePackagePackagePayloadResultPackage) toPackage() *Package {

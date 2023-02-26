@@ -13,18 +13,6 @@ type TargetConnection {
   updatedAt: DateTime
 }
 
-"A cloud provider region"
-type CloudRegion {
-  "Region's human-friendly name, e.g.: US West 2"
-  name: String!
-
-  "Region's code, e.g.: us-west-2"
-  code: String!
-
-  "Restrictions on use of this region."
-  restrictions: String
-}
-
 type DnsZone {
   id: ID
   name: String
@@ -423,11 +411,6 @@ input ContainerRepositoriesInput {
   location: String!
 }
 
-"Supported cloud information"
-type Cloud {
-  regions: [CloudRegion]
-}
-
 type ArtifactPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -591,14 +574,6 @@ type RootQueryType {
     "Filter bundle search results"
     input: BundleSearchFilters
   ): [Bundle]
-
-  cloud(
-    "Clouds supported by Massdriver"
-    organizationId: ID!
-
-    "Cloud identifier (aws, gcp, or azure)"
-    id: String!
-  ): Cloud!
 
   containerRepository(organizationId: ID!, artifactId: ID!, input: ContainerRepositoryInput!): ContainerRepositoryAuth
 

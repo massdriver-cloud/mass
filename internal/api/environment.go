@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/Khan/genqlient/graphql"
@@ -35,20 +34,14 @@ func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID str
 		return response.DeployPreviewEnvironment.Result.toEnvironment(), nil
 	}
 
-	msgs, err := json.Marshal(response.DeployPreviewEnvironment.Messages)
-	if err != nil {
-		return nil, fmt.Errorf("failed to deploy preview environment and couldn't marshal error messages: %w", err)
-	}
-
-	// TODO: better formatting of errors - custom mutation Error type
-	return nil, fmt.Errorf("failed to deploy environment: %v", string(msgs))
+	return nil, NewMutationError("failed to deploy environment", response.DeployPreviewEnvironment.Messages)
 }
 
 func (e *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget) toEnvironment() *Environment {
 	return &Environment{
 		ID:   e.Id,
 		Slug: e.Slug,
-		// TODO: use slugs for proj & env once front end has resolved the issues there.
+		// NOTE: We use IDs here instead of slugs because there is currently a bug in the UI for rendering targets w/ slugs.
 		URL: fmt.Sprintf(urlTemplate, e.Project.Id, e.Id),
 	}
 }

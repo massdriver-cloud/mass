@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
@@ -56,10 +57,7 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 	c := config.Get()
 	client := api.NewClient(c.URL, c.APIKey)
 
-	// TODO: send stdin
-	// commands.WithStdin(os.Stdin)
-
-	cfg, err := commands.InitializePreviewEnvironment(client, c.OrgID, projectSlug)
+	cfg, err := commands.InitializePreviewEnvironment(client, c.OrgID, projectSlug, os.Stdin, os.Stdout)
 
 	if err != nil {
 		return err
@@ -89,7 +87,7 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// TODO: bubbletea v zerolog
+	// TODO: bubbletea STDOUT
 	fmt.Printf("Deploying @ %s", env.URL)
 
 	return nil
