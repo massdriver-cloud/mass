@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
 	"github.com/massdriver-cloud/mass/internal/config"
@@ -87,8 +88,10 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// TODO: bubbletea STDOUT
-	fmt.Printf("Deploying @ %s", env.URL)
+	var url = lipgloss.NewStyle().SetString(env.URL).Underline(true).Foreground(lipgloss.Color("#7D56F4"))
+	msg := fmt.Sprintf("Deploying preview environment: %s", url)
+
+	fmt.Println(msg)
 
 	return nil
 }

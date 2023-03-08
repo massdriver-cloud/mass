@@ -9,8 +9,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// TODO: styles (title, table, column headings, help)
-
 func (m Model) Init() tea.Cmd {
 	return nil
 }

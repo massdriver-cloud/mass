@@ -43,6 +43,9 @@ func InitializePreviewEnvironment(client graphql.Client, orgID string, projectSl
 		Focused(true).
 		WithMinimum(1)
 
+	// TODO: These commands should be there own packages of command.go and ui.go (ui if a bubbletea)
+
+	// TODO: fix test wrt 'P'
 	P = tea.NewProgram(
 		model, // Note: can be given multiple models... and use bubble tea to swap between them based on input
 		tea.WithInput(stdin),

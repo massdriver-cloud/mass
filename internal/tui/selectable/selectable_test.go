@@ -9,8 +9,6 @@ import (
 	"github.com/massdriver-cloud/mass/internal/tui/selectable"
 )
 
-// WithSelectedText(" ", "✓")
-
 func TestSelectedRows(t *testing.T) {
 	t.Run("does not render metadata", func(t *testing.T) {
 		people := []person{
