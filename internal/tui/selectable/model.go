@@ -6,6 +6,7 @@ import (
 )
 
 type errMsg error
+
 type Model struct {
 	table           table.Model
 	title           string

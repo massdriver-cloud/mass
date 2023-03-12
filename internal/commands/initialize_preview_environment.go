@@ -31,7 +31,7 @@ func InitializePreviewEnvironment(client graphql.Client, orgID string, projectSl
 	credentialTypes := api.ListCredentialTypes()
 	for i := range credentialTypes {
 		credentialType := credentialTypes[i]
-		// TODO: set the type in the table as metadta and present a pretty name
+		// TODO: set the type in the table as metadata and present a pretty name
 		row := table.NewRow(table.RowData{nameColumn: credentialType.Name})
 		rows = append(rows, row)
 	}

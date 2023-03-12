@@ -8,6 +8,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+func TeaKeyToByteArr(key tea.KeyType) []byte {
+	return []byte{'\x1b', byte(key)}
+}
+
 func KeyPress(key rune) tea.Msg {
 	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{key}, Alt: false}
 }
@@ -29,6 +33,6 @@ func SendKeyPresses(p *tea.Program, keys string) {
 func AssertUIContains(t *testing.T, stdout bytes.Buffer, str string) {
 	ui := stdout.String()
 	if !strings.Contains(ui, str) {
-		t.Errorf("Expected TUI to contain '%s'\nGot:\n%s", str, ui)
+		t.Errorf("Expected UI to contain '%s'\nGot:\n%s", str, ui)
 	}
 }
