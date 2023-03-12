@@ -31,7 +31,6 @@ func InitializePreviewEnvironment(client graphql.Client, orgID string, projectSl
 	credentialTypes := api.ListCredentialTypes()
 	for i := range credentialTypes {
 		credentialType := credentialTypes[i]
-		// TODO: set the type in the table as metadata and present a pretty name
 		row := table.NewRow(table.RowData{nameColumn: credentialType.Name})
 		rows = append(rows, row)
 	}
@@ -43,11 +42,8 @@ func InitializePreviewEnvironment(client graphql.Client, orgID string, projectSl
 		Focused(true).
 		WithMinimum(1)
 
-	// TODO: These commands should be there own packages of command.go and ui.go (ui if a bubbletea)
-
-	// TODO: fix test wrt 'P'
 	P = tea.NewProgram(
-		model, // Note: can be given multiple models... and use bubble tea to swap between them based on input
+		model,
 		tea.WithInput(stdin),
 		tea.WithOutput(stdout),
 	)
@@ -106,6 +102,7 @@ func newArtifactSelectionModel(client graphql.Client, orgID string, artifactType
 	idColumn := "id"
 
 	columns := []table.Column{
+		// TODO: set the type in the table as metadata and present a pretty name
 		table.NewColumn(nameColumn, "Name", 40),
 		table.NewColumn(idColumn, "Artifact ID", 40),
 	}

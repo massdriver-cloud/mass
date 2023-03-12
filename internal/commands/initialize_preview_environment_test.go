@@ -49,7 +49,7 @@ func TestInitializePreviewEnvironment(t *testing.T) {
 
 	previewCfg, err := commands.InitializePreviewEnvironment(client, "faux-org-id", projectSlug, &stdin, &stdout)
 
-	teahelper.AssertUIContains(t, stdout, "aws-iam-role")
+	teahelper.AssertStdoutContains(t, stdout, "aws-iam-role")
 
 	if err != nil {
 		t.Fatal(err)

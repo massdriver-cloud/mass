@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
+	initializeprevenv "github.com/massdriver-cloud/mass/internal/commands/initialize_prev_env"
 	"github.com/massdriver-cloud/mass/internal/config"
 	"github.com/massdriver-cloud/mass/internal/files"
 	"github.com/spf13/cobra"
@@ -58,13 +59,17 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 	c := config.Get()
 	client := api.NewClient(c.URL, c.APIKey)
 
-	cfg, err := commands.InitializePreviewEnvironment(client, c.OrgID, projectSlug, os.Stdin, os.Stdout)
+	// cfg, err := commands.InitializePreviewEnvironment(client, c.OrgID, projectSlug, os.Stdin, os.Stdout)
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
-	return files.Write(previewInitParamsPath, cfg)
+	// return files.Write(previewInitParamsPath, cfg)
+
+	initializeprevenv.Run(client, c.OrgID, projectSlug, os.Stdin, os.Stdout)
+
+	return nil
 }
 
 func runPreviewDeploy(cmd *cobra.Command, args []string) error {

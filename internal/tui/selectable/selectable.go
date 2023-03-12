@@ -67,11 +67,6 @@ func (m Model) View() string {
 func helpOrValidationMessagesComponent(m Model) string {
 	msg := ""
 	if m.validationError == "" {
-		// TODO: replace w/ https://github.com/charmbracelet/bubbletea/blob/master/examples/help/main.go
-		// Help view KeyMap
-		// Error area (Validation Errors)
-		// table may expose its key bindings for help, if so we just need to add "(S)ave"
-		// https://github.com/charmbracelet/bubbletea/blob/master/examples/help/main.go#L92
 		msg = "↑/↓: Navigate • esc: Quit • enter: Select • s: Save"
 	} else {
 		var style = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ff0000")).Render
