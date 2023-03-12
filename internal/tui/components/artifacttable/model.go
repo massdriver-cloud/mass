@@ -12,7 +12,6 @@ import (
 
 type Model struct {
 	table             table.Model
-	quitting          bool
 	help              help.Model
 	artifacts         []*api.Artifact
 	keys              KeyMap
@@ -70,10 +69,6 @@ func New(artifacts []*api.Artifact) *Model {
 			key.WithKeys("?"),
 			key.WithHelp("?", "toggle help"),
 		),
-		Quit: key.NewBinding(
-			key.WithKeys("q", "esc", "ctrl+c"),
-			key.WithHelp("q", "quit"),
-		),
 	}
 
 	return &Model{
@@ -100,9 +95,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keys.Help):
 			m.help.ShowAll = !m.help.ShowAll
-		case key.Matches(msg, m.keys.Quit):
-			m.quitting = true
-			return m, tea.Quit
 		}
 	}
 

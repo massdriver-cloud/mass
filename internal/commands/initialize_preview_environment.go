@@ -48,7 +48,6 @@ func InitializePreviewEnvironment(client graphql.Client, orgID string, projectSl
 		tea.WithOutput(stdout),
 	)
 
-	// TODO: Should commands return a list of models so all cmds can start the program w/o passing stdin/stdout?
 	result, err := P.Run()
 
 	if err != nil {
@@ -102,7 +101,6 @@ func newArtifactSelectionModel(client graphql.Client, orgID string, artifactType
 	idColumn := "id"
 
 	columns := []table.Column{
-		// TODO: set the type in the table as metadata and present a pretty name
 		table.NewColumn(nameColumn, "Name", 40),
 		table.NewColumn(idColumn, "Artifact ID", 40),
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 func TestViewHumanizes(t *testing.T) {
-	artdefs := []api.ArtifactDefinition{
+	artdefs := []*api.ArtifactDefinition{
 		{Name: "example/password"},
 		{Name: "example/iam-thing"},
 	}
@@ -22,9 +22,10 @@ func TestViewHumanizes(t *testing.T) {
 }
 
 func TestUpdateSelectsArtifactDefinition(t *testing.T) {
-	artdefs := []api.ArtifactDefinition{
+	want := &api.ArtifactDefinition{Name: "example/iam-thing"}
+	artdefs := []*api.ArtifactDefinition{
 		{Name: "example/password"},
-		{Name: "example/iam-thing"},
+		want,
 	}
 
 	model := artdeftable.New(artdefs)
@@ -35,14 +36,9 @@ func TestUpdateSelectsArtifactDefinition(t *testing.T) {
 	pressSpace := tea.KeyMsg{Type: tea.KeySpace}
 	updatedModel, _ = updatedModel.Update(pressSpace)
 
-	pressEsc := tea.KeyMsg{Type: tea.KeyEsc}
-	updatedModel, _ = updatedModel.Update(pressEsc)
-
 	finalModel := (updatedModel).(artdeftable.Model)
 
 	got := finalModel.SelectedArtifactDefinitions
-
-	want := api.ArtifactDefinition{Name: "example/iam-thing"}
 
 	if len(got) != 1 {
 		t.Errorf("Expected exactly one result, got: %v", got)

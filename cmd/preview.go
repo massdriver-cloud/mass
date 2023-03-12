@@ -67,6 +67,8 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 
 	// return files.Write(previewInitParamsPath, cfg)
 
+	// TODO: can we start the program here and return a model instead?!
+
 	initializeprevenv.Run(client, c.OrgID, projectSlug, os.Stdin, os.Stdout)
 
 	return nil

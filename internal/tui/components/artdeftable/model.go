@@ -13,11 +13,10 @@ import (
 
 type Model struct {
 	table                       table.Model
-	quitting                    bool
 	help                        help.Model
-	artifactDefinitions         []api.ArtifactDefinition
+	artifactDefinitions         []*api.ArtifactDefinition
 	keys                        KeyMap
-	SelectedArtifactDefinitions []api.ArtifactDefinition
+	SelectedArtifactDefinitions []*api.ArtifactDefinition
 }
 
 const (
@@ -25,7 +24,7 @@ const (
 	columnKeyArtDefData = "artDefData"
 )
 
-func New(creds []api.ArtifactDefinition) *Model {
+func New(creds []*api.ArtifactDefinition) *Model {
 	columns := []table.Column{
 		table.NewColumn(columnKeyLabel, "Name", 40),
 	}
@@ -98,15 +97,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keys.Help):
 			m.help.ShowAll = !m.help.ShowAll
-		case key.Matches(msg, m.keys.Quit):
-			m.quitting = true
-			return m, tea.Quit
 		}
 	}
-
-	// Note: msg can be the result of an I/O operation, not just keystrokes.
-	// case Artifact:
-	// case errMsg: // custom error message type
 
 	m.table, cmd = m.table.Update(msg)
 	m.SelectedArtifactDefinitions = mapRowsToArtDef(m.table.SelectedRows())
@@ -123,11 +115,11 @@ func (m Model) View() string {
 	return body.String()
 }
 
-func mapRowsToArtDef(rows []table.Row) []api.ArtifactDefinition {
-	artdefs := []api.ArtifactDefinition{}
+func mapRowsToArtDef(rows []table.Row) []*api.ArtifactDefinition {
+	artdefs := []*api.ArtifactDefinition{}
 
 	for _, row := range rows {
-		artdef := row.Data[columnKeyArtDefData].(api.ArtifactDefinition)
+		artdef := row.Data[columnKeyArtDefData].(*api.ArtifactDefinition)
 		artdefs = append(artdefs, artdef)
 	}
 	return artdefs

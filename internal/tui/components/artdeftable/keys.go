@@ -9,6 +9,7 @@ type KeyMap struct {
 	RowUp           key.Binding
 	RowSelectToggle key.Binding
 	Quit            key.Binding
+	Save            key.Binding
 	Help            key.Binding
 }
 
@@ -22,7 +23,7 @@ func (k KeyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.RowDown, k.RowUp, k.RowSelectToggle},
+		{k.RowDown, k.RowUp, k.RowSelectToggle, k.Save},
 		{k.Help, k.Quit},
 	}
 }

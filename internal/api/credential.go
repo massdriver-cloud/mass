@@ -7,7 +7,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-var credentialArtifactDefinitions = []ArtifactDefinition{
+var credentialArtifactDefinitions = []*ArtifactDefinition{
 	{"massdriver/aws-iam-role"},
 	{"massdriver/azure-service-principal"},
 	{"massdriver/gcp-service-account"},
@@ -15,7 +15,7 @@ var credentialArtifactDefinitions = []ArtifactDefinition{
 }
 
 // List supported credential types
-func ListCredentialTypes() []ArtifactDefinition {
+func ListCredentialTypes() []*ArtifactDefinition {
 	return credentialArtifactDefinitions
 }
 
