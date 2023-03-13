@@ -18,6 +18,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.6.0
 	github.com/evertras/bubble-table v0.14.8
 	github.com/rs/zerolog v1.29.0
+	golang.org/x/text v0.4.0
 )
 
 require (
@@ -64,6 +65,5 @@ require (
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/term v0.2.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

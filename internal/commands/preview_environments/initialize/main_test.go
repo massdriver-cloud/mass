@@ -44,6 +44,7 @@ func TestRun(t *testing.T) {
 	teahelper.AssertModelViewContains(t, updatedModel.View(), "aws-credentials")
 	updatedModel, _ = updatedModel.Update(pressNext)
 
+	//nolint:errcheck
 	updatedInitializeModel := (updatedModel).(initialize.Model)
 	got := updatedInitializeModel.PreviewConfig()
 

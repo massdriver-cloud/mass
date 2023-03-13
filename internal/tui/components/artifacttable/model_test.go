@@ -40,6 +40,7 @@ func TestUpdateSelectsArtifactDefinition(t *testing.T) {
 	pressEsc := tea.KeyMsg{Type: tea.KeyEsc}
 	updatedModel, _ = updatedModel.Update(pressEsc)
 
+	//nolint:errcheck
 	finalModel := (updatedModel).(artifacttable.Model)
 
 	got := finalModel.SelectedArtifacts

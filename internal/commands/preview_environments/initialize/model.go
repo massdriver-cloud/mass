@@ -129,10 +129,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.promptCursor == len(m.prompts) {
 		m.quitting = true
 		return m, tea.Quit
-	} else {
-		m.current, cmd = m.current.Update(msg)
-		return m, cmd
 	}
+
+	m.current, cmd = m.current.Update(msg)
+	return m, cmd
 }
 
 func (m Model) View() string {

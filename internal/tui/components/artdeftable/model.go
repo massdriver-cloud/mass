@@ -9,6 +9,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/evertras/bubble-table/table"
 	"github.com/massdriver-cloud/mass/internal/api"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type Model struct {
@@ -103,8 +105,9 @@ func mapRowsToArtDef(rows []table.Row) []*api.ArtifactDefinition {
 	artdefs := []*api.ArtifactDefinition{}
 
 	for _, row := range rows {
-		artdef := row.Data[columnKeyArtDefData].(*api.ArtifactDefinition)
-		artdefs = append(artdefs, artdef)
+		if artdef, ok := row.Data[columnKeyArtDefData].(*api.ArtifactDefinition); ok {
+			artdefs = append(artdefs, artdef)
+		}
 	}
 	return artdefs
 }
@@ -126,7 +129,7 @@ func humanize(artdef string) string {
 		if v, ok := abbrevMap[c]; ok {
 			word = v
 		} else {
-			word = strings.Title(c)
+			word = cases.Title(language.English).String(c)
 		}
 
 		titledComponents = append(titledComponents, word)

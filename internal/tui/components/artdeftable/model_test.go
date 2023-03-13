@@ -36,6 +36,7 @@ func TestUpdateSelectsArtifactDefinition(t *testing.T) {
 	pressSpace := tea.KeyMsg{Type: tea.KeySpace}
 	updatedModel, _ = updatedModel.Update(pressSpace)
 
+	//nolint:errcheck
 	finalModel := (updatedModel).(artdeftable.Model)
 
 	got := finalModel.SelectedArtifactDefinitions

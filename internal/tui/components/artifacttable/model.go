@@ -20,14 +20,14 @@ type Model struct {
 
 const (
 	columnKeyName         = "name"
-	columnKeyId           = "id"
+	columnKeyID           = "id"
 	columnKeyArtifactData = "artifactData"
 )
 
 func New(artifacts []*api.Artifact) Model {
 	columns := []table.Column{
 		table.NewColumn(columnKeyName, "Name", 40),
-		table.NewColumn(columnKeyId, "ID", 40),
+		table.NewColumn(columnKeyID, "ID", 40),
 	}
 
 	rows := []table.Row{}
@@ -35,7 +35,7 @@ func New(artifacts []*api.Artifact) Model {
 	for _, artifact := range artifacts {
 		row := table.NewRow(table.RowData{
 			columnKeyName:         artifact.Name,
-			columnKeyId:           artifact.ID,
+			columnKeyID:           artifact.ID,
 			columnKeyArtifactData: artifact,
 		})
 		rows = append(rows, row)
@@ -105,8 +105,10 @@ func mapRowsToArtifact(rows []table.Row) []*api.Artifact {
 	artifacts := []*api.Artifact{}
 
 	for _, row := range rows {
-		artifact := row.Data[columnKeyArtifactData].(*api.Artifact)
-		artifacts = append(artifacts, artifact)
+		if artifact, ok := row.Data[columnKeyArtifactData].(*api.Artifact); ok {
+			artifacts = append(artifacts, artifact)
+		}
 	}
+
 	return artifacts
 }
