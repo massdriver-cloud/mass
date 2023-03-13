@@ -1,6 +1,9 @@
 package initialize
 
 import (
+	"strings"
+
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/massdriver-cloud/mass/internal/api"
@@ -15,12 +18,6 @@ const (
 	artifactSelection
 )
 
-type KeyMap struct {
-	Quit key.Binding
-	Next key.Binding
-	Back key.Binding
-}
-
 type artifactPrompt struct {
 	artifactDefinitionName string
 	selection              api.Artifact
@@ -28,6 +25,7 @@ type artifactPrompt struct {
 
 type Model struct {
 	keys            KeyMap
+	help            help.Model
 	quitting        bool
 	loaded          bool
 	listCredentials func(string) ([]*api.Artifact, error)
@@ -62,19 +60,6 @@ func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m Model) View() string {
-	if !m.loaded {
-		return "loading..."
-	}
-
-	if m.quitting {
-		return ""
-	}
-
-	// TODO: return keys and display combined help + back/next (esc issue)
-	return m.current.View()
-}
-
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.loaded {
 		m.current = m.artDefTable
@@ -84,8 +69,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.help.Width = msg.Width
 	case tea.KeyMsg:
 		switch {
+		case key.Matches(msg, m.keys.Help):
+			m.help.ShowAll = !m.help.ShowAll
+
 		case key.Matches(msg, m.keys.Next):
 			switch m.mode {
 			case artifactDefinitionSelection:
@@ -116,6 +106,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.mode = artifactDefinitionSelection
 				m.current = m.artDefTable
 				m.promptCursor = -1
+
 			case artifactSelection:
 				m.promptCursor--
 				if m.promptCursor == -1 {
@@ -124,6 +115,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.promptCursor = -1
 					return m, cmd
 				}
+
 				prevPrompt := m.prompts[m.promptCursor]
 				m.current = buildArtifactTable(m, prevPrompt.artifactDefinitionName)
 			}
@@ -141,6 +133,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.current, cmd = m.current.Update(msg)
 		return m, cmd
 	}
+}
+
+func (m Model) View() string {
+	if !m.loaded {
+		return "loading..."
+	}
+
+	if m.quitting {
+		return ""
+	}
+
+	body := strings.Builder{}
+	body.WriteString(m.current.View())
+	body.WriteString("\n")
+	// TODO: combine submodel help w/ nav help
+	body.WriteString(m.help.View(m.keys))
+	return body.String()
 }
 
 func initArtifactPrompts(m Model) []artifactPrompt {

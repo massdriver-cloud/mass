@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"github.com/Khan/genqlient/graphql"
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/debuglog"
@@ -35,9 +36,14 @@ func New(client graphql.Client, orgID string, projectSlug string) (*Model, error
 			key.WithKeys("q", "esc", "ctrl+c"),
 			key.WithHelp("q", "quit"),
 		),
+		Help: key.NewBinding(
+			key.WithKeys("?"),
+			key.WithHelp("?", "toggle help"),
+		),
 	}
 
 	m := Model{
+		help:         help.New(),
 		project:      project,
 		keys:         keys,
 		promptCursor: -1,

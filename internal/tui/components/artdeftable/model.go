@@ -62,11 +62,6 @@ func New(creds []*api.ArtifactDefinition) Model {
 			key.WithKeys(tableKeyMap.RowSelectToggle.Keys()...),
 			key.WithHelp("space/enter", "select row"),
 		),
-
-		Help: key.NewBinding(
-			key.WithKeys("?"),
-			key.WithHelp("?", "toggle help"),
-		),
 	}
 
 	return Model{
@@ -86,12 +81,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.help.Width = msg.Width
-
-	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, m.keys.Help):
-			m.help.ShowAll = !m.help.ShowAll
-		}
+		m.help.ShowAll = true
 	}
 
 	m.table, cmd = m.table.Update(msg)
