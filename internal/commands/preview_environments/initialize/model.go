@@ -1,8 +1,6 @@
 package initialize
 
 import (
-	"log"
-
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/massdriver-cloud/mass/internal/api"
@@ -32,7 +30,8 @@ type Model struct {
 	keys            KeyMap
 	quitting        bool
 	loaded          bool
-	ListCredentials func(string) ([]*api.Artifact, error)
+	listCredentials func(string) ([]*api.Artifact, error)
+	project         *api.Project
 
 	// ui mode
 	mode mode
@@ -44,6 +43,19 @@ type Model struct {
 	current      tea.Model
 	prompts      []artifactPrompt
 	promptCursor int
+}
+
+func (m Model) PreviewConfig() *api.PreviewConfig {
+	credentials := map[string]string{}
+
+	for _, p := range m.prompts {
+		credentials[p.artifactDefinitionName] = p.selection.ID
+	}
+
+	return &api.PreviewConfig{
+		PackageParams: m.project.DefaultParams,
+		Credentials:   credentials,
+	}
 }
 
 func New(artDefTable tea.Model) Model {
@@ -70,13 +82,6 @@ func New(artDefTable tea.Model) Model {
 
 func (m Model) Init() tea.Cmd {
 	return nil
-}
-
-// TODO: get this out to file instead of printing..
-func (m Model) PrintSelections() {
-	for _, p := range m.prompts {
-		log.Printf("Artifact %v\n", p.selection)
-	}
 }
 
 func (m Model) View() string {
@@ -175,7 +180,7 @@ func initArtifactPrompts(m Model) []artifactPrompt {
 }
 
 func buildArtifactTable(m Model, artdefName string) artifacttable.Model {
-	creds, _ := m.ListCredentials(artdefName)
+	creds, _ := m.listCredentials(artdefName)
 	table := artifacttable.New(creds)
 	return table
 }

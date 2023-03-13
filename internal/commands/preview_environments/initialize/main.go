@@ -8,6 +8,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/tui/components/artdeftable"
 )
 
+// TODO: dont call it run since it returns a model...
 func Run(client graphql.Client, orgID string, projectSlug string) (*Model, error) {
 	cmdLog := debuglog.Log().With().Str("orgID", orgID).Str("projectSlug", projectSlug).Logger()
 	cmdLog.Info().Msg("Initializing preview environment.")
@@ -21,8 +22,8 @@ func Run(client graphql.Client, orgID string, projectSlug string) (*Model, error
 
 	artDefTable := artdeftable.New(api.ListCredentialTypes())
 	m := New(artDefTable)
-
-	m.ListCredentials = func(artDefType string) ([]*api.Artifact, error) {
+	m.project = project
+	m.listCredentials = func(artDefType string) ([]*api.Artifact, error) {
 		return api.ListCredentials(client, orgID, artDefType)
 	}
 

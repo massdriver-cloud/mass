@@ -59,37 +59,25 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 	c := config.Get()
 	client := api.NewClient(c.URL, c.APIKey)
 
-	// cfg, err := commands.InitializePreviewEnvironment(client, c.OrgID, projectSlug, os.Stdin, os.Stdout)
-
-	// if err != nil {
-	// 	return err
-	// }
-
-	// return files.Write(previewInitParamsPath, cfg)
-
-	// TODO: can we start the program here and return a model instead?!
-
-	// TODO: dont call it run since it returns a model...
 	m, _ := peinit.Run(client, c.OrgID, projectSlug)
-
-	// TODO: can we return the m and let cobra start the command, we would need no
-	// stdin / stdout mocks...
-	// should all params be fields on the model?
 	p := tea.NewProgram(m)
 	result, err := p.Run()
-	_ = err
+
+	if err != nil {
+		return err
+	}
 
 	updatedModel, _ := (result).(peinit.Model)
-	updatedModel.PrintSelections()
+	cfg := updatedModel.PreviewConfig()
 
-	return nil
+	return files.Write(previewInitParamsPath, cfg)
 }
 
 func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 	projectSlug := args[0]
 	c := config.Get()
 	client := api.NewClient(c.URL, c.APIKey)
-	previewCfg := commands.PreviewConfig{}
+	previewCfg := api.PreviewConfig{}
 	ciContext := map[string]interface{}{}
 
 	if err := files.Read(previewInitParamsPath, &previewCfg); err != nil {

@@ -1,15 +1,14 @@
-package commands_test
+package api_test
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/commands"
 )
 
 func TestPreviewConfigGetCredentials(t *testing.T) {
-	cfg := commands.PreviewConfig{
+	cfg := api.PreviewConfig{
 		Credentials: map[string]string{
 			"massdriver/aws-iam-role": "foo",
 		},

@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
@@ -26,7 +27,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 
 	client := gqlmock.NewClientWithJSONResponseArray(responses)
 
-	previewCfg := commands.PreviewConfig{
+	previewCfg := api.PreviewConfig{
 		Credentials:   map[string]string{},
 		PackageParams: map[string]interface{}{},
 	}
@@ -92,7 +93,7 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 
 	client := gqlmock.NewClient(mux)
 
-	previewCfg := commands.PreviewConfig{
+	previewCfg := api.PreviewConfig{
 		Credentials: map[string]string{},
 		PackageParams: map[string]interface{}{
 			"myApp": map[string]interface{}{

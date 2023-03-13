@@ -1,9 +1,11 @@
 package initialize_test
 
 import (
+	"reflect"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands/preview_environments/initialize"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/mass/internal/tui/teahelper"
@@ -43,25 +45,20 @@ func TestRun(t *testing.T) {
 	updatedModel, _ = updatedModel.Update(pressNext)
 
 	updatedInitializeModel := (updatedModel).(initialize.Model)
-	updatedInitializeModel.PrintSelections()
+	got := updatedInitializeModel.PreviewConfig()
 
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	want := &api.PreviewConfig{
+		PackageParams: map[string]interface{}{
+			"database": map[string]interface{}{
+				"username": "root",
+			},
+		},
+		Credentials: map[string]string{
+			"massdriver/aws-iam-role": "uuid-here",
+		},
+	}
 
-	// got := previewCfg
-	// want := &commands.PreviewConfig{
-	// 	PackageParams: map[string]interface{}{
-	// 		"database": map[string]interface{}{
-	// 			"username": "root",
-	// 		},
-	// 	},
-	// 	Credentials: map[string]string{
-	// 		"massdriver/aws-iam-role": "uuid-here",
-	// 	},
-	// }
-
-	// if !reflect.DeepEqual(got, want) {
-	// 	t.Errorf("got %v, wanted %v", got, want)
-	// }
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, wanted %v", got, want)
+	}
 }
