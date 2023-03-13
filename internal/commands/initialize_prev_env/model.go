@@ -21,13 +21,12 @@ type KeyMap struct {
 }
 
 type Model struct {
-	screens                   []tea.Model
-	currentScreen             int
-	keys                      KeyMap
-	quitting                  bool
-	loaded                    bool
-	ListCredentials           func(string) ([]*api.Artifact, error)
-	SelectedCredentialsByType map[string]string
+	screens         []tea.Model
+	currentScreen   int
+	keys            KeyMap
+	quitting        bool
+	loaded          bool
+	ListCredentials func(string) ([]*api.Artifact, error)
 }
 
 func New() *Model {

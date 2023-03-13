@@ -29,7 +29,6 @@ func Run(client graphql.Client, orgID string, projectSlug string, stdin io.Reade
 		artdeftable.New(api.ListCredentialTypes()),
 	}
 
-	// this should make testing easy...
 	m.ListCredentials = func(artDefType string) ([]*api.Artifact, error) {
 		return api.ListCredentials(client, orgID, artDefType)
 	}
