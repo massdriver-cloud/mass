@@ -3,8 +3,11 @@ package cmd
 import (
 	"fmt"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
+	peinit "github.com/massdriver-cloud/mass/internal/commands/preview_environments/initialize"
 	"github.com/massdriver-cloud/mass/internal/config"
 	"github.com/massdriver-cloud/mass/internal/files"
 	"github.com/spf13/cobra"
@@ -56,14 +59,16 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 	c := config.Get()
 	client := api.NewClient(c.URL, c.APIKey)
 
-	// TODO: send stdin
-	// commands.WithStdin(os.Stdin)
-
-	cfg, err := commands.InitializePreviewEnvironment(client, c.OrgID, projectSlug)
+	initModel, _ := peinit.New(client, c.OrgID, projectSlug)
+	p := tea.NewProgram(initModel)
+	result, err := p.Run()
 
 	if err != nil {
 		return err
 	}
+
+	updatedModel, _ := (result).(peinit.Model)
+	cfg := updatedModel.PreviewConfig()
 
 	return files.Write(previewInitParamsPath, cfg)
 }
@@ -72,7 +77,7 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 	projectSlug := args[0]
 	c := config.Get()
 	client := api.NewClient(c.URL, c.APIKey)
-	previewCfg := commands.PreviewConfig{}
+	previewCfg := api.PreviewConfig{}
 	ciContext := map[string]interface{}{}
 
 	if err := files.Read(previewInitParamsPath, &previewCfg); err != nil {
@@ -89,8 +94,10 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// TODO: bubbletea v zerolog
-	fmt.Printf("Deploying @ %s", env.URL)
+	var url = lipgloss.NewStyle().SetString(env.URL).Underline(true).Foreground(lipgloss.Color("#7D56F4"))
+	msg := fmt.Sprintf("Deploying preview environment: %s", url)
+
+	fmt.Println(msg)
 
 	return nil
 }

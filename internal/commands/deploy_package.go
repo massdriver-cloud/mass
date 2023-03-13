@@ -35,7 +35,9 @@ func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeo
 
 	timeout -= DeploymentStatusSleep
 
-	// TODO: replace w/ bubbletea (human) & zerolog (json)
+	// TODO: bubbletea status
+	// API responses can updated UI...
+	// 	https://github.com/Evertras/bubble-table/blob/main/examples/updates/main.go#L104
 	fmt.Printf("Checking deployment status for %s: %s\n", id, deployment.Status)
 
 	switch deployment.Status {

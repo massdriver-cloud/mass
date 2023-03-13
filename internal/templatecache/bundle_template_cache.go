@@ -131,8 +131,6 @@ func getOrCreateTemplateDirectory(fs afero.Fs) (string, error) {
 		return templatesPath, nil
 	}
 
-	//TODO: BubbleTea vs NIZ
-	fmt.Printf("Reading templates for local development path: %s", localDevTemplatesPath)
 	return localDevTemplatesPath, nil
 }
 

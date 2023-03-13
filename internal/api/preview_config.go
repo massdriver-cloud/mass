@@ -1,16 +1,14 @@
-package commands
-
-import "github.com/massdriver-cloud/mass/internal/api"
+package api
 
 type PreviewConfig struct {
 	Credentials   map[string]string      `json:"credentials"`
 	PackageParams map[string]interface{} `json:"packageParams"`
 }
 
-func (p *PreviewConfig) GetCredentials() []api.Credential {
-	credentials := []api.Credential{}
+func (p *PreviewConfig) GetCredentials() []Credential {
+	credentials := []Credential{}
 	for k, v := range p.Credentials {
-		cred := api.Credential{
+		cred := Credential{
 			ArtifactDefinitionType: k,
 			ArtifactId:             v,
 		}
