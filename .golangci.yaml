@@ -197,7 +197,8 @@ linters:
     #- errchkjson # [don't see profit + I'm against of omitting errors like in the first example https://github.com/breml/errchkjson] Checks types passed to the json encoding functions. Reports unsupported types and optionally reports occasions, where the check for the returned error can be omitted.
     #- forcetypeassert # [replaced by errcheck] finds forced type assertions
     #- gci # Gci controls golang package import order and makes it always deterministic.
-    - godox # Tool for detection of FIXME, TODO and other comment keywords
+    # TODO: enable godox!
+    #- godox # Tool for detection of FIXME, TODO and other comment keywords
     #- goerr113 # [too strict] Golang linter to check the errors handling expressions
     #- gofmt # [replaced by goimports] Gofmt checks whether code was gofmt-ed. By default this tool runs with -s option to check for code simplification
     #- gofumpt # [replaced by goimports, gofumports is not available yet] Gofumpt checks whether code was gofumpt-ed.

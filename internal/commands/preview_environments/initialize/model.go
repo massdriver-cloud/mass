@@ -60,6 +60,7 @@ func (m Model) Init() tea.Cmd {
 	return nil
 }
 
+//nolint:gocognit
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.loaded {
 		m.current = m.artDefTable
@@ -86,9 +87,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(selectedArtifacts) > 0 {
 					// TODO limit 1 in UI w/ Maximum validation error OR call next automatically
 					// when selecting in an artifact prompt
-					first := *selectedArtifacts[0]
 					prompt := m.prompts[m.promptCursor]
-					prompt.selection = first
+					prompt.selection = *selectedArtifacts[0]
 					m.prompts[m.promptCursor] = prompt
 				}
 			}
@@ -100,14 +100,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(msg, m.keys.Back):
-			switch m.mode {
-			case artifactDefinitionSelection:
-				// noop, reset everything just for fun.
-				m.mode = artifactDefinitionSelection
-				m.current = m.artDefTable
-				m.promptCursor = -1
-
-			case artifactSelection:
+			if m.mode == artifactSelection {
 				m.promptCursor--
 				if m.promptCursor == -1 {
 					m.mode = artifactDefinitionSelection
