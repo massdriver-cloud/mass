@@ -117,5 +117,6 @@ func buildscreens(m Model) []tea.Model {
 
 func buildArtifactTable(m Model, artdefName string) artifacttable.Model {
 	creds, _ := m.ListCredentials(artdefName)
-	return artifacttable.New(creds)
+	table := artifacttable.New(creds)
+	return table
 }

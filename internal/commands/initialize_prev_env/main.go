@@ -43,9 +43,9 @@ func Run(client graphql.Client, orgID string, projectSlug string, stdin io.Reade
 	updatedModel, _ := (result).(Model)
 
 	// TODO Get the data out ...
-	// TODO: Max selected on artifact screen should be one ... :(
 	for _, screen := range updatedModel.screens {
 		if v, ok := screen.(artifacttable.Model); ok {
+			// TODO limit 1
 			for _, a := range v.SelectedArtifacts {
 				fmt.Printf("Artifact: %v\n", a.Name)
 			}
