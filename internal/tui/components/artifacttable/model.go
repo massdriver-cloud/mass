@@ -45,7 +45,7 @@ func New(artifacts []*api.Artifact) *Model {
 		New(columns).
 		WithRows(rows).
 		SelectableRows(true).
-		Focused(true) // TODO: focused shouldn't be hard coded
+		Focused(true)
 
 	tableKeyMap := t.KeyMap()
 
@@ -87,8 +87,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		// If we set a width on the help menu it can gracefully truncate
-		// its view as needed.
 		m.help.Width = msg.Width
 
 	case tea.KeyMsg:
@@ -98,10 +96,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// Note: msg can be the result of an I/O operation, not just keystrokes.
-	// case Artifact:
-	// case errMsg: // custom error message type
-
 	m.table, cmd = m.table.Update(msg)
 	m.SelectedArtifacts = mapRowsToArtifact(m.table.SelectedRows())
 	return m, cmd
@@ -109,7 +103,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	body := strings.Builder{}
-	body.WriteString("Select credential types:")
+	body.WriteString("Select credentials:")
 	body.WriteString("\n")
 	body.WriteString(m.table.View())
 	body.WriteString("\n")
