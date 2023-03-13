@@ -67,10 +67,6 @@ func New(creds []*api.ArtifactDefinition) *Model {
 			key.WithKeys("?"),
 			key.WithHelp("?", "toggle help"),
 		),
-		Quit: key.NewBinding(
-			key.WithKeys("q", "esc", "ctrl+c"),
-			key.WithHelp("q", "quit"),
-		),
 	}
 
 	return &Model{
