@@ -24,7 +24,7 @@ const (
 	columnKeyArtDefData = "artDefData"
 )
 
-func New(creds []*api.ArtifactDefinition) *Model {
+func New(creds []*api.ArtifactDefinition) Model {
 	columns := []table.Column{
 		table.NewColumn(columnKeyLabel, "Name", 40),
 	}
@@ -69,7 +69,7 @@ func New(creds []*api.ArtifactDefinition) *Model {
 		),
 	}
 
-	return &Model{
+	return Model{
 		table:               t,
 		help:                help.New(),
 		artifactDefinitions: creds,

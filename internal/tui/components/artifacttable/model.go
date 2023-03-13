@@ -24,7 +24,7 @@ const (
 	columnKeyArtifactData = "artifactData"
 )
 
-func New(artifacts []*api.Artifact) *Model {
+func New(artifacts []*api.Artifact) Model {
 	columns := []table.Column{
 		table.NewColumn(columnKeyName, "Name", 40),
 		table.NewColumn(columnKeyId, "ID", 40),
@@ -71,7 +71,7 @@ func New(artifacts []*api.Artifact) *Model {
 		),
 	}
 
-	return &Model{
+	return Model{
 		table:     t,
 		help:      help.New(),
 		artifacts: artifacts,
