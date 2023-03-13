@@ -29,7 +29,7 @@ type Model struct {
 	ListCredentials func(string) ([]*api.Artifact, error)
 }
 
-func New() *Model {
+func New() Model {
 	keys := KeyMap{
 		Next: key.NewBinding(
 			key.WithKeys("n"),
@@ -44,7 +44,7 @@ func New() *Model {
 			key.WithHelp("q", "quit"),
 		),
 	}
-	return &Model{
+	return Model{
 		keys: keys,
 	}
 }
