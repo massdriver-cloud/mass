@@ -2,15 +2,14 @@
 package initializeprevenv
 
 import (
-	"fmt"
 	"io"
+	"log"
 
 	"github.com/Khan/genqlient/graphql"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/debuglog"
 	"github.com/massdriver-cloud/mass/internal/tui/components/artdeftable"
-	"github.com/massdriver-cloud/mass/internal/tui/components/artifacttable"
 )
 
 func Run(client graphql.Client, orgID string, projectSlug string, stdin io.Reader, stdout io.Writer) (*tea.Program, error) {
@@ -24,10 +23,8 @@ func Run(client graphql.Client, orgID string, projectSlug string, stdin io.Reade
 
 	cmdLog.Info().Str("id", project.ID).Msg("Found project.")
 
-	m := New()
-	m.screens = []tea.Model{
-		artdeftable.New(api.ListCredentialTypes()),
-	}
+	artDefTable := artdeftable.New(api.ListCredentialTypes())
+	m := New(artDefTable)
 
 	m.ListCredentials = func(artDefType string) ([]*api.Artifact, error) {
 		return api.ListCredentials(client, orgID, artDefType)
@@ -42,14 +39,9 @@ func Run(client graphql.Client, orgID string, projectSlug string, stdin io.Reade
 
 	updatedModel, _ := (result).(Model)
 
-	// TODO Get the data out ...
-	for _, screen := range updatedModel.screens {
-		if v, ok := screen.(artifacttable.Model); ok {
-			// TODO limit 1
-			for _, a := range v.SelectedArtifacts {
-				fmt.Printf("Artifact: %v\n", a.Name)
-			}
-		}
+	// TODO Get the data out to file...
+	for _, p := range updatedModel.prompts {
+		log.Printf("Artifact %v\n", p.selection)
 	}
 
 	return p, nil

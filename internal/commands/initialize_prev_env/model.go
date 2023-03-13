@@ -1,8 +1,6 @@
 package initializeprevenv
 
 import (
-	"fmt"
-
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/massdriver-cloud/mass/internal/api"
@@ -10,8 +8,11 @@ import (
 	"github.com/massdriver-cloud/mass/internal/tui/components/artifacttable"
 )
 
+type mode int
+
 const (
-	artifactDefinitionTable int = 0
+	artifactDefinitionSelection mode = iota
+	artifactSelection
 )
 
 type KeyMap struct {
@@ -20,16 +21,30 @@ type KeyMap struct {
 	Back key.Binding
 }
 
+type artifactPrompt struct {
+	artifactDefinitionName string
+	selection              api.Artifact
+}
+
 type Model struct {
-	screens         []tea.Model
-	currentScreen   int
 	keys            KeyMap
 	quitting        bool
 	loaded          bool
 	ListCredentials func(string) ([]*api.Artifact, error)
+
+	// ui mode
+	mode mode
+
+	// initial artdef selector
+	artDefTable tea.Model
+
+	// current model
+	current      tea.Model
+	prompts      []artifactPrompt
+	promptCursor int
 }
 
-func New() Model {
+func New(artDefTable tea.Model) Model {
 	keys := KeyMap{
 		Next: key.NewBinding(
 			key.WithKeys("n"),
@@ -45,7 +60,9 @@ func New() Model {
 		),
 	}
 	return Model{
-		keys: keys,
+		keys:         keys,
+		promptCursor: -1,
+		artDefTable:  artDefTable,
 	}
 }
 
@@ -62,57 +79,90 @@ func (m Model) View() string {
 		return ""
 	}
 
-	view := m.screens[m.currentScreen].View()
 	// TODO: return keys and display combined help + back/next (esc issue)
-	return fmt.Sprintf("%s\n\n", view)
+	return m.current.View()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		if !m.loaded {
-			m.currentScreen = artifactDefinitionTable
+			m.current = m.artDefTable
+			m.mode = artifactDefinitionSelection
 			m.loaded = true
 		}
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keys.Next):
-			if m.currentScreen == artifactDefinitionTable {
-				m.screens = buildscreens(m)
+			switch m.mode {
+			case artifactDefinitionSelection:
+				m.prompts = initArtifactPrompts(m)
+				m.mode = artifactSelection
+			case artifactSelection:
+				selectedArtifacts := m.current.(artifacttable.Model).SelectedArtifacts
+				if len(selectedArtifacts) > 0 {
+					// TODO limit 1 in UI w/ Maximum validation error OR call next automatically
+					// when selecting in an artifact prompt
+					first := *selectedArtifacts[0]
+					prompt := m.prompts[m.promptCursor]
+					prompt.selection = first
+					m.prompts[m.promptCursor] = prompt
+				}
 			}
 
-			m.currentScreen++
-		case key.Matches(msg, m.keys.Back):
-			if m.currentScreen > 0 {
-				m.currentScreen--
+			m.promptCursor++
+			if m.promptCursor < len(m.prompts) {
+				nextPrompt := m.prompts[m.promptCursor]
+				m.current = buildArtifactTable(m, nextPrompt.artifactDefinitionName)
 			}
+
+		case key.Matches(msg, m.keys.Back):
+			switch m.mode {
+			case artifactDefinitionSelection:
+				// noop, reset everything just for fun.
+				m.mode = artifactDefinitionSelection
+				m.current = m.artDefTable
+				m.promptCursor = -1
+			case artifactSelection:
+				m.promptCursor--
+				if m.promptCursor == -1 {
+					m.mode = artifactDefinitionSelection
+					m.current = m.artDefTable
+					m.promptCursor = -1
+					return m, cmd
+				}
+				prevPrompt := m.prompts[m.promptCursor]
+				m.current = buildArtifactTable(m, prevPrompt.artifactDefinitionName)
+			}
+
 		case key.Matches(msg, m.keys.Quit):
 			m.quitting = true
 			return m, tea.Quit
 		}
 	}
 
-	var cmd tea.Cmd
-
-	if m.currentScreen == len(m.screens) {
+	if m.promptCursor == len(m.prompts) {
 		m.quitting = true
 		return m, tea.Quit
 	} else {
-		m.screens[m.currentScreen], cmd = m.screens[m.currentScreen].Update(msg)
+		m.current, cmd = m.current.Update(msg)
 		return m, cmd
 	}
 }
 
-func buildscreens(m Model) []tea.Model {
-	screens := []tea.Model{m.screens[0]}
+func initArtifactPrompts(m Model) []artifactPrompt {
+	prompts := []artifactPrompt{}
 
-	if v, ok := m.screens[artifactDefinitionTable].(artdeftable.Model); ok {
+	if v, ok := m.current.(artdeftable.Model); ok {
 		for _, artdef := range v.SelectedArtifactDefinitions {
-			screens = append(screens, buildArtifactTable(m, artdef.Name))
+			prompts = append(prompts, artifactPrompt{
+				artifactDefinitionName: artdef.Name,
+			})
 		}
 	}
 
-	return screens
+	return prompts
 }
 
 func buildArtifactTable(m Model, artdefName string) artifacttable.Model {
