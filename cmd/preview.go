@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
-	initializeprevenv "github.com/massdriver-cloud/mass/internal/commands/initialize_prev_env"
+	peinit "github.com/massdriver-cloud/mass/internal/commands/preview_environments/initialize"
 	"github.com/massdriver-cloud/mass/internal/config"
 	"github.com/massdriver-cloud/mass/internal/files"
 	"github.com/spf13/cobra"
@@ -69,7 +69,18 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 
 	// TODO: can we start the program here and return a model instead?!
 
-	initializeprevenv.Run(client, c.OrgID, projectSlug, os.Stdin, os.Stdout)
+	// TODO: dont call it run since it returns a model...
+	m, _ := peinit.Run(client, c.OrgID, projectSlug)
+
+	// TODO: can we return the m and let cobra start the command, we would need no
+	// stdin / stdout mocks...
+	// should all params be fields on the model?
+	p := tea.NewProgram(m)
+	result, err := p.Run()
+	_ = err
+
+	updatedModel, _ := (result).(peinit.Model)
+	updatedModel.PrintSelections()
 
 	return nil
 }

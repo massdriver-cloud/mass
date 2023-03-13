@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// TeaKeyToByteArr converts tea KeyTypes (special characters) to byte arrays
 func TeaKeyToByteArr(key tea.KeyType) []byte {
 	return []byte{'\x1b', byte(key)}
 }
