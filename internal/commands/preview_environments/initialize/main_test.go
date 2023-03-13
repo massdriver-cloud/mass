@@ -32,7 +32,7 @@ func TestRun(t *testing.T) {
 
 	client := gqlmock.NewClientWithJSONResponseArray(responses)
 
-	model, _ := initialize.Run(client, "faux-org-id", projectSlug)
+	model, _ := initialize.New(client, "faux-org-id", projectSlug)
 
 	selectRow := tea.KeyMsg{Type: tea.KeySpace}
 	pressNext := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}}

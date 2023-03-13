@@ -58,28 +58,6 @@ func (m Model) PreviewConfig() *api.PreviewConfig {
 	}
 }
 
-func New(artDefTable tea.Model) Model {
-	keys := KeyMap{
-		Next: key.NewBinding(
-			key.WithKeys("n"),
-			key.WithHelp("n", "next"),
-		),
-		Back: key.NewBinding(
-			key.WithKeys("b"),
-			key.WithHelp("b", "back"),
-		),
-		Quit: key.NewBinding(
-			key.WithKeys("q", "esc", "ctrl+c"),
-			key.WithHelp("q", "quit"),
-		),
-	}
-	return Model{
-		keys:         keys,
-		promptCursor: -1,
-		artDefTable:  artDefTable,
-	}
-}
-
 func (m Model) Init() tea.Cmd {
 	return nil
 }
