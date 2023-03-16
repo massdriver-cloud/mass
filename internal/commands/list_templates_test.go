@@ -29,7 +29,7 @@ func TestListTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	files := []mockfilesystem.FileToWrite{
+	files := []mockfilesystem.VirtualFile{
 		{Path: fmt.Sprintf("%s/massdriver-cloud/application-templates/kubernetes-cronjob/massdriver.yaml", rootTemplateDir)},
 		{Path: fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/terraform/massdriver.yaml", rootTemplateDir)},
 		{Path: fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/palumi/massdriver.yaml", rootTemplateDir)},
