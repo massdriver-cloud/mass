@@ -256,6 +256,18 @@ func (v *__configurePackageInput) __premarshalJSON() (*__premarshal__configurePa
 	return &retval, nil
 }
 
+// __decommissionPreviewEnvironmentInput is used internally by genqlient
+type __decommissionPreviewEnvironmentInput struct {
+	OrgId    string `json:"orgId"`
+	TargetId string `json:"targetId"`
+}
+
+// GetOrgId returns __decommissionPreviewEnvironmentInput.OrgId, and is useful for accessing the field via an interface.
+func (v *__decommissionPreviewEnvironmentInput) GetOrgId() string { return v.OrgId }
+
+// GetTargetId returns __decommissionPreviewEnvironmentInput.TargetId, and is useful for accessing the field via an interface.
+func (v *__decommissionPreviewEnvironmentInput) GetTargetId() string { return v.TargetId }
+
 // __deployPackageInput is used internally by genqlient
 type __deployPackageInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -449,6 +461,79 @@ type configurePackageResponse struct {
 // GetConfigurePackage returns configurePackageResponse.ConfigurePackage, and is useful for accessing the field via an interface.
 func (v *configurePackageResponse) GetConfigurePackage() configurePackageConfigurePackagePackagePayload {
 	return v.ConfigurePackage
+}
+
+// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload includes the requested fields of the GraphQL type TargetPayload.
+type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetResult returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload.Result, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload) GetResult() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget {
+	return v.Result
+}
+
+// GetSuccessful returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload.Successful, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload.Messages, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget includes the requested fields of the GraphQL type Target.
+type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget struct {
+	Id      string                                                                                       `json:"id"`
+	Slug    string                                                                                       `json:"slug"`
+	Project decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject `json:"project"`
+}
+
+// GetId returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget.Id, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget) GetId() string {
+	return v.Id
+}
+
+// GetSlug returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget.Slug, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget) GetSlug() string {
+	return v.Slug
+}
+
+// GetProject returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget.Project, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget) GetProject() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject {
+	return v.Project
+}
+
+// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject includes the requested fields of the GraphQL type Project.
+type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject struct {
+	Id   string `json:"id"`
+	Slug string `json:"slug"`
+}
+
+// GetId returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject.Id, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject) GetId() string {
+	return v.Id
+}
+
+// GetSlug returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject.Slug, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject) GetSlug() string {
+	return v.Slug
+}
+
+// decommissionPreviewEnvironmentResponse is returned by decommissionPreviewEnvironment on success.
+type decommissionPreviewEnvironmentResponse struct {
+	DecommissionPreviewEnvironment decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload `json:"decommissionPreviewEnvironment"`
+}
+
+// GetDecommissionPreviewEnvironment returns decommissionPreviewEnvironmentResponse.DecommissionPreviewEnvironment, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentResponse) GetDecommissionPreviewEnvironment() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload {
+	return v.DecommissionPreviewEnvironment
 }
 
 // deployPackageDeployPackageDeploymentPayload includes the requested fields of the GraphQL type DeploymentPayload.
@@ -849,6 +934,51 @@ mutation configurePackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID
 	var err error
 
 	var data configurePackageResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func decommissionPreviewEnvironment(
+	ctx context.Context,
+	client graphql.Client,
+	orgId string,
+	targetId string,
+) (*decommissionPreviewEnvironmentResponse, error) {
+	req := &graphql.Request{
+		OpName: "decommissionPreviewEnvironment",
+		Query: `
+mutation decommissionPreviewEnvironment ($orgId: ID!, $targetId: ID!) {
+	decommissionPreviewEnvironment(organizationId: $orgId, targetId: $targetId) {
+		result {
+			id
+			slug
+			project {
+				id
+				slug
+			}
+		}
+		successful
+		messages {
+			message
+		}
+	}
+}
+`,
+		Variables: &__decommissionPreviewEnvironmentInput{
+			OrgId:    orgId,
+			TargetId: targetId,
+		},
+	}
+	var err error
+
+	var data decommissionPreviewEnvironmentResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

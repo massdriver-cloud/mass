@@ -1,4 +1,4 @@
-package commands_test
+package deploy_test
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/commands"
+	"github.com/massdriver-cloud/mass/internal/commands/preview_environment/deploy"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
@@ -34,7 +34,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 
 	ciContext := map[string]interface{}{}
 
-	env, err := commands.DeployPreviewEnvironment(client, "faux-org-id", projectSlug, &previewCfg, &ciContext)
+	env, err := deploy.Run(client, "faux-org-id", projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		t.Fatal(err)
@@ -105,7 +105,7 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 	ciContext := map[string]interface{}{}
 
 	t.Setenv("PR_NUMBER", "9000")
-	_, err := commands.DeployPreviewEnvironment(client, "faux-org-id", projectSlug, &previewCfg, &ciContext)
+	_, err := deploy.Run(client, "faux-org-id", projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		t.Fatal(err)

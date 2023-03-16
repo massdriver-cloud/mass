@@ -13,6 +13,18 @@ type TargetConnection {
   updatedAt: DateTime
 }
 
+"A cloud provider region"
+type CloudRegion {
+  "Region's human-friendly name, e.g.: US West 2"
+  name: String!
+
+  "Region's code, e.g.: us-west-2"
+  code: String!
+
+  "Restrictions on use of this region."
+  restrictions: String
+}
+
 type DnsZone {
   id: ID
   name: String
@@ -411,6 +423,11 @@ input ContainerRepositoriesInput {
   location: String!
 }
 
+"Supported cloud information"
+type Cloud {
+  regions: [CloudRegion]
+}
+
 type ArtifactPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -510,6 +527,9 @@ input GraphPositionParams {
 input ArtifactDefinitionFilters {
   "The service for which to get compatible artifact definitions"
   service: String
+
+  "Whether to get credential or non-credential artifact definitions"
+  isCredential: Boolean
 }
 
 type BillingSubscription {
@@ -574,6 +594,14 @@ type RootQueryType {
     "Filter bundle search results"
     input: BundleSearchFilters
   ): [Bundle]
+
+  cloud(
+    "Clouds supported by Massdriver"
+    organizationId: ID!
+
+    "Cloud identifier (aws, gcp, or azure)"
+    id: String!
+  ): Cloud!
 
   containerRepository(organizationId: ID!, artifactId: ID!, input: ContainerRepositoryInput!): ContainerRepositoryAuth
 
@@ -669,6 +697,8 @@ type RootQueryType {
   groups(organizationId: ID!): [Group]
 
   subscriptionPlans: [SubscriptionPlan]
+
+  applicationTemplates(organizationId: ID!): [ApplicationTemplate]
 }
 
 type PackageAlertState {
@@ -1357,6 +1387,9 @@ type Artifact {
 
   type: String!
 
+  "The bundle's artifact field (output field) that produced this artifact."
+  field: String
+
   data: JSON
 
   specs: JSON
@@ -1671,6 +1704,12 @@ type ContainerRepository {
 type ArchitectureDeletionLifecycle {
   result: Boolean!
   errors: [ArchitectureDeletionLifecycleError]
+}
+
+type ApplicationTemplate {
+  name: String!
+  displayName: String!
+  imageUrl: String
 }
 
 input SetSecretValueInput {
