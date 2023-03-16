@@ -136,7 +136,7 @@ func setValuesIfNotExists(paramsSchemaProperties, existingParams map[string]inte
 	return paramsWithExampleOrExistingValue, nil
 }
 
-var placeholderValue = "TODO: REPLACE ME"
+var placeholderValue = "REPLACE ME"
 
 func fillDevParam(name string, prop, existingVal, exampleVal interface{}) (interface{}, error) {
 	// the base case is we fall back to a placeholder to indicate to the developer they should replace this value.

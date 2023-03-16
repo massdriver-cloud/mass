@@ -18,7 +18,7 @@ func (art *Definition) Publish(c *restclient.MassdriverClient) error {
 	}
 
 	req := restclient.NewRequest("PUT", "artifact-definitions", bytes.NewBuffer(bodyBytes))
-	ctx := context.TODO()
+	ctx := context.Background()
 	resp, err := c.Do(&ctx, req)
 	if err != nil {
 		return err

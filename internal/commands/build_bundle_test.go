@@ -191,14 +191,14 @@ var expectedTFContent = map[string][]byte{
             "alarm_webhook_url": "https://placeholder.com"
         }
     },
-    "resource_name": "TODO: REPLACE ME",
+    "resource_name": "REPLACE ME",
     "resource_type": "Network"
 }`),
 	"_connections.auto.tfvars.json": []byte(`{
     "draft_node_foo": {
         "foo": {
             "infrastructure": {
-                "arn": "TODO: REPLACE ME"
+                "arn": "REPLACE ME"
             }
         }
     }

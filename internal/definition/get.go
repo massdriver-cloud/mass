@@ -18,7 +18,7 @@ func GetDefinition(c *restclient.MassdriverClient, definitionType string) (map[s
 
 	req := restclient.NewRequest("GET", endpoint, nil)
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	resp, err := c.Do(&ctx, req)
 
 	if err != nil {

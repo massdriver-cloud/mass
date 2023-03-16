@@ -113,7 +113,7 @@ func dereferenceMassdriverRef(hydratedSchema map[string]interface{}, schema map[
 }
 
 func dereferenceHTTPRef(hydratedSchema map[string]interface{}, schema map[string]interface{}, schemaRefValue string, opts DereferenceOptions) (map[string]interface{}, error) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	var referencedSchema map[string]interface{}
 	request, err := http.NewRequestWithContext(ctx, "GET", schemaRefValue, nil)
 	if err != nil {
