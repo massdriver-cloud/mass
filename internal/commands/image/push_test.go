@@ -12,7 +12,7 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/docker/docker/api/types"
 	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/image"
+	"github.com/massdriver-cloud/mass/internal/commands/image"
 )
 
 type nopCloser struct {
@@ -48,7 +48,7 @@ func (mockGQLClient) MakeRequest(ctx context.Context, req *graphql.Request, resp
 func (mockGQLClient) GetContainerRepository(client graphql.Client, artifactID string, orgID string, imageName string, location string) (*api.ContainerRepository, error) {
 	return &api.ContainerRepository{
 		Token:         "bogustoken",
-		RepositoryUri: "https://0000000.ecr.dkr.amazonaws.com",
+		RepositoryURI: "https://0000000.ecr.dkr.amazonaws.com",
 	}, nil
 }
 
@@ -59,15 +59,15 @@ func TestPushImage(t *testing.T) {
 		log.SetOutput((os.Stderr))
 	}()
 
-	mockGQLClient := mockGQLClient{}
+	mockGQLClient := &mockGQLClient{}
 	imageClient := image.Client{
 		Cli: &mockCli{},
 	}
 	input := image.PushImageInput{
 		ImageName:          "test/docker",
 		Location:           "us-west-2",
-		ArtifactId:         "00000-000-000-00000000",
-		OrganizationId:     "00000-000-000-00000000",
+		ArtifactID:         "00000-000-000-00000000",
+		OrganizationID:     "00000-000-000-00000000",
 		Tag:                "latest",
 		DockerBuildContext: ".",
 		Dockerfile:         "DockerFile",

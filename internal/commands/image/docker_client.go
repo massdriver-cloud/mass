@@ -16,13 +16,13 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api"
 )
 
-type ImageClient interface {
+type DockerClient interface {
 	ImageBuild(ctx context.Context, buildContext io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error)
 	ImagePush(ctx context.Context, image string, options types.ImagePushOptions) (io.ReadCloser, error)
 }
 
 type Client struct {
-	Cli ImageClient
+	Cli DockerClient
 }
 
 func NewImageClient() (Client, error) {
@@ -44,7 +44,7 @@ func (c *Client) BuildImage(input PushImageInput, containerRepository *api.Conta
 
 	opts := types.ImageBuildOptions{
 		Dockerfile: input.Dockerfile,
-		Tags:       []string{imageFqn(containerRepository.RepositoryUri, input.ImageName, input.Tag)},
+		Tags:       []string{imageFqn(containerRepository.RepositoryURI, input.ImageName, input.Tag)},
 		Remove:     true,
 		Platform:   input.TargetPlatform,
 	}
@@ -57,13 +57,13 @@ func (c *Client) BuildImage(input PushImageInput, containerRepository *api.Conta
 
 func (c *Client) PushImage(input PushImageInput, containerRepository *api.ContainerRepository) (io.ReadCloser, error) {
 	ctx := context.Background()
-	auth, err := createAuthForCloud(containerRepository, input)
+	auth, err := createAuthForCloud(containerRepository)
 
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := c.Cli.ImagePush(ctx, imageFqn(containerRepository.RepositoryUri, input.ImageName, input.Tag), types.ImagePushOptions{RegistryAuth: auth})
+	res, err := c.Cli.ImagePush(ctx, imageFqn(containerRepository.RepositoryURI, input.ImageName, input.Tag), types.ImagePushOptions{RegistryAuth: auth})
 
 	return res, err
 }
@@ -80,7 +80,7 @@ func repoPrefix(uri string) string {
 	return strings.ReplaceAll(uri, "https://", "")
 }
 
-func createAuthForCloud(containerRepository *api.ContainerRepository, input PushImageInput) (string, error) {
+func createAuthForCloud(containerRepository *api.ContainerRepository) (string, error) {
 	authConfig := &types.AuthConfig{}
 
 	err := setAuthUserNameByCloud(containerRepository, authConfig)
@@ -109,7 +109,7 @@ func createAuthForCloud(containerRepository *api.ContainerRepository, input Push
 }
 
 func setAuthUserNameByCloud(containerRepository *api.ContainerRepository, auth *types.AuthConfig) error {
-	switch identifyCloudByRepositoryUri(containerRepository.RepositoryUri) {
+	switch identifyCloudByRepositoryURI(containerRepository.RepositoryURI) {
 	case AWS:
 		auth.Username = "AWS"
 	case AZURE:
@@ -117,30 +117,26 @@ func setAuthUserNameByCloud(containerRepository *api.ContainerRepository, auth *
 	case GCP:
 		auth.Username = "oauth2accesstoken"
 	default:
-		return fmt.Errorf("container repositories are not supported for %s", containerRepository.RepositoryUri)
+		return fmt.Errorf("container repositories are not supported for %s", containerRepository.RepositoryURI)
 	}
 
 	return nil
 }
 
 func maybeRemoveSuffix(containerRepository *api.ContainerRepository, auth *types.AuthConfig) error {
-	r, err := regexp.Compile("[a-zA-Z0-9-_]+.docker.pkg.dev")
+	r := regexp.MustCompile("[a-zA-Z0-9-_]+.docker.pkg.dev")
 
-	if err != nil {
-		return err
-	}
-
-	switch identifyCloudByRepositoryUri(containerRepository.RepositoryUri) {
+	switch identifyCloudByRepositoryURI(containerRepository.RepositoryURI) {
 	case GCP:
-		auth.ServerAddress = r.FindString(containerRepository.RepositoryUri)
+		auth.ServerAddress = r.FindString(containerRepository.RepositoryURI)
 		return nil
 	case AWS:
-		auth.ServerAddress = containerRepository.RepositoryUri
+		auth.ServerAddress = containerRepository.RepositoryURI
 		return nil
 	case AZURE:
-		auth.ServerAddress = containerRepository.RepositoryUri
+		auth.ServerAddress = containerRepository.RepositoryURI
 		return nil
 	default:
-		return fmt.Errorf("container repositories are not supported for %s", containerRepository.RepositoryUri)
+		return fmt.Errorf("container repositories are not supported for %s", containerRepository.RepositoryURI)
 	}
 }

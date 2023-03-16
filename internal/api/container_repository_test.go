@@ -26,7 +26,7 @@ func TestDockerRegistryToken(t *testing.T) {
 
 	want := &api.ContainerRepository{
 		Token:         "bogustoken",
-		RepositoryUri: "massdriveruswest.pkg.docker.dev",
+		RepositoryURI: "massdriveruswest.pkg.docker.dev",
 	}
 
 	if !reflect.DeepEqual(got, want) {

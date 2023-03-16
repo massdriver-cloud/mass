@@ -23,13 +23,13 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 	msg := fmt.Sprintf("Creating repository for image %s in region %s and fetching single use credentials", imageName, location)
 	fmt.Println(msg)
 
-	containerRepository, err := api.GetContainerRepository(client, input.ArtifactId, input.OrganizationId, input.ImageName, input.Location)
+	containerRepository, err := api.GetContainerRepository(client, input.ArtifactID, input.OrganizationID, input.ImageName, input.Location)
 
 	if err != nil {
 		return err
 	}
 
-	cloudName := identifyCloudByRepositoryUri(containerRepository.RepositoryUri)
+	cloudName := identifyCloudByRepositoryURI(containerRepository.RepositoryURI)
 
 	var logCloud = lipgloss.NewStyle().SetString(cloudName).Underline(true).Foreground(lipgloss.Color("#7D56f4"))
 	msg = fmt.Sprintf("%s credentials feted successfully", logCloud)
@@ -65,14 +65,14 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 		return err
 	}
 
-	var fqn = lipgloss.NewStyle().SetString(imageFqn(containerRepository.RepositoryUri, input.ImageName, input.Tag)).Underline(true).Foreground(lipgloss.Color("#7D56f4"))
+	var fqn = lipgloss.NewStyle().SetString(imageFqn(containerRepository.RepositoryURI, input.ImageName, input.Tag)).Underline(true).Foreground(lipgloss.Color("#7D56f4"))
 	msg = fmt.Sprintf("Image %s pushed successfully", fqn)
 	fmt.Println(msg)
 
 	return nil
 }
 
-func identifyCloudByRepositoryUri(uri string) string {
+func identifyCloudByRepositoryURI(uri string) string {
 	switch {
 	case strings.Contains(uri, "amazonaws.com"):
 		return AWS
@@ -88,10 +88,10 @@ func identifyCloudByRepositoryUri(uri string) string {
 func handleResponseBuffer(buf io.ReadCloser) error {
 	defer buf.Close()
 
-	return print(buf)
+	return printDockerOutput(buf)
 }
 
-func print(rd io.Reader) error {
+func printDockerOutput(rd io.Reader) error {
 	var lastLine string
 
 	scanner := bufio.NewScanner(rd)
@@ -100,12 +100,17 @@ func print(rd io.Reader) error {
 	}
 
 	errLine := &ErrorLine{}
-	json.Unmarshal([]byte(lastLine), errLine)
+	err := json.Unmarshal([]byte(lastLine), errLine)
+
+	if err != nil {
+		return err
+	}
+
 	if errLine.Error != "" {
 		return errors.New(errLine.Error)
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return err
 	}
 

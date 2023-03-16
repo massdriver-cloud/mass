@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/commands/image"
 	"github.com/massdriver-cloud/mass/internal/config"
-	"github.com/massdriver-cloud/mass/internal/image"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +34,7 @@ var dockerBuildContext string
 var dockerfileName string
 var targetPlatform string
 var tag string
-var artifactId string
+var artifactID string
 var region string
 
 func init() {
@@ -43,17 +43,17 @@ func init() {
 	imagePushCmd.Flags().StringVarP(&dockerBuildContext, "build-context", "b", ".", "Path to the directory to build the image from")
 	imagePushCmd.Flags().StringVarP(&dockerfileName, "dockerfile", "f", "Dockerfile", "Name of the dockerfile to build from if you have named it anything other than Dockerfile")
 	imagePushCmd.Flags().StringVarP(&tag, "image-tag", "t", "latest", "Unique identifier for this version of the image")
-	imagePushCmd.Flags().StringVarP(&artifactId, "artifact", "a", "", "Massdriver ID of the artifact used to create the repository and generate repository credentials.")
-	imagePushCmd.MarkFlagRequired("artifact")
+	imagePushCmd.Flags().StringVarP(&artifactID, "artifact", "a", "", "Massdriver ID of the artifact used to create the repository and generate repository credentials.")
+	_ = imagePushCmd.MarkFlagRequired("artifact")
 	imagePushCmd.Flags().StringVarP(&region, "region", "r", "", "Cloud region to push the image to")
-	imagePushCmd.MarkFlagRequired("region")
+	_ = imagePushCmd.MarkFlagRequired("region")
 	imagePushCmd.Flags().StringVarP(&targetPlatform, "platform", "p", "linux/amd64", "")
 }
 
 func runImagePush(cmd *cobra.Command, args []string) error {
 	config := config.Get()
 	pushInput := image.PushImageInput{
-		OrganizationId: config.OrgID,
+		OrganizationID: config.OrgID,
 		ImageName:      args[0],
 	}
 
@@ -79,7 +79,7 @@ func validatePushInputAndAddFlags(input *image.PushImageInput, cmd *cobra.Comman
 		{Flag: "build-context", Attribute: &input.DockerBuildContext},
 		{Flag: "platform", Attribute: &input.TargetPlatform},
 		{Flag: "image-tag", Attribute: &input.Tag},
-		{Flag: "artifact", Attribute: &input.ArtifactId},
+		{Flag: "artifact", Attribute: &input.ArtifactID},
 		{Flag: "region", Attribute: &input.Location},
 	}
 

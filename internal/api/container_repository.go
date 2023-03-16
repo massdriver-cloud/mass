@@ -8,7 +8,7 @@ import (
 
 type ContainerRepository struct {
 	Token         string
-	RepositoryUri string
+	RepositoryURI string
 }
 
 func GetContainerRepository(client graphql.Client, artifactID, orgID, imageName, location string) (*ContainerRepository, error) {
@@ -18,7 +18,7 @@ func GetContainerRepository(client graphql.Client, artifactID, orgID, imageName,
 		return result, err
 	}
 
-	result.RepositoryUri = response.ContainerRepository.RepoUri
+	result.RepositoryURI = response.ContainerRepository.RepoUri
 	result.Token = response.ContainerRepository.Token
 
 	return result, nil

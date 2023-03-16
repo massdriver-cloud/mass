@@ -3,9 +3,9 @@ package image
 type PushImageInput struct {
 	ImageName          string
 	Location           string
-	OrganizationId     string
+	OrganizationID     string
 	Tag                string
-	ArtifactId         string
+	ArtifactID         string
 	Dockerfile         string
 	DockerBuildContext string
 	TargetPlatform     string
