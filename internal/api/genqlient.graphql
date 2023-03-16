@@ -105,3 +105,9 @@ mutation decommissionPreviewEnvironment($orgId: ID!, $targetId: ID!) {
     }
   }
 }
+
+query containerRepository($orgId: ID!, $artifactId: ID!, $input: ContainerRepositoryInput!) {
+  containerRepository(organizationId: $orgId, artifactId: $artifactId, input: $input) {
+    token, repoUri
+  }
+}

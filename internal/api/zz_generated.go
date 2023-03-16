@@ -11,6 +11,18 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api/scalars"
 )
 
+// Arguments required to get container repositories
+type ContainerRepositoryInput struct {
+	Location  string `json:"location"`
+	ImageName string `json:"imageName"`
+}
+
+// GetLocation returns ContainerRepositoryInput.Location, and is useful for accessing the field via an interface.
+func (v *ContainerRepositoryInput) GetLocation() string { return v.Location }
+
+// GetImageName returns ContainerRepositoryInput.ImageName, and is useful for accessing the field via an interface.
+func (v *ContainerRepositoryInput) GetImageName() string { return v.ImageName }
+
 type Credential struct {
 	ArtifactDefinitionType string `json:"artifactDefinitionType"`
 	ArtifactId             string `json:"artifactId"`
@@ -256,6 +268,22 @@ func (v *__configurePackageInput) __premarshalJSON() (*__premarshal__configurePa
 	return &retval, nil
 }
 
+// __containerRepositoryInput is used internally by genqlient
+type __containerRepositoryInput struct {
+	OrgId      string                   `json:"orgId"`
+	ArtifactId string                   `json:"artifactId"`
+	Input      ContainerRepositoryInput `json:"input"`
+}
+
+// GetOrgId returns __containerRepositoryInput.OrgId, and is useful for accessing the field via an interface.
+func (v *__containerRepositoryInput) GetOrgId() string { return v.OrgId }
+
+// GetArtifactId returns __containerRepositoryInput.ArtifactId, and is useful for accessing the field via an interface.
+func (v *__containerRepositoryInput) GetArtifactId() string { return v.ArtifactId }
+
+// GetInput returns __containerRepositoryInput.Input, and is useful for accessing the field via an interface.
+func (v *__containerRepositoryInput) GetInput() ContainerRepositoryInput { return v.Input }
+
 // __decommissionPreviewEnvironmentInput is used internally by genqlient
 type __decommissionPreviewEnvironmentInput struct {
 	OrgId    string `json:"orgId"`
@@ -461,6 +489,32 @@ type configurePackageResponse struct {
 // GetConfigurePackage returns configurePackageResponse.ConfigurePackage, and is useful for accessing the field via an interface.
 func (v *configurePackageResponse) GetConfigurePackage() configurePackageConfigurePackagePackagePayload {
 	return v.ConfigurePackage
+}
+
+// containerRepositoryContainerRepositoryContainerRepositoryAuth includes the requested fields of the GraphQL type ContainerRepositoryAuth.
+type containerRepositoryContainerRepositoryContainerRepositoryAuth struct {
+	Token   string `json:"token"`
+	RepoUri string `json:"repoUri"`
+}
+
+// GetToken returns containerRepositoryContainerRepositoryContainerRepositoryAuth.Token, and is useful for accessing the field via an interface.
+func (v *containerRepositoryContainerRepositoryContainerRepositoryAuth) GetToken() string {
+	return v.Token
+}
+
+// GetRepoUri returns containerRepositoryContainerRepositoryContainerRepositoryAuth.RepoUri, and is useful for accessing the field via an interface.
+func (v *containerRepositoryContainerRepositoryContainerRepositoryAuth) GetRepoUri() string {
+	return v.RepoUri
+}
+
+// containerRepositoryResponse is returned by containerRepository on success.
+type containerRepositoryResponse struct {
+	ContainerRepository containerRepositoryContainerRepositoryContainerRepositoryAuth `json:"containerRepository"`
+}
+
+// GetContainerRepository returns containerRepositoryResponse.ContainerRepository, and is useful for accessing the field via an interface.
+func (v *containerRepositoryResponse) GetContainerRepository() containerRepositoryContainerRepositoryContainerRepositoryAuth {
+	return v.ContainerRepository
 }
 
 // decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload includes the requested fields of the GraphQL type TargetPayload.
@@ -934,6 +988,43 @@ mutation configurePackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID
 	var err error
 
 	var data configurePackageResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func containerRepository(
+	ctx context.Context,
+	client graphql.Client,
+	orgId string,
+	artifactId string,
+	input ContainerRepositoryInput,
+) (*containerRepositoryResponse, error) {
+	req := &graphql.Request{
+		OpName: "containerRepository",
+		Query: `
+query containerRepository ($orgId: ID!, $artifactId: ID!, $input: ContainerRepositoryInput!) {
+	containerRepository(organizationId: $orgId, artifactId: $artifactId, input: $input) {
+		token
+		repoUri
+	}
+}
+`,
+		Variables: &__containerRepositoryInput{
+			OrgId:      orgId,
+			ArtifactId: artifactId,
+			Input:      input,
+		},
+	}
+	var err error
+
+	var data containerRepositoryResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
