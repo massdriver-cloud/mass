@@ -15,6 +15,7 @@ require (
 )
 
 require (
+	github.com/BurntSushi/toml v1.2.1
 	github.com/charmbracelet/lipgloss v0.6.0
 	github.com/docker/docker v23.0.1+incompatible
 	github.com/evertras/bubble-table v0.14.8

@@ -1,4 +1,4 @@
-package commands
+package configure
 
 import (
 	"github.com/Khan/genqlient/graphql"
@@ -6,7 +6,7 @@ import (
 )
 
 // Updates a packages configuration parameters.
-func ConfigurePackage(client graphql.Client, orgID string, name string, params map[string]interface{}) (*api.Package, error) {
+func Run(client graphql.Client, orgID string, name string, params map[string]interface{}) (*api.Package, error) {
 	pkg, err := api.GetPackageByName(client, orgID, name)
 
 	if err != nil {

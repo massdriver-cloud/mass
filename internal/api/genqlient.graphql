@@ -79,6 +79,7 @@ mutation configurePackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!
     result {
       id
       params
+      namePrefix
     }
     successful
     # @genqlient(typename: "MutationValidationError")

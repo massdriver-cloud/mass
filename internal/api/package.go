@@ -54,7 +54,8 @@ func ConfigurePackage(client graphql.Client, orgID string, targetID string, mani
 
 func (p *configurePackageConfigurePackagePackagePayloadResultPackage) toPackage() *Package {
 	return &Package{
-		ID:     p.Id,
-		Params: p.Params,
+		ID:         p.Id,
+		Params:     p.Params,
+		NamePrefix: p.NamePrefix,
 	}
 }

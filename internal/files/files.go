@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/BurntSushi/toml"
+	"gopkg.in/yaml.v3"
 )
 
 const UserRW = 0600
@@ -38,6 +41,14 @@ func Read(path string, v any) error {
 	switch ext {
 	case ".json":
 		if err = json.Unmarshal(contents, &v); err != nil {
+			return err
+		}
+	case ".toml":
+		if _, err = toml.Decode(string(contents), &v); err != nil {
+			return err
+		}
+	case ".yaml":
+		if err = yaml.Unmarshal(contents, &v); err != nil {
 			return err
 		}
 	default:

@@ -403,7 +403,8 @@ func (v *configurePackageConfigurePackagePackagePayload) GetMessages() []Mutatio
 type configurePackageConfigurePackagePackagePayloadResultPackage struct {
 	Id string `json:"id"`
 	// Package configuration parameters
-	Params map[string]interface{} `json:"-"`
+	Params     map[string]interface{} `json:"-"`
+	NamePrefix string                 `json:"namePrefix"`
 }
 
 // GetId returns configurePackageConfigurePackagePackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
@@ -412,6 +413,11 @@ func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetId() st
 // GetParams returns configurePackageConfigurePackagePackagePayloadResultPackage.Params, and is useful for accessing the field via an interface.
 func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetParams() map[string]interface{} {
 	return v.Params
+}
+
+// GetNamePrefix returns configurePackageConfigurePackagePackagePayloadResultPackage.NamePrefix, and is useful for accessing the field via an interface.
+func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetNamePrefix() string {
+	return v.NamePrefix
 }
 
 func (v *configurePackageConfigurePackagePackagePayloadResultPackage) UnmarshalJSON(b []byte) error {
@@ -451,6 +457,8 @@ type __premarshalconfigurePackageConfigurePackagePackagePayloadResultPackage str
 	Id string `json:"id"`
 
 	Params json.RawMessage `json:"params"`
+
+	NamePrefix string `json:"namePrefix"`
 }
 
 func (v *configurePackageConfigurePackagePackagePayloadResultPackage) MarshalJSON() ([]byte, error) {
@@ -477,6 +485,7 @@ func (v *configurePackageConfigurePackagePackagePayloadResultPackage) __premarsh
 				"Unable to marshal configurePackageConfigurePackagePackagePayloadResultPackage.Params: %w", err)
 		}
 	}
+	retval.NamePrefix = v.NamePrefix
 	return &retval, nil
 }
 
@@ -970,6 +979,7 @@ mutation configurePackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID
 		result {
 			id
 			params
+			namePrefix
 		}
 		successful
 		messages {

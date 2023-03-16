@@ -1,36 +1,54 @@
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
+	"github.com/massdriver-cloud/mass/internal/commands/package/configure"
 	"github.com/massdriver-cloud/mass/internal/config"
+	"github.com/massdriver-cloud/mass/internal/files"
 	"github.com/spf13/cobra"
 )
 
-const infraCmdHelp = `
-# Configure and deploy infrastructure managed with Massdriver.
-`
+var infraParamsPath = "./params.json"
 
-var infraDeployCmdHelp = mustRenderHelpDoc("infra/deploy")
+var infraCmdHelp = mustRenderHelpDoc("infrastructure")
+var infraDeployCmdHelp = mustRenderHelpDoc("infrastructure/deploy")
+var infraConfigureCmdHelp = mustRenderHelpDoc("infrastructure/configure")
 
 var infraCmd = &cobra.Command{
 	Use:     "infrastructure",
 	Aliases: []string{"infra"},
-	Short:   "Configure & deploy infrastructure.",
+	Short:   "Manage infrastructure.",
 	Long:    infraCmdHelp,
 }
 
 var infraDeployCmd = &cobra.Command{
 	Use:   `deploy <project>-<target>-<manifest>`,
-	Short: "Deploy cloud infrastructure on Massdriver",
+	Short: "Deploy infrastructure",
 	Long:  infraDeployCmdHelp,
 	Args:  cobra.ExactArgs(1),
 	RunE:  runInfraDeploy,
 }
 
+var infraConfigureCmd = &cobra.Command{
+	Use:     `configure <project>-<target>-<manifest>`,
+	Short:   "Configure infrastructure",
+	Aliases: []string{"cfg"},
+	Long:    infraConfigureCmdHelp,
+	Args:    cobra.ExactArgs(1),
+	RunE:    runInfraConfigure,
+}
+
 func init() {
 	rootCmd.AddCommand(infraCmd)
 	infraCmd.AddCommand(infraDeployCmd)
+	infraCmd.AddCommand(infraConfigureCmd)
+
+	// TODO: Add interpolation support
+	infraConfigureCmd.Flags().StringVarP(&infraParamsPath, "params", "p", infraParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 }
 
 func runInfraDeploy(cmd *cobra.Command, args []string) error {
@@ -39,6 +57,24 @@ func runInfraDeploy(cmd *cobra.Command, args []string) error {
 	client := api.NewClient(c.URL, c.APIKey)
 
 	_, err := commands.DeployPackage(client, c.OrgID, name)
+
+	return err
+}
+
+func runInfraConfigure(cmd *cobra.Command, args []string) error {
+	packageSlugOrID := args[0]
+	c := config.Get()
+	client := api.NewClient(c.URL, c.APIKey)
+	params := map[string]interface{}{}
+	if err := files.Read(infraParamsPath, &params); err != nil {
+		return err
+	}
+
+	_, err := configure.Run(client, c.OrgID, packageSlugOrID, params)
+
+	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
+	msg := fmt.Sprintf("Configuring: %s", name)
+	fmt.Println(msg)
 
 	return err
 }

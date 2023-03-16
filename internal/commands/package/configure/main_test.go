@@ -1,11 +1,11 @@
-package commands_test
+package configure_test
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/commands"
+	"github.com/massdriver-cloud/mass/internal/commands/package/configure"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
@@ -32,7 +32,7 @@ func TestConfigurePackage(t *testing.T) {
 		},
 	})
 
-	pkg, err := commands.ConfigurePackage(client, "faux-org-id", "ecomm-prod-cache", params)
+	pkg, err := configure.Run(client, "faux-org-id", "ecomm-prod-cache", params)
 	if err != nil {
 		t.Fatal(err)
 	}
