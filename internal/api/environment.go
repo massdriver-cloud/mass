@@ -45,3 +45,28 @@ func (e *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarg
 		URL: fmt.Sprintf(urlTemplate, e.Project.Id, e.Id),
 	}
 }
+
+func DecommissionPreviewEnvironment(client graphql.Client, orgID string, projectTargetSlugOrTargetID string) (*Environment, error) {
+	ctx := context.Background()
+
+	response, err := decommissionPreviewEnvironment(ctx, client, orgID, projectTargetSlugOrTargetID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.DecommissionPreviewEnvironment.Successful {
+		return response.DecommissionPreviewEnvironment.Result.toEnvironment(), nil
+	}
+
+	return nil, NewMutationError("failed to deploy environment", response.DecommissionPreviewEnvironment.Messages)
+}
+
+func (e *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget) toEnvironment() *Environment {
+	return &Environment{
+		ID:   e.Id,
+		Slug: e.Slug,
+		// NOTE: We use IDs here instead of slugs because there is currently a bug in the UI for rendering targets w/ slugs.
+		URL: fmt.Sprintf(urlTemplate, e.Project.Id, e.Id),
+	}
+}

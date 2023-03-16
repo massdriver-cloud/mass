@@ -90,8 +90,16 @@ mutation configurePackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!
 
 mutation decommissionPreviewEnvironment($orgId: ID!, $targetId: ID!) {
   decommissionPreviewEnvironment(organizationId: $orgId, targetId: $targetId) {
+    result {
+      id
+      slug
+      project{
+        id
+        slug
+      }
+    }
     successful
-    result {id, slug}
+    # @genqlient(typename: "MutationValidationError")
     messages {
       message
     }
