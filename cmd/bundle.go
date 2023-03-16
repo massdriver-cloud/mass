@@ -90,14 +90,14 @@ func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 func runBundleBuild(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 
-	output, err := cmd.Flags().GetString("output")
+	outputDir, err := cmd.Flags().GetString("output")
 
 	if err != nil {
 		return err
 	}
 
-	if output == "" {
-		output = "."
+	if outputDir == "" {
+		outputDir = "."
 	}
 
 	file, err := afero.ReadFile(fs, path.Join(".", "massdriver.yaml"))
@@ -116,7 +116,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient()
 
-	err = commands.BuildBundle(".", unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(outputDir, unmarshalledBundle, c, fs)
 
 	return err
 }
