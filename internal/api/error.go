@@ -10,7 +10,7 @@ type MutationError struct {
 }
 
 func (m *MutationError) Error() string {
-	err := fmt.Sprintf("Error in GraphQL Mutation: %s\n", m.Err)
+	err := fmt.Sprintf("GraphQL mutation %s\n", m.Err)
 
 	for _, msg := range m.Messages {
 		err = fmt.Sprintf("%s  - %s\n", err, msg.Message)

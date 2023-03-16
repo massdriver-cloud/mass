@@ -45,6 +45,7 @@ query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
   getPackageByNamingConvention(organizationId: $organizationId, name: $name) {
     id
     namePrefix
+    params
     manifest {
       id
     }
@@ -79,6 +80,7 @@ mutation configurePackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!
     result {
       id
       params
+      namePrefix
     }
     successful
     # @genqlient(typename: "MutationValidationError")

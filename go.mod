@@ -15,9 +15,11 @@ require (
 )
 
 require (
+	github.com/BurntSushi/toml v1.2.1
 	github.com/charmbracelet/lipgloss v0.6.0
 	github.com/docker/docker v23.0.1+incompatible
 	github.com/evertras/bubble-table v0.14.8
+	github.com/itchyny/gojq v0.12.12
 	github.com/rs/zerolog v1.29.0
 	golang.org/x/text v0.8.0
 )
@@ -26,7 +28,10 @@ require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
+	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
+	github.com/alexflint/go-arg v1.4.2 // indirect
+	github.com/alexflint/go-scalar v1.0.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52 v1.2.2 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
@@ -44,6 +49,7 @@ require (
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/itchyny/timefmt-go v0.1.5 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
@@ -84,5 +90,6 @@ require (
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
 )

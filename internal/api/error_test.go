@@ -15,7 +15,7 @@ func TestNewMutationError(t *testing.T) {
 	err := api.NewMutationError("oops", messages)
 
 	got := err.Error()
-	want := "Error in GraphQL Mutation: oops\n  - boom\n  - pow\n"
+	want := "GraphQL mutation oops\n  - boom\n  - pow\n"
 
 	if got != want {
 		t.Errorf("got %s , wanted %s", got, want)

@@ -28,6 +28,7 @@ func GetPackageByName(client graphql.Client, orgID string, name string) (*Packag
 func (p *getPackageByNamingConventionGetPackageByNamingConventionPackage) toPackage() *Package {
 	return &Package{
 		NamePrefix: p.NamePrefix,
+		Params:     p.Params,
 		Manifest: Manifest{
 			ID: p.Manifest.Id,
 		},
@@ -54,7 +55,8 @@ func ConfigurePackage(client graphql.Client, orgID string, targetID string, mani
 
 func (p *configurePackageConfigurePackagePackagePayloadResultPackage) toPackage() *Package {
 	return &Package{
-		ID:     p.Id,
-		Params: p.Params,
+		ID:         p.Id,
+		Params:     p.Params,
+		NamePrefix: p.NamePrefix,
 	}
 }

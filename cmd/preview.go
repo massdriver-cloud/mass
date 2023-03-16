@@ -125,7 +125,6 @@ func runPreviewDecommission(cmd *cobra.Command, args []string) error {
 
 	var url = lipgloss.NewStyle().SetString(env.URL).Underline(true).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Decommissioning preview environment: %s", url)
-
 	fmt.Println(msg)
 
 	return nil
