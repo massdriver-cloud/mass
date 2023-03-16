@@ -17,10 +17,10 @@ type Bundle struct {
 	Params      map[string]interface{} `json:"params" yaml:"params"`
 	Connections map[string]interface{} `json:"connections" yaml:"connections"`
 	UI          map[string]interface{} `json:"ui" yaml:"ui"`
-	App         AppBlock               `json:"app" yaml:"app"`
+	AppSpec     AppSpec                `json:"app" yaml:"app"`
 }
 
-type AppBlock struct {
+type AppSpec struct {
 	Envs     map[string]string `json:"envs" yaml:"envs"`
 	Policies []string          `json:"policies" yaml:"policies"`
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func compileConnectionVarFile(path string, b *bundle.Bundle, fs afero.Fs) error {
+func transpileConnectionVarFile(path string, b *bundle.Bundle, fs afero.Fs) error {
 	emptyConnections := checkEmptySchema(b.Connections)
 
 	if emptyConnections {

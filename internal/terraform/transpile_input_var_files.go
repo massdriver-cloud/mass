@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-// Compile a JSON Schema to Terraform Variable Definition JSON
-func compile(properties map[string]interface{}, requiredProperties map[string]bool) ([]byte, error) {
+// transpile a JSON Schema to Terraform Variable Definition JSON
+func transpile(properties map[string]interface{}, requiredProperties map[string]bool) ([]byte, error) {
 	// You can't have an empty variable block, so if there are no vars return an empty json block
 	if len(properties) == 0 {
 		return []byte("{}"), nil

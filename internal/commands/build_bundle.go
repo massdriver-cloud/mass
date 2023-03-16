@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"fmt"
+
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/restclient"
 	"github.com/massdriver-cloud/mass/internal/terraform"
@@ -19,11 +21,28 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 	if err != nil {
 		return err
 	}
-	err = terraform.GenerateFiles(buildPath, b, fs)
 
-	if err != nil {
-		return err
+	for _, step := range stepsOrDefault(b.Steps) {
+		switch step.Provisioner {
+		case "terraform":
+			err = terraform.GenerateFiles(buildPath, step.Path, b, fs)
+			if err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("%s is not a supported provisioner", step.Provisioner)
+		}
 	}
 
 	return nil
+}
+
+func stepsOrDefault(steps []bundle.Step) []bundle.Step {
+	if steps == nil {
+		return []bundle.Step{
+			{Path: "src", Provisioner: "terraform"},
+		}
+	}
+
+	return steps
 }

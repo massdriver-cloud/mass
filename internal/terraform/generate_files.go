@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-type writeTarget struct {
+type schema struct {
 	label     string
 	schema    map[string]interface{}
 	writePath string
@@ -23,27 +23,7 @@ var mdVars = map[string]interface{}{
 	},
 }
 
-func GenerateFiles(buildPath string, b *bundle.Bundle, fs afero.Fs) error {
-	stepsOrDefault := b.Steps
-
-	if stepsOrDefault == nil {
-		stepsOrDefault = []bundle.Step{
-			{Path: "src", Provisioner: "terraform"},
-		}
-	}
-
-	for _, step := range stepsOrDefault {
-		switch step.Provisioner {
-		case "terraform":
-			return generateFilesForStep(buildPath, step.Path, b, fs)
-		default:
-			return fmt.Errorf("%s is not a supported provisioner", step.Provisioner)
-		}
-	}
-	return nil
-}
-
-func generateFilesForStep(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {
+func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {
 	err := generateTfVarsFiles(buildPath, stepPath, b, fs)
 
 	if err != nil {
@@ -52,13 +32,13 @@ func generateFilesForStep(buildPath, stepPath string, b *bundle.Bundle, fs afero
 
 	devParamPath := path.Join(buildPath, stepPath, "_params.auto.tfvars.json")
 
-	err = compileAndWriteDevParams(devParamPath, b, fs)
+	err = transpileAndWriteDevParams(devParamPath, b, fs)
 
 	if err != nil {
 		return fmt.Errorf("error compiling dev params: %w", err)
 	}
 
-	err = compileConnectionVarFile(path.Join(buildPath, stepPath, "_connections.auto.tfvars.json"), b, fs)
+	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, "_connections.auto.tfvars.json"), b, fs)
 
 	if err != nil {
 		return err
@@ -68,7 +48,7 @@ func generateFilesForStep(buildPath, stepPath string, b *bundle.Bundle, fs afero
 }
 
 func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {
-	varFileTasks := []writeTarget{
+	varFileTasks := []schema{
 		{
 			label:     "params",
 			schema:    b.Params,
@@ -89,7 +69,7 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 	for _, task := range varFileTasks {
 		schemaRequiredProperties := createRequiredPropertiesMap(task.schema)
 
-		content, err := compile(task.schema["properties"].(map[string]interface{}), schemaRequiredProperties)
+		content, err := transpile(task.schema["properties"].(map[string]interface{}), schemaRequiredProperties)
 
 		if err != nil {
 			return err

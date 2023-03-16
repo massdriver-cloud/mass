@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func compileAndWriteDevParams(path string, b *bundle.Bundle, fs afero.Fs) error {
+func transpileAndWriteDevParams(path string, b *bundle.Bundle, fs afero.Fs) error {
 	emptyParams := checkEmptySchema(b.Params)
 
 	if emptyParams {

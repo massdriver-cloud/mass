@@ -11,7 +11,7 @@ import (
 const idURLPattern = "https://schemas.massdriver.cloud/schemas/bundles/%s/schema-%s.json"
 const jsonSchemaURLPattern = "http://json-schema.org/%s/schema"
 
-type WriteTarget struct {
+type Schema struct {
 	schema map[string]interface{}
 	label  string
 }
@@ -23,7 +23,7 @@ func (b *Bundle) WriteSchemas(buildPath string, fs afero.Fs) error {
 		return mkdirErr
 	}
 
-	tasks := []WriteTarget{
+	tasks := []Schema{
 		{schema: b.Artifacts, label: "artifacts"},
 		{schema: b.Params, label: "params"},
 		{schema: b.Connections, label: "connections"},
@@ -49,7 +49,7 @@ func (b *Bundle) WriteSchemas(buildPath string, fs afero.Fs) error {
 	return nil
 }
 
-// generateSchema generates a specific schema-*.json file
+// generateSchema generates a specific *-schema.json file
 func generateSchema(schema map[string]interface{}, metadata map[string]string) ([]byte, error) {
 	var err error
 	var mergedSchema = mergeMaps(schema, metadata)
