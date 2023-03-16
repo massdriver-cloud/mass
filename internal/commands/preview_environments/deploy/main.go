@@ -1,4 +1,4 @@
-package commands
+package deploy
 
 import (
 	"encoding/json"
@@ -9,7 +9,8 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api"
 )
 
-func DeployPreviewEnvironment(client graphql.Client, orgID string, projectSlug string, previewCfg *api.PreviewConfig, ciContext *map[string]interface{}) (*api.Environment, error) {
+// Runs a preview environment deployment
+func Run(client graphql.Client, orgID string, projectSlug string, previewCfg *api.PreviewConfig, ciContext *map[string]interface{}) (*api.Environment, error) {
 	interpolatedParams := map[string]interface{}{}
 
 	if err := interpolateParams(previewCfg.PackageParams, &interpolatedParams); err != nil {

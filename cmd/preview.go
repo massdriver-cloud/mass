@@ -6,7 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/commands"
+	"github.com/massdriver-cloud/mass/internal/commands/preview_environments/deploy"
 	peinit "github.com/massdriver-cloud/mass/internal/commands/preview_environments/initialize"
 	"github.com/massdriver-cloud/mass/internal/config"
 	"github.com/massdriver-cloud/mass/internal/files"
@@ -88,7 +88,7 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	env, err := commands.DeployPreviewEnvironment(client, c.OrgID, projectSlug, &previewCfg, &ciContext)
+	env, err := deploy.Run(client, c.OrgID, projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		return err

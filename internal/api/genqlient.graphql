@@ -87,3 +87,13 @@ mutation configurePackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!
     }
   }
 }
+
+mutation decommissionPreviewEnvironment($orgId: ID!, $targetId: ID!) {
+  decommissionPreviewEnvironment(organizationId: $orgId, targetId: $targetId) {
+    successful
+    result {id, slug}
+    messages {
+      message
+    }
+  }
+}
