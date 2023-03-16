@@ -37,7 +37,7 @@ func (b *Bundle) WriteSchemas(buildPath string, fs afero.Fs) error {
 			return err
 		}
 
-		filepath := fmt.Sprintf("/%s-schema.json", task.label)
+		filepath := fmt.Sprintf("/schema-%s.json", task.label)
 
 		err = afero.WriteFile(fs, path.Join(buildPath, filepath), content, 0755)
 

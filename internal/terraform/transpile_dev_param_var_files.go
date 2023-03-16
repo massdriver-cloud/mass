@@ -2,7 +2,6 @@ package terraform
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
@@ -111,7 +110,7 @@ func checkEmptySchema(schema map[string]interface{}) bool {
 
 func getFirstExample(examples []interface{}) (map[string]interface{}, error) {
 	if len(examples) == 0 {
-		return nil, errors.New("bundle examples is empty")
+		return make(map[string]interface{}), nil
 	}
 
 	firstExample, ok := examples[0].(map[string]interface{})

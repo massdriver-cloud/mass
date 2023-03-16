@@ -15,14 +15,14 @@ import (
 )
 
 var expectedSchemaContents = map[string][]byte{
-	"ui-schema.json": []byte(`{
+	"schema-ui.json": []byte(`{
     "ui:order": [
         "resource_name",
         "*"
     ]
 }
 `),
-	"params-schema.json": []byte(`{
+	"schema-params.json": []byte(`{
     "$id": "https://schemas.massdriver.cloud/schemas/bundles/draft-node/schema-params.json",
     "$schema": "http://json-schema.org/draft-07/schema",
     "description": "A resource that can be used to visually design architecture without provisioning real infrastructure.",
@@ -73,7 +73,7 @@ var expectedSchemaContents = map[string][]byte{
     "title": "draft-node"
 }
 `),
-	"connections-schema.json": []byte(`{
+	"schema-connections.json": []byte(`{
     "$id": "https://schemas.massdriver.cloud/schemas/bundles/draft-node/schema-connections.json",
     "$schema": "http://json-schema.org/draft-07/schema",
     "description": "A resource that can be used to visually design architecture without provisioning real infrastructure.",
@@ -103,7 +103,7 @@ var expectedSchemaContents = map[string][]byte{
     "title": "draft-node"
 }
 `),
-	"artifacts-schema.json": []byte(`{
+	"schema-artifacts.json": []byte(`{
     "$id": "https://schemas.massdriver.cloud/schemas/bundles/draft-node/schema-artifacts.json",
     "$schema": "http://json-schema.org/draft-07/schema",
     "description": "A resource that can be used to visually design architecture without provisioning real infrastructure.",
