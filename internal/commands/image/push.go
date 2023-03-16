@@ -100,17 +100,14 @@ func printDockerOutput(rd io.Reader) error {
 	}
 
 	errLine := &ErrorLine{}
-	err := json.Unmarshal([]byte(lastLine), errLine)
 
-	if err != nil {
-		return err
-	}
+	_ = json.Unmarshal([]byte(lastLine), errLine)
 
 	if errLine.Error != "" {
 		return errors.New(errLine.Error)
 	}
 
-	if err = scanner.Err(); err != nil {
+	if err := scanner.Err(); err != nil {
 		return err
 	}
 
