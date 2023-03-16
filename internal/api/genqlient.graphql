@@ -45,6 +45,7 @@ query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
   getPackageByNamingConvention(organizationId: $organizationId, name: $name) {
     id
     namePrefix
+    params
     manifest {
       id
     }

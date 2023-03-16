@@ -7,13 +7,14 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands"
 	"github.com/massdriver-cloud/mass/internal/commands/package/configure"
+	"github.com/massdriver-cloud/mass/internal/commands/package/patch"
 	"github.com/massdriver-cloud/mass/internal/config"
 	"github.com/massdriver-cloud/mass/internal/files"
 	"github.com/spf13/cobra"
 )
 
 var infraParamsPath = "./params.json"
-
+var infraPatchQueries []string
 var infraCmdHelp = mustRenderHelpDoc("infrastructure")
 var infraDeployCmdHelp = mustRenderHelpDoc("infrastructure/deploy")
 var infraConfigureCmdHelp = mustRenderHelpDoc("infrastructure/configure")
@@ -42,13 +43,25 @@ var infraConfigureCmd = &cobra.Command{
 	RunE:    runInfraConfigure,
 }
 
+var infraPatchCmd = &cobra.Command{
+	Use:     `patch <project>-<target>-<manifest>`,
+	Short:   "Patch individual package parameter values",
+	Aliases: []string{"cfg"},
+	// TODO
+	// Long:    infraConfigureCmdHelp,
+	Args: cobra.ExactArgs(1),
+	RunE: runInfraPatch,
+}
+
 func init() {
 	rootCmd.AddCommand(infraCmd)
 	infraCmd.AddCommand(infraDeployCmd)
 	infraCmd.AddCommand(infraConfigureCmd)
+	infraCmd.AddCommand(infraPatchCmd)
 
 	// TODO: Add interpolation support
 	infraConfigureCmd.Flags().StringVarP(&infraParamsPath, "params", "p", infraParamsPath, "Path to params JSON file. This file supports bash interpolation.")
+	infraPatchCmd.Flags().StringArrayVarP(&infraPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 }
 
 func runInfraDeploy(cmd *cobra.Command, args []string) error {
@@ -74,6 +87,20 @@ func runInfraConfigure(cmd *cobra.Command, args []string) error {
 
 	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Configuring: %s", name)
+	fmt.Println(msg)
+
+	return err
+}
+
+func runInfraPatch(cmd *cobra.Command, args []string) error {
+	packageSlugOrID := args[0]
+	c := config.Get()
+	client := api.NewClient(c.URL, c.APIKey)
+
+	_, err := patch.Run(client, c.OrgID, packageSlugOrID, infraPatchQueries)
+
+	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
+	msg := fmt.Sprintf("Patching: %s", name)
 	fmt.Println(msg)
 
 	return err

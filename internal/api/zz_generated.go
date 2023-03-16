@@ -776,8 +776,10 @@ func (v *getDeploymentByIdResponse) GetDeployment() getDeploymentByIdDeployment 
 
 // getPackageByNamingConventionGetPackageByNamingConventionPackage includes the requested fields of the GraphQL type Package.
 type getPackageByNamingConventionGetPackageByNamingConventionPackage struct {
-	Id               string                                                                          `json:"id"`
-	NamePrefix       string                                                                          `json:"namePrefix"`
+	Id         string `json:"id"`
+	NamePrefix string `json:"namePrefix"`
+	// Package configuration parameters
+	Params           map[string]interface{}                                                          `json:"-"`
 	Manifest         getPackageByNamingConventionGetPackageByNamingConventionPackageManifest         `json:"manifest"`
 	ActiveDeployment getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment `json:"activeDeployment"`
 	// The target this package will be deployed to
@@ -790,6 +792,11 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetId(
 // GetNamePrefix returns getPackageByNamingConventionGetPackageByNamingConventionPackage.NamePrefix, and is useful for accessing the field via an interface.
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetNamePrefix() string {
 	return v.NamePrefix
+}
+
+// GetParams returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Params, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetParams() map[string]interface{} {
+	return v.Params
 }
 
 // GetManifest returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Manifest, and is useful for accessing the field via an interface.
@@ -805,6 +812,84 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetAct
 // GetTarget returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Target, and is useful for accessing the field via an interface.
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetTarget() getPackageByNamingConventionGetPackageByNamingConventionPackageTarget {
 	return v.Target
+}
+
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPackageByNamingConventionGetPackageByNamingConventionPackage
+		Params json.RawMessage `json:"params"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPackageByNamingConventionGetPackageByNamingConventionPackage = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Params
+		src := firstPass.Params
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal getPackageByNamingConventionGetPackageByNamingConventionPackage.Params: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage struct {
+	Id string `json:"id"`
+
+	NamePrefix string `json:"namePrefix"`
+
+	Params json.RawMessage `json:"params"`
+
+	Manifest getPackageByNamingConventionGetPackageByNamingConventionPackageManifest `json:"manifest"`
+
+	ActiveDeployment getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment `json:"activeDeployment"`
+
+	Target getPackageByNamingConventionGetPackageByNamingConventionPackageTarget `json:"target"`
+}
+
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) __premarshalJSON() (*__premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage, error) {
+	var retval __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage
+
+	retval.Id = v.Id
+	retval.NamePrefix = v.NamePrefix
+	{
+
+		dst := &retval.Params
+		src := v.Params
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal getPackageByNamingConventionGetPackageByNamingConventionPackage.Params: %w", err)
+		}
+	}
+	retval.Manifest = v.Manifest
+	retval.ActiveDeployment = v.ActiveDeployment
+	retval.Target = v.Target
+	return &retval, nil
 }
 
 // getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment includes the requested fields of the GraphQL type Deployment.
@@ -1266,6 +1351,7 @@ query getPackageByNamingConvention ($organizationId: ID!, $name: String!) {
 	getPackageByNamingConvention(organizationId: $organizationId, name: $name) {
 		id
 		namePrefix
+		params
 		manifest {
 			id
 		}
