@@ -6,8 +6,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/commands/preview_environments/deploy"
-	peinit "github.com/massdriver-cloud/mass/internal/commands/preview_environments/initialize"
+	"github.com/massdriver-cloud/mass/internal/commands/preview_environment/decommission"
+	"github.com/massdriver-cloud/mass/internal/commands/preview_environment/deploy"
+	peinit "github.com/massdriver-cloud/mass/internal/commands/preview_environment/initialize"
 	"github.com/massdriver-cloud/mass/internal/config"
 	"github.com/massdriver-cloud/mass/internal/files"
 	"github.com/spf13/cobra"
@@ -48,7 +49,7 @@ var previewDecommissionCmd = &cobra.Command{
 	Use:   "decommission $projectTargetSlug",
 	Short: "Decommissions a preview environment in your project",
 	Long:  previewDecommissionCmdHelp,
-	RunE:  runPreviewDeploy,
+	RunE:  runPreviewDecommission,
 	Args:  cobra.ExactArgs(1),
 }
 
@@ -105,6 +106,25 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 
 	var url = lipgloss.NewStyle().SetString(env.URL).Underline(true).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Deploying preview environment: %s", url)
+
+	fmt.Println(msg)
+
+	return nil
+}
+
+func runPreviewDecommission(cmd *cobra.Command, args []string) error {
+	projectTargetSlugOrTargetID := args[0]
+	c := config.Get()
+	client := api.NewClient(c.URL, c.APIKey)
+
+	env, err := decommission.Run(client, c.OrgID, projectTargetSlugOrTargetID)
+
+	if err != nil {
+		return err
+	}
+
+	var url = lipgloss.NewStyle().SetString(env.URL).Underline(true).Foreground(lipgloss.Color("#7D56F4"))
+	msg := fmt.Sprintf("Decommissioning preview environment: %s", url)
 
 	fmt.Println(msg)
 

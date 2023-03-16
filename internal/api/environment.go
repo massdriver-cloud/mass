@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/massdriver-cloud/mass/internal/debuglog"
 )
 
 type Environment struct {
@@ -48,6 +49,8 @@ func (e *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarg
 
 func DecommissionPreviewEnvironment(client graphql.Client, orgID string, projectTargetSlugOrTargetID string) (*Environment, error) {
 	ctx := context.Background()
+	cmdLog := debuglog.Log().With().Str("orgID", orgID).Str("projectTargetSlugOrTargetID", projectTargetSlugOrTargetID).Logger()
+	cmdLog.Info().Msg("Decommissioning preview environment.")
 
 	response, err := decommissionPreviewEnvironment(ctx, client, orgID, projectTargetSlugOrTargetID)
 
@@ -59,7 +62,7 @@ func DecommissionPreviewEnvironment(client graphql.Client, orgID string, project
 		return response.DecommissionPreviewEnvironment.Result.toEnvironment(), nil
 	}
 
-	return nil, NewMutationError("failed to deploy environment", response.DecommissionPreviewEnvironment.Messages)
+	return nil, NewMutationError("failed to decommission environment", response.DecommissionPreviewEnvironment.Messages)
 }
 
 func (e *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget) toEnvironment() *Environment {

@@ -23,12 +23,12 @@ GitHub and GitLab workflow events are officially support, but any CI Context fil
 {
   "pull_request": {
     "title": "Your title",
-    "number" 1337
+    "number": 1337
   }
 }
 ```
 
-`title` which will be used as the name of the environment and a "PR" `number` which is used in the environment's `slug`.
+`title` which will be used as the description of the environment and a "PR" `number` which is used in the environment's `name` and `slug`.
 
 * [GitHub](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#push)
 * [GitLab](https://docs.gitlab.com/ee/user/project/integrations/webhook_events.html#push-events)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/commands/preview_environments/decommission"
+	"github.com/massdriver-cloud/mass/internal/commands/preview_environment/decommission"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
