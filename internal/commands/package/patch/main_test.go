@@ -9,7 +9,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 )
 
-func TestConfigurePackage(t *testing.T) {
+func TestPatchPackage(t *testing.T) {
 	params := map[string]interface{}{
 		"cidr": "10.0.0.0/16",
 	}
@@ -27,6 +27,9 @@ func TestConfigurePackage(t *testing.T) {
 				"configurePackage": map[string]interface{}{
 					"result": map[string]interface{}{
 						"id": "pkg-id",
+						"params": map[string]interface{}{
+							"cidr": "10.0.0.0/20",
+						},
 					},
 					"successful": true,
 				},
