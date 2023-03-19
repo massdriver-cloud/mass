@@ -1,7 +1,12 @@
 package restclient
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 )
@@ -14,6 +19,24 @@ type MassdriverClient struct {
 	Client  HTTPClient
 	baseURL string
 	apiKey  string
+}
+
+type PublishPost struct {
+	Name              string                 `json:"name"`
+	Description       string                 `json:"description"`
+	Type              string                 `json:"type"`
+	SourceURL         string                 `json:"source_url"`
+	Access            string                 `json:"access"`
+	ArtifactsSchema   map[string]interface{} `json:"artifacts_schema"`
+	ConnectionsSchema map[string]interface{} `json:"connections_schema"`
+	ParamsSchema      map[string]interface{} `json:"params_schema"`
+	UISchema          map[string]interface{} `json:"ui_schema"`
+	OperatorGuide     []byte                 `json:"operator_guide,omitempty"`
+	AppSpec           map[string]interface{} `json:"app,omitempty"`
+}
+
+type PublishResponse struct {
+	UploadLocation string `json:"upload_location"`
 }
 
 const MassdriverBaseURL = "https://api.massdriver.cloud"
@@ -57,4 +80,41 @@ func (c *MassdriverClient) Do(ctx *context.Context, req *Request) (*http.Respons
 	}
 
 	return c.Client.Do(httpReq)
+}
+
+func (c *MassdriverClient) PublishBundle(request PublishPost) (string, error) {
+	bodyBytes, err := json.Marshal(request)
+
+	if err != nil {
+		return "", err
+	}
+
+	ctx := context.Background()
+	req := NewRequest("PUT", "bundles", bytes.NewBuffer(bodyBytes))
+
+	resp, err := c.Do(&ctx, req)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	respBodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.Status != "200 OK" {
+		fmt.Println(string(respBodyBytes))
+		return "", errors.New("received non-200 response from Massdriver: " + resp.Status)
+	}
+
+	var respBody PublishResponse
+	err = json.Unmarshal(respBodyBytes, &respBody)
+	if err != nil {
+		return "", err
+	}
+
+	return respBody.UploadLocation, nil
 }

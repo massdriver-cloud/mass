@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
+	"runtime"
 
 	"github.com/spf13/afero"
 )
@@ -29,7 +31,8 @@ func SetupBundleTemplate(rootTemplateDir string, fs afero.Fs) error {
 		path.Join(rootTemplateDir, repoPath, templatePath, srcPath),
 	}
 
-	massdriverYamlTemplate, err := os.ReadFile("../mockfilesystem/testdata/massdriver.yaml.txt")
+	fixturePath := path.Join(projectRoot(), "/internal/mockfilesystem/testdata/massdriver.yaml.txt")
+	massdriverYamlTemplate, err := os.ReadFile(fixturePath)
 
 	if err != nil {
 		return err
@@ -68,7 +71,9 @@ func SetupBundle(rootDir string, fs afero.Fs) error {
 		path.Join(rootDir, srcPath),
 	}
 
-	massdriverYamlFile, err := os.ReadFile("../mockfilesystem/testdata/massdriver.yaml")
+	fixturePath := path.Join(projectRoot(), "/internal/mockfilesystem/testdata/massdriver.yaml")
+
+	massdriverYamlFile, err := os.ReadFile(fixturePath)
 
 	if err != nil {
 		return err
@@ -88,6 +93,30 @@ func SetupBundle(rootDir string, fs afero.Fs) error {
 
 	if err != nil {
 		return err
+	}
+
+	err = MakeFiles(files, fs)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func WithOperatorGuide(rootDir string, guideType string, fs afero.Fs) error {
+	operatorGuideFilePath := fmt.Sprintf("%s/internal/mockfilesystem/testdata/operator.md", projectRoot())
+	operatorGuideMd, err := os.ReadFile(operatorGuideFilePath)
+
+	if err != nil {
+		return err
+	}
+
+	files := []VirtualFile{
+		{
+			Path:    fmt.Sprintf("%s/operator.%s", rootDir, guideType),
+			Content: operatorGuideMd,
+		},
 	}
 
 	err = MakeFiles(files, fs)
@@ -129,4 +158,10 @@ func AssertDirectoryContents(fs afero.Fs, path string, want []string) (string, b
 	}
 
 	return fmt.Sprintf("Wanted %v but got %v", want, got), reflect.DeepEqual(got, want)
+}
+
+func projectRoot() string {
+	_, b, _, _ := runtime.Caller(0)
+
+	return filepath.Join(filepath.Dir(b), "../..")
 }
