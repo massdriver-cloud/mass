@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/restclient"
@@ -33,6 +32,7 @@ const (
 type Publisher struct {
 	Bundle     *bundle.Bundle
 	RestClient restclient.MassdriverClient
+	Fs         afero.Fs
 }
 
 type S3PresignEndpointResponse struct {
@@ -67,9 +67,9 @@ var fileAllows = []string{
 	"src",
 }
 
-func (p *Publisher) SubmitBundle(srcDir string, fs afero.Fs) (string, error) {
+func (p *Publisher) SubmitBundle(srcDir string) (string, error) {
 	//TODO: Add log message for publish and response
-	body, err := p.Bundle.GenerateBundlePublishBody(srcDir, fs)
+	body, err := p.Bundle.GenerateBundlePublishBody(srcDir, p.Fs)
 
 	if err != nil {
 		return "", err
@@ -85,14 +85,12 @@ func (p *Publisher) ArchiveBundle(filePath string, buf io.Writer) error {
 		Ignores: fileIgnores,
 	}
 
-	srcDir := filepath.Dir(filePath)
-
 	gzipWriter := gzip.NewWriter(buf)
 	tarWriter := tar.NewWriter(gzipWriter)
 
-	packager := newPackager(&copyConfig)
+	packager := newPackager(&copyConfig, p.Fs)
 
-	errCompress := packager.createArchiveWithFilter(srcDir, PackageManagerDirectoryPrefix, tarWriter)
+	errCompress := packager.createArchiveWithFilter(filePath, PackageManagerDirectoryPrefix, tarWriter)
 
 	if errCompress != nil {
 		return errCompress

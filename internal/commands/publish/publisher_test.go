@@ -1,9 +1,16 @@
 package publish_test
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"path"
+	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
@@ -193,18 +200,18 @@ func TestPublish(t *testing.T) {
 			defer testServer.Close()
 
 			c := restclient.NewClient().WithBaseURL(testServer.URL)
+			fs := afero.NewMemMapFs()
 
 			publisher := &publish.Publisher{
 				Bundle:     &tc.bundle,
 				RestClient: *c,
+				Fs:         fs,
 			}
-
-			fs := afero.NewMemMapFs()
 
 			mockfilesystem.SetupBundle(tc.path, fs)
 			mockfilesystem.WithOperatorGuide(tc.path, tc.guideType, fs)
 
-			gotResponse, err := publisher.SubmitBundle(tc.path, fs)
+			gotResponse, err := publisher.SubmitBundle(tc.path)
 
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
@@ -217,5 +224,135 @@ func TestPublish(t *testing.T) {
 				t.Errorf("got %v, want %v", gotResponse, `https://some.site.test/endpoint`)
 			}
 		})
+	}
+}
+
+func TestArchive(t *testing.T) {
+	b := bundle.Bundle{
+		Name:        "the-bundle",
+		Description: "something",
+		SourceURL:   "github.com/some-repo",
+		Type:        "bundle",
+		Access:      "public",
+		Steps: []bundle.Step{
+			{
+				Path:        "deploy",
+				Provisioner: "terraform",
+			},
+		},
+		Artifacts: map[string]interface{}{
+			"artifacts": "foo",
+		},
+		Connections: map[string]interface{}{
+			"connections": "bar",
+		},
+		Params: map[string]interface{}{
+			"params": map[string]string{
+				"hello": "world",
+			},
+		},
+		UI: map[string]interface{}{
+			"ui": "baz",
+		},
+		AppSpec: &bundle.AppSpec{
+			Secrets: map[string]bundle.Secret{
+				"STRIPE_KEY": {
+					Required:    true,
+					Json:        false,
+					Title:       "A secret",
+					Description: "Access key for live stripe accounts",
+				},
+			},
+			Policies: []string{".connections.vpc.data.infrastructure.arn"},
+			Envs: map[string]string{
+				"LOG_LEVEL": "warn",
+			},
+		},
+	}
+
+	fs := afero.NewMemMapFs()
+
+	mockfilesystem.SetupBundle("/archive", fs)
+	mockfilesystem.WithFilesToIgnore("/archive", fs)
+
+	publisher := &publish.Publisher{
+		Bundle: &b,
+		Fs:     fs,
+	}
+
+	var buf bytes.Buffer
+
+	err := publisher.ArchiveBundle("/archive", &buf)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	extractTarGz(bytes.NewReader(buf.Bytes()), fs)
+
+	wantSrc := []string{"main.tf"}
+	wantTopLevel := []string{"deploy", "massdriver.yaml", "src"}
+
+	assertDirContains(wantTopLevel, "/untar/bundle", fs, t)
+	assertDirContains(wantSrc, "/untar/bundle/src", fs, t)
+}
+
+func assertDirContains(want []string, dir string, fs afero.Fs, t *testing.T) {
+	got := []string{}
+
+	info, err := afero.ReadDir(fs, dir)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, val := range info {
+		got = append(got, val.Name())
+	}
+
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("Expected %v got %v", want, got)
+	}
+}
+
+func extractTarGz(gzipStream io.Reader, fs afero.Fs) {
+	uncompressedStream, err := gzip.NewReader(gzipStream)
+	if err != nil {
+		log.Fatal("ExtractTarGz: NewReader failed")
+	}
+
+	tarReader := tar.NewReader(uncompressedStream)
+
+	for {
+		header, err := tarReader.Next()
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatalf("ExtractTarGz: Next() failed: %s", err.Error())
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := fs.Mkdir(path.Join("/untar/", header.Name), 0755); err != nil {
+				log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
+			}
+		case tar.TypeReg:
+			outFile, err := fs.Create(path.Join("/untar/", header.Name))
+			if err != nil {
+				log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())
+			}
+			defer outFile.Close()
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				log.Fatalf("ExtractTarGz: Copy() failed: %s", err.Error())
+			}
+		default:
+			log.Fatalf(
+				"ExtractTarGz: uknown type: %v in %s",
+				header.Typeflag,
+				header.Name)
+		}
 	}
 }

@@ -2,13 +2,14 @@ package publish
 
 import (
 	"archive/tar"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/afero"
 )
 
 type CopyConfig struct {
@@ -18,11 +19,13 @@ type CopyConfig struct {
 
 type Packager struct {
 	Filter *CopyConfig
+	Fs     afero.Fs
 }
 
-func newPackager(filter *CopyConfig) Packager {
+func newPackager(filter *CopyConfig, fs afero.Fs) Packager {
 	return Packager{
 		Filter: filter,
+		Fs:     fs,
 	}
 }
 
@@ -34,8 +37,7 @@ func (p *Packager) createArchiveWithFilter(dirPath string, prefix string, tarWri
 	}
 
 	// walk through every file in the folder
-	if err := filepath.Walk(absolutePath, func(file string, fi os.FileInfo, err error) error {
-
+	if err := afero.Walk(p.Fs, absolutePath, func(file string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -72,7 +74,7 @@ func (p *Packager) createArchiveWithFilter(dirPath string, prefix string, tarWri
 
 		// if not a dir, write file content
 		if !fi.IsDir() {
-			data, openErr := os.Open(file)
+			data, openErr := p.Fs.Open(file)
 			if openErr != nil {
 				return openErr
 			}
@@ -90,11 +92,9 @@ func (p *Packager) createArchiveWithFilter(dirPath string, prefix string, tarWri
 
 func (p *Packager) shouldSkip(info fs.FileInfo, depth int) (bool, error) {
 	name := info.Name()
-	fmt.Println(name)
 	// if we're at the root of the bundle
 	// we only want to honor the include list
 	if depth == 2 && !p.shouldInclude(name) {
-		fmt.Println("Not Including: ", name)
 		if info.IsDir() {
 			return true, filepath.SkipDir
 		}
@@ -105,7 +105,6 @@ func (p *Packager) shouldSkip(info fs.FileInfo, depth int) (bool, error) {
 	// we want to include every file _except_ the ones
 	// that match the ignore _criteria_. File names, sizes, etc...
 	if p.shouldIgnore(info) {
-		fmt.Println("ignoring: ", name)
 		if info.IsDir() {
 			return true, filepath.SkipDir
 		}
