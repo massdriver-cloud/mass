@@ -2,13 +2,15 @@
 
 Your infrastructure IaC must be published as a [bundle](https://docs.massdriver.cloud/bundles) to Massdriver first and be to an environment (target).
 
+Configuration will replace the full configuration of an infrastructure package in Massdriver.
+
 ## Examples
 
 You can configure infrastructure using the _fully qualified name_, its `slug`, or its ID.
 
 The `slug` can be found by hovering over the bundle in the Massdriver diagram.
 
-*Note:* Parameter files support bash interpolation.
+_Note:_ Parameter files support bash interpolation.
 
 **Using the fully qualified name**:
 

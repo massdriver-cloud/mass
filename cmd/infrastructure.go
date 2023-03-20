@@ -17,6 +17,7 @@ var infraParamsPath = "./params.json"
 var infraPatchQueries []string
 var infraCmdHelp = mustRenderHelpDoc("infrastructure")
 var infraDeployCmdHelp = mustRenderHelpDoc("infrastructure/deploy")
+var infraPatchCmdHelp = mustRenderHelpDoc("infrastructure/patch")
 var infraConfigureCmdHelp = mustRenderHelpDoc("infrastructure/configure")
 
 var infraCmd = &cobra.Command{
@@ -47,10 +48,9 @@ var infraPatchCmd = &cobra.Command{
 	Use:     `patch <project>-<target>-<manifest>`,
 	Short:   "Patch individual package parameter values",
 	Aliases: []string{"cfg"},
-	// TODO
-	// Long:    infraConfigureCmdHelp,
-	Args: cobra.ExactArgs(1),
-	RunE: runInfraPatch,
+	Long:    infraPatchCmdHelp,
+	Args:    cobra.ExactArgs(1),
+	RunE:    runInfraPatch,
 }
 
 func init() {
