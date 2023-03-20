@@ -59,7 +59,6 @@ func init() {
 	infraCmd.AddCommand(infraConfigureCmd)
 	infraCmd.AddCommand(infraPatchCmd)
 
-	// TODO: Add interpolation support
 	infraConfigureCmd.Flags().StringVarP(&infraParamsPath, "params", "p", infraParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 	infraPatchCmd.Flags().StringArrayVarP(&infraPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 }

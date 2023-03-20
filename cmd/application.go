@@ -59,7 +59,6 @@ func init() {
 	appCmd.AddCommand(appConfigureCmd)
 	appCmd.AddCommand(appPatchCmd)
 
-	// TODO: Add interpolation support
 	appConfigureCmd.Flags().StringVarP(&appParamsPath, "params", "p", appParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 	appPatchCmd.Flags().StringArrayVarP(&appPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 }

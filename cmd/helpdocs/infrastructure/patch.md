@@ -14,8 +14,6 @@ You can patch infrastructure using the _fully qualified name_, its `slug`, or it
 
 The `slug` can be found by hovering over the bundle in the Massdriver diagram.
 
-_Note:_ Parameter files support bash interpolation.
-
 **Using the fully qualified name**:
 
 ```shell
