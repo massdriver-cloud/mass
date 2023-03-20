@@ -2,8 +2,11 @@ package publish
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
+	"github.com/massdriver-cloud/mass/internal/config"
+	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/mass/internal/restclient"
 	"github.com/spf13/afero"
 )
@@ -16,21 +19,43 @@ func Run(b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs, buildFro
 		BuildDir:   buildFromDir,
 	}
 
+	var bundleName = prettylogs.Underline(b.Name)
+	var orgId = prettylogs.Underline(config.Get().OrgID)
+	var access = prettylogs.Underline(b.Access)
+	msg := fmt.Sprintf("Publishing %s to Organization %s with %s visibility", bundleName, orgId, access)
+	fmt.Println(msg)
+
 	s3SignedURL, err := publisher.SubmitBundle()
 
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
+
+	msg = fmt.Sprintf("%s published successfully to Organization %s with %s visibility", bundleName, orgId, access)
+	fmt.Println(msg)
 
 	var buf bytes.Buffer
 
+	msg = fmt.Sprintf("Packaging bundle %s for package manager", bundleName)
+	fmt.Println(msg)
 	if err = publisher.ArchiveBundle(&buf); err != nil {
+		fmt.Println(err)
 		return err
 	}
 
+	msg = fmt.Sprintf("Package %s created", bundleName)
+	fmt.Println(msg)
+
+	msg = fmt.Sprintf("Pushing packaged bundle %s to package manager", bundleName)
+	fmt.Println(msg)
 	if err = publisher.PushArchiveToPackageManager(s3SignedURL, &buf); err != nil {
+		fmt.Println(err)
 		return err
 	}
+
+	msg = fmt.Sprintf("Bundle %s successfully published to Organization %s", bundleName, orgId)
+	fmt.Println(msg)
 
 	return nil
 }
