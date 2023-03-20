@@ -1,14 +1,15 @@
 package templatecache
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path"
 	"strings"
 
-	"text/template"
-
+	"github.com/osteele/liquid"
 	"github.com/spf13/afero"
 )
 
@@ -36,11 +37,15 @@ func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkEr
 	outputPath := path.Join(f.writeDirectory, relativeWritePath)
 
 	if info.IsDir() {
-		if isBundleRootDirectory(relativeWritePath) {
-			return makeWriteDirectoryAndParents(f.writeDirectory, f.fs)
+		if _, checkDirExistsErr := f.fs.Stat(outputPath); errors.Is(checkDirExistsErr, os.ErrNotExist) {
+			if isBundleRootDirectory(relativeWritePath) {
+				return makeWriteDirectoryAndParents(f.writeDirectory, f.fs)
+			}
+
+			return f.fs.Mkdir(outputPath, 0755)
 		}
 
-		return f.fs.Mkdir(outputPath, 0755)
+		return nil
 	}
 
 	file, err := afero.ReadFile(f.fs, filePath)
@@ -52,35 +57,37 @@ func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkEr
 	return f.promptAndWrite(file, outputPath)
 }
 
-func (f *fileManager) promptAndWrite(file []byte, outputPath string) error {
-	tmpl, errTmpl := template.New("tmpl").Delims("<md", "md>").Parse(string(file))
-
-	if errTmpl != nil {
-		return errTmpl
-	}
-
-	if _, err := os.Stat(outputPath); err == nil {
+func (f *fileManager) promptAndWrite(template []byte, outputPath string) error {
+	if _, err := f.fs.Stat(outputPath); err == nil {
 		fmt.Printf("%s exists. Overwrite? (y|N): ", outputPath)
 		var response string
 		fmt.Scanln(&response)
 
-		if response == "y" || response == "Y" || response == "yes" {
-			return f.writeToFile(outputPath, tmpl)
+		if !(response == "y" || response == "Y" || response == "yes") {
+			fmt.Println("keeping existing file")
+			return nil
 		}
+
+		return f.writeToFile(outputPath, template)
 	}
 
-	return f.writeToFile(outputPath, tmpl)
+	return f.writeToFile(outputPath, template)
 }
 
-func (f *fileManager) writeToFile(outputPath string, tmpl *template.Template) error {
-	outputFile, err := f.fs.Create(outputPath)
+func (f *fileManager) writeToFile(outputPath string, template []byte) error {
+	engine := liquid.NewEngine()
 
-	if err != nil {
-		return err
+	var bindings map[string]interface{}
+	inrec, _ := json.Marshal(f.templateData)
+	json.Unmarshal(inrec, &bindings)
+
+	out, renderErr := engine.ParseAndRender(template, bindings)
+
+	if renderErr != nil {
+		return renderErr
 	}
 
-	defer outputFile.Close()
-	return tmpl.Execute(outputFile, f.templateData)
+	return afero.WriteFile(f.fs, outputPath, out, 0600)
 }
 
 func relativeWritePath(currentFilePath, readDirectory string) string {

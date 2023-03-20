@@ -1,9 +1,9 @@
 # This file will be used to generate all of the schema-*.json files in a bundle
 schema: draft-07
-name: "<md .Name md>"
-description: "<md .Description md>"
-source_url: github.com/YOUR_NAME_HERE/<md .Name md>
-access: "<md .Access md>"
+name: "{{ name }}"
+description: "{{ description }}"
+source_url: github.com/YOUR_NAME_HERE/{{ name }}
+access: "{{ access }}"
 type: infrastructure
 
 # schema-params.json
@@ -30,23 +30,20 @@ params:
 
 # schema-connections.json
 # Named list of input connections (artifacts) (map[name]artifact)
-<md if not .Connections md>
-connections:
-  properties: {}
-<md end -md>
 
-<md if .Connections md>
 connections:
   required:
-  <md- range $key, $art:= .Connections md>
-    - <md $key md>
-  <md- end md>
+    - aws_authentication
+  {%- for conn in connections %}
+    - {{conn.name}}
+  {% endfor %}
   properties:
-  <md- range $key, $art:= .Connections md>
-    <md $key md>:
-      $ref: <md $art md>
-  <md- end md>
-<md- end md>
+    aws_authentication:
+      $ref: massdriver/aws-iam-role
+  {%- for conn in connections %}
+    {{conn.name}}:
+      $ref: {{conn.artifact_definition}}
+  {% endfor %}
 
 # schema-artifacts.json
 # Named list of output artifacts  (map[name]artifact)

@@ -64,6 +64,7 @@ func (b *BundleTemplateCache) ListTemplates() ([]TemplateList, error) {
 		Issue here: https://linear.app/massdriver/issue/PLAT-262/support-glob-in-mass-cli-for-arbitrarily-nested-template-repositories
 	*/
 	matches, err := afero.Glob(b.Fs, fmt.Sprintf("%s/%s/%s/%s/massdriver.yaml", b.TemplatePath, gitOrg, repoName, templateDir))
+	fmt.Println(matches)
 
 	if err != nil {
 		return nil, err
@@ -85,12 +86,14 @@ Clones the desired template to the directory specified by the user and renders t
 func (b *BundleTemplateCache) RenderTemplate(data *TemplateData) error {
 	fileManager := &fileManager{
 		fs:                    b.Fs,
-		readDirectory:         path.Join(data.TemplateSource, data.TemplateRepo, data.TemplateName),
+		readDirectory:         path.Join(b.TemplatePath, data.TemplateRepo, data.TemplateName),
 		writeDirectory:        data.OutputDir,
 		templateData:          data,
 		templateRootDirectory: b.TemplatePath,
 	}
 
+	fmt.Println(fileManager.readDirectory)
+	fmt.Println(b.TemplatePath)
 	err := fileManager.CopyTemplate()
 
 	if err != nil {
