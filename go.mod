@@ -15,12 +15,12 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.2.1
-	github.com/itchyny/gojq v0.12.12
 	github.com/AlecAivazis/survey/v2 v2.3.6
+	github.com/BurntSushi/toml v1.2.1
 	github.com/charmbracelet/lipgloss v0.6.0
 	github.com/docker/docker v23.0.1+incompatible
 	github.com/evertras/bubble-table v0.14.8
+	github.com/itchyny/gojq v0.12.12
 	github.com/manifoldco/promptui v0.9.0
 	github.com/osteele/liquid v1.3.0
 	github.com/rs/zerolog v1.29.0

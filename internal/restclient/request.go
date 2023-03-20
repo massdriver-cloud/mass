@@ -32,7 +32,6 @@ func (req *Request) ToHTTPRequest(ctx context.Context, c *MassdriverClient) (*ht
 
 	url.Path = req.Path
 
-	// TODO: is there a better place to set this context?
 	httpReq, err := http.NewRequestWithContext(ctx, req.Method, url.String(), req.Body)
 	if err != nil {
 		return nil, err

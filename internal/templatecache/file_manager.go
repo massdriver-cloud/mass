@@ -79,7 +79,12 @@ func (f *fileManager) writeToFile(outputPath string, template []byte) error {
 
 	var bindings map[string]interface{}
 	inrec, _ := json.Marshal(f.templateData)
-	json.Unmarshal(inrec, &bindings)
+
+	err := json.Unmarshal(inrec, &bindings)
+
+	if err != nil {
+		return err
+	}
 
 	out, renderErr := engine.ParseAndRender(template, bindings)
 
