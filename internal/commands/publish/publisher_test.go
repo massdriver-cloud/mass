@@ -204,14 +204,15 @@ func TestPublish(t *testing.T) {
 
 			publisher := &publish.Publisher{
 				Bundle:     &tc.bundle,
-				RestClient: *c,
+				RestClient: c,
 				Fs:         fs,
+				BuildDir:   tc.path,
 			}
 
 			mockfilesystem.SetupBundle(tc.path, fs)
 			mockfilesystem.WithOperatorGuide(tc.path, tc.guideType, fs)
 
-			gotResponse, err := publisher.SubmitBundle(tc.path)
+			gotResponse, err := publisher.SubmitBundle()
 
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
@@ -271,18 +272,20 @@ func TestArchive(t *testing.T) {
 	}
 
 	fs := afero.NewMemMapFs()
+	buildDir := "/archive"
 
-	mockfilesystem.SetupBundle("/archive", fs)
-	mockfilesystem.WithFilesToIgnore("/archive", fs)
+	mockfilesystem.SetupBundle(buildDir, fs)
+	mockfilesystem.WithFilesToIgnore(buildDir, fs)
 
 	publisher := &publish.Publisher{
-		Bundle: &b,
-		Fs:     fs,
+		Bundle:   &b,
+		Fs:       fs,
+		BuildDir: buildDir,
 	}
 
 	var buf bytes.Buffer
 
-	err := publisher.ArchiveBundle("/archive", &buf)
+	err := publisher.ArchiveBundle(&buf)
 
 	if err != nil {
 		t.Fatal(err)
@@ -295,6 +298,46 @@ func TestArchive(t *testing.T) {
 
 	assertDirContains(wantTopLevel, "/untar/bundle", fs, t)
 	assertDirContains(wantSrc, "/untar/bundle/src", fs, t)
+}
+
+func TestUploadToPresignedS3URL(t *testing.T) {
+	type test struct {
+		name  string
+		bytes []byte
+	}
+	tests := []test{
+		{
+			name:  "simple",
+			bytes: []byte{1, 2, 3, 4},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotBody []byte
+			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				bytes, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					t.Fatalf("%d, unexpected error", err)
+				}
+				gotBody = bytes
+
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer testServer.Close()
+
+			publisher := publish.Publisher{}
+
+			err := publisher.PushArchiveToPackageManager(testServer.URL, bytes.NewReader(tc.bytes))
+			if err != nil {
+				t.Fatalf("%d, unexpected error", err)
+			}
+
+			if string(gotBody) != string(tc.bytes) {
+				t.Errorf("got %v, want %v", gotBody, tc.bytes)
+			}
+		})
+	}
 }
 
 func assertDirContains(want []string, dir string, fs afero.Fs, t *testing.T) {

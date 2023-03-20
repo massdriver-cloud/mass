@@ -93,13 +93,10 @@ func (b *Bundle) IsApplication() bool {
 func checkForOperatorGuideAndSetValue(path string, body *restclient.PublishPost, fs afero.Fs) error {
 	pathsToCheck := []string{"operator.mdx", "operator.md"}
 
-	fmt.Println(afero.ReadDir(fs, path))
-
 	for _, fileName := range pathsToCheck {
 		_, err := fs.Stat(filepath.Join(path, fileName))
 
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 

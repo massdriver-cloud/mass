@@ -31,8 +31,9 @@ const (
 
 type Publisher struct {
 	Bundle     *bundle.Bundle
-	RestClient restclient.MassdriverClient
+	RestClient *restclient.MassdriverClient
 	Fs         afero.Fs
+	BuildDir   string
 }
 
 type S3PresignEndpointResponse struct {
@@ -67,9 +68,9 @@ var fileAllows = []string{
 	"src",
 }
 
-func (p *Publisher) SubmitBundle(srcDir string) (string, error) {
+func (p *Publisher) SubmitBundle() (string, error) {
 	//TODO: Add log message for publish and response
-	body, err := p.Bundle.GenerateBundlePublishBody(srcDir, p.Fs)
+	body, err := p.Bundle.GenerateBundlePublishBody(p.BuildDir, p.Fs)
 
 	if err != nil {
 		return "", err
@@ -78,7 +79,7 @@ func (p *Publisher) SubmitBundle(srcDir string) (string, error) {
 	return p.RestClient.PublishBundle(body)
 }
 
-func (p *Publisher) ArchiveBundle(filePath string, buf io.Writer) error {
+func (p *Publisher) ArchiveBundle(buf io.Writer) error {
 	allowList := getAllowList(p.Bundle)
 	copyConfig := CopyConfig{
 		Allows:  allowList,
@@ -89,8 +90,7 @@ func (p *Publisher) ArchiveBundle(filePath string, buf io.Writer) error {
 	tarWriter := tar.NewWriter(gzipWriter)
 
 	packager := newPackager(&copyConfig, p.Fs)
-
-	errCompress := packager.createArchiveWithFilter(filePath, PackageManagerDirectoryPrefix, tarWriter)
+	errCompress := packager.createArchiveWithFilter(p.BuildDir, PackageManagerDirectoryPrefix, tarWriter)
 
 	if errCompress != nil {
 		return errCompress
@@ -108,7 +108,7 @@ func (p *Publisher) ArchiveBundle(filePath string, buf io.Writer) error {
 	return nil
 }
 
-func (p *Publisher) PushArchiveToPackageManager(url string, object io.Reader) error {
+func (p Publisher) PushArchiveToPackageManager(url string, object io.Reader) error {
 	// TODO: Add log message for push to s3
 	req, err := http.NewRequestWithContext(context.Background(), "PUT", url, object)
 	if err != nil {
