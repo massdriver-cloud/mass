@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
-	"github.com/massdriver-cloud/mass/internal/config"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/mass/internal/restclient"
 	"github.com/spf13/afero"
@@ -20,9 +19,8 @@ func Run(b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs, buildFro
 	}
 
 	var bundleName = prettylogs.Underline(b.Name)
-	var orgId = prettylogs.Underline(config.Get().OrgID)
 	var access = prettylogs.Underline(b.Access)
-	msg := fmt.Sprintf("Publishing %s to Organization %s with %s visibility", bundleName, orgId, access)
+	msg := fmt.Sprintf("Publishing %s with %s visibility", bundleName, access)
 	fmt.Println(msg)
 
 	s3SignedURL, err := publisher.SubmitBundle()
@@ -32,7 +30,7 @@ func Run(b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs, buildFro
 		return err
 	}
 
-	msg = fmt.Sprintf("%s published successfully to Organization %s with %s visibility", bundleName, orgId, access)
+	msg = fmt.Sprintf("%s published successfully to with %s visibility", bundleName, access)
 	fmt.Println(msg)
 
 	var buf bytes.Buffer
@@ -54,7 +52,7 @@ func Run(b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs, buildFro
 		return err
 	}
 
-	msg = fmt.Sprintf("Bundle %s successfully published to Organization %s", bundleName, orgId)
+	msg = fmt.Sprintf("Bundle %s successfully published", bundleName)
 	fmt.Println(msg)
 
 	return nil
