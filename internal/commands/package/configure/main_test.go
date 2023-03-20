@@ -11,28 +11,32 @@ import (
 )
 
 func TestConfigurePackage(t *testing.T) {
+	responses := []gqlmock.ResponseFunc{
+		func(req *http.Request) interface{} {
+			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
+				Manifest: api.Manifest{ID: "manifest-id"},
+				Target:   api.Target{ID: "target-id"},
+			})
+		},
+		func(req *http.Request) interface{} {
+			vars := gqlmock.ParseInputVariables(req)
+			paramsJSON := []byte(vars["params"].(string))
+
+			params := map[string]interface{}{}
+			gqlmock.MustUnmarshalJSON(paramsJSON, &params)
+
+			return gqlmock.MockMutationResponse("configurePackage", map[string]interface{}{
+				"id":     "pkg-id",
+				"params": params,
+			})
+		},
+	}
+
 	params := map[string]interface{}{
 		"cidr": "10.0.0.0/16",
 	}
 
-	// TODO: This is a bunk tests
-	client := gqlmock.NewClientWithJSONResponseMap(map[string]interface{}{
-		"getPackageByNamingConvention": gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
-			Manifest: api.Manifest{ID: "manifest-id"},
-			Target:   api.Target{ID: "target-id"},
-		}),
-		"configurePackage": map[string]interface{}{
-			"data": map[string]interface{}{
-				"configurePackage": map[string]interface{}{
-					"result": map[string]interface{}{
-						"id":     "pkg-id",
-						"params": params,
-					},
-					"successful": true,
-				},
-			},
-		},
-	})
+	client := gqlmock.NewClientWithFuncResponseArray(responses)
 
 	pkg, err := configure.Run(client, "faux-org-id", "ecomm-prod-cache", params)
 	if err != nil {

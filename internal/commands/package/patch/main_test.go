@@ -1,6 +1,7 @@
 package patch_test
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
@@ -10,33 +11,32 @@ import (
 )
 
 func TestPatchPackage(t *testing.T) {
-	params := map[string]interface{}{
-		"cidr": "10.0.0.0/16",
+	// Client-side patch gets params, patches, and reconfigures
+	responses := []gqlmock.ResponseFunc{
+		func(req *http.Request) interface{} {
+			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
+				Manifest: api.Manifest{ID: "manifest-id"},
+				Target:   api.Target{ID: "target-id"},
+				Params: map[string]interface{}{
+					"cidr": "10.0.0.0/16",
+				},
+			})
+		},
+		func(req *http.Request) interface{} {
+			vars := gqlmock.ParseInputVariables(req)
+			paramsJSON := []byte(vars["params"].(string))
+
+			params := map[string]interface{}{}
+			gqlmock.MustUnmarshalJSON(paramsJSON, &params)
+
+			return gqlmock.MockMutationResponse("configurePackage", map[string]interface{}{
+				"id":     "pkg-id",
+				"params": params,
+			})
+		},
 	}
 
-	// TODO: this test is bunk, doesnt test anything.
-	// Need to add a mock that accepts functions so we can assert what configurePackage receives...
-	client := gqlmock.NewClientWithJSONResponseMap(map[string]interface{}{
-		"getPackageByNamingConvention": gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
-			Manifest: api.Manifest{ID: "manifest-id"},
-			Target:   api.Target{ID: "target-id"},
-			Params:   params,
-		}),
-		"configurePackage": map[string]interface{}{
-			"data": map[string]interface{}{
-				"configurePackage": map[string]interface{}{
-					"result": map[string]interface{}{
-						"id": "pkg-id",
-						"params": map[string]interface{}{
-							"cidr": "10.0.0.0/20",
-						},
-					},
-					"successful": true,
-				},
-			},
-		},
-	})
-
+	client := gqlmock.NewClientWithFuncResponseArray(responses)
 	setValues := []string{".cidr = \"10.0.0.0/20\""}
 
 	pkg, err := patch.Run(client, "faux-org-id", "ecomm-prod-cache", setValues)
