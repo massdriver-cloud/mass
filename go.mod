@@ -22,7 +22,7 @@ require (
 	github.com/evertras/bubble-table v0.14.8
 	github.com/itchyny/gojq v0.12.12
 	github.com/manifoldco/promptui v0.9.0
-	github.com/osteele/liquid v1.3.0
+	github.com/massdriver-cloud/liquid v1.2.4
 	github.com/rs/zerolog v1.29.0
 	golang.org/x/text v0.8.0
 )
