@@ -24,10 +24,17 @@ func transpileAndWriteDevParams(path string, b *bundle.Bundle, fs afero.Fs) erro
 		return err
 	}
 
-	example, err := getFirstExample(b.Params["examples"].([]interface{}))
+	var example map[string]interface{}
 
-	if err != nil {
-		return err
+	if b.Params["examples"] == nil {
+		example = make(map[string]interface{})
+	} else {
+		example, err = getFirstExample(b.Params["examples"].([]interface{}))
+
+		if err != nil {
+			return err
+		}
+
 	}
 
 	paramsSchemaProperties, ok := b.Params["properties"].(map[string]interface{})
