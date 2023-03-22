@@ -48,6 +48,12 @@ var bundleTemplateRefreshCmd = &cobra.Command{
 	RunE:  runBundleTemplateRefresh,
 }
 
+var bundleNewCmd = &cobra.Command{
+	Use:   "new",
+	Short: "Create a new bundle from a template",
+	RunE:  runBundleNew,
+}
+
 var bundleBuildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "Build schemas from massdriver.yaml file",
@@ -56,6 +62,7 @@ var bundleBuildCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(bundleCmd)
+	bundleCmd.AddCommand(bundleNewCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
@@ -85,6 +92,38 @@ func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 	err := commands.RefreshTemplates(cache)
 
 	return err
+}
+
+func runBundleNew(cmd *cobra.Command, args []string) error {
+	var fs = afero.NewOsFs()
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	err := commands.RefreshTemplates(cache)
+
+	if err != nil {
+		return err
+	}
+
+	templateData := &templatecache.TemplateData{
+		Access: "private",
+		// Promptui templates are a nightmare. Need to support multi repos when moving this to bubbletea
+		TemplateRepo: "/massdriver-cloud/application-templates",
+		// TODO: unify bundle build and app build outputDir logic and support
+		OutputDir: ".",
+	}
+
+	err = bundle.RunPromptNew(templateData)
+
+	if err != nil {
+		return err
+	}
+
+	err = commands.GenerateNewBundle(cache, templateData)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func runBundleBuild(cmd *cobra.Command, args []string) error {

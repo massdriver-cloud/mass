@@ -8,20 +8,25 @@ type TemplateCache interface {
 }
 
 type TemplateData struct {
-	Name           string
-	Description    string
-	Access         string
-	Location       string
-	TemplateName   string
-	TemplateRepo   string
-	TemplateSource string
-	OutputDir      string
-	Type           string
-	Connections    map[string]string
+	Name           string       `json:"name"`
+	Description    string       `json:"description"`
+	Access         string       `json:"access"`
+	Location       string       `json:"location"`
+	TemplateName   string       `json:"templateName"`
+	TemplateRepo   string       `json:"templateRepo"`
+	TemplateSource string       `json:"templateSource"`
+	OutputDir      string       `json:"outputDir"`
+	Type           string       `json:"type"`
+	Connections    []Connection `json:"connections"`
 	// Specificaly for the README
-	CloudAbbreviation string
-	RepoName          string
-	RepoNameEncoded   string
+	CloudAbbreviation string `json:"cloudAbbreviation"`
+	RepoName          string `json:"repoName"`
+	RepoNameEncoded   string `json:"repoNameEncoded"`
+}
+
+type Connection struct {
+	Name               string `json:"name"`
+	ArtifactDefinition string `json:"artifact_definition"`
 }
 
 type Fetcher func(writePath string) error
