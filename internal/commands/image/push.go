@@ -67,7 +67,7 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 		return err
 	}
 
-	var fqn = prettylogs.Underline(containerRepository.RepositoryURI)
+	var fqn = prettylogs.Underline(imageFqn(containerRepository.RepositoryURI, input.ImageName, input.Tag))
 	msg = fmt.Sprintf("Image %s pushed successfully", fqn)
 	fmt.Println(msg)
 
