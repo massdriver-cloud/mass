@@ -7,6 +7,8 @@ import (
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/commands"
+	"github.com/massdriver-cloud/mass/internal/commands/publish"
+	"github.com/massdriver-cloud/mass/internal/config"
 	"github.com/massdriver-cloud/mass/internal/restclient"
 	"github.com/massdriver-cloud/mass/internal/templatecache"
 	"github.com/spf13/afero"
@@ -60,6 +62,12 @@ var bundleBuildCmd = &cobra.Command{
 	RunE:  runBundleBuild,
 }
 
+var bundlePublishCmd = &cobra.Command{
+	Use:   "publish",
+	Short: "Publish bundle to Massdriver's package manager",
+	RunE:  runBundlePublish,
+}
+
 func init() {
 	rootCmd.AddCommand(bundleCmd)
 	bundleCmd.AddCommand(bundleNewCmd)
@@ -68,6 +76,7 @@ func init() {
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
 	bundleCmd.AddCommand(bundleBuildCmd)
 	bundleBuildCmd.Flags().StringP("output", "o", "", "Path to output directory (default is massdriver.yaml directory)")
+	bundleCmd.AddCommand(bundlePublishCmd)
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
@@ -139,15 +148,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 		outputDir = "."
 	}
 
-	file, err := afero.ReadFile(fs, path.Join(".", "massdriver.yaml"))
-
-	if err != nil {
-		return err
-	}
-
-	unmarshalledBundle := &bundle.Bundle{}
-
-	err = yaml.Unmarshal(file, unmarshalledBundle)
+	unmarshalledBundle, err := unmarshalBundle(fs)
 
 	if err != nil {
 		return err
@@ -158,4 +159,62 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 	err = commands.BuildBundle(outputDir, unmarshalledBundle, c, fs)
 
 	return err
+}
+
+func runBundlePublish(cmd *cobra.Command, args []string) error {
+	config := config.Get()
+	var fs = afero.NewOsFs()
+
+	unmarshalledBundle, err := unmarshalBundle(fs)
+
+	if err != nil {
+		return err
+	}
+
+	c := restclient.NewClient().WithAPIKey(config.APIKey)
+
+	err = commands.BuildBundle(".", unmarshalledBundle, c, fs)
+
+	if err != nil {
+		return err
+	}
+
+	publish.Run(unmarshalledBundle, c, fs, ".")
+	return nil
+}
+
+func unmarshalBundle(fs afero.Fs) (*bundle.Bundle, error) {
+	file, err := afero.ReadFile(fs, path.Join(".", "massdriver.yaml"))
+
+	if err != nil {
+		return nil, err
+	}
+
+	unmarshalledBundle := &bundle.Bundle{}
+
+	err = yaml.Unmarshal(file, unmarshalledBundle)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if unmarshalledBundle.IsApplication() {
+		applyAppBlockDefaults(unmarshalledBundle)
+	}
+
+	return unmarshalledBundle, nil
+}
+
+func applyAppBlockDefaults(b *bundle.Bundle) {
+	if b.AppSpec != nil {
+		if b.AppSpec.Envs == nil {
+			b.AppSpec.Envs = map[string]string{}
+		}
+		if b.AppSpec.Policies == nil {
+			b.AppSpec.Policies = []string{}
+		}
+		if b.AppSpec.Secrets == nil {
+			b.AppSpec.Secrets = map[string]bundle.Secret{}
+		}
+	}
 }

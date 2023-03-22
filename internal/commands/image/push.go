@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/prettylogs"
 )
 
 const AWS = "AWS"
@@ -18,8 +18,9 @@ const GCP = "GCP"
 const AZURE = "Azure"
 
 func Push(client graphql.Client, input PushImageInput, imageClient Client) error {
-	var imageName = lipgloss.NewStyle().SetString(input.ImageName).Underline(true).Foreground(lipgloss.Color("#7D56f4"))
-	var location = lipgloss.NewStyle().SetString(input.Location).Underline(true).Foreground(lipgloss.Color("#7D56f4"))
+	var imageName = prettylogs.Underline(input.ImageName)
+	var location = prettylogs.Underline(input.Location)
+
 	msg := fmt.Sprintf("Creating repository for image %s in region %s and fetching single use credentials", imageName, location)
 	fmt.Println(msg)
 
@@ -31,11 +32,12 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 
 	cloudName := identifyCloudByRepositoryURI(containerRepository.RepositoryURI)
 
-	var logCloud = lipgloss.NewStyle().SetString(cloudName).Underline(true).Foreground(lipgloss.Color("#7D56f4"))
+	var logCloud = prettylogs.Underline(cloudName)
 	msg = fmt.Sprintf("%s credentials feted successfully", logCloud)
 	fmt.Println(msg)
 
-	var logTag = lipgloss.NewStyle().SetString(input.Tag).Underline(true).Foreground(lipgloss.Color("#7D56f4"))
+	var logTag = prettylogs.Underline(input.Tag)
+
 	msg = fmt.Sprintf("Building %s and tagging the image with %s", imageName, logTag)
 	fmt.Println(msg)
 
@@ -65,7 +67,7 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 		return err
 	}
 
-	var fqn = lipgloss.NewStyle().SetString(imageFqn(containerRepository.RepositoryURI, input.ImageName, input.Tag)).Underline(true).Foreground(lipgloss.Color("#7D56f4"))
+	var fqn = prettylogs.Underline(containerRepository.RepositoryURI)
 	msg = fmt.Sprintf("Image %s pushed successfully", fqn)
 	fmt.Println(msg)
 

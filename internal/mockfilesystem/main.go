@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
+	"runtime"
 
 	"github.com/spf13/afero"
 )
@@ -29,7 +31,8 @@ func SetupBundleTemplate(rootTemplateDir string, fs afero.Fs) error {
 		path.Join(rootTemplateDir, repoPath, templatePath, srcPath),
 	}
 
-	massdriverYamlTemplate, err := os.ReadFile("../mockfilesystem/testdata/massdriver.yaml.txt")
+	fixturePath := path.Join(projectRoot(), "/internal/mockfilesystem/testdata/massdriver.yaml.txt")
+	massdriverYamlTemplate, err := os.ReadFile(fixturePath)
 
 	if err != nil {
 		return err
@@ -62,13 +65,20 @@ func SetupBundleTemplate(rootTemplateDir string, fs afero.Fs) error {
 
 func SetupBundle(rootDir string, fs afero.Fs) error {
 	srcPath := "src"
+	deployPath := "deploy"
 
 	directories := []string{
 		rootDir,
 		path.Join(rootDir, srcPath),
+		path.Join(rootDir, deployPath),
 	}
 
-	massdriverYamlFile, err := os.ReadFile("../mockfilesystem/testdata/massdriver.yaml")
+	fixturePath := path.Join(projectRoot(), "/internal/mockfilesystem/testdata/massdriver.yaml")
+
+	massdriverYamlFile, err := os.ReadFile(fixturePath)
+
+	mainTFPath := path.Join(projectRoot(), "/internal/mockfilesystem/testdata/main.tf")
+	mainTF, err := os.ReadFile(mainTFPath)
 
 	if err != nil {
 		return err
@@ -80,7 +90,11 @@ func SetupBundle(rootDir string, fs afero.Fs) error {
 			Content: massdriverYamlFile,
 		},
 		{
-			Path: fmt.Sprintf("%s/main.tf", path.Join(rootDir, srcPath)),
+			Path:    fmt.Sprintf("%s/main.tf", path.Join(rootDir, srcPath)),
+			Content: mainTF,
+		},
+		{
+			Path: fmt.Sprintf("%s/main.tf", path.Join(rootDir, deployPath)),
 		},
 	}
 
@@ -93,6 +107,55 @@ func SetupBundle(rootDir string, fs afero.Fs) error {
 	err = MakeFiles(files, fs)
 
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func WithOperatorGuide(rootDir string, guideType string, fs afero.Fs) error {
+	operatorGuideFilePath := fmt.Sprintf("%s/internal/mockfilesystem/testdata/operator.md", projectRoot())
+	operatorGuideMd, err := os.ReadFile(operatorGuideFilePath)
+
+	if err != nil {
+		return err
+	}
+
+	files := []VirtualFile{
+		{
+			Path:    fmt.Sprintf("%s/operator.%s", rootDir, guideType),
+			Content: operatorGuideMd,
+		},
+	}
+
+	err = MakeFiles(files, fs)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func WithFilesToIgnore(rootDir string, fs afero.Fs) error {
+	directories := []string{
+		path.Join(rootDir, "shouldntexist"),
+	}
+
+	files := []VirtualFile{
+		{
+			Path: fmt.Sprintf("%s/shouldntexist.txt", rootDir),
+		},
+		{
+			Path: fmt.Sprintf("%s/src/.tfstate", rootDir),
+		},
+	}
+
+	if err := MakeDirectories(directories, fs); err != nil {
+		return err
+	}
+
+	if err := MakeFiles(files, fs); err != nil {
 		return err
 	}
 
@@ -129,4 +192,10 @@ func AssertDirectoryContents(fs afero.Fs, path string, want []string) (string, b
 	}
 
 	return fmt.Sprintf("Wanted %v but got %v", want, got), reflect.DeepEqual(got, want)
+}
+
+func projectRoot() string {
+	_, b, _, _ := runtime.Caller(0)
+
+	return filepath.Join(filepath.Dir(b), "../..")
 }
