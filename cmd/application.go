@@ -96,7 +96,7 @@ func runAppPatch(cmd *cobra.Command, args []string) error {
 	c := config.Get()
 	client := api.NewClient(c.URL, c.APIKey)
 
-	_, err := patch.Run(client, c.OrgID, packageSlugOrID, infraPatchQueries)
+	_, err := patch.Run(client, c.OrgID, packageSlugOrID, appPatchQueries)
 
 	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Patching: %s", name)
