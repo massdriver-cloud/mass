@@ -8,10 +8,10 @@ import (
 )
 
 var credentialArtifactDefinitions = []*ArtifactDefinition{
-	{"massdriver/aws-iam-role"},
-	{"massdriver/azure-service-principal"},
-	{"massdriver/gcp-service-account"},
-	{"massdriver/kubernetes-cluster"},
+	{"massdriver/aws-iam-role", "AWS IAM Role", ""},
+	{"massdriver/azure-service-principal", "Azure Service Principal", ""},
+	{"massdriver/gcp-service-account", "GCP Service Account", ""},
+	{"massdriver/kubernetes-cluster", "Kubernetes Cluster", ""},
 }
 
 // List supported credential types
