@@ -1,3 +1,3 @@
 # artifact command help docs
 
-TODO
+TODO: Fill this out
