@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/massdriver-cloud/liquid"
@@ -35,7 +36,6 @@ func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkEr
 
 	relativeWritePath := relativeWritePath(filePath, f.readDirectory)
 	outputPath := path.Join(f.writeDirectory, relativeWritePath)
-
 	if info.IsDir() {
 		if _, checkDirExistsErr := f.fs.Stat(outputPath); errors.Is(checkDirExistsErr, os.ErrNotExist) {
 			if isBundleRootDirectory(relativeWritePath) {
@@ -48,13 +48,24 @@ func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkEr
 		return nil
 	}
 
-	file, err := afero.ReadFile(f.fs, filePath)
-
-	if err != nil {
-		return err
+	readBytes, readErr := afero.ReadFile(f.fs, filePath)
+	if readErr != nil {
+		return readErr
 	}
 
-	return f.promptAndWrite(file, outputPath)
+	// only templatize files in the bundle root directory (to not conflict w/ helm templates)
+	var outBytes []byte
+	if isInsideBundleRootDirectory(relativeWritePath) {
+		var renderErr error
+		outBytes, renderErr = f.renderFile(readBytes)
+		if renderErr != nil {
+			return renderErr
+		}
+	} else {
+		outBytes = readBytes
+	}
+
+	return f.promptAndWrite(outBytes, outputPath)
 }
 
 func (f *fileManager) promptAndWrite(template []byte, outputPath string) error {
@@ -74,7 +85,7 @@ func (f *fileManager) promptAndWrite(template []byte, outputPath string) error {
 	return f.writeToFile(outputPath, template)
 }
 
-func (f *fileManager) writeToFile(outputPath string, template []byte) error {
+func (f *fileManager) renderFile(template []byte) ([]byte, error) {
 	engine := liquid.NewEngine()
 
 	var bindings map[string]interface{}
@@ -83,16 +94,14 @@ func (f *fileManager) writeToFile(outputPath string, template []byte) error {
 	err := json.Unmarshal(inrec, &bindings)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	out, renderErr := engine.ParseAndRender(template, bindings)
+	return engine.ParseAndRender(template, bindings)
+}
 
-	if renderErr != nil {
-		return renderErr
-	}
-
-	return afero.WriteFile(f.fs, outputPath, out, 0600)
+func (f *fileManager) writeToFile(outputPath string, outBytes []byte) error {
+	return afero.WriteFile(f.fs, outputPath, outBytes, 0600)
 }
 
 func relativeWritePath(currentFilePath, readDirectory string) string {
@@ -112,6 +121,10 @@ func makeWriteDirectoryAndParents(writeDirectory string, fs afero.Fs) error {
 	return nil
 }
 
-func isBundleRootDirectory(realtiveWritePath string) bool {
-	return realtiveWritePath == "."
+func isBundleRootDirectory(relativeWritePath string) bool {
+	return relativeWritePath == "."
+}
+
+func isInsideBundleRootDirectory(relativeWritePath string) bool {
+	return filepath.Dir(relativeWritePath) == "/"
 }
