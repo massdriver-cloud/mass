@@ -62,6 +62,12 @@ var bundleBuildCmd = &cobra.Command{
 	RunE:  runBundleBuild,
 }
 
+var bundleLintCmd = &cobra.Command{
+	Use:   "lint",
+	Short: "Check massdriver.yaml file for common errors",
+	RunE:  runBundleLint,
+}
+
 var bundlePublishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "Publish bundle to Massdriver's package manager",
@@ -76,6 +82,7 @@ func init() {
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
 	bundleCmd.AddCommand(bundleBuildCmd)
 	bundleBuildCmd.Flags().StringP("output", "o", "", "Path to output directory (default is massdriver.yaml directory)")
+	bundleCmd.AddCommand(bundleLintCmd)
 	bundleCmd.AddCommand(bundlePublishCmd)
 }
 
@@ -159,6 +166,13 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 	err = commands.BuildBundle(outputDir, unmarshalledBundle, c, fs)
 
 	return err
+}
+
+func runBundleLint(cmd *cobra.Command, args []string) error {
+	// config := config.Get()
+	// var fs = afero.NewOsFs()
+
+	return nil
 }
 
 func runBundlePublish(cmd *cobra.Command, args []string) error {
