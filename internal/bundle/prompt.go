@@ -3,10 +3,12 @@ package bundle
 import (
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/go-git/go-git/v5"
 	"github.com/manifoldco/promptui"
 	"github.com/massdriver-cloud/mass/internal/templatecache"
 	"github.com/spf13/afero"
@@ -70,6 +72,7 @@ var promptsNew = []func(t *templatecache.TemplateData) error{
 	getTemplate,
 	GetConnections,
 	getOutputDir,
+	getSourceUrl,
 }
 
 func RunPromptNew(t *templatecache.TemplateData) error {
@@ -259,5 +262,29 @@ func getOutputDir(t *templatecache.TemplateData) error {
 	}
 
 	t.OutputDir = result
+	return nil
+}
+
+func getSourceUrl(t *templatecache.TemplateData) error {
+	// No actual prompt here - just check if we are in a github repo so we can automatically
+	// set the "source_url". Otherwise use a safe default. Ignore any errors since the user
+	// may not be in a git repo.
+	t.SourceURL = fmt.Sprintf("github.com/YOUR_ORGANIZATION/%s", t.Name)
+	dir, err := os.Getwd()
+	if err != nil {
+		return nil
+	}
+	repo, err := git.PlainOpen(dir)
+	if err != nil {
+		return nil
+	}
+	remote, err := repo.Remote("origin")
+	if err != nil {
+		return nil
+	}
+	url := remote.Config().URLs[0]
+	url = strings.Replace(url, "git@github.com:", "github.com/", 1)
+	t.SourceURL = strings.TrimSuffix(url, ".git")
+
 	return nil
 }

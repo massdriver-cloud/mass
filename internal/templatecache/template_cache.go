@@ -12,6 +12,7 @@ type TemplateData struct {
 	Description    string       `json:"description"`
 	Access         string       `json:"access"`
 	Location       string       `json:"location"`
+	SourceURL      string       `json:"source_url"`
 	TemplateName   string       `json:"templateName"`
 	TemplateRepo   string       `json:"templateRepo"`
 	TemplateSource string       `json:"templateSource"`
