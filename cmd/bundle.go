@@ -75,7 +75,6 @@ func init() {
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
 	bundleCmd.AddCommand(bundleBuildCmd)
-	bundleBuildCmd.Flags().StringP("output", "o", ".", "Path to output directory (default is massdriver.yaml directory)")
 	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleCmd.AddCommand(bundlePublishCmd)
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
@@ -139,12 +138,6 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 
 func runBundleBuild(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
-
-	_, err := cmd.Flags().GetString("output")
-
-	if err != nil {
-		return err
-	}
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
 
