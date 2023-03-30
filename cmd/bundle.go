@@ -183,7 +183,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
-	err = commands.BuildBundle(".", unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
 
 	if err != nil {
 		return err
