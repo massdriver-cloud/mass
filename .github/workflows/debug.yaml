@@ -8,8 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  sign_macos:
-    needs: build
+  debug:
     runs-on: macos-latest
     steps:
       - name: Checkout
