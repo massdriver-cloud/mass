@@ -1,0 +1,26 @@
+name: debugging
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  sign_macos:
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download-Binaries
+        uses: actions/download-artifact@v2
+        with:
+          name: binaries
+          path: release/
+
+      - name: ls release dir
+        run: |
+          ls -R release/
