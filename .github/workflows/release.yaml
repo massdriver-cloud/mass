@@ -1,12 +1,12 @@
-name: Generate release-artifacts
+name: build releases
 on:
   release:
     types:
       - created
       - released
 jobs:
-  generate:
-    name: Generate cross-platform builds
+  build:
+    name: build
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -26,3 +26,27 @@ jobs:
           binary_name: mass
           # ldflags is the canonical way of setting dynamic values (like version) at compile time
           ldflags: -X github.com/massdriver-cloud/mass/pkg/version.version=${{github.ref_name}} -X github.com/massdriver-cloud/mass/pkg/version.gitSHA=${{github.sha}}
+
+  sign_macos:
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download-Binaries
+        uses: actions/download-artifact@v2
+        with:
+          name: binaries
+          path: release/
+
+      - name: Import Code-Signing Certificates
+        uses: Apple-Actions/import-codesign-certs@v1
+        with:
+          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+          p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+
+      - name: Install gon via HomeBrew for code signing and app notarization
+        run: |
+          brew tap mitchellh/gon
+          brew install mitchellh/gon/gon
