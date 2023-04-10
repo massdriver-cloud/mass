@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -19,7 +20,7 @@ func GetPackageByName(client graphql.Client, orgID string, name string) (*Packag
 	response, err := getPackageByNamingConvention(ctx, client, orgID, name)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error when querying for package %s:\n\t%w", name, err)
 	}
 
 	return response.GetPackageByNamingConvention.toPackage(), nil
