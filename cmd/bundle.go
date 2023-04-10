@@ -63,9 +63,10 @@ var bundleBuildCmd = &cobra.Command{
 }
 
 var bundleLintCmd = &cobra.Command{
-	Use:   "lint",
-	Short: "Check massdriver.yaml file for common errors",
-	RunE:  runBundleLint,
+	Use:          "lint",
+	Short:        "Check massdriver.yaml file for common errors",
+	SilenceUsage: true,
+	RunE:         runBundleLint,
 }
 
 var bundlePublishCmd = &cobra.Command{
@@ -81,9 +82,11 @@ func init() {
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
 	bundleCmd.AddCommand(bundleBuildCmd)
-	bundleBuildCmd.Flags().StringP("output", "o", "", "Path to output directory (default is massdriver.yaml directory)")
+	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleCmd.AddCommand(bundleLintCmd)
+	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleCmd.AddCommand(bundlePublishCmd)
+	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
@@ -145,17 +148,13 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 func runBundleBuild(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 
-	outputDir, err := cmd.Flags().GetString("output")
+	buildDirectory, err := cmd.Flags().GetString("build-directory")
 
 	if err != nil {
 		return err
 	}
 
-	if outputDir == "" {
-		outputDir = "."
-	}
-
-	unmarshalledBundle, err := unmarshalBundle(fs)
+	unmarshalledBundle, err := unmarshalBundle(buildDirectory, fs)
 
 	if err != nil {
 		return err
@@ -163,23 +162,22 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient()
 
-	err = commands.BuildBundle(outputDir, unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
 
 	return err
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {
-	// config := config.Get()
-	// var fs = afero.NewOsFs()
-
-	return nil
-}
-
-func runBundlePublish(cmd *cobra.Command, args []string) error {
 	config := config.Get()
 	var fs = afero.NewOsFs()
 
-	unmarshalledBundle, err := unmarshalBundle(fs)
+	buildDirectory, err := cmd.Flags().GetString("build-directory")
+
+	if err != nil {
+		return err
+	}
+
+	unmarshalledBundle, err := unmarshalBundle(buildDirectory, fs)
 
 	if err != nil {
 		return err
@@ -187,18 +185,45 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
-	err = commands.BuildBundle(".", unmarshalledBundle, c, fs)
+	err = unmarshalledBundle.DereferenceSchemas(buildDirectory, c, fs)
 
 	if err != nil {
 		return err
 	}
 
-	publish.Run(unmarshalledBundle, c, fs, ".")
+	return commands.LintBundle(unmarshalledBundle)
+}
+
+func runBundlePublish(cmd *cobra.Command, args []string) error {
+	config := config.Get()
+	var fs = afero.NewOsFs()
+
+	buildDirectory, err := cmd.Flags().GetString("build-directory")
+
+	if err != nil {
+		return err
+	}
+
+	unmarshalledBundle, err := unmarshalBundle(buildDirectory, fs)
+
+	if err != nil {
+		return err
+	}
+
+	c := restclient.NewClient().WithAPIKey(config.APIKey)
+
+	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
+
+	if err != nil {
+		return err
+	}
+
+	publish.Run(unmarshalledBundle, c, fs, buildDirectory)
 	return nil
 }
 
-func unmarshalBundle(fs afero.Fs) (*bundle.Bundle, error) {
-	file, err := afero.ReadFile(fs, path.Join(".", "massdriver.yaml"))
+func unmarshalBundle(readDirectory string, fs afero.Fs) (*bundle.Bundle, error) {
+	file, err := afero.ReadFile(fs, path.Join(readDirectory, "massdriver.yaml"))
 
 	if err != nil {
 		return nil, err

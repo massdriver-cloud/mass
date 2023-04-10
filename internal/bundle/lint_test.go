@@ -1,4 +1,4 @@
-package commands_test
+package bundle_test
 
 import (
 	"errors"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
-	"github.com/massdriver-cloud/mass/internal/commands"
 )
 
 func TestLintSchema(t *testing.T) {
@@ -51,7 +50,7 @@ func TestLintSchema(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := commands.LintSchema(tc.bun)
+			err := tc.bun.LintSchema()
 			if tc.err != nil {
 				if err == nil {
 					t.Errorf("expected an error, got nil")
@@ -108,7 +107,7 @@ func TestLintParamsConnectionsNameCollision(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := commands.LintParamsConnectionsNameCollision(tc.bun)
+			err := tc.bun.LintParamsConnectionsNameCollision()
 			if tc.err != nil {
 				if err == nil {
 					t.Errorf("expected an error, got nil")
@@ -232,7 +231,7 @@ func TestLintEnvs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := commands.LintEnvs(tc.b)
+			got, err := tc.b.LintEnvs()
 			if tc.err != nil {
 				if err == nil {
 					t.Errorf("expected an error, got nil")
