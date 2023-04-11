@@ -9,6 +9,9 @@ import (
 // Updates a packages configuration parameters.
 func Run(client graphql.Client, orgID string, name string, setValues []string) (*api.Package, error) {
 	pkg, err := api.GetPackageByName(client, orgID, name)
+	if err != nil {
+		return nil, err
+	}
 
 	updatedParams := pkg.Params
 
