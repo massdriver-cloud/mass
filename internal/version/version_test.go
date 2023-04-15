@@ -8,25 +8,47 @@ import (
 
 func TestCheckForNewerVersionAvailable(t *testing.T) {
 	tests := []struct {
-		name    string
-		isOld   bool
-		wantErr bool
+		name      string
+		current   string
+		latest    string
+		wantIsOld bool
+		wantErr   bool
 	}{
 		{
-			name:    "unknown version should be considered old",
-			isOld:   true,
-			wantErr: false,
+			name:      "unknown version should be considered old",
+			current:   "unknown",
+			latest:    "1.2.0",
+			wantIsOld: true,
+			wantErr:   false,
+		},
+		{
+			name:      "current version is the latest version",
+			current:   "1.2.0",
+			latest:    "1.2.0",
+			wantIsOld: false,
+			wantErr:   false,
+		},
+		{
+			name:      "current version is older than the latest version",
+			current:   "1.0.0",
+			latest:    "1.2.0",
+			wantIsOld: true,
+			wantErr:   false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, _, err := version.CheckForNewerVersionAvailable()
+			version.SetVersion(tt.current)
+			got, latestVersion, err := version.CheckForNewerVersionAvailable()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckForNewerVersionAvailable() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.isOld {
-				t.Errorf("CheckForNewerVersionAvailable() got = %v, want %v", got, tt.isOld)
+			if got != tt.wantIsOld {
+				t.Errorf("CheckForNewerVersionAvailable() got = %v, want %v", got, tt.wantIsOld)
+			}
+			if latestVersion != tt.latest {
+				t.Errorf("CheckForNewerVersionAvailable() latestVersion = %v, want %v", latestVersion, tt.latest)
 			}
 		})
 	}
