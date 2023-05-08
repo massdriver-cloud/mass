@@ -68,7 +68,6 @@ var MassdriverArtifactDefinitions = []string{
 var promptsNew = []func(t *templatecache.TemplateData) error{
 	getName,
 	getDescription,
-	getAccessLevel,
 	getTemplate,
 	GetConnections,
 	getOutputDir,
@@ -109,26 +108,6 @@ func getName(t *templatecache.TemplateData) error {
 	}
 
 	t.Name = result
-	return nil
-}
-
-func getAccessLevel(t *templatecache.TemplateData) error {
-	if t.Access != "" {
-		return nil
-	}
-
-	prompt := promptui.Select{
-		Label: "Access Level",
-		Items: []string{"public", "private"},
-	}
-
-	_, result, err := prompt.Run()
-
-	if err != nil {
-		return err
-	}
-
-	t.Access = result
 	return nil
 }
 

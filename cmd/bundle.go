@@ -86,6 +86,7 @@ func init() {
 	bundleCmd.AddCommand(bundleLintCmd)
 	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleCmd.AddCommand(bundlePublishCmd)
+	bundlePublishCmd.Flags().String("access", "private", "Override the access, useful in CI for deploying to sandboxes.")
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 }
 
@@ -154,7 +155,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, fs)
+	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
 
 	if err != nil {
 		return err
@@ -196,6 +197,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 
 func runBundlePublish(cmd *cobra.Command, args []string) error {
 	config := config.Get()
+
 	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
@@ -204,7 +206,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, fs)
+	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
 
 	if err != nil {
 		return err
@@ -222,7 +224,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func unmarshalBundle(readDirectory string, fs afero.Fs) (*bundle.Bundle, error) {
+func unmarshalBundle(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bundle.Bundle, error) {
 	file, err := afero.ReadFile(fs, path.Join(readDirectory, "massdriver.yaml"))
 
 	if err != nil {
@@ -236,6 +238,8 @@ func unmarshalBundle(readDirectory string, fs afero.Fs) (*bundle.Bundle, error) 
 	if err != nil {
 		return nil, err
 	}
+
+	applyOverrides(unmarshalledBundle, cmd)
 
 	if unmarshalledBundle.IsApplication() {
 		applyAppBlockDefaults(unmarshalledBundle)
@@ -255,5 +259,13 @@ func applyAppBlockDefaults(b *bundle.Bundle) {
 		if b.AppSpec.Secrets == nil {
 			b.AppSpec.Secrets = map[string]bundle.Secret{}
 		}
+	}
+}
+
+func applyOverrides(bundle *bundle.Bundle, cmd *cobra.Command) {
+	access, err := cmd.Flags().GetString("access")
+
+	if err == nil {
+		bundle.Access = access
 	}
 }
