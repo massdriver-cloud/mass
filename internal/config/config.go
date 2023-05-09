@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/sethvargo/go-envconfig"
 )
@@ -21,6 +22,11 @@ func Get() (*Config, error) {
 	err := envconfig.Process(ctx, &c)
 	if err != nil {
 		return nil, fmt.Errorf("required environment variable not set: %s", err)
+	}
+
+	_, err = uuid.Parse(c.OrgID)
+	if err != nil {
+		return nil, fmt.Errorf("Required environment variable MASSDRIVER_ORG_ID is not a valid UUID: %s", err)
 	}
 
 	setDefaults(&c)
