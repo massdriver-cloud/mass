@@ -25,6 +25,26 @@ type CloudRegion {
   restrictions: String
 }
 
+type ValidationOption {
+  "The name of a variable to be subsituted in a validation message template"
+  key: String!
+
+  "The value of a variable to be substituted in a validation message template"
+  value: String!
+}
+
+"A link between two manifests in an architecture"
+type BlueprintLink {
+  "The upstream `BlueprintPart` in the architecture to link to."
+  source: String!
+
+  "The field to link to on the upstream manifest."
+  srcField: [BlueprintLinkSource!]!
+
+  "The field to link to on this manifest."
+  destField: String!
+}
+
 type DnsZone {
   id: ID
   name: String
@@ -33,350 +53,9 @@ type DnsZone {
   cloudProviderId: ID
 }
 
-type Metric {
-  name: String!
-  namespace: String!
-  statistic: String
-  dimensions: [Dimension]
-  timeSeries: [Sample]
-}
-
-type RootSubscriptionType {
-  deploymentProgress(organizationId: ID!, packageId: ID!): ProvisioningLifecycleEvents
-  packageAlerts(organizationId: ID!, packageId: ID!): PackageAlert
-}
-
-"""
-The `Markdown` scalar type represents base64 encoded string data used to represent markdown files
-which can be retrieved in decoded form.
-"""
-scalar Markdown
-
-type ManifestResource {
-  "Manifest name"
-  name: String
-
-  package: Package @deprecated
-
-  manifest: Manifest
-
-  artifacts: [Artifact] @deprecated
-
-  deployments: [Deployment] @deprecated
-}
-
-type ArtifactResource {
-  "Artifact name"
-  name: String
-
-  "Artifact type"
-  type: String
-
-  id: ID
-
-  artifactId: ID
-
-  origin: String
-
-  sourceTargetId: ID
-
-  sourceProjectId: ID
-}
-
-"The source end of a blueprint link"
-type BlueprintLinkSource {
-  "The fully qualified name of the bundle to link to."
-  bundle: String!
-
-  "The field to link to on the upstream manifest."
-  srcField: String!
-}
-
-"""
-Application secret definitions. These fields are defined in your applications massdriver.yaml file.
-
-Secrets are only applied to `application` type bundles.
-"""
-type SecretField {
-  "The name of the secret. Generally in the form of an environment variable."
-  name: String!
-
-  "Is the secret required?"
-  required: Boolean!
-
-  "Is the secret a JSON object?"
-  json: Boolean!
-
-  "Secret field definition friendly display name."
-  title: String
-
-  "Secret field definition description."
-  description: String
-
-  "Metadata for the secret value set on this field."
-  valueMetadata: SecretMetadata
-}
-
-input ArtifactsInput {
-  "The number of items to return."
-  limit: Int
-
-  "A cursor pointing to an item. Instructs the API to return items after the cursor."
-  after: String
-
-  filter: ArtifactsFilters
-}
-
-"A template of a manifest to with a specific role in the architecture."
-type BlueprintPart {
-  "The role of this template manifest."
-  role: String!
-
-  "The description of this template manifest."
-  description: String
-
-  "Links to upstream dependency template manifests of this template manifest."
-  links: [BlueprintLink]
-
-  "The bundle for this template manifest."
-  bundle: Bundle
-}
-
-type TargetDeletionLifecyclePackageError {
-  package: Package!
-  message: String!
-}
-
-"Artifact definitions that can be set as a target default (TargetConnection)"
-type DefaultableTargetConnectionGroup {
-  "UI Label for group"
-  name: String
-
-  artifactDefinitions: [ArtifactDefinition]
-}
-
-enum ArtifactOrigin {
-  IMPORTED
-  PROVISIONED
-}
-
-type ProviderResource {
-  id: ID!
-
-  "Name the provisioner refers to this resource by"
-  provisionerResourceName: String!
-
-  "Internal set ID for collections"
-  provisionerResourceKey: String
-
-  "Cloud provider resource ID"
-  providerResourceId: ID!
-
-  "Provisioner resource type. E.g.: terraform `aws_s3_bucket`, kubernetes `apps\/v1\/Deployment`"
-  provisionerResourceType: String!
-
-  createdAt: DateTime!
-
-  updatedAt: DateTime!
-}
-
-type Compliance {
-  name: String!
-  badge: String!
-}
-
-"""
-Validation messages are returned when mutation input does not meet the requirements.
-  While client-side validation is highly recommended to provide the best User Experience,
-  All inputs will always be validated server-side.
-
-  Some examples of validations are:
-
-  * Username must be at least 10 characters
-  * Email field does not contain an email address
-  * Birth Date is required
-
-  While GraphQL has support for required values, mutation data fields are always
-  set to optional in our API. This allows 'required field' messages
-  to be returned in the same manner as other validations. The only exceptions
-  are id fields, which may be required to perform updates or deletes.
-"""
-type ValidationMessage {
-  """
-  The input field that the error applies to. The field can be used to
-  identify which field the error message should be displayed next to in the
-  presentation layer.
-
-  If there are multiple errors to display for a field, multiple validation
-  messages will be in the result.
-
-  This field may be null in cases where an error cannot be applied to a specific field.
-  """
-  field: String
-
-  """
-  A friendly error message, appropriate for display to the end user.
-
-  The message is interpolated to include the appropriate variables.
-
-  Example: `Username must be at least 10 characters`
-
-  This message may change without notice, so we do not recommend you match against the text.
-  Instead, use the *code* field for matching.
-  """
-  message: String
-
-  "A unique error code for the type of validation used."
-  code: String!
-
-  """
-  A template used to generate the error message, with placeholders for option substiution.
-
-  Example: `Username must be at least {count} characters`
-
-  This message may change without notice, so we do not recommend you match against the text.
-  Instead, use the *code* field for matching.
-  """
-  template: String
-
-  "A list of substitutions to be applied to a validation message template"
-  options: [ValidationOption]
-}
-
-type Project {
-  id: ID
-  name: String
-  description: String
-  slug: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  organization: Organization
-  targets: [Target]
-  manifests: [Manifest]
-  deletable: ProjectDeletionLifecycle!
-  defaultParams: JSON
-  diagram: Diagram
-}
-
-type SessionPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: Session
-}
-
-type MembershipPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: Membership
-}
-
-"Deployment and resource lifecycle events"
-union ProvisioningLifecycleEvents = DeploymentLifecycleEvent | ResourceLifecycleEvent
-
-type PaginatedArtifacts {
-  "A cursor to the next page of items in the list."
-  next: String
-
-  "A cursor to the next page of items in the list."
-  before: String
-
-  "A list of type artifact."
-  items: [Artifact]
-}
-
-type ProjectDeletionLifecyclePackageError {
-  package: Package!
-  message: String!
-  target: Target
-}
-
-type GraphPosition {
-  x: Int
-  y: Int
-}
-
-input Credential {
-  artifactDefinitionType: String!
-  artifactId: ID!
-}
-
-type Target {
-  id: ID
-
-  name: String
-
-  slug: String
-
-  description: String
-
-  mode: TargetMode
-
-  deletable: TargetDeletionLifecycle!
-
-  createdAt: DateTime
-
-  updatedAt: DateTime
-
-  "Target's diagram links and resources"
-  diagram: Diagram
-
-  "Manifests for this target's package"
-  manifests: [Manifest]
-
-  project: Project
-
-  packages: [Package]
-
-  connections: [TargetConnection]
-
-  defaultConnections: [DefaultTargetConnection]
-}
-
-"DNS Zone filters"
-input DnsZoneInput {
-  filter: DnsZoneFilters
-}
-
-"Arguments required to get container repositories"
-input ContainerRepositoryInput {
-  location: String!
-  imageName: String!
-}
-
-type Member {
-  email: String
-}
-
-type BundleDeletionLifecycleError {
-  message: String!
-}
-
-type Group {
-  id: ID
-  name: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  members: [Member]
-  invited: [Member]
-  organizationName: String
-}
-
-type ValidationOption {
-  "The name of a variable to be subsituted in a validation message template"
-  key: String!
-
-  "The value of a variable to be substituted in a validation message template"
-  value: String!
+type ApplicationBundle {
+  bundle: Bundle!
+  zip: String!
 }
 
 type PackageResource {
@@ -395,6 +74,23 @@ type PackageResource {
 type ResourceLifecycleState {
   id: ID!
   resources: [ResourceLifecycleEvent!]!
+}
+
+enum TargetMode {
+  PREVIEW
+  STANDARD
+}
+
+type ApplicationBundleTemplate {
+  name: String!
+  displayName: String!
+  imageUrl: String
+}
+
+enum AlarmState {
+  OK
+  ALARM
+  INSUFFICIENT_DATA
 }
 
 type TargetPayload {
@@ -439,487 +135,6 @@ type ArtifactPayload {
   result: Artifact
 }
 
-type ApiKey {
-  id: ID!
-  name: String!
-  active: Boolean!
-  secret: String!
-}
-
-type ContainerRepositoryAuth {
-  repoUri: String!
-  token: String!
-}
-
-type PackageDeletionLifecycle {
-  result: Boolean!
-  messages: [PackageDeletionLifecycleArtifactError]
-}
-
-type Package {
-  id: ID!
-
-  namePrefix: String!
-
-  "Package configuration parameters"
-  params: JSON!
-
-  status: PackageStatus!
-
-  createdAt: DateTime!
-
-  updatedAt: DateTime!
-
-  "Secret configuration for application packages"
-  secretFields: [SecretField]
-
-  activeDeployment: Deployment
-
-  "Checks if this package can be decommissioned."
-  decommissionable: PackageDeletionLifecycle!
-
-  manifest: Manifest!
-
-  paramsSchema: JSON!
-
-  providerResources: [ProviderResource]
-
-  "The target this package will be deployed to"
-  target: Target!
-
-  deployments: [Deployment]
-
-  connections: [Connection]
-
-  "Artifacts provisioned by this package"
-  artifacts: [Artifact]
-
-  "Current alarms for this package"
-  packageAlerts: [PackageAlert]
-
-  "Artifacts from a remote source like another project or a resource not managed by massdriver"
-  remoteReferences: [RemoteReference]
-}
-
-type BundleDeletionLifecycle {
-  result: Boolean!
-  messages: [BundleDeletionLifecycleError]
-}
-
-"A choice between two or more template manifests with specific roles in the architecture"
-type BlueprintChoice {
-  "The name of this choice."
-  name: String!
-
-  "The description of this choice."
-  description: String
-
-  "The template manifests that can be used in this choice. Only one can be chosen."
-  choices: [BlueprintPart]!
-}
-
-input GraphPositionParams {
-  x: Int!
-  y: Int!
-}
-
-"Artifact definition filters"
-input ArtifactDefinitionFilters {
-  "The service for which to get compatible artifact definitions"
-  service: String
-
-  "Whether to get credential or non-credential artifact definitions"
-  isCredential: Boolean
-}
-
-type BillingSubscription {
-  id: ID!
-  providerCustomerId: ID!
-  providerPaymentStatus: String!
-  subscriptionPlan: SubscriptionPlan
-  trialEndDate: DateTime
-}
-
-type RootQueryType {
-  me: Account
-
-  apiKeys(organizationId: ID!): [ApiKey]
-
-  "List all architectures belonging to the given organization."
-  architectures(organizationId: ID!): [Architecture]
-
-  "Filter artifacts by an artifact definition type."
-  filterArtifactsByType(organizationId: ID!, type: String!): [Artifact] @deprecated(reason: "Use artifacts query w\/ artifacts filters instead.")
-
-  "Get an artifact by ID"
-  artifact(organizationId: ID!, id: ID!): Artifact
-
-  "List all artifacts"
-  artifacts(
-    organizationId: ID!
-
-    "Search, filter, and sort inputs"
-    input: ArtifactsInput
-  ): PaginatedArtifacts
-
-  "Connection data for an artifact rendered in requested format"
-  downloadArtifact(organizationId: ID!, artifactId: ID!, format: DownloadFormat!): RenderedArtifact
-
-  artifactDefinitions(
-    "List all artifact definitions"
-    organizationId: ID!
-
-    "Filter artifact definition results"
-    input: ArtifactDefinitionInput
-  ): [ArtifactDefinition]
-
-  defaultableTargetConnectionGroups(
-    "List defaultable target connections by group"
-    organizationId: ID!
-  ): [DefaultableTargetConnectionGroup]
-
-  compareTargets(organizationId: ID!, fromTargetId: ID!, toTargetId: ID!): Changeset
-
-  compareDeployments(organizationId: ID!, fromDeploymentId: ID!, toDeploymentId: ID!): Changeset
-
-  billingSubscription(organizationId: ID!): BillingSubscription
-
-  bundles(organizationId: ID!): [Bundle]
-
-  bundle(organizationId: ID!, id: ID!): Bundle
-
-  searchBundles(
-    organizationId: ID!
-
-    "Filter bundle search results"
-    input: BundleSearchFilters
-  ): [Bundle]
-
-  cloud(
-    "Clouds supported by Massdriver"
-    organizationId: ID!
-
-    "Cloud identifier (aws, gcp, or azure)"
-    id: String!
-  ): Cloud!
-
-  containerRepository(organizationId: ID!, artifactId: ID!, input: ContainerRepositoryInput!): ContainerRepositoryAuth
-
-  containerRepositories(organizationId: ID!, artifactId: ID!, input: ContainerRepositoriesInput!): [ContainerRepository]
-
-  "Find bundles and manifests that provide a dependency."
-  recommendManifestDependencies(
-    organizationId: ID!
-
-    "Manifest ID or slug."
-    id: ID!
-
-    "The field to find dependencies for."
-    fieldName: String!
-  ): DependencyRecommendations
-
-  deployment(
-    organizationId: ID!
-
-    "Deployment ID"
-    id: ID!
-  ): Deployment
-
-  deployments(organizationId: ID!, manifestId: ID!, targetId: ID!): [Deployment]
-
-  resourceLifecycleState(
-    organizationId: ID!
-
-    "Deployment ID"
-    id: ID!
-  ): ResourceLifecycleState
-
-  dnsZones(
-    organizationId: ID!
-
-    "Filter DNS Zone results"
-    input: DnsZoneInput
-  ): [DnsZone]
-
-  cloudDnsZones(organizationId: ID!, location: String!, artifactId: ID!): [DnsZone]
-
-  "Gets all VM instance types for a given region"
-  instanceTypes(organizationId: ID!, artifactId: ID!, packageId: ID!, input: InstanceTypeInput!): [InstanceType]
-
-  "Gets supported regions for cloud services"
-  supportedLocations(organizationId: ID!, cloudService: String!): LocationList
-
-  manifest(
-    organizationId: ID!
-
-    "Manifest ID or slug"
-    id: ID!
-  ): Manifest
-
-  "Gets the organization the user has selected to act on behalf of"
-  organization(organizationId: ID!): Organization!
-
-  package(organizationId: ID!, manifestId: ID!, targetId: ID!): Package
-
-  "Finds a package by its naming convention, the name prefix (project-target-manifest) without the random unique suffix."
-  getPackageByNamingConvention(
-    organizationId: ID!
-
-    "Package ID or {project.slug}-{target.slug}-{manifest.slug} i.e.: ecomm-staging-database"
-    name: String!
-  ): Package
-
-  projects(organizationId: ID!): [Project]
-
-  project(
-    organizationId: ID!
-
-    "Project ID or slug"
-    id: ID!
-  ): Project
-
-  "List and filter provider resources"
-  providerResources(
-    organizationId: ID!
-
-    "Search, filter, and sort provider resources"
-    input: ProviderResourcesInput
-  ): PaginatedProviderResources
-
-  target(
-    organizationId: ID!
-
-    "Target ID or slug"
-    id: ID!
-  ): Target
-
-  "gets all groups for an organization"
-  groups(organizationId: ID!): [Group]
-
-  subscriptionPlans: [SubscriptionPlan]
-
-  applicationTemplates(organizationId: ID!): [ApplicationTemplate]
-}
-
-type PackageAlertState {
-  status: AlarmState!
-  message: String
-  notification: JSON
-  occurredAt: String
-}
-
-"""
-The `DateTime` scalar type represents a date and time in the UTC
-timezone. The DateTime appears in a JSON response as an ISO8601 formatted
-string, including UTC timezone ("Z"). The parsed date and time string will
-be converted to UTC if there is an offset.
-"""
-scalar DateTime
-
-type Manifest {
-  id: ID!
-
-  name: String!
-
-  slug: String!
-
-  suffix: String!
-
-  description: String
-
-  position: GraphPosition
-
-  "Fields & values for managing default secret values in preview environments."
-  secretFields: [SecretField]
-
-  deletable: ManifestDeletionLifecycle!
-
-  createdAt: DateTime!
-
-  updatedAt: DateTime!
-
-  bundle: Bundle!
-
-  packages: [Package]
-
-  linkableFields: [LinkableField]
-}
-
-input InstanceTypeInput {
-  "A JQ like query for accessing the region in a package"
-  query: String!
-
-  "Cloud service to get instances for"
-  service: String!
-}
-
-input BlueprintInputPart {
-  "The role of this template manifest."
-  role: String!
-
-  "The description of this template manifest."
-  description: String
-
-  "The fully qualified name of the bundle used by manifests created from this template manifest. Example: massdriver\/aws-aurora-serverless-postgres"
-  bundle: String!
-
-  "Links to upstream dependency template manifests of this template manifest."
-  links: [BlueprintInputLink!]!
-}
-
-"Bundle search filters"
-input BundleSearchFilters {
-  "Search query"
-  query: String
-}
-
-type DefaultTargetConnection {
-  id: ID!
-  defaultTargetConnectionGroup: String!
-  defaultTargetConnectionGroupLabel: String!
-  defaultTargetConnectionType: String!
-  artifact: Artifact!
-}
-
-type Invitation {
-  id: ID
-}
-
-type ManifestRecommendation {
-  fieldName: String!
-  manifest: Manifest!
-}
-
-type ArtifactDefinition {
-  id: ID
-  name: String
-  url: String
-  type: String @deprecated(reason: "use `name` field")
-  schema: JSON!
-  exportFormats: [ArtifactDefinitionExportFormat]
-  fqn: String! @deprecated(reason: "use `name` field")
-}
-
-type PendingInvitation {
-  id: ID!
-  group: Group
-}
-
-type TargetDeletionLifecycle {
-  result: Boolean!
-  messages: [TargetDeletionLifecyclePackageError]
-}
-
-type ProjectDeletionLifecycle {
-  result: Boolean!
-  messages: [ProjectDeletionLifecyclePackageError]
-}
-
-"A hypothetical set of manifests and links that can be deployed into a Massdriver project."
-type Architecture {
-  id: ID!
-
-  "The name of this architecture."
-  name: String!
-
-  "The description of this bundle."
-  description: String
-
-  "Public or private."
-  access: String!
-
-  "The manifests and links to build this architecture."
-  blueprint: [BlueprintChoice]!
-
-  deletable: ArchitectureDeletionLifecycle!
-}
-
-type PlanLimit {
-  maxMembers: Int!
-  maxCloudAccounts: Int!
-  maxTargets: Int!
-  maxArtifactDefinitions: Int!
-  maxPublicBundles: Int!
-  maxPrivateBundles: Int!
-  maxPublicArchitectures: Int!
-  maxPrivateArchitectures: Int!
-}
-
-type ProjectPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: Project
-}
-
-type DnsZonePayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: DnsZone
-}
-
-type BundlePayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: Bundle
-}
-
-type BillingSubscriptionPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: BillingSubscription
-}
-
-"supported file formats for artifacts"
-enum DownloadFormat {
-  RAW
-  YAML
-}
-
-type RenderedArtifact {
-  renderedArtifact: String!
-}
-
-type InstantiatedArchitecturePayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: InstantiatedArchitecture
-}
-
-type DependencyRecommendations {
-  bundles: [BundleRecommendation]
-  manifests: [ManifestRecommendation]
-}
-
-enum TargetMode {
-  PREVIEW
-  STANDARD
-}
-
 type RemoteReferencePayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -962,225 +177,6 @@ type ApiKeyPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: ApiKey
-}
-
-type PaginatedProviderResources {
-  "A cursor to the next page of items in the list."
-  next: String
-
-  "A cursor to the next page of items in the list."
-  before: String
-
-  "A list of type provider_resource."
-  items: [ProviderResource]
-}
-
-type PackageDeletionLifecycleArtifactError {
-  artifact: Artifact!
-  message: String!
-}
-
-type ManifestDeletionLifecyclePackageError {
-  package: Package!
-  message: String!
-}
-
-type RemoteReference {
-  artifact: Artifact!
-  field: String!
-  package: Package!
-  id: ID!
-  unsettable: UnsettableResult!
-}
-
-type ArtifactDeletionLifecycle {
-  result: Boolean!
-  messages: [ArtifactDeletionLifecycleArtifactError]
-}
-
-type PackagePayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: Package
-}
-
-input ManifestParams {
-  "The name for the created manifest."
-  name: String!
-
-  "The slug for the created manifest."
-  slug: String!
-
-  "The description for the created manifest."
-  description: String
-
-  "The role of the blueprint part that the manifest will be created from."
-  role: String!
-}
-
-type ArchitectureDeletionLifecycleError {
-  message: String!
-}
-
-type Dimension {
-  name: String!
-  value: String!
-}
-
-type BundleRecommendation {
-  fieldName: String!
-  bundle: Bundle!
-}
-
-"""
-The `JSON` scalar type represents arbitrary json string data, represented as UTF-8
-character sequences. The Json type is most often used to represent a free-form
-human-readable json string.
-"""
-scalar JSON
-
-type OnboardingTask {
-  task: String!
-  complete: Boolean!
-  label: String!
-}
-
-type ManifestDeletionLifecycle {
-  result: Boolean!
-  messages: [ManifestDeletionLifecyclePackageError]
-}
-
-"A VM type in the cloud"
-type InstanceType {
-  name: String!
-
-  "Compute class defined by the cloud"
-  size: String
-
-  memoryGb: String!
-
-  vCpus: String!
-
-  iops: String
-}
-
-type TargetConnectionPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: TargetConnection
-}
-
-type ManifestPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: Manifest
-}
-
-"Artifact definition filters"
-input ArtifactDefinitionInput {
-  filter: ArtifactDefinitionFilters
-}
-
-input RemoteReferenceParams {
-  "The name of the field in the artifact schema to assign the reference to"
-  field: String
-}
-
-"DNS Zone filters"
-input DnsZoneFilters {
-  "The cloud in which to filter by"
-  cloud: String
-}
-
-type Link {
-  id: ID!
-  srcField: String!
-  destField: String!
-  isConnection: Boolean
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  srcManifest: Manifest!
-  destManifest: Manifest!
-}
-
-input BlueprintInputLink {
-  "The upstream `BlueprintPart` in the architecture to link to."
-  source: String!
-
-  "The field to link to on the upstream manifest."
-  srcField: [BlueprintInputLinkSource!]!
-
-  "The field to link to on this manifest."
-  destField: String!
-}
-
-type InstantiatedArchitecture {
-  "The manifests that were created during the instantiation process."
-  manifests: [Manifest!]!
-
-  "The links that were created during the instantiation process."
-  links: [Link!]!
-}
-
-type ResourceLifecycleEvent {
-  "Provider resource type"
-  type: String!
-
-  "Internal resource name"
-  name: String!
-
-  key: String
-
-  status: String!
-
-  action: String!
-}
-
-type UnsettableResult {
-  result: Boolean!
-  messages: [String]
-}
-
-"Error encountered during provisioning or decommissioning"
-type DeploymentError {
-  "Brief overview of error"
-  message: JSON
-
-  "Additional details of error"
-  details: JSON
-}
-
-"A link between two manifests in an architecture"
-type BlueprintLink {
-  "The upstream `BlueprintPart` in the architecture to link to."
-  source: String!
-
-  "The field to link to on the upstream manifest."
-  srcField: [BlueprintLinkSource!]!
-
-  "The field to link to on this manifest."
-  destField: String!
-}
-
-enum AlarmState {
-  OK
-  ALARM
-  INSUFFICIENT_DATA
 }
 
 type SecretMetadataPayload {
@@ -1252,6 +248,25 @@ type Account {
   organizations: [Organization]
 }
 
+type Metric {
+  name: String!
+  namespace: String!
+  statistic: String
+  dimensions: [Dimension]
+  timeSeries: [Sample]
+}
+
+type PaginatedProviderResources {
+  "A cursor to the next page of items in the list."
+  next: String
+
+  "A cursor to the next page of items in the list."
+  before: String
+
+  "A list of type provider_resource."
+  items: [ProviderResource]
+}
+
 "Artifact filters"
 input ArtifactsFilters {
   "The artifact definition type to filter by"
@@ -1266,12 +281,165 @@ input ArtifactUpdateParams {
   name: String!
 }
 
+type PackageDeletionLifecycleArtifactError {
+  artifact: Artifact!
+  message: String!
+}
+
+type ManifestDeletionLifecyclePackageError {
+  package: Package!
+  message: String!
+}
+
 type Membership {
   groupId: ID
 }
 
+type RootSubscriptionType {
+  deploymentProgress(organizationId: ID!, packageId: ID!): ProvisioningLifecycleEvents
+  packageAlerts(organizationId: ID!, packageId: ID!): PackageAlert
+}
+
+"""
+The `Markdown` scalar type represents base64 encoded string data used to represent markdown files
+which can be retrieved in decoded form.
+"""
+scalar Markdown
+
 type Session {
   url: String!
+}
+
+type ApiKey {
+  id: ID!
+  name: String!
+  active: Boolean!
+  secret: String!
+}
+
+type ContainerRepositoryAuth {
+  repoUri: String!
+  token: String!
+}
+
+type ManifestResource {
+  "Manifest name"
+  name: String
+
+  package: Package @deprecated
+
+  manifest: Manifest
+
+  artifacts: [Artifact] @deprecated
+
+  deployments: [Deployment] @deprecated
+}
+
+type ArtifactResource {
+  "Artifact name"
+  name: String
+
+  "Artifact type"
+  type: String
+
+  id: ID
+
+  artifactId: ID
+
+  origin: String
+
+  sourceTargetId: ID
+
+  sourceProjectId: ID
+}
+
+"The source end of a blueprint link"
+type BlueprintLinkSource {
+  "The fully qualified name of the bundle to link to."
+  bundle: String!
+
+  "The field to link to on the upstream manifest."
+  srcField: String!
+}
+
+type PackageDeletionLifecycle {
+  result: Boolean!
+  messages: [PackageDeletionLifecycleArtifactError]
+}
+
+type Package {
+  id: ID!
+
+  namePrefix: String!
+
+  "Package configuration parameters"
+  params: JSON!
+
+  status: PackageStatus!
+
+  createdAt: DateTime!
+
+  updatedAt: DateTime!
+
+  "Secret configuration for application packages"
+  secretFields: [SecretField]
+
+  activeDeployment: Deployment
+
+  "Checks if this package can be decommissioned."
+  decommissionable: PackageDeletionLifecycle!
+
+  manifest: Manifest!
+
+  paramsSchema: JSON!
+
+  providerResources: [ProviderResource]
+
+  "The target this package will be deployed to"
+  target: Target!
+
+  deployments: [Deployment]
+
+  connections: [Connection]
+
+  "Artifacts provisioned by this package"
+  artifacts: [Artifact]
+
+  "Current alarms for this package"
+  packageAlerts: [PackageAlert]
+
+  "Artifacts from a remote source like another project or a resource not managed by massdriver"
+  remoteReferences: [RemoteReference]
+}
+
+type BundleDeletionLifecycle {
+  result: Boolean!
+  messages: [BundleDeletionLifecycleError]
+}
+
+"A choice between two or more template manifests with specific roles in the architecture"
+type BlueprintChoice {
+  "The name of this choice."
+  name: String!
+
+  "The description of this choice."
+  description: String
+
+  "The template manifests that can be used in this choice. Only one can be chosen."
+  choices: [BlueprintPart]!
+}
+
+type RemoteReference {
+  artifact: Artifact!
+  field: String!
+  package: Package!
+  id: ID!
+  unsettable: UnsettableResult!
+}
+
+type ArtifactDeletionLifecycle {
+  result: Boolean!
+  messages: [ArtifactDeletionLifecycleArtifactError]
 }
 
 type Sample {
@@ -1339,6 +507,67 @@ input BlueprintInputLinkSource {
 
   "The field to link to on the upstream manifest."
   srcField: String!
+}
+
+"""
+Application secret definitions. These fields are defined in your applications massdriver.yaml file.
+
+Secrets are only applied to `application` type bundles.
+"""
+type SecretField {
+  "The name of the secret. Generally in the form of an environment variable."
+  name: String!
+
+  "Is the secret required?"
+  required: Boolean!
+
+  "Is the secret a JSON object?"
+  json: Boolean!
+
+  "Secret field definition friendly display name."
+  title: String
+
+  "Secret field definition description."
+  description: String
+
+  "Metadata for the secret value set on this field."
+  valueMetadata: SecretMetadata
+}
+
+input ArtifactsInput {
+  "The number of items to return."
+  limit: Int
+
+  "A cursor pointing to an item. Instructs the API to return items after the cursor."
+  after: String
+
+  filter: ArtifactsFilters
+}
+
+"A template of a manifest to with a specific role in the architecture."
+type BlueprintPart {
+  "The role of this template manifest."
+  role: String!
+
+  "The description of this template manifest."
+  description: String
+
+  "Links to upstream dependency template manifests of this template manifest."
+  links: [BlueprintLink]
+
+  "The bundle for this template manifest."
+  bundle: Bundle
+}
+
+type PackagePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Package
 }
 
 input PreviewEnvironmentInput {
@@ -1430,6 +659,43 @@ type ArchitecturePayload {
   result: Architecture
 }
 
+input GraphPositionParams {
+  x: Int!
+  y: Int!
+}
+
+"Artifact definition filters"
+input ArtifactDefinitionFilters {
+  "The service for which to get compatible artifact definitions"
+  service: String
+
+  "Whether to get credential or non-credential artifact definitions"
+  isCredential: Boolean
+}
+
+input ManifestParams {
+  "The name for the created manifest."
+  name: String!
+
+  "The slug for the created manifest."
+  slug: String!
+
+  "The description for the created manifest."
+  description: String
+
+  "The role of the blueprint part that the manifest will be created from."
+  role: String!
+}
+
+type TargetDeletionLifecyclePackageError {
+  package: Package!
+  message: String!
+}
+
+type ArchitectureDeletionLifecycleError {
+  message: String!
+}
+
 type ArtifactDeletionLifecycleArtifactError {
   message: String!
 }
@@ -1449,6 +715,44 @@ type SecretMetadata {
   createdAt: DateTime!
 }
 
+"Artifact definitions that can be set as a target default (TargetConnection)"
+type DefaultableTargetConnectionGroup {
+  "UI Label for group"
+  name: String
+
+  artifactDefinitions: [ArtifactDefinition]
+}
+
+enum ArtifactOrigin {
+  IMPORTED
+  PROVISIONED
+}
+
+type BillingSubscription {
+  id: ID!
+  providerCustomerId: ID!
+  providerPaymentStatus: String!
+  subscriptionPlan: SubscriptionPlan
+  trialEndDate: DateTime
+}
+
+type Dimension {
+  name: String!
+  value: String!
+}
+
+type BundleRecommendation {
+  fieldName: String!
+  bundle: Bundle!
+}
+
+"""
+The `JSON` scalar type represents arbitrary json string data, represented as UTF-8
+character sequences. The Json type is most often used to represent a free-form
+human-readable json string.
+"""
+scalar JSON
+
 type RootMutationType {
   "Creates an API key"
   createApiKey(organizationId: ID!, name: String!): ApiKeyPayload
@@ -1458,6 +762,9 @@ type RootMutationType {
   deactivateApiKey(organizationId: ID!, id: ID!): ApiKeyPayload
 
   reactivateApiKey(organizationId: ID!, id: ID!): ApiKeyPayload
+
+  "Create an Application Bundle"
+  createApplicationBundle(organizationId: ID!, templateName: String!, params: JSON!): ApplicationBundlePayload
 
   "Create an artifact"
   createArtifact(organizationId: ID!, name: String!, type: String!, specs: JSON!, data: JSON!): ArtifactPayload
@@ -1626,8 +933,407 @@ type Diagram {
   resources: [Resource]
 }
 
+type OnboardingTask {
+  task: String!
+  complete: Boolean!
+  label: String!
+}
+
+type RootQueryType {
+  me: Account
+
+  apiKeys(organizationId: ID!): [ApiKey]
+
+  "List all architectures belonging to the given organization."
+  architectures(organizationId: ID!): [Architecture]
+
+  "Filter artifacts by an artifact definition type."
+  filterArtifactsByType(organizationId: ID!, type: String!): [Artifact] @deprecated(reason: "Use artifacts query w\/ artifacts filters instead.")
+
+  "Get an artifact by ID"
+  artifact(organizationId: ID!, id: ID!): Artifact
+
+  "List all artifacts"
+  artifacts(
+    organizationId: ID!
+
+    "Search, filter, and sort inputs"
+    input: ArtifactsInput
+  ): PaginatedArtifacts
+
+  "Connection data for an artifact rendered in requested format"
+  downloadArtifact(organizationId: ID!, artifactId: ID!, format: DownloadFormat!): RenderedArtifact
+
+  artifactDefinitions(
+    "List all artifact definitions"
+    organizationId: ID!
+
+    "Filter artifact definition results"
+    input: ArtifactDefinitionInput
+  ): [ArtifactDefinition]
+
+  defaultableTargetConnectionGroups(
+    "List defaultable target connections by group"
+    organizationId: ID!
+  ): [DefaultableTargetConnectionGroup]
+
+  compareTargets(organizationId: ID!, fromTargetId: ID!, toTargetId: ID!): Changeset
+
+  compareDeployments(organizationId: ID!, fromDeploymentId: ID!, toDeploymentId: ID!): Changeset
+
+  billingSubscription(organizationId: ID!): BillingSubscription
+
+  bundles(organizationId: ID!): [Bundle]
+
+  bundle(organizationId: ID!, id: ID!): Bundle
+
+  searchBundles(
+    organizationId: ID!
+
+    "Filter bundle search results"
+    input: BundleSearchFilters
+  ): [Bundle]
+
+  cloud(
+    "Clouds supported by Massdriver"
+    organizationId: ID!
+
+    "Cloud identifier (aws, gcp, or azure)"
+    id: String!
+  ): Cloud!
+
+  containerRepository(organizationId: ID!, artifactId: ID!, input: ContainerRepositoryInput!): ContainerRepositoryAuth
+
+  containerRepositories(organizationId: ID!, artifactId: ID!, input: ContainerRepositoriesInput!): [ContainerRepository]
+
+  "Find bundles and manifests that provide a dependency."
+  recommendManifestDependencies(
+    organizationId: ID!
+
+    "Manifest ID or slug."
+    id: ID!
+
+    "The field to find dependencies for."
+    fieldName: String!
+  ): DependencyRecommendations
+
+  deployment(
+    organizationId: ID!
+
+    "Deployment ID"
+    id: ID!
+  ): Deployment
+
+  deployments(organizationId: ID!, manifestId: ID!, targetId: ID!): [Deployment]
+
+  resourceLifecycleState(
+    organizationId: ID!
+
+    "Deployment ID"
+    id: ID!
+  ): ResourceLifecycleState
+
+  dnsZones(
+    organizationId: ID!
+
+    "Filter DNS Zone results"
+    input: DnsZoneInput
+  ): [DnsZone]
+
+  cloudDnsZones(organizationId: ID!, location: String!, artifactId: ID!): [DnsZone]
+
+  "Gets all VM instance types for a given region"
+  instanceTypes(organizationId: ID!, artifactId: ID!, packageId: ID!, input: InstanceTypeInput!): [InstanceType]
+
+  "Gets supported regions for cloud services"
+  supportedLocations(organizationId: ID!, cloudService: String!): LocationList
+
+  manifest(
+    organizationId: ID!
+
+    "Manifest ID or slug"
+    id: ID!
+  ): Manifest
+
+  "Gets the organization the user has selected to act on behalf of"
+  organization(organizationId: ID!): Organization!
+
+  package(organizationId: ID!, manifestId: ID!, targetId: ID!): Package
+
+  "Finds a package by its naming convention, the name prefix (project-target-manifest) without the random unique suffix."
+  getPackageByNamingConvention(
+    organizationId: ID!
+
+    "Package ID or {project.slug}-{target.slug}-{manifest.slug} i.e.: ecomm-staging-database"
+    name: String!
+  ): Package
+
+  projects(organizationId: ID!): [Project]
+
+  project(
+    organizationId: ID!
+
+    "Project ID or slug"
+    id: ID!
+  ): Project
+
+  "List and filter provider resources"
+  providerResources(
+    organizationId: ID!
+
+    "Search, filter, and sort provider resources"
+    input: ProviderResourcesInput
+  ): PaginatedProviderResources
+
+  target(
+    organizationId: ID!
+
+    "Target ID or slug"
+    id: ID!
+  ): Target
+
+  "gets all groups for an organization"
+  groups(organizationId: ID!): [Group]
+
+  subscriptionPlans: [SubscriptionPlan]
+
+  applicationBundleTemplates(organizationId: ID!): [ApplicationBundleTemplate]
+}
+
+type ProviderResource {
+  id: ID!
+
+  "Name the provisioner refers to this resource by"
+  provisionerResourceName: String!
+
+  "Internal set ID for collections"
+  provisionerResourceKey: String
+
+  "Cloud provider resource ID"
+  providerResourceId: ID!
+
+  "Provisioner resource type. E.g.: terraform `aws_s3_bucket`, kubernetes `apps\/v1\/Deployment`"
+  provisionerResourceType: String!
+
+  createdAt: DateTime!
+
+  updatedAt: DateTime!
+}
+
+type Compliance {
+  name: String!
+  badge: String!
+}
+
+"""
+Validation messages are returned when mutation input does not meet the requirements.
+  While client-side validation is highly recommended to provide the best User Experience,
+  All inputs will always be validated server-side.
+
+  Some examples of validations are:
+
+  * Username must be at least 10 characters
+  * Email field does not contain an email address
+  * Birth Date is required
+
+  While GraphQL has support for required values, mutation data fields are always
+  set to optional in our API. This allows 'required field' messages
+  to be returned in the same manner as other validations. The only exceptions
+  are id fields, which may be required to perform updates or deletes.
+"""
+type ValidationMessage {
+  """
+  The input field that the error applies to. The field can be used to
+  identify which field the error message should be displayed next to in the
+  presentation layer.
+
+  If there are multiple errors to display for a field, multiple validation
+  messages will be in the result.
+
+  This field may be null in cases where an error cannot be applied to a specific field.
+  """
+  field: String
+
+  """
+  A friendly error message, appropriate for display to the end user.
+
+  The message is interpolated to include the appropriate variables.
+
+  Example: `Username must be at least 10 characters`
+
+  This message may change without notice, so we do not recommend you match against the text.
+  Instead, use the *code* field for matching.
+  """
+  message: String
+
+  "A unique error code for the type of validation used."
+  code: String!
+
+  """
+  A template used to generate the error message, with placeholders for option substiution.
+
+  Example: `Username must be at least {count} characters`
+
+  This message may change without notice, so we do not recommend you match against the text.
+  Instead, use the *code* field for matching.
+  """
+  template: String
+
+  "A list of substitutions to be applied to a validation message template"
+  options: [ValidationOption]
+}
+
+type PackageAlertState {
+  status: AlarmState!
+  message: String
+  notification: JSON
+  occurredAt: String
+}
+
+"""
+The `DateTime` scalar type represents a date and time in the UTC
+timezone. The DateTime appears in a JSON response as an ISO8601 formatted
+string, including UTC timezone ("Z"). The parsed date and time string will
+be converted to UTC if there is an offset.
+"""
+scalar DateTime
+
+type ManifestDeletionLifecycle {
+  result: Boolean!
+  messages: [ManifestDeletionLifecyclePackageError]
+}
+
+"A VM type in the cloud"
+type InstanceType {
+  name: String!
+
+  "Compute class defined by the cloud"
+  size: String
+
+  memoryGb: String!
+
+  vCpus: String!
+
+  iops: String
+}
+
 "Artifact and manifest nodes"
 union Resource = ManifestResource | PackageResource | ArtifactResource
+
+type Project {
+  id: ID
+  name: String
+  description: String
+  slug: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  organization: Organization
+  targets: [Target]
+  manifests: [Manifest]
+  deletable: ProjectDeletionLifecycle!
+  defaultParams: JSON
+  diagram: Diagram
+}
+
+type SessionPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Session
+}
+
+type MembershipPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Membership
+}
+
+type Manifest {
+  id: ID!
+
+  name: String!
+
+  slug: String!
+
+  suffix: String!
+
+  description: String
+
+  position: GraphPosition
+
+  "Fields & values for managing default secret values in preview environments."
+  secretFields: [SecretField]
+
+  deletable: ManifestDeletionLifecycle!
+
+  createdAt: DateTime!
+
+  updatedAt: DateTime!
+
+  bundle: Bundle!
+
+  packages: [Package]
+
+  linkableFields: [LinkableField]
+}
+
+input InstanceTypeInput {
+  "A JQ like query for accessing the region in a package"
+  query: String!
+
+  "Cloud service to get instances for"
+  service: String!
+}
+
+input BlueprintInputPart {
+  "The role of this template manifest."
+  role: String!
+
+  "The description of this template manifest."
+  description: String
+
+  "The fully qualified name of the bundle used by manifests created from this template manifest. Example: massdriver\/aws-aurora-serverless-postgres"
+  bundle: String!
+
+  "Links to upstream dependency template manifests of this template manifest."
+  links: [BlueprintInputLink!]!
+}
+
+type TargetConnectionPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: TargetConnection
+}
+
+type ManifestPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Manifest
+}
+
+"Artifact definition filters"
+input ArtifactDefinitionInput {
+  filter: ArtifactDefinitionFilters
+}
 
 input UnsetSecretValueInput {
   "Name defined in applications massdriver.yaml file."
@@ -1651,6 +1357,37 @@ type DeploymentLifecycleEvent {
   deployment: Deployment!
 }
 
+"Deployment and resource lifecycle events"
+union ProvisioningLifecycleEvents = DeploymentLifecycleEvent | ResourceLifecycleEvent
+
+type PaginatedArtifacts {
+  "A cursor to the next page of items in the list."
+  next: String
+
+  "A cursor to the next page of items in the list."
+  before: String
+
+  "A list of type artifact."
+  items: [Artifact]
+}
+
+"Bundle search filters"
+input BundleSearchFilters {
+  "Search query"
+  query: String
+}
+
+input RemoteReferenceParams {
+  "The name of the field in the artifact schema to assign the reference to"
+  field: String
+}
+
+"DNS Zone filters"
+input DnsZoneFilters {
+  "The cloud in which to filter by"
+  cloud: String
+}
+
 "Provider resources filters"
 input ProviderResourcesFilters {
   projectId: ID
@@ -1664,6 +1401,49 @@ enum PackageStatus {
   DECOMMISSIONED
   FAILED
   EXTERNAL
+}
+
+type ProjectDeletionLifecyclePackageError {
+  package: Package!
+  message: String!
+  target: Target
+}
+
+type GraphPosition {
+  x: Int
+  y: Int
+}
+
+type DefaultTargetConnection {
+  id: ID!
+  defaultTargetConnectionGroup: String!
+  defaultTargetConnectionGroupLabel: String!
+  defaultTargetConnectionType: String!
+  artifact: Artifact!
+}
+
+type Invitation {
+  id: ID
+}
+
+type ManifestRecommendation {
+  fieldName: String!
+  manifest: Manifest!
+}
+
+type ArtifactDefinition {
+  id: ID
+  name: String
+  url: String
+  type: String @deprecated(reason: "use `name` field")
+  schema: JSON!
+  exportFormats: [ArtifactDefinitionExportFormat]
+  fqn: String! @deprecated(reason: "use `name` field")
+}
+
+type PendingInvitation {
+  id: ID!
+  group: Group
 }
 
 type SubscriptionPlan {
@@ -1694,6 +1474,33 @@ type Connection {
   updatedAt: DateTime
 }
 
+input Credential {
+  artifactDefinitionType: String!
+  artifactId: ID!
+}
+
+type Link {
+  id: ID!
+  srcField: String!
+  destField: String!
+  isConnection: Boolean
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  srcManifest: Manifest!
+  destManifest: Manifest!
+}
+
+input BlueprintInputLink {
+  "The upstream `BlueprintPart` in the architecture to link to."
+  source: String!
+
+  "The field to link to on the upstream manifest."
+  srcField: [BlueprintInputLinkSource!]!
+
+  "The field to link to on this manifest."
+  destField: String!
+}
+
 type ContainerRepository {
   name: String!
   cloud: String!
@@ -1701,15 +1508,195 @@ type ContainerRepository {
   cloudProviderId: ID!
 }
 
+type TargetDeletionLifecycle {
+  result: Boolean!
+  messages: [TargetDeletionLifecyclePackageError]
+}
+
+type ProjectDeletionLifecycle {
+  result: Boolean!
+  messages: [ProjectDeletionLifecyclePackageError]
+}
+
+"A hypothetical set of manifests and links that can be deployed into a Massdriver project."
+type Architecture {
+  id: ID!
+
+  "The name of this architecture."
+  name: String!
+
+  "The description of this bundle."
+  description: String
+
+  "Public or private."
+  access: String!
+
+  "The manifests and links to build this architecture."
+  blueprint: [BlueprintChoice]!
+
+  deletable: ArchitectureDeletionLifecycle!
+}
+
+type InstantiatedArchitecture {
+  "The manifests that were created during the instantiation process."
+  manifests: [Manifest!]!
+
+  "The links that were created during the instantiation process."
+  links: [Link!]!
+}
+
 type ArchitectureDeletionLifecycle {
   result: Boolean!
   errors: [ArchitectureDeletionLifecycleError]
 }
 
-type ApplicationTemplate {
+type Target {
+  id: ID
+
+  name: String
+
+  slug: String
+
+  description: String
+
+  mode: TargetMode
+
+  deletable: TargetDeletionLifecycle!
+
+  createdAt: DateTime
+
+  updatedAt: DateTime
+
+  "Target's diagram links and resources"
+  diagram: Diagram
+
+  "Manifests for this target's package"
+  manifests: [Manifest]
+
+  project: Project
+
+  packages: [Package]
+
+  connections: [TargetConnection]
+
+  defaultConnections: [DefaultTargetConnection]
+}
+
+"DNS Zone filters"
+input DnsZoneInput {
+  filter: DnsZoneFilters
+}
+
+"Arguments required to get container repositories"
+input ContainerRepositoryInput {
+  location: String!
+  imageName: String!
+}
+
+type PlanLimit {
+  maxMembers: Int!
+  maxCloudAccounts: Int!
+  maxTargets: Int!
+  maxArtifactDefinitions: Int!
+  maxPublicBundles: Int!
+  maxPrivateBundles: Int!
+  maxPublicArchitectures: Int!
+  maxPrivateArchitectures: Int!
+}
+
+type ProjectPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Project
+}
+
+type DnsZonePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: DnsZone
+}
+
+type BundlePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Bundle
+}
+
+type BillingSubscriptionPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: BillingSubscription
+}
+
+"supported file formats for artifacts"
+enum DownloadFormat {
+  RAW
+  YAML
+}
+
+type RenderedArtifact {
+  renderedArtifact: String!
+}
+
+type InstantiatedArchitecturePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: InstantiatedArchitecture
+}
+
+type ApplicationBundlePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: ApplicationBundle
+}
+
+type ResourceLifecycleEvent {
+  "Provider resource type"
+  type: String!
+
+  "Internal resource name"
   name: String!
-  displayName: String!
-  imageUrl: String
+
+  key: String
+
+  status: String!
+
+  action: String!
+}
+
+type UnsettableResult {
+  result: Boolean!
+  messages: [String]
 }
 
 input SetSecretValueInput {
@@ -1718,4 +1705,36 @@ input SetSecretValueInput {
 
   "The secret value."
   value: String!
+}
+
+type DependencyRecommendations {
+  bundles: [BundleRecommendation]
+  manifests: [ManifestRecommendation]
+}
+
+type Member {
+  email: String
+}
+
+type BundleDeletionLifecycleError {
+  message: String!
+}
+
+"Error encountered during provisioning or decommissioning"
+type DeploymentError {
+  "Brief overview of error"
+  message: JSON
+
+  "Additional details of error"
+  details: JSON
+}
+
+type Group {
+  id: ID
+  name: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  members: [Member]
+  invited: [Member]
+  organizationName: String
 }

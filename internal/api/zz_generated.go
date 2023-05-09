@@ -328,6 +328,26 @@ func (v *__deployPreviewEnvironmentInput) GetProjectId() string { return v.Proje
 // GetInput returns __deployPreviewEnvironmentInput.Input, and is useful for accessing the field via an interface.
 func (v *__deployPreviewEnvironmentInput) GetInput() PreviewEnvironmentInput { return v.Input }
 
+// __getAllArtifactsInput is used internally by genqlient
+type __getAllArtifactsInput struct {
+	OrganizationId string `json:"organizationId"`
+}
+
+// GetOrganizationId returns __getAllArtifactsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getAllArtifactsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// __getAllArtifactsPaginatedInput is used internally by genqlient
+type __getAllArtifactsPaginatedInput struct {
+	OrganizationId string `json:"organizationId"`
+	After          string `json:"after"`
+}
+
+// GetOrganizationId returns __getAllArtifactsPaginatedInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getAllArtifactsPaginatedInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetAfter returns __getAllArtifactsPaginatedInput.After, and is useful for accessing the field via an interface.
+func (v *__getAllArtifactsPaginatedInput) GetAfter() string { return v.After }
+
 // __getArtifactsByTypeInput is used internally by genqlient
 type __getArtifactsByTypeInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -713,6 +733,468 @@ type deployPreviewEnvironmentResponse struct {
 // GetDeployPreviewEnvironment returns deployPreviewEnvironmentResponse.DeployPreviewEnvironment, and is useful for accessing the field via an interface.
 func (v *deployPreviewEnvironmentResponse) GetDeployPreviewEnvironment() deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload {
 	return v.DeployPreviewEnvironment
+}
+
+// getAllArtifactsArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
+type getAllArtifactsArtifactsPaginatedArtifacts struct {
+	// A cursor to the next page of items in the list.
+	Next string `json:"next"`
+	// A list of type artifact.
+	Items []getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact `json:"items"`
+}
+
+// GetNext returns getAllArtifactsArtifactsPaginatedArtifacts.Next, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifacts) GetNext() string { return v.Next }
+
+// GetItems returns getAllArtifactsArtifactsPaginatedArtifacts.Items, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifacts) GetItems() []getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact {
+	return v.Items
+}
+
+// getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact includes the requested fields of the GraphQL type Artifact.
+type getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact struct {
+	Id   string                 `json:"id"`
+	Name string                 `json:"name"`
+	Type string                 `json:"type"`
+	Data map[string]interface{} `json:"-"`
+	// The type of artifact
+	ArtifactDefinition getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition `json:"artifactDefinition"`
+}
+
+// GetId returns getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact) GetId() string { return v.Id }
+
+// GetName returns getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
+
+// GetType returns getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact.Type, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact) GetType() string { return v.Type }
+
+// GetData returns getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact.Data, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact) GetData() map[string]interface{} {
+	return v.Data
+}
+
+// GetArtifactDefinition returns getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact.ArtifactDefinition, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact) GetArtifactDefinition() getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition {
+	return v.ArtifactDefinition
+}
+
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact
+		Data json.RawMessage `json:"data"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Data
+		src := firstPass.Data
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact.Data: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetAllArtifactsArtifactsPaginatedArtifactsItemsArtifact struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Type string `json:"type"`
+
+	Data json.RawMessage `json:"data"`
+
+	ArtifactDefinition getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition `json:"artifactDefinition"`
+}
+
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact) __premarshalJSON() (*__premarshalgetAllArtifactsArtifactsPaginatedArtifactsItemsArtifact, error) {
+	var retval __premarshalgetAllArtifactsArtifactsPaginatedArtifactsItemsArtifact
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Type = v.Type
+	{
+
+		dst := &retval.Data
+		src := v.Data
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal getAllArtifactsArtifactsPaginatedArtifactsItemsArtifact.Data: %w", err)
+		}
+	}
+	retval.ArtifactDefinition = v.ArtifactDefinition
+	return &retval, nil
+}
+
+// getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+type getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition struct {
+	Id     string                 `json:"id"`
+	Name   string                 `json:"name"`
+	Schema map[string]interface{} `json:"-"`
+	Url    string                 `json:"url"`
+}
+
+// GetId returns getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Id, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) GetId() string {
+	return v.Id
+}
+
+// GetName returns getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Name, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) GetName() string {
+	return v.Name
+}
+
+// GetSchema returns getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Schema, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) GetSchema() map[string]interface{} {
+	return v.Schema
+}
+
+// GetUrl returns getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Url, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) GetUrl() string {
+	return v.Url
+}
+
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Schema json.RawMessage `json:"schema"`
+
+	Url string `json:"url"`
+}
+
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) __premarshalJSON() (*__premarshalgetAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition, error) {
+	var retval __premarshalgetAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal getAllArtifactsArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Schema: %w", err)
+		}
+	}
+	retval.Url = v.Url
+	return &retval, nil
+}
+
+// getAllArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
+type getAllArtifactsPaginatedArtifacts struct {
+	// A cursor to the next page of items in the list.
+	Next string `json:"next"`
+	// A list of type artifact.
+	Items []getAllArtifactsPaginatedArtifactsItemsArtifact `json:"items"`
+}
+
+// GetNext returns getAllArtifactsPaginatedArtifacts.Next, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifacts) GetNext() string { return v.Next }
+
+// GetItems returns getAllArtifactsPaginatedArtifacts.Items, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifacts) GetItems() []getAllArtifactsPaginatedArtifactsItemsArtifact {
+	return v.Items
+}
+
+// getAllArtifactsPaginatedArtifactsItemsArtifact includes the requested fields of the GraphQL type Artifact.
+type getAllArtifactsPaginatedArtifactsItemsArtifact struct {
+	Id   string                 `json:"id"`
+	Name string                 `json:"name"`
+	Type string                 `json:"type"`
+	Data map[string]interface{} `json:"-"`
+	// The type of artifact
+	ArtifactDefinition getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition `json:"artifactDefinition"`
+}
+
+// GetId returns getAllArtifactsPaginatedArtifactsItemsArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifact) GetId() string { return v.Id }
+
+// GetName returns getAllArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
+
+// GetType returns getAllArtifactsPaginatedArtifactsItemsArtifact.Type, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifact) GetType() string { return v.Type }
+
+// GetData returns getAllArtifactsPaginatedArtifactsItemsArtifact.Data, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifact) GetData() map[string]interface{} {
+	return v.Data
+}
+
+// GetArtifactDefinition returns getAllArtifactsPaginatedArtifactsItemsArtifact.ArtifactDefinition, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifact) GetArtifactDefinition() getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition {
+	return v.ArtifactDefinition
+}
+
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifact) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getAllArtifactsPaginatedArtifactsItemsArtifact
+		Data json.RawMessage `json:"data"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getAllArtifactsPaginatedArtifactsItemsArtifact = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Data
+		src := firstPass.Data
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal getAllArtifactsPaginatedArtifactsItemsArtifact.Data: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetAllArtifactsPaginatedArtifactsItemsArtifact struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Type string `json:"type"`
+
+	Data json.RawMessage `json:"data"`
+
+	ArtifactDefinition getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition `json:"artifactDefinition"`
+}
+
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifact) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifact) __premarshalJSON() (*__premarshalgetAllArtifactsPaginatedArtifactsItemsArtifact, error) {
+	var retval __premarshalgetAllArtifactsPaginatedArtifactsItemsArtifact
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Type = v.Type
+	{
+
+		dst := &retval.Data
+		src := v.Data
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal getAllArtifactsPaginatedArtifactsItemsArtifact.Data: %w", err)
+		}
+	}
+	retval.ArtifactDefinition = v.ArtifactDefinition
+	return &retval, nil
+}
+
+// getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+type getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition struct {
+	Id     string                 `json:"id"`
+	Name   string                 `json:"name"`
+	Schema map[string]interface{} `json:"-"`
+	Url    string                 `json:"url"`
+}
+
+// GetId returns getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Id, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) GetId() string {
+	return v.Id
+}
+
+// GetName returns getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Name, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) GetName() string {
+	return v.Name
+}
+
+// GetSchema returns getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Schema, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) GetSchema() map[string]interface{} {
+	return v.Schema
+}
+
+// GetUrl returns getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Url, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) GetUrl() string {
+	return v.Url
+}
+
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Schema json.RawMessage `json:"schema"`
+
+	Url string `json:"url"`
+}
+
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition) __premarshalJSON() (*__premarshalgetAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition, error) {
+	var retval __premarshalgetAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal getAllArtifactsPaginatedArtifactsItemsArtifactArtifactDefinition.Schema: %w", err)
+		}
+	}
+	retval.Url = v.Url
+	return &retval, nil
+}
+
+// getAllArtifactsPaginatedResponse is returned by getAllArtifactsPaginated on success.
+type getAllArtifactsPaginatedResponse struct {
+	// List all artifacts
+	Artifacts getAllArtifactsPaginatedArtifacts `json:"artifacts"`
+}
+
+// GetArtifacts returns getAllArtifactsPaginatedResponse.Artifacts, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsPaginatedResponse) GetArtifacts() getAllArtifactsPaginatedArtifacts {
+	return v.Artifacts
+}
+
+// getAllArtifactsResponse is returned by getAllArtifacts on success.
+type getAllArtifactsResponse struct {
+	// List all artifacts
+	Artifacts getAllArtifactsArtifactsPaginatedArtifacts `json:"artifacts"`
+}
+
+// GetArtifacts returns getAllArtifactsResponse.Artifacts, and is useful for accessing the field via an interface.
+func (v *getAllArtifactsResponse) GetArtifacts() getAllArtifactsArtifactsPaginatedArtifacts {
+	return v.Artifacts
 }
 
 // getArtifactsByTypeArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
@@ -1254,6 +1736,96 @@ mutation deployPreviewEnvironment ($organizationId: ID!, $projectId: ID!, $input
 	var err error
 
 	var data deployPreviewEnvironmentResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func getAllArtifacts(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+) (*getAllArtifactsResponse, error) {
+	req := &graphql.Request{
+		OpName: "getAllArtifacts",
+		Query: `
+query getAllArtifacts ($organizationId: ID!) {
+	artifacts(organizationId: $organizationId, input: {}) {
+		next
+		items {
+			id
+			name
+			type
+			data
+			artifactDefinition {
+				id
+				name
+				schema
+				url
+			}
+		}
+	}
+}
+`,
+		Variables: &__getAllArtifactsInput{
+			OrganizationId: organizationId,
+		},
+	}
+	var err error
+
+	var data getAllArtifactsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func getAllArtifactsPaginated(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	after string,
+) (*getAllArtifactsPaginatedResponse, error) {
+	req := &graphql.Request{
+		OpName: "getAllArtifactsPaginated",
+		Query: `
+query getAllArtifactsPaginated ($organizationId: ID!, $after: String!) {
+	artifacts(organizationId: $organizationId, input: {after:$after}) {
+		next
+		items {
+			id
+			name
+			type
+			data
+			artifactDefinition {
+				id
+				name
+				schema
+				url
+			}
+		}
+	}
+}
+`,
+		Variables: &__getAllArtifactsPaginatedInput{
+			OrganizationId: organizationId,
+			After:          after,
+		},
+	}
+	var err error
+
+	var data getAllArtifactsPaginatedResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
