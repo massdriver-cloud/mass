@@ -51,7 +51,10 @@ func init() {
 }
 
 func runImagePush(cmd *cobra.Command, args []string) error {
-	config := config.Get()
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
 	pushInput := image.PushImageInput{
 		OrganizationID: config.OrgID,
 		ImageName:      args[0],

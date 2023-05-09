@@ -65,24 +65,30 @@ func init() {
 
 func runAppDeploy(cmd *cobra.Command, args []string) error {
 	name := args[0]
-	c := config.Get()
-	client := api.NewClient(c.URL, c.APIKey)
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
+	client := api.NewClient(config.URL, config.APIKey)
 
-	_, err := commands.DeployPackage(client, c.OrgID, name)
+	_, err := commands.DeployPackage(client, config.OrgID, name)
 
 	return err
 }
 
 func runAppConfigure(cmd *cobra.Command, args []string) error {
 	packageSlugOrID := args[0]
-	c := config.Get()
-	client := api.NewClient(c.URL, c.APIKey)
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
+	client := api.NewClient(config.URL, config.APIKey)
 	params := map[string]interface{}{}
 	if err := files.Read(appParamsPath, &params); err != nil {
 		return err
 	}
 
-	_, err := configure.Run(client, c.OrgID, packageSlugOrID, params)
+	_, err := configure.Run(client, config.OrgID, packageSlugOrID, params)
 
 	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Configuring: %s", name)
@@ -93,10 +99,13 @@ func runAppConfigure(cmd *cobra.Command, args []string) error {
 
 func runAppPatch(cmd *cobra.Command, args []string) error {
 	packageSlugOrID := args[0]
-	c := config.Get()
-	client := api.NewClient(c.URL, c.APIKey)
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
+	client := api.NewClient(config.URL, config.APIKey)
 
-	_, err := patch.Run(client, c.OrgID, packageSlugOrID, appPatchQueries)
+	_, err := patch.Run(client, config.OrgID, packageSlugOrID, appPatchQueries)
 
 	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Patching: %s", name)
