@@ -15,11 +15,16 @@ const (
 // information in the release process
 var (
 	version = "unknown" // this will be the release tag
+	gitSHA  = "unknown" // sha1 from git, output of $(git rev-parse HEAD)
 )
 
 // MassVersion returns the current version of the github.com/massdriver-cloud/mass.
 func MassVersion() string {
 	return version
+}
+
+func MassGitSHA() string {
+	return gitSHA
 }
 
 func CheckForNewerVersionAvailable() (bool, string, error) {
@@ -36,8 +41,4 @@ func CheckForNewerVersionAvailable() (bool, string, error) {
 		return true, latestVersion, nil
 	}
 	return false, latestVersion, nil
-}
-
-func SetVersion(v string) {
-	version = v
 }

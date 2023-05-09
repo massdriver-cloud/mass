@@ -14,20 +14,20 @@ var versionCmd = &cobra.Command{
 	Aliases: []string{"v"},
 	Short:   "Version of Mass CLI",
 	Long:    ``,
-	RunE:     runVersion,
+	RunE:    runVersion,
 }
 
 func runVersion(cmd *cobra.Command, args []string) error {
 
-	isOld, latestVersion, err := version.CheckForNewerVersionAvailable()
+	isOld, _, err := version.CheckForNewerVersionAvailable()
 	if err != nil {
-		return fmt.Errorf("could not check for newer versions: %w. skipping...\n", err)
+		fmt.Printf("could not check for newer versions at %v: %v. skipping...\n", version.LatestReleaseURL, err.Error())
 	} else if isOld {
 		fmt.Printf("A newer version of the CLI is available, you can download it here: %v\n", version.LatestReleaseURL)
 	}
-	var outputColor = prettylogs.Green(latestVersion)
-	fmt.Printf("Mass CLI version: %v\n", outputColor)
-return nil
+	var massVersionColor = prettylogs.Green(version.MassVersion())
+	fmt.Printf("Mass CLI version: %v (git SHA: %v) \n", massVersionColor, version.MassGitSHA())
+	return nil
 }
 
 func init() {
