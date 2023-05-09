@@ -66,10 +66,13 @@ func init() {
 
 func runPreviewInit(cmd *cobra.Command, args []string) error {
 	projectSlug := args[0]
-	c := config.Get()
-	client := api.NewClient(c.URL, c.APIKey)
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
+	client := api.NewClient(config.URL, config.APIKey)
 
-	initModel, _ := peinit.New(client, c.OrgID, projectSlug)
+	initModel, _ := peinit.New(client, config.OrgID, projectSlug)
 	p := tea.NewProgram(initModel)
 	result, err := p.Run()
 
@@ -85,8 +88,11 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 
 func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 	projectSlug := args[0]
-	c := config.Get()
-	client := api.NewClient(c.URL, c.APIKey)
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
+	client := api.NewClient(config.URL, config.APIKey)
 	previewCfg := api.PreviewConfig{}
 	ciContext := map[string]interface{}{}
 
@@ -98,7 +104,7 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	env, err := deploy.Run(client, c.OrgID, projectSlug, &previewCfg, &ciContext)
+	env, err := deploy.Run(client, config.OrgID, projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		return err
@@ -114,10 +120,13 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 
 func runPreviewDecommission(cmd *cobra.Command, args []string) error {
 	projectTargetSlugOrTargetID := args[0]
-	c := config.Get()
-	client := api.NewClient(c.URL, c.APIKey)
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
+	client := api.NewClient(config.URL, config.APIKey)
 
-	env, err := decommission.Run(client, c.OrgID, projectTargetSlugOrTargetID)
+	env, err := decommission.Run(client, config.OrgID, projectTargetSlugOrTargetID)
 
 	if err != nil {
 		return err

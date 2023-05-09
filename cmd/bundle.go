@@ -168,7 +168,10 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {
-	config := config.Get()
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
 	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
@@ -195,7 +198,10 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 }
 
 func runBundlePublish(cmd *cobra.Command, args []string) error {
-	config := config.Get()
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
 	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
