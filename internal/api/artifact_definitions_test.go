@@ -37,7 +37,7 @@ func TestGetArtifactDefinitions(t *testing.T) {
 			Name: "massdriver/aws-ecs-cluster",
 			Schema: map[string]interface{}{
 				"properties": map[string]interface{}{
-					"aws_authentication": map[string]string{
+					"aws_authentication": map[string]interface{}{
 						"type": "object",
 					},
 				},

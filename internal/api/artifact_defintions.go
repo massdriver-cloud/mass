@@ -14,7 +14,7 @@ func GetArtifactDefinitions(client graphql.Client, orgID string, input ArtifactD
 func (ad *getArtifactDefinitionsResponse) toArtifactDefinitions() []ArtifactDefinitionWithSchema {
 	var ads []ArtifactDefinitionWithSchema
 	for _, artifactDefinition := range ad.ArtifactDefinitions {
-		ads = append(ads, ArtifactDefinitionWithSchema{Name: artifactDefinition.Name, Schema: artifactDefinition.Schema})
+		ads = append(ads, ArtifactDefinitionWithSchema(artifactDefinition))
 	}
 
 	return ads
