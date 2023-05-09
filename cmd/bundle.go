@@ -181,7 +181,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, fs)
+	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
 
 	if err != nil {
 		return err
