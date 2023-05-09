@@ -57,6 +57,10 @@ func (b *Bundle) LintParamsConnectionsNameCollision() error {
 func (b *Bundle) LintEnvs() (map[string]string, error) {
 	result := map[string]string{}
 
+	if b.AppSpec == nil {
+		return result, nil
+	}
+
 	input, err := b.buildEnvsInput()
 	if err != nil {
 		return nil, fmt.Errorf("error building env query: %s", err.Error())
