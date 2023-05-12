@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/artifact"
 	"github.com/massdriver-cloud/mass/internal/commands"
 	"github.com/massdriver-cloud/mass/internal/config"
 	"github.com/spf13/afero"
@@ -19,7 +20,7 @@ var artifactCmd = &cobra.Command{
 
 // Import
 var artifactImportCmd = &cobra.Command{
-	Use:   `import -n <name> -t <type> -f <file>`,
+	Use:   `import`,
 	Short: "Import a custom artifact",
 	Long:  artifactImportCmdHelp,
 	RunE:  runArtifactImport,
@@ -32,9 +33,6 @@ func init() {
 	artifactImportCmd.Flags().StringP("name", "n", "", "Artifact name")
 	artifactImportCmd.Flags().StringP("type", "t", "", "Artifact type")
 	artifactImportCmd.Flags().StringP("file", "f", "", "Artifact file")
-	_ = artifactImportCmd.MarkFlagRequired("name")
-	_ = artifactImportCmd.MarkFlagRequired("type")
-	_ = artifactImportCmd.MarkFlagRequired("file")
 }
 
 func runArtifactImport(cmd *cobra.Command, args []string) error {
@@ -59,5 +57,12 @@ func runArtifactImport(cmd *cobra.Command, args []string) error {
 	}
 	gqlclient := api.NewClient(c.URL, c.APIKey)
 
-	return commands.ArtifactImport(gqlclient, c.OrgID, fs, artifactName, artifactType, artifactFile)
+	promptData := artifact.ArtifactImport{Name: artifactName, Type: artifactType, File: artifactFile}
+	promptErr := artifact.RunArtifactImportPrompt(gqlclient, c.OrgID, &promptData)
+	if promptErr != nil {
+		return promptErr
+	}
+
+	_, importErr := commands.ArtifactImport(gqlclient, c.OrgID, fs, promptData.Name, promptData.Type, promptData.File)
+	return importErr
 }

@@ -11,28 +11,6 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api/scalars"
 )
 
-// Artifact definition filters
-type ArtifactDefinitionFilters struct {
-	// The service for which to get compatible artifact definitions
-	Service string `json:"service"`
-	// Whether to get credential or non-credential artifact definitions
-	IsCredential bool `json:"isCredential"`
-}
-
-// GetService returns ArtifactDefinitionFilters.Service, and is useful for accessing the field via an interface.
-func (v *ArtifactDefinitionFilters) GetService() string { return v.Service }
-
-// GetIsCredential returns ArtifactDefinitionFilters.IsCredential, and is useful for accessing the field via an interface.
-func (v *ArtifactDefinitionFilters) GetIsCredential() bool { return v.IsCredential }
-
-// Artifact definition filters
-type ArtifactDefinitionInput struct {
-	Filter ArtifactDefinitionFilters `json:"filter"`
-}
-
-// GetFilter returns ArtifactDefinitionInput.Filter, and is useful for accessing the field via an interface.
-func (v *ArtifactDefinitionInput) GetFilter() ArtifactDefinitionFilters { return v.Filter }
-
 // Arguments required to get container repositories
 type ContainerRepositoryInput struct {
 	Location  string `json:"location"`
@@ -476,15 +454,11 @@ func (v *__deployPreviewEnvironmentInput) GetInput() PreviewEnvironmentInput { r
 
 // __getArtifactDefinitionsInput is used internally by genqlient
 type __getArtifactDefinitionsInput struct {
-	OrganizationId string                  `json:"organizationId"`
-	Input          ArtifactDefinitionInput `json:"input"`
+	OrganizationId string `json:"organizationId"`
 }
 
 // GetOrganizationId returns __getArtifactDefinitionsInput.OrganizationId, and is useful for accessing the field via an interface.
 func (v *__getArtifactDefinitionsInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetInput returns __getArtifactDefinitionsInput.Input, and is useful for accessing the field via an interface.
-func (v *__getArtifactDefinitionsInput) GetInput() ArtifactDefinitionInput { return v.Input }
 
 // __getArtifactsByTypeInput is used internally by genqlient
 type __getArtifactsByTypeInput struct {
@@ -1610,13 +1584,12 @@ func getArtifactDefinitions(
 	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
-	input ArtifactDefinitionInput,
 ) (*getArtifactDefinitionsResponse, error) {
 	req := &graphql.Request{
 		OpName: "getArtifactDefinitions",
 		Query: `
-query getArtifactDefinitions ($organizationId: ID!, $input: ArtifactDefinitionInput) {
-	artifactDefinitions(organizationId: $organizationId, input: $input) {
+query getArtifactDefinitions ($organizationId: ID!) {
+	artifactDefinitions(organizationId: $organizationId) {
 		name
 		schema
 	}
@@ -1624,7 +1597,6 @@ query getArtifactDefinitions ($organizationId: ID!, $input: ArtifactDefinitionIn
 `,
 		Variables: &__getArtifactDefinitionsInput{
 			OrganizationId: organizationId,
-			Input:          input,
 		},
 	}
 	var err error

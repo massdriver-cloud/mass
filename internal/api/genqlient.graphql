@@ -134,8 +134,8 @@ mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactS
   }
 }
 
-query getArtifactDefinitions($organizationId: ID!, $input: ArtifactDefinitionInput) {
-  artifactDefinitions(organizationId: $organizationId, input: $input) {
+query getArtifactDefinitions($organizationId: ID!) {
+  artifactDefinitions(organizationId: $organizationId) {
     name
     schema
   }

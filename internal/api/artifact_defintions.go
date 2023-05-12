@@ -6,8 +6,8 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
-func GetArtifactDefinitions(client graphql.Client, orgID string, input ArtifactDefinitionInput) ([]ArtifactDefinitionWithSchema, error) {
-	response, err := getArtifactDefinitions(context.Background(), client, orgID, input)
+func GetArtifactDefinitions(client graphql.Client, orgID string) ([]ArtifactDefinitionWithSchema, error) {
+	response, err := getArtifactDefinitions(context.Background(), client, orgID)
 	return response.toArtifactDefinitions(), err
 }
 

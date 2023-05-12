@@ -1,34 +1,71 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/artifact"
 	"github.com/spf13/afero"
+	"github.com/xeipuuv/gojsonschema"
 )
 
-func ArtifactImport(client graphql.Client, OrgID string, fs afero.Fs, artifactName string, artifactType string, artifactFile string) error {
-	fmt.Printf("creating artifact %s of type %s\n", artifactName, artifactType)
-
-	bytes, err := os.ReadFile(artifactFile)
-	if err != nil {
-		return err
+func ArtifactImport(client graphql.Client, OrgID string, fs afero.Fs, artifactName string, artifactType string, artifactFile string) (string, error) {
+	bytes, readErr := afero.ReadFile(fs, artifactFile)
+	if readErr != nil {
+		return "", readErr
 	}
 
-	fmt.Println(bytes)
-
-	adInput := api.ArtifactDefinitionInput{Filter: api.ArtifactDefinitionFilters{Service: "AWS"}}
-	ads, err := api.GetArtifactDefinitions(client, OrgID, adInput)
-	if err != nil {
-		return err
+	artifact := artifact.Artifact{}
+	unmarshalErr := json.Unmarshal(bytes, &artifact)
+	if unmarshalErr != nil {
+		return "", unmarshalErr
 	}
-	_ = ads
 
-	// for _, ad := range ads {
-	// 	fmt.Printf("%v\n", ad.Name)
-	// }
+	validateErr := validateArtifact(client, OrgID, artifactType, &artifact)
+	if validateErr != nil {
+		return "", validateErr
+	}
 
+	fmt.Printf("Creating artifact %s of type %s...\n", artifactName, artifactType)
+	resp, createErr := api.CreateArtifact(client, OrgID, artifactName, artifactType, artifact.Data, artifact.Specs)
+	if createErr != nil {
+		return "", createErr
+	}
+	fmt.Printf("Artifact %s created! (Artifact ID: %s)\n", resp.Name, resp.ID)
+
+	return resp.ID, nil
+}
+
+func validateArtifact(client graphql.Client, OrgID string, artifactType string, artifact *artifact.Artifact) error {
+	ads, adsErr := api.GetArtifactDefinitions(client, OrgID)
+	if adsErr != nil {
+		return adsErr
+	}
+
+	var schema map[string]interface{} = nil
+	for _, ad := range ads {
+		if ad.Name == artifactType {
+			schema = ad.Schema
+		}
+	}
+	if schema == nil {
+		return fmt.Errorf("invalid artifact type: %s", artifactType)
+	}
+
+	documentLoader := gojsonschema.NewGoLoader(artifact)
+	schemaLoader := gojsonschema.NewGoLoader(schema)
+	result, validateErr := gojsonschema.Validate(schemaLoader, documentLoader)
+	if validateErr != nil {
+		return validateErr
+	}
+	if !result.Valid() {
+		errorString := "The artifact is not valid. see errors :\n"
+		for _, desc := range result.Errors() {
+			errorString += fmt.Sprintf("- %s\n", desc)
+		}
+		return fmt.Errorf("%s", errorString)
+	}
 	return nil
 }
