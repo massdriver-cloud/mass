@@ -26,6 +26,7 @@ require (
 	github.com/massdriver-cloud/schema2json v0.0.2
 	github.com/rs/zerolog v1.29.0
 	github.com/xeipuuv/gojsonschema v1.2.0
+	golang.org/x/mod v0.9.0
 	golang.org/x/text v0.8.0
 )
 
@@ -93,7 +94,6 @@ require (
 	github.com/yuin/goldmark v1.5.2 // indirect
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
-	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect

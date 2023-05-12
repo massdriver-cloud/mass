@@ -27,17 +27,38 @@ func MassGitSHA() string {
 	return gitSHA
 }
 
-func CheckForNewerVersionAvailable() (bool, string, error) {
+func SetVersion(setVersion string) {
+	version = setVersion
+}
+
+var GetLatestVersion = func() (string, error) {
 	resp, err := http.Get(LatestReleaseURL) //nolint:noctx
 	if err != nil {
-		return false, "", err
+		return "", err
 	}
 	defer resp.Body.Close()
 	// Github will redirect releases/latest to the appropriate releases/tag/X.X.X
 	redirectURL := resp.Request.URL.String()
 	parts := strings.Split(redirectURL, "/")
 	latestVersion := parts[len(parts)-1]
-	if semver.Compare(version, latestVersion) < 0 {
+	return latestVersion, nil
+}
+
+func CheckForNewerVersionAvailable() (bool, string, error) {
+	currentVersion := version
+	latestVersion, err := GetLatestVersion()
+	if err != nil {
+		return false, "", err
+	}
+	// semver requires a "v" prefix (v1.0.0 not 1.0.0), so add prefix if missing
+	if !strings.HasPrefix(currentVersion, "v") {
+		currentVersion = "v" + currentVersion
+	}
+	if !strings.HasPrefix(latestVersion, "v") {
+		latestVersion = "v" + latestVersion
+	}
+
+	if semver.Compare(currentVersion, latestVersion) < 0 {
 		return true, latestVersion, nil
 	}
 	return false, latestVersion, nil

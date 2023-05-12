@@ -26,7 +26,7 @@ func TestGetArtifactDefinitions(t *testing.T) {
 		},
 	})
 
-	got, err := api.GetArtifactDefinitions(client, "faux-org-id", api.ArtifactDefinitionInput{})
+	got, err := api.GetArtifactDefinitions(client, "faux-org-id")
 
 	if err != nil {
 		t.Fatal(err)
@@ -45,7 +45,6 @@ func TestGetArtifactDefinitions(t *testing.T) {
 		},
 	}
 
-	// Not sure why this doesn't work
 	if !reflect.DeepEqual(got[0].Schema, want[0].Schema) {
 		t.Errorf("got %v expected %v", got[0].Schema, want[0].Schema)
 	}
