@@ -63,16 +63,3 @@ func CheckForNewerVersionAvailable() (bool, string, error) {
 	}
 	return false, latestVersion, nil
 }
-
-// func GetLatestVersion() (string, error) {
-// 	resp, err := http.Get(LatestReleaseURL) //nolint:noctx
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	defer resp.Body.Close()
-// 	// Github will redirect releases/latest to the appropriate releases/tag/X.X.X
-// 	redirectURL := resp.Request.URL.String()
-// 	parts := strings.Split(redirectURL, "/")
-// 	latestVersion := parts[len(parts)-1]
-// 	return latestVersion, nil
-// }
