@@ -99,7 +99,6 @@ func printDockerOutput(rd io.Reader) error {
 	scanner := bufio.NewScanner(rd)
 	for scanner.Scan() {
 		lastLine = scanner.Text()
-		// fmt.Println(lastLine)
 		var logLine map[string]interface{}
 		if err := json.Unmarshal([]byte(lastLine), &logLine); err != nil {
 			return err
