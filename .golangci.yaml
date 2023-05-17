@@ -225,11 +225,17 @@ issues:
   max-same-issues: 50
 
   exclude:
+    # These files are _incidentally_ duplicated.
     - "(\\d+)-(\\d+) lines are duplicate of `cmd/infrastructure.go:(\\d+)-(\\d+)`"
     - "(\\d+)-(\\d+) lines are duplicate of `cmd/application.go:(\\d+)-(\\d+)`"
+    # I get it, but this function name makes sense
     - "cognitive complexity 28 of func `\\(\\*Bundle\\).LintParamsConnectionsNameCollision` is high \\(> 20\\)"
 
   exclude-rules:
+    # Allow unused params at the cobra command level
+    - linters: [revive]
+      text: "unused-parameter: parameter ('cmd'|'args') seems to be unused, consider removing or renaming it as _"
+    # GQL client autogens to artifactId and orgId
     - linters: [revive]
       text: "var-naming: var artifactId should be artifactID"
     - linters: [revive]
@@ -238,6 +244,7 @@ issues:
       text: "ST1003: func parameter orgId should be orgID"
     - source: "^//\\s*go:generate\\s"
       linters: [lll]
+    # Allow TODO for now
     - source: "(noinspection|TODO)"
       linters: [godox]
     - source: "//noinspection"
