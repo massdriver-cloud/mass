@@ -50,7 +50,11 @@ func TestArtifactImport(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	file.Write([]byte(`{"name":"fake"}`))
+	_, err = file.Write([]byte(`{"name":"fake"}`))
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	got, err := commands.ArtifactImport(client, "faux-org-id", fs, "artifact-name", "massdriver/fake-artifact-schema", "artifact.json")
 

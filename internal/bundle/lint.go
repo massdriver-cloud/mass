@@ -39,7 +39,7 @@ func (b *Bundle) LintParamsConnectionsNameCollision() error {
 	if b.Params != nil {
 		if params, ok := b.Params["properties"]; ok {
 			if b.Connections != nil {
-				if connections, ok := b.Connections["properties"]; ok {
+				if connections, connectionsOk := b.Connections["properties"]; connectionsOk {
 					for param := range params.(map[string]interface{}) {
 						for connection := range connections.(map[string]interface{}) {
 							if param == connection {
@@ -63,34 +63,34 @@ func (b *Bundle) LintEnvs() (map[string]string, error) {
 
 	input, err := b.buildEnvsInput()
 	if err != nil {
-		return nil, fmt.Errorf("error building env query: %s", err.Error())
+		return nil, fmt.Errorf("error building env query: %w", err)
 	}
 
 	for name, query := range b.AppSpec.Envs {
-		jq, err := gojq.Parse(query)
-		if err != nil {
-			return result, errors.New("The jq query for environment variable " + name + " is invalid: " + err.Error())
+		jq, parseErr := gojq.Parse(query)
+		if parseErr != nil {
+			return result, errors.New("the jq query for environment variable " + name + " is invalid: " + parseErr.Error())
 		}
 
 		iter := jq.Run(input)
 		value, ok := iter.Next()
 		if !ok || value == nil {
-			return result, errors.New("The jq query for environment variable " + name + " didn't produce a result")
+			return result, errors.New("the jq query for environment variable " + name + " didn't produce a result")
 		}
-		if err, ok := value.(error); ok {
-			return result, errors.New("The jq query for environment variable " + name + " produced an error: " + err.Error())
+		if castErr, castOk := value.(error); castOk {
+			return result, errors.New("the jq query for environment variable " + name + " produced an error: " + castErr.Error())
 		}
 		var valueString string
 		if valueString, ok = value.(string); !ok {
-			resultBytes, err := json.Marshal(value)
-			if err != nil {
-				return result, errors.New("The jq query for environment variable " + name + " produced an uninterpretable value: " + err.Error())
+			resultBytes, marshalErr := json.Marshal(value)
+			if marshalErr != nil {
+				return result, errors.New("the jq query for environment variable " + name + " produced an uninterpretable value: " + marshalErr.Error())
 			}
 			valueString = string(resultBytes)
 		}
 		_, multiple := iter.Next()
 		if multiple {
-			return result, errors.New("The jq query for environment variable " + name + " produced multiple values, which isn't supported")
+			return result, errors.New("the jq query for environment variable " + name + " produced multiple values, which isn't supported")
 		}
 		result[name] = valueString
 	}

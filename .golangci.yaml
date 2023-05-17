@@ -224,19 +224,29 @@ issues:
   # Default: 3
   max-same-issues: 50
 
+  exclude:
+    - "(\\d+)-(\\d+) lines are duplicate of `cmd/infrastructure.go:(\\d+)-(\\d+)`"
+    - "(\\d+)-(\\d+) lines are duplicate of `cmd/application.go:(\\d+)-(\\d+)`"
+    - "cognitive complexity 28 of func `\\(\\*Bundle\\).LintParamsConnectionsNameCollision` is high \\(> 20\\)"
+
   exclude-rules:
     - linters: [revive]
       text: "var-naming: var artifactId should be artifactID"
+    - linters: [revive]
+      text: "var-naming: (var|func parameter) orgId should be orgID"
+    - linters: [stylecheck]
+      text: "ST1003: func parameter orgId should be orgID"
     - source: "^//\\s*go:generate\\s"
       linters: [lll]
     - source: "(noinspection|TODO)"
-      linters: [godot]
+      linters: [godox]
     - source: "//noinspection"
       linters: [gocritic]
     - source: "^\\s+if _, ok := err\\.\\([^.]+\\.InternalError\\); ok {"
       linters: [errorlint]
     - path: "_test\\.go"
       linters:
+        - revive
         - bodyclose
         - dupl
         - funlen

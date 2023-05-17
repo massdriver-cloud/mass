@@ -1,6 +1,8 @@
 package patch
 
 import (
+	"errors"
+
 	"github.com/Khan/genqlient/graphql"
 	"github.com/itchyny/gojq"
 	"github.com/massdriver-cloud/mass/internal/api"
@@ -9,6 +11,7 @@ import (
 // Updates a packages configuration parameters.
 func Run(client graphql.Client, orgID string, name string, setValues []string) (*api.Package, error) {
 	pkg, err := api.GetPackageByName(client, orgID, name)
+
 	if err != nil {
 		return nil, err
 	}
@@ -16,9 +19,10 @@ func Run(client graphql.Client, orgID string, name string, setValues []string) (
 	updatedParams := pkg.Params
 
 	for _, queryStr := range setValues {
-		query, err := gojq.Parse(queryStr)
-		if err != nil {
-			return nil, err
+		query, parseErr := gojq.Parse(queryStr)
+
+		if parseErr != nil {
+			return nil, parseErr
 		}
 
 		iter := query.Run(updatedParams)
@@ -27,15 +31,16 @@ func Run(client graphql.Client, orgID string, name string, setValues []string) (
 			if !ok {
 				break
 			}
-			if err, ok := v.(error); ok {
+			if err, ok = v.(error); ok {
 				return nil, err
 			}
-			updatedParams = v.(map[string]interface{})
-		}
-	}
 
-	if err != nil {
-		return nil, err
+			updatedParams, ok = v.(map[string]interface{})
+
+			if !ok {
+				return nil, errors.New("failed to cast params")
+			}
+		}
 	}
 
 	return api.ConfigurePackage(client, orgID, pkg.Target.ID, pkg.Manifest.ID, updatedParams)

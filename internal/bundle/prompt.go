@@ -15,8 +15,8 @@ import (
 var bundleTypeFormat = regexp.MustCompile(`^[a-z0-9-]{2,}`)
 var connectionNameFormat = regexp.MustCompile(`^[a-z]+[a-z0-9_]*[a-z0-9]+$`)
 
-// TODO: @coryodaniel Can you add the query we are using for the frontend flow so I can swap this out?
 var MassdriverArtifactDefinitions = []string{
+	// TODO: @coryodaniel Can you add the query we are using for the frontend flow so I can swap this out?
 	"massdriver/aws-api-gateway-rest-api",
 	"massdriver/aws-ecs-cluster",
 	"massdriver/aws-dynamodb-table",

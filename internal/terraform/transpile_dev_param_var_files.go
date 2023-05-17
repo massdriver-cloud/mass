@@ -34,7 +34,6 @@ func transpileAndWriteDevParams(path string, b *bundle.Bundle, fs afero.Fs) erro
 		if err != nil {
 			return err
 		}
-
 	}
 
 	paramsSchemaProperties, ok := b.Params["properties"].(map[string]interface{})

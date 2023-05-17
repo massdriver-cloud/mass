@@ -11,7 +11,7 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-func ArtifactImport(client graphql.Client, OrgID string, fs afero.Fs, artifactName string, artifactType string, artifactFile string) (string, error) {
+func ArtifactImport(client graphql.Client, orgID string, fs afero.Fs, artifactName string, artifactType string, artifactFile string) (string, error) {
 	bytes, readErr := afero.ReadFile(fs, artifactFile)
 	if readErr != nil {
 		return "", readErr
@@ -23,13 +23,13 @@ func ArtifactImport(client graphql.Client, OrgID string, fs afero.Fs, artifactNa
 		return "", unmarshalErr
 	}
 
-	validateErr := validateArtifact(client, OrgID, artifactType, &artifact)
+	validateErr := validateArtifact(client, orgID, artifactType, &artifact)
 	if validateErr != nil {
 		return "", validateErr
 	}
 
 	fmt.Printf("Creating artifact %s of type %s...\n", artifactName, artifactType)
-	resp, createErr := api.CreateArtifact(client, OrgID, artifactName, artifactType, artifact.Data, artifact.Specs)
+	resp, createErr := api.CreateArtifact(client, orgID, artifactName, artifactType, artifact.Data, artifact.Specs)
 	if createErr != nil {
 		return "", createErr
 	}
@@ -38,13 +38,14 @@ func ArtifactImport(client graphql.Client, OrgID string, fs afero.Fs, artifactNa
 	return resp.ID, nil
 }
 
-func validateArtifact(client graphql.Client, OrgID string, artifactType string, artifact *artifact.Artifact) error {
-	ads, adsErr := api.GetArtifactDefinitions(client, OrgID)
+func validateArtifact(client graphql.Client, orgID string, artifactType string, artifact *artifact.Artifact) error {
+	ads, adsErr := api.GetArtifactDefinitions(client, orgID)
 	if adsErr != nil {
 		return adsErr
 	}
 
-	var schema map[string]interface{} = nil
+	var schema map[string]interface{}
+
 	for _, ad := range ads {
 		if ad.Name == artifactType {
 			schema = ad.Schema

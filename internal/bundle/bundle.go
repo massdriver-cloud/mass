@@ -37,7 +37,7 @@ type AppSpec struct {
 
 type Secret struct {
 	Required    bool   `json:"required" yaml:"required"`
-	Json        bool   `json:"json" yaml:"json"`
+	JSON        bool   `json:"json" yaml:"json"`
 	Title       string `json:"title" yaml:"title"`
 	Description string `json:"description" yaml:"description"`
 }

@@ -57,7 +57,7 @@ func runArtifactImport(cmd *cobra.Command, args []string) error {
 	}
 	gqlclient := api.NewClient(c.URL, c.APIKey)
 
-	promptData := artifact.ArtifactImport{Name: artifactName, Type: artifactType, File: artifactFile}
+	promptData := artifact.ImportedArtifact{Name: artifactName, Type: artifactType, File: artifactFile}
 	promptErr := artifact.RunArtifactImportPrompt(gqlclient, c.OrgID, &promptData)
 	if promptErr != nil {
 		return promptErr

@@ -18,7 +18,9 @@ func Run(client graphql.Client, orgID string, name string, params map[string]int
 	}
 
 	interpolatedParams := map[string]interface{}{}
-	if err := interpolateParams(params, &interpolatedParams); err != nil {
+	err = interpolateParams(params, &interpolatedParams)
+
+	if err != nil {
 		return nil, err
 	}
 
