@@ -14,19 +14,19 @@ import (
 var artifactNameFormat = regexp.MustCompile(`[a-z][a-z0-9-]*[a-z0-9]`)
 var artifactDefinitions = []string{}
 
-type ArtifactImport struct {
+type ImportedArtifact struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 	File string `json:"file"`
 }
 
-var promptsNew = []func(t *ArtifactImport) error{
+var promptsNew = []func(t *ImportedArtifact) error{
 	getName,
 	getType,
 	getFile,
 }
 
-func RunArtifactImportPrompt(client graphql.Client, orgId string, t *ArtifactImport) error {
+func RunArtifactImportPrompt(client graphql.Client, orgId string, t *ImportedArtifact) error {
 	var err error
 
 	ads, err := api.GetArtifactDefinitions(client, orgId)
@@ -50,7 +50,7 @@ func RunArtifactImportPrompt(client graphql.Client, orgId string, t *ArtifactImp
 	return nil
 }
 
-func getName(t *ArtifactImport) error {
+func getName(t *ImportedArtifact) error {
 	validate := func(input string) error {
 		if !artifactNameFormat.MatchString(input) {
 			return errors.New("name must be 2 or more characters and can only include lowercase letters, numbers and dashes")
@@ -76,7 +76,7 @@ func getName(t *ArtifactImport) error {
 	return nil
 }
 
-func getType(t *ArtifactImport) error {
+func getType(t *ImportedArtifact) error {
 	if t.Type != "" {
 		return nil
 	}
@@ -96,7 +96,7 @@ func getType(t *ArtifactImport) error {
 	return nil
 }
 
-func getFile(t *ArtifactImport) error {
+func getFile(t *ImportedArtifact) error {
 	if t.File != "" {
 		return nil
 	}

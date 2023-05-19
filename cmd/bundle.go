@@ -226,8 +226,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	publish.Run(unmarshalledBundle, c, fs, buildDirectory)
-	return nil
+	return publish.Run(unmarshalledBundle, c, fs, buildDirectory)
 }
 
 func unmarshalBundle(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bundle.Bundle, error) {

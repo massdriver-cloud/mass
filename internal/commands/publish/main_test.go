@@ -2,7 +2,7 @@ package publish_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,7 +20,7 @@ func TestPublishBundle(t *testing.T) {
 	buildDir := "/publishtest"
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bytes, err := ioutil.ReadAll(r.Body)
+		bytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatalf("%d, unexpected error", err)
 		}
@@ -30,7 +30,8 @@ func TestPublishBundle(t *testing.T) {
 		case "/bundles":
 			responseBody := fmt.Sprintf(`{"upload_location":"http://%s/s3"}`, r.Host)
 			gotPublishBody = bytes
-			if _, err := w.Write([]byte(responseBody)); err != nil {
+			_, err = w.Write([]byte(responseBody))
+			if err != nil {
 				t.Fatalf("%d, unexpected error writing upload location to test server", err)
 			}
 		default:
@@ -41,14 +42,28 @@ func TestPublishBundle(t *testing.T) {
 
 	fs := afero.NewMemMapFs()
 
-	mockfilesystem.SetupBundle(buildDir, fs)
-	mockfilesystem.WithFilesToIgnore(buildDir, fs)
-	mockfilesystem.WithOperatorGuide(buildDir, "md", fs)
+	err := mockfilesystem.SetupBundle(buildDir, fs)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = mockfilesystem.WithFilesToIgnore(buildDir, fs)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = mockfilesystem.WithOperatorGuide(buildDir, "md", fs)
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	c := restclient.NewClient().WithBaseURL(testServer.URL)
 	b := mockBundle()
 
-	err := publish.Run(b, c, fs, buildDir)
+	err = publish.Run(b, c, fs, buildDir)
 
 	if err != nil {
 		t.Fatal(err)
@@ -92,7 +107,7 @@ func mockBundle() *bundle.Bundle {
 			Secrets: map[string]bundle.Secret{
 				"STRIPE_KEY": {
 					Required:    true,
-					Json:        false,
+					JSON:        false,
 					Title:       "A secret",
 					Description: "Access key for live stripe accounts",
 				},

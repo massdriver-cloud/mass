@@ -20,7 +20,7 @@ func Get() (*Config, error) {
 	ctx := context.Background()
 	err := envconfig.Process(ctx, &c)
 	if err != nil {
-		return nil, fmt.Errorf("required environment variable not set: %s", err)
+		return nil, fmt.Errorf("required environment variable not set: %w", err)
 	}
 
 	setDefaults(&c)

@@ -21,10 +21,10 @@ We welcome contributions in the form of pull requests! Before submitting a pull 
 - Ensure that all tests pass by running `go test ./...`.
 - Submit a pull request, explaining the changes you have made and why they should be merged.
 
-<!-- 
+<!--
 ## Code of Conduct
 
-Please note that by contributing to this project, you are agreeing to abide by the [Code of Conduct](./CODE_OF_CONDUCT.md). Any violations of the Code of Conduct will not be tolerated and may result in being banned from contributing to the project. 
+Please note that by contributing to this project, you are agreeing to abide by the [Code of Conduct](./CODE_OF_CONDUCT.md). Any violations of the Code of Conduct will not be tolerated and may result in being banned from contributing to the project.
 -->
 
 ## License

@@ -185,7 +185,7 @@ func TestLintEnvs(t *testing.T) {
 				Connections: map[string]interface{}{},
 			},
 			want: map[string]string{},
-			err:  errors.New("The jq query for environment variable FOO didn't produce a result"),
+			err:  errors.New("the jq query for environment variable FOO didn't produce a result"),
 		},
 		{
 			name: "error on invalid jq syntax",
@@ -200,7 +200,7 @@ func TestLintEnvs(t *testing.T) {
 				Connections: map[string]interface{}{},
 			},
 			want: map[string]string{},
-			err:  errors.New("The jq query for environment variable FOO produced an error: function not defined: laksdjf/0"),
+			err:  errors.New("the jq query for environment variable FOO produced an error: function not defined: laksdjf/0"),
 		},
 		{
 			name: "error on multiple values",
@@ -225,7 +225,7 @@ func TestLintEnvs(t *testing.T) {
 				Connections: map[string]interface{}{},
 			},
 			want: map[string]string{},
-			err:  errors.New("The jq query for environment variable FOO produced multiple values, which isn't supported"),
+			err:  errors.New("the jq query for environment variable FOO produced multiple values, which isn't supported"),
 		},
 	}
 

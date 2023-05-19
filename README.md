@@ -16,12 +16,12 @@ Official [GitHub actions](https://github.com/massdriver-cloud/actions) are also 
 
 Pre-built binaries for the Mass CLI are available in the [Releases](https://github.com/massdriver-cloud/mass/releases) section of this repository.
 
-<!-- 
+<!--
 ### Homebrew
 
 ```sh
 brew install mass
-``` 
+```
 -->
 
 ### Go
@@ -144,4 +144,3 @@ If you'd like to contribute to the Mass CLI, please refer to the [Contribution G
 ## License
 
 The Mass CLI is open source software licensed under the [MIT license](https://github.com/massdriver-cloud/mass/blob/main/LICENSE).
-

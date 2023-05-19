@@ -109,7 +109,9 @@ func printDockerOutput(rd io.Reader) error {
 		return errors.New(errLine.Error)
 	}
 
-	if err := scanner.Err(); err != nil {
+	err := scanner.Err()
+
+	if err != nil {
 		return err
 	}
 

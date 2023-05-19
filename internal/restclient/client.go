@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 )
@@ -100,7 +100,7 @@ func (c *MassdriverClient) PublishBundle(request PublishPost) (string, error) {
 
 	defer resp.Body.Close()
 
-	respBodyBytes, err := ioutil.ReadAll(resp.Body)
+	respBodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}

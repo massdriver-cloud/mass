@@ -32,7 +32,7 @@ func SetVersion(setVersion string) {
 }
 
 var GetLatestVersion = func() (string, error) {
-	resp, err := http.Get(LatestReleaseURL) //nolint:noctx
+	resp, err := http.Get(LatestReleaseURL)
 	if err != nil {
 		return "", err
 	}

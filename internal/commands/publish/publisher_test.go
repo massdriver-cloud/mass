@@ -4,8 +4,8 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -85,7 +85,7 @@ func TestPublish(t *testing.T) {
 					Secrets: map[string]bundle.Secret{
 						"STRIPE_KEY": {
 							Required:    true,
-							Json:        false,
+							JSON:        false,
 							Title:       "A secret",
 							Description: "Access key for live stripe accounts",
 						},
@@ -126,7 +126,7 @@ func TestPublish(t *testing.T) {
 					Secrets: map[string]bundle.Secret{
 						"STRIPE_KEY": {
 							Required:    true,
-							Json:        false,
+							JSON:        false,
 							Title:       "A secret",
 							Description: "Access key for live stripe accounts",
 						},
@@ -167,7 +167,7 @@ func TestPublish(t *testing.T) {
 					Secrets: map[string]bundle.Secret{
 						"STRIPE_KEY": {
 							Required:    true,
-							Json:        false,
+							JSON:        false,
 							Title:       "A secret",
 							Description: "Access key for live stripe accounts",
 						},
@@ -186,7 +186,7 @@ func TestPublish(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var gotBody string
 			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				bytes, readErr := ioutil.ReadAll(r.Body)
+				bytes, readErr := io.ReadAll(r.Body)
 				if readErr != nil {
 					t.Fatalf("%d, unexpected error", readErr)
 				}
@@ -209,8 +209,17 @@ func TestPublish(t *testing.T) {
 				BuildDir:   tc.path,
 			}
 
-			mockfilesystem.SetupBundle(tc.path, fs)
-			mockfilesystem.WithOperatorGuide(tc.path, tc.guideType, fs)
+			err := mockfilesystem.SetupBundle(tc.path, fs)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = mockfilesystem.WithOperatorGuide(tc.path, tc.guideType, fs)
+
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			gotResponse, err := publisher.SubmitBundle()
 
@@ -259,7 +268,7 @@ func TestArchive(t *testing.T) {
 			Secrets: map[string]bundle.Secret{
 				"STRIPE_KEY": {
 					Required:    true,
-					Json:        false,
+					JSON:        false,
 					Title:       "A secret",
 					Description: "Access key for live stripe accounts",
 				},
@@ -274,8 +283,17 @@ func TestArchive(t *testing.T) {
 	fs := afero.NewMemMapFs()
 	buildDir := "/archive"
 
-	mockfilesystem.SetupBundle(buildDir, fs)
-	mockfilesystem.WithFilesToIgnore(buildDir, fs)
+	err := mockfilesystem.SetupBundle(buildDir, fs)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = mockfilesystem.WithFilesToIgnore(buildDir, fs)
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	publisher := &publish.Publisher{
 		Bundle:   &b,
@@ -285,7 +303,7 @@ func TestArchive(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := publisher.ArchiveBundle(&buf)
+	err = publisher.ArchiveBundle(&buf)
 
 	if err != nil {
 		t.Fatal(err)
@@ -316,7 +334,7 @@ func TestUploadToPresignedS3URL(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var gotBody []byte
 			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				bytes, err := ioutil.ReadAll(r.Body)
+				bytes, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatalf("%d, unexpected error", err)
 				}
@@ -367,30 +385,36 @@ func extractTarGz(gzipStream io.Reader, fs afero.Fs) {
 	tarReader := tar.NewReader(uncompressedStream)
 
 	for {
-		header, err := tarReader.Next()
+		header, tarErr := tarReader.Next()
 
-		if err == io.EOF {
+		if errors.Is(tarErr, io.EOF) {
 			break
 		}
 
-		if err != nil {
+		if tarErr != nil {
 			log.Fatalf("ExtractTarGz: Next() failed: %s", err.Error())
 		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := fs.Mkdir(path.Join("/untar/", header.Name), 0755); err != nil {
+			dirErr := fs.Mkdir(path.Join("/untar/", header.Name), 0755)
+			if dirErr != nil {
 				log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
 			}
 		case tar.TypeReg:
-			outFile, err := fs.Create(path.Join("/untar/", header.Name))
-			if err != nil {
+			outFile, headerErr := fs.Create(path.Join("/untar/", header.Name))
+			if headerErr != nil {
 				log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())
 			}
-			defer outFile.Close()
-			if _, err := io.Copy(outFile, tarReader); err != nil {
+
+			_, err = io.Copy(outFile, tarReader)
+
+			if err != nil {
+				outFile.Close()
 				log.Fatalf("ExtractTarGz: Copy() failed: %s", err.Error())
 			}
+
+			outFile.Close()
 		default:
 			log.Fatalf(
 				"ExtractTarGz: uknown type: %v in %s",

@@ -12,9 +12,12 @@ func transpileAndWriteDevParams(path string, b *bundle.Bundle, fs afero.Fs) erro
 	emptyParams := checkEmptySchema(b.Params)
 
 	if emptyParams {
-		if err := afero.WriteFile(fs, path, []byte("{}"), 0755); err != nil {
+		err := afero.WriteFile(fs, path, []byte("{}"), 0755)
+
+		if err != nil {
 			return err
 		}
+
 		return nil
 	}
 
@@ -34,7 +37,6 @@ func transpileAndWriteDevParams(path string, b *bundle.Bundle, fs afero.Fs) erro
 		if err != nil {
 			return err
 		}
-
 	}
 
 	paramsSchemaProperties, ok := b.Params["properties"].(map[string]interface{})

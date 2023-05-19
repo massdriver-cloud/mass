@@ -12,7 +12,9 @@ func transpileConnectionVarFile(path string, b *bundle.Bundle, fs afero.Fs) erro
 	emptyConnections := checkEmptySchema(b.Connections)
 
 	if emptyConnections {
-		if err := afero.WriteFile(fs, path, []byte("{}"), 0755); err != nil {
+		err := afero.WriteFile(fs, path, []byte("{}"), 0755)
+
+		if err != nil {
 			return err
 		}
 
