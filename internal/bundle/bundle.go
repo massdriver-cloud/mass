@@ -26,7 +26,7 @@ type Bundle struct {
 	Params      map[string]interface{} `json:"params" yaml:"params"`
 	Connections map[string]interface{} `json:"connections" yaml:"connections"`
 	UI          map[string]interface{} `json:"ui" yaml:"ui"`
-	AppSpec     *AppSpec               `json:"app" yaml:"app"`
+	AppSpec     *AppSpec               `json:"app,omitempty" yaml:"app,omitempty"`
 }
 
 type AppSpec struct {
@@ -37,7 +37,7 @@ type AppSpec struct {
 
 type Secret struct {
 	Required    bool   `json:"required" yaml:"required"`
-	Json        bool   `json:"json" yaml:"json"`
+	JSON        bool   `json:"json" yaml:"json"`
 	Title       string `json:"title" yaml:"title"`
 	Description string `json:"description" yaml:"description"`
 }

@@ -284,6 +284,130 @@ func (v *__containerRepositoryInput) GetArtifactId() string { return v.ArtifactI
 // GetInput returns __containerRepositoryInput.Input, and is useful for accessing the field via an interface.
 func (v *__containerRepositoryInput) GetInput() ContainerRepositoryInput { return v.Input }
 
+// __createArtifactInput is used internally by genqlient
+type __createArtifactInput struct {
+	OrganizationId string                 `json:"organizationId"`
+	ArtifactName   string                 `json:"artifactName"`
+	ArtifactSpecs  map[string]interface{} `json:"-"`
+	ArtifactType   string                 `json:"artifactType"`
+	ArtifactData   map[string]interface{} `json:"-"`
+}
+
+// GetOrganizationId returns __createArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createArtifactInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetArtifactName returns __createArtifactInput.ArtifactName, and is useful for accessing the field via an interface.
+func (v *__createArtifactInput) GetArtifactName() string { return v.ArtifactName }
+
+// GetArtifactSpecs returns __createArtifactInput.ArtifactSpecs, and is useful for accessing the field via an interface.
+func (v *__createArtifactInput) GetArtifactSpecs() map[string]interface{} { return v.ArtifactSpecs }
+
+// GetArtifactType returns __createArtifactInput.ArtifactType, and is useful for accessing the field via an interface.
+func (v *__createArtifactInput) GetArtifactType() string { return v.ArtifactType }
+
+// GetArtifactData returns __createArtifactInput.ArtifactData, and is useful for accessing the field via an interface.
+func (v *__createArtifactInput) GetArtifactData() map[string]interface{} { return v.ArtifactData }
+
+func (v *__createArtifactInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*__createArtifactInput
+		ArtifactSpecs json.RawMessage `json:"artifactSpecs"`
+		ArtifactData  json.RawMessage `json:"artifactData"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.__createArtifactInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.ArtifactSpecs
+		src := firstPass.ArtifactSpecs
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal __createArtifactInput.ArtifactSpecs: %w", err)
+			}
+		}
+	}
+
+	{
+		dst := &v.ArtifactData
+		src := firstPass.ArtifactData
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal __createArtifactInput.ArtifactData: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshal__createArtifactInput struct {
+	OrganizationId string `json:"organizationId"`
+
+	ArtifactName string `json:"artifactName"`
+
+	ArtifactSpecs json.RawMessage `json:"artifactSpecs"`
+
+	ArtifactType string `json:"artifactType"`
+
+	ArtifactData json.RawMessage `json:"artifactData"`
+}
+
+func (v *__createArtifactInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *__createArtifactInput) __premarshalJSON() (*__premarshal__createArtifactInput, error) {
+	var retval __premarshal__createArtifactInput
+
+	retval.OrganizationId = v.OrganizationId
+	retval.ArtifactName = v.ArtifactName
+	{
+
+		dst := &retval.ArtifactSpecs
+		src := v.ArtifactSpecs
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal __createArtifactInput.ArtifactSpecs: %w", err)
+		}
+	}
+	retval.ArtifactType = v.ArtifactType
+	{
+
+		dst := &retval.ArtifactData
+		src := v.ArtifactData
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal __createArtifactInput.ArtifactData: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
 // __decommissionPreviewEnvironmentInput is used internally by genqlient
 type __decommissionPreviewEnvironmentInput struct {
 	OrgId    string `json:"orgId"`
@@ -327,6 +451,14 @@ func (v *__deployPreviewEnvironmentInput) GetProjectId() string { return v.Proje
 
 // GetInput returns __deployPreviewEnvironmentInput.Input, and is useful for accessing the field via an interface.
 func (v *__deployPreviewEnvironmentInput) GetInput() PreviewEnvironmentInput { return v.Input }
+
+// __getArtifactDefinitionsInput is used internally by genqlient
+type __getArtifactDefinitionsInput struct {
+	OrganizationId string `json:"organizationId"`
+}
+
+// GetOrganizationId returns __getArtifactDefinitionsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getArtifactDefinitionsInput) GetOrganizationId() string { return v.OrganizationId }
 
 // __getArtifactsByTypeInput is used internally by genqlient
 type __getArtifactsByTypeInput struct {
@@ -526,6 +658,52 @@ func (v *containerRepositoryResponse) GetContainerRepository() containerReposito
 	return v.ContainerRepository
 }
 
+// createArtifactCreateArtifactArtifactPayload includes the requested fields of the GraphQL type ArtifactPayload.
+type createArtifactCreateArtifactArtifactPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result createArtifactCreateArtifactArtifactPayloadResultArtifact `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetResult returns createArtifactCreateArtifactArtifactPayload.Result, and is useful for accessing the field via an interface.
+func (v *createArtifactCreateArtifactArtifactPayload) GetResult() createArtifactCreateArtifactArtifactPayloadResultArtifact {
+	return v.Result
+}
+
+// GetSuccessful returns createArtifactCreateArtifactArtifactPayload.Successful, and is useful for accessing the field via an interface.
+func (v *createArtifactCreateArtifactArtifactPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns createArtifactCreateArtifactArtifactPayload.Messages, and is useful for accessing the field via an interface.
+func (v *createArtifactCreateArtifactArtifactPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// createArtifactCreateArtifactArtifactPayloadResultArtifact includes the requested fields of the GraphQL type Artifact.
+type createArtifactCreateArtifactArtifactPayloadResultArtifact struct {
+	Name string `json:"name"`
+	Id   string `json:"id"`
+}
+
+// GetName returns createArtifactCreateArtifactArtifactPayloadResultArtifact.Name, and is useful for accessing the field via an interface.
+func (v *createArtifactCreateArtifactArtifactPayloadResultArtifact) GetName() string { return v.Name }
+
+// GetId returns createArtifactCreateArtifactArtifactPayloadResultArtifact.Id, and is useful for accessing the field via an interface.
+func (v *createArtifactCreateArtifactArtifactPayloadResultArtifact) GetId() string { return v.Id }
+
+// createArtifactResponse is returned by createArtifact on success.
+type createArtifactResponse struct {
+	// Create an artifact
+	CreateArtifact createArtifactCreateArtifactArtifactPayload `json:"createArtifact"`
+}
+
+// GetCreateArtifact returns createArtifactResponse.CreateArtifact, and is useful for accessing the field via an interface.
+func (v *createArtifactResponse) GetCreateArtifact() createArtifactCreateArtifactArtifactPayload {
+	return v.CreateArtifact
+}
+
 // decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload includes the requested fields of the GraphQL type TargetPayload.
 type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -713,6 +891,96 @@ type deployPreviewEnvironmentResponse struct {
 // GetDeployPreviewEnvironment returns deployPreviewEnvironmentResponse.DeployPreviewEnvironment, and is useful for accessing the field via an interface.
 func (v *deployPreviewEnvironmentResponse) GetDeployPreviewEnvironment() deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload {
 	return v.DeployPreviewEnvironment
+}
+
+// getArtifactDefinitionsArtifactDefinitionsArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+type getArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
+	Name   string                 `json:"name"`
+	Schema map[string]interface{} `json:"-"`
+}
+
+// GetName returns getArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Name, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetName() string { return v.Name }
+
+// GetSchema returns getArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetSchema() map[string]interface{} {
+	return v.Schema
+}
+
+func (v *getArtifactDefinitionsArtifactDefinitionsArtifactDefinition) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getArtifactDefinitionsArtifactDefinitionsArtifactDefinition
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getArtifactDefinitionsArtifactDefinitionsArtifactDefinition = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal getArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
+	Name string `json:"name"`
+
+	Schema json.RawMessage `json:"schema"`
+}
+
+func (v *getArtifactDefinitionsArtifactDefinitionsArtifactDefinition) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getArtifactDefinitionsArtifactDefinitionsArtifactDefinition) __premarshalJSON() (*__premarshalgetArtifactDefinitionsArtifactDefinitionsArtifactDefinition, error) {
+	var retval __premarshalgetArtifactDefinitionsArtifactDefinitionsArtifactDefinition
+
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal getArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// getArtifactDefinitionsResponse is returned by getArtifactDefinitions on success.
+type getArtifactDefinitionsResponse struct {
+	ArtifactDefinitions []getArtifactDefinitionsArtifactDefinitionsArtifactDefinition `json:"artifactDefinitions"`
+}
+
+// GetArtifactDefinitions returns getArtifactDefinitionsResponse.ArtifactDefinitions, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionsResponse) GetArtifactDefinitions() []getArtifactDefinitionsArtifactDefinitionsArtifactDefinition {
+	return v.ArtifactDefinitions
 }
 
 // getArtifactsByTypeArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
@@ -1131,6 +1399,53 @@ query containerRepository ($orgId: ID!, $artifactId: ID!, $input: ContainerRepos
 	return &data, err
 }
 
+func createArtifact(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	artifactName string,
+	artifactSpecs map[string]interface{},
+	artifactType string,
+	artifactData map[string]interface{},
+) (*createArtifactResponse, error) {
+	req := &graphql.Request{
+		OpName: "createArtifact",
+		Query: `
+mutation createArtifact ($organizationId: ID!, $artifactName: String!, $artifactSpecs: JSON!, $artifactType: String!, $artifactData: JSON!) {
+	createArtifact(organizationId: $organizationId, name: $artifactName, specs: $artifactSpecs, type: $artifactType, data: $artifactData) {
+		result {
+			name
+			id
+		}
+		successful
+		messages {
+			message
+		}
+	}
+}
+`,
+		Variables: &__createArtifactInput{
+			OrganizationId: organizationId,
+			ArtifactName:   artifactName,
+			ArtifactSpecs:  artifactSpecs,
+			ArtifactType:   artifactType,
+			ArtifactData:   artifactData,
+		},
+	}
+	var err error
+
+	var data createArtifactResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 func decommissionPreviewEnvironment(
 	ctx context.Context,
 	client graphql.Client,
@@ -1254,6 +1569,39 @@ mutation deployPreviewEnvironment ($organizationId: ID!, $projectId: ID!, $input
 	var err error
 
 	var data deployPreviewEnvironmentResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func getArtifactDefinitions(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+) (*getArtifactDefinitionsResponse, error) {
+	req := &graphql.Request{
+		OpName: "getArtifactDefinitions",
+		Query: `
+query getArtifactDefinitions ($organizationId: ID!) {
+	artifactDefinitions(organizationId: $organizationId) {
+		name
+		schema
+	}
+}
+`,
+		Variables: &__getArtifactDefinitionsInput{
+			OrganizationId: organizationId,
+		},
+	}
+	var err error
+
+	var data getArtifactDefinitionsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

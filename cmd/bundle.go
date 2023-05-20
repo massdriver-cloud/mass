@@ -68,6 +68,13 @@ var bundleBuildCmd = &cobra.Command{
 	RunE:  runBundleBuild,
 }
 
+var bundleLintCmd = &cobra.Command{
+	Use:          "lint",
+	Short:        "Check massdriver.yaml file for common errors",
+	SilenceUsage: true,
+	RunE:         runBundleLint,
+}
+
 var bundlePublishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "Publish bundle to Massdriver's package manager",
@@ -82,7 +89,10 @@ func init() {
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
 	bundleCmd.AddCommand(bundleBuildCmd)
 	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleCmd.AddCommand(bundleLintCmd)
+	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleCmd.AddCommand(bundlePublishCmd)
+	bundlePublishCmd.Flags().String("access", "private", "Override the access, useful in CI for deploying to sandboxes.")
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleNewCmd.Flags().StringP("name", "n", "", "Name of the new bundle")
 	bundleNewCmd.Flags().StringP("description", "d", "", "Description of the new bundle")
@@ -217,7 +227,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, fs)
+	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
 
 	if err != nil {
 		return err
@@ -230,8 +240,11 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func runBundlePublish(cmd *cobra.Command, args []string) error {
-	config := config.Get()
+func runBundleLint(cmd *cobra.Command, args []string) error {
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
 	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
@@ -240,7 +253,38 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, fs)
+	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
+
+	if err != nil {
+		return err
+	}
+
+	c := restclient.NewClient().WithAPIKey(config.APIKey)
+
+	err = unmarshalledBundle.DereferenceSchemas(buildDirectory, c, fs)
+
+	if err != nil {
+		return err
+	}
+
+	return commands.LintBundle(unmarshalledBundle)
+}
+
+func runBundlePublish(cmd *cobra.Command, args []string) error {
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
+
+	var fs = afero.NewOsFs()
+
+	buildDirectory, err := cmd.Flags().GetString("build-directory")
+
+	if err != nil {
+		return err
+	}
+
+	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
 
 	if err != nil {
 		return err
@@ -254,11 +298,10 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	publish.Run(unmarshalledBundle, c, fs, buildDirectory)
-	return nil
+	return publish.Run(unmarshalledBundle, c, fs, buildDirectory)
 }
 
-func unmarshalBundle(readDirectory string, fs afero.Fs) (*bundle.Bundle, error) {
+func unmarshalBundle(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bundle.Bundle, error) {
 	file, err := afero.ReadFile(fs, path.Join(readDirectory, "massdriver.yaml"))
 
 	if err != nil {
@@ -272,6 +315,8 @@ func unmarshalBundle(readDirectory string, fs afero.Fs) (*bundle.Bundle, error) 
 	if err != nil {
 		return nil, err
 	}
+
+	applyOverrides(unmarshalledBundle, cmd)
 
 	if unmarshalledBundle.IsApplication() {
 		applyAppBlockDefaults(unmarshalledBundle)
@@ -291,5 +336,13 @@ func applyAppBlockDefaults(b *bundle.Bundle) {
 		if b.AppSpec.Secrets == nil {
 			b.AppSpec.Secrets = map[string]bundle.Secret{}
 		}
+	}
+}
+
+func applyOverrides(bundle *bundle.Bundle, cmd *cobra.Command) {
+	access, err := cmd.Flags().GetString("access")
+
+	if err == nil {
+		bundle.Access = access
 	}
 }

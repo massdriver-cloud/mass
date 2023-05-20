@@ -18,7 +18,9 @@ func Run(client graphql.Client, orgID string, name string, params map[string]int
 	}
 
 	interpolatedParams := map[string]interface{}{}
-	if err := interpolateParams(params, &interpolatedParams); err != nil {
+	err = interpolateParams(params, &interpolatedParams)
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -34,7 +36,9 @@ func interpolateParams(params map[string]interface{}, interpolatedParams *map[st
 	envVars := getOsEnv()
 	config := os.Expand(string(templateData), func(s string) string { return envVars[s] })
 
-	if err = json.Unmarshal([]byte(config), &interpolatedParams); err != nil {
+	err = json.Unmarshal([]byte(config), &interpolatedParams)
+
+	if err != nil {
 		return err
 	}
 

@@ -77,6 +77,10 @@ func SetupBundle(rootDir string, fs afero.Fs) error {
 
 	massdriverYamlFile, err := os.ReadFile(fixturePath)
 
+	if err != nil {
+		return err
+	}
+
 	mainTFPath := path.Join(projectRoot(), "/internal/mockfilesystem/testdata/main.tf")
 	mainTF, err := os.ReadFile(mainTFPath)
 
@@ -151,11 +155,15 @@ func WithFilesToIgnore(rootDir string, fs afero.Fs) error {
 		},
 	}
 
-	if err := MakeDirectories(directories, fs); err != nil {
+	err := MakeDirectories(directories, fs)
+
+	if err != nil {
 		return err
 	}
 
-	if err := MakeFiles(files, fs); err != nil {
+	err = MakeFiles(files, fs)
+
+	if err != nil {
 		return err
 	}
 

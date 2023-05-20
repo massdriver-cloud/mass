@@ -113,3 +113,30 @@ query containerRepository($orgId: ID!, $artifactId: ID!, $input: ContainerReposi
     token, repoUri
   }
 }
+
+mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactSpecs: JSON!, $artifactType: String! $artifactData: JSON!) {
+  createArtifact(
+    organizationId: $organizationId,
+    name: $artifactName,
+    specs: $artifactSpecs,
+    type: $artifactType,
+    data: $artifactData
+  ) {
+    result {
+      name
+      id
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
+query getArtifactDefinitions($organizationId: ID!) {
+  artifactDefinitions(organizationId: $organizationId) {
+    name
+    schema
+  }
+}

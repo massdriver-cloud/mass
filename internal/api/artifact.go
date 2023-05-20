@@ -8,3 +8,8 @@ type Artifact struct {
 type ArtifactDefinition struct {
 	Name string
 }
+
+type ArtifactDefinitionWithSchema struct {
+	Name   string
+	Schema map[string]interface{}
+}

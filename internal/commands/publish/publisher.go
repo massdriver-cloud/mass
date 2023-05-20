@@ -97,11 +97,16 @@ func (p *Publisher) ArchiveBundle(buf io.Writer) error {
 	}
 
 	// produce tar
-	if err := tarWriter.Close(); err != nil {
+	err := tarWriter.Close()
+
+	if err != nil {
 		return err
 	}
+
 	// produce gzip
-	if err := gzipWriter.Close(); err != nil {
+	err = gzipWriter.Close()
+
+	if err != nil {
 		return err
 	}
 

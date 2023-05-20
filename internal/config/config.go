@@ -16,17 +16,16 @@ type Config struct {
 
 var c Config
 
-func Get() *Config {
+func Get() (*Config, error) {
 	ctx := context.Background()
 	err := envconfig.Process(ctx, &c)
 	if err != nil {
-		msg := fmt.Sprintf("Required environment variable not set: %s", err)
-		panic(msg)
+		return nil, fmt.Errorf("required environment variable not set: %w", err)
 	}
 
 	setDefaults(&c)
 
-	return &c
+	return &c, nil
 }
 
 func setDefaults(conf *Config) {

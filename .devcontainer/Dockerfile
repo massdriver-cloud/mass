@@ -21,7 +21,7 @@ RUN sudo apt update && \
   sudo apt install --no-install-recommends -y gcc musl-dev python3-dev python3-venv python3-pip && \
   pip install setuptools wheel ruamel.yaml.clib==0.2.6 pre-commit
 
-RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.50.1
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.52.1
 
 
 # [Optional] Uncomment this section to install additional OS packages.
