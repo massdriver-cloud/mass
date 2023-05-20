@@ -53,13 +53,7 @@ var bundleTemplateRefreshCmd = &cobra.Command{
 var bundleNewCmd = &cobra.Command{
 	Use:   "new",
 	Short: "Create a new bundle from a template",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if name, _ := cmd.Flags().GetString("name"); name != "" {
-			return runBundleNewFlags(cmd)
-		} else {
-			return runBundleNewInteractive(cmd)
-		}
-	},
+	RunE:  runBundleNew,
 }
 
 var bundleBuildCmd = &cobra.Command{
@@ -91,11 +85,6 @@ func init() {
 	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleCmd.AddCommand(bundlePublishCmd)
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
-	bundleNewCmd.Flags().StringP("name", "n", "", "Name of the new bundle")
-	bundleNewCmd.Flags().StringP("description", "d", "", "Description of the new bundle")
-	bundleNewCmd.Flags().StringP("template-type", "t", "", "Name of the bundle template to use")
-	bundleNewCmd.Flags().StringSliceP("connections", "c", []string{}, "Connections and names to add to the bundle - example: massdriver/vpc=network")
-	bundleNewCmd.Flags().StringP("output-directory", "o", ".", "Directory to output the new bundle")
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
@@ -121,43 +110,7 @@ func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 	return commands.RefreshTemplates(cache)
 }
 
-func runBundleNewInteractive(cmd *cobra.Command) error {
-	var (
-		outputDir string
-	)
-	outputDir, _ = cmd.Flags().GetString("output-directory")
-
-	// run the interactive prompt
-	var fs = afero.NewOsFs()
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
-	err := commands.RefreshTemplates(cache)
-
-	if err != nil {
-		return err
-	}
-
-	templateData := &templatecache.TemplateData{
-		Access: "private",
-		// Promptui templates are a nightmare. Need to support multi repos when moving this to bubbletea
-		TemplateRepo: "/massdriver-cloud/application-templates",
-		// TODO: unify bundle build and app build outputDir logic and support
-		OutputDir: outputDir,
-	}
-
-	err = bundle.RunPromptNew(templateData)
-	if err != nil {
-		return err
-	}
-
-	err = commands.GenerateNewBundle(cache, templateData)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func runBundleNewFlags(cmd *cobra.Command) error {
+func runBundleNew(cmd *cobra.Command, args []string) error {
 	var (
 		name         string
 		description  string
@@ -166,6 +119,7 @@ func runBundleNewFlags(cmd *cobra.Command) error {
 		outputDir    string
 	)
 
+	// define flag
 	name, _ = cmd.Flags().GetString("name")
 	description, _ = cmd.Flags().GetString("description")
 	templateName, _ = cmd.Flags().GetString("template-type")
@@ -173,42 +127,68 @@ func runBundleNewFlags(cmd *cobra.Command) error {
 	outputDir, _ = cmd.Flags().GetString("output-directory")
 
 	// parse flags
-	if err := cmd.ParseFlags(nil); err != nil {
+	if err := cmd.ParseFlags(args); err != nil {
 		return err
 	}
 
 	if name == "" || templateName == "" {
-		return fmt.Errorf("name and template-type flags are required")
-	}
+		// run the interactive prompt
+		var fs = afero.NewOsFs()
+		cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+		err := commands.RefreshTemplates(cache)
 
-	connectionData := make([]templatecache.Connection, len(connections))
-	for i, conn := range connections {
-		parts := strings.Split(conn, "=")
-		if len(parts) != 2 {
-			return fmt.Errorf("invalid connection argument: %s", conn)
+		if err != nil {
+			return err
 		}
-		connectionData[i] = templatecache.Connection{
-			ArtifactDefinition: parts[0],
-			Name:               parts[1],
+
+		templateData := &templatecache.TemplateData{
+			Access: "private",
+			// Promptui templates are a nightmare. Need to support multi repos when moving this to bubbletea
+			TemplateRepo: "/massdriver-cloud/application-templates",
+			// TODO: unify bundle build and app build outputDir logic and support
+			OutputDir: outputDir,
 		}
-	}
 
-	var fs = afero.NewOsFs()
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+		err = bundle.RunPromptNew(templateData)
+		if err != nil {
+			return err
+		}
 
-	templateData := &templatecache.TemplateData{
-		Access:       "private",
-		TemplateRepo: "/massdriver-cloud/application-templates",
-		OutputDir:    outputDir,
-		Name:         name,
-		Description:  description,
-		TemplateName: templateName,
-		Connections:  connectionData,
-	}
+		err = commands.GenerateNewBundle(cache, templateData)
+		if err != nil {
+			return err
+		}
+	} else {
+		// skip the interactive prompt and use flags
+		connectionData := make([]templatecache.Connection, len(connections))
+		for i, conn := range connections {
+			parts := strings.Split(conn, "=")
+			if len(parts) != 2 {
+				return fmt.Errorf("invalid connection argument: %s", conn)
+			}
+			connectionData[i] = templatecache.Connection{
+				ArtifactDefinition: parts[0],
+				Name:               parts[1],
+			}
+		}
 
-	err := commands.GenerateNewBundle(cache, templateData)
-	if err != nil {
-		return err
+		var fs = afero.NewOsFs()
+		cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+
+		templateData := &templatecache.TemplateData{
+			Access:       "private",
+			TemplateRepo: "/massdriver-cloud/application-templates",
+			OutputDir:    outputDir,
+			Name:         name,
+			Description:  description,
+			TemplateName: templateName,
+			Connections:  connectionData,
+		}
+
+		err := commands.GenerateNewBundle(cache, templateData)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
