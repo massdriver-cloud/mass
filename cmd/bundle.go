@@ -171,8 +171,8 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("invalid connection argument: %s", conn)
 			}
 			connectionData[i] = templatecache.Connection{
-				ArtifactDefinition: parts[0],
-				Name:               parts[1],
+				ArtifactDefinition: parts[1],
+				Name:               parts[0],
 			}
 		}
 
