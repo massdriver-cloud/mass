@@ -85,6 +85,11 @@ func init() {
 	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleCmd.AddCommand(bundlePublishCmd)
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleNewCmd.Flags().StringP("name", "n", "", "Name of the new bundle")
+	bundleNewCmd.Flags().StringP("description", "d", "", "Description of the new bundle")
+	bundleNewCmd.Flags().StringP("template-type", "t", "", "Name of the bundle template to use")
+	bundleNewCmd.Flags().StringSliceP("connections", "c", []string{}, "Connections and names to add to the bundle - example: massdriver/vpc=network")
+	bundleNewCmd.Flags().StringP("output-directory", "o", ".", "Directory to output the new bundle")
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
