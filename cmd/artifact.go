@@ -14,7 +14,7 @@ var artifactImportCmdHelp = mustRenderHelpDoc("artifact/import")
 
 var artifactCmd = &cobra.Command{
 	Use:   "artifact",
-	Short: "Manage applications.",
+	Short: "Manage artifacts",
 	Long:  artifactCmdHelp,
 }
 
