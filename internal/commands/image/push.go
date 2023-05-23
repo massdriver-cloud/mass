@@ -33,7 +33,7 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 	cloudName := identifyCloudByRepositoryURI(containerRepository.RepositoryURI)
 
 	var logCloud = prettylogs.Underline(cloudName)
-	msg = fmt.Sprintf("%s credentials feted successfully", logCloud)
+	msg = fmt.Sprintf("%s credentials fetched successfully", logCloud)
 	fmt.Println(msg)
 
 	var logTag = prettylogs.Underline(input.Tag)
