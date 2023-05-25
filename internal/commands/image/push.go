@@ -33,7 +33,7 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 	cloudName := identifyCloudByRepositoryURI(containerRepository.RepositoryURI)
 
 	var logCloud = prettylogs.Underline(cloudName)
-	msg = fmt.Sprintf("%s credentials feted successfully", logCloud)
+	msg = fmt.Sprintf("%s credentials fetched successfully", logCloud)
 	fmt.Println(msg)
 
 	var logTag = prettylogs.Underline(input.Tag)
@@ -99,6 +99,24 @@ func printDockerOutput(rd io.Reader) error {
 	scanner := bufio.NewScanner(rd)
 	for scanner.Scan() {
 		lastLine = scanner.Text()
+		var logLine map[string]interface{}
+		if err := json.Unmarshal([]byte(lastLine), &logLine); err != nil {
+			return err
+		}
+
+		// The Docker client emits two kinds of log lines that we care about:
+		// - `stream` messages, when the image is being built
+		// - `status` messages, when the image is being pushed
+		stream, ok := logLine["stream"]
+		if ok {
+			fmt.Print(stream)
+		}
+
+		status, statusOk := logLine["status"]
+		id, idOk := logLine["id"]
+		if statusOk && idOk {
+			fmt.Println(id, status)
+		}
 	}
 
 	errLine := &ErrorLine{}
