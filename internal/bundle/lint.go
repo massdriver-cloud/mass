@@ -12,12 +12,11 @@ import (
 )
 
 //go:embed schemas/bundle-schema.json
-//go:embed schemas/meta-schema.json
 var bundleFS embed.FS
 
 func (b *Bundle) LintSchema() error {
 	schemaBytes, _ := bundleFS.ReadFile("schemas/bundle-schema.json")
-	documentLoader := gojsonschema.NewGoLoader(b)
+	documentLoader := gojsonschema.NewGoLoader(b.Conf)
 	schemaLoader := gojsonschema.NewBytesLoader(schemaBytes)
 
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)

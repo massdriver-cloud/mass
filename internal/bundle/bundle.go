@@ -27,6 +27,7 @@ type Bundle struct {
 	Connections map[string]interface{} `json:"connections" yaml:"connections"`
 	UI          map[string]interface{} `json:"ui" yaml:"ui"`
 	AppSpec     *AppSpec               `json:"app,omitempty" yaml:"app,omitempty"`
+	Conf        map[string]interface{}
 }
 
 type AppSpec struct {
@@ -54,6 +55,7 @@ func (b *Bundle) GenerateBundlePublishBody(srcDir string, fs afero.Fs) (restclie
 	body.ConnectionsSchema = b.Connections
 	body.ParamsSchema = b.Params
 	body.UISchema = b.UI
+	body.Conf = b.Conf
 
 	var appSpec map[string]interface{}
 

@@ -244,6 +244,18 @@ func unmarshalBundle(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bu
 		return nil, err
 	}
 
+	// TODO: Begin experimental conf/metadata change
+	rawConfig := map[string]interface{}{}
+
+	err = yaml.Unmarshal(file, &rawConfig)
+
+	if err != nil {
+		return nil, err
+	}
+
+	unmarshalledBundle.Conf = rawConfig
+	// TODO: End experimental conf/metadata change
+
 	applyOverrides(unmarshalledBundle, cmd)
 
 	if unmarshalledBundle.IsApplication() {
