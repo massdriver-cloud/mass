@@ -52,7 +52,7 @@ func (mockGQLClient) GetContainerRepository(client graphql.Client, artifactID st
 	}, nil
 }
 
-func TestPushImage(t *testing.T) {
+func TestPushLatestImage(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 	defer func() {
@@ -69,6 +69,34 @@ func TestPushImage(t *testing.T) {
 		ArtifactID:         "00000-000-000-00000000",
 		OrganizationID:     "00000-000-000-00000000",
 		Tag:                "latest",
+		DockerBuildContext: ".",
+		Dockerfile:         "DockerFile",
+	}
+
+	err := image.Push(mockGQLClient, input, imageClient)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPushImage(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput((os.Stderr))
+	}()
+
+	mockGQLClient := &mockGQLClient{}
+	imageClient := image.Client{
+		Cli: &mockCli{},
+	}
+	input := image.PushImageInput{
+		ImageName:          "test/docker",
+		Location:           "us-west-2",
+		ArtifactID:         "00000-000-000-00000000",
+		OrganizationID:     "00000-000-000-00000000",
+		Tag:                "some-tag",
 		DockerBuildContext: ".",
 		Dockerfile:         "DockerFile",
 	}

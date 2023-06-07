@@ -55,6 +55,24 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 
 	fmt.Println("Pushing image to repository. This may take a few minutes")
 
+	err = pushImage(input, imageClient, containerRepository)
+
+	if err != nil {
+		return err
+	}
+
+	if input.Tag != "latest" {
+		input.Tag = "latest"
+		err = pushImage(input, imageClient, containerRepository)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func pushImage(input PushImageInput, imageClient Client, containerRepository *api.ContainerRepository) error {
 	rd, err := imageClient.PushImage(input, containerRepository)
 
 	if err != nil {
@@ -68,7 +86,7 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 	}
 
 	var fqn = prettylogs.Underline(imageFqn(containerRepository.RepositoryURI, input.ImageName, input.Tag))
-	msg = fmt.Sprintf("Image %s pushed successfully", fqn)
+	msg := fmt.Sprintf("Image %s pushed successfully", fqn)
 	fmt.Println(msg)
 
 	return nil
