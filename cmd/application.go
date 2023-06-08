@@ -23,7 +23,7 @@ var appConfigureCmdHelp = mustRenderHelpDoc("application/configure")
 var appCmd = &cobra.Command{
 	Use:     "application",
 	Aliases: []string{"app"},
-	Short:   "Manage applications.",
+	Short:   "Manage applications",
 	Long:    appCmdHelp,
 }
 

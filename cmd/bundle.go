@@ -26,7 +26,7 @@ var templateRefreshCmdHelp = mustRenderHelpDoc("bundle/template-refresh")
 
 var bundleCmd = &cobra.Command{
 	Use:   "bundle",
-	Short: "Generate and publish bundles.",
+	Short: "Generate and publish bundles",
 	Long:  bundleCmdHelp,
 }
 

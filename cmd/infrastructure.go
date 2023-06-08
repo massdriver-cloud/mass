@@ -23,7 +23,7 @@ var infraConfigureCmdHelp = mustRenderHelpDoc("infrastructure/configure")
 var infraCmd = &cobra.Command{
 	Use:     "infrastructure",
 	Aliases: []string{"infra"},
-	Short:   "Manage infrastructure.",
+	Short:   "Manage infrastructure",
 	Long:    infraCmdHelp,
 }
 
