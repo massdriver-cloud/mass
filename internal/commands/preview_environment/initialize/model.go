@@ -53,6 +53,7 @@ func (m Model) PreviewConfig() *api.PreviewConfig {
 	return &api.PreviewConfig{
 		PackageParams: m.project.DefaultParams,
 		Credentials:   credentials,
+		ProjectSlug:   m.project.Slug,
 	}
 }
 

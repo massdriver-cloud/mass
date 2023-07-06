@@ -1,6 +1,7 @@
 package api
 
 type PreviewConfig struct {
+	ProjectSlug   string                 `json:"projectSlug"`
 	Credentials   map[string]string      `json:"credentials"`
 	PackageParams map[string]interface{} `json:"packageParams"`
 }

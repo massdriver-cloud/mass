@@ -49,6 +49,7 @@ func TestRun(t *testing.T) {
 	got := updatedInitializeModel.PreviewConfig()
 
 	want := &api.PreviewConfig{
+		ProjectSlug: projectSlug,
 		PackageParams: map[string]interface{}{
 			"database": map[string]interface{}{
 				"username": "root",

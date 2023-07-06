@@ -38,11 +38,10 @@ var previewInitCmd = &cobra.Command{
 }
 
 var previewDeployCmd = &cobra.Command{
-	Use:   "deploy $projectSlug",
+	Use:   "deploy",
 	Short: "Deploys a preview environment in your project",
 	Long:  previewDeployCmdHelp,
 	RunE:  runPreviewDeploy,
-	Args:  cobra.ExactArgs(1),
 }
 
 var previewDecommissionCmd = &cobra.Command{
@@ -87,7 +86,6 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 }
 
 func runPreviewDeploy(cmd *cobra.Command, args []string) error {
-	projectSlug := args[0]
 	config, configErr := config.Get()
 	if configErr != nil {
 		return configErr
@@ -104,7 +102,7 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	env, err := deploy.Run(client, config.OrgID, projectSlug, &previewCfg, &ciContext)
+	env, err := deploy.Run(client, config.OrgID, previewCfg.ProjectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		return err
