@@ -28,6 +28,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 	client := gqlmock.NewClientWithJSONResponseArray(responses)
 
 	previewCfg := api.PreviewConfig{
+		ProjectSlug:   "fake-project-slug",
 		Credentials:   map[string]string{},
 		PackageParams: map[string]interface{}{},
 	}
