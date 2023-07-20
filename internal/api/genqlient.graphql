@@ -140,3 +140,9 @@ query getArtifactDefinitions($organizationId: ID!) {
     schema
   }
 }
+
+query projects($organizationId: ID!){
+  projects(organizationId: $organizationId){
+    id, name, defaultParams, slug
+  }
+}

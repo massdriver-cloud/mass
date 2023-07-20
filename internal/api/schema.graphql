@@ -33,6 +33,11 @@ type DnsZone {
   cloudProviderId: ID
 }
 
+type ApplicationBundle {
+  bundle: Bundle!
+  zip: String!
+}
+
 type Metric {
   name: String!
   namespace: String!
@@ -51,6 +56,15 @@ The `Markdown` scalar type represents base64 encoded string data used to represe
 which can be retrieved in decoded form.
 """
 scalar Markdown
+
+type AuditLog {
+  occurredAt: String!
+  resourceId: ID!
+  resourceType: String!
+  action: String!
+  actor: Actor!
+  parent: AuditLogParent
+}
 
 type ManifestResource {
   "Manifest name"
@@ -280,6 +294,11 @@ type MembershipPayload {
   result: Membership
 }
 
+type AuditLogParent {
+  id: ID!
+  type: AuditLogFilterOption!
+}
+
 "Deployment and resource lifecycle events"
 union ProvisioningLifecycleEvents = DeploymentLifecycleEvent | ResourceLifecycleEvent
 
@@ -342,6 +361,13 @@ type Target {
   defaultConnections: [DefaultTargetConnection]
 }
 
+type ServiceAccount {
+  id: ID!
+  name: String!
+  active: Boolean!
+  secret: String!
+}
+
 "DNS Zone filters"
 input DnsZoneInput {
   filter: DnsZoneFilters
@@ -397,6 +423,11 @@ type ResourceLifecycleState {
   resources: [ResourceLifecycleEvent!]!
 }
 
+type AuditLogResponse {
+  events: [AuditLog]!
+  cursor: String
+}
+
 type TargetPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -419,6 +450,17 @@ type InvitationPayload {
   result: Invitation
 }
 
+type EnvironmentConnectionPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: EnvironmentConnection
+}
+
 input ContainerRepositoriesInput {
   location: String!
 }
@@ -439,6 +481,7 @@ type ArtifactPayload {
   result: Artifact
 }
 
+"Use serviceAccount instead. This object will be removed."
 type ApiKey {
   id: ID!
   name: String!
@@ -543,10 +586,26 @@ type BillingSubscription {
 type RootQueryType {
   me: Account
 
-  apiKeys(organizationId: ID!): [ApiKey]
+  "Use serviceAccounts instead. This query will be removed."
+  apiKeys(organizationId: ID!): [ApiKey] @deprecated(reason: "Use serviceAccounts instead. This query will be removed.")
+
+  applicationBundleTemplates(organizationId: ID!): [ApplicationBundleTemplate]
 
   "List all architectures belonging to the given organization."
   architectures(organizationId: ID!): [Architecture]
+
+  artifactDefinitions(
+    "List all artifact definitions"
+    organizationId: ID!
+
+    "Filter artifact definition results"
+    input: ArtifactDefinitionInput
+  ): [ArtifactDefinition]
+
+  defaultableTargetConnectionGroups(
+    "List defaultable target connections by group"
+    organizationId: ID!
+  ): [DefaultableTargetConnectionGroup]
 
   "Filter artifacts by an artifact definition type."
   filterArtifactsByType(organizationId: ID!, type: String!): [Artifact] @deprecated(reason: "Use artifacts query w\/ artifacts filters instead.")
@@ -565,20 +624,12 @@ type RootQueryType {
   "Connection data for an artifact rendered in requested format"
   downloadArtifact(organizationId: ID!, artifactId: ID!, format: DownloadFormat!): RenderedArtifact
 
-  artifactDefinitions(
-    "List all artifact definitions"
-    organizationId: ID!
+  auditLogs(organizationId: ID!, cursor: String, filter: AuditLogFilter): AuditLogResponse
 
-    "Filter artifact definition results"
-    input: ArtifactDefinitionInput
-  ): [ArtifactDefinition]
+  "Deprecated, use compare_environments instead"
+  compareTargets(organizationId: ID!, fromTargetId: ID!, toTargetId: ID!): Changeset @deprecated(reason: "use compare_environments instead")
 
-  defaultableTargetConnectionGroups(
-    "List defaultable target connections by group"
-    organizationId: ID!
-  ): [DefaultableTargetConnectionGroup]
-
-  compareTargets(organizationId: ID!, fromTargetId: ID!, toTargetId: ID!): Changeset
+  compareEnvironments(organizationId: ID!, fromEnvironmentId: ID!, toEnvironmentId: ID!): Changeset
 
   compareDeployments(organizationId: ID!, fromDeploymentId: ID!, toDeploymentId: ID!): Changeset
 
@@ -616,6 +667,9 @@ type RootQueryType {
 
     "The field to find dependencies for."
     fieldName: String!
+
+    "Optional. If specified, recommendations are tailored to the environment, prioritizing bundles and manifests of the same cloud as the credentials attached to the environment."
+    targetId: ID
   ): DependencyRecommendations
 
   deployment(
@@ -642,6 +696,16 @@ type RootQueryType {
   ): [DnsZone]
 
   cloudDnsZones(organizationId: ID!, location: String!, artifactId: ID!): [DnsZone]
+
+  environment(
+    organizationId: ID!
+
+    "Environment ID or slug"
+    id: ID!
+  ): Environment
+
+  "gets all groups for an organization"
+  groups(organizationId: ID!): [Group]
 
   "Gets all VM instance types for a given region"
   instanceTypes(organizationId: ID!, artifactId: ID!, packageId: ID!, input: InstanceTypeInput!): [InstanceType]
@@ -686,19 +750,17 @@ type RootQueryType {
     input: ProviderResourcesInput
   ): PaginatedProviderResources
 
+  serviceAccounts(organizationId: ID!): [ServiceAccount]
+
+  subscriptionPlans: [SubscriptionPlan]
+
+  "Deprecated, use environment instead"
   target(
     organizationId: ID!
 
     "Target ID or slug"
     id: ID!
-  ): Target
-
-  "gets all groups for an organization"
-  groups(organizationId: ID!): [Group]
-
-  subscriptionPlans: [SubscriptionPlan]
-
-  applicationTemplates(organizationId: ID!): [ApplicationTemplate]
+  ): Target @deprecated(reason: "deprecated, use environment instead")
 }
 
 type PackageAlertState {
@@ -765,6 +827,11 @@ input BlueprintInputPart {
 
   "Links to upstream dependency template manifests of this template manifest."
   links: [BlueprintInputLink!]!
+}
+
+type BundleStatistics {
+  estimatedDeploymentTime: Int
+  activeDeploymentCount: Int
 }
 
 "Bundle search filters"
@@ -910,14 +977,44 @@ type InstantiatedArchitecturePayload {
   result: InstantiatedArchitecture
 }
 
+type ApplicationBundlePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: ApplicationBundle
+}
+
+input PreviewRemoteReferenceParams {
+  package: String!
+  artifactId: ID!
+  field: String!
+}
+
 type DependencyRecommendations {
   bundles: [BundleRecommendation]
   manifests: [ManifestRecommendation]
 }
 
+enum AuditLogActor {
+  SYSTEM
+  SERVICE_ACCOUNT
+  ACCOUNT
+}
+
 enum TargetMode {
   PREVIEW
+  DEMO
   STANDARD
+}
+
+type ApplicationBundleTemplate {
+  name: String!
+  displayName: String!
+  imageUrl: String
 }
 
 type RemoteReferencePayload {
@@ -953,6 +1050,7 @@ type DeploymentPayload {
   result: Deployment
 }
 
+"Use serviceAccountPayload instead. This object will be removed."
 type ApiKeyPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -985,12 +1083,22 @@ type ManifestDeletionLifecyclePackageError {
   message: String!
 }
 
+enum AuditLogFilterOption {
+  PROJECT
+  TARGET
+}
+
 type RemoteReference {
   artifact: Artifact!
   field: String!
   package: Package!
   id: ID!
   unsettable: UnsettableResult!
+}
+
+type EnvironmentDeletionLifecycle {
+  result: Boolean!
+  messages: [EnvironmentDeletionLifecyclePackageError]
 }
 
 type ArtifactDeletionLifecycle {
@@ -1023,6 +1131,12 @@ input ManifestParams {
   role: String!
 }
 
+type Actor {
+  id: ID!
+  type: AuditLogActor!
+  name: String!
+}
+
 type ArchitectureDeletionLifecycleError {
   message: String!
 }
@@ -1030,6 +1144,14 @@ type ArchitectureDeletionLifecycleError {
 type Dimension {
   name: String!
   value: String!
+}
+
+type DefaultEnvironmentConnection {
+  id: ID!
+  defaultEnvironmentConnectionGroup: String!
+  defaultEnvironmentConnectionGroupLabel: String!
+  defaultEnvironmentConnectionType: String!
+  artifact: Artifact!
 }
 
 type BundleRecommendation {
@@ -1091,6 +1213,49 @@ type ManifestPayload {
   result: Manifest
 }
 
+type Environment {
+  id: ID
+
+  name: String
+
+  slug: String
+
+  description: String
+
+  mode: TargetMode
+
+  deletable: EnvironmentDeletionLifecycle!
+
+  createdAt: DateTime
+
+  updatedAt: DateTime
+
+  "Environment's diagram links and resources"
+  diagram: Diagram
+
+  "Manifests for this environment's package"
+  manifests: [Manifest]
+
+  project: Project
+
+  packages: [Package]
+
+  connections: [EnvironmentConnection]
+
+  defaultConnections: [DefaultEnvironmentConnection]
+}
+
+type EnvironmentPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Environment
+}
+
 "Artifact definition filters"
 input ArtifactDefinitionInput {
   filter: ArtifactDefinitionFilters
@@ -1137,6 +1302,17 @@ type InstantiatedArchitecture {
   links: [Link!]!
 }
 
+type ServiceAccountPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: ServiceAccount
+}
+
 type ResourceLifecycleEvent {
   "Provider resource type"
   type: String!
@@ -1163,6 +1339,11 @@ type DeploymentError {
 
   "Additional details of error"
   details: JSON
+}
+
+input AuditLogFilter {
+  id: ID
+  type: AuditLogFilterOption
 }
 
 "A link between two manifests in an architecture"
@@ -1217,7 +1398,7 @@ type PackageAlert {
 "Field that an artifact can be linked to on this manifest."
 type LinkableField {
   name: String!
-  artifactDefinition: ArtifactDefinition!
+  artifactDefinitions: [ArtifactDefinition]!
 }
 
 type LocationList {
@@ -1258,6 +1439,9 @@ input ArtifactsFilters {
   type: String
 
   origin: ArtifactOrigin
+
+  "Include or exclude credential artifacts"
+  credential: Boolean
 }
 
 "Allowed params used in updated artifacts"
@@ -1313,6 +1497,8 @@ type Bundle {
 
   updatedAt: DateTime!
 
+  statistics: BundleStatistics!
+
   deletable: BundleDeletionLifecycle!
 
   compliance: [Compliance]
@@ -1341,6 +1527,17 @@ input BlueprintInputLinkSource {
   srcField: String!
 }
 
+type MemberPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Member
+}
+
 input PreviewEnvironmentInput {
   credentials: [Credential]
 
@@ -1348,6 +1545,8 @@ input PreviewEnvironmentInput {
   ciContext: JSON!
 
   packageParams: JSON!
+
+  remoteReferenceParams: [PreviewRemoteReferenceParams!]
 }
 
 type Deployment {
@@ -1450,14 +1649,20 @@ type SecretMetadata {
 }
 
 type RootMutationType {
-  "Creates an API key"
-  createApiKey(organizationId: ID!, name: String!): ApiKeyPayload
+  "Create an Application Bundle"
+  createApplicationBundle(organizationId: ID!, templateName: String!, params: JSON!): ApplicationBundlePayload
 
-  deleteApiKey(organizationId: ID!, id: ID!): ApiKeyPayload
+  "Use createServiceAccount instead. This mutation will be removed."
+  createApiKey(organizationId: ID!, name: String!): ApiKeyPayload @deprecated(reason: "Use createServiceAccount instead. This mutation will be removed.")
 
-  deactivateApiKey(organizationId: ID!, id: ID!): ApiKeyPayload
+  "Use deleteServiceAccount instead. This mutation will be removed."
+  deleteApiKey(organizationId: ID!, id: ID!): ApiKeyPayload @deprecated(reason: "Use deleteServiceAccount instead. This mutation will be removed.")
 
-  reactivateApiKey(organizationId: ID!, id: ID!): ApiKeyPayload
+  "Use deactivateServiceAccount instead. This mutation will be removed."
+  deactivateApiKey(organizationId: ID!, id: ID!): ApiKeyPayload @deprecated(reason: "Use deactivateServiceAccount instead. This mutation will be removed.")
+
+  "Use reactivateServiceAccount instead. This mutation will be removed."
+  reactivateApiKey(organizationId: ID!, id: ID!): ApiKeyPayload @deprecated(reason: "Use reactivateServiceAccount instead. This mutation will be removed.")
 
   "Create an artifact"
   createArtifact(organizationId: ID!, name: String!, type: String!, specs: JSON!, data: JSON!): ArtifactPayload
@@ -1505,6 +1710,51 @@ type RootMutationType {
   connectDnsZone(organizationId: ID!, name: String!, location: String!, cloudProviderId: ID!, cloud: String!): DnsZonePayload
 
   disconnectDnsZone(organizationId: ID!, id: ID!): DnsZonePayload
+
+  "Create an environment"
+  createEnvironment(organizationId: ID!, projectId: ID!, name: String!, slug: String!, description: String): EnvironmentPayload
+
+  "Deploy a Preview Environment"
+  deployPreviewEnvironment(organizationId: ID!, projectId: ID!, input: PreviewEnvironmentInput!): EnvironmentPayload
+
+  decommissionPreviewEnvironment(organizationId: ID!, targetId: ID!): EnvironmentPayload
+
+  "Update an environment"
+  updateEnvironment(organizationId: ID!, id: ID!, name: String!, description: String): EnvironmentPayload
+
+  "Removes an environment from a project. This will fail if infrastructure is still provisioned in the environment."
+  deleteEnvironment(organizationId: ID!, id: ID!): EnvironmentPayload
+
+  createDemoEnvironment(organizationId: ID!, projectId: ID!, name: String!, slug: String!, description: String): EnvironmentPayload
+
+  configureDemoEnvironment(organizationId: ID!, projectId: ID!, targetId: ID!, packageParams: JSON!): EnvironmentPayload
+
+  deployDemoEnvironment(organizationId: ID!, targetId: ID!): EnvironmentPayload
+
+  decommissionDemoEnvironment(organizationId: ID!, targetId: ID!): EnvironmentPayload
+
+  "Connect an environment as the default environment type for a given environment"
+  createEnvironmentConnection(organizationId: ID!, artifactId: ID!, environmentId: ID!): EnvironmentConnectionPayload
+
+  """
+  Disconnect an artifact as the default artifact type for a given environment.
+
+  This is a potentially dangerous/destructive action.
+
+  For example, changing the default VPC will cause all resources to be deleted and recreated in the new VPC.
+  """
+  deleteEnvironmentConnection(organizationId: ID!, id: ID!): EnvironmentConnectionPayload
+
+  deleteGroupMembership(email: String!, groupId: ID!, organizationId: ID!): MemberPayload
+
+  "Invites a user"
+  inviteMemberToOrganization(email: String!, groupId: ID!, organizationId: ID!): InvitationPayload
+
+  "Uninvites a user"
+  uninviteMemberToOrganization(email: String!, groupId: ID!, organizationId: ID!): InvitationPayload
+
+  "Allows users to accept invitations"
+  acceptInvitation(invitationId: ID!): MembershipPayload
 
   "Adds a bundle to a project"
   createManifest(organizationId: ID!, bundleId: ID!, projectId: ID!, name: String!, slug: String!, description: String): ManifestPayload
@@ -1571,6 +1821,9 @@ type RootMutationType {
     input: UnsetSecretValueInput!
   ): SecretMetadataPayload
 
+  "Create a stripe subscription management session"
+  createSubscriptionManagementSession(organizationId: ID!): SessionPayload
+
   "Create a project"
   createProject(organizationId: ID!, name: String!, description: String, slug: String!): ProjectPayload
 
@@ -1579,46 +1832,43 @@ type RootMutationType {
 
   deleteProject(organizationId: ID!, id: ID!): ProjectPayload
 
-  "Connect an artifact as the default artifact type for a given target"
-  createTargetConnection(organizationId: ID!, artifactId: ID!, targetId: ID!): TargetConnectionPayload
-
-  """
-  Disconnect an artifact as the default artifact type for a given target.
-
-  This is a potentially dangerous/destructive action.
-
-  For example, changing the default VPC will cause all resources to be deleted and recreated in the new VPC.
-  """
-  deleteTargetConnection(organizationId: ID!, id: ID!): TargetConnectionPayload
-
-  "Create a target"
-  createTarget(organizationId: ID!, projectId: ID!, name: String!, slug: String!, description: String): TargetPayload
-
-  "Deploy a Preview Environment"
-  deployPreviewEnvironment(organizationId: ID!, projectId: ID!, input: PreviewEnvironmentInput!): TargetPayload
-
-  decommissionPreviewEnvironment(organizationId: ID!, targetId: ID!): TargetPayload
-
-  "Update a target"
-  updateTarget(organizationId: ID!, id: ID!, name: String!, description: String): TargetPayload
-
-  "Removes a target from a project. This will fail if infrastructure is still provisioned in the target."
-  deleteTarget(organizationId: ID!, id: ID!): TargetPayload
-
-  "Invites a user"
-  inviteMemberToOrganization(email: String!, groupId: ID!, organizationId: ID!): InvitationPayload
-
-  "Allows users to accept invitations"
-  acceptInvitation(invitationId: ID!): MembershipPayload
-
-  "Create a stripe subscription management session"
-  createSubscriptionManagementSession(organizationId: ID!): SessionPayload
-
   "Assign a reference to an artifact of infrastructure in another project, or that is not managed by massdriver"
   assignRemoteReference(organizationId: ID!, artifactId: ID!, packageId: ID!, params: RemoteReferenceParams!): RemoteReferencePayload
 
   "Removes a remote reference from a package's field"
   unsetRemoteReference(organizationId: ID!, remoteReferenceId: ID!): RemoteReferencePayload
+
+  "Creates a service account"
+  createServiceAccount(organizationId: ID!, name: String!): ServiceAccountPayload
+
+  deleteServiceAccount(organizationId: ID!, id: ID!): ServiceAccountPayload
+
+  deactivateServiceAccount(organizationId: ID!, id: ID!): ServiceAccountPayload
+
+  reactivateServiceAccount(organizationId: ID!, id: ID!): ServiceAccountPayload
+
+  "deprecated. Use createEnvironmentConnection instead"
+  createTargetConnection(organizationId: ID!, artifactId: ID!, targetId: ID!): TargetConnectionPayload @deprecated(reason: "use createEnvironmentConnection instead")
+
+  "deprecated. Use deleteEnvironmentConnection instead"
+  deleteTargetConnection(organizationId: ID!, id: ID!): TargetConnectionPayload @deprecated(reason: "use deleteEnvironmentConnection instead")
+
+  "Deprecated. Use createEnvironment instead"
+  createTarget(organizationId: ID!, projectId: ID!, name: String!, slug: String!, description: String): TargetPayload @deprecated(reason: "use createEnvironment instead")
+
+  "Deprecated. use updateEnvironment instead"
+  updateTarget(organizationId: ID!, id: ID!, name: String!, description: String): TargetPayload @deprecated(reason: "use updateEnvironment instead")
+
+  "Deprecated. use deleteTarget instead"
+  deleteTarget(organizationId: ID!, id: ID!): TargetPayload @deprecated(reason: "use deleteTarget instead")
+}
+
+type EnvironmentConnection {
+  id: ID
+  artifact: Artifact
+  environment: Environment
+  createdAt: DateTime
+  updatedAt: DateTime
 }
 
 type Diagram {
@@ -1666,6 +1916,11 @@ enum PackageStatus {
   EXTERNAL
 }
 
+type EnvironmentDeletionLifecyclePackageError {
+  package: Package!
+  message: String!
+}
+
 type SubscriptionPlan {
   id: ID!
   name: String!
@@ -1704,12 +1959,6 @@ type ContainerRepository {
 type ArchitectureDeletionLifecycle {
   result: Boolean!
   errors: [ArchitectureDeletionLifecycleError]
-}
-
-type ApplicationTemplate {
-  name: String!
-  displayName: String!
-  imageUrl: String
 }
 
 input SetSecretValueInput {
