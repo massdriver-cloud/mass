@@ -42,6 +42,8 @@ type Secret struct {
 	Description string `json:"description" yaml:"description"`
 }
 
+type docAdder func(path string, body *restclient.PublishPost, fs afero.Fs) error
+
 func (b *Bundle) GenerateBundlePublishBody(srcDir string, fs afero.Fs) (restclient.PublishPost, error) {
 	var body restclient.PublishPost
 
@@ -72,7 +74,7 @@ func (b *Bundle) GenerateBundlePublishBody(srcDir string, fs afero.Fs) (restclie
 
 	body.AppSpec = appSpec
 
-	err = checkForOperatorGuideAndSetValue(srcDir, &body, fs)
+	err = checkForGuidesAndSetValue(srcDir, &body, fs)
 
 	if err != nil {
 		return restclient.PublishPost{}, err
@@ -90,8 +92,46 @@ func (b *Bundle) IsApplication() bool {
 	return b.Type == "application"
 }
 
+func checkForGuidesAndSetValue(path string, body *restclient.PublishPost, fs afero.Fs) error {
+	documentFetchers := []docAdder{checkForOperatorGuideAndSetValue, checkForRunbookAndSetValue}
+
+	for _, fetcher := range documentFetchers {
+		err := fetcher(path, body, fs)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func checkForOperatorGuideAndSetValue(path string, body *restclient.PublishPost, fs afero.Fs) error {
 	pathsToCheck := []string{"operator.mdx", "operator.md"}
+	content, err := checkFileAndReadContents(path, pathsToCheck, fs)
+
+	if err != nil {
+		return err
+	}
+
+	body.OperatorGuide = content
+	return nil
+}
+
+func checkForRunbookAndSetValue(path string, body *restclient.PublishPost, fs afero.Fs) error {
+	pathsToCheck := []string{"runbook.mdx", "runbook.md"}
+	content, err := checkFileAndReadContents(path, pathsToCheck, fs)
+
+	if err != nil {
+		return err
+	}
+
+	body.Runbook = content
+	return nil
+}
+
+func checkFileAndReadContents(path string, pathsToCheck []string, fs afero.Fs) ([]byte, error) {
+	var content []byte
 
 	for _, fileName := range pathsToCheck {
 		_, err := fs.Stat(filepath.Join(path, fileName))
@@ -100,14 +140,14 @@ func checkForOperatorGuideAndSetValue(path string, body *restclient.PublishPost,
 			continue
 		}
 
-		content, err := afero.ReadFile(fs, filepath.Join(path, fileName))
+		content, err = afero.ReadFile(fs, filepath.Join(path, fileName))
 
 		if err != nil {
-			return fmt.Errorf("error reading %s", fileName)
+			return content, fmt.Errorf("error reading %s", fileName)
 		}
 
-		body.OperatorGuide = content
+		return content, nil
 	}
 
-	return nil
+	return content, nil
 }

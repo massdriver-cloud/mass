@@ -137,7 +137,7 @@ func TestPublish(t *testing.T) {
 					},
 				},
 			},
-			wantBody: `{"name":"the-bundle","description":"something","type":"bundle","source_url":"github.com/some-repo","access":"public","artifacts_schema":{"artifacts":"foo"},"connections_schema":{"connections":"bar"},"params_schema":{"params":{"hello":"world"}},"ui_schema":{"ui":"baz"},"operator_guide":"IyBTb21lIE1hcmtkb3duIQo=","app":{"envs":{"LOG_LEVEL":"warn"},"policies":[".connections.vpc.data.infrastructure.arn"],"secrets":{"STRIPE_KEY":{"description":"Access key for live stripe accounts","json":false,"required":true,"title":"A secret"}}}}`,
+			wantBody: `{"name":"the-bundle","description":"something","type":"bundle","source_url":"github.com/some-repo","access":"public","artifacts_schema":{"artifacts":"foo"},"connections_schema":{"connections":"bar"},"params_schema":{"params":{"hello":"world"}},"ui_schema":{"ui":"baz"},"operator_guide":"IyBTb21lIE1hcmtkb3duIQo=","app":{"envs":{"LOG_LEVEL":"warn"},"policies":[".connections.vpc.data.infrastructure.arn"],"secrets":{"STRIPE_KEY":{"description":"Access key for live stripe accounts","json":false,"required":true,"title":"A secret"}}},"runbook":"IyBDbGljayBhIGJ1dHRvbiB0byBmaXggeW91ciBwcm9ibGVt"}`,
 		},
 		{
 			name:      "Submits an operator.mdx guide if it exist",
@@ -178,7 +178,89 @@ func TestPublish(t *testing.T) {
 					},
 				},
 			},
-			wantBody: `{"name":"the-bundle","description":"something","type":"bundle","source_url":"github.com/some-repo","access":"public","artifacts_schema":{"artifacts":"foo"},"connections_schema":{"connections":"bar"},"params_schema":{"params":{"hello":"world"}},"ui_schema":{"ui":"baz"},"operator_guide":"IyBTb21lIE1hcmtkb3duIQo=","app":{"envs":{"LOG_LEVEL":"warn"},"policies":[".connections.vpc.data.infrastructure.arn"],"secrets":{"STRIPE_KEY":{"description":"Access key for live stripe accounts","json":false,"required":true,"title":"A secret"}}}}`,
+			wantBody: `{"name":"the-bundle","description":"something","type":"bundle","source_url":"github.com/some-repo","access":"public","artifacts_schema":{"artifacts":"foo"},"connections_schema":{"connections":"bar"},"params_schema":{"params":{"hello":"world"}},"ui_schema":{"ui":"baz"},"operator_guide":"IyBTb21lIE1hcmtkb3duIQo=","app":{"envs":{"LOG_LEVEL":"warn"},"policies":[".connections.vpc.data.infrastructure.arn"],"secrets":{"STRIPE_KEY":{"description":"Access key for live stripe accounts","json":false,"required":true,"title":"A secret"}}},"runbook":"IyBDbGljayBhIGJ1dHRvbiB0byBmaXggeW91ciBwcm9ibGVt"}`,
+		},
+		{
+			name:      "Submits a runbook.md if it exist",
+			path:      "/md",
+			guideType: "md",
+			bundle: bundle.Bundle{
+				Name:        "the-bundle",
+				Description: "something",
+				SourceURL:   "github.com/some-repo",
+				Type:        "bundle",
+				Access:      "public",
+				Artifacts: map[string]interface{}{
+					"artifacts": "foo",
+				},
+				Connections: map[string]interface{}{
+					"connections": "bar",
+				},
+				Params: map[string]interface{}{
+					"params": map[string]string{
+						"hello": "world",
+					},
+				},
+				UI: map[string]interface{}{
+					"ui": "baz",
+				},
+				AppSpec: &bundle.AppSpec{
+					Secrets: map[string]bundle.Secret{
+						"STRIPE_KEY": {
+							Required:    true,
+							JSON:        false,
+							Title:       "A secret",
+							Description: "Access key for live stripe accounts",
+						},
+					},
+					Policies: []string{".connections.vpc.data.infrastructure.arn"},
+					Envs: map[string]string{
+						"LOG_LEVEL": "warn",
+					},
+				},
+			},
+			wantBody: `{"name":"the-bundle","description":"something","type":"bundle","source_url":"github.com/some-repo","access":"public","artifacts_schema":{"artifacts":"foo"},"connections_schema":{"connections":"bar"},"params_schema":{"params":{"hello":"world"}},"ui_schema":{"ui":"baz"},"operator_guide":"IyBTb21lIE1hcmtkb3duIQo=","app":{"envs":{"LOG_LEVEL":"warn"},"policies":[".connections.vpc.data.infrastructure.arn"],"secrets":{"STRIPE_KEY":{"description":"Access key for live stripe accounts","json":false,"required":true,"title":"A secret"}}},"runbook":"IyBDbGljayBhIGJ1dHRvbiB0byBmaXggeW91ciBwcm9ibGVt"}`,
+		},
+		{
+			name:      "Submits a runbook.mdx if it exist",
+			path:      "/md",
+			guideType: "mdx",
+			bundle: bundle.Bundle{
+				Name:        "the-bundle",
+				Description: "something",
+				SourceURL:   "github.com/some-repo",
+				Type:        "bundle",
+				Access:      "public",
+				Artifacts: map[string]interface{}{
+					"artifacts": "foo",
+				},
+				Connections: map[string]interface{}{
+					"connections": "bar",
+				},
+				Params: map[string]interface{}{
+					"params": map[string]string{
+						"hello": "world",
+					},
+				},
+				UI: map[string]interface{}{
+					"ui": "baz",
+				},
+				AppSpec: &bundle.AppSpec{
+					Secrets: map[string]bundle.Secret{
+						"STRIPE_KEY": {
+							Required:    true,
+							JSON:        false,
+							Title:       "A secret",
+							Description: "Access key for live stripe accounts",
+						},
+					},
+					Policies: []string{".connections.vpc.data.infrastructure.arn"},
+					Envs: map[string]string{
+						"LOG_LEVEL": "warn",
+					},
+				},
+			},
+			wantBody: `{"name":"the-bundle","description":"something","type":"bundle","source_url":"github.com/some-repo","access":"public","artifacts_schema":{"artifacts":"foo"},"connections_schema":{"connections":"bar"},"params_schema":{"params":{"hello":"world"}},"ui_schema":{"ui":"baz"},"operator_guide":"IyBTb21lIE1hcmtkb3duIQo=","app":{"envs":{"LOG_LEVEL":"warn"},"policies":[".connections.vpc.data.infrastructure.arn"],"secrets":{"STRIPE_KEY":{"description":"Access key for live stripe accounts","json":false,"required":true,"title":"A secret"}}},"runbook":"IyBDbGljayBhIGJ1dHRvbiB0byBmaXggeW91ciBwcm9ibGVt"}`,
 		},
 	}
 
@@ -216,6 +298,12 @@ func TestPublish(t *testing.T) {
 			}
 
 			err = mockfilesystem.WithOperatorGuide(tc.path, tc.guideType, fs)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = mockfilesystem.WithRunbook(tc.path, tc.guideType, fs)
 
 			if err != nil {
 				t.Fatal(err)
