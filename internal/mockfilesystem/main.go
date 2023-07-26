@@ -118,8 +118,16 @@ func SetupBundle(rootDir string, fs afero.Fs) error {
 }
 
 func WithOperatorGuide(rootDir string, guideType string, fs afero.Fs) error {
-	operatorGuideFilePath := fmt.Sprintf("%s/internal/mockfilesystem/testdata/operator.md", projectRoot())
-	operatorGuideMd, err := os.ReadFile(operatorGuideFilePath)
+	return createDocument(rootDir, "operator", guideType, fs)
+}
+
+func WithRunbook(rootDir string, guideType string, fs afero.Fs) error {
+	return createDocument(rootDir, "runbook", guideType, fs)
+}
+
+func createDocument(rootDir string, name string, guideType string, fs afero.Fs) error {
+	documentFilePath := fmt.Sprintf("%s/internal/mockfilesystem/testdata/%s.md", projectRoot(), name)
+	documentMdFile, err := os.ReadFile(documentFilePath)
 
 	if err != nil {
 		return err
@@ -127,8 +135,8 @@ func WithOperatorGuide(rootDir string, guideType string, fs afero.Fs) error {
 
 	files := []VirtualFile{
 		{
-			Path:    fmt.Sprintf("%s/operator.%s", rootDir, guideType),
-			Content: operatorGuideMd,
+			Path:    fmt.Sprintf("%s/%s.%s", rootDir, name, guideType),
+			Content: documentMdFile,
 		},
 	}
 
