@@ -3,7 +3,6 @@ package configure
 import (
 	"encoding/json"
 	"os"
-	"strings"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/internal/api"
@@ -33,8 +32,7 @@ func interpolateParams(params map[string]interface{}, interpolatedParams *map[st
 		return err
 	}
 
-	envVars := getOsEnv()
-	config := os.Expand(string(templateData), func(s string) string { return envVars[s] })
+	config := os.ExpandEnv(string(templateData))
 
 	err = json.Unmarshal([]byte(config), &interpolatedParams)
 
@@ -43,24 +41,4 @@ func interpolateParams(params map[string]interface{}, interpolatedParams *map[st
 	}
 
 	return nil
-}
-
-func getOsEnv() map[string]string {
-	getenvironment := func(data []string, getkeyval func(item string) (key, val string)) map[string]string {
-		items := make(map[string]string)
-		for _, item := range data {
-			key, val := getkeyval(item)
-			items[key] = val
-		}
-		return items
-	}
-
-	osEnv := getenvironment(os.Environ(), func(item string) (key, val string) {
-		splits := strings.Split(item, "=")
-		key = splits[0]
-		val = splits[1]
-		return
-	})
-
-	return osEnv
 }
