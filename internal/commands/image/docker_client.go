@@ -16,6 +16,8 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api"
 )
 
+var dockerURIPattern = regexp.MustCompile("[a-zA-Z0-9-_]+.docker.pkg.dev")
+
 type DockerClient interface {
 	ImageBuild(ctx context.Context, buildContext io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error)
 	ImagePush(ctx context.Context, image string, options types.ImagePushOptions) (io.ReadCloser, error)
@@ -124,11 +126,9 @@ func setAuthUserNameByCloud(containerRepository *api.ContainerRepository, auth *
 }
 
 func maybeRemoveSuffix(containerRepository *api.ContainerRepository, auth *types.AuthConfig) error {
-	r := regexp.MustCompile("[a-zA-Z0-9-_]+.docker.pkg.dev")
-
 	switch identifyCloudByRepositoryURI(containerRepository.RepositoryURI) {
 	case GCP:
-		auth.ServerAddress = r.FindString(containerRepository.RepositoryURI)
+		auth.ServerAddress = dockerURIPattern.FindString(containerRepository.RepositoryURI)
 		return nil
 	case AWS:
 		auth.ServerAddress = containerRepository.RepositoryURI
