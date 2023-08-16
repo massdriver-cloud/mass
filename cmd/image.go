@@ -49,7 +49,7 @@ func init() {
 	imagePushCmd.Flags().StringVarP(&region, "region", "r", "", "Cloud region to push the image to")
 	_ = imagePushCmd.MarkFlagRequired("region")
 	imagePushCmd.Flags().StringVarP(&targetPlatform, "platform", "p", "linux/amd64", "")
-	imagePushCmd.Flags().StringVarP(&cacheFrom, "cache-from", "c", "", "Folder containing images used for caching")
+	imagePushCmd.Flags().StringVarP(&cacheFrom, "cache-from", "c", "", "Path to image used for caching")
 }
 
 func runImagePush(cmd *cobra.Command, args []string) error {
