@@ -36,6 +36,7 @@ var targetPlatform string
 var tag string
 var artifactID string
 var region string
+var cacheFrom string
 
 func init() {
 	rootCmd.AddCommand(imageCmd)
@@ -43,11 +44,12 @@ func init() {
 	imagePushCmd.Flags().StringVarP(&dockerBuildContext, "build-context", "b", ".", "Path to the directory to build the image from")
 	imagePushCmd.Flags().StringVarP(&dockerfileName, "dockerfile", "f", "Dockerfile", "Name of the dockerfile to build from if you have named it anything other than Dockerfile")
 	imagePushCmd.Flags().StringVarP(&tag, "image-tag", "t", "latest", "Unique identifier for this version of the image")
-	imagePushCmd.Flags().StringVarP(&artifactID, "artifact", "a", "", "Massdriver ID of the artifact used to create the repository and generate repository credentials.")
+	imagePushCmd.Flags().StringVarP(&artifactID, "artifact", "a", "", "Massdriver ID of the artifact used to create the repository and generate repository credentials")
 	_ = imagePushCmd.MarkFlagRequired("artifact")
 	imagePushCmd.Flags().StringVarP(&region, "region", "r", "", "Cloud region to push the image to")
 	_ = imagePushCmd.MarkFlagRequired("region")
 	imagePushCmd.Flags().StringVarP(&targetPlatform, "platform", "p", "linux/amd64", "")
+	imagePushCmd.Flags().StringVarP(&cacheFrom, "cache-from", "c", "", "Folder containing images used for caching")
 }
 
 func runImagePush(cmd *cobra.Command, args []string) error {
@@ -84,6 +86,7 @@ func validatePushInputAndAddFlags(input *image.PushImageInput, cmd *cobra.Comman
 		{Flag: "image-tag", Attribute: &input.Tag},
 		{Flag: "artifact", Attribute: &input.ArtifactID},
 		{Flag: "region", Attribute: &input.Location},
+		{Flag: "cache-from", Attribute: &input.CacheFrom},
 	}
 
 	for _, flag := range flagsToSet {
