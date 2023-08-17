@@ -32,10 +32,12 @@ archives:
   - id: linux-archives
     builds:
       - linux-build
+    name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
 
   - id: darwin-archives
     builds:
       - darwin-build
+    name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
 
 checksum:
   name_template: 'checksums.txt'
