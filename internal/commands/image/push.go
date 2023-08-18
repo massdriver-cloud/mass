@@ -61,14 +61,6 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 		return err
 	}
 
-	if input.Tag != "latest" {
-		input.Tag = "latest"
-		err = pushImage(input, imageClient, containerRepository)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
