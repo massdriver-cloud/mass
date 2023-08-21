@@ -51,6 +51,10 @@ func (c *Client) BuildImage(input PushImageInput, containerRepository *api.Conta
 		Platform:   input.TargetPlatform,
 	}
 
+	if input.CacheFrom != "" {
+		opts.CacheFrom = []string{input.CacheFrom}
+	}
+
 	ctx := context.Background()
 
 	res, err := c.Cli.ImageBuild(ctx, tar, opts)

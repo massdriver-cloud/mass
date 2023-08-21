@@ -9,6 +9,7 @@ type PushImageInput struct {
 	Dockerfile         string
 	DockerBuildContext string
 	TargetPlatform     string
+	CacheFrom          string
 }
 
 type ErrorLine struct {
