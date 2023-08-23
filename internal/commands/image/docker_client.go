@@ -14,6 +14,7 @@ import (
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/prettylogs"
 )
 
 var dockerURIPattern = regexp.MustCompile("[a-zA-Z0-9-_]+.docker.pkg.dev")
@@ -37,16 +38,23 @@ func NewImageClient() (Client, error) {
 	return Client{Cli: cli}, nil
 }
 
-func (c *Client) BuildImage(input PushImageInput, containerRepository *api.ContainerRepository) (*types.ImageBuildResponse, error) {
+func (c *Client) BuildImage(input PushImageInput, containerRepository *api.ContainerRepository) error {
 	tar, err := packageBuildDirectory(input.DockerBuildContext)
-
 	if err != nil {
-		return nil, err
+		return err
 	}
+
+	var imageFqns []string
+	for _, tag := range input.Tags {
+		imageFqns = append(imageFqns, imageFqn(containerRepository.RepositoryURI, input.ImageName, tag))
+	}
+
+	logTag := prettylogs.Underline(strings.Join(imageFqns, "\n"))
+	fmt.Printf("Building images: \n%s\n", logTag)
 
 	opts := types.ImageBuildOptions{
 		Dockerfile: input.Dockerfile,
-		Tags:       []string{imageFqn(containerRepository.RepositoryURI, input.ImageName, input.Tag)},
+		Tags:       imageFqns,
 		Remove:     true,
 		Platform:   input.TargetPlatform,
 	}
@@ -58,20 +66,39 @@ func (c *Client) BuildImage(input PushImageInput, containerRepository *api.Conta
 	ctx := context.Background()
 
 	res, err := c.Cli.ImageBuild(ctx, tar, opts)
-	return &res, err
-}
-
-func (c *Client) PushImage(input PushImageInput, containerRepository *api.ContainerRepository) (io.ReadCloser, error) {
-	ctx := context.Background()
-	auth, err := createAuthForCloud(containerRepository)
-
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("ImageBuild: %w", err)
+	}
+	err = handleResponseBuffer(res.Body)
+	if err != nil {
+		return fmt.Errorf("HandleRespone: %w", err)
 	}
 
-	res, err := c.Cli.ImagePush(ctx, imageFqn(containerRepository.RepositoryURI, input.ImageName, input.Tag), types.ImagePushOptions{RegistryAuth: auth})
+	return nil
+}
 
-	return res, err
+func (c *Client) PushImage(input PushImageInput, containerRepository *api.ContainerRepository) error {
+	ctx := context.Background()
+	auth, authErr := createAuthForCloud(containerRepository)
+	if authErr != nil {
+		return authErr
+	}
+
+	for _, tag := range input.Tags {
+		res, err := c.Cli.ImagePush(ctx, imageFqn(containerRepository.RepositoryURI, input.ImageName, tag), types.ImagePushOptions{RegistryAuth: auth})
+		if err != nil {
+			return err
+		}
+		err = handleResponseBuffer(res)
+		if err != nil {
+			return err
+		}
+		fqn := prettylogs.Underline(imageFqn(containerRepository.RepositoryURI, input.ImageName, tag))
+		msg := fmt.Sprintf("Image %s pushed successfully", fqn)
+		fmt.Println(msg)
+	}
+
+	return nil
 }
 
 func packageBuildDirectory(buildContext string) (io.ReadCloser, error) {

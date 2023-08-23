@@ -68,7 +68,7 @@ func TestPushLatestImage(t *testing.T) {
 		Location:           "us-west-2",
 		ArtifactID:         "00000-000-000-00000000",
 		OrganizationID:     "00000-000-000-00000000",
-		Tag:                "latest",
+		Tags:               []string{"latest"},
 		DockerBuildContext: ".",
 		Dockerfile:         "DockerFile",
 	}
@@ -96,7 +96,7 @@ func TestPushImage(t *testing.T) {
 		Location:           "us-west-2",
 		ArtifactID:         "00000-000-000-00000000",
 		OrganizationID:     "00000-000-000-00000000",
-		Tag:                "some-tag",
+		Tags:               []string{"some-tag"},
 		DockerBuildContext: ".",
 		Dockerfile:         "DockerFile",
 	}
