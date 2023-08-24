@@ -4,7 +4,7 @@ type PushImageInput struct {
 	ImageName          string
 	Location           string
 	OrganizationID     string
-	Tag                string
+	Tags               []string
 	ArtifactID         string
 	Dockerfile         string
 	DockerBuildContext string
