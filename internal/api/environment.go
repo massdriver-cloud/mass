@@ -38,7 +38,7 @@ func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID str
 	return nil, NewMutationError("failed to deploy environment", response.DeployPreviewEnvironment.Messages)
 }
 
-func (e *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget) toEnvironment() *Environment {
+func (e *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment) toEnvironment() *Environment {
 	return &Environment{
 		ID:   e.Id,
 		Slug: e.Slug,
@@ -65,7 +65,7 @@ func DecommissionPreviewEnvironment(client graphql.Client, orgID string, project
 	return nil, NewMutationError("failed to decommission environment", response.DecommissionPreviewEnvironment.Messages)
 }
 
-func (e *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget) toEnvironment() *Environment {
+func (e *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment) toEnvironment() *Environment {
 	return &Environment{
 		ID:   e.Id,
 		Slug: e.Slug,

@@ -69,8 +69,9 @@ func (v *MutationValidationError) GetMessage() string { return v.Message }
 type PreviewEnvironmentInput struct {
 	Credentials []Credential `json:"credentials"`
 	// GitHub Action event payload.
-	CiContext     map[string]interface{} `json:"-"`
-	PackageParams map[string]interface{} `json:"-"`
+	CiContext             map[string]interface{}         `json:"-"`
+	PackageParams         map[string]interface{}         `json:"-"`
+	RemoteReferenceParams []PreviewRemoteReferenceParams `json:"remoteReferenceParams"`
 }
 
 // GetCredentials returns PreviewEnvironmentInput.Credentials, and is useful for accessing the field via an interface.
@@ -81,6 +82,11 @@ func (v *PreviewEnvironmentInput) GetCiContext() map[string]interface{} { return
 
 // GetPackageParams returns PreviewEnvironmentInput.PackageParams, and is useful for accessing the field via an interface.
 func (v *PreviewEnvironmentInput) GetPackageParams() map[string]interface{} { return v.PackageParams }
+
+// GetRemoteReferenceParams returns PreviewEnvironmentInput.RemoteReferenceParams, and is useful for accessing the field via an interface.
+func (v *PreviewEnvironmentInput) GetRemoteReferenceParams() []PreviewRemoteReferenceParams {
+	return v.RemoteReferenceParams
+}
 
 func (v *PreviewEnvironmentInput) UnmarshalJSON(b []byte) error {
 
@@ -135,6 +141,8 @@ type __premarshalPreviewEnvironmentInput struct {
 	CiContext json.RawMessage `json:"ciContext"`
 
 	PackageParams json.RawMessage `json:"packageParams"`
+
+	RemoteReferenceParams []PreviewRemoteReferenceParams `json:"remoteReferenceParams"`
 }
 
 func (v *PreviewEnvironmentInput) MarshalJSON() ([]byte, error) {
@@ -173,8 +181,24 @@ func (v *PreviewEnvironmentInput) __premarshalJSON() (*__premarshalPreviewEnviro
 				"Unable to marshal PreviewEnvironmentInput.PackageParams: %w", err)
 		}
 	}
+	retval.RemoteReferenceParams = v.RemoteReferenceParams
 	return &retval, nil
 }
+
+type PreviewRemoteReferenceParams struct {
+	Package    string `json:"package"`
+	ArtifactId string `json:"artifactId"`
+	Field      string `json:"field"`
+}
+
+// GetPackage returns PreviewRemoteReferenceParams.Package, and is useful for accessing the field via an interface.
+func (v *PreviewRemoteReferenceParams) GetPackage() string { return v.Package }
+
+// GetArtifactId returns PreviewRemoteReferenceParams.ArtifactId, and is useful for accessing the field via an interface.
+func (v *PreviewRemoteReferenceParams) GetArtifactId() string { return v.ArtifactId }
+
+// GetField returns PreviewRemoteReferenceParams.Field, and is useful for accessing the field via an interface.
+func (v *PreviewRemoteReferenceParams) GetField() string { return v.Field }
 
 // __configurePackageInput is used internally by genqlient
 type __configurePackageInput struct {
@@ -508,6 +532,14 @@ func (v *__getProjectByIdInput) GetOrganizationId() string { return v.Organizati
 // GetId returns __getProjectByIdInput.Id, and is useful for accessing the field via an interface.
 func (v *__getProjectByIdInput) GetId() string { return v.Id }
 
+// __projectsInput is used internally by genqlient
+type __projectsInput struct {
+	OrganizationId string `json:"organizationId"`
+}
+
+// GetOrganizationId returns __projectsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__projectsInput) GetOrganizationId() string { return v.OrganizationId }
+
 // configurePackageConfigurePackagePackagePayload includes the requested fields of the GraphQL type PackagePayload.
 type configurePackageConfigurePackagePackagePayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -704,76 +736,76 @@ func (v *createArtifactResponse) GetCreateArtifact() createArtifactCreateArtifac
 	return v.CreateArtifact
 }
 
-// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload includes the requested fields of the GraphQL type TargetPayload.
-type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload struct {
+// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
+type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget `json:"result"`
+	Result decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment `json:"result"`
 	// Indicates if the mutation completed successfully or not.
 	Successful bool `json:"successful"`
 	// A list of failed validations. May be blank or null if mutation succeeded.
 	Messages []MutationValidationError `json:"messages"`
 }
 
-// GetResult returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload.Result, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload) GetResult() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget {
+// GetResult returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload.Result, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload) GetResult() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment {
 	return v.Result
 }
 
-// GetSuccessful returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload.Successful, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload) GetSuccessful() bool {
+// GetSuccessful returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload) GetSuccessful() bool {
 	return v.Successful
 }
 
-// GetMessages returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload.Messages, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload) GetMessages() []MutationValidationError {
+// GetMessages returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload) GetMessages() []MutationValidationError {
 	return v.Messages
 }
 
-// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget includes the requested fields of the GraphQL type Target.
-type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget struct {
-	Id      string                                                                                       `json:"id"`
-	Slug    string                                                                                       `json:"slug"`
-	Project decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject `json:"project"`
+// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
+type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment struct {
+	Id      string                                                                                                 `json:"id"`
+	Slug    string                                                                                                 `json:"slug"`
+	Project decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject `json:"project"`
 }
 
-// GetId returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget.Id, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget) GetId() string {
+// GetId returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetId() string {
 	return v.Id
 }
 
-// GetSlug returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget.Slug, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget) GetSlug() string {
+// GetSlug returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetSlug() string {
 	return v.Slug
 }
 
-// GetProject returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget.Project, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTarget) GetProject() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject {
+// GetProject returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetProject() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject {
 	return v.Project
 }
 
-// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject includes the requested fields of the GraphQL type Project.
-type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject struct {
+// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject includes the requested fields of the GraphQL type Project.
+type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject struct {
 	Id   string `json:"id"`
 	Slug string `json:"slug"`
 }
 
-// GetId returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject.Id, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject) GetId() string {
+// GetId returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject) GetId() string {
 	return v.Id
 }
 
-// GetSlug returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject.Slug, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayloadResultTargetProject) GetSlug() string {
+// GetSlug returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject.Slug, and is useful for accessing the field via an interface.
+func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject) GetSlug() string {
 	return v.Slug
 }
 
 // decommissionPreviewEnvironmentResponse is returned by decommissionPreviewEnvironment on success.
 type decommissionPreviewEnvironmentResponse struct {
-	DecommissionPreviewEnvironment decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload `json:"decommissionPreviewEnvironment"`
+	DecommissionPreviewEnvironment decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload `json:"decommissionPreviewEnvironment"`
 }
 
 // GetDecommissionPreviewEnvironment returns decommissionPreviewEnvironmentResponse.DecommissionPreviewEnvironment, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentResponse) GetDecommissionPreviewEnvironment() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentTargetPayload {
+func (v *decommissionPreviewEnvironmentResponse) GetDecommissionPreviewEnvironment() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload {
 	return v.DecommissionPreviewEnvironment
 }
 
@@ -819,77 +851,77 @@ func (v *deployPackageResponse) GetDeployPackage() deployPackageDeployPackageDep
 	return v.DeployPackage
 }
 
-// deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload includes the requested fields of the GraphQL type TargetPayload.
-type deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload struct {
+// deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
+type deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload struct {
 	// Indicates if the mutation completed successfully or not.
 	Successful bool `json:"successful"`
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget `json:"result"`
+	Result deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment `json:"result"`
 	// A list of failed validations. May be blank or null if mutation succeeded.
 	Messages []MutationValidationError `json:"messages"`
 }
 
-// GetSuccessful returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload.Successful, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload) GetSuccessful() bool {
+// GetSuccessful returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload) GetSuccessful() bool {
 	return v.Successful
 }
 
-// GetResult returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload.Result, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload) GetResult() deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget {
+// GetResult returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload.Result, and is useful for accessing the field via an interface.
+func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload) GetResult() deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment {
 	return v.Result
 }
 
-// GetMessages returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload.Messages, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload) GetMessages() []MutationValidationError {
+// GetMessages returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload) GetMessages() []MutationValidationError {
 	return v.Messages
 }
 
-// deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget includes the requested fields of the GraphQL type Target.
-type deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget struct {
-	Id      string                                                                           `json:"id"`
-	Slug    string                                                                           `json:"slug"`
-	Project deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTargetProject `json:"project"`
+// deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
+type deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment struct {
+	Id      string                                                                                     `json:"id"`
+	Slug    string                                                                                     `json:"slug"`
+	Project deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject `json:"project"`
 }
 
-// GetId returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget.Id, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget) GetId() string {
+// GetId returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetId() string {
 	return v.Id
 }
 
-// GetSlug returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget.Slug, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget) GetSlug() string {
+// GetSlug returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetSlug() string {
 	return v.Slug
 }
 
-// GetProject returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget.Project, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTarget) GetProject() deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTargetProject {
+// GetProject returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetProject() deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject {
 	return v.Project
 }
 
-// deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTargetProject includes the requested fields of the GraphQL type Project.
-type deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTargetProject struct {
+// deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject includes the requested fields of the GraphQL type Project.
+type deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject struct {
 	Id   string `json:"id"`
 	Slug string `json:"slug"`
 }
 
-// GetId returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTargetProject.Id, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTargetProject) GetId() string {
+// GetId returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject) GetId() string {
 	return v.Id
 }
 
-// GetSlug returns deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTargetProject.Slug, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayloadResultTargetProject) GetSlug() string {
+// GetSlug returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject.Slug, and is useful for accessing the field via an interface.
+func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject) GetSlug() string {
 	return v.Slug
 }
 
 // deployPreviewEnvironmentResponse is returned by deployPreviewEnvironment on success.
 type deployPreviewEnvironmentResponse struct {
 	// Deploy a Preview Environment
-	DeployPreviewEnvironment deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload `json:"deployPreviewEnvironment"`
+	DeployPreviewEnvironment deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload `json:"deployPreviewEnvironment"`
 }
 
 // GetDeployPreviewEnvironment returns deployPreviewEnvironmentResponse.DeployPreviewEnvironment, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentResponse) GetDeployPreviewEnvironment() deployPreviewEnvironmentDeployPreviewEnvironmentTargetPayload {
+func (v *deployPreviewEnvironmentResponse) GetDeployPreviewEnvironment() deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload {
 	return v.DeployPreviewEnvironment
 }
 
@@ -1315,6 +1347,106 @@ type getProjectByIdResponse struct {
 
 // GetProject returns getProjectByIdResponse.Project, and is useful for accessing the field via an interface.
 func (v *getProjectByIdResponse) GetProject() getProjectByIdProject { return v.Project }
+
+// projectsProjectsProject includes the requested fields of the GraphQL type Project.
+type projectsProjectsProject struct {
+	Id            string                 `json:"id"`
+	Name          string                 `json:"name"`
+	DefaultParams map[string]interface{} `json:"-"`
+	Slug          string                 `json:"slug"`
+}
+
+// GetId returns projectsProjectsProject.Id, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProject) GetId() string { return v.Id }
+
+// GetName returns projectsProjectsProject.Name, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProject) GetName() string { return v.Name }
+
+// GetDefaultParams returns projectsProjectsProject.DefaultParams, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProject) GetDefaultParams() map[string]interface{} { return v.DefaultParams }
+
+// GetSlug returns projectsProjectsProject.Slug, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProject) GetSlug() string { return v.Slug }
+
+func (v *projectsProjectsProject) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*projectsProjectsProject
+		DefaultParams json.RawMessage `json:"defaultParams"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.projectsProjectsProject = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.DefaultParams
+		src := firstPass.DefaultParams
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal projectsProjectsProject.DefaultParams: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalprojectsProjectsProject struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	DefaultParams json.RawMessage `json:"defaultParams"`
+
+	Slug string `json:"slug"`
+}
+
+func (v *projectsProjectsProject) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *projectsProjectsProject) __premarshalJSON() (*__premarshalprojectsProjectsProject, error) {
+	var retval __premarshalprojectsProjectsProject
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	{
+
+		dst := &retval.DefaultParams
+		src := v.DefaultParams
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal projectsProjectsProject.DefaultParams: %w", err)
+		}
+	}
+	retval.Slug = v.Slug
+	return &retval, nil
+}
+
+// projectsResponse is returned by projects on success.
+type projectsResponse struct {
+	Projects []projectsProjectsProject `json:"projects"`
+}
+
+// GetProjects returns projectsResponse.Projects, and is useful for accessing the field via an interface.
+func (v *projectsResponse) GetProjects() []projectsProjectsProject { return v.Projects }
 
 func configurePackage(
 	ctx context.Context,
@@ -1760,6 +1892,41 @@ query getProjectById ($organizationId: ID!, $id: ID!) {
 	var err error
 
 	var data getProjectByIdResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func projects(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+) (*projectsResponse, error) {
+	req := &graphql.Request{
+		OpName: "projects",
+		Query: `
+query projects ($organizationId: ID!) {
+	projects(organizationId: $organizationId) {
+		id
+		name
+		defaultParams
+		slug
+	}
+}
+`,
+		Variables: &__projectsInput{
+			OrganizationId: organizationId,
+		},
+	}
+	var err error
+
+	var data projectsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
