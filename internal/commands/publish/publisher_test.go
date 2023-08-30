@@ -30,6 +30,39 @@ func TestPublish(t *testing.T) {
 	}
 	tests := []test{
 		{
+			name:      "Includes the original massdriver.yaml in the request body",
+			path:      "./templates",
+			guideType: "",
+			bundle: bundle.Bundle{
+				Name:        "the-bundle",
+				Description: "something",
+				SourceURL:   "github.com/some-repo",
+				Type:        "bundle",
+				Access:      "public",
+				Artifacts: map[string]interface{}{
+					"artifacts": "foo",
+				},
+				Connections: map[string]interface{}{
+					"connections": "bar",
+				},
+				Params: map[string]interface{}{
+					"params": map[string]string{
+						"hello": "world",
+					},
+				},
+				UI: map[string]interface{}{
+					"ui": "baz",
+				},
+				AppSpec: nil,
+				Conf: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"foo": "bar",
+					},
+				},
+			},
+			wantBody: `{"name":"the-bundle","description":"something","type":"bundle","source_url":"github.com/some-repo","access":"public","artifacts_schema":{"artifacts":"foo"},"connections_schema":{"connections":"bar"},"params_schema":{"params":{"hello":"world"}},"ui_schema":{"ui":"baz"},"conf":{"metadata":{"foo":"bar"}}}`,
+		},
+		{
 			name:      "Does not submit an app block field if one does not exist",
 			path:      "./templates",
 			guideType: "",

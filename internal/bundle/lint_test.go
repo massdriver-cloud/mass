@@ -14,6 +14,9 @@ func TestLintSchema(t *testing.T) {
 		bun  *bundle.Bundle
 		err  error
 	}
+
+	// TODO: this is currently failing because we are using b.Conf to get actualy files to pass, but this
+	// is mocking w/o it... fix this code to use the actual massdriver.yaml
 	tests := []test{
 		{
 			name: "Valid pass",
@@ -27,6 +30,7 @@ func TestLintSchema(t *testing.T) {
 				Connections: map[string]interface{}{},
 				Artifacts:   map[string]interface{}{},
 				UI:          map[string]interface{}{},
+				Steps:       []bundle.Step{},
 			},
 			err: nil,
 		},
@@ -41,8 +45,10 @@ func TestLintSchema(t *testing.T) {
 				Connections: map[string]interface{}{},
 				Artifacts:   map[string]interface{}{},
 				UI:          map[string]interface{}{},
+				Steps:       []bundle.Step{},
 			},
 			err: errors.New(`massdriver.yaml has schema violations:
+	- (root): Must validate one and only one schema (oneOf)
 	- schema: schema must be one of the following: "draft-07"
 `),
 		},

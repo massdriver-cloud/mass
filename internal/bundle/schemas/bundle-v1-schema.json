@@ -1,0 +1,157 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema",
+    "type": "object",
+    "title": "Bundle",
+    "required": [
+        "params",
+        "connections",
+        "artifacts",
+        "ui",
+        "schema",
+        "description",
+        "access",
+        "type"
+    ],
+    "properties": {
+        "app": {
+            "title": "Application Configuration",
+            "type": "object",
+            "properties": {
+                "secrets": {
+                    "title": "Secrets",
+                    "description": "",
+                    "type": "object",
+                    "propertyNames": {
+                        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    },
+                    "patternProperties": {
+                        "^.*$": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "required": {
+                                    "type": "boolean",
+                                    "default": false
+                                },
+                                "json": {
+                                    "type": "boolean",
+                                    "default": false
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "policies": {
+                    "title": "IAM Permissions",
+                    "description": "Map param and connection values to IAM Permissions & Policies for your application.",
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^\\.[a-zA-Z0-9._-]*$"
+                    }
+                },
+                "envs": {
+                    "title": "Environment variables",
+                    "description": "Map param and connection values to environment variables with JQ for processing.",
+                    "type": "object",
+                    "propertyNames": {
+                        "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+                    },
+                    "patternProperties": {
+                        "^[a-zA-Z_][a-zA-Z0-9_]*$": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "name": {
+            "title": "Title",
+            "type": "string",
+            "description": "The name of the bundle. This will be prefixed with your organization name upon publishing.",
+            "pattern": "^[a-z][a-z0-9-]+[a-z0-9]$",
+            "minLength": 3,
+            "maxLength": 53
+        },
+        "schema": {
+            "title": "JSON Schema Schema",
+            "type": "string",
+            "description": "The JSON Schema used to define the bundle.",
+            "enum": [
+                "draft-07"
+            ]
+        },
+        "description": {
+            "title": "Description",
+            "description": "A description of the bundle.",
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1024
+        },
+        "source_url": {
+            "title": "Source URL",
+            "type": "string",
+            "description": "Link to the bundle source code."
+        },
+        "access": {
+            "title": "Access",
+            "type": "string",
+            "description": "The access level of the bundle. Private bundles will only be accessible by the organization it is published under.",
+            "enum": [
+                "public",
+                "private"
+            ]
+        },
+        "type": {
+            "title": "Type",
+            "type": "string",
+            "description": "The type of bundle: infrastructure or application.",
+            "enum": [
+                "infrastructure",
+                "application"
+            ]
+        },
+        "params": {
+            "type": "object",
+            "title": "Input Parameters",
+            "description": "Input parameters for the bundle. These will be converted to input variables for your IaC module."
+        },
+        "connections": {
+            "type": "object",
+            "title": "Input Connections",
+            "description": "Input connections for this bundle. Determines which artifacts from other bundles this bundle depends on. These will be converted to input variables for your IaC module."
+        },
+        "artifacts": {
+            "type": "object",
+            "title": "Output Artifacts",
+            "description": "Cloud resources created by this bundle that are available to be used as input connections to other bundles. See: https://github.com/massdriver-cloud/artifact-definitions"
+        },
+        "ui": {
+            "type": "object",
+            "description": "RJSF UI Schema for advanced control over the UI. See https://react-jsonschema-form.readthedocs.io/en/docs/api-reference/uiSchema/#uischema"
+        },
+        "steps": {
+            "type": "array",
+            "description": "Massdriver provisioning steps",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Path to the IaC directory"
+                    },
+                    "provisioner": {
+                        "type": "string",
+                        "description": "Provisioner type to use for step"
+                    }
+                }
+            }
+        }
+    }
+}
