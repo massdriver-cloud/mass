@@ -1,9 +1,9 @@
 package api
 
 type PreviewConfig struct {
-	ProjectSlug string           `json:"projectSlug"`
-	Credentials []Credential     `json:"credentials"`
-	Packages    []PreviewPackage `json:"packages"`
+	ProjectSlug string                    `json:"projectSlug"`
+	Credentials []Credential              `json:"credentials"`
+	Packages    map[string]PreviewPackage `json:"packages"`
 }
 
 type PreviewPackage struct {
