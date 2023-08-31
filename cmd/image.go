@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/commands/image"
-	"github.com/massdriver-cloud/mass/internal/config"
+	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/pkg/commands/image"
+	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/spf13/cobra"
 )
 

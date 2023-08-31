@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/massdriver-cloud/mass/internal/jsonschema"
+	"github.com/massdriver-cloud/mass/pkg/jsonschema"
 	"github.com/spf13/cobra"
 )
 
