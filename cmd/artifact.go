@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/artifact"
-	"github.com/massdriver-cloud/mass/internal/commands"
-	"github.com/massdriver-cloud/mass/internal/config"
+	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/pkg/artifact"
+	"github.com/massdriver-cloud/mass/pkg/commands"
+	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )

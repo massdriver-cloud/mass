@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/massdriver-cloud/mass/internal/prettylogs"
-	"github.com/massdriver-cloud/mass/internal/version"
+	"github.com/massdriver-cloud/mass/pkg/prettylogs"
+	"github.com/massdriver-cloud/mass/pkg/version"
 	"github.com/spf13/cobra"
 )
 

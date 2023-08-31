@@ -1,11 +1,11 @@
 INSTALL_PATH ?= /usr/local/bin
 GIT_SHA := $(shell git log -1 --pretty=format:"%H")
-LD_FLAGS := "-X github.com/massdriver-cloud/mass/internal/version.version=dev -X github.com/massdriver-cloud/mass/internal/version.gitSHA=local-dev-${GIT_SHA}"
+LD_FLAGS := "-X github.com/massdriver-cloud/mass/pkg/version.version=dev -X github.com/massdriver-cloud/mass/pkg/version.gitSHA=local-dev-${GIT_SHA}"
 
 MASSDRIVER_PATH?=../massdriver
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(dir $(MKFILE_PATH))
-API_DIR := internal/api
+API_DIR := pkg/api
 
 all.macos: clean generate install.macos
 all.linux: clean generate install.linux
