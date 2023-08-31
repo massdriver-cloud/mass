@@ -50,17 +50,22 @@ func TestRun(t *testing.T) {
 
 	want := &api.PreviewConfig{
 		ProjectSlug: projectSlug,
-		PackageParams: map[string]interface{}{
-			"database": map[string]interface{}{
-				"username": "root",
+		Credentials: []api.Credential{
+			{
+				ArtifactDefinitionType: "massdriver/aws-iam-role",
+				ArtifactId:             "uuid-here",
 			},
 		},
-		Credentials: map[string]string{
-			"massdriver/aws-iam-role": "uuid-here",
+		Packages: map[string]api.PreviewPackage{
+			"database": {
+				Params: map[string]interface{}{
+					"username": "root",
+				},
+			},
 		},
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
+		t.Errorf("got %+v, wanted %+v", got, want)
 	}
 }

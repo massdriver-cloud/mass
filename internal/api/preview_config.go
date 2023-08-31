@@ -1,19 +1,26 @@
 package api
 
 type PreviewConfig struct {
-	ProjectSlug   string                 `json:"projectSlug"`
-	Credentials   map[string]string      `json:"credentials"`
-	PackageParams map[string]interface{} `json:"packageParams"`
+	ProjectSlug string                    `json:"projectSlug"`
+	Credentials []Credential              `json:"credentials"`
+	Packages    map[string]PreviewPackage `json:"packages"`
+}
+
+type PreviewPackage struct {
+	Params           map[string]interface{} `json:"params"`
+	Secrets          []Secret               `json:"secrets,omitempty"`
+	RemoteReferences []RemoteRef            `json:"remoteReferences,omitempty"`
+}
+
+type RemoteRef struct {
+	ArtifactID string `json:"artifactId"`
+	Field      string `json:"field"`
+}
+type Secret struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 func (p *PreviewConfig) GetCredentials() []Credential {
-	credentials := []Credential{}
-	for k, v := range p.Credentials {
-		cred := Credential{
-			ArtifactDefinitionType: k,
-			ArtifactId:             v,
-		}
-		credentials = append(credentials, cred)
-	}
-	return credentials
+	return p.Credentials
 }

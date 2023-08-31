@@ -9,9 +9,7 @@ import (
 
 func TestPreviewConfigGetCredentials(t *testing.T) {
 	cfg := api.PreviewConfig{
-		Credentials: map[string]string{
-			"massdriver/aws-iam-role": "foo",
-		},
+		Credentials: []api.Credential{{ArtifactDefinitionType: "massdriver/aws-iam-role", ArtifactId: "foo"}},
 	}
 
 	got := cfg.GetCredentials()

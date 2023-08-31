@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"log/slog"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -24,4 +26,25 @@ func (p *getProjectByIdProject) toProject() *Project {
 		Slug:          p.Slug,
 		DefaultParams: p.DefaultParams,
 	}
+}
+
+func (p *Project) GetDefaultParams() map[string]PreviewPackage {
+	packages := make(map[string]PreviewPackage)
+
+	for id, prev := range p.DefaultParams {
+		var previewPackage PreviewPackage
+		jsonPreview, err := json.Marshal(prev)
+		if err != nil {
+			slog.Error(err.Error())
+			continue
+		}
+
+		err = json.Unmarshal(jsonPreview, &previewPackage.Params)
+		if err != nil {
+			slog.Error(err.Error())
+			continue
+		}
+		packages[id] = previewPackage
+	}
+	return packages
 }

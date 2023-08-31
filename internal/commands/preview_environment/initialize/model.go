@@ -44,16 +44,16 @@ type Model struct {
 }
 
 func (m Model) PreviewConfig() *api.PreviewConfig {
-	credentials := map[string]string{}
+	var credentials []api.Credential
 
 	for _, p := range m.prompts {
-		credentials[p.artifactDefinitionName] = p.selection.ID
+		credentials = append(credentials, api.Credential{ArtifactDefinitionType: p.artifactDefinitionName, ArtifactId: p.selection.ID})
 	}
 
 	return &api.PreviewConfig{
-		PackageParams: m.project.DefaultParams,
-		Credentials:   credentials,
-		ProjectSlug:   m.project.Slug,
+		Packages:    m.project.GetDefaultParams(),
+		Credentials: credentials,
+		ProjectSlug: m.project.Slug,
 	}
 }
 

@@ -28,9 +28,9 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 	client := gqlmock.NewClientWithJSONResponseArray(responses)
 
 	previewCfg := api.PreviewConfig{
-		ProjectSlug:   "fake-project-slug",
-		Credentials:   map[string]string{},
-		PackageParams: map[string]interface{}{},
+		ProjectSlug: "fake-project-slug",
+		Credentials: []api.Credential{},
+		Packages:    make(map[string]api.PreviewPackage),
 	}
 
 	ciContext := map[string]interface{}{}
@@ -64,7 +64,7 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 		inputMap, ok := input.(map[string]interface{})
 		_ = ok
 
-		paramsJSON := []byte((inputMap["packageParams"]).(string))
+		paramsJSON := []byte((inputMap["packageConfigurations"]).(string))
 
 		got := map[string]interface{}{}
 		gqlmock.MustUnmarshalJSON(paramsJSON, &got)
@@ -95,10 +95,13 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 	client := gqlmock.NewClient(mux)
 
 	previewCfg := api.PreviewConfig{
-		Credentials: map[string]string{},
-		PackageParams: map[string]interface{}{
-			"myApp": map[string]interface{}{
-				"hostname": "preview-${PR_NUMBER}.example.com",
+		ProjectSlug: "",
+		Credentials: []api.Credential{},
+		Packages: map[string]api.PreviewPackage{
+			"myApp": {
+				Params: map[string]interface{}{
+					"hostname": "preview-${PR_NUMBER}.example.com",
+				},
 			},
 		},
 	}

@@ -10,29 +10,30 @@ import (
 
 // Runs a preview environment deployment
 func Run(client graphql.Client, orgID string, projectSlug string, previewCfg *api.PreviewConfig, ciContext *map[string]interface{}) (*api.Environment, error) {
-	interpolatedParams := map[string]interface{}{}
-
-	if err := interpolateParams(previewCfg.PackageParams, &interpolatedParams); err != nil {
+	interpolatedParams, err := interpolateParams(previewCfg.Packages)
+	if err != nil {
 		return nil, err
 	}
 
 	return api.DeployPreviewEnvironment(client, orgID, projectSlug, previewCfg.GetCredentials(), interpolatedParams, *ciContext)
 }
 
-func interpolateParams(params map[string]interface{}, interpolatedParams *map[string]interface{}) error {
-	templateData, err := json.Marshal(params)
+func interpolateParams(packages map[string]api.PreviewPackage) (map[string]interface{}, error) {
+	interpolatedParams := make(map[string]interface{})
+	for id, p := range packages {
+		templateData, err := json.Marshal(p.Params)
+		if err != nil {
+			return nil, err
+		}
 
-	if err != nil {
-		return err
+		config := os.ExpandEnv(string(templateData))
+
+		expanded := make(map[string]interface{})
+		err = json.Unmarshal([]byte(config), &expanded)
+		if err != nil {
+			return nil, err
+		}
+		interpolatedParams[id] = expanded
 	}
-
-	config := os.ExpandEnv(string(templateData))
-
-	err = json.Unmarshal([]byte(config), &interpolatedParams)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return interpolatedParams, nil
 }
