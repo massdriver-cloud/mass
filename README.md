@@ -19,7 +19,7 @@ Pre-built binaries for the Mass CLI are available in the [Releases](https://gith
 ### Homebrew
 
 ```sh
-brew install mass
+brew install massdriver
 ```
 
 ### Go
