@@ -29,6 +29,8 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 			if err != nil {
 				return err
 			}
+		case "helm":
+			continue
 		default:
 			return fmt.Errorf("%s is not a supported provisioner", step.Provisioner)
 		}
