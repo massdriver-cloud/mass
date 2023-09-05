@@ -12,9 +12,33 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	projectSlug := "ecomm"
+	envSlug := "env1"
+	projectSlug := "ecomm1"
+
+	env := map[string]interface{}{
+		"name": "potato",
+		"slug": "potato",
+		"packages": []map[string]interface{}{
+			{
+				"id": "package1",
+				"manifest": map[string]interface{}{
+					"slug": "database",
+				},
+			},
+		},
+		"project": map[string]interface{}{
+			"id": "ecomma",
+			"defaultParams": map[string]interface{}{
+				"database": map[string]interface{}{
+					"username": "root",
+				},
+			},
+		},
+	}
 
 	responses := []interface{}{
+		gqlmock.MockQueryResponse("environment", env),
+
 		gqlmock.MockQueryResponse("project", map[string]interface{}{
 			"slug": projectSlug,
 			"defaultParams": map[string]interface{}{
@@ -32,7 +56,7 @@ func TestRun(t *testing.T) {
 
 	client := gqlmock.NewClientWithJSONResponseArray(responses)
 
-	model, _ := initialize.New(client, "faux-org-id", projectSlug)
+	model, _ := initialize.New(client, "faux-org-id", envSlug)
 
 	selectRow := tea.KeyMsg{Type: tea.KeySpace}
 	pressNext := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}}

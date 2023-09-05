@@ -30,6 +30,7 @@ type Model struct {
 	loaded          bool
 	listCredentials func(string) ([]*api.Artifact, error)
 	project         *api.Project
+	environment     *api.GetEnvironmentByIdEnvironment
 
 	// ui mode
 	mode mode
@@ -51,10 +52,56 @@ func (m Model) PreviewConfig() *api.PreviewConfig {
 	}
 
 	return &api.PreviewConfig{
-		Packages:    m.project.GetDefaultParams(),
+		Packages:    m.hydratePackages(),
 		Credentials: credentials,
 		ProjectSlug: m.project.Slug,
 	}
+}
+
+// hydratePackages uses the reference environment to build the preview package JSON and if no params
+// are set in the env use the default values from the project
+func (m Model) hydratePackages() map[string]api.PreviewPackage {
+	packages := make(map[string]api.PreviewPackage)
+
+	defaults := m.project.GetDefaultParams()
+
+	for _, p := range m.environment.Packages {
+		previwPackage := graphqlPackagetoPreviewPackage(p)
+		if defaultPackage, ok := defaults[p.Manifest.Slug]; ok {
+			// Check if we have params already, if not then use the default from the project
+			// This does not fill out all available fields, only ones set at the project level
+			if len(previwPackage.Params) == 0 {
+				previwPackage.Params = defaultPackage.Params
+			}
+		}
+		packages[p.Manifest.Slug] = previwPackage
+	}
+
+	return packages
+}
+
+func graphqlPackagetoPreviewPackage(in api.GetEnvironmentByIdEnvironmentPackagesPackage) api.PreviewPackage {
+	var transformedPackage api.PreviewPackage
+
+	transformedPackage.Params = in.Params
+
+	for _, remote := range in.GetRemoteReferences() {
+		r := api.RemoteRef{
+			ArtifactID: remote.Artifact.Id,
+			Field:      remote.Field,
+		}
+		transformedPackage.RemoteReferences = append(transformedPackage.RemoteReferences, r)
+	}
+
+	for _, secret := range in.GetSecretFields() {
+		s := api.Secret{
+			Name:     secret.Name,
+			Required: secret.Required,
+		}
+		transformedPackage.Secrets = append(transformedPackage.Secrets, s)
+	}
+
+	return transformedPackage
 }
 
 func (m Model) Init() tea.Cmd {
