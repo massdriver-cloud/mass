@@ -64,17 +64,20 @@ func init() {
 }
 
 func runPreviewInit(cmd *cobra.Command, args []string) error {
-	projectSlug := args[0]
+	envSlug := args[0]
 	config, configErr := config.Get()
 	if configErr != nil {
 		return configErr
 	}
+
 	client := api.NewClient(config.URL, config.APIKey)
 
-	initModel, _ := peinit.New(client, config.OrgID, projectSlug)
+	initModel, err := peinit.New(client, config.OrgID, envSlug)
+	if err != nil {
+		return err
+	}
 	p := tea.NewProgram(initModel)
 	result, err := p.Run()
-
 	if err != nil {
 		return err
 	}

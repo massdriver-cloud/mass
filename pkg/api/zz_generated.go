@@ -34,6 +34,313 @@ func (v *Credential) GetArtifactDefinitionType() string { return v.ArtifactDefin
 // GetArtifactId returns Credential.ArtifactId, and is useful for accessing the field via an interface.
 func (v *Credential) GetArtifactId() string { return v.ArtifactId }
 
+// GetEnvironmentByIdEnvironment includes the requested fields of the GraphQL type Environment.
+type GetEnvironmentByIdEnvironment struct {
+	Name     string                                         `json:"name"`
+	Slug     string                                         `json:"slug"`
+	Id       string                                         `json:"id"`
+	Project  GetEnvironmentByIdEnvironmentProject           `json:"project"`
+	Packages []GetEnvironmentByIdEnvironmentPackagesPackage `json:"packages"`
+}
+
+// GetName returns GetEnvironmentByIdEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironment) GetName() string { return v.Name }
+
+// GetSlug returns GetEnvironmentByIdEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironment) GetSlug() string { return v.Slug }
+
+// GetId returns GetEnvironmentByIdEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironment) GetId() string { return v.Id }
+
+// GetProject returns GetEnvironmentByIdEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironment) GetProject() GetEnvironmentByIdEnvironmentProject {
+	return v.Project
+}
+
+// GetPackages returns GetEnvironmentByIdEnvironment.Packages, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironment) GetPackages() []GetEnvironmentByIdEnvironmentPackagesPackage {
+	return v.Packages
+}
+
+// GetEnvironmentByIdEnvironmentPackagesPackage includes the requested fields of the GraphQL type Package.
+type GetEnvironmentByIdEnvironmentPackagesPackage struct {
+	Id string `json:"id"`
+	// Package configuration parameters
+	Params     map[string]interface{}                               `json:"-"`
+	NamePrefix string                                               `json:"namePrefix"`
+	Manifest   GetEnvironmentByIdEnvironmentPackagesPackageManifest `json:"manifest"`
+	// Artifacts from a remote source like another project or a resource not managed by massdriver
+	RemoteReferences []GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	// Secret configuration for application packages
+	SecretFields []GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField `json:"secretFields"`
+}
+
+// GetId returns GetEnvironmentByIdEnvironmentPackagesPackage.Id, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackage) GetId() string { return v.Id }
+
+// GetParams returns GetEnvironmentByIdEnvironmentPackagesPackage.Params, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackage) GetParams() map[string]interface{} {
+	return v.Params
+}
+
+// GetNamePrefix returns GetEnvironmentByIdEnvironmentPackagesPackage.NamePrefix, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackage) GetNamePrefix() string { return v.NamePrefix }
+
+// GetManifest returns GetEnvironmentByIdEnvironmentPackagesPackage.Manifest, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackage) GetManifest() GetEnvironmentByIdEnvironmentPackagesPackageManifest {
+	return v.Manifest
+}
+
+// GetRemoteReferences returns GetEnvironmentByIdEnvironmentPackagesPackage.RemoteReferences, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackage) GetRemoteReferences() []GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference {
+	return v.RemoteReferences
+}
+
+// GetSecretFields returns GetEnvironmentByIdEnvironmentPackagesPackage.SecretFields, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackage) GetSecretFields() []GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField {
+	return v.SecretFields
+}
+
+func (v *GetEnvironmentByIdEnvironmentPackagesPackage) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*GetEnvironmentByIdEnvironmentPackagesPackage
+		Params json.RawMessage `json:"params"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.GetEnvironmentByIdEnvironmentPackagesPackage = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Params
+		src := firstPass.Params
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal GetEnvironmentByIdEnvironmentPackagesPackage.Params: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalGetEnvironmentByIdEnvironmentPackagesPackage struct {
+	Id string `json:"id"`
+
+	Params json.RawMessage `json:"params"`
+
+	NamePrefix string `json:"namePrefix"`
+
+	Manifest GetEnvironmentByIdEnvironmentPackagesPackageManifest `json:"manifest"`
+
+	RemoteReferences []GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+
+	SecretFields []GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField `json:"secretFields"`
+}
+
+func (v *GetEnvironmentByIdEnvironmentPackagesPackage) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *GetEnvironmentByIdEnvironmentPackagesPackage) __premarshalJSON() (*__premarshalGetEnvironmentByIdEnvironmentPackagesPackage, error) {
+	var retval __premarshalGetEnvironmentByIdEnvironmentPackagesPackage
+
+	retval.Id = v.Id
+	{
+
+		dst := &retval.Params
+		src := v.Params
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal GetEnvironmentByIdEnvironmentPackagesPackage.Params: %w", err)
+		}
+	}
+	retval.NamePrefix = v.NamePrefix
+	retval.Manifest = v.Manifest
+	retval.RemoteReferences = v.RemoteReferences
+	retval.SecretFields = v.SecretFields
+	return &retval, nil
+}
+
+// GetEnvironmentByIdEnvironmentPackagesPackageManifest includes the requested fields of the GraphQL type Manifest.
+type GetEnvironmentByIdEnvironmentPackagesPackageManifest struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+// GetId returns GetEnvironmentByIdEnvironmentPackagesPackageManifest.Id, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackageManifest) GetId() string { return v.Id }
+
+// GetName returns GetEnvironmentByIdEnvironmentPackagesPackageManifest.Name, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackageManifest) GetName() string { return v.Name }
+
+// GetSlug returns GetEnvironmentByIdEnvironmentPackagesPackageManifest.Slug, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackageManifest) GetSlug() string { return v.Slug }
+
+// GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
+type GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference struct {
+	Artifact GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact `json:"artifact"`
+	Field    string                                                                              `json:"field"`
+}
+
+// GetArtifact returns GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference.Artifact, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference) GetArtifact() GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact {
+	return v.Artifact
+}
+
+// GetField returns GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference.Field, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference) GetField() string {
+	return v.Field
+}
+
+// GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact includes the requested fields of the GraphQL type Artifact.
+type GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact struct {
+	Id string `json:"id"`
+}
+
+// GetId returns GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Id, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetId() string {
+	return v.Id
+}
+
+// GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField includes the requested fields of the GraphQL type SecretField.
+// The GraphQL type's documentation follows.
+//
+// Application secret definitions. These fields are defined in your applications massdriver.yaml file.
+//
+// Secrets are only applied to `application` type bundles.
+type GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField struct {
+	// The name of the secret. Generally in the form of an environment variable.
+	Name string `json:"name"`
+	// Is the secret required?
+	Required bool `json:"required"`
+	// Is the secret a JSON object?
+	Json bool `json:"json"`
+}
+
+// GetName returns GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField.Name, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField) GetName() string {
+	return v.Name
+}
+
+// GetRequired returns GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField.Required, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField) GetRequired() bool {
+	return v.Required
+}
+
+// GetJson returns GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField.Json, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentPackagesPackageSecretFieldsSecretField) GetJson() bool {
+	return v.Json
+}
+
+// GetEnvironmentByIdEnvironmentProject includes the requested fields of the GraphQL type Project.
+type GetEnvironmentByIdEnvironmentProject struct {
+	Id            string                 `json:"id"`
+	DefaultParams map[string]interface{} `json:"-"`
+}
+
+// GetId returns GetEnvironmentByIdEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentProject) GetId() string { return v.Id }
+
+// GetDefaultParams returns GetEnvironmentByIdEnvironmentProject.DefaultParams, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdEnvironmentProject) GetDefaultParams() map[string]interface{} {
+	return v.DefaultParams
+}
+
+func (v *GetEnvironmentByIdEnvironmentProject) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*GetEnvironmentByIdEnvironmentProject
+		DefaultParams json.RawMessage `json:"defaultParams"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.GetEnvironmentByIdEnvironmentProject = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.DefaultParams
+		src := firstPass.DefaultParams
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"Unable to unmarshal GetEnvironmentByIdEnvironmentProject.DefaultParams: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalGetEnvironmentByIdEnvironmentProject struct {
+	Id string `json:"id"`
+
+	DefaultParams json.RawMessage `json:"defaultParams"`
+}
+
+func (v *GetEnvironmentByIdEnvironmentProject) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *GetEnvironmentByIdEnvironmentProject) __premarshalJSON() (*__premarshalGetEnvironmentByIdEnvironmentProject, error) {
+	var retval __premarshalGetEnvironmentByIdEnvironmentProject
+
+	retval.Id = v.Id
+	{
+
+		dst := &retval.DefaultParams
+		src := v.DefaultParams
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"Unable to marshal GetEnvironmentByIdEnvironmentProject.DefaultParams: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// GetEnvironmentByIdResponse is returned by GetEnvironmentById on success.
+type GetEnvironmentByIdResponse struct {
+	Environment GetEnvironmentByIdEnvironment `json:"environment"`
+}
+
+// GetEnvironment returns GetEnvironmentByIdResponse.Environment, and is useful for accessing the field via an interface.
+func (v *GetEnvironmentByIdResponse) GetEnvironment() GetEnvironmentByIdEnvironment {
+	return v.Environment
+}
+
 // MutationValidationError includes the requested fields of the GraphQL type ValidationMessage.
 // The GraphQL type's documentation follows.
 //
@@ -177,6 +484,18 @@ func (v *PreviewEnvironmentInput) __premarshalJSON() (*__premarshalPreviewEnviro
 	}
 	return &retval, nil
 }
+
+// __GetEnvironmentByIdInput is used internally by genqlient
+type __GetEnvironmentByIdInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __GetEnvironmentByIdInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__GetEnvironmentByIdInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __GetEnvironmentByIdInput.Id, and is useful for accessing the field via an interface.
+func (v *__GetEnvironmentByIdInput) GetId() string { return v.Id }
 
 // __configurePackageInput is used internally by genqlient
 type __configurePackageInput struct {
@@ -1317,6 +1636,67 @@ type getProjectByIdResponse struct {
 
 // GetProject returns getProjectByIdResponse.Project, and is useful for accessing the field via an interface.
 func (v *getProjectByIdResponse) GetProject() getProjectByIdProject { return v.Project }
+
+func GetEnvironmentById(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*GetEnvironmentByIdResponse, error) {
+	req := &graphql.Request{
+		OpName: "GetEnvironmentById",
+		Query: `
+query GetEnvironmentById ($organizationId: ID!, $id: ID!) {
+	environment(organizationId: $organizationId, id: $id) {
+		name
+		slug
+		id
+		project {
+			id
+			defaultParams
+		}
+		packages {
+			id
+			params
+			namePrefix
+			manifest {
+				id
+				name
+				slug
+			}
+			remoteReferences {
+				artifact {
+					id
+				}
+				field
+			}
+			secretFields {
+				name
+				required
+				json
+			}
+		}
+	}
+}
+`,
+		Variables: &__GetEnvironmentByIdInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data GetEnvironmentByIdResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
 
 func configurePackage(
 	ctx context.Context,

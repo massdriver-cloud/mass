@@ -1,6 +1,8 @@
 package initialize
 
 import (
+	"context"
+
 	"github.com/Khan/genqlient/graphql"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -10,11 +12,15 @@ import (
 )
 
 // New returns a new tea.Model for initializing a preview env config
-func New(client graphql.Client, orgID string, projectSlug string) (*Model, error) {
-	cmdLog := debuglog.Log().With().Str("orgID", orgID).Str("projectSlug", projectSlug).Logger()
+func New(client graphql.Client, orgID string, envSlug string) (*Model, error) {
+	cmdLog := debuglog.Log().With().Str("orgID", orgID).Str("envSlug", envSlug).Logger()
 	cmdLog.Info().Msg("Initializing preview environment.")
-	project, err := api.GetProject(client, orgID, projectSlug)
+	env, err := api.GetEnvironmentById(context.Background(), client, orgID, envSlug)
+	if err != nil {
+		return nil, err
+	}
 
+	project, err := api.GetProject(client, orgID, env.Environment.Project.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +51,7 @@ func New(client graphql.Client, orgID string, projectSlug string) (*Model, error
 	m := Model{
 		help:         help.New(),
 		project:      project,
+		environment:  &env.Environment,
 		keys:         keys,
 		promptCursor: -1,
 		artDefTable:  artDefTable,
@@ -52,6 +59,8 @@ func New(client graphql.Client, orgID string, projectSlug string) (*Model, error
 			return api.ListCredentials(client, orgID, artDefType)
 		},
 	}
+
+	m.help.ShowAll = true
 
 	return &m, nil
 }

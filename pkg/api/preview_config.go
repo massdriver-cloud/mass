@@ -17,8 +17,9 @@ type RemoteRef struct {
 	Field      string `json:"field"`
 }
 type Secret struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	Required bool   `json:"required"`
 }
 
 func (p *PreviewConfig) GetCredentials() []Credential {

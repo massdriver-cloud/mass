@@ -4,11 +4,11 @@ The preview environment config file should be checked into your source repositor
 
 **Examples:**
 
-`mass preview init $yourProjectSlug`
+`mass preview init $yourEnvironmentSlug/ID`
 
-`mass preview init ecomm`
+`mass preview init projectSlug-environmentSlug`
 
-`mass preview init ecomm --output path/to/my/preview.json`
+`mass preview init myProject-ecomm --output path/to/my/preview.json`
 
 ## Preview Environment Config Files
 

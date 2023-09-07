@@ -16,6 +16,39 @@ query getProjectById($organizationId: ID!, $id: ID!) {
   }
 }
 
+query GetEnvironmentById($organizationId: ID!, $id: ID!) {
+  environment(organizationId: $organizationId, id: $id) {
+    name
+    slug
+    id
+    project {
+      id
+      defaultParams
+    }
+    packages {
+      id
+      params
+      namePrefix
+      manifest {
+        id
+        name
+        slug
+      }
+      remoteReferences {
+        artifact {
+          id
+        }
+        field
+      }
+      secretFields{
+        name
+        required
+        json
+      }
+    }
+  }
+}
+
 query getDeploymentById($organizationId: ID!, $id: ID!) {
   deployment(organizationId: $organizationId, id: $id) {
     id
