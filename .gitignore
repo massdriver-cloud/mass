@@ -28,3 +28,5 @@ env
 event.json
 preview.demo.json
 TODO
+
+dist/

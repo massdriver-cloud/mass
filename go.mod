@@ -1,36 +1,36 @@
 module github.com/massdriver-cloud/mass
 
-go 1.19
-
-require (
-	github.com/Khan/genqlient v0.5.0
-	github.com/charmbracelet/bubbles v0.15.0
-	github.com/charmbracelet/bubbletea v0.23.2
-	github.com/charmbracelet/glamour v0.6.0
-	github.com/go-git/go-git/v5 v5.6.0
-	github.com/sethvargo/go-envconfig v0.9.0
-	github.com/spf13/afero v1.9.3
-	github.com/spf13/cobra v1.6.1
-	gopkg.in/yaml.v3 v3.0.1
-)
+go 1.21
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/BurntSushi/toml v1.2.1
+	github.com/Khan/genqlient v0.5.0
+	github.com/charmbracelet/bubbles v0.15.0
+	github.com/charmbracelet/bubbletea v0.23.2
+	github.com/charmbracelet/glamour v0.6.0
 	github.com/charmbracelet/lipgloss v0.6.0
 	github.com/docker/docker v23.0.1+incompatible
 	github.com/evertras/bubble-table v0.14.8
+	github.com/go-git/go-git/v5 v5.6.0
 	github.com/itchyny/gojq v0.12.12
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/liquid v1.2.4
 	github.com/massdriver-cloud/schema2json v0.0.2
+	github.com/moby/moby v24.0.5+incompatible
+	github.com/moby/term v0.0.0-20221205130635-1aeaba878587
 	github.com/rs/zerolog v1.29.0
+	github.com/sethvargo/go-envconfig v0.9.0
+	github.com/spf13/afero v1.9.3
+	github.com/spf13/cobra v1.6.1
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/mod v0.9.0
 	golang.org/x/text v0.8.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
+	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
@@ -42,7 +42,6 @@ require (
 	github.com/cloudflare/circl v1.3.2 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/containerd/containerd v1.7.0 // indirect
-	github.com/creack/pty v1.1.18 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -69,7 +68,6 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.21 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
-	github.com/moby/term v0.0.0-20221205130635-1aeaba878587 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230307104941-78d3738a59f2 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect

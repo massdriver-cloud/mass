@@ -5,12 +5,12 @@ import (
 	"path"
 	"strings"
 
-	"github.com/massdriver-cloud/mass/internal/bundle"
-	"github.com/massdriver-cloud/mass/internal/commands"
-	"github.com/massdriver-cloud/mass/internal/commands/publish"
-	"github.com/massdriver-cloud/mass/internal/config"
-	"github.com/massdriver-cloud/mass/internal/restclient"
-	"github.com/massdriver-cloud/mass/internal/templatecache"
+	"github.com/massdriver-cloud/mass/pkg/bundle"
+	"github.com/massdriver-cloud/mass/pkg/commands"
+	"github.com/massdriver-cloud/mass/pkg/commands/publish"
+	"github.com/massdriver-cloud/mass/pkg/config"
+	"github.com/massdriver-cloud/mass/pkg/restclient"
+	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -26,7 +26,7 @@ var templateRefreshCmdHelp = mustRenderHelpDoc("bundle/template-refresh")
 
 var bundleCmd = &cobra.Command{
 	Use:   "bundle",
-	Short: "Generate and publish bundles.",
+	Short: "Generate and publish bundles",
 	Long:  bundleCmdHelp,
 }
 

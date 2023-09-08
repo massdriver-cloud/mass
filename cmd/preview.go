@@ -5,12 +5,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/commands/preview_environment/decommission"
-	"github.com/massdriver-cloud/mass/internal/commands/preview_environment/deploy"
-	peinit "github.com/massdriver-cloud/mass/internal/commands/preview_environment/initialize"
-	"github.com/massdriver-cloud/mass/internal/config"
-	"github.com/massdriver-cloud/mass/internal/files"
+	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/decommission"
+	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/deploy"
+	peinit "github.com/massdriver-cloud/mass/pkg/commands/preview_environment/initialize"
+	"github.com/massdriver-cloud/mass/pkg/config"
+	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/spf13/cobra"
 )
 
@@ -38,11 +38,10 @@ var previewInitCmd = &cobra.Command{
 }
 
 var previewDeployCmd = &cobra.Command{
-	Use:   "deploy $projectSlug",
+	Use:   "deploy",
 	Short: "Deploys a preview environment in your project",
 	Long:  previewDeployCmdHelp,
 	RunE:  runPreviewDeploy,
-	Args:  cobra.ExactArgs(1),
 }
 
 var previewDecommissionCmd = &cobra.Command{
@@ -87,7 +86,6 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 }
 
 func runPreviewDeploy(cmd *cobra.Command, args []string) error {
-	projectSlug := args[0]
 	config, configErr := config.Get()
 	if configErr != nil {
 		return configErr
@@ -104,7 +102,7 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	env, err := deploy.Run(client, config.OrgID, projectSlug, &previewCfg, &ciContext)
+	env, err := deploy.Run(client, config.OrgID, previewCfg.ProjectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		return err

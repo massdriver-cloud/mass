@@ -1,0 +1,50 @@
+release:
+  # If set to auto, will mark the release as not ready for production in case there is an indicator for this in the
+  # tag e.g. v1.0.0-rc1 .If set to true, will mark the release as not ready for production.
+  prerelease: auto
+
+builds:
+  - id: linux-build
+    binary: mass
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags: &build-ldflags |
+      -X github.com/massdriver-cloud/mass/pkg/version.version={{.Version}}
+      -X github.com/massdriver-cloud/mass/pkg/version.gitSHA={{.FullCommit}}
+
+  - id: darwin-build
+    binary: mass
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags: *build-ldflags
+
+archives:
+  - id: linux-archives
+    builds:
+      - linux-build
+    name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+
+  - id: darwin-archives
+    builds:
+      - darwin-build
+    name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

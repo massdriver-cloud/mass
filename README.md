@@ -16,13 +16,11 @@ Official [GitHub actions](https://github.com/massdriver-cloud/actions) are also 
 
 Pre-built binaries for the Mass CLI are available in the [Releases](https://github.com/massdriver-cloud/mass/releases) section of this repository.
 
-<!--
 ### Homebrew
 
 ```sh
-brew install mass
+brew install massdriver
 ```
--->
 
 ### Go
 

@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/commands"
-	"github.com/massdriver-cloud/mass/internal/commands/package/configure"
-	"github.com/massdriver-cloud/mass/internal/commands/package/patch"
-	"github.com/massdriver-cloud/mass/internal/config"
-	"github.com/massdriver-cloud/mass/internal/files"
+	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/pkg/commands"
+	"github.com/massdriver-cloud/mass/pkg/commands/package/configure"
+	"github.com/massdriver-cloud/mass/pkg/commands/package/patch"
+	"github.com/massdriver-cloud/mass/pkg/config"
+	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ var infraConfigureCmdHelp = mustRenderHelpDoc("infrastructure/configure")
 var infraCmd = &cobra.Command{
 	Use:     "infrastructure",
 	Aliases: []string{"infra"},
-	Short:   "Manage infrastructure.",
+	Short:   "Manage infrastructure",
 	Long:    infraCmdHelp,
 }
 
