@@ -3,6 +3,7 @@ package terraform
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 )
 
 // transpile a JSON Schema to Terraform Variable Definition JSON
@@ -29,7 +30,18 @@ func makeTFVariablesFromProperties(properties map[string]interface{}, requiredPr
 	variables := map[string]TFVariable{}
 
 	for name, prop := range properties {
-		variables[name] = newTFVariable(prop.(map[string]interface{}), isRequired(requiredProperties, name))
+		property, ok := prop.(map[string]interface{})
+		if !ok {
+			// If we hit this something bad happened but it saves the panic and lets us continue
+			slog.Warn("Property failed conversion", "name", name, "property", prop)
+			continue
+		}
+		// Validate the property, if there are no keys or a type then skip it or we fail later
+		if len(property) == 0 || property["type"] == nil {
+			slog.Warn("Property does not have a valid type", "name", name, "property", prop)
+			continue
+		}
+		variables[name] = newTFVariable(property, isRequired(requiredProperties, name))
 	}
 
 	return variables
