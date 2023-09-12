@@ -3,8 +3,10 @@ package cmd
 import (
 	"fmt"
 	"path"
+	"sort"
 	"strings"
 
+	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/commands/publish"
@@ -118,10 +120,29 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	err := commands.RefreshTemplates(cache)
-
 	if err != nil {
 		return err
 	}
+
+	c, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
+	gqlclient := api.NewClient(c.URL, c.APIKey)
+
+	artifactDefs, err := api.GetArtifactDefinitions(gqlclient, c.OrgID)
+	if err != nil {
+		return err
+	}
+
+	var artifacts []string
+	for _, v := range artifactDefs {
+		artifacts = append(artifacts, v.Name)
+	}
+
+	sort.StringSlice(artifacts).Sort()
+
+	bundle.SetMassdriverArtifactDefinitions(artifacts)
 
 	templateData := &templatecache.TemplateData{
 		Access: "private",
