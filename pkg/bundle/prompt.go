@@ -15,55 +15,7 @@ import (
 var bundleTypeFormat = regexp.MustCompile(`^[a-z0-9-]{2,}`)
 var connectionNameFormat = regexp.MustCompile(`^[a-z]+[a-z0-9_]*[a-z0-9]+$`)
 
-var MassdriverArtifactDefinitions = []string{
-	// TODO: @coryodaniel Can you add the query we are using for the frontend flow so I can swap this out?
-	"massdriver/aws-api-gateway-rest-api",
-	"massdriver/aws-ecs-cluster",
-	"massdriver/aws-dynamodb-table",
-	"massdriver/aws-dynamodb-stream",
-	"massdriver/aws-efs-file-system",
-	"massdriver/aws-eventbridge",
-	"massdriver/aws-eventbridge-rule",
-	"massdriver/aws-iam-role",
-	"massdriver/aws-lambda-function",
-	"massdriver/aws-s3-bucket",
-	"massdriver/aws-sns-topic",
-	"massdriver/aws-sqs-queue",
-	"massdriver/aws-vpc",
-	"massdriver/azure-cognitive-service-language",
-	"massdriver/azure-cognitive-service-openai",
-	"massdriver/azure-communication-service",
-	"massdriver/azure-databricks-workspace",
-	"massdriver/azure-event-hubs",
-	"massdriver/azure-fhir-service",
-	"massdriver/azure-machine-learning-workspace",
-	"massdriver/azure-service-principal",
-	"massdriver/azure-storage-account-blob",
-	"massdriver/azure-storage-account-data-lake",
-	"massdriver/azure-virtual-network",
-	"massdriver/cosmosdb-sql-authentication",
-	"massdriver/elasticsearch-authentication",
-	"massdriver/gcp-bucket-https",
-	"massdriver/gcp-cloud-function",
-	"massdriver/gcp-cloud-tasks-queue",
-	"massdriver/gcp-firebase-authentication",
-	"massdriver/gcp-gcs-bucket",
-	"massdriver/gcp-global-network",
-	"massdriver/gcp-pubsub-subscription",
-	"massdriver/gcp-pubsub-topic",
-	"massdriver/gcp-service-account",
-	"massdriver/gcp-subnetwork",
-	"massdriver/cosmosdb-sql-authentication",
-	"massdriver/kafka-authentication",
-	"massdriver/kubernetes-cluster",
-	"massdriver/machine-learning-workspace",
-	"massdriver/mongo-authentication",
-	"massdriver/mysql-authentication",
-	"massdriver/opensearch-authentication",
-	"massdriver/postgresql-authentication",
-	"massdriver/redis-authentication",
-	"massdriver/sftp-authentication",
-}
+var massdriverArtifactDefinitions []string
 
 var promptsNew = []func(t *templatecache.TemplateData) error{
 	getName,
@@ -71,6 +23,11 @@ var promptsNew = []func(t *templatecache.TemplateData) error{
 	getTemplate,
 	GetConnections,
 	getOutputDir,
+}
+
+// SetMassdriverArtifactDefinitions sets the defs used to specify connections in a bundle
+func SetMassdriverArtifactDefinitions(in []string) {
+	massdriverArtifactDefinitions = in
 }
 
 func RunPromptNew(t *templatecache.TemplateData) error {
@@ -167,11 +124,10 @@ func GetConnections(t *templatecache.TemplateData) error {
 	var selectedDeps []string
 	multiselect := &survey.MultiSelect{
 		Message: "What connections do you need?\n  If you don't need any, just hit enter or select (None)\n",
-		Options: append([]string{none}, MassdriverArtifactDefinitions...),
+		Options: append([]string{none}, massdriverArtifactDefinitions...),
 	}
 
 	err := survey.AskOne(multiselect, &selectedDeps)
-
 	if err != nil {
 		return err
 	}
@@ -201,7 +157,6 @@ func GetConnections(t *templatecache.TemplateData) error {
 		}
 
 		result, errName := prompt.Run()
-
 		if errName != nil {
 			return errName
 		}
