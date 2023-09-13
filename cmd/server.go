@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"syscall"
 	"time"
 
@@ -26,6 +27,7 @@ func NewCmdServer() *cobra.Command {
 	}
 
 	cmd.Flags().StringP("port", "p", "", "port for the server to listen on")
+	cmd.Flags().StringP("directory", "d", "", "directory for the massdriver bundle, will default to the directory the server is ran from")
 
 	return cmd
 }
@@ -42,6 +44,19 @@ func runServer(cmd *cobra.Command) {
 		}
 	}()
 
+	dir, err := cmd.Flags().GetString("directory")
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
+	// Check we have a massdriver.yaml file available, if not error out.
+	_, err = os.Stat(path.Join(dir, "massdriver.yaml"))
+	if err != nil {
+		slog.Error("massdriver.yaml file is not available in the specified directory")
+		os.Exit(1)
+	}
+
 	port, err := cmd.Flags().GetString("port")
 	if err != nil {
 		fmt.Println(err)
@@ -54,7 +69,7 @@ func runServer(cmd *cobra.Command) {
 	}
 
 	// Setup our single handler
-	server.RegisterServerHandler()
+	server.RegisterServerHandler(dir)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:"+port)
 	if err != nil {

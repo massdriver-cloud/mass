@@ -16,9 +16,11 @@ var (
 )
 
 // RegisterServerHandler registers with the DefaultServeMux to handle requests
-func RegisterServerHandler() {
+func RegisterServerHandler(dir string) {
 	// Register a FileServer that will give access to the assets dir
-	http.Handle("/site/assets/", http.FileServer(http.FS(res)))
+	// http.Handle("/site/assets/", http.FileServer(http.FS(res)))
+
+	http.Handle("/", http.FileServer(http.Dir(dir)))
 
 	// Register the handler func to serve the html page
 	http.HandleFunc("/hello-agent", func(w http.ResponseWriter, r *http.Request) {
