@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"path"
 	"sort"
 	"strings"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 var bundleCmdHelp = mustRenderHelpDoc("bundle")
@@ -96,6 +94,9 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	templateList, err := commands.ListTemplates(cache)
+	if err != nil {
+		return err
+	}
 	// TODO: BubbleTea a nice data grid for this. Repo title row with template list sub rows.
 
 	view := ""
@@ -105,15 +106,14 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println(view)
-	return err
+	return nil
 }
 
 func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
-	err := commands.RefreshTemplates(cache)
 
-	return err
+	return commands.RefreshTemplates(cache)
 }
 
 func runBundleNew(cmd *cobra.Command, args []string) error {
@@ -153,13 +153,11 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 	}
 
 	err = bundle.RunPromptNew(templateData)
-
 	if err != nil {
 		return err
 	}
 
 	err = commands.GenerateNewBundle(cache, templateData)
-
 	if err != nil {
 		return err
 	}
@@ -171,13 +169,11 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
-
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
-
+	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
 	if err != nil {
 		return err
 	}
@@ -197,13 +193,11 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
-
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
-
+	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
 	if err != nil {
 		return err
 	}
@@ -211,7 +205,6 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
 	err = unmarshalledBundle.DereferenceSchemas(buildDirectory, c, fs)
-
 	if err != nil {
 		return err
 	}
@@ -228,13 +221,11 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
-
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
-
+	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
 	if err != nil {
 		return err
 	}
@@ -242,7 +233,6 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
 	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
-
 	if err != nil {
 		return err
 	}
@@ -250,17 +240,8 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	return publish.Run(unmarshalledBundle, c, fs, buildDirectory)
 }
 
-func unmarshalBundle(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bundle.Bundle, error) {
-	file, err := afero.ReadFile(fs, path.Join(readDirectory, "massdriver.yaml"))
-
-	if err != nil {
-		return nil, err
-	}
-
-	unmarshalledBundle := &bundle.Bundle{}
-
-	err = yaml.Unmarshal(file, unmarshalledBundle)
-
+func unmarshalBundleandApplyDefaults(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bundle.Bundle, error) {
+	unmarshalledBundle, err := bundle.UnmarshalBundle(readDirectory, fs)
 	if err != nil {
 		return nil, err
 	}
@@ -268,29 +249,14 @@ func unmarshalBundle(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bu
 	applyOverrides(unmarshalledBundle, cmd)
 
 	if unmarshalledBundle.IsApplication() {
-		applyAppBlockDefaults(unmarshalledBundle)
+		bundle.ApplyAppBlockDefaults(unmarshalledBundle)
 	}
 
 	return unmarshalledBundle, nil
 }
 
-func applyAppBlockDefaults(b *bundle.Bundle) {
-	if b.AppSpec != nil {
-		if b.AppSpec.Envs == nil {
-			b.AppSpec.Envs = map[string]string{}
-		}
-		if b.AppSpec.Policies == nil {
-			b.AppSpec.Policies = []string{}
-		}
-		if b.AppSpec.Secrets == nil {
-			b.AppSpec.Secrets = map[string]bundle.Secret{}
-		}
-	}
-}
-
 func applyOverrides(bundle *bundle.Bundle, cmd *cobra.Command) {
 	access, err := cmd.Flags().GetString("access")
-
 	if err == nil {
 		bundle.Access = access
 	}
