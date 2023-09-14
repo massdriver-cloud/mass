@@ -3,12 +3,20 @@ package bundle
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"net/http"
+	"path"
 	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/spf13/afero"
+	"gopkg.in/yaml.v2"
 )
 
+type Handler struct {
+	Bundle Bundle
+	fs     afero.Fs
+}
 type Step struct {
 	Path        string `json:"path" yaml:"path"`
 	Provisioner string `json:"provisioner" yaml:"provisioner"`
@@ -110,4 +118,57 @@ func checkForOperatorGuideAndSetValue(path string, body *restclient.PublishPost,
 	}
 
 	return nil
+}
+
+func UnmarshalBundle(readDirectory string, fs afero.Fs) (*Bundle, error) {
+	file, err := afero.ReadFile(fs, path.Join(readDirectory, "massdriver.yaml"))
+	if err != nil {
+		return nil, err
+	}
+
+	unmarshalledBundle := &Bundle{}
+
+	err = yaml.Unmarshal(file, unmarshalledBundle)
+	if err != nil {
+		return nil, err
+	}
+
+	return unmarshalledBundle, nil
+}
+
+func ApplyAppBlockDefaults(b *Bundle) {
+	if b.AppSpec != nil {
+		if b.AppSpec.Envs == nil {
+			b.AppSpec.Envs = map[string]string{}
+		}
+		if b.AppSpec.Policies == nil {
+			b.AppSpec.Policies = []string{}
+		}
+		if b.AppSpec.Secrets == nil {
+			b.AppSpec.Secrets = map[string]Secret{}
+		}
+	}
+}
+
+func NewHandler(dir string) (*Handler, error) {
+	fs := afero.NewOsFs()
+	bundle, err := UnmarshalBundle(dir, fs)
+	if err != nil {
+		return nil, err
+	}
+	ApplyAppBlockDefaults(bundle)
+	return &Handler{Bundle: *bundle, fs: fs}, nil
+}
+
+func (b *Handler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
+	out, err := json.Marshal(b.Bundle.AppSpec.Secrets)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(out)
+	if err != nil {
+		slog.Error(err.Error())
+	}
 }

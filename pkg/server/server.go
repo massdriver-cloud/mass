@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/proxy"
 )
 
@@ -24,7 +25,7 @@ func RegisterServerHandler(dir string) {
 	// Register a FileServer that will give access to the assets dir
 	// http.Handle("/site/assets/", http.FileServer(http.FS(res)))
 
-	http.Handle("/", http.FileServer(http.Dir(dir)))
+	http.Handle("/", originHeaderMiddleware(http.FileServer(http.Dir(dir))))
 
 	// Register the handler func to serve the html page
 	http.HandleFunc("/hello-agent", func(w http.ResponseWriter, r *http.Request) {
@@ -55,5 +56,20 @@ func RegisterServerHandler(dir string) {
 		os.Exit(1)
 	}
 
-	http.Handle("/proxy/", proxy)
+	http.Handle("/proxy/", originHeaderMiddleware(proxy))
+
+	bundleHandler, err := bundle.NewHandler(dir)
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
+	http.Handle("/bundle/secrets", originHeaderMiddleware(bundleHandler))
+}
+
+func originHeaderMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		next.ServeHTTP(w, r)
+	})
 }
