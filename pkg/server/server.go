@@ -4,7 +4,11 @@ import (
 	"embed"
 	"html/template"
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
+
+	"github.com/massdriver-cloud/mass/pkg/proxy"
 )
 
 var (
@@ -44,4 +48,12 @@ func RegisterServerHandler(dir string) {
 			return
 		}
 	})
+
+	proxy, err := proxy.New("https://api.massdriver.cloud")
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
+	http.Handle("/proxy/", proxy)
 }
