@@ -8,12 +8,15 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/massdriver-cloud/mass/pkg/server"
 	"github.com/spf13/cobra"
 )
+
+var programLevel = new(slog.LevelVar) // Info by default
 
 func NewCmdServer() *cobra.Command {
 	cmd := &cobra.Command{
@@ -28,11 +31,19 @@ func NewCmdServer() *cobra.Command {
 
 	cmd.Flags().StringP("port", "p", "", "port for the server to listen on")
 	cmd.Flags().StringP("directory", "d", "", "directory for the massdriver bundle, will default to the directory the server is ran from")
+	cmd.Flags().String("log-level", "info", "Set the log level for the server. Options are [debug, info, warn, error]")
 
 	return cmd
 }
 
 func runServer(cmd *cobra.Command) {
+	logLevel, err := cmd.Flags().GetString("log-level")
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+	setupLogging(logLevel)
+
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -84,4 +95,22 @@ func runServer(cmd *cobra.Command) {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
+}
+
+func setupLogging(level string) {
+	switch strings.ToLower(level) {
+	case "debug":
+		programLevel.Set(slog.LevelDebug)
+	case "info":
+		programLevel.Set(slog.LevelInfo)
+	case "warn":
+		programLevel.Set(slog.LevelWarn)
+	case "error":
+		programLevel.Set(slog.LevelError)
+	default:
+		slog.Info("Unknown log level, setting to INFO", "level", level)
+	}
+
+	h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
+	slog.SetDefault(slog.New(h))
 }
