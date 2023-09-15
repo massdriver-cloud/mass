@@ -21,6 +21,7 @@ mass
 .vscode
 bin
 mass
+/massdriver/
 
 .DS_Store
 preview.json
