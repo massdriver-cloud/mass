@@ -11,7 +11,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/spf13/afero"
-	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/yaml"
 )
 
 var expectedSchemaContents = map[string][]byte{

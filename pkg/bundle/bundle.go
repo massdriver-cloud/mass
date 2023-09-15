@@ -10,7 +10,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/spf13/afero"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 type Handler struct {
