@@ -13,54 +13,54 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var appParamsPath = "./params.json"
-var appPatchQueries []string
-var appCmdHelp = mustRenderHelpDoc("application")
-var appDeployCmdHelp = mustRenderHelpDoc("application/deploy")
-var appPatchCmdHelp = mustRenderHelpDoc("application/patch")
-var appConfigureCmdHelp = mustRenderHelpDoc("application/configure")
+var (
+	appParamsPath   = "./params.json"
+	appPatchQueries []string
+)
 
-var appCmd = &cobra.Command{
-	Use:     "application",
-	Aliases: []string{"app"},
-	Short:   "Manage applications",
-	Long:    appCmdHelp,
-}
+func NewCmdApp() *cobra.Command {
+	appCmd := &cobra.Command{
+		Use:     "application",
+		Aliases: []string{"app"},
+		Short:   "Manage applications",
+		Long:    mustRenderHelpDoc("application"),
+	}
 
-var appDeployCmd = &cobra.Command{
-	Use:   `deploy <project>-<target>-<manifest>`,
-	Short: "Deploy applications",
-	Long:  appDeployCmdHelp,
-	Args:  cobra.ExactArgs(1),
-	RunE:  runAppDeploy,
-}
+	appDeployCmd := &cobra.Command{
+		Use:   `deploy <project>-<target>-<manifest>`,
+		Short: "Deploy applications",
+		Long:  mustRenderHelpDoc("application/deploy"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runAppDeploy,
+	}
 
-var appConfigureCmd = &cobra.Command{
-	Use:     `configure <project>-<target>-<manifest>`,
-	Short:   "Configure application",
-	Aliases: []string{"cfg"},
-	Long:    appConfigureCmdHelp,
-	Args:    cobra.ExactArgs(1),
-	RunE:    runAppConfigure,
-}
+	appConfigureCmd := &cobra.Command{
+		Use:     `configure <project>-<target>-<manifest>`,
+		Short:   "Configure application",
+		Aliases: []string{"cfg"},
+		Long:    mustRenderHelpDoc("application/configure"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runAppConfigure,
+	}
 
-var appPatchCmd = &cobra.Command{
-	Use:     `patch <project>-<target>-<manifest>`,
-	Short:   "Patch individual package parameter values",
-	Aliases: []string{"cfg"},
-	Long:    appPatchCmdHelp,
-	Args:    cobra.ExactArgs(1),
-	RunE:    runAppPatch,
-}
+	appConfigureCmd.Flags().StringVarP(&appParamsPath, "params", "p", appParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 
-func init() {
-	rootCmd.AddCommand(appCmd)
+	appPatchCmd := &cobra.Command{
+		Use:     `patch <project>-<target>-<manifest>`,
+		Short:   "Patch individual package parameter values",
+		Aliases: []string{"cfg"},
+		Long:    mustRenderHelpDoc("application/patch"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runAppPatch,
+	}
+
+	appPatchCmd.Flags().StringArrayVarP(&appPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
+
 	appCmd.AddCommand(appDeployCmd)
 	appCmd.AddCommand(appConfigureCmd)
 	appCmd.AddCommand(appPatchCmd)
 
-	appConfigureCmd.Flags().StringVarP(&appParamsPath, "params", "p", appParamsPath, "Path to params JSON file. This file supports bash interpolation.")
-	appPatchCmd.Flags().StringArrayVarP(&appPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
+	return appCmd
 }
 
 func runAppDeploy(cmd *cobra.Command, args []string) error {
