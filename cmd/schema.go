@@ -8,27 +8,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var schemaCmdHelp = mustRenderHelpDoc("schema")
-var schemaValidateCmdHelp = mustRenderHelpDoc("schema/validate")
-var schemaCmd = &cobra.Command{
-	Use:   "schema",
-	Short: "Manage JSON Schemas",
-	Long:  schemaCmdHelp,
-}
+func NewCmdSchema() *cobra.Command {
+	schemaCmd := &cobra.Command{
+		Use:   "schema",
+		Short: "Manage JSON Schemas",
+		Long:  mustRenderHelpDoc("schema"),
+	}
 
-var schemaValidateCmd = &cobra.Command{
-	Use:   "validate",
-	Short: "Validates a JSON document against a JSON Schema",
-	Long:  schemaValidateCmdHelp,
-	RunE:  runSchemaValidate,
-}
-
-func init() {
-	rootCmd.AddCommand(schemaCmd)
-	schemaCmd.AddCommand(schemaValidateCmd)
-
+	schemaValidateCmd := &cobra.Command{
+		Use:   "validate",
+		Short: "Validates a JSON document against a JSON Schema",
+		Long:  mustRenderHelpDoc("schema/validate"),
+		RunE:  runSchemaValidate,
+	}
 	schemaValidateCmd.Flags().StringP("document", "d", "document.json", "Path to JSON document")
 	schemaValidateCmd.Flags().StringP("schema", "s", "./schema.json", "Path to JSON Schema")
+
+	schemaCmd.AddCommand(schemaValidateCmd)
+
+	return schemaCmd
 }
 
 func runSchemaValidate(cmd *cobra.Command, args []string) error {

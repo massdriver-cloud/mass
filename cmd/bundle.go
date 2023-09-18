@@ -16,78 +16,71 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var bundleCmdHelp = mustRenderHelpDoc("bundle")
+func NewCmdBundle() *cobra.Command {
+	bundleCmd := &cobra.Command{
+		Use:   "bundle",
+		Short: "Generate and publish bundles",
+		Long:  mustRenderHelpDoc("bundle"),
+	}
 
-var bundleTemplateCmdHelp = mustRenderHelpDoc("bundle/template")
+	bundleBuildCmd := &cobra.Command{
+		Use:   "build",
+		Short: "Build schemas from massdriver.yaml file",
+		RunE:  runBundleBuild,
+	}
+	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
-var templateListCmdHelp = mustRenderHelpDoc("bundle/template-list")
+	bundleLintCmd := &cobra.Command{
+		Use:          "lint",
+		Short:        "Check massdriver.yaml file for common errors",
+		SilenceUsage: true,
+		RunE:         runBundleLint,
+	}
+	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
-var templateRefreshCmdHelp = mustRenderHelpDoc("bundle/template-refresh")
+	bundleNewCmd := &cobra.Command{
+		Use:   "new",
+		Short: "Create a new bundle from a template",
+		RunE:  runBundleNew,
+	}
 
-var bundleCmd = &cobra.Command{
-	Use:   "bundle",
-	Short: "Generate and publish bundles",
-	Long:  bundleCmdHelp,
-}
+	bundlePublishCmd := &cobra.Command{
+		Use:   "publish",
+		Short: "Publish bundle to Massdriver's package manager",
+		RunE:  runBundlePublish,
+	}
+	bundlePublishCmd.Flags().String("access", "private", "Override the access, useful in CI for deploying to sandboxes.")
+	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
-var bundleTemplateCmd = &cobra.Command{
-	Use:   "template",
-	Short: "Application template development tools",
-	Long:  bundleTemplateCmdHelp,
-}
+	bundleTemplateCmd := &cobra.Command{
+		Use:   "template",
+		Short: "Application template development tools",
+		Long:  mustRenderHelpDoc("bundle/template"),
+	}
 
-var bundleTemplateListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List bundle templates",
-	Long:  templateListCmdHelp,
-	RunE:  runBundleTemplateList,
-}
+	bundleTemplateListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List bundle templates",
+		Long:  mustRenderHelpDoc("bundle/template-list"),
+		RunE:  runBundleTemplateList,
+	}
 
-var bundleTemplateRefreshCmd = &cobra.Command{
-	Use:   "refresh",
-	Short: "Update template list from the official Massdriver Github",
-	Long:  templateRefreshCmdHelp,
-	RunE:  runBundleTemplateRefresh,
-}
+	bundleTemplateRefreshCmd := &cobra.Command{
+		Use:   "refresh",
+		Short: "Update template list from the official Massdriver Github",
+		Long:  mustRenderHelpDoc("bundle/template-refresh"),
+		RunE:  runBundleTemplateRefresh,
+	}
 
-var bundleNewCmd = &cobra.Command{
-	Use:   "new",
-	Short: "Create a new bundle from a template",
-	RunE:  runBundleNew,
-}
-
-var bundleBuildCmd = &cobra.Command{
-	Use:   "build",
-	Short: "Build schemas from massdriver.yaml file",
-	RunE:  runBundleBuild,
-}
-
-var bundleLintCmd = &cobra.Command{
-	Use:          "lint",
-	Short:        "Check massdriver.yaml file for common errors",
-	SilenceUsage: true,
-	RunE:         runBundleLint,
-}
-
-var bundlePublishCmd = &cobra.Command{
-	Use:   "publish",
-	Short: "Publish bundle to Massdriver's package manager",
-	RunE:  runBundlePublish,
-}
-
-func init() {
-	rootCmd.AddCommand(bundleCmd)
+	bundleCmd.AddCommand(bundleBuildCmd)
+	bundleCmd.AddCommand(bundleLintCmd)
 	bundleCmd.AddCommand(bundleNewCmd)
+	bundleCmd.AddCommand(bundlePublishCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
-	bundleCmd.AddCommand(bundleBuildCmd)
-	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
-	bundleCmd.AddCommand(bundleLintCmd)
-	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
-	bundleCmd.AddCommand(bundlePublishCmd)
-	bundlePublishCmd.Flags().String("access", "private", "Override the access, useful in CI for deploying to sandboxes.")
-	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+
+	return bundleCmd
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {

@@ -10,31 +10,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var imagePushCmdHelp = mustRenderHelpDoc("image/push")
-
 type PushFlag struct {
 	Flag      string
 	Attribute *string
 }
 
-var imageCmd = &cobra.Command{
-	Use:   "image",
-	Short: "Container image integration Massdriver",
-}
-
-var imagePushCmd = &cobra.Command{
-	Use:   "push <namespace>/<image-name>",
-	Short: "Push an image to ECR, ACR or GAR",
-	Long:  imagePushCmdHelp,
-	RunE:  runImagePush,
-	Args:  cobra.ExactArgs(1),
-}
-
 var pushInput = image.PushImageInput{}
 
-func init() {
-	rootCmd.AddCommand(imageCmd)
-	imageCmd.AddCommand(imagePushCmd)
+func NewCmdImage() *cobra.Command {
+	imageCmd := &cobra.Command{
+		Use:   "image",
+		Short: "Container image integration Massdriver",
+	}
+
+	imagePushCmd := &cobra.Command{
+		Use:   "push <namespace>/<image-name>",
+		Short: "Push an image to ECR, ACR or GAR",
+		Long:  mustRenderHelpDoc("image/push"),
+		RunE:  runImagePush,
+		Args:  cobra.ExactArgs(1),
+	}
 	imagePushCmd.Flags().StringVarP(&pushInput.DockerBuildContext, "build-context", "b", ".", "Path to the directory to build the image from")
 	imagePushCmd.Flags().StringVarP(&pushInput.Dockerfile, "dockerfile", "f", "Dockerfile", "Name of the dockerfile to build from if you have named it anything other than Dockerfile")
 	imagePushCmd.Flags().StringSliceVarP(&pushInput.Tags, "image-tag", "t", []string{"latest"}, "Unique identifier for this version of the image")
@@ -44,6 +39,10 @@ func init() {
 	_ = imagePushCmd.MarkFlagRequired("region")
 	imagePushCmd.Flags().StringVarP(&pushInput.TargetPlatform, "platform", "p", "linux/amd64", "Set platform if server is multi-platform capable")
 	imagePushCmd.Flags().StringVarP(&pushInput.CacheFrom, "cache-from", "c", "", "Path to image used for caching")
+
+	imageCmd.AddCommand(imagePushCmd)
+
+	return imageCmd
 }
 
 func runImagePush(cmd *cobra.Command, args []string) error {

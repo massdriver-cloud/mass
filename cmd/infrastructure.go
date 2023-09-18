@@ -13,54 +13,52 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var infraParamsPath = "./params.json"
-var infraPatchQueries []string
-var infraCmdHelp = mustRenderHelpDoc("infrastructure")
-var infraDeployCmdHelp = mustRenderHelpDoc("infrastructure/deploy")
-var infraPatchCmdHelp = mustRenderHelpDoc("infrastructure/patch")
-var infraConfigureCmdHelp = mustRenderHelpDoc("infrastructure/configure")
+var (
+	infraParamsPath   = "./params.json"
+	infraPatchQueries []string
+)
 
-var infraCmd = &cobra.Command{
-	Use:     "infrastructure",
-	Aliases: []string{"infra"},
-	Short:   "Manage infrastructure",
-	Long:    infraCmdHelp,
-}
+func NewCmdInfra() *cobra.Command {
+	infraCmd := &cobra.Command{
+		Use:     "infrastructure",
+		Aliases: []string{"infra"},
+		Short:   "Manage infrastructure",
+		Long:    mustRenderHelpDoc("infrastructure"),
+	}
 
-var infraDeployCmd = &cobra.Command{
-	Use:   `deploy <project>-<target>-<manifest>`,
-	Short: "Deploy infrastructure",
-	Long:  infraDeployCmdHelp,
-	Args:  cobra.ExactArgs(1),
-	RunE:  runInfraDeploy,
-}
+	infraConfigureCmd := &cobra.Command{
+		Use:     `configure <project>-<target>-<manifest>`,
+		Short:   "Configure infrastructure",
+		Aliases: []string{"cfg"},
+		Long:    mustRenderHelpDoc("infrastructure/configure"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runInfraConfigure,
+	}
+	infraConfigureCmd.Flags().StringVarP(&infraParamsPath, "params", "p", infraParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 
-var infraConfigureCmd = &cobra.Command{
-	Use:     `configure <project>-<target>-<manifest>`,
-	Short:   "Configure infrastructure",
-	Aliases: []string{"cfg"},
-	Long:    infraConfigureCmdHelp,
-	Args:    cobra.ExactArgs(1),
-	RunE:    runInfraConfigure,
-}
+	infraDeployCmd := &cobra.Command{
+		Use:   `deploy <project>-<target>-<manifest>`,
+		Short: "Deploy infrastructure",
+		Long:  mustRenderHelpDoc("infrastructure/deploy"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runInfraDeploy,
+	}
 
-var infraPatchCmd = &cobra.Command{
-	Use:     `patch <project>-<target>-<manifest>`,
-	Short:   "Patch individual package parameter values",
-	Aliases: []string{"cfg"},
-	Long:    infraPatchCmdHelp,
-	Args:    cobra.ExactArgs(1),
-	RunE:    runInfraPatch,
-}
+	infraPatchCmd := &cobra.Command{
+		Use:     `patch <project>-<target>-<manifest>`,
+		Short:   "Patch individual package parameter values",
+		Aliases: []string{"cfg"},
+		Long:    mustRenderHelpDoc("infrastructure/patch"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runInfraPatch,
+	}
+	infraPatchCmd.Flags().StringArrayVarP(&infraPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 
-func init() {
-	rootCmd.AddCommand(infraCmd)
-	infraCmd.AddCommand(infraDeployCmd)
 	infraCmd.AddCommand(infraConfigureCmd)
+	infraCmd.AddCommand(infraDeployCmd)
 	infraCmd.AddCommand(infraPatchCmd)
 
-	infraConfigureCmd.Flags().StringVarP(&infraParamsPath, "params", "p", infraParamsPath, "Path to params JSON file. This file supports bash interpolation.")
-	infraPatchCmd.Flags().StringArrayVarP(&infraPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
+	return infraCmd
 }
 
 func runInfraDeploy(cmd *cobra.Command, args []string) error {

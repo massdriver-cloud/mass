@@ -1,6 +1,7 @@
 package version
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -31,8 +32,13 @@ func SetVersion(setVersion string) {
 	version = setVersion
 }
 
-var GetLatestVersion = func() (string, error) {
-	resp, err := http.Get(LatestReleaseURL)
+func GetLatestVersion() (string, error) {
+	ctx := context.Background()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, LatestReleaseURL, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -44,12 +50,9 @@ var GetLatestVersion = func() (string, error) {
 	return latestVersion, nil
 }
 
-func CheckForNewerVersionAvailable() (bool, string, error) {
+func CheckForNewerVersionAvailable(latestVersion string) (bool, string) {
 	currentVersion := version
-	latestVersion, err := GetLatestVersion()
-	if err != nil {
-		return false, "", err
-	}
+
 	// semver requires a "v" prefix (v1.0.0 not 1.0.0), so add prefix if missing
 	if !strings.HasPrefix(currentVersion, "v") {
 		currentVersion = "v" + currentVersion
@@ -59,7 +62,7 @@ func CheckForNewerVersionAvailable() (bool, string, error) {
 	}
 
 	if semver.Compare(currentVersion, latestVersion) < 0 {
-		return true, latestVersion, nil
+		return true, latestVersion
 	}
-	return false, latestVersion, nil
+	return false, latestVersion
 }
