@@ -46,7 +46,6 @@ func runProjList(cmd *cobra.Command, args []string) error {
 	fmt.Fprintln(w, "ID\tNAME\tSLUG")
 
 	for _, project := range *projects {
-		fmt.Printf("Project: %s\n", project.Name)
 		line := fmt.Sprintf("%s\t%s\t%s", project.ID, project.Name, project.Slug)
 		fmt.Fprintln(w, line)
 	}
