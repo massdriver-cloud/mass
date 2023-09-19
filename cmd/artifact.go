@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/artifact"
 	"github.com/massdriver-cloud/mass/pkg/commands"
@@ -13,14 +14,14 @@ func NewCmdArtifact() *cobra.Command {
 	artifactCmd := &cobra.Command{
 		Use:   "artifact",
 		Short: "Manage artifacts",
-		Long:  mustRenderHelpDoc("artifact"),
+		Long:  helpdocs.MustRender("artifact"),
 	}
 
 	// Import
 	artifactImportCmd := &cobra.Command{
 		Use:   `import`,
 		Short: "Import a custom artifact",
-		Long:  mustRenderHelpDoc("artifact/import"),
+		Long:  helpdocs.MustRender("artifact/import"),
 		RunE:  runArtifactImport,
 	}
 	artifactImportCmd.Flags().StringP("name", "n", "", "Artifact name")

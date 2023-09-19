@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/image"
 	"github.com/massdriver-cloud/mass/pkg/config"
@@ -26,7 +27,7 @@ func NewCmdImage() *cobra.Command {
 	imagePushCmd := &cobra.Command{
 		Use:   "push <namespace>/<image-name>",
 		Short: "Push an image to ECR, ACR or GAR",
-		Long:  mustRenderHelpDoc("image/push"),
+		Long:  helpdocs.MustRender("image/push"),
 		RunE:  runImagePush,
 		Args:  cobra.ExactArgs(1),
 	}

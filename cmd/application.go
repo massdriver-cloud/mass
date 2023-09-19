@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/commands/package/configure"
@@ -23,13 +24,13 @@ func NewCmdApp() *cobra.Command {
 		Use:     "application",
 		Aliases: []string{"app"},
 		Short:   "Manage applications",
-		Long:    mustRenderHelpDoc("application"),
+		Long:    helpdocs.MustRender("application"),
 	}
 
 	appDeployCmd := &cobra.Command{
 		Use:   `deploy <project>-<target>-<manifest>`,
 		Short: "Deploy applications",
-		Long:  mustRenderHelpDoc("application/deploy"),
+		Long:  helpdocs.MustRender("application/deploy"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runAppDeploy,
 	}
@@ -38,7 +39,7 @@ func NewCmdApp() *cobra.Command {
 		Use:     `configure <project>-<target>-<manifest>`,
 		Short:   "Configure application",
 		Aliases: []string{"cfg"},
-		Long:    mustRenderHelpDoc("application/configure"),
+		Long:    helpdocs.MustRender("application/configure"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runAppConfigure,
 	}
@@ -49,7 +50,7 @@ func NewCmdApp() *cobra.Command {
 		Use:     `patch <project>-<target>-<manifest>`,
 		Short:   "Patch individual package parameter values",
 		Aliases: []string{"cfg"},
-		Long:    mustRenderHelpDoc("application/patch"),
+		Long:    helpdocs.MustRender("application/patch"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runAppPatch,
 	}
