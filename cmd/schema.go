@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/jsonschema"
 	"github.com/spf13/cobra"
 )
@@ -12,13 +13,13 @@ func NewCmdSchema() *cobra.Command {
 	schemaCmd := &cobra.Command{
 		Use:   "schema",
 		Short: "Manage JSON Schemas",
-		Long:  mustRenderHelpDoc("schema"),
+		Long:  helpdocs.MustRender("schema"),
 	}
 
 	schemaValidateCmd := &cobra.Command{
 		Use:   "validate",
 		Short: "Validates a JSON document against a JSON Schema",
-		Long:  mustRenderHelpDoc("schema/validate"),
+		Long:  helpdocs.MustRender("schema/validate"),
 		RunE:  runSchemaValidate,
 	}
 	schemaValidateCmd.Flags().StringP("document", "d", "document.json", "Path to JSON document")

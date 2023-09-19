@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/commands/package/configure"
@@ -23,14 +24,14 @@ func NewCmdInfra() *cobra.Command {
 		Use:     "infrastructure",
 		Aliases: []string{"infra"},
 		Short:   "Manage infrastructure",
-		Long:    mustRenderHelpDoc("infrastructure"),
+		Long:    helpdocs.MustRender("infrastructure"),
 	}
 
 	infraConfigureCmd := &cobra.Command{
 		Use:     `configure <project>-<target>-<manifest>`,
 		Short:   "Configure infrastructure",
 		Aliases: []string{"cfg"},
-		Long:    mustRenderHelpDoc("infrastructure/configure"),
+		Long:    helpdocs.MustRender("infrastructure/configure"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInfraConfigure,
 	}
@@ -39,7 +40,7 @@ func NewCmdInfra() *cobra.Command {
 	infraDeployCmd := &cobra.Command{
 		Use:   `deploy <project>-<target>-<manifest>`,
 		Short: "Deploy infrastructure",
-		Long:  mustRenderHelpDoc("infrastructure/deploy"),
+		Long:  helpdocs.MustRender("infrastructure/deploy"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runInfraDeploy,
 	}
@@ -48,7 +49,7 @@ func NewCmdInfra() *cobra.Command {
 		Use:     `patch <project>-<target>-<manifest>`,
 		Short:   "Patch individual package parameter values",
 		Aliases: []string{"cfg"},
-		Long:    mustRenderHelpDoc("infrastructure/patch"),
+		Long:    helpdocs.MustRender("infrastructure/patch"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInfraPatch,
 	}

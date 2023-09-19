@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/commands"
@@ -20,7 +21,7 @@ func NewCmdBundle() *cobra.Command {
 	bundleCmd := &cobra.Command{
 		Use:   "bundle",
 		Short: "Generate and publish bundles",
-		Long:  mustRenderHelpDoc("bundle"),
+		Long:  helpdocs.MustRender("bundle"),
 	}
 
 	bundleBuildCmd := &cobra.Command{
@@ -55,20 +56,20 @@ func NewCmdBundle() *cobra.Command {
 	bundleTemplateCmd := &cobra.Command{
 		Use:   "template",
 		Short: "Application template development tools",
-		Long:  mustRenderHelpDoc("bundle/template"),
+		Long:  helpdocs.MustRender("bundle/template"),
 	}
 
 	bundleTemplateListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List bundle templates",
-		Long:  mustRenderHelpDoc("bundle/template-list"),
+		Long:  helpdocs.MustRender("bundle/template-list"),
 		RunE:  runBundleTemplateList,
 	}
 
 	bundleTemplateRefreshCmd := &cobra.Command{
 		Use:   "refresh",
 		Short: "Update template list from the official Massdriver Github",
-		Long:  mustRenderHelpDoc("bundle/template-refresh"),
+		Long:  helpdocs.MustRender("bundle/template-refresh"),
 		RunE:  runBundleTemplateRefresh,
 	}
 

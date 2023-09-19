@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/decommission"
 	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/deploy"
@@ -24,13 +25,13 @@ func NewCmdPreview() *cobra.Command {
 		Use:     "preview",
 		Aliases: []string{"pv"},
 		Short:   "Create & deploy preview environments",
-		Long:    mustRenderHelpDoc("preview"),
+		Long:    helpdocs.MustRender("preview"),
 	}
 
 	previewInitCmd := &cobra.Command{
 		Use:   `init $projectSlug`,
 		Short: "Generate a preview enviroment configuration file",
-		Long:  mustRenderHelpDoc("preview/init"),
+		Long:  helpdocs.MustRender("preview/init"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runPreviewInit,
 	}
@@ -39,7 +40,7 @@ func NewCmdPreview() *cobra.Command {
 	previewDeployCmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploys a preview environment in your project",
-		Long:  mustRenderHelpDoc("preview/deploy"),
+		Long:  helpdocs.MustRender("preview/deploy"),
 		RunE:  runPreviewDeploy,
 	}
 	previewDeployCmd.Flags().StringVarP(&previewInitParamsPath, "params", "p", previewInitParamsPath, "Path to preview environment configuration file. This file supports bash interpolation.")
@@ -48,7 +49,7 @@ func NewCmdPreview() *cobra.Command {
 	previewDecommissionCmd := &cobra.Command{
 		Use:   "decommission $projectTargetSlug",
 		Short: "Decommissions a preview environment in your project",
-		Long:  mustRenderHelpDoc("preview/decommission"),
+		Long:  helpdocs.MustRender("preview/decommission"),
 		RunE:  runPreviewDecommission,
 		Args:  cobra.ExactArgs(1),
 	}
