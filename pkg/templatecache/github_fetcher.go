@@ -12,8 +12,10 @@ import (
 func GithubTemplatesFetcher(writePath string) error {
 	cloneErrors := []CloneError{}
 
-	for _, repoName := range massdriverApplicationTemplatesRepositories {
+	for _, repoName := range massdriverApplicationTemplatesRepositories() {
+		fmt.Printf("\tCloning %s\n", repoName)
 		cloneErr := doClone(repoName, writePath)
+
 		// If one repository fails, we want to get the rest so stash the error and handle later.
 		if cloneErr != nil {
 			errorStruct := CloneError{Repository: repoName, Error: cloneErr.Error()}
