@@ -19,16 +19,6 @@ export MD_TEMPLATES_PATH="$HOME/custom/"
 mass bundle template refresh
 ```
 
-#### Developing Templates
-
-For local development of templates its common to set:
-
-```shell
-export_MD_TEMPLATES_PATH="."
-mass bundle template list
-mass bundle new
-```
-
 **Note: No `refresh` is necessary here since the templates are in this directory already.**
 
 ### Custom Application Templates
