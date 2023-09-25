@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
+	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/proxy"
 )
 
@@ -65,6 +66,14 @@ func RegisterServerHandler(dir string) {
 	}
 
 	http.Handle("/bundle/secrets", originHeaderMiddleware(bundleHandler))
+
+	configHandler, err := config.NewHandler()
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
+	http.Handle("/config", originHeaderMiddleware(configHandler))
 }
 
 func originHeaderMiddleware(next http.Handler) http.Handler {
