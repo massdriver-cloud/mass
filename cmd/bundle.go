@@ -17,6 +17,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// hiddenArtifacts are artifact definitions that the API returns that
+// should not be added to bundles
+var hiddenArtifacts = map[string]struct{}{
+	"massdriver/api":        {},
+	"massdriver/draft-node": {},
+}
+
 func NewCmdBundle() *cobra.Command {
 	bundleCmd := &cobra.Command{
 		Use:   "bundle",
@@ -131,6 +138,9 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 
 	var artifacts []string
 	for _, v := range artifactDefs {
+		if _, ok := hiddenArtifacts[v.Name]; ok {
+			continue
+		}
 		artifacts = append(artifacts, v.Name)
 	}
 
