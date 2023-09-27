@@ -30,7 +30,7 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 		return err
 	}
 
-	devParamPath := path.Join(buildPath, stepPath, "_params.auto.tfvars.json")
+	devParamPath := path.Join(buildPath, stepPath, bundle.ParamsFile)
 
 	err = transpileAndWriteDevParams(devParamPath, b, fs)
 
@@ -38,7 +38,7 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 		return fmt.Errorf("error compiling dev params: %w", err)
 	}
 
-	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, "_connections.auto.tfvars.json"), b, fs)
+	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, bundle.ConnsFile), b, fs)
 
 	if err != nil {
 		return err

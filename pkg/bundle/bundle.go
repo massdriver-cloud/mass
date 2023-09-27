@@ -3,6 +3,7 @@ package bundle
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"path"
@@ -13,9 +14,15 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	ParamsFile = "_params.auto.tfvars.json"
+	ConnsFile  = "_connections.auto.tfvars.json"
+)
+
 type Handler struct {
-	Bundle Bundle
-	fs     afero.Fs
+	Bundle    Bundle
+	fs        afero.Fs
+	bundleDir string
 }
 type Step struct {
 	Path        string `json:"path" yaml:"path"`
@@ -157,10 +164,10 @@ func NewHandler(dir string) (*Handler, error) {
 		return nil, err
 	}
 	ApplyAppBlockDefaults(bundle)
-	return &Handler{Bundle: *bundle, fs: fs}, nil
+	return &Handler{Bundle: *bundle, fs: fs, bundleDir: dir}, nil
 }
 
-func (b *Handler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
+func (b *Handler) GetSecrets(w http.ResponseWriter, _ *http.Request) {
 	out, err := json.Marshal(b.Bundle.AppSpec.Secrets)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -170,5 +177,80 @@ func (b *Handler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	_, err = w.Write(out)
 	if err != nil {
 		slog.Error(err.Error())
+	}
+}
+
+func (b *Handler) Connections(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		b.getConnections(w)
+	case http.MethodPost:
+		b.postConnections(w, r)
+	default:
+		w.Header().Add("Allow", "GET, POST")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	out, err := json.Marshal(b.Bundle.AppSpec.Secrets)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(out)
+	if err != nil {
+		slog.Error(err.Error())
+	}
+}
+
+func (b *Handler) getConnections(w http.ResponseWriter) {
+	f, err := afero.ReadFile(b.fs, path.Join(b.bundleDir, "src", ConnsFile))
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(f)
+	if err != nil {
+		slog.Error(err.Error())
+	}
+}
+
+func (b *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
+	conns, err := io.ReadAll(r.Body)
+	if err != nil {
+		slog.Debug("Error reading payload", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	connMap := make(map[string]any)
+
+	// We have to go through the unmarshal/marshal dance to ensure
+	// we keep the formatting in the final file. If the json payload
+	// is a single line that would end up back in the file and make
+	// it unreadable.
+	err = json.Unmarshal(conns, &connMap)
+	if err != nil {
+		slog.Debug("Error unmarshalling payload", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	bytes, err := json.MarshalIndent(connMap, "", "    ")
+	if err != nil {
+		slog.Debug("Error marshalling payload", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = afero.WriteFile(b.fs, path.Join(b.bundleDir, "src", ConnsFile), bytes, 0755)
+	if err != nil {
+		slog.Debug("Error writing file", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 }
