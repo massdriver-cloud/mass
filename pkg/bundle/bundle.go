@@ -191,17 +191,6 @@ func (b *Handler) Connections(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-
-	out, err := json.Marshal(b.Bundle.AppSpec.Secrets)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(out)
-	if err != nil {
-		slog.Error(err.Error())
-	}
 }
 
 func (b *Handler) getConnections(w http.ResponseWriter) {
