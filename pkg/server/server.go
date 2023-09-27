@@ -65,7 +65,8 @@ func RegisterServerHandler(dir string) {
 		os.Exit(1)
 	}
 
-	http.Handle("/bundle/secrets", originHeaderMiddleware(bundleHandler))
+	http.Handle("/bundle/secrets", originHeaderMiddleware(http.HandlerFunc(bundleHandler.GetSecrets)))
+	http.Handle("/bundle/connections", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Connections)))
 
 	configHandler, err := config.NewHandler()
 	if err != nil {
