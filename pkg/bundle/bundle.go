@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	ParamsFile = "_params.auto.tfvars.json"
-	ConnsFile  = "_connections.auto.tfvars.json"
+	ParamsFile     = "_params.auto.tfvars.json"
+	ConnsFile      = "_connections.auto.tfvars.json"
+	allowedMethods = "OPTIONS, GET, POST"
 )
 
 type Handler struct {
@@ -186,8 +187,10 @@ func (b *Handler) Connections(w http.ResponseWriter, r *http.Request) {
 		b.getConnections(w)
 	case http.MethodPost:
 		b.postConnections(w, r)
+	case http.MethodOptions:
+		b.options(w, r)
 	default:
-		w.Header().Add("Allow", "GET, POST")
+		w.Header().Add("Allow", allowedMethods)
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
@@ -242,4 +245,12 @@ func (b *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+}
+
+func (b *Handler) options(w http.ResponseWriter, r *http.Request) {
+	headers := w.Header()
+
+	headers["Access-Control-Allow-Headers"] = r.Header["Access-Control-Request-Headers"]
+	headers["Access-Control-Allow-Methods"] = []string{allowedMethods}
+	w.WriteHeader(http.StatusOK)
 }
