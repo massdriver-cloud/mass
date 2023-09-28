@@ -26,6 +26,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/mod v0.12.0
 	golang.org/x/text v0.13.0
+	nhooyr.io/websocket v1.8.7
 	sigs.k8s.io/yaml v1.3.0
 )
 

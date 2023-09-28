@@ -10,6 +10,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/config"
+	"github.com/massdriver-cloud/mass/pkg/container"
 	"github.com/massdriver-cloud/mass/pkg/proxy"
 )
 
@@ -75,6 +76,9 @@ func RegisterServerHandler(dir string) {
 	}
 
 	http.Handle("/config", originHeaderMiddleware(configHandler))
+
+	http.Handle("/containers/logs", originHeaderMiddleware(http.HandlerFunc(container.StreamLogs)))
+	http.Handle("/containers/list", originHeaderMiddleware(http.HandlerFunc(container.List)))
 }
 
 func originHeaderMiddleware(next http.Handler) http.Handler {
