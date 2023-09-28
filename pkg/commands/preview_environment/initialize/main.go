@@ -53,5 +53,7 @@ func New(client graphql.Client, orgID string, projectSlug string) (*Model, error
 		},
 	}
 
+	m.help.ShowAll = true
+
 	return &m, nil
 }
