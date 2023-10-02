@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -44,17 +44,6 @@ func runServer(cmd *cobra.Command) {
 	}
 	setupLogging(logLevel)
 
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		for sig := range c {
-			slog.Info("Shutting down", "signal", sig)
-			// TODO: Add cleanup work here, that could be flushing current work or just shutting down
-			// the server gracefully
-			os.Exit(0)
-		}
-	}()
-
 	dir, err := cmd.Flags().GetString("directory")
 	if err != nil {
 		slog.Error(err.Error())
@@ -70,7 +59,7 @@ func runServer(cmd *cobra.Command) {
 
 	port, err := cmd.Flags().GetString("port")
 	if err != nil {
-		fmt.Println(err)
+		slog.Error(err.Error())
 		os.Exit(1)
 	}
 
@@ -79,21 +68,23 @@ func runServer(cmd *cobra.Command) {
 		port = "0"
 	}
 
-	// Setup our single handler
-	server.RegisterServerHandler(dir)
-
-	ln, err := net.Listen("tcp", "127.0.0.1:"+port)
+	server, err := server.New(dir)
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 
-	slog.Info(fmt.Sprintf("Visit http://%s/hello-agent in your browser", ln.Addr().String()))
-	server := http.Server{ReadHeaderTimeout: 60 * time.Second}
-	err = server.Serve(ln)
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
+	server.RegisterHandlers()
+
+	handleSignals(server)
+
+	if err = server.Start(port); err != nil {
+		// The signal handler will shutdown the server under a ctrl-c
+		// so getting a ErrServerClosed here is expected
+		if !errors.Is(err, http.ErrServerClosed) {
+			slog.Error(err.Error())
+		}
+		slog.Info("Server is stopped")
 	}
 }
 
@@ -113,4 +104,25 @@ func setupLogging(level string) {
 
 	h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: programLevel})
 	slog.SetDefault(slog.New(h))
+}
+
+func handleSignals(s *server.BundleServer) {
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func(s *server.BundleServer) {
+		for sig := range c {
+			slog.Info("Shutting down", "signal", sig)
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+			// If there are no errors here, the main func will race to exit potentially
+			// before hitting the context cancel which is fine since we are already on the way out.
+			if err := s.Stop(ctx); err != nil {
+				if !errors.Is(err, http.ErrServerClosed) {
+					slog.Error(err.Error())
+				}
+			}
+			cancel()
+			os.Exit(0)
+		}
+	}(s)
 }
