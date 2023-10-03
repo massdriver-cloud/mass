@@ -1,0 +1,356 @@
+definitions:
+  bundle.AppSpec:
+    properties:
+      envs:
+        additionalProperties:
+          type: string
+        type: object
+      policies:
+        items:
+          type: string
+        type: array
+      secrets:
+        additionalProperties:
+          $ref: '#/definitions/bundle.Secret'
+        type: object
+    type: object
+  bundle.Connections:
+    additionalProperties: {}
+    type: object
+  bundle.Secret:
+    properties:
+      description:
+        type: string
+      json:
+        type: boolean
+      required:
+        type: boolean
+      title:
+        type: string
+    type: object
+  github_com_massdriver-cloud_mass_pkg_config.Config:
+    properties:
+      apiKey:
+        type: string
+      orgID:
+        type: string
+      url:
+        type: string
+    type: object
+  mount.Propagation:
+    enum:
+    - rprivate
+    - private
+    - rshared
+    - shared
+    - rslave
+    - slave
+    type: string
+    x-enum-varnames:
+    - PropagationRPrivate
+    - PropagationPrivate
+    - PropagationRShared
+    - PropagationShared
+    - PropagationRSlave
+    - PropagationSlave
+  mount.Type:
+    enum:
+    - bind
+    - volume
+    - tmpfs
+    - npipe
+    - cluster
+    type: string
+    x-enum-varnames:
+    - TypeBind
+    - TypeVolume
+    - TypeTmpfs
+    - TypeNamedPipe
+    - TypeCluster
+  network.EndpointIPAMConfig:
+    properties:
+      ipv4Address:
+        type: string
+      ipv6Address:
+        type: string
+      linkLocalIPs:
+        items:
+          type: string
+        type: array
+    type: object
+  network.EndpointSettings:
+    properties:
+      aliases:
+        items:
+          type: string
+        type: array
+      driverOpts:
+        additionalProperties:
+          type: string
+        type: object
+      endpointID:
+        type: string
+      gateway:
+        type: string
+      globalIPv6Address:
+        type: string
+      globalIPv6PrefixLen:
+        type: integer
+      ipaddress:
+        type: string
+      ipamconfig:
+        allOf:
+        - $ref: '#/definitions/network.EndpointIPAMConfig'
+        description: Configurations
+      ipprefixLen:
+        type: integer
+      ipv6Gateway:
+        type: string
+      links:
+        items:
+          type: string
+        type: array
+      macAddress:
+        type: string
+      networkID:
+        description: Operational data
+        type: string
+    type: object
+  types.Container:
+    properties:
+      Id:
+        type: string
+      command:
+        type: string
+      created:
+        type: integer
+      hostConfig:
+        properties:
+          networkMode:
+            type: string
+        type: object
+      image:
+        type: string
+      imageID:
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        type: object
+      mounts:
+        items:
+          $ref: '#/definitions/types.MountPoint'
+        type: array
+      names:
+        items:
+          type: string
+        type: array
+      networkSettings:
+        $ref: '#/definitions/types.SummaryNetworkSettings'
+      ports:
+        items:
+          $ref: '#/definitions/types.Port'
+        type: array
+      sizeRootFs:
+        type: integer
+      sizeRw:
+        type: integer
+      state:
+        type: string
+      status:
+        type: string
+    type: object
+  types.MountPoint:
+    properties:
+      destination:
+        description: |-
+          Destination is the path relative to the container root (`/`) where the
+          Source is mounted inside the container.
+        type: string
+      driver:
+        description: Driver is the volume driver used to create the volume (if it
+          is a volume).
+        type: string
+      mode:
+        description: |-
+          Mode is a comma separated list of options supplied by the user when
+          creating the bind/volume mount.
+
+          The default is platform-specific (`"z"` on Linux, empty on Windows).
+        type: string
+      name:
+        description: |-
+          Name is the name reference to the underlying data defined by `Source`
+          e.g., the volume name.
+        type: string
+      propagation:
+        allOf:
+        - $ref: '#/definitions/mount.Propagation'
+        description: |-
+          Propagation describes how mounts are propagated from the host into the
+          mount point, and vice-versa. Refer to the Linux kernel documentation
+          for details:
+          https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt
+
+          This field is not used on Windows.
+      rw:
+        description: RW indicates whether the mount is mounted writable (read-write).
+        type: boolean
+      source:
+        description: |-
+          Source is the source location of the mount.
+
+          For volumes, this contains the storage location of the volume (within
+          `/var/lib/docker/volumes/`). For bind-mounts, and `npipe`, this contains
+          the source (host) part of the bind-mount. For `tmpfs` mount points, this
+          field is empty.
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/mount.Type'
+        description: |-
+          Type is the type of mount, see `Type<foo>` definitions in
+          github.com/docker/docker/api/types/mount.Type
+    type: object
+  types.Port:
+    properties:
+      IP:
+        description: Host IP address that the container's port is mapped to
+        type: string
+      PrivatePort:
+        description: |-
+          Port on the container
+          Required: true
+        type: integer
+      PublicPort:
+        description: Port exposed on the host
+        type: integer
+      Type:
+        description: |-
+          type
+          Required: true
+        type: string
+    type: object
+  types.SummaryNetworkSettings:
+    properties:
+      networks:
+        additionalProperties:
+          $ref: '#/definitions/network.EndpointSettings'
+        type: object
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: 127.0.0.1:8080
+info:
+  contact:
+    name: Massdriver
+    url: https://github.com/massdriver-cloud/mass
+  description: Massdriver Bundle Development Server API
+  license:
+    name: Apache 2.0
+    url: https://github.com/massdriver-cloud/mass/blob/main/LICENSE
+  title: Massdriver API
+paths:
+  /bundle/connections:
+    get:
+      description: Get bundle connections
+      operationId: get-bundle-connections
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bundle.Connections'
+      summary: Get bundle connections
+    post:
+      consumes:
+      - application/json
+      description: Post bundle connections
+      operationId: post-bundle-connections
+      parameters:
+      - description: Connections
+        in: body
+        name: connectons
+        required: true
+        schema:
+          $ref: '#/definitions/bundle.Connections'
+      responses:
+        "200":
+          description: success
+          schema:
+            type: string
+      summary: Post bundle connections
+  /bundle/secrets:
+    get:
+      description: Get bundle secrets
+      operationId: get-bundle-secrets
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bundle.AppSpec'
+      summary: Get bundle secrets
+  /config:
+    get:
+      description: Get the users config
+      operationId: get-config
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_massdriver-cloud_mass_pkg_config.Config'
+      summary: Get the users config
+  /containers/list:
+    get:
+      description: List containers searches using the name param, defaults to 'mass'
+        if none provided.
+      operationId: list-containers
+      parameters:
+      - default: false
+        description: all containers, even stopped
+        in: query
+        name: all
+        type: boolean
+      - default: 0
+        description: number of containers to return, 0 is all
+        in: query
+        name: limit
+        type: integer
+      - default: mass
+        description: name of container to search with
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Container'
+            type: array
+      summary: List containers
+  /containers/logs:
+    get:
+      description: Stream the logs from a container using a websocket
+      operationId: stream-logs
+      parameters:
+      - description: id of the container
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "101":
+          description: Switching Protocols
+      summary: Stream logs
+swagger: "2.0"

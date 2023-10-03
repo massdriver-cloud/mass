@@ -18,6 +18,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/proxy"
 	"github.com/moby/moby/client"
 	"github.com/spf13/afero"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 var (
@@ -85,6 +86,10 @@ func (b *BundleServer) RegisterHandlers() {
 	// http.Handle("/site/assets/", http.FileServer(http.FS(res)))
 
 	http.Handle("/", originHeaderMiddleware(http.FileServer(http.Dir(b.BaseDir))))
+
+	http.HandleFunc("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("http://127.0.0.1:8080/swagger/doc.json"), // The url pointing to API definition
+	))
 
 	// Register the handler func to serve the html page
 	http.HandleFunc("/hello-agent", func(w http.ResponseWriter, r *http.Request) {

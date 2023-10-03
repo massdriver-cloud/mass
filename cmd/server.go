@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/massdriver-cloud/mass/docs" // Init swagger docs
 	"github.com/massdriver-cloud/mass/pkg/server"
 	"github.com/spf13/cobra"
 )
@@ -29,13 +30,22 @@ func NewCmdServer() *cobra.Command {
 		Args: cobra.NoArgs,
 	}
 
-	cmd.Flags().StringP("port", "p", "", "port for the server to listen on")
+	cmd.Flags().StringP("port", "p", "8080", "port for the server to listen on")
 	cmd.Flags().StringP("directory", "d", "", "directory for the massdriver bundle, will default to the directory the server is ran from")
 	cmd.Flags().String("log-level", "info", "Set the log level for the server. Options are [debug, info, warn, error]")
 
 	return cmd
 }
 
+// @title						Massdriver API
+// @description				Massdriver Bundle Development Server API
+// @contact.url				https://github.com/massdriver-cloud/mass
+// @contact.name				Massdriver
+// @license.name				Apache 2.0
+// @license.url				https://github.com/massdriver-cloud/mass/blob/main/LICENSE
+// @host						127.0.0.1:8080
+// @externalDocs.description	OpenAPI
+// @externalDocs.url			https://swagger.io/resources/open-api/
 func runServer(cmd *cobra.Command) {
 	logLevel, err := cmd.Flags().GetString("log-level")
 	if err != nil {
