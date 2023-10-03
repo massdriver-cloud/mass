@@ -22,7 +22,7 @@ mass server [flags]
   -d, --directory string   directory for the massdriver bundle, will default to the directory the server is ran from
   -h, --help               help for server
       --log-level string   Set the log level for the server. Options are [debug, info, warn, error] (default "info")
-  -p, --port string        port for the server to listen on
+  -p, --port string        port for the server to listen on (default "8080")
 ```
 
 ### SEE ALSO

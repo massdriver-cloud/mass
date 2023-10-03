@@ -40,10 +40,12 @@ type Bundle struct {
 	Steps       []Step                 `json:"steps" yaml:"steps"`
 	Artifacts   map[string]interface{} `json:"artifacts" yaml:"artifacts"`
 	Params      map[string]interface{} `json:"params" yaml:"params"`
-	Connections map[string]interface{} `json:"connections" yaml:"connections"`
+	Connections Connections            `json:"connections" yaml:"connections"`
 	UI          map[string]interface{} `json:"ui" yaml:"ui"`
 	AppSpec     *AppSpec               `json:"app,omitempty" yaml:"app,omitempty"`
 }
+
+type Connections = map[string]any
 
 type AppSpec struct {
 	Envs     map[string]string `json:"envs" yaml:"envs"`
@@ -168,6 +170,14 @@ func NewHandler(dir string) (*Handler, error) {
 	return &Handler{Bundle: *bundle, fs: fs, bundleDir: dir}, nil
 }
 
+// GetSecrets returns the secrets from the bundle
+//
+//	@Summary		Get bundle secrets
+//	@Description	Get bundle secrets
+//	@ID				get-bundle-secrets
+//	@Produce		json
+//	@Success		200	{object}	bundle.AppSpec.Secrets
+//	@Router			/bundle/secrets [get]
 func (b *Handler) GetSecrets(w http.ResponseWriter, _ *http.Request) {
 	out, err := json.Marshal(b.Bundle.AppSpec.Secrets)
 	if err != nil {
@@ -196,6 +206,14 @@ func (b *Handler) Connections(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// getConnections returns the existing connections in the conn file
+//
+//	@Summary		Get bundle connections
+//	@Description	Get bundle connections
+//	@ID				get-bundle-connections
+//	@Produce		json
+//	@Success		200	{object}	bundle.Connections
+//	@Router			/bundle/connections [get]
 func (b *Handler) getConnections(w http.ResponseWriter) {
 	f, err := afero.ReadFile(b.fs, path.Join(b.bundleDir, "src", ConnsFile))
 	if err != nil {
@@ -210,6 +228,15 @@ func (b *Handler) getConnections(w http.ResponseWriter) {
 	}
 }
 
+// postConnections accepts connections and writes them back to the conn file
+//
+//	@Summary		Post bundle connections
+//	@Description	Post bundle connections
+//	@ID				post-bundle-connections
+//	@Accept			json
+//	@Success		200			{string}	string				"success"
+//	@Param			connectons	body		bundle.Connections	true	"Connections"
+//	@Router			/bundle/connections [post]
 func (b *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
 	conns, err := io.ReadAll(r.Body)
 	if err != nil {

@@ -15,6 +15,17 @@ import (
 	"nhooyr.io/websocket"
 )
 
+// List lists containers
+//
+//	@Summary		List containers
+//	@Description	List containers searches using the name param, defaults to 'mass' if none provided.
+//	@ID				list-containers
+//	@Produce		json
+//	@Param			all		query	bool	false	"all containers, even stopped"				default(false)
+//	@Param			limit	query	int		false	"number of containers to return, 0 is all"	default(0)
+//	@Param			name	query	string	false	"name of container to search with"			default(mass)
+//	@Success		200		{array}	types.Container
+//	@Router			/containers/list [get]
 func List(w http.ResponseWriter, r *http.Request) {
 	queries := r.URL.Query()
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
@@ -66,6 +77,15 @@ func List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// StreamLogs opens a websocket to stream the logs of a container
+//
+//	@Summary		Stream logs
+//	@Description	Stream the logs from a container using a websocket
+//	@ID				stream-logs
+//	@Produce		plain
+//	@Param			id	query	string	true	"id of the container"
+//	@Success		101
+//	@Router			/containers/logs [get]
 func StreamLogs(w http.ResponseWriter, r *http.Request) {
 	containerID := r.URL.Query().Get("id")
 	if containerID == "" {

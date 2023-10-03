@@ -24,6 +24,11 @@ generate:
 	./scripts/graphql-gen.sh
 	cd ${API_DIR} && go generate
 
+.PHONY:
+swagger-gen:
+	swag fmt -g cmd/server.go
+	swag init -g cmd/server.go --pd --ot go,yaml
+
 .PHONY: test
 test:
 	go test ./... -cover

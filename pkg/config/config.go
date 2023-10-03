@@ -41,6 +41,14 @@ func NewHandler() (*Config, error) {
 	return Get()
 }
 
+// ServeHTTP returns the config
+//
+//	@Summary		Get the users config
+//	@Description	Get the users config
+//	@ID				get-config
+//	@Produce		json
+//	@Success		200	{object}	config.Config
+//	@Router			/config [get]
 func (c *Config) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	out, err := json.Marshal(c)
 	if err != nil {
