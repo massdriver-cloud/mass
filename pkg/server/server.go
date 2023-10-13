@@ -128,8 +128,11 @@ func (b *BundleServer) RegisterHandlers() {
 		os.Exit(1)
 	}
 
+	containerHandler := container.NewHandler(b.BaseDir, b.DockerCli, b.Fs)
+
 	http.Handle("/bundle/secrets", originHeaderMiddleware(http.HandlerFunc(bundleHandler.GetSecrets)))
 	http.Handle("/bundle/connections", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Connections)))
+	http.Handle("/bundle/deploy", originHeaderMiddleware(http.HandlerFunc(containerHandler.Deploy)))
 
 	configHandler, err := config.NewHandler()
 	if err != nil {
@@ -139,8 +142,8 @@ func (b *BundleServer) RegisterHandlers() {
 
 	http.Handle("/config", originHeaderMiddleware(configHandler))
 
-	http.Handle("/containers/logs", originHeaderMiddleware(http.HandlerFunc(container.StreamLogs)))
-	http.Handle("/containers/list", originHeaderMiddleware(http.HandlerFunc(container.List)))
+	http.Handle("/containers/logs", originHeaderMiddleware(http.HandlerFunc(containerHandler.StreamLogs)))
+	http.Handle("/containers/list", originHeaderMiddleware(http.HandlerFunc(containerHandler.List)))
 }
 
 func originHeaderMiddleware(next http.Handler) http.Handler {

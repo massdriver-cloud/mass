@@ -28,6 +28,25 @@ definitions:
       title:
         type: string
     type: object
+  container.DeployPayload:
+    properties:
+      action:
+        type: string
+      image:
+        type: string
+      params:
+        additionalProperties: {}
+        type: object
+      secrets:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  container.deployReply:
+    properties:
+      containerID:
+        type: string
+    type: object
   github_com_massdriver-cloud_mass_pkg_config.Config:
     properties:
       apiKey:
@@ -282,6 +301,25 @@ paths:
           schema:
             type: string
       summary: Post bundle connections
+  /bundle/deploy:
+    post:
+      consumes:
+      - application/json
+      description: Deploy runs the local provisioner to deploy the bundle
+      operationId: deploy-container
+      parameters:
+      - description: DeployPayload
+        in: body
+        name: deployPayload
+        required: true
+        schema:
+          $ref: '#/definitions/container.DeployPayload'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/container.deployReply'
+      summary: Deploy the bundle
   /bundle/secrets:
     get:
       description: Get bundle secrets

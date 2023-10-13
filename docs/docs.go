@@ -67,6 +67,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/bundle/deploy": {
+            "post": {
+                "description": "Deploy runs the local provisioner to deploy the bundle",
+                "consumes": [
+                    "application/json"
+                ],
+                "summary": "Deploy the bundle",
+                "operationId": "deploy-container",
+                "parameters": [
+                    {
+                        "description": "DeployPayload",
+                        "name": "deployPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/container.DeployPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/container.deployReply"
+                        }
+                    }
+                }
+            }
+        },
         "/bundle/secrets": {
             "get": {
                 "description": "Get bundle secrets",
@@ -213,6 +242,35 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "container.DeployPayload": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "params": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "secrets": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "container.deployReply": {
+            "type": "object",
+            "properties": {
+                "containerID": {
                     "type": "string"
                 }
             }
