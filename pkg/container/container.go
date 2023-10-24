@@ -30,6 +30,8 @@ import (
 	"nhooyr.io/websocket"
 )
 
+const allowedMethods = "OPTIONS, GET, POST"
+
 type Handler struct {
 	baseDir   string
 	dockerCLI *client.Client
@@ -209,8 +211,13 @@ const (
 //	@Param			deployPayload	body		container.DeployPayload	true	"DeployPayload"
 //	@Router			/bundle/deploy [post]
 func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodPost && r.Method != http.MethodOptions {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if r.Method == http.MethodOptions {
+		h.options(w, r)
 		return
 	}
 
@@ -375,4 +382,12 @@ func (h *Handler) getAWSCreds(ctx context.Context) ([]string, error) {
 		envVar = append(envVar, fmt.Sprintf("AWS_SESSION_TOKEN=%s", creds.SessionToken))
 	}
 	return envVar, nil
+}
+
+func (h *Handler) options(w http.ResponseWriter, r *http.Request) {
+	headers := w.Header()
+
+	headers["Access-Control-Allow-Headers"] = r.Header["Access-Control-Request-Headers"]
+	headers["Access-Control-Allow-Methods"] = []string{allowedMethods}
+	w.WriteHeader(http.StatusOK)
 }

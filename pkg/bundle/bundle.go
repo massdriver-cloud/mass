@@ -179,10 +179,16 @@ func NewHandler(dir string) (*Handler, error) {
 //	@Success		200	{object}	bundle.AppSpec.Secrets
 //	@Router			/bundle/secrets [get]
 func (b *Handler) GetSecrets(w http.ResponseWriter, _ *http.Request) {
-	out, err := json.Marshal(b.Bundle.AppSpec.Secrets)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	var out []byte
+	var err error
+	if b.Bundle.AppSpec == nil || len(b.Bundle.AppSpec.Secrets) == 0 {
+		out = []byte("{}")
+	} else {
+		out, err = json.Marshal(b.Bundle.AppSpec.Secrets)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(out)
