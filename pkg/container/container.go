@@ -136,7 +136,7 @@ func (h *Handler) StreamLogs(w http.ResponseWriter, r *http.Request) {
 	reader, err := h.dockerCLI.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{
 		ShowStderr: true,
 		ShowStdout: true,
-		Timestamps: true,
+		Timestamps: false,
 		Follow:     true,
 		Tail:       "50",
 	})
@@ -170,17 +170,18 @@ func (h *Handler) StreamLogs(w http.ResponseWriter, r *http.Request) {
 			slog.Info("Websocket connection closed")
 			return
 		}
-		t := scanner.Text()
-		err = wc.Write(ctx, websocket.MessageText, []byte(t))
-		if err != nil {
-			slog.Error("Websocket write error", "error", err.Error())
-			// If a container is ran without TTY then the logs coming back from docker
-			// can potentially have invalid utf-8 characters which causes the websocket
-			// receiver to error out
-			if !utf8.ValidString(t) {
-				slog.Warn("Container log has invalid utf-8", "log", string([]rune(t)))
+		b := scanner.Bytes()
+		if json.Valid(b) {
+			err = wc.Write(ctx, websocket.MessageText, b)
+			if err != nil {
+				slog.Error("Websocket write error", "error", err.Error())
+				break
 			}
-			break
+		} else if !utf8.ValidString(string(b)) {
+			// If a container is ran without TTY then the logs coming back from docker
+			// can potentially have invalid utf-8 characters which won't pass the valid json
+			// check above. At least warn so there is indication why nothing is coming through
+			slog.Warn("Container log has invalid utf-8", "log", string([]rune(scanner.Text())))
 		}
 	}
 
