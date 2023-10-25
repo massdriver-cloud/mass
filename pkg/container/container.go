@@ -153,7 +153,8 @@ func (h *Handler) StreamLogs(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	wc, err := websocket.Accept(w, r, &websocket.AcceptOptions{})
+	// InsecureSkipVerify is fine here since we are running locally.
+	wc, err := websocket.Accept(w, r, &websocket.AcceptOptions{InsecureSkipVerify: true})
 	if err != nil {
 		// Don't write an error to the writer, websocket handles that
 		// internally
