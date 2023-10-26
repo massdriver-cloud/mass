@@ -56,3 +56,12 @@ install.macos: build.macos
 .PHONY: install.linux
 install.linux: build.linux
 	cp -f bin/mass-linux-amd64 ${INSTALL_PATH}/mass
+
+# https://github.com/achiku/planter#planter
+# https://plantuml.com/starting
+ERD_PLANTER_PATH?=planter
+ERD_PLANTUML_PATH?=plantuml
+.PHONY: erd
+erd:
+	PGPASSWORD=postgres $(ERD_PLANTER_PATH) postgres://postgres@localhost:5432/massdriver_test?sslmode=disable -o /tmp/massdriver.uml
+	PLANTUML_LIMIT_SIZE=8192 $(ERD_PLANTUML_PATH) /tmp/massdriver.uml
