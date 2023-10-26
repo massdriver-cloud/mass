@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/go-git/go-git/v5"
@@ -81,19 +82,17 @@ func doClone(repoName, writePath string) error {
 		return nil
 	}
 
-	w, err := repo.Worktree()
-	if err != nil {
+	// Pull the latest changes from the origin remote and merge into the current branch
+	slog.Info("Pulling latest changes from repo")
+
+	if err = os.RemoveAll(clonePath); err != nil {
 		return err
 	}
 
-	// Pull the latest changes from the origin remote and merge into the current branch
-	slog.Info("Pulling latest changes from repo")
-	err = w.Pull(&git.PullOptions{RemoteName: "origin", Depth: 1})
-	if errors.Is(err, git.NoErrAlreadyUpToDate) {
-		// If we hit this then something went funny above
-		slog.Info("Repo is already current", "local-hash", latest.Hash.String(), "upstream-hash", latestUpstream)
-		return nil
-	}
+	_, err = git.PlainClone(clonePath, false, &git.CloneOptions{
+		URL:   repoName,
+		Depth: 1,
+	})
 
 	return err
 }
