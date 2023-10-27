@@ -129,9 +129,7 @@ func (h *Handler) StreamLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Just in case....
-	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
-	defer cancel()
+	ctx := r.Context()
 
 	reader, err := h.dockerCLI.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{
 		ShowStderr: true,
