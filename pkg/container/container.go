@@ -267,10 +267,16 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		image = payload.Image
 	}
 
-	err = h.pullImage(r.Context(), image)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	// Allow running of a local image without bombing out trying to pull it
+	// The image string in the payload would be "local/my-dev-image:latest"
+	if strings.HasPrefix(image, "local/") {
+		image = strings.TrimPrefix(image, "local/")
+	} else {
+		err = h.pullImage(r.Context(), image)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	containerID, err := h.runContainer(r.Context(), payload.Action, image)
@@ -303,16 +309,19 @@ func (h *Handler) pullImage(ctx context.Context, image string) error {
 
 func (h *Handler) runContainer(ctx context.Context, action, image string) (string, error) {
 	// TODO: This is aws only at this point
-	creds, err := h.getAWSCreds(ctx)
+	envs, err := h.getAWSCreds(ctx)
 	if err != nil {
 		slog.Debug("Error getting aws creds", "error", err)
 		return "", err
 	}
 
+	// This makes the container logs huge but debug doesn't come through events
+	envs = append(envs, "TF_LOG=DEBUG")
+
 	c := &container.Config{
 		Cmd:   strslice.StrSlice{"run.sh", action},
 		Image: image,
-		Env:   creds,
+		Env:   envs,
 		Tty:   true,
 	}
 
