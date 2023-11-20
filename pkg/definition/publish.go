@@ -11,13 +11,18 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 )
 
-func (art *Definition) Publish(c *restclient.MassdriverClient) error {
-	bodyBytes, err := json.Marshal(*art)
-	if err != nil {
-		return err
+func Publish(c *restclient.MassdriverClient, in io.Reader) error {
+
+	byteValue, _ := io.ReadAll(in)
+
+	// attempt to unmarshall to make sure it's valid JSON
+	// TODO: use JSON schema to validate
+	var artdef Definition
+	if jsonErr := json.Unmarshal(byteValue, &artdef); jsonErr != nil {
+		return jsonErr
 	}
 
-	req := restclient.NewRequest("PUT", "artifact-definitions", bytes.NewBuffer(bodyBytes))
+	req := restclient.NewRequest("PUT", "artifact-definitions", bytes.NewBuffer(byteValue))
 	ctx := context.Background()
 	resp, err := c.Do(&ctx, req)
 	if err != nil {

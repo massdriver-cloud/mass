@@ -45,7 +45,7 @@ func TestGet(t *testing.T) {
 
 			c := restclient.NewClient().WithBaseURL(testServer.URL)
 
-			got, err := definition.GetDefinition(c, "massdriver/test-schema")
+			got, err := definition.Get(c, "massdriver/test-schema")
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

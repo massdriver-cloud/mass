@@ -1,6 +1,7 @@
 package definition_test
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,18 +14,14 @@ import (
 func TestPublish(t *testing.T) {
 	type test struct {
 		name       string
-		definition *definition.Definition
+		definition *bytes.Buffer
 		wantBody   string
 	}
 	tests := []test{
 		{
-			name: "simple",
-			definition: &definition.Definition{
-				"definition": map[string]interface{}{
-					"foo": "bar",
-				},
-			},
-			wantBody: `{"definition":{"foo":"bar"}}`,
+			name:       "simple",
+			definition: bytes.NewBuffer([]byte(`{"data":{"hello":"world"},"specs":{}}`)),
+			wantBody:   `{"data":{"hello":"world"},"specs":{}}`,
 		},
 	}
 
@@ -43,7 +40,7 @@ func TestPublish(t *testing.T) {
 
 			c := restclient.NewClient().WithBaseURL(testServer.URL)
 
-			err := tc.definition.Publish(c)
+			err := definition.Publish(c, tc.definition)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

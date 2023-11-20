@@ -1,3 +1,6 @@
 package definition
 
-type Definition map[string]interface{}
+type Definition struct {
+	Data  map[string]interface{} `json:"data"`
+	Specs map[string]interface{} `json:"specs"`
+}
