@@ -36,6 +36,7 @@ Configure and deploying infrastructure and applications.
 * [mass artifact](/cli/commands/mass_artifact)	 - Manage artifacts
 * [mass bundle](/cli/commands/mass_bundle)	 - Generate and publish bundles
 * [mass completion](/cli/commands/mass_completion)	 - Generate the autocompletion script for the specified shell
+* [mass definition](/cli/commands/mass_definition)	 - Artifact definition management
 * [mass docs](/cli/commands/mass_docs)	 - Gen docs
 * [mass image](/cli/commands/mass_image)	 - Container image integration Massdriver
 * [mass infrastructure](/cli/commands/mass_infrastructure)	 - Manage infrastructure
