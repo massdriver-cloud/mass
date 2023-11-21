@@ -12,7 +12,6 @@ import (
 )
 
 func Publish(c *restclient.MassdriverClient, in io.Reader) error {
-
 	byteValue, _ := io.ReadAll(in)
 
 	// attempt to unmarshall to make sure it's valid JSON
