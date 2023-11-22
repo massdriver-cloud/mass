@@ -20,8 +20,8 @@ func TestPublish(t *testing.T) {
 	tests := []test{
 		{
 			name:       "simple",
-			definition: bytes.NewBuffer([]byte(`{"data":{"hello":"world"},"specs":{}}`)),
-			wantBody:   `{"data":{"hello":"world"},"specs":{}}`,
+			definition: bytes.NewBuffer([]byte(`{"$md":{"access":"public","name":"foo"},"required":["data","specs"],"properties":{"data":{},"specs":{}}}`)),
+			wantBody:   `{"$md":{"access":"public","name":"foo"},"required":["data","specs"],"properties":{"data":{},"specs":{}}}`,
 		},
 	}
 

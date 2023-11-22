@@ -1,0 +1,53 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema",
+    "type": "object",
+    "title": "Bundle",
+    "required": [
+        "$md",
+        "required",
+        "properties"
+    ],
+    "properties": {
+        "$md": {
+            "type": "object",
+            "properties": {
+                "access": {
+                    "type": "string",
+                    "enum": [
+                        "public",
+                        "private"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]+$"
+                }
+            }
+        },
+        "required": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "const": [
+                "data",
+                "specs"
+            ]
+        },
+        "properties": {
+            "type": "object",
+            "required": [
+                "data",
+                "specs"
+            ],
+            "properties": {
+                "data": {
+                    "type": "object"
+                },
+                "specs": {
+                    "type": "object"
+                }
+            }
+        }
+    }
+}
