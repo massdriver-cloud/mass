@@ -100,7 +100,7 @@ func dereferenceList(val reflect.Value, opts DereferenceOptions) ([]interface{},
 }
 
 func dereferenceMassdriverRef(hydratedSchema map[string]interface{}, schema map[string]interface{}, schemaRefValue string, opts DereferenceOptions) (map[string]interface{}, error) {
-	referencedSchema, err := definition.GetDefinition(opts.Client, schemaRefValue)
+	referencedSchema, err := definition.Get(opts.Client, schemaRefValue)
 	if err != nil {
 		return hydratedSchema, err
 	}
