@@ -24,7 +24,7 @@ func Publish(c *restclient.MassdriverClient, in io.Reader) error {
 
 	// validate artifact definition against JSON Schema meta-schema
 	// and artifact definition schema
-	artdefSchemaBytes, _ := definitionFS.ReadFile("schemas/artifact-definition-schema.json")
+	artdefSchemaBytes, err := definitionFS.ReadFile("schemas/artifact-definition-schema.json")
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func Publish(c *restclient.MassdriverClient, in io.Reader) error {
 	if err != nil {
 		return err
 	}
-	metaSchemaBytes, _ := definitionFS.ReadFile("schemas/meta-schema.json")
+	metaSchemaBytes, err := definitionFS.ReadFile("schemas/meta-schema.json")
 	if err != nil {
 		return err
 	}

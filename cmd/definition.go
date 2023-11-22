@@ -33,7 +33,7 @@ func NewCmdDefinition() *cobra.Command {
 		SilenceUsage: true,
 	}
 	definitionPublishCmd.Flags().StringP("file", "f", "", "File containing artifact definition schema (use - for stdin)")
-	definitionPublishCmd.MarkFlagRequired("file")
+	_ = definitionPublishCmd.MarkFlagRequired("file")
 
 	definitionCmd.AddCommand(definitionGetCmd)
 	definitionCmd.AddCommand(definitionPublishCmd)
