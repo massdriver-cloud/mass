@@ -18,12 +18,21 @@ type Config struct {
 }
 
 var c Config
+var envvarError = "%s environment variable exists but has no value, please set a value to continue"
 
 func Get() (*Config, error) {
 	ctx := context.Background()
 	err := envconfig.Process(ctx, &c)
 	if err != nil {
 		return nil, fmt.Errorf("required environment variable not set: %w", err)
+	}
+
+	if c.APIKey == "" {
+		return nil, fmt.Errorf(envvarError, "MASSDRIVER_API_KEY")
+	}
+
+	if c.OrgID == "" {
+		return nil, fmt.Errorf(envvarError, "MASSDRIVER_ORG_ID")
 	}
 
 	setDefaults(&c)
