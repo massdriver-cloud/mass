@@ -256,6 +256,23 @@ func unmarshalBundleandApplyDefaults(readDirectory string, cmd *cobra.Command, f
 		bundle.ApplyAppBlockDefaults(unmarshalledBundle)
 	}
 
+	// This looks weird but we have to be careful we don't overwrite things that do exist in the bundle file
+	if unmarshalledBundle.Connections == nil {
+		unmarshalledBundle.Connections = make(map[string]any)
+	}
+
+	if unmarshalledBundle.Connections["properties"] == nil {
+		unmarshalledBundle.Connections["properties"] = make(map[string]any)
+	}
+
+	if unmarshalledBundle.Artifacts == nil {
+		unmarshalledBundle.Artifacts = make(map[string]any)
+	}
+
+	if unmarshalledBundle.Artifacts["properties"] == nil {
+		unmarshalledBundle.Artifacts["properties"] = make(map[string]any)
+	}
+
 	return unmarshalledBundle, nil
 }
 
