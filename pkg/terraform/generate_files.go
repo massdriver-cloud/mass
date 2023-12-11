@@ -1,26 +1,24 @@
 package terraform
 
 import (
+	"bytes"
+	"embed"
+	"encoding/json"
 	"fmt"
 	"path"
 
+	"github.com/massdriver-cloud/airlock/pkg/terraform"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/spf13/afero"
 )
+
+//go:embed schemas/metadata-schema.json
+var bundleFS embed.FS
 
 type schema struct {
 	label     string
 	schema    map[string]interface{}
 	writePath string
-}
-
-var mdVars = map[string]interface{}{
-	"required": []string{},
-	"properties": map[string]interface{}{
-		"md_metadata": map[string]interface{}{
-			"type": "object",
-		},
-	},
 }
 
 func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {
@@ -48,6 +46,17 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 }
 
 func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {
+	metadataBytes, err := bundleFS.ReadFile("schemas/metadata-schema.json")
+	if err != nil {
+		return err
+	}
+
+	var metadata map[string]interface{}
+	err = json.Unmarshal(metadataBytes, &metadata)
+	if err != nil {
+		return err
+	}
+
 	varFileTasks := []schema{
 		{
 			label:     "params",
@@ -61,28 +70,23 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 		},
 		{
 			label:     "md",
-			schema:    mdVars,
+			schema:    metadata,
 			writePath: path.Join(buildPath, stepPath),
 		},
 	}
 
 	for _, task := range varFileTasks {
-		schemaRequiredProperties := createRequiredPropertiesMap(task.schema)
-
-		props, ok := task.schema["properties"].(map[string]interface{})
-		if !ok {
-			// We should not hit this now since we are defaulting properties in the bundle
-			// unmarshal so if we do get here, we want to know.
-			return fmt.Errorf("%s block is missing 'properties' entry", task.label)
-		}
-
-		content, err := transpile(props, schemaRequiredProperties)
-
+		schemaBytes, err := json.Marshal(task.schema)
 		if err != nil {
 			return err
 		}
 
-		filePath := fmt.Sprintf("/_%s_variables.tf.json", task.label)
+		content, err := terraform.SchemaToTf(bytes.NewReader(schemaBytes))
+		if err != nil {
+			return err
+		}
+
+		filePath := fmt.Sprintf("/_%s_variables.tf", task.label)
 		err = afero.WriteFile(fs, path.Join(buildPath, stepPath, filePath), content, 0755)
 
 		if err != nil {

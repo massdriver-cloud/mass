@@ -136,7 +136,7 @@ var expectedSchemaContents = map[string][]byte{
 }
 
 var expectedTFContent = map[string][]byte{
-	"_connections_variables.tf.json": []byte(`{
+	"_connections_variables.tf": []byte(`{
     "variable": {
         "draft_node_foo": {
             "type": "any",
@@ -145,7 +145,7 @@ var expectedTFContent = map[string][]byte{
     }
 }
 `),
-	"_md_variables.tf.json": []byte(`{
+	"_md_variables.tf": []byte(`{
     "variable": {
         "md_metadata": {
             "type": "any",
@@ -154,7 +154,7 @@ var expectedTFContent = map[string][]byte{
     }
 }
 `),
-	"_params_variables.tf.json": []byte(`{
+	"_params_variables.tf": []byte(`{
     "variable": {
         "foo": {
             "type": "any",
