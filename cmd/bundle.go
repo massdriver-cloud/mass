@@ -191,8 +191,7 @@ func runBundleNewFlags(cmd *cobra.Command) (*templatecache.TemplateData, error) 
 
 func runBundleNew(cmd *cobra.Command, args []string) error {
 	fs := afero.NewOsFs()
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
-	err := commands.RefreshTemplates(cache)
+	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	if err != nil {
 		return err
 	}
