@@ -117,8 +117,9 @@ func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 	return commands.RefreshTemplates(cache)
 }
 
-func runBundleNew(cmd *cobra.Command, args []string) error {
-	var fs = afero.NewOsFs()
+func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, error) {
+	fs := afero.NewOsFs()
+
 	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	err := commands.RefreshTemplates(cache)
 	if err != nil {
@@ -133,7 +134,7 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 
 	artifactDefs, err := api.GetArtifactDefinitions(gqlclient, c.OrgID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var artifacts []string
@@ -153,7 +154,7 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 		// Promptui templates are a nightmare. Need to support multi repos when moving this to bubbletea
 		TemplateRepo: "/massdriver-cloud/application-templates",
 		// TODO: unify bundle build and app build outputDir logic and support
-		OutputDir: ".",
+		OutputDir: outputDir,
 	}
 
 	err = bundle.RunPromptNew(templateData)
@@ -166,6 +167,10 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	err = commands.GenerateNewBundle(cache, templateData)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
