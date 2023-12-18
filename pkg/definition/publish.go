@@ -3,21 +3,45 @@ package definition
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"embed"
 	"errors"
 	"fmt"
 	"io"
 
 	"github.com/massdriver-cloud/mass/pkg/restclient"
+	"github.com/xeipuuv/gojsonschema"
 )
 
-func (art *Definition) Publish(c *restclient.MassdriverClient) error {
-	bodyBytes, err := json.Marshal(*art)
+//go:embed schemas/artifact-definition-schema.json
+//go:embed schemas/meta-schema.json
+var definitionFS embed.FS
+
+func Publish(c *restclient.MassdriverClient, in io.Reader) error {
+	artdefBytes, err := io.ReadAll(in)
 	if err != nil {
 		return err
 	}
 
-	req := restclient.NewRequest("PUT", "artifact-definitions", bytes.NewBuffer(bodyBytes))
+	// validate artifact definition against JSON Schema meta-schema
+	// and artifact definition schema
+	artdefSchemaBytes, err := definitionFS.ReadFile("schemas/artifact-definition-schema.json")
+	if err != nil {
+		return err
+	}
+	err = validateArtifactDefinition(artdefBytes, artdefSchemaBytes)
+	if err != nil {
+		return err
+	}
+	metaSchemaBytes, err := definitionFS.ReadFile("schemas/meta-schema.json")
+	if err != nil {
+		return err
+	}
+	err = validateArtifactDefinition(artdefBytes, metaSchemaBytes)
+	if err != nil {
+		return err
+	}
+
+	req := restclient.NewRequest("PUT", "artifact-definitions", bytes.NewBuffer(artdefBytes))
 	ctx := context.Background()
 	resp, err := c.Do(&ctx, req)
 	if err != nil {
@@ -34,5 +58,24 @@ func (art *Definition) Publish(c *restclient.MassdriverClient) error {
 		return errors.New("received non-200 response from Massdriver: " + resp.Status)
 	}
 
+	return nil
+}
+
+func validateArtifactDefinition(artdefBytes, schemaBytes []byte) error {
+	documentLoader := gojsonschema.NewBytesLoader(artdefBytes)
+	schemaLoader := gojsonschema.NewBytesLoader(schemaBytes)
+
+	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	if err != nil {
+		return err
+	}
+
+	if !result.Valid() {
+		errors := "Artifact definition has schema violations:\n"
+		for _, violation := range result.Errors() {
+			errors += fmt.Sprintf("\t- %v\n", violation)
+		}
+		return fmt.Errorf(errors)
+	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/artifact"
 	"github.com/massdriver-cloud/mass/pkg/commands"
@@ -9,30 +10,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var artifactCmdHelp = mustRenderHelpDoc("artifact")
-var artifactImportCmdHelp = mustRenderHelpDoc("artifact/import")
+func NewCmdArtifact() *cobra.Command {
+	artifactCmd := &cobra.Command{
+		Use:   "artifact",
+		Short: "Manage artifacts",
+		Long:  helpdocs.MustRender("artifact"),
+	}
 
-var artifactCmd = &cobra.Command{
-	Use:   "artifact",
-	Short: "Manage artifacts",
-	Long:  artifactCmdHelp,
-}
-
-// Import
-var artifactImportCmd = &cobra.Command{
-	Use:   `import`,
-	Short: "Import a custom artifact",
-	Long:  artifactImportCmdHelp,
-	RunE:  runArtifactImport,
-}
-
-func init() {
-	rootCmd.AddCommand(artifactCmd)
-
-	artifactCmd.AddCommand(artifactImportCmd)
+	// Import
+	artifactImportCmd := &cobra.Command{
+		Use:   `import`,
+		Short: "Import a custom artifact",
+		Long:  helpdocs.MustRender("artifact/import"),
+		RunE:  runArtifactImport,
+	}
 	artifactImportCmd.Flags().StringP("name", "n", "", "Artifact name")
 	artifactImportCmd.Flags().StringP("type", "t", "", "Artifact type")
 	artifactImportCmd.Flags().StringP("file", "f", "", "Artifact file")
+
+	artifactCmd.AddCommand(artifactImportCmd)
+
+	return artifactCmd
 }
 
 func runArtifactImport(cmd *cobra.Command, args []string) error {

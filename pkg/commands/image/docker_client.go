@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/massdriver-cloud/mass/pkg/api"
@@ -114,7 +115,7 @@ func repoPrefix(uri string) string {
 }
 
 func createAuthForCloud(containerRepository *api.ContainerRepository) (string, error) {
-	authConfig := &types.AuthConfig{}
+	authConfig := &registry.AuthConfig{}
 
 	err := setAuthUserNameByCloud(containerRepository, authConfig)
 
@@ -141,7 +142,7 @@ func createAuthForCloud(containerRepository *api.ContainerRepository) (string, e
 	return encodedAuth, nil
 }
 
-func setAuthUserNameByCloud(containerRepository *api.ContainerRepository, auth *types.AuthConfig) error {
+func setAuthUserNameByCloud(containerRepository *api.ContainerRepository, auth *registry.AuthConfig) error {
 	switch identifyCloudByRepositoryURI(containerRepository.RepositoryURI) {
 	case AWS:
 		auth.Username = "AWS"
@@ -156,7 +157,7 @@ func setAuthUserNameByCloud(containerRepository *api.ContainerRepository, auth *
 	return nil
 }
 
-func maybeRemoveSuffix(containerRepository *api.ContainerRepository, auth *types.AuthConfig) error {
+func maybeRemoveSuffix(containerRepository *api.ContainerRepository, auth *registry.AuthConfig) error {
 	switch identifyCloudByRepositoryURI(containerRepository.RepositoryURI) {
 	case GCP:
 		auth.ServerAddress = dockerURIPattern.FindString(containerRepository.RepositoryURI)

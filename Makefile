@@ -20,7 +20,14 @@ clean:
 	rm -rf ${API_DIR}/zz_generated.go
 
 .PHONY: generate
-generate: ${API_DIR}/zz_generated.go
+generate:
+	./scripts/graphql-gen.sh
+	cd ${API_DIR} && go generate
+
+.PHONY:
+swagger-gen:
+	swag fmt -g cmd/server.go
+	swag init -g cmd/server.go --pd --ot go,yaml
 
 .PHONY: test
 test:
@@ -49,10 +56,3 @@ install.macos: build.macos
 .PHONY: install.linux
 install.linux: build.linux
 	cp -f bin/mass-linux-amd64 ${INSTALL_PATH}/mass
-
-${API_DIR}/schema.graphql:
-	cd ${MASSDRIVER_PATH} && mix absinthe.schema.sdl ${MKFILE_DIR}/${API_DIR}/schema.graphql
-
-${API_DIR}/zz_generated.go: ${API_DIR}/schema.graphql
-	go get github.com/Khan/genqlient/generate@v0.5.0
-	cd ${API_DIR} && go generate

@@ -9,26 +9,27 @@ import (
 )
 
 // versionCmd represents the version command
-var versionCmd = &cobra.Command{
-	Use:     "version",
-	Aliases: []string{"v"},
-	Short:   "Version of Mass CLI",
-	Long:    ``,
-	RunE:    runVersion,
+func NewCmdVersion() *cobra.Command {
+	versionCmd := &cobra.Command{
+		Use:     "version",
+		Aliases: []string{"v"},
+		Short:   "Version of Mass CLI",
+		Long:    ``,
+		Run:     runVersion,
+	}
+	return versionCmd
 }
 
-func runVersion(cmd *cobra.Command, args []string) error {
-	isOld, _, err := version.CheckForNewerVersionAvailable()
+func runVersion(cmd *cobra.Command, args []string) {
+	latestVersion, err := version.GetLatestVersion()
 	if err != nil {
-		fmt.Printf("could not check for newer versions at %v: %v. skipping...\n", version.LatestReleaseURL, err.Error())
-	} else if isOld {
+		fmt.Printf("Could not check for newer version, skipping. url:%s error:%s", version.LatestReleaseURL, err.Error())
+		return
+	}
+	isOld, _ := version.CheckForNewerVersionAvailable(latestVersion)
+	if isOld {
 		fmt.Printf("A newer version of the CLI is available, you can download it here: %v\n", version.LatestReleaseURL)
 	}
-	var massVersionColor = prettylogs.Green(version.MassVersion())
+	massVersionColor := prettylogs.Green(version.MassVersion())
 	fmt.Printf("Mass CLI version: %v (git SHA: %v) \n", massVersionColor, version.MassGitSHA())
-	return nil
-}
-
-func init() {
-	rootCmd.AddCommand(versionCmd)
 }

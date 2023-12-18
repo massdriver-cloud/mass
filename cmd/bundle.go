@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"path"
+	"sort"
 	"strings"
 
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
+	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/commands/publish"
@@ -13,89 +15,89 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
-var bundleCmdHelp = mustRenderHelpDoc("bundle")
-
-var bundleTemplateCmdHelp = mustRenderHelpDoc("bundle/template")
-
-var templateListCmdHelp = mustRenderHelpDoc("bundle/template-list")
-
-var templateRefreshCmdHelp = mustRenderHelpDoc("bundle/template-refresh")
-
-var bundleCmd = &cobra.Command{
-	Use:   "bundle",
-	Short: "Generate and publish bundles",
-	Long:  bundleCmdHelp,
+// hiddenArtifacts are artifact definitions that the API returns that
+// should not be added to bundles
+var hiddenArtifacts = map[string]struct{}{
+	"massdriver/api":        {},
+	"massdriver/draft-node": {},
 }
 
-var bundleTemplateCmd = &cobra.Command{
-	Use:   "template",
-	Short: "Application template development tools",
-	Long:  bundleTemplateCmdHelp,
-}
+func NewCmdBundle() *cobra.Command {
+	bundleCmd := &cobra.Command{
+		Use:   "bundle",
+		Short: "Generate and publish bundles",
+		Long:  helpdocs.MustRender("bundle"),
+	}
 
-var bundleTemplateListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List bundle templates",
-	Long:  templateListCmdHelp,
-	RunE:  runBundleTemplateList,
-}
+	bundleBuildCmd := &cobra.Command{
+		Use:   "build",
+		Short: "Build schemas from massdriver.yaml file",
+		RunE:  runBundleBuild,
+	}
+	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
-var bundleTemplateRefreshCmd = &cobra.Command{
-	Use:   "refresh",
-	Short: "Update template list from the official Massdriver Github",
-	Long:  templateRefreshCmdHelp,
-	RunE:  runBundleTemplateRefresh,
-}
+	bundleLintCmd := &cobra.Command{
+		Use:          "lint",
+		Short:        "Check massdriver.yaml file for common errors",
+		SilenceUsage: true,
+		RunE:         runBundleLint,
+	}
+	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
-var bundleNewCmd = &cobra.Command{
-	Use:   "new",
-	Short: "Create a new bundle from a template",
-	RunE:  runBundleNew,
-}
+	bundleNewCmd := &cobra.Command{
+		Use:   "new",
+		Short: "Create a new bundle from a template",
+		RunE:  runBundleNew,
+	}
 
-var bundleBuildCmd = &cobra.Command{
-	Use:   "build",
-	Short: "Build schemas from massdriver.yaml file",
-	RunE:  runBundleBuild,
-}
+	bundlePublishCmd := &cobra.Command{
+		Use:   "publish",
+		Short: "Publish bundle to Massdriver's package manager",
+		RunE:  runBundlePublish,
+	}
+	bundlePublishCmd.Flags().String("access", "private", "Override the access, useful in CI for deploying to sandboxes.")
+	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
-var bundleLintCmd = &cobra.Command{
-	Use:          "lint",
-	Short:        "Check massdriver.yaml file for common errors",
-	SilenceUsage: true,
-	RunE:         runBundleLint,
-}
+	bundleTemplateCmd := &cobra.Command{
+		Use:   "template",
+		Short: "Application template development tools",
+		Long:  helpdocs.MustRender("bundle/template"),
+	}
 
-var bundlePublishCmd = &cobra.Command{
-	Use:   "publish",
-	Short: "Publish bundle to Massdriver's package manager",
-	RunE:  runBundlePublish,
-}
+	bundleTemplateListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List bundle templates",
+		Long:  helpdocs.MustRender("bundle/template-list"),
+		RunE:  runBundleTemplateList,
+	}
 
-func init() {
-	rootCmd.AddCommand(bundleCmd)
+	bundleTemplateRefreshCmd := &cobra.Command{
+		Use:   "refresh",
+		Short: "Update template list from the official Massdriver Github",
+		Long:  helpdocs.MustRender("bundle/template-refresh"),
+		RunE:  runBundleTemplateRefresh,
+	}
+
+	bundleCmd.AddCommand(bundleBuildCmd)
+	bundleCmd.AddCommand(bundleLintCmd)
 	bundleCmd.AddCommand(bundleNewCmd)
+	bundleCmd.AddCommand(bundlePublishCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
-	bundleCmd.AddCommand(bundleBuildCmd)
-	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
-	bundleCmd.AddCommand(bundlePublishCmd)
-	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
-	bundleNewCmd.Flags().StringP("name", "n", "", "Name of the new bundle")
-	bundleNewCmd.Flags().StringP("description", "d", "", "Description of the new bundle")
-	bundleNewCmd.Flags().StringP("template-type", "t", "", "Name of the bundle template to use")
-	bundleNewCmd.Flags().StringSliceP("connections", "c", []string{}, "Connections and names to add to the bundle - example: massdriver/vpc=network")
-	bundleNewCmd.Flags().StringP("output-directory", "o", ".", "Directory to output the new bundle")
+
+	return bundleCmd
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	templateList, err := commands.ListTemplates(cache)
+	if err != nil {
+		return err
+	}
 	// TODO: BubbleTea a nice data grid for this. Repo title row with template list sub rows.
 
 	view := ""
@@ -105,155 +107,57 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println(view)
-	return err
+	return nil
 }
 
 func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
-	fs := afero.NewOsFs()
-	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	var fs = afero.NewOsFs()
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+
+	return commands.RefreshTemplates(cache)
+}
+
+func runBundleNew(cmd *cobra.Command, args []string) error {
+	var fs = afero.NewOsFs()
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	err := commands.RefreshTemplates(cache)
 	if err != nil {
 		return err
 	}
 
-	return commands.RefreshTemplates(cache)
-}
-
-func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, error) {
-	fs := afero.NewOsFs()
-
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
-<<<<<<< HEAD
-
-	return commands.RefreshTemplates(cache)
-=======
-
-	err := commands.RefreshTemplates(cache)
-	if err != nil {
-		return nil, err
+	c, configErr := config.Get()
+	if configErr != nil {
+		return configErr
 	}
+	gqlclient := api.NewClient(c.URL, c.APIKey)
+
+	artifactDefs, err := api.GetArtifactDefinitions(gqlclient, c.OrgID)
+	if err != nil {
+		return err
+	}
+
+	var artifacts []string
+	for _, v := range artifactDefs {
+		if _, ok := hiddenArtifacts[v.Name]; ok {
+			continue
+		}
+		artifacts = append(artifacts, v.Name)
+	}
+
+	sort.StringSlice(artifacts).Sort()
+
+	bundle.SetMassdriverArtifactDefinitions(artifacts)
 
 	templateData := &templatecache.TemplateData{
 		Access: "private",
 		// Promptui templates are a nightmare. Need to support multi repos when moving this to bubbletea
 		TemplateRepo: "/massdriver-cloud/application-templates",
 		// TODO: unify bundle build and app build outputDir logic and support
-		OutputDir: outputDir,
+		OutputDir: ".",
 	}
 
 	err = bundle.RunPromptNew(templateData)
 	if err != nil {
-		return nil, err
-	}
-
-	err = commands.GenerateNewBundle(cache, templateData)
-	if err != nil {
-		return nil, err
-	}
-
-	return templateData, nil
-}
-
-func runBundleNewFlags(cmd *cobra.Command) (*templatecache.TemplateData, error) {
-	name, err := cmd.Flags().GetString("name")
-	if err != nil {
-		return nil, err
-	}
-
-	description, err := cmd.Flags().GetString("description")
-	if err != nil {
-		return nil, err
-	}
-
-	connections, err := cmd.Flags().GetStringSlice("connections")
-	if err != nil {
-		return nil, err
-	}
-
-	templateName, err := cmd.Flags().GetString("template-type")
-	if err != nil {
-		return nil, err
-	}
-
-	outputDir, err := cmd.Flags().GetString("output-directory")
-	if err != nil {
-		return nil, err
-	}
-
-	connectionData := make([]templatecache.Connection, len(connections))
-	for i, conn := range connections {
-		parts := strings.Split(conn, "=")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid connection argument: %s", conn)
-		}
-		connectionData[i] = templatecache.Connection{
-			ArtifactDefinition: parts[1],
-			Name:               parts[0],
-		}
-	}
-
-	templateData := &templatecache.TemplateData{
-		Access:       "private",
-		TemplateRepo: "/massdriver-cloud/application-templates",
-		OutputDir:    outputDir,
-		Name:         name,
-		Description:  description,
-		TemplateName: templateName,
-		Connections:  connectionData,
-	}
-
-	return templateData, nil
->>>>>>> Refactoring for cleanup
-}
-
-func runBundleNew(cmd *cobra.Command, args []string) error {
-	var (
-		name         string
-		templateName string
-		outputDir    string
-		err          error
-	)
-
-	// define flag
-	name, err = cmd.Flags().GetString("name")
-	if err != nil {
-		return err
-	}
-
-	templateName, err = cmd.Flags().GetString("template-type")
-	if err != nil {
-		return err
-	}
-
-	outputDir, err = cmd.Flags().GetString("output-directory")
-	if err != nil {
-		return err
-	}
-
-	// parse flags
-	if err := cmd.ParseFlags(args); err != nil {
-		return err
-	}
-
-	var templateData *templatecache.TemplateData
-	if name == "" || templateName == "" {
-		// run the interactive prompt
-		templateData, err = runBundleNewInteractive(outputDir)
-		if err != nil {
-			return err
-		}
-	} else {
-		// skip the interactive prompt and use flags
-		templateData, err = runBundleNewFlags(cmd)
-		if err != nil {
-			return err
-		}
-	}
-<<<<<<< HEAD
-=======
-
-	fs := afero.NewOsFs()
-	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
-	if err != nil {
 		return err
 	}
 
@@ -261,7 +165,7 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
->>>>>>> Refactoring for cleanup
+
 	return nil
 }
 
@@ -269,13 +173,11 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
-
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
-
+	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
 	if err != nil {
 		return err
 	}
@@ -295,13 +197,11 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
-
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
-
+	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
 	if err != nil {
 		return err
 	}
@@ -309,7 +209,6 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
 	err = unmarshalledBundle.DereferenceSchemas(buildDirectory, c, fs)
-
 	if err != nil {
 		return err
 	}
@@ -326,13 +225,11 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
-
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundle(buildDirectory, cmd, fs)
-
+	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
 	if err != nil {
 		return err
 	}
@@ -340,7 +237,6 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
 	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
-
 	if err != nil {
 		return err
 	}
@@ -348,17 +244,8 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	return publish.Run(unmarshalledBundle, c, fs, buildDirectory)
 }
 
-func unmarshalBundle(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bundle.Bundle, error) {
-	file, err := afero.ReadFile(fs, path.Join(readDirectory, "massdriver.yaml"))
-
-	if err != nil {
-		return nil, err
-	}
-
-	unmarshalledBundle := &bundle.Bundle{}
-
-	err = yaml.Unmarshal(file, unmarshalledBundle)
-
+func unmarshalBundleandApplyDefaults(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bundle.Bundle, error) {
+	unmarshalledBundle, err := bundle.UnmarshalBundle(readDirectory, fs)
 	if err != nil {
 		return nil, err
 	}
@@ -366,29 +253,31 @@ func unmarshalBundle(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bu
 	applyOverrides(unmarshalledBundle, cmd)
 
 	if unmarshalledBundle.IsApplication() {
-		applyAppBlockDefaults(unmarshalledBundle)
+		bundle.ApplyAppBlockDefaults(unmarshalledBundle)
+	}
+
+	// This looks weird but we have to be careful we don't overwrite things that do exist in the bundle file
+	if unmarshalledBundle.Connections == nil {
+		unmarshalledBundle.Connections = make(map[string]any)
+	}
+
+	if unmarshalledBundle.Connections["properties"] == nil {
+		unmarshalledBundle.Connections["properties"] = make(map[string]any)
+	}
+
+	if unmarshalledBundle.Artifacts == nil {
+		unmarshalledBundle.Artifacts = make(map[string]any)
+	}
+
+	if unmarshalledBundle.Artifacts["properties"] == nil {
+		unmarshalledBundle.Artifacts["properties"] = make(map[string]any)
 	}
 
 	return unmarshalledBundle, nil
 }
 
-func applyAppBlockDefaults(b *bundle.Bundle) {
-	if b.AppSpec != nil {
-		if b.AppSpec.Envs == nil {
-			b.AppSpec.Envs = map[string]string{}
-		}
-		if b.AppSpec.Policies == nil {
-			b.AppSpec.Policies = []string{}
-		}
-		if b.AppSpec.Secrets == nil {
-			b.AppSpec.Secrets = map[string]bundle.Secret{}
-		}
-	}
-}
-
 func applyOverrides(bundle *bundle.Bundle, cmd *cobra.Command) {
 	access, err := cmd.Flags().GetString("access")
-
 	if err == nil {
 		bundle.Access = access
 	}

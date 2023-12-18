@@ -30,7 +30,7 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 		return err
 	}
 
-	devParamPath := path.Join(buildPath, stepPath, "_params.auto.tfvars.json")
+	devParamPath := path.Join(buildPath, stepPath, bundle.ParamsFile)
 
 	err = transpileAndWriteDevParams(devParamPath, b, fs)
 
@@ -38,7 +38,7 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 		return fmt.Errorf("error compiling dev params: %w", err)
 	}
 
-	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, "_connections.auto.tfvars.json"), b, fs)
+	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, bundle.ConnsFile), b, fs)
 
 	if err != nil {
 		return err
@@ -69,7 +69,14 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 	for _, task := range varFileTasks {
 		schemaRequiredProperties := createRequiredPropertiesMap(task.schema)
 
-		content, err := transpile(task.schema["properties"].(map[string]interface{}), schemaRequiredProperties)
+		props, ok := task.schema["properties"].(map[string]interface{})
+		if !ok {
+			// We should not hit this now since we are defaulting properties in the bundle
+			// unmarshal so if we do get here, we want to know.
+			return fmt.Errorf("%s block is missing 'properties' entry", task.label)
+		}
+
+		content, err := transpile(props, schemaRequiredProperties)
 
 		if err != nil {
 			return err

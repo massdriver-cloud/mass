@@ -6,11 +6,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/spf13/afero"
-	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/yaml"
 )
 
 func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
@@ -116,7 +117,7 @@ func TestTemplateRender(t *testing.T) {
 
 	checkErr(err, t)
 
-	got := make(map[string]interface{})
+	got := &bundle.Bundle{}
 
 	err = yaml.Unmarshal(renderedTemplate, got)
 
@@ -134,12 +135,12 @@ func TestTemplateRender(t *testing.T) {
 		"required": []interface{}{"aws_authentication", "dynamo"},
 	}
 
-	if got["name"] != templateData.Name {
-		t.Errorf("Expected rendered template's name field to be %s but got %s", templateData.Name, got["name"])
+	if got.Name != templateData.Name {
+		t.Errorf("Expected rendered template's name field to be %s but got %s", templateData.Name, got.Name)
 	}
 
-	if !reflect.DeepEqual(got["connections"], wantConnections) {
-		t.Errorf("Expected rendered template's connections field to be %v but got %v", wantConnections, got["connections"])
+	if !reflect.DeepEqual(got.Connections, wantConnections) {
+		t.Errorf("Expected rendered template's connections field to be %v but got %v", wantConnections, got.Connections)
 	}
 }
 

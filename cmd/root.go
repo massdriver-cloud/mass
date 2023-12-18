@@ -1,23 +1,19 @@
 package cmd
 
 import (
-	"embed"
-	"fmt"
 	"os"
 
-	"github.com/charmbracelet/glamour"
 	"github.com/spf13/cobra"
 )
 
-//go:embed helpdocs/*.md helpdocs/**
-var helpdocs embed.FS
-
+// This has 4 spaces at the beginning to make it look nice in md. It
+// turns it into a code block which preserves spaces/returns
 var rootCmdHelp = `
-███    ███  █████  ███████ ███████
-████  ████ ██   ██ ██      ██
-██ ████ ██ ███████ ███████ ███████
-██  ██  ██ ██   ██      ██      ██
-██      ██ ██   ██ ███████ ███████
+    ███    ███  █████  ███████ ███████
+    ████  ████ ██   ██ ██      ██
+    ██ ████ ██ ███████ ███████ ███████
+    ██  ██  ██ ██   ██      ██      ██
+    ██      ██ ██   ██ ███████ ███████
 
 Massdriver Cloud CLI
 
@@ -28,30 +24,27 @@ Configure and deploying infrastructure and applications.
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "mass",
-	Short: "Massdriver Cloud CLI",
-	Long:  rootCmdHelp,
+	Use:               "mass",
+	Short:             "Massdriver Cloud CLI",
+	Long:              rootCmdHelp,
+	DisableAutoGenTag: true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	rootCmd.AddCommand(NewCmdApp())
+	rootCmd.AddCommand(NewCmdArtifact())
+	rootCmd.AddCommand(NewCmdBundle())
+	rootCmd.AddCommand(NewCmdDefinition())
+	rootCmd.AddCommand(NewCmdDocs())
+	rootCmd.AddCommand(NewCmdImage())
+	rootCmd.AddCommand(NewCmdInfra())
+	rootCmd.AddCommand(NewCmdPreview())
+	rootCmd.AddCommand(NewCmdSchema())
 	rootCmd.AddCommand(NewCmdServer())
+	rootCmd.AddCommand(NewCmdVersion())
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
-}
-
-func mustRenderHelpDoc(name string) string {
-	path := fmt.Sprintf("helpdocs/%s.md", name)
-	data, err := helpdocs.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-
-	out, err := glamour.Render(string(data), "auto")
-	if err != nil {
-		panic(err)
-	}
-	return out
 }

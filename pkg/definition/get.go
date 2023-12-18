@@ -11,7 +11,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 )
 
-func GetDefinition(c *restclient.MassdriverClient, definitionType string) (map[string]interface{}, error) {
+func Get(c *restclient.MassdriverClient, definitionType string) (map[string]interface{}, error) {
 	var definition map[string]interface{}
 
 	endpoint := path.Join("artifact-definitions", definitionType)
