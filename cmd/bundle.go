@@ -87,7 +87,11 @@ func NewCmdBundle() *cobra.Command {
 	bundleCmd.AddCommand(bundleTemplateCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
-
+	bundleNewCmd.Flags().StringP("name", "n", "", "Name of the new bundle")
+	bundleNewCmd.Flags().StringP("description", "d", "", "Description of the new bundle")
+	bundleNewCmd.Flags().StringP("template-type", "t", "", "Name of the bundle template to use")
+	bundleNewCmd.Flags().StringSliceP("connections", "c", []string{}, "Connections and names to add to the bundle - example: massdriver/vpc=network")
+	bundleNewCmd.Flags().StringP("output-directory", "o", ".", "Directory to output the new bundle")
 	return bundleCmd
 }
 
@@ -121,33 +125,11 @@ func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, err
 	fs := afero.NewOsFs()
 
 	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+
 	err := commands.RefreshTemplates(cache)
-	if err != nil {
-		return err
-	}
-
-	c, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
-	gqlclient := api.NewClient(c.URL, c.APIKey)
-
-	artifactDefs, err := api.GetArtifactDefinitions(gqlclient, c.OrgID)
 	if err != nil {
 		return nil, err
 	}
-
-	var artifacts []string
-	for _, v := range artifactDefs {
-		if _, ok := hiddenArtifacts[v.Name]; ok {
-			continue
-		}
-		artifacts = append(artifacts, v.Name)
-	}
-
-	sort.StringSlice(artifacts).Sort()
-
-	bundle.SetMassdriverArtifactDefinitions(artifacts)
 
 	templateData := &templatecache.TemplateData{
 		Access: "private",
@@ -159,10 +141,114 @@ func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, err
 
 	err = bundle.RunPromptNew(templateData)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = commands.GenerateNewBundle(cache, templateData)
+	if err != nil {
+		return nil, err
+	}
+
+	return templateData, nil
+}
+
+func runBundleNewFlags(cmd *cobra.Command) (*templatecache.TemplateData, error) {
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return nil, err
+	}
+
+	description, err := cmd.Flags().GetString("description")
+	if err != nil {
+		return nil, err
+	}
+
+	connections, err := cmd.Flags().GetStringSlice("connections")
+	if err != nil {
+		return nil, err
+	}
+
+	templateName, err := cmd.Flags().GetString("template-type")
+	if err != nil {
+		return nil, err
+	}
+
+	outputDir, err := cmd.Flags().GetString("output-directory")
+	if err != nil {
+		return nil, err
+	}
+
+	connectionData := make([]templatecache.Connection, len(connections))
+	for i, conn := range connections {
+		parts := strings.Split(conn, "=")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid connection argument: %s", conn)
+		}
+		connectionData[i] = templatecache.Connection{
+			ArtifactDefinition: parts[1],
+			Name:               parts[0],
+		}
+	}
+
+	templateData := &templatecache.TemplateData{
+		Access:       "private",
+		TemplateRepo: "/massdriver-cloud/application-templates",
+		OutputDir:    outputDir,
+		Name:         name,
+		Description:  description,
+		TemplateName: templateName,
+		Connections:  connectionData,
+	}
+
+	return templateData, nil
+}
+
+func runBundleNew(cmd *cobra.Command, args []string) error {
+	var (
+		name         string
+		templateName string
+		outputDir    string
+		err          error
+	)
+
+	// define flag
+	name, err = cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+
+	templateName, err = cmd.Flags().GetString("template-type")
+	if err != nil {
+		return err
+	}
+
+	outputDir, err = cmd.Flags().GetString("output-directory")
+	if err != nil {
+		return err
+	}
+
+	// parse flags
+	if err := cmd.ParseFlags(args); err != nil {
+		return err
+	}
+
+	var templateData *templatecache.TemplateData
+	if name == "" || templateName == "" {
+		// run the interactive prompt
+		templateData, err = runBundleNewInteractive(outputDir)
+		if err != nil {
+			return err
+		}
+	} else {
+		// skip the interactive prompt and use flags
+		templateData, err = runBundleNewFlags(cmd)
+		if err != nil {
+			return err
+		}
+	}
+
+	fs := afero.NewOsFs()
+	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	if err != nil {
 		return err
 	}
