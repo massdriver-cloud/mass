@@ -122,7 +122,6 @@ func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 }
 
 func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, error) {
-
 	templateData := &templatecache.TemplateData{
 		Access: "private",
 		// Promptui templates are a nightmare. Need to support multi repos when moving this to bubbletea
