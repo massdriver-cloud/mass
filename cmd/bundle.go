@@ -122,14 +122,6 @@ func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 }
 
 func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, error) {
-	fs := afero.NewOsFs()
-
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
-
-	err := commands.RefreshTemplates(cache)
-	if err != nil {
-		return nil, err
-	}
 
 	templateData := &templatecache.TemplateData{
 		Access: "private",
@@ -139,12 +131,7 @@ func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, err
 		OutputDir: outputDir,
 	}
 
-	err = bundle.RunPromptNew(templateData)
-	if err != nil {
-		return nil, err
-	}
-
-	err = commands.GenerateNewBundle(cache, templateData)
+	err := bundle.RunPromptNew(templateData)
 	if err != nil {
 		return nil, err
 	}
@@ -204,11 +191,17 @@ func runBundleNewFlags(cmd *cobra.Command) (*templatecache.TemplateData, error) 
 }
 
 func runBundleNew(cmd *cobra.Command, args []string) error {
+	fs := afero.NewOsFs()
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	err := commands.RefreshTemplates(cache)
+	if err != nil {
+		return err
+	}
+
 	var (
 		name         string
 		templateName string
 		outputDir    string
-		err          error
 	)
 
 	// define flag
@@ -232,6 +225,29 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	c, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
+	gqlclient := api.NewClient(c.URL, c.APIKey)
+
+	artifactDefs, err := api.GetArtifactDefinitions(gqlclient, c.OrgID)
+	if err != nil {
+		return err
+	}
+
+	var artifacts []string
+	for _, v := range artifactDefs {
+		if _, ok := hiddenArtifacts[v.Name]; ok {
+			continue
+		}
+		artifacts = append(artifacts, v.Name)
+	}
+
+	sort.StringSlice(artifacts).Sort()
+
+	bundle.SetMassdriverArtifactDefinitions(artifacts)
+
 	var templateData *templatecache.TemplateData
 	if name == "" || templateName == "" {
 		// run the interactive prompt
@@ -247,8 +263,6 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fs := afero.NewOsFs()
-	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	if err != nil {
 		return err
 	}
