@@ -15,7 +15,7 @@ mass bundle new [flags]
 ### Options
 
 ```
-  -c, --connections strings       Connections and names to add to the bundle - example: massdriver/vpc=network
+  -c, --connections strings       Connections and names to add to the bundle - example: network=massdriver/vpc
   -d, --description string        Description of the new bundle
   -h, --help                      help for new
   -n, --name string               Name of the new bundle
