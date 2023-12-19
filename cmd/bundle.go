@@ -90,7 +90,7 @@ func NewCmdBundle() *cobra.Command {
 	bundleNewCmd.Flags().StringP("name", "n", "", "Name of the new bundle")
 	bundleNewCmd.Flags().StringP("description", "d", "", "Description of the new bundle")
 	bundleNewCmd.Flags().StringP("template-type", "t", "", "Name of the bundle template to use")
-	bundleNewCmd.Flags().StringSliceP("connections", "c", []string{}, "Connections and names to add to the bundle - example: massdriver/vpc=network")
+	bundleNewCmd.Flags().StringSliceP("connections", "c", []string{}, "Connections and names to add to the bundle - example: network=massdriver/vpc")
 	bundleNewCmd.Flags().StringP("output-directory", "o", ".", "Directory to output the new bundle")
 	return bundleCmd
 }
