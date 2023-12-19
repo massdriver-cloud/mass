@@ -196,6 +196,11 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	err = commands.RefreshTemplates(cache)
+	if err != nil {
+		return err
+	}
+
 	var (
 		name         string
 		templateName string
@@ -219,7 +224,7 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 	}
 
 	// parse flags
-	if err := cmd.ParseFlags(args); err != nil {
+	if err = cmd.ParseFlags(args); err != nil {
 		return err
 	}
 
