@@ -146,14 +146,13 @@ func TestTemplateRender(t *testing.T) {
 
 func mockTemplateData(writePath string) *templatecache.TemplateData {
 	return &templatecache.TemplateData{
-		OutputDir:      writePath,
-		Type:           "infrastructure",
-		TemplateName:   "terraform",
-		TemplateRepo:   "massdriver-cloud/infrastructure-templates",
-		TemplateSource: "/home/md-cloud",
-		Name:           "aws-dynamodb",
-		Access:         "private",
-		Description:    "whatever",
+		OutputDir:    writePath,
+		Type:         "infrastructure",
+		TemplateName: "terraform",
+		TemplateRepo: "massdriver-cloud/infrastructure-templates",
+		Name:         "aws-dynamodb",
+		Access:       "private",
+		Description:  "whatever",
 		Connections: []templatecache.Connection{
 			{ArtifactDefinition: "massdriver/aws-dynamodb-table", Name: "dynamo"},
 		},

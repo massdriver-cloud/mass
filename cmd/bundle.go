@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/commands/publish"
 	"github.com/massdriver-cloud/mass/pkg/config"
+	"github.com/massdriver-cloud/mass/pkg/params"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/spf13/afero"
@@ -92,6 +94,7 @@ func NewCmdBundle() *cobra.Command {
 	bundleNewCmd.Flags().StringP("template-type", "t", "", "Name of the bundle template to use")
 	bundleNewCmd.Flags().StringSliceP("connections", "c", []string{}, "Connections and names to add to the bundle - example: network=massdriver/vpc")
 	bundleNewCmd.Flags().StringP("output-directory", "o", ".", "Directory to output the new bundle")
+	bundleNewCmd.Flags().StringP("params-directory", "p", "", "Path with existing params to use - terraform module directory or helm chart values.yaml")
 	return bundleCmd
 }
 
@@ -164,6 +167,11 @@ func runBundleNewFlags(cmd *cobra.Command) (*templatecache.TemplateData, error) 
 		return nil, err
 	}
 
+	paramsDir, err := cmd.Flags().GetString("params-directory")
+	if err != nil {
+		return nil, err
+	}
+
 	connectionData := make([]templatecache.Connection, len(connections))
 	for i, conn := range connections {
 		parts := strings.Split(conn, "=")
@@ -177,13 +185,14 @@ func runBundleNewFlags(cmd *cobra.Command) (*templatecache.TemplateData, error) 
 	}
 
 	templateData := &templatecache.TemplateData{
-		Access:       "private",
-		TemplateRepo: "/massdriver-cloud/application-templates",
-		OutputDir:    outputDir,
-		Name:         name,
-		Description:  description,
-		TemplateName: templateName,
-		Connections:  connectionData,
+		Access:             "private",
+		TemplateRepo:       "/massdriver-cloud/application-templates",
+		OutputDir:          outputDir,
+		Name:               name,
+		Description:        description,
+		TemplateName:       templateName,
+		Connections:        connectionData,
+		ExistingParamsPath: paramsDir,
 	}
 
 	return templateData, nil
@@ -196,9 +205,13 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = commands.RefreshTemplates(cache)
-	if err != nil {
-		return err
+	// If MD_TEMPLATES_PATH is set then it's most likely local dev work on templates so don't fetch
+	// or the refresh will overwrite whatever path this points to
+	if os.Getenv("MD_TEMPLATES_PATH") == "" {
+		err = commands.RefreshTemplates(cache)
+		if err != nil {
+			return err
+		}
 	}
 
 	var (
@@ -220,11 +233,6 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 
 	outputDir, err = cmd.Flags().GetString("output-directory")
 	if err != nil {
-		return err
-	}
-
-	// parse flags
-	if err = cmd.ParseFlags(args); err != nil {
 		return err
 	}
 
@@ -266,15 +274,14 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	localParams, err := params.GetFromPath(templateData.TemplateName, templateData.ExistingParamsPath)
 	if err != nil {
 		return err
 	}
 
-	err = commands.GenerateNewBundle(cache, templateData)
-	if err != nil {
-		return err
-	}
-	return nil
+	templateData.ParamsSchema = localParams
+
+	return commands.GenerateNewBundle(cache, templateData)
 }
 
 func runBundleBuild(cmd *cobra.Command, args []string) error {
