@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"sort"
 	"strings"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/commands/publish"
 	"github.com/massdriver-cloud/mass/pkg/config"
+	"github.com/massdriver-cloud/mass/pkg/params"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/spf13/afero"
@@ -22,6 +25,15 @@ import (
 var hiddenArtifacts = map[string]struct{}{
 	"massdriver/api":        {},
 	"massdriver/draft-node": {},
+}
+
+type bundleNew struct {
+	name         string
+	description  string
+	templateName string
+	connections  []string
+	outputDir    string
+	paramsDir    string
 }
 
 func NewCmdBundle() *cobra.Command {
@@ -46,11 +58,20 @@ func NewCmdBundle() *cobra.Command {
 	}
 	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
+	var bundleNewInput bundleNew
+
 	bundleNewCmd := &cobra.Command{
 		Use:   "new",
 		Short: "Create a new bundle from a template",
-		RunE:  runBundleNew,
+		Run:   func(cmd *cobra.Command, args []string) { runBundleNew(&bundleNewInput) },
+		Long:  helpdocs.MustRender("bundle/new"),
 	}
+	bundleNewCmd.Flags().StringVarP(&bundleNewInput.name, "name", "n", "", "Name of the new bundle")
+	bundleNewCmd.Flags().StringVarP(&bundleNewInput.description, "description", "d", "", "Description of the new bundle")
+	bundleNewCmd.Flags().StringVarP(&bundleNewInput.templateName, "template-name", "t", "", "Name of the bundle template to use")
+	bundleNewCmd.Flags().StringSliceVarP(&bundleNewInput.connections, "connections", "c", []string{}, "Connections and names to add to the bundle - example: network=massdriver/vpc")
+	bundleNewCmd.Flags().StringVarP(&bundleNewInput.outputDir, "output-directory", "o", ".", "Directory to output the new bundle")
+	bundleNewCmd.Flags().StringVarP(&bundleNewInput.paramsDir, "params-directory", "p", "", "Path with existing params to use - terraform module directory or helm chart values.yaml")
 
 	bundlePublishCmd := &cobra.Command{
 		Use:   "publish",
@@ -87,11 +108,6 @@ func NewCmdBundle() *cobra.Command {
 	bundleCmd.AddCommand(bundleTemplateCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
-	bundleNewCmd.Flags().StringP("name", "n", "", "Name of the new bundle")
-	bundleNewCmd.Flags().StringP("description", "d", "", "Description of the new bundle")
-	bundleNewCmd.Flags().StringP("template-type", "t", "", "Name of the bundle template to use")
-	bundleNewCmd.Flags().StringSliceP("connections", "c", []string{}, "Connections and names to add to the bundle - example: network=massdriver/vpc")
-	bundleNewCmd.Flags().StringP("output-directory", "o", ".", "Directory to output the new bundle")
 	return bundleCmd
 }
 
@@ -138,34 +154,9 @@ func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, err
 	return templateData, nil
 }
 
-func runBundleNewFlags(cmd *cobra.Command) (*templatecache.TemplateData, error) {
-	name, err := cmd.Flags().GetString("name")
-	if err != nil {
-		return nil, err
-	}
-
-	description, err := cmd.Flags().GetString("description")
-	if err != nil {
-		return nil, err
-	}
-
-	connections, err := cmd.Flags().GetStringSlice("connections")
-	if err != nil {
-		return nil, err
-	}
-
-	templateName, err := cmd.Flags().GetString("template-type")
-	if err != nil {
-		return nil, err
-	}
-
-	outputDir, err := cmd.Flags().GetString("output-directory")
-	if err != nil {
-		return nil, err
-	}
-
-	connectionData := make([]templatecache.Connection, len(connections))
-	for i, conn := range connections {
+func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
+	connectionData := make([]templatecache.Connection, len(input.connections))
+	for i, conn := range input.connections {
 		parts := strings.Split(conn, "=")
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid connection argument: %s", conn)
@@ -177,66 +168,44 @@ func runBundleNewFlags(cmd *cobra.Command) (*templatecache.TemplateData, error) 
 	}
 
 	templateData := &templatecache.TemplateData{
-		Access:       "private",
-		TemplateRepo: "/massdriver-cloud/application-templates",
-		OutputDir:    outputDir,
-		Name:         name,
-		Description:  description,
-		TemplateName: templateName,
-		Connections:  connectionData,
+		Access:             "private",
+		TemplateRepo:       "/massdriver-cloud/application-templates",
+		OutputDir:          input.outputDir,
+		Name:               input.name,
+		Description:        input.description,
+		TemplateName:       input.templateName,
+		Connections:        connectionData,
+		ExistingParamsPath: input.paramsDir,
 	}
 
 	return templateData, nil
 }
 
-func runBundleNew(cmd *cobra.Command, args []string) error {
+func runBundleNew(input *bundleNew) {
 	fs := afero.NewOsFs()
 	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
-	err = commands.RefreshTemplates(cache)
-	if err != nil {
-		return err
-	}
-
-	var (
-		name         string
-		templateName string
-		outputDir    string
-	)
-
-	// define flag
-	name, err = cmd.Flags().GetString("name")
-	if err != nil {
-		return err
-	}
-
-	templateName, err = cmd.Flags().GetString("template-type")
-	if err != nil {
-		return err
-	}
-
-	outputDir, err = cmd.Flags().GetString("output-directory")
-	if err != nil {
-		return err
-	}
-
-	// parse flags
-	if err = cmd.ParseFlags(args); err != nil {
-		return err
+	// If MD_TEMPLATES_PATH is set then it's most likely local dev work on templates so don't fetch
+	// or the refresh will overwrite whatever path this points to
+	if os.Getenv("MD_TEMPLATES_PATH") == "" {
+		err = commands.RefreshTemplates(cache)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	c, configErr := config.Get()
 	if configErr != nil {
-		return configErr
+		log.Fatal(err)
 	}
 	gqlclient := api.NewClient(c.URL, c.APIKey)
 
 	artifactDefs, err := api.GetArtifactDefinitions(gqlclient, c.OrgID)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
 	var artifacts []string
@@ -252,29 +221,30 @@ func runBundleNew(cmd *cobra.Command, args []string) error {
 	bundle.SetMassdriverArtifactDefinitions(artifacts)
 
 	var templateData *templatecache.TemplateData
-	if name == "" || templateName == "" {
+	if input.name == "" || input.templateName == "" {
 		// run the interactive prompt
-		templateData, err = runBundleNewInteractive(outputDir)
+		templateData, err = runBundleNewInteractive(input.outputDir)
 		if err != nil {
-			return err
+			log.Fatal(err)
 		}
 	} else {
 		// skip the interactive prompt and use flags
-		templateData, err = runBundleNewFlags(cmd)
+		templateData, err = runBundleNewFlags(input)
 		if err != nil {
-			return err
+			log.Fatal(err)
 		}
 	}
 
+	localParams, err := params.GetFromPath(templateData.TemplateName, templateData.ExistingParamsPath)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
-	err = commands.GenerateNewBundle(cache, templateData)
-	if err != nil {
-		return err
+	templateData.ParamsSchema = localParams
+
+	if err = commands.GenerateNewBundle(cache, templateData); err != nil {
+		log.Fatal(err)
 	}
-	return nil
 }
 
 func runBundleBuild(cmd *cobra.Command, args []string) error {

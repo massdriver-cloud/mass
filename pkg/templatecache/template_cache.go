@@ -8,16 +8,21 @@ type TemplateCache interface {
 }
 
 type TemplateData struct {
-	Name           string       `json:"name"`
-	Description    string       `json:"description"`
-	Access         string       `json:"access"`
-	Location       string       `json:"location"`
-	TemplateName   string       `json:"templateName"`
-	TemplateRepo   string       `json:"templateRepo"`
-	TemplateSource string       `json:"templateSource"`
-	OutputDir      string       `json:"outputDir"`
-	Type           string       `json:"type"`
-	Connections    []Connection `json:"connections"`
+	Name         string       `json:"name"`
+	Description  string       `json:"description"`
+	Access       string       `json:"access"`
+	Location     string       `json:"location"`
+	TemplateName string       `json:"templateName"`
+	TemplateRepo string       `json:"templateRepo"`
+	OutputDir    string       `json:"outputDir"`
+	Type         string       `json:"type"`
+	Connections  []Connection `json:"connections"`
+
+	// ParamsSchema is a YAML formatted string
+	ParamsSchema string `json:"paramsSchema"`
+
+	// Path to a terraform-module or helm-chart to parse for params
+	ExistingParamsPath string `json:"existingParamsPath"`
 	// Specificaly for the README
 	CloudAbbreviation string `json:"cloudAbbreviation"`
 	RepoName          string `json:"repoName"`

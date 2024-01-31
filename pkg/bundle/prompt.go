@@ -99,22 +99,31 @@ func getTemplate(t *templatecache.TemplateData) error {
 	templates, err := cache.ListTemplates()
 
 	filteredTemplates := removeIgnoredTemplateDirectories(templates)
-
 	if err != nil {
 		return err
 	}
+
 	prompt := promptui.Select{
 		Label: "Template",
 		Items: filteredTemplates,
 	}
 
 	_, result, err := prompt.Run()
-
 	if err != nil {
 		return err
 	}
 
 	t.TemplateName = result
+
+	// "helm-chart" doesn't exist yet but seems like the right thing to call the template
+	if result == "terraform-module" || result == "helm-chart" {
+		paramPath, paramsErr := getExistingParamsPath(result)
+		if paramsErr != nil {
+			return paramsErr
+		}
+		t.ExistingParamsPath = paramPath
+	}
+
 	return nil
 }
 
@@ -196,4 +205,12 @@ func getOutputDir(t *templatecache.TemplateData) error {
 
 	t.OutputDir = result
 	return nil
+}
+
+func getExistingParamsPath(in string) (string, error) {
+	prompt := promptui.Prompt{
+		Label: fmt.Sprintf("Path to an existing %s to generate params from, leave blank to skip", in),
+	}
+
+	return prompt.Run()
 }
