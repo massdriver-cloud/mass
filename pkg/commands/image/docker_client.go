@@ -61,7 +61,7 @@ func (c *Client) BuildImage(input PushImageInput, containerRepository *api.Conta
 	}
 
 	if input.UseBuildkit {
-		opts.Version = "1"
+		opts.Version = types.BuilderBuildKit
 	}
 
 	if input.CacheFrom != "" {
