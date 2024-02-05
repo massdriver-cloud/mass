@@ -10,6 +10,7 @@ type PushImageInput struct {
 	DockerBuildContext string
 	TargetPlatform     string
 	CacheFrom          string
+	UseBuildKit        bool
 }
 
 type ErrorLine struct {
