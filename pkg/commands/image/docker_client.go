@@ -23,6 +23,7 @@ var dockerURIPattern = regexp.MustCompile("[a-zA-Z0-9-_]+.docker.pkg.dev")
 type DockerClient interface {
 	ImageBuild(ctx context.Context, buildContext io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error)
 	ImagePush(ctx context.Context, image string, options types.ImagePushOptions) (io.ReadCloser, error)
+	ImageTag(ctx context.Context, source, target string) error
 }
 
 type Client struct {
@@ -47,7 +48,7 @@ func (c *Client) BuildImage(input PushImageInput, containerRepository *api.Conta
 
 	var imageFqns []string
 	for _, tag := range input.Tags {
-		imageFqns = append(imageFqns, imageFqn(containerRepository.RepositoryURI, input.ImageName, tag))
+		imageFqns = append(imageFqns, getImageFQN(containerRepository.RepositoryURI, input.ImageName, tag))
 	}
 
 	logTag := prettylogs.Underline(strings.Join(imageFqns, "\n"))
@@ -86,7 +87,19 @@ func (c *Client) PushImage(input PushImageInput, containerRepository *api.Contai
 	}
 
 	for _, tag := range input.Tags {
-		res, err := c.Cli.ImagePush(ctx, imageFqn(containerRepository.RepositoryURI, input.ImageName, tag), types.ImagePushOptions{RegistryAuth: auth})
+		imageFQN := getImageFQN(containerRepository.RepositoryURI, input.ImageName, tag)
+
+		// Check the image name for the registry URL, if it doesn't have it yet tag the image with the FQN
+		// image-namespace/image:latest > registry-url/image-namespace/image:latest
+		if !strings.HasPrefix(input.ImageName, dropRepoPrefix(containerRepository.RepositoryURI)) {
+			err := c.tagImageWithFQN(ctx, fmt.Sprintf("%s:%s", input.ImageName, tag), imageFQN)
+			if err != nil {
+				return err
+			}
+		}
+
+		fmt.Println("Pushing image to repository. This may take a few minutes")
+		res, err := c.Cli.ImagePush(ctx, imageFQN, types.ImagePushOptions{RegistryAuth: auth})
 		if err != nil {
 			return err
 		}
@@ -94,7 +107,7 @@ func (c *Client) PushImage(input PushImageInput, containerRepository *api.Contai
 		if err != nil {
 			return err
 		}
-		fqn := prettylogs.Underline(imageFqn(containerRepository.RepositoryURI, input.ImageName, tag))
+		fqn := prettylogs.Underline(imageFQN)
 		msg := fmt.Sprintf("Image %s pushed successfully", fqn)
 		fmt.Println(msg)
 	}
@@ -102,15 +115,20 @@ func (c *Client) PushImage(input PushImageInput, containerRepository *api.Contai
 	return nil
 }
 
+func (c *Client) tagImageWithFQN(ctx context.Context, current, fullName string) error {
+	fmt.Printf("Tagging image %s with %s\n", prettylogs.Underline(current), prettylogs.Underline(fullName))
+	return c.Cli.ImageTag(ctx, current, fullName)
+}
+
 func packageBuildDirectory(buildContext string) (io.ReadCloser, error) {
 	return archive.TarWithOptions(buildContext, &archive.TarOptions{})
 }
 
-func imageFqn(uri, imageName, tag string) string {
-	return fmt.Sprintf("%s/%s:%s", repoPrefix(uri), imageName, tag)
+func getImageFQN(uri, imageName, tag string) string {
+	return fmt.Sprintf("%s/%s:%s", dropRepoPrefix(uri), imageName, tag)
 }
 
-func repoPrefix(uri string) string {
+func dropRepoPrefix(uri string) string {
 	return strings.ReplaceAll(uri, "https://", "")
 }
 
