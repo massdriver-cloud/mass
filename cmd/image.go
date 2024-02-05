@@ -40,7 +40,7 @@ func NewCmdImage() *cobra.Command {
 	_ = imagePushCmd.MarkFlagRequired("region")
 	imagePushCmd.Flags().StringVarP(&pushInput.TargetPlatform, "platform", "p", "linux/amd64", "Set platform if server is multi-platform capable")
 	imagePushCmd.Flags().StringVarP(&pushInput.CacheFrom, "cache-from", "c", "", "Path to image used for caching")
-	imagePushCmd.Flags().BoolVarP(&pushInput.UseBuildkit, "use-builtkit", "x", true, "Use the build kit for docker builds")
+	imagePushCmd.Flags().BoolVarP(&pushInput.UseBuildKit, "use-builtkit", "x", false, "Use the build kit for docker builds")
 
 	imageCmd.AddCommand(imagePushCmd)
 

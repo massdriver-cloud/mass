@@ -60,7 +60,7 @@ func (c *Client) BuildImage(input PushImageInput, containerRepository *api.Conta
 		Platform:   input.TargetPlatform,
 	}
 
-	if input.UseBuildkit {
+	if input.UseBuildKit {
 		opts.Version = types.BuilderBuildKit
 	}
 
