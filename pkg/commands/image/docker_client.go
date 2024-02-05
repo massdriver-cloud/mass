@@ -60,6 +60,10 @@ func (c *Client) BuildImage(input PushImageInput, containerRepository *api.Conta
 		Platform:   input.TargetPlatform,
 	}
 
+	if input.UseBuildkit {
+		opts.Version = "1"
+	}
+
 	if input.CacheFrom != "" {
 		opts.CacheFrom = []string{input.CacheFrom}
 	}
