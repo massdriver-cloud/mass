@@ -36,6 +36,10 @@ func (mockCli) ImagePush(ctx context.Context, image string, options types.ImageP
 	return NopCloser(bytes.NewBuffer(make([]byte, 0))), nil
 }
 
+func (mockCli) ImageTag(ctx context.Context, source, target string) error {
+	return nil
+}
+
 type mockGQLClient struct{}
 
 func (mockGQLClient) MakeRequest(ctx context.Context, req *graphql.Request, resp *graphql.Response) error {

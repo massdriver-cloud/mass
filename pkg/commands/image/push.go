@@ -36,12 +36,12 @@ func Push(client graphql.Client, input PushImageInput, imageClient Client) error
 	msg = fmt.Sprintf("%s credentials fetched successfully", logCloud)
 	fmt.Println(msg)
 
-	err = imageClient.BuildImage(input, containerRepository)
-	if err != nil {
-		return err
+	if !input.SkipBuild {
+		err = imageClient.BuildImage(input, containerRepository)
+		if err != nil {
+			return err
+		}
 	}
-
-	fmt.Println("Pushing image to repository. This may take a few minutes")
 
 	return imageClient.PushImage(input, containerRepository)
 }

@@ -40,6 +40,7 @@ func NewCmdImage() *cobra.Command {
 	_ = imagePushCmd.MarkFlagRequired("region")
 	imagePushCmd.Flags().StringVarP(&pushInput.TargetPlatform, "platform", "p", "linux/amd64", "Set platform if server is multi-platform capable")
 	imagePushCmd.Flags().StringVarP(&pushInput.CacheFrom, "cache-from", "c", "", "Path to image used for caching")
+	imagePushCmd.Flags().BoolVarP(&pushInput.SkipBuild, "skip-build", "s", false, "Skip building the image before pushing")
 
 	imageCmd.AddCommand(imagePushCmd)
 
