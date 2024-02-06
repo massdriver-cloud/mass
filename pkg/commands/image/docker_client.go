@@ -91,7 +91,7 @@ func (c *Client) PushImage(input PushImageInput, containerRepository *api.Contai
 
 		// Check the image name for the registry URL, if it doesn't have it yet tag the image with the FQN
 		// image-namespace/image:latest > registry-url/image-namespace/image:latest
-		if !strings.HasPrefix(input.ImageName, dropRepoPrefix(containerRepository.RepositoryURI)) {
+		if input.SkipBuild && !strings.HasPrefix(input.ImageName, dropRepoPrefix(containerRepository.RepositoryURI)) {
 			err := c.tagImageWithFQN(ctx, fmt.Sprintf("%s:%s", input.ImageName, tag), imageFQN)
 			if err != nil {
 				return err
