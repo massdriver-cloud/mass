@@ -62,8 +62,8 @@ query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
   }
 }
 
-mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!) {
-  deployPackage(organizationId: $organizationId, manifestId: $manifestId, targetId: $targetId) {
+mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $message: String!) {
+  deployPackage(organizationId: $organizationId, manifestId: $manifestId, targetId: $targetId, message: $message) {
     successful
     result {
       id

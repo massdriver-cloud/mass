@@ -45,6 +45,8 @@ func NewCmdInfra() *cobra.Command {
 		RunE:  runInfraDeploy,
 	}
 
+	infraDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
+
 	infraPatchCmd := &cobra.Command{
 		Use:     `patch <project>-<target>-<manifest>`,
 		Short:   "Patch individual package parameter values",
@@ -70,7 +72,12 @@ func runInfraDeploy(cmd *cobra.Command, args []string) error {
 	}
 	client := api.NewClient(config.URL, config.APIKey)
 
-	_, err := commands.DeployPackage(client, config.OrgID, name)
+	msg, err := cmd.Flags().GetString("message")
+	if err != nil {
+		return err
+	}
+
+	_, err = commands.DeployPackage(client, config.OrgID, name, msg)
 
 	return err
 }
