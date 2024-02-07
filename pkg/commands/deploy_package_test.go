@@ -31,7 +31,7 @@ func TestDeployPackage(t *testing.T) {
 	client := gqlmock.NewClientWithJSONResponseArray(responses)
 	commands.DeploymentStatusSleep = 0
 
-	deployment, err := commands.DeployPackage(client, "faux-org-id", "ecomm-prod-cache")
+	deployment, err := commands.DeployPackage(client, "faux-org-id", "ecomm-prod-cache", "foo")
 	if err != nil {
 		t.Fatal(err)
 	}

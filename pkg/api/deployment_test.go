@@ -44,7 +44,7 @@ func TestDeployPackage(t *testing.T) {
 		},
 	})
 
-	deployment, err := api.DeployPackage(client, "faux-org-id", "target-id", "manifest-id")
+	deployment, err := api.DeployPackage(client, "faux-org-id", "target-id", "manifest-id", "foo")
 
 	if err != nil {
 		t.Fatal(err)
