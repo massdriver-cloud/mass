@@ -427,6 +427,7 @@ type __deployPackageInput struct {
 	OrganizationId string `json:"organizationId"`
 	TargetId       string `json:"targetId"`
 	ManifestId     string `json:"manifestId"`
+	Message        string `json:"message"`
 }
 
 // GetOrganizationId returns __deployPackageInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -437,6 +438,9 @@ func (v *__deployPackageInput) GetTargetId() string { return v.TargetId }
 
 // GetManifestId returns __deployPackageInput.ManifestId, and is useful for accessing the field via an interface.
 func (v *__deployPackageInput) GetManifestId() string { return v.ManifestId }
+
+// GetMessage returns __deployPackageInput.Message, and is useful for accessing the field via an interface.
+func (v *__deployPackageInput) GetMessage() string { return v.Message }
 
 // __deployPreviewEnvironmentInput is used internally by genqlient
 type __deployPreviewEnvironmentInput struct {
@@ -1507,8 +1511,8 @@ func decommissionPreviewEnvironment(
 
 // The query or mutation executed by deployPackage.
 const deployPackage_Operation = `
-mutation deployPackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID!) {
-	deployPackage(organizationId: $organizationId, manifestId: $manifestId, targetId: $targetId) {
+mutation deployPackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $message: String!) {
+	deployPackage(organizationId: $organizationId, manifestId: $manifestId, targetId: $targetId, message: $message) {
 		successful
 		result {
 			id
@@ -1526,6 +1530,7 @@ func deployPackage(
 	organizationId string,
 	targetId string,
 	manifestId string,
+	message string,
 ) (*deployPackageResponse, error) {
 	req := &graphql.Request{
 		OpName: "deployPackage",
@@ -1534,6 +1539,7 @@ func deployPackage(
 			OrganizationId: organizationId,
 			TargetId:       targetId,
 			ManifestId:     manifestId,
+			Message:        message,
 		},
 	}
 	var err error
