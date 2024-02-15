@@ -69,7 +69,10 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 	}
 	client := api.NewClient(config.URL, config.APIKey)
 
-	initModel, _ := peinit.New(client, config.OrgID, projectSlug)
+	initModel, err := peinit.New(client, config.OrgID, projectSlug)
+	if err != nil {
+		return err
+	}
 	p := tea.NewProgram(initModel)
 	result, err := p.Run()
 
