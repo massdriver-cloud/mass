@@ -10,6 +10,7 @@ import (
 
 const (
 	LatestReleaseURL = "https://github.com/massdriver-cloud/mass/releases/latest"
+	BundleBuilderUI  = "https://github.com/massdriver-cloud/massdriver-devtool-ui/releases/latest/download/devtool-ui.tar.gz"
 )
 
 // var needs to be used instead of const as ldflags is used to fill this

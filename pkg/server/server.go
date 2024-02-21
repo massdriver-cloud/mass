@@ -1,32 +1,29 @@
 package server
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
-	"embed"
 	"fmt"
-	"html/template"
-	"log"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/container"
 	"github.com/massdriver-cloud/mass/pkg/proxy"
+	"github.com/massdriver-cloud/mass/pkg/templatecache"
+	"github.com/massdriver-cloud/mass/pkg/version"
 	"github.com/moby/moby/client"
 	"github.com/spf13/afero"
 	httpSwagger "github.com/swaggo/http-swagger"
-)
-
-var (
-	//go:embed site
-	res   embed.FS
-	pages = map[string]string{
-		"/hello-agent": "site/index.html",
-	}
 )
 
 type BundleServer struct {
@@ -68,7 +65,7 @@ func (b *BundleServer) Start(port string) error {
 		return err
 	}
 
-	slog.Info(fmt.Sprintf("Visit http://%s/hello-agent in your browser", ln.Addr().String()))
+	slog.Info(fmt.Sprintf("Visit http://%s in your browser", ln.Addr().String()))
 	err = b.httpServer.Serve(ln)
 	if err != nil {
 		return err
@@ -81,38 +78,31 @@ func (b *BundleServer) Stop(ctx context.Context) error {
 }
 
 // RegisterHandlers registers with the DefaultServeMux to handle requests
-func (b *BundleServer) RegisterHandlers() {
-	// Register a FileServer that will give access to the assets dir
-	// http.Handle("/site/assets/", http.FileServer(http.FS(res)))
+func (b *BundleServer) RegisterHandlers(ctx context.Context) {
+	bundleUIDir, err := setupUIDir()
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
 
-	http.Handle("/", originHeaderMiddleware(http.FileServer(http.Dir(b.BaseDir))))
+	if err = GetUIFiles(ctx, bundleUIDir); err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		http.ServeFile(w, r, path.Join(bundleUIDir, "public/index.html"))
+	})
+
+	http.Handle("/dist/", originHeaderMiddleware(http.FileServer(http.Dir(bundleUIDir))))
+	http.Handle("/public/", originHeaderMiddleware(http.FileServer(http.Dir(bundleUIDir))))
+
+	http.Handle("/bundle-server/", http.StripPrefix("/bundle-server/", (originHeaderMiddleware(http.FileServer(http.Dir(b.BaseDir))))))
 
 	http.HandleFunc("/swagger/", httpSwagger.Handler(
 		httpSwagger.URL("http://127.0.0.1:8080/swagger/doc.json"), // The url pointing to API definition
 	))
-
-	// Register the handler func to serve the html page
-	http.HandleFunc("/hello-agent", func(w http.ResponseWriter, r *http.Request) {
-		page, ok := pages[r.URL.Path]
-		if !ok {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		tpl, err := template.ParseFS(res, page)
-		if err != nil {
-			log.Printf("page %s not found in pages cache...", r.RequestURI)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		data := map[string]interface{}{
-			"userAgent": r.UserAgent(),
-		}
-		if err = tpl.Execute(w, data); err != nil {
-			return
-		}
-	})
 
 	proxy, err := proxy.New("https://api.massdriver.cloud")
 	if err != nil {
@@ -134,7 +124,7 @@ func (b *BundleServer) RegisterHandlers() {
 	http.Handle("/bundle/connections", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Connections)))
 	http.Handle("/bundle/deploy", originHeaderMiddleware(http.HandlerFunc(containerHandler.Deploy)))
 
-	configHandler, err := config.NewHandler()
+	configHandler, err := config.NewHandler() //nolint:contextcheck
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -151,4 +141,96 @@ func originHeaderMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		next.ServeHTTP(w, r)
 	})
+}
+
+func GetUIFiles(ctx context.Context, baseDir string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, version.BundleBuilderUI, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	r, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	tarReader := tar.NewReader(r)
+
+	for {
+		header, err1 := tarReader.Next()
+		if err1 == io.EOF {
+			break
+		} else if err1 != nil {
+			return err1
+		}
+
+		path, errS := sanitizeArchivePath(baseDir, header.Name)
+		if errS != nil {
+			return errS
+		}
+
+		info := header.FileInfo()
+		if info.IsDir() {
+			if err = os.MkdirAll(path, info.Mode()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if err = os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+			return err
+		}
+
+		file, createErr := os.Create(path)
+		if createErr != nil {
+			return createErr
+		}
+
+		defer file.Close()
+
+		// Ignore the gosec linting, we are pulling from our repo only
+		_, err = io.Copy(file, tarReader) // #nosec G110
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// setupUIDir creates the base dir for the bundle-ui based off the mass dir
+func setupUIDir() (string, error) {
+	localFs := afero.NewOsFs()
+	massDir, err := templatecache.GetOrCreateMassDir(localFs)
+	if err != nil {
+		return "", err
+	}
+
+	bundleUIDir := path.Join(massDir, "bundle-ui")
+
+	// TODO: Add some smarts so we know what version we are on and don't always wipe the dir
+	if _, err = os.Stat(bundleUIDir); err == nil {
+		slog.Debug("Cleaning up UI dir")
+		if err = os.RemoveAll(bundleUIDir); err != nil {
+			slog.Warn("Error cleaning up UI dir", "error", err)
+		}
+	}
+
+	return bundleUIDir, localFs.MkdirAll(bundleUIDir, os.ModePerm)
+}
+
+// sanitizeArchivePath from "G305: Zip Slip vulnerability" - stop naughty path traversal like ../..
+func sanitizeArchivePath(d, t string) (v string, err error) {
+	v = filepath.Join(d, t)
+	if strings.HasPrefix(v, filepath.Clean(d)) {
+		return v, nil
+	}
+
+	return "", fmt.Errorf("%s: %s", "content filepath is tainted", t)
 }

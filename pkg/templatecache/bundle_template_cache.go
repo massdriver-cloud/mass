@@ -95,7 +95,7 @@ Template cache factory which will create a new instance of BundleTemplateCache.
 Requires a function as a dependency to handle retreival of templates which can in turn be mocked for testing.
 */
 func NewBundleTemplateCache(fetch Fetcher, fs afero.Fs) (TemplateCache, error) {
-	templatePath, err := getOrCreateTemplateDirectory(fs)
+	templatePath, err := GetOrCreateMassDir(fs)
 
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func NewBundleTemplateCache(fetch Fetcher, fs afero.Fs) (TemplateCache, error) {
 	return bundleTemplateCache, nil
 }
 
-func getOrCreateTemplateDirectory(fs afero.Fs) (string, error) {
+func GetOrCreateMassDir(fs afero.Fs) (string, error) {
 	localDevTemplatesPath := os.Getenv("MD_TEMPLATES_PATH")
 
 	if localDevTemplatesPath == "" {
