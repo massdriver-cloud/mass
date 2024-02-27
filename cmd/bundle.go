@@ -248,23 +248,20 @@ func runBundleNew(input *bundleNew) {
 }
 
 func runBundleBuild(cmd *cobra.Command, args []string) error {
-	var fs = afero.NewOsFs()
-
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
+	unmarshalledBundle, err := bundle.UnmarshalandApplyDefaults(buildDirectory)
 	if err != nil {
 		return err
 	}
 
 	c := restclient.NewClient()
 
-	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
-
-	return err
+	fs := afero.NewOsFs()
+	return commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {
@@ -272,20 +269,20 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 	if configErr != nil {
 		return configErr
 	}
-	var fs = afero.NewOsFs()
 
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
+	unmarshalledBundle, err := bundle.UnmarshalandApplyDefaults(buildDirectory)
 	if err != nil {
 		return err
 	}
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
+	fs := afero.NewOsFs()
 	err = unmarshalledBundle.DereferenceSchemas(buildDirectory, c, fs)
 	if err != nil {
 		return err
@@ -300,63 +297,28 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return configErr
 	}
 
-	var fs = afero.NewOsFs()
-
 	buildDirectory, err := cmd.Flags().GetString("build-directory")
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
+	unmarshalledBundle, err := bundle.UnmarshalandApplyDefaults(buildDirectory)
 	if err != nil {
 		return err
 	}
 
+	access, err := cmd.Flags().GetString("access")
+	if err == nil {
+		unmarshalledBundle.Access = access
+	}
+
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
+	fs := afero.NewOsFs()
 	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
 	if err != nil {
 		return err
 	}
 
 	return publish.Run(unmarshalledBundle, c, fs, buildDirectory)
-}
-
-func unmarshalBundleandApplyDefaults(readDirectory string, cmd *cobra.Command, fs afero.Fs) (*bundle.Bundle, error) {
-	unmarshalledBundle, err := bundle.UnmarshalBundle(readDirectory, fs)
-	if err != nil {
-		return nil, err
-	}
-
-	applyOverrides(unmarshalledBundle, cmd)
-
-	if unmarshalledBundle.IsApplication() {
-		bundle.ApplyAppBlockDefaults(unmarshalledBundle)
-	}
-
-	// This looks weird but we have to be careful we don't overwrite things that do exist in the bundle file
-	if unmarshalledBundle.Connections == nil {
-		unmarshalledBundle.Connections = make(map[string]any)
-	}
-
-	if unmarshalledBundle.Connections["properties"] == nil {
-		unmarshalledBundle.Connections["properties"] = make(map[string]any)
-	}
-
-	if unmarshalledBundle.Artifacts == nil {
-		unmarshalledBundle.Artifacts = make(map[string]any)
-	}
-
-	if unmarshalledBundle.Artifacts["properties"] == nil {
-		unmarshalledBundle.Artifacts["properties"] = make(map[string]any)
-	}
-
-	return unmarshalledBundle, nil
-}
-
-func applyOverrides(bundle *bundle.Bundle, cmd *cobra.Command) {
-	access, err := cmd.Flags().GetString("access")
-	if err == nil {
-		bundle.Access = access
-	}
 }
