@@ -74,7 +74,7 @@ func NewClientWithJSONResponseMap(responses map[string]interface{}) graphql.Clie
 func MuxWithJSONResponseArray(responses []interface{}) *http.ServeMux {
 	mux := http.NewServeMux()
 	counter := 0
-	mux.HandleFunc(MockEndpoint, func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc(MockEndpoint, func(w http.ResponseWriter, _ *http.Request) {
 		response := responses[counter]
 		counter++
 		data, _ := json.Marshal(response)
@@ -86,7 +86,7 @@ func MuxWithJSONResponseArray(responses []interface{}) *http.ServeMux {
 
 func MuxWithJSONResponse(response map[string]interface{}) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc(MockEndpoint, func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc(MockEndpoint, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		data, _ := json.Marshal(response)
 		MustWrite(w, string(data))

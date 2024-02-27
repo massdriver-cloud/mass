@@ -54,6 +54,8 @@ func (b *Bundle) LintParamsConnectionsNameCollision() error {
 	return nil
 }
 
+const jqErrorPrefix = "the jq query for environment variable "
+
 func (b *Bundle) LintEnvs() (map[string]string, error) {
 	result := map[string]string{}
 
@@ -69,28 +71,28 @@ func (b *Bundle) LintEnvs() (map[string]string, error) {
 	for name, query := range b.AppSpec.Envs {
 		jq, parseErr := gojq.Parse(query)
 		if parseErr != nil {
-			return result, errors.New("the jq query for environment variable " + name + " is invalid: " + parseErr.Error())
+			return result, errors.New(jqErrorPrefix + name + " is invalid: " + parseErr.Error())
 		}
 
 		iter := jq.Run(input)
 		value, ok := iter.Next()
 		if !ok || value == nil {
-			return result, errors.New("the jq query for environment variable " + name + " didn't produce a result")
+			return result, errors.New(jqErrorPrefix + name + " didn't produce a result")
 		}
 		if castErr, castOk := value.(error); castOk {
-			return result, errors.New("the jq query for environment variable " + name + " produced an error: " + castErr.Error())
+			return result, errors.New(jqErrorPrefix + name + " produced an error: " + castErr.Error())
 		}
 		var valueString string
 		if valueString, ok = value.(string); !ok {
 			resultBytes, marshalErr := json.Marshal(value)
 			if marshalErr != nil {
-				return result, errors.New("the jq query for environment variable " + name + " produced an uninterpretable value: " + marshalErr.Error())
+				return result, errors.New(jqErrorPrefix + name + " produced an uninterpretable value: " + marshalErr.Error())
 			}
 			valueString = string(resultBytes)
 		}
 		_, multiple := iter.Next()
 		if multiple {
-			return result, errors.New("the jq query for environment variable " + name + " produced multiple values, which isn't supported")
+			return result, errors.New(jqErrorPrefix + name + " produced multiple values, which isn't supported")
 		}
 		result[name] = valueString
 	}
