@@ -19,6 +19,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/container"
 	"github.com/massdriver-cloud/mass/pkg/proxy"
+	sb "github.com/massdriver-cloud/mass/pkg/server/bundle"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/massdriver-cloud/mass/pkg/version"
 	"github.com/moby/moby/client"
@@ -30,19 +31,17 @@ type BundleServer struct {
 	BaseDir   string
 	Bundle    *bundle.Bundle
 	DockerCli *client.Client
-	Fs        afero.Fs
 
 	httpServer *http.Server
 }
 
 func New(dir string) (*BundleServer, error) {
-	fs := afero.NewOsFs()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.41"))
 	if err != nil {
 		return nil, fmt.Errorf("error creating docker client %w", err)
 	}
 
-	bundler, err := bundle.UnmarshalBundle(dir, fs)
+	bundler, err := bundle.Unmarshal(dir)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshalling bundle %w", err)
 	}
@@ -53,7 +52,6 @@ func New(dir string) (*BundleServer, error) {
 		BaseDir:    dir,
 		Bundle:     bundler,
 		DockerCli:  cli,
-		Fs:         fs,
 		httpServer: server,
 	}, nil
 }
@@ -112,14 +110,15 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 
 	http.Handle("/proxy/", originHeaderMiddleware(proxy))
 
-	bundleHandler, err := bundle.NewHandler(b.BaseDir)
+	bundleHandler, err := sb.NewHandler(b.BaseDir)
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 
-	containerHandler := container.NewHandler(b.BaseDir, b.DockerCli, b.Fs)
+	containerHandler := container.NewHandler(b.BaseDir, b.DockerCli)
 
+	http.Handle("/bundle/build", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Build)))
 	http.Handle("/bundle/secrets", originHeaderMiddleware(http.HandlerFunc(bundleHandler.GetSecrets)))
 	http.Handle("/bundle/connections", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Connections)))
 	http.Handle("/bundle/deploy", originHeaderMiddleware(http.HandlerFunc(containerHandler.Deploy)))
@@ -138,7 +137,17 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 
 func originHeaderMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			headers := w.Header()
+
+			headers["Access-Control-Allow-Headers"] = r.Header["Access-Control-Request-Headers"]
+			headers["Access-Control-Allow-Methods"] = []string{"GET, POST"}
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		w.Header().Set("Access-Control-Allow-Origin", "*")
+
 		next.ServeHTTP(w, r)
 	})
 }

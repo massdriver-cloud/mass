@@ -3,28 +3,19 @@ package bundle
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"log/slog"
-	"net/http"
 	"path"
 	"path/filepath"
 
+	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/spf13/afero"
-	"sigs.k8s.io/yaml"
 )
 
 const (
-	ParamsFile     = "_params.auto.tfvars.json"
-	ConnsFile      = "_connections.auto.tfvars.json"
-	allowedMethods = "OPTIONS, GET, POST"
+	ParamsFile = "_params.auto.tfvars.json"
+	ConnsFile  = "_connections.auto.tfvars.json"
 )
 
-type Handler struct {
-	Bundle    Bundle
-	fs        afero.Fs
-	bundleDir string
-}
 type Step struct {
 	Path        string `json:"path" yaml:"path"`
 	Provisioner string `json:"provisioner" yaml:"provisioner"`
@@ -130,17 +121,40 @@ func checkForOperatorGuideAndSetValue(path string, body *restclient.PublishPost,
 	return nil
 }
 
-func UnmarshalBundle(readDirectory string, fs afero.Fs) (*Bundle, error) {
-	file, err := afero.ReadFile(fs, path.Join(readDirectory, "massdriver.yaml"))
+func Unmarshal(readDirectory string) (*Bundle, error) {
+	unmarshalledBundle := &Bundle{}
+	if err := files.Read(path.Join(readDirectory, "massdriver.yaml"), unmarshalledBundle); err != nil {
+		return nil, err
+	}
+
+	return unmarshalledBundle, nil
+}
+
+func UnmarshalandApplyDefaults(readDirectory string) (*Bundle, error) {
+	unmarshalledBundle, err := Unmarshal(readDirectory)
 	if err != nil {
 		return nil, err
 	}
 
-	unmarshalledBundle := &Bundle{}
+	if unmarshalledBundle.IsApplication() {
+		ApplyAppBlockDefaults(unmarshalledBundle)
+	}
 
-	err = yaml.Unmarshal(file, unmarshalledBundle)
-	if err != nil {
-		return nil, err
+	// This looks weird but we have to be careful we don't overwrite things that do exist in the bundle file
+	if unmarshalledBundle.Connections == nil {
+		unmarshalledBundle.Connections = make(map[string]any)
+	}
+
+	if unmarshalledBundle.Connections["properties"] == nil {
+		unmarshalledBundle.Connections["properties"] = make(map[string]any)
+	}
+
+	if unmarshalledBundle.Artifacts == nil {
+		unmarshalledBundle.Artifacts = make(map[string]any)
+	}
+
+	if unmarshalledBundle.Artifacts["properties"] == nil {
+		unmarshalledBundle.Artifacts["properties"] = make(map[string]any)
 	}
 
 	return unmarshalledBundle, nil
@@ -158,132 +172,4 @@ func ApplyAppBlockDefaults(b *Bundle) {
 			b.AppSpec.Secrets = map[string]Secret{}
 		}
 	}
-}
-
-func NewHandler(dir string) (*Handler, error) {
-	fs := afero.NewOsFs()
-	bundle, err := UnmarshalBundle(dir, fs)
-	if err != nil {
-		return nil, err
-	}
-	ApplyAppBlockDefaults(bundle)
-	return &Handler{Bundle: *bundle, fs: fs, bundleDir: dir}, nil
-}
-
-// GetSecrets returns the secrets from the bundle
-//
-//	@Summary		Get bundle secrets
-//	@Description	Get bundle secrets
-//	@ID				get-bundle-secrets
-//	@Produce		json
-//	@Success		200	{object}	bundle.AppSpec.Secrets
-//	@Router			/bundle/secrets [get]
-func (b *Handler) GetSecrets(w http.ResponseWriter, _ *http.Request) {
-	var out []byte
-	var err error
-	if b.Bundle.AppSpec == nil || len(b.Bundle.AppSpec.Secrets) == 0 {
-		out = []byte("{}")
-	} else {
-		out, err = json.Marshal(b.Bundle.AppSpec.Secrets)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(out)
-	if err != nil {
-		slog.Error(err.Error())
-	}
-}
-
-func (b *Handler) Connections(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		b.getConnections(w)
-	case http.MethodPost:
-		b.postConnections(w, r)
-	case http.MethodOptions:
-		b.options(w, r)
-	default:
-		w.Header().Add("Allow", allowedMethods)
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-}
-
-// getConnections returns the existing connections in the conn file
-//
-//	@Summary		Get bundle connections
-//	@Description	Get bundle connections
-//	@ID				get-bundle-connections
-//	@Produce		json
-//	@Success		200	{object}	bundle.Connections
-//	@Router			/bundle/connections [get]
-func (b *Handler) getConnections(w http.ResponseWriter) {
-	f, err := afero.ReadFile(b.fs, path.Join(b.bundleDir, "src", ConnsFile))
-	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(f)
-	if err != nil {
-		slog.Error(err.Error())
-	}
-}
-
-// postConnections accepts connections and writes them back to the conn file
-//
-//	@Summary		Post bundle connections
-//	@Description	Post bundle connections
-//	@ID				post-bundle-connections
-//	@Accept			json
-//	@Success		200			{string}	string				"success"
-//	@Param			connectons	body		bundle.Connections	true	"Connections"
-//	@Router			/bundle/connections [post]
-func (b *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
-	conns, err := io.ReadAll(r.Body)
-	if err != nil {
-		slog.Debug("Error reading payload", "error", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	connMap := make(map[string]any)
-
-	// We have to go through the unmarshal/marshal dance to ensure
-	// we keep the formatting in the final file. If the json payload
-	// is a single line that would end up back in the file and make
-	// it unreadable.
-	err = json.Unmarshal(conns, &connMap)
-	if err != nil {
-		slog.Debug("Error unmarshalling payload", "error", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	bytes, err := json.MarshalIndent(connMap, "", "    ")
-	if err != nil {
-		slog.Debug("Error marshalling payload", "error", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	err = afero.WriteFile(b.fs, path.Join(b.bundleDir, "src", ConnsFile), bytes, 0755)
-	if err != nil {
-		slog.Debug("Error writing file", "error", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-}
-
-func (b *Handler) options(w http.ResponseWriter, r *http.Request) {
-	headers := w.Header()
-
-	headers["Access-Control-Allow-Headers"] = r.Header["Access-Control-Request-Headers"]
-	headers["Access-Control-Allow-Methods"] = []string{allowedMethods}
-	w.WriteHeader(http.StatusOK)
 }

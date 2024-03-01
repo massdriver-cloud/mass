@@ -26,7 +26,6 @@ import (
 	"github.com/moby/moby/pkg/jsonmessage"
 	"github.com/moby/moby/pkg/namesgenerator"
 	"github.com/moby/term"
-	"github.com/spf13/afero"
 	"nhooyr.io/websocket"
 )
 
@@ -35,7 +34,6 @@ const allowedMethods = "OPTIONS, GET, POST"
 type Handler struct {
 	baseDir   string
 	dockerCLI *client.Client
-	fs        afero.Fs
 }
 
 type DeployPayload struct {
@@ -49,11 +47,10 @@ type deployReply struct {
 	ContainerID string `json:"containerID"`
 }
 
-func NewHandler(baseDir string, dockerCLI *client.Client, fileSystem afero.Fs) *Handler {
+func NewHandler(baseDir string, dockerCLI *client.Client) *Handler {
 	return &Handler{
 		baseDir:   baseDir,
 		dockerCLI: dockerCLI,
-		fs:        fileSystem,
 	}
 }
 
