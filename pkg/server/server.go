@@ -88,14 +88,18 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 		os.Exit(1)
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// Routes to handle the UI
+	http.Handle("/", originHeaderMiddleware(http.FileServer(http.Dir(filepath.Join(bundleUIDir, "public")))))
+	http.Handle("/dist/", originHeaderMiddleware(http.FileServer(http.Dir(bundleUIDir))))
+	http.Handle("/public/", originHeaderMiddleware(http.FileServer(http.Dir(bundleUIDir))))
+
+	// The /deploy route wants the bundle.js file so redirect it to the index.html so it can download it again
+	http.HandleFunc("/deploy", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		http.ServeFile(w, r, path.Join(bundleUIDir, "public/index.html"))
 	})
 
-	http.Handle("/dist/", originHeaderMiddleware(http.FileServer(http.Dir(bundleUIDir))))
-	http.Handle("/public/", originHeaderMiddleware(http.FileServer(http.Dir(bundleUIDir))))
-
+	// Route to handle the bundle files from the user's sytem - Any file in a bundle can be accessed
 	http.Handle("/bundle-server/", http.StripPrefix("/bundle-server/", (originHeaderMiddleware(http.FileServer(http.Dir(b.BaseDir))))))
 
 	http.HandleFunc("/swagger/", httpSwagger.Handler(
