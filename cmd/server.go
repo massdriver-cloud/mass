@@ -33,6 +33,7 @@ func NewCmdServer() *cobra.Command {
 	cmd.Flags().StringP("port", "p", "8080", "port for the server to listen on")
 	cmd.Flags().StringP("directory", "d", "", "directory for the massdriver bundle, will default to the directory the server is ran from")
 	cmd.Flags().String("log-level", "info", "Set the log level for the server. Options are [debug, info, warn, error]")
+	cmd.Flags().Bool("browser", false, "Launch a browser window after starting the server")
 
 	return cmd
 }
@@ -90,7 +91,13 @@ func runServer(cmd *cobra.Command) {
 
 	handleSignals(ctx, server)
 
-	if err = server.Start(port); err != nil {
+	launchBrowser, err := cmd.Flags().GetBool("browser")
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
+	if err = server.Start(port, launchBrowser); err != nil {
 		// The signal handler will shutdown the server under a ctrl-c
 		// so getting a ErrServerClosed here is expected
 		if !errors.Is(err, http.ErrServerClosed) {

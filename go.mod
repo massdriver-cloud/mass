@@ -11,6 +11,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.23.2
 	github.com/charmbracelet/glamour v0.6.0
 	github.com/charmbracelet/lipgloss v0.6.0
+	github.com/cli/browser v1.3.0
 	github.com/docker/docker v24.0.8+incompatible
 	github.com/evertras/bubble-table v0.14.8
 	github.com/go-git/go-git/v5 v5.11.0

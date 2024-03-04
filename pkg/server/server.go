@@ -9,12 +9,14 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/cli/browser"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/container"
@@ -57,19 +59,22 @@ func New(dir string) (*BundleServer, error) {
 	}, nil
 }
 
-func (b *BundleServer) Start(port string) error {
+func (b *BundleServer) Start(port string, launchBrowser bool) error {
 	ln, err := net.Listen("tcp", "127.0.0.1:"+port)
 	if err != nil {
 		slog.Error(err.Error())
 		return err
 	}
 
-	slog.Info(fmt.Sprintf("Visit http://%s in your browser", ln.Addr().String()))
-	err = b.httpServer.Serve(ln)
-	if err != nil {
-		return err
+	serverURL := "http://" + ln.Addr().String()
+
+	slog.Info(fmt.Sprintf("Visit %s in your browser", serverURL))
+
+	if launchBrowser {
+		go openUIinBrowser(serverURL)
 	}
-	return nil
+
+	return b.httpServer.Serve(ln)
 }
 
 func (b *BundleServer) Stop(ctx context.Context) error {
@@ -98,6 +103,14 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 	http.HandleFunc("/deploy", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		http.ServeFile(w, r, path.Join(bundleUIDir, "public/index.html"))
+	})
+
+	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		_, err = w.Write([]byte("ok"))
+		if err != nil {
+			slog.Error("Error attempting to write healthcheck", "error", err.Error())
+		}
 	})
 
 	// Route to handle the bundle files from the user's sytem - Any file in a bundle can be accessed
@@ -248,4 +261,53 @@ func sanitizeArchivePath(d, t string) (v string, err error) {
 	}
 
 	return "", fmt.Errorf("%s: %s", "content filepath is tainted", t)
+}
+
+func openUIinBrowser(serverURL string) {
+	var iter int
+	for {
+		if iter > 3 {
+			slog.Warn("Server never responded healthy")
+			return
+		}
+
+		healthURL, err := url.JoinPath(serverURL, "health")
+		if err != nil {
+			slog.Error("Error creating healthcheck", "error", err.Error())
+			return
+		}
+
+		// If the server isn't up it won't respond so use a timeout to try the request again
+		ctx, cancelFunc := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancelFunc()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthURL, nil)
+		if err != nil {
+			slog.Error("Error creating healthcheck", "error", err.Error())
+			return
+		}
+
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			if strings.HasSuffix(err.Error(), "context deadline exceeded") {
+				// Log under Debug, if the server isn't up yet then the context timeout
+				// would trigger an error here which isn't really useful
+				slog.Debug("Error getting healthcheck", "error", err.Error())
+			} else {
+				slog.Warn("Error getting healthcheck", "error", err.Error())
+			}
+		} else {
+			defer res.Body.Close()
+
+			if res.StatusCode == http.StatusOK {
+				if err = browser.OpenURL(serverURL); err != nil {
+					slog.Error("Error trying to open browser", "error", err.Error())
+				}
+				return
+			}
+		}
+
+		iter++
+		time.Sleep(200 * time.Millisecond)
+	}
 }
