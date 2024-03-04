@@ -20,6 +20,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/container"
 	"github.com/massdriver-cloud/mass/pkg/proxy"
 	sb "github.com/massdriver-cloud/mass/pkg/server/bundle"
+	sv "github.com/massdriver-cloud/mass/pkg/server/version"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/massdriver-cloud/mass/pkg/version"
 	"github.com/moby/moby/client"
@@ -83,7 +84,7 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 		os.Exit(1)
 	}
 
-	if err = GetUIFiles(ctx, bundleUIDir); err != nil {
+	if err = getUIFiles(ctx, bundleUIDir); err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
@@ -137,6 +138,7 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 
 	http.Handle("/containers/logs", originHeaderMiddleware(http.HandlerFunc(containerHandler.StreamLogs)))
 	http.Handle("/containers/list", originHeaderMiddleware(http.HandlerFunc(containerHandler.List)))
+	http.Handle("/version", originHeaderMiddleware(http.HandlerFunc(sv.Latest)))
 }
 
 func originHeaderMiddleware(next http.Handler) http.Handler {
@@ -156,7 +158,7 @@ func originHeaderMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func GetUIFiles(ctx context.Context, baseDir string) error {
+func getUIFiles(ctx context.Context, baseDir string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, version.BundleBuilderUI, nil)
 	if err != nil {
 		return err
