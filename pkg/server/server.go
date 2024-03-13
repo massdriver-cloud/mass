@@ -155,17 +155,22 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 }
 
 func originHeaderMiddleware(next http.Handler) http.Handler {
+	access_control_header_name := "Access-Control-Allow-Origin"
+	access_control_header_value := "*"
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions {
 			headers := w.Header()
 
 			headers["Access-Control-Allow-Headers"] = r.Header["Access-Control-Request-Headers"]
 			headers["Access-Control-Allow-Methods"] = []string{"GET, POST"}
+			headers[access_control_header_name] = []string{access_control_header_value}
+
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set(access_control_header_name, access_control_header_value)
 
 		next.ServeHTTP(w, r)
 	})
