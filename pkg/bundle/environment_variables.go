@@ -32,7 +32,9 @@ func ParseEnvironmentVariables(params map[string]interface{}, query map[string]s
 		for {
 			v, ok := iter.Next()
 
-			if !ok {
+			if !ok || v == nil {
+				result.Error = "Failed to return a result"
+				results[k] = result
 				break
 			}
 
@@ -41,7 +43,6 @@ func ParseEnvironmentVariables(params map[string]interface{}, query map[string]s
 				results[k] = result
 				break
 			}
-
 			ofType := reflect.TypeOf(v)
 
 			var castValue string

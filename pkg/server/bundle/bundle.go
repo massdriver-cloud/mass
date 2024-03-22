@@ -95,22 +95,38 @@ func (h *Handler) GetEnvironmentVariables(w http.ResponseWriter, _ *http.Request
 	}
 }
 
-// Params writes current parameters to file on demand
+// Params writes and fetches current parameters to file on demand
 //
-//	@Summary		Write currently set params to vars file
+//	@Summary		Write and fetch currently set params to vars file
 //	@Description	Allows users to set their params before deployment for easy recall
 //	@ID				params
 //	@Produce		json
 //	@Success		200	{object}	map[string]any
-//	@Router			/bundle/params [post]
+//	@Router			/bundle/params [post, get, options]
 func (h *Handler) Params(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost && r.Method != http.MethodOptions {
+	if r.Method != http.MethodPost && r.Method != http.MethodOptions && r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
 	if r.Method == http.MethodOptions {
 		h.options(w, r)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		content, err := afero.ReadFile(h.fs, path.Join(h.bundleDir, "src", paramsFile))
+		if err != nil {
+			slog.Debug("Error reading params file", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		_, err = w.Write(content)
+		if err != nil {
+			slog.Warn("failed to write response", "error", err)
+			return
+		}
 		return
 	}
 
