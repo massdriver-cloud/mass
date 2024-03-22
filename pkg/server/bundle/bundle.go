@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/afero"
 )
 
+const allowedMethods = "OPTIONS, POST"
+
 type Handler struct {
 	parsedBundle bundle.Bundle
 	fs           afero.Fs
@@ -54,6 +56,129 @@ func (h *Handler) GetSecrets(w http.ResponseWriter, _ *http.Request) {
 	if err != nil {
 		slog.Error(err.Error())
 	}
+}
+
+// GetEnvironmentVariables returns the parsed env vars from an application bundle
+//
+//	@Summary		Get parsed env vars
+//	@Description	Get parsed env vars
+//	@ID				get-environment-variables
+//	@Produce		json
+//	@Success		200	{object}	map[string]bundle.ParsedEnvironmentVariable
+//	@Router			/bundle/envs [get]
+func (h *Handler) GetEnvironmentVariables(w http.ResponseWriter, _ *http.Request) {
+	var out []byte
+	if h.parsedBundle.AppSpec == nil || len(h.parsedBundle.AppSpec.Envs) == 0 {
+		out = []byte("{}")
+	} else {
+		paramsAndConnections, err := h.getUserInput()
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		result := bundle.ParseEnvironmentVariables(paramsAndConnections, h.parsedBundle.AppSpec.Envs)
+
+		out, err = json.Marshal(result)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err := w.Write(out)
+	if err != nil {
+		slog.Error(err.Error())
+	}
+}
+
+// Params writes current parameters to file on demand
+//
+//	@Summary		Write currently set params to vars file
+//	@Description	Allows users to set their params before deployment for easy recall
+//	@ID				params
+//	@Produce		json
+//	@Success		200	{object}	map[string]any
+//	@Router			/bundle/params [post]
+func (h *Handler) Params(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodOptions {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if r.Method == http.MethodOptions {
+		h.options(w, r)
+		return
+	}
+
+	params, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		slog.Debug("Error reading payload", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	payload := make(map[string]any)
+
+	err = json.Unmarshal(params, &payload)
+
+	if err != nil {
+		slog.Debug("Error unmarshalling payload", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err = ReconcileParams(h.bundleDir, payload); err != nil {
+		slog.Debug("Error writing params contents", "error", err)
+		http.Error(w, "unable to write params file", http.StatusBadRequest)
+		return
+	}
+
+	_, err = w.Write([]byte("{}"))
+	if err != nil {
+		slog.Warn("failed to write response", "error", err)
+	}
+}
+
+func (h *Handler) getUserInput() (map[string]interface{}, error) {
+	output := make(map[string]interface{})
+
+	conns, err := h.readFileAndUnmarshal(bundle.ConnsFile)
+
+	if err != nil {
+		return output, err
+	}
+
+	params, err := h.readFileAndUnmarshal(bundle.ParamsFile)
+
+	if err != nil {
+		return output, err
+	}
+
+	output["connections"] = conns
+	output["params"] = params
+
+	return output, nil
+}
+
+func (h *Handler) readFileAndUnmarshal(readPath string) (map[string]interface{}, error) {
+	output := make(map[string]interface{})
+
+	file, err := afero.ReadFile(h.fs, path.Join(h.bundleDir, "src", readPath))
+
+	if err != nil {
+		return output, err
+	}
+
+	err = json.Unmarshal(file, &output)
+
+	return output, err
 }
 
 func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
@@ -167,4 +292,12 @@ func (h *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+}
+
+func (h *Handler) options(w http.ResponseWriter, r *http.Request) {
+	headers := w.Header()
+
+	headers["Access-Control-Allow-Headers"] = r.Header["Access-Control-Request-Headers"]
+	headers["Access-Control-Allow-Methods"] = []string{allowedMethods}
+	w.WriteHeader(http.StatusOK)
 }

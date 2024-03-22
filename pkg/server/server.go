@@ -140,6 +140,8 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 	http.Handle("/bundle/secrets", originHeaderMiddleware(http.HandlerFunc(bundleHandler.GetSecrets)))
 	http.Handle("/bundle/connections", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Connections)))
 	http.Handle("/bundle/deploy", originHeaderMiddleware(http.HandlerFunc(containerHandler.Deploy)))
+	http.Handle("/bundle/envs", originHeaderMiddleware(http.HandlerFunc(bundleHandler.GetEnvironmentVariables)))
+	http.Handle("/bundle/params", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Params)))
 
 	configHandler, err := config.NewHandler() //nolint:contextcheck
 	if err != nil {
