@@ -77,3 +77,23 @@ func TestMultipleValues(t *testing.T) {
 		t.Errorf("Wanted %s but got %s", want, asJSON)
 	}
 }
+
+func TestNilResult(t *testing.T) {
+	query := map[string]string{
+		"DATABASE_URL": ".connections.postgres.data.authentication.userName",
+	}
+
+	got := bundle.ParseEnvironmentVariables(params, query)
+
+	asJSON, err := json.Marshal(got)
+
+	if err != nil {
+		t.Fatalf("Failed to unmarshal result")
+	}
+
+	want := "{\"DATABASE_URL\":{\"error\":\"failed to produce a result\",\"value\":\"\"}}"
+
+	if string(asJSON) != want {
+		t.Errorf("Wanted %s but got %s", want, asJSON)
+	}
+}

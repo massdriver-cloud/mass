@@ -32,20 +32,24 @@ func ParseEnvironmentVariables(params map[string]interface{}, query map[string]s
 		for {
 			v, ok := iter.Next()
 
-			if !ok || v == nil {
-				result.Error = "Failed to return a result"
-				results[k] = result
+			if !ok {
 				break
 			}
 
 			if valueErr, valOk := v.(error); valOk {
 				result.Error = fmt.Sprint(valueErr)
 				results[k] = result
-				break
+				continue
 			}
 			ofType := reflect.TypeOf(v)
 
 			var castValue string
+
+			if ofType == nil {
+				result.Error = "failed to produce a result"
+				results[k] = result
+				continue
+			}
 
 			switch ofType.Kind() {
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
