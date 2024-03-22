@@ -10,7 +10,8 @@ sim
 
 ### Synopsis
 
-## TODO
+## Bundle Builder and Deployment Simulator
+
 
 ```
 mass development simulator [flags]
