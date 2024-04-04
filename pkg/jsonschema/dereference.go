@@ -26,7 +26,6 @@ type DereferenceOptions struct {
 var relativeFilePathPattern = regexp.MustCompile(`^(\.\/|\.\.\/)`)
 var massdriverDefinitionPattern = regexp.MustCompile(`^[a-zA-Z0-9]`)
 var httpPattern = regexp.MustCompile(`^(http|https)://`)
-var fragmentPattern = regexp.MustCompile(`^#`)
 
 func Dereference(anyVal interface{}, opts DereferenceOptions) (interface{}, error) {
 	val := getValue(anyVal)
