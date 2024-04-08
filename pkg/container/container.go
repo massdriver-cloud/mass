@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -307,10 +308,10 @@ func (h *Handler) pullImage(ctx context.Context, image string) error {
 
 func (h *Handler) runContainer(ctx context.Context, action, image string) (string, error) {
 	// TODO: This is aws only at this point
-	envs, err := h.getAWSCreds(ctx)
-	if err != nil {
-		slog.Debug("Error getting aws creds", "error", err)
-		return "", err
+	envs, ok := h.getCloudCreds(ctx)
+
+	if !ok {
+		return "", errors.New("cloud credentials not detected in host environment")
 	}
 
 	// This makes the container logs huge but debug doesn't come through events
@@ -345,27 +346,56 @@ func (h *Handler) runContainer(ctx context.Context, action, image string) (strin
 	return response.ID, err
 }
 
+func (h *Handler) getCloudCreds(ctx context.Context) ([]string, bool) {
+	var envs []string
+	awsCredsExist := h.getAWSCreds(ctx, &envs)
+	azureCredsExist := h.getAzureCreds(&envs)
+
+	if !(awsCredsExist || azureCredsExist) {
+		return envs, false
+	}
+
+	return envs, true
+}
+
 // getAWSCreds returns a formatted slice of aws cred envvars suitable for a containers env.
-func (h *Handler) getAWSCreds(ctx context.Context) ([]string, error) {
+func (h *Handler) getAWSCreds(ctx context.Context, envVars *[]string) bool {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return nil, err
+		return false
 	}
 	creds, err := cfg.Credentials.Retrieve(ctx)
 	if err != nil {
-		return nil, err
+		return false
 	}
 
 	slog.Debug("Found aws credentials", "source", creds.Source)
 
-	var envVar []string
+	*envVars = append(*envVars, fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", creds.AccessKeyID))
 
-	envVar = append(envVar, fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", creds.AccessKeyID))
-	envVar = append(envVar, fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", creds.SecretAccessKey))
+	*envVars = append(*envVars, fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", creds.SecretAccessKey))
+
 	if creds.SessionToken != "" {
-		envVar = append(envVar, fmt.Sprintf("AWS_SESSION_TOKEN=%s", creds.SessionToken))
+		*envVars = append(*envVars, fmt.Sprintf("AWS_SESSION_TOKEN=%s", creds.SessionToken))
 	}
-	return envVar, nil
+	return true
+}
+
+func (h *Handler) getAzureCreds(envVars *[]string) bool {
+	requiredEnvVars := []string{"AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET"}
+
+	for _, v := range requiredEnvVars {
+		value, ok := os.LookupEnv(v)
+
+		if !ok {
+			slog.Warn("Azure credential value %s not set in environment. If deploying Azure resources set this variable.")
+			return false
+		}
+
+		*envVars = append(*envVars, fmt.Sprintf("%s=%s", v, value))
+	}
+
+	return true
 }
 
 func (h *Handler) options(w http.ResponseWriter, r *http.Request) {
