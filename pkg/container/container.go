@@ -362,10 +362,12 @@ func (h *Handler) getCloudCreds(ctx context.Context) ([]string, bool) {
 func (h *Handler) getAWSCreds(ctx context.Context, envVars *[]string) bool {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
+		slog.Warn("Failed to load AWS credential. If deploying AWS resources set your credentials.")
 		return false
 	}
 	creds, err := cfg.Credentials.Retrieve(ctx)
 	if err != nil {
+		slog.Warn("Failed to load AWS credential. If deploying AWS resources set your credentials.")
 		return false
 	}
 
