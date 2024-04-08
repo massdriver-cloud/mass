@@ -388,7 +388,7 @@ func (h *Handler) getAzureCreds(envVars *[]string) bool {
 		value, ok := os.LookupEnv(v)
 
 		if !ok {
-			slog.Warn("Azure credential value %s not set in environment. If deploying Azure resources set this variable.")
+			slog.Warn(fmt.Sprintf("Azure credential value %s not set in environment. If deploying Azure resources set this variable.", v))
 			return false
 		}
 
