@@ -71,7 +71,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
-	var listOpts types.ContainerListOptions
+	var listOpts container.ListOptions
 	if queries.Get("all") == "true" {
 		listOpts.All = true
 	}
@@ -129,7 +129,7 @@ func (h *Handler) StreamLogs(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	reader, err := h.dockerCLI.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{
+	reader, err := h.dockerCLI.ContainerLogs(ctx, containerID, container.LogsOptions{
 		ShowStderr: true,
 		ShowStdout: true,
 		Timestamps: false,
@@ -340,7 +340,7 @@ func (h *Handler) runContainer(ctx context.Context, action, image string) (strin
 		return "", err
 	}
 
-	err = h.dockerCLI.ContainerStart(ctx, response.ID, types.ContainerStartOptions{})
+	err = h.dockerCLI.ContainerStart(ctx, response.ID, container.StartOptions{})
 
 	return response.ID, err
 }
