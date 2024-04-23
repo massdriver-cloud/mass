@@ -30,9 +30,6 @@ func Run(b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs, buildFro
 		return err
 	}
 
-	msg = fmt.Sprintf("%s published successfully to with %s visibility", bundleName, access)
-	fmt.Println(msg)
-
 	var buf bytes.Buffer
 
 	msg = fmt.Sprintf("Packaging bundle %s for package manager", bundleName)
