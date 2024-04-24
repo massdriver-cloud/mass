@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"github.com/massdriver-cloud/mass/pkg/bicep"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/massdriver-cloud/mass/pkg/terraform"
@@ -31,6 +32,11 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 			}
 		case "helm":
 			continue
+		case "bicep":
+			err = bicep.GenerateFiles(buildPath, step.Path, b, fs)
+			if err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("%s is not a supported provisioner", step.Provisioner)
 		}
