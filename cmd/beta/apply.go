@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/massdriver-cloud/mass/pkg/beta"
-	"github.com/massdriver-cloud/mass/pkg/bundle"
 
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
@@ -86,11 +85,4 @@ func runBundleApply(cmd *cobra.Command, args []string) error {
 	}
 
 	return beta.Apply(ctx, cli, name, params, connections)
-}
-
-func applyOverrides(bundle *bundle.Bundle, cmd *cobra.Command) {
-	access, err := cmd.Flags().GetString("access")
-	if err == nil {
-		bundle.Access = access
-	}
 }
