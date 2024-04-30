@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs) error {
+func BuildBundle(buildPath string, generateFiles bool, b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs) error {
 	err := b.DereferenceSchemas(buildPath, c, fs)
 
 	if err != nil {
@@ -25,9 +25,11 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 	for _, step := range stepsOrDefault(b.Steps) {
 		switch step.Provisioner {
 		case "terraform":
-			err = terraform.GenerateFiles(buildPath, step.Path, b, fs)
-			if err != nil {
-				return err
+			if generateFiles {
+				err = terraform.GenerateFiles(buildPath, step.Path, b, fs)
+				if err != nil {
+					return err
+				}
 			}
 		default:
 			return fmt.Errorf("%s is not a supported provisioner", step.Provisioner)

@@ -37,6 +37,7 @@ func NewCmdBundle() *cobra.Command {
 		RunE:  runBundleBuild,
 	}
 	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleBuildCmd.Flags().BoolP("generate-files", "g", false, "Generate files for provisioners")
 
 	bundleLintCmd := &cobra.Command{
 		Use:          "lint",
@@ -59,6 +60,7 @@ func NewCmdBundle() *cobra.Command {
 	}
 	bundlePublishCmd.Flags().String("access", "private", "Override the access, useful in CI for deploying to sandboxes.")
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundlePublishCmd.Flags().BoolP("generate-files", "g", false, "Generate files for provisioners")
 
 	bundleTemplateCmd := &cobra.Command{
 		Use:   "template",
@@ -176,6 +178,10 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	generateFiles, err := cmd.Flags().GetBool("generate-files")
+	if err != nil {
+		return err
+	}
 
 	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
 	if err != nil {
@@ -184,7 +190,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient()
 
-	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(buildDirectory, generateFiles, unmarshalledBundle, c, fs)
 
 	return err
 }
@@ -228,6 +234,10 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	generateFiles, err := cmd.Flags().GetBool("build-directory")
+	if err != nil {
+		return err
+	}
 
 	unmarshalledBundle, err := unmarshalBundleandApplyDefaults(buildDirectory, cmd, fs)
 	if err != nil {
@@ -236,7 +246,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
-	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(buildDirectory, generateFiles, unmarshalledBundle, c, fs)
 	if err != nil {
 		return err
 	}
