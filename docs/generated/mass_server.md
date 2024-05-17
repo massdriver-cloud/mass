@@ -19,6 +19,7 @@ mass server [flags]
 ### Options
 
 ```
+      --browser            Launch a browser window after starting the server
   -d, --directory string   directory for the massdriver bundle, will default to the directory the server is ran from
   -h, --help               help for server
       --log-level string   Set the log level for the server. Options are [debug, info, warn, error] (default "info")

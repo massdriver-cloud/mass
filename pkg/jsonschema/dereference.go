@@ -26,7 +26,6 @@ type DereferenceOptions struct {
 var relativeFilePathPattern = regexp.MustCompile(`^(\.\/|\.\.\/)`)
 var massdriverDefinitionPattern = regexp.MustCompile(`^[a-zA-Z0-9]`)
 var httpPattern = regexp.MustCompile(`^(http|https)://`)
-var fragmentPattern = regexp.MustCompile(`^#`)
 
 func Dereference(anyVal interface{}, opts DereferenceOptions) (interface{}, error) {
 	val := getValue(anyVal)
@@ -59,8 +58,6 @@ func Dereference(anyVal interface{}, opts DereferenceOptions) (interface{}, erro
 			} else if httpPattern.MatchString(schemaRefValue) {
 				// HTTP ref. Pull the schema down via HTTP GET and hydrate
 				hydratedSchema, err = dereferenceHTTPRef(hydratedSchema, schema, schemaRefValue, opts)
-			} else if fragmentPattern.MatchString(schemaRefValue) {
-				fmt.Println("Fragment refs not supported")
 			} else if massdriverDefinitionPattern.MatchString(schemaRefValue) {
 				// this must be a published schema, so fetch from massdriver
 				hydratedSchema, err = dereferenceMassdriverRef(hydratedSchema, schema, schemaRefValue, opts)

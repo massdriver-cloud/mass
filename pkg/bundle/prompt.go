@@ -12,8 +12,16 @@ import (
 	"github.com/spf13/afero"
 )
 
-var bundleTypeFormat = regexp.MustCompile(`^[a-z0-9-]{2,}`)
-var connectionNameFormat = regexp.MustCompile(`^[a-z]+[a-z0-9_]*[a-z0-9]+$`)
+var (
+	// These look eerily similar, the difference being - vs _
+	baseRegex            = "^[a-z]+[a-z0-9%s]*[a-z0-9]+$"
+	bundleNameFormat     = regexp.MustCompile(fmt.Sprintf(baseRegex, "-"))
+	connectionNameFormat = regexp.MustCompile(fmt.Sprintf(baseRegex, "_"))
+
+	baseNameError   = "name must be 2 to 53 characters, can only include lowercase letters, numbers and %s, must start with a letter and end with an alphanumeric character [abc%s123, my%scool%sthing]"
+	bundleNameError = fmt.Sprintf(baseNameError, "dashes", "-", "-", "-")
+	connNameError   = fmt.Sprintf(baseNameError, "underscores", "_", "_", "_")
+)
 
 var massdriverArtifactDefinitions []string
 
@@ -43,19 +51,22 @@ func RunPromptNew(t *templatecache.TemplateData) error {
 	return nil
 }
 
-func getName(t *templatecache.TemplateData) error {
-	validate := func(input string) error {
-		if !bundleTypeFormat.MatchString(input) {
-			return errors.New("name must be 2 or more characters and can only include lowercase letters and dashes")
-		}
-		return nil
+func bundleNameValidate(name string) error {
+	if len(name) < 2 || len(name) > 53 {
+		return errors.New(bundleNameError)
 	}
+	if !bundleNameFormat.MatchString(name) {
+		return errors.New(bundleNameError)
+	}
+	return nil
+}
 
+func getName(t *templatecache.TemplateData) error {
 	defaultValue := strings.ReplaceAll(strings.ToLower(t.Name), " ", "-")
 
 	prompt := promptui.Prompt{
 		Label:    "Name",
-		Validate: validate,
+		Validate: bundleNameValidate,
 		Default:  defaultValue,
 	}
 
@@ -99,22 +110,41 @@ func getTemplate(t *templatecache.TemplateData) error {
 	templates, err := cache.ListTemplates()
 
 	filteredTemplates := removeIgnoredTemplateDirectories(templates)
-
 	if err != nil {
 		return err
 	}
+
 	prompt := promptui.Select{
 		Label: "Template",
 		Items: filteredTemplates,
 	}
 
 	_, result, err := prompt.Run()
-
 	if err != nil {
 		return err
 	}
 
 	t.TemplateName = result
+
+	// "helm-chart" doesn't exist yet but seems like the right thing to call the template
+	if result == "terraform-module" || result == "helm-chart" {
+		paramPath, paramsErr := getExistingParamsPath(result)
+		if paramsErr != nil {
+			return paramsErr
+		}
+		t.ExistingParamsPath = paramPath
+	}
+
+	return nil
+}
+
+func connNameValidate(name string) error {
+	if len(name) < 2 || len(name) > 53 {
+		return errors.New(connNameError)
+	}
+	if !connectionNameFormat.MatchString(name) {
+		return errors.New(connNameError)
+	}
 	return nil
 }
 
@@ -142,18 +172,11 @@ func GetConnections(t *templatecache.TemplateData) error {
 			return nil
 		}
 
-		validate := func(input string) error {
-			if !connectionNameFormat.MatchString(input) {
-				return errors.New("name must be at least 2 characters, start with a-z, use lowercase letters, numbers and underscores. It can not end with an underscore")
-			}
-			return nil
-		}
-
 		fmt.Printf("Please enter a name for the connection: \"%v\"\nThis will be the variable name used to reference it in your app|bundle IaC\n", v)
 
 		prompt := promptui.Prompt{
 			Label:    `Name`,
-			Validate: validate,
+			Validate: connNameValidate,
 		}
 
 		result, errName := prompt.Run()
@@ -196,4 +219,12 @@ func getOutputDir(t *templatecache.TemplateData) error {
 
 	t.OutputDir = result
 	return nil
+}
+
+func getExistingParamsPath(in string) (string, error) {
+	prompt := promptui.Prompt{
+		Label: fmt.Sprintf("Path to an existing %s to generate params from, leave blank to skip", in),
+	}
+
+	return prompt.Run()
 }

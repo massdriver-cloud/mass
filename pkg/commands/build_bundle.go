@@ -31,6 +31,8 @@ func BuildBundle(buildPath string, generateFiles bool, b *bundle.Bundle, c *rest
 					return err
 				}
 			}
+		case "helm":
+			continue
 		default:
 			return fmt.Errorf("%s is not a supported provisioner", step.Provisioner)
 		}

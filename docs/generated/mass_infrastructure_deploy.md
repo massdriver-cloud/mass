@@ -40,7 +40,8 @@ mass infrastructure deploy <project>-<target>-<manifest> [flags]
 ### Options
 
 ```
-  -h, --help   help for deploy
+  -h, --help             help for deploy
+  -m, --message string   Add a message when deploying
 ```
 
 ### SEE ALSO

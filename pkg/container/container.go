@@ -22,11 +22,11 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/massdriver-cloud/mass/pkg/files"
+	"github.com/massdriver-cloud/mass/pkg/server/bundle"
 	"github.com/moby/moby/client"
 	"github.com/moby/moby/pkg/jsonmessage"
 	"github.com/moby/moby/pkg/namesgenerator"
 	"github.com/moby/term"
-	"github.com/spf13/afero"
 	"nhooyr.io/websocket"
 )
 
@@ -35,7 +35,6 @@ const allowedMethods = "OPTIONS, GET, POST"
 type Handler struct {
 	baseDir   string
 	dockerCLI *client.Client
-	fs        afero.Fs
 }
 
 type DeployPayload struct {
@@ -49,11 +48,10 @@ type deployReply struct {
 	ContainerID string `json:"containerID"`
 }
 
-func NewHandler(baseDir string, dockerCLI *client.Client, fileSystem afero.Fs) *Handler {
+func NewHandler(baseDir string, dockerCLI *client.Client) *Handler {
 	return &Handler{
 		baseDir:   baseDir,
 		dockerCLI: dockerCLI,
-		fs:        fileSystem,
 	}
 }
 
@@ -255,7 +253,7 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(payload.Params) != 0 {
-		if err = h.reconcileParams(payload.Params); err != nil {
+		if err = bundle.ReconcileParams(h.baseDir, payload.Params); err != nil {
 			slog.Debug("Error writing params contents", "error", err)
 			http.Error(w, "unable to write params file", http.StatusBadRequest)
 			return
@@ -345,29 +343,6 @@ func (h *Handler) runContainer(ctx context.Context, action, image string) (strin
 	err = h.dockerCLI.ContainerStart(ctx, response.ID, types.ContainerStartOptions{})
 
 	return response.ID, err
-}
-
-// reconcileParams reads the params file keeping the md_metadata field intact as it's
-// not represented in the UI yet, adds the incoming params, and writes the file back out.
-func (h *Handler) reconcileParams(params map[string]any) error {
-	paramPath := path.Join(h.baseDir, "src", paramsFile)
-
-	fileParams := make(map[string]any)
-	err := files.Read(paramPath, &fileParams)
-	if err != nil {
-		return err
-	}
-
-	combinedParams := make(map[string]any)
-	if v, ok := fileParams["md_metadata"]; ok {
-		combinedParams["md_metadata"] = v
-	}
-
-	for k, v := range params {
-		combinedParams[k] = v
-	}
-
-	return files.Write(paramPath, combinedParams)
 }
 
 // getAWSCreds returns a formatted slice of aws cred envvars suitable for a containers env.

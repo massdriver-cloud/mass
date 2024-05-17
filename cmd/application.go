@@ -35,6 +35,8 @@ func NewCmdApp() *cobra.Command {
 		RunE:  runAppDeploy,
 	}
 
+	appDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
+
 	appConfigureCmd := &cobra.Command{
 		Use:     `configure <project>-<target>-<manifest>`,
 		Short:   "Configure application",
@@ -72,7 +74,12 @@ func runAppDeploy(cmd *cobra.Command, args []string) error {
 	}
 	client := api.NewClient(config.URL, config.APIKey)
 
-	_, err := commands.DeployPackage(client, config.OrgID, name)
+	msg, err := cmd.Flags().GetString("message")
+	if err != nil {
+		return err
+	}
+
+	_, err = commands.DeployPackage(client, config.OrgID, name, msg)
 
 	return err
 }

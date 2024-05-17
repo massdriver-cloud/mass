@@ -33,6 +33,7 @@ func NewCmdServer() *cobra.Command {
 	cmd.Flags().StringP("port", "p", "8080", "port for the server to listen on")
 	cmd.Flags().StringP("directory", "d", "", "directory for the massdriver bundle, will default to the directory the server is ran from")
 	cmd.Flags().String("log-level", "info", "Set the log level for the server. Options are [debug, info, warn, error]")
+	cmd.Flags().Bool("browser", false, "Launch a browser window after starting the server")
 
 	return cmd
 }
@@ -84,11 +85,19 @@ func runServer(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	server.RegisterHandlers()
+	ctx := context.Background()
 
-	handleSignals(server)
+	server.RegisterHandlers(ctx)
 
-	if err = server.Start(port); err != nil {
+	handleSignals(ctx, server)
+
+	launchBrowser, err := cmd.Flags().GetBool("browser")
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
+	if err = server.Start(port, launchBrowser); err != nil {
 		// The signal handler will shutdown the server under a ctrl-c
 		// so getting a ErrServerClosed here is expected
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -116,17 +125,17 @@ func setupLogging(level string) {
 	slog.SetDefault(slog.New(h))
 }
 
-func handleSignals(s *server.BundleServer) {
+func handleSignals(ctx context.Context, s *server.BundleServer) {
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func(s *server.BundleServer) {
 		for sig := range c {
 			slog.Info("Shutting down", "signal", sig)
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 
 			// If there are no errors here, the main func will race to exit potentially
 			// before hitting the context cancel which is fine since we are already on the way out.
-			if err := s.Stop(ctx); err != nil {
+			if err := s.Stop(ctxTimeout); err != nil {
 				if !errors.Is(err, http.ErrServerClosed) {
 					slog.Error(err.Error())
 				}

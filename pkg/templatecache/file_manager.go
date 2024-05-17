@@ -20,6 +20,7 @@ type fileManager struct {
 	writeDirectory        string
 	templateRootDirectory string
 	templateData          *TemplateData
+	overwriteAll          bool
 }
 
 /*
@@ -69,17 +70,18 @@ func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkEr
 }
 
 func (f *fileManager) promptAndWrite(template []byte, outputPath string) error {
-	if _, err := f.fs.Stat(outputPath); err == nil {
-		fmt.Printf("%s exists. Overwrite? (y|N): ", outputPath)
+	if _, err := f.fs.Stat(outputPath); err == nil && !f.overwriteAll {
+		fmt.Printf("%s exists. Overwrite? (y|N|all): ", outputPath)
 		var response string
 		fmt.Scanln(&response)
 
-		if !(response == "y" || response == "Y" || response == "yes") {
+		if !(response == "y" || response == "Y" || response == "yes" || response == "all") {
 			fmt.Println("keeping existing file")
 			return nil
 		}
-
-		return f.writeToFile(outputPath, template)
+		if response == "all" {
+			f.overwriteAll = true
+		}
 	}
 
 	return f.writeToFile(outputPath, template)

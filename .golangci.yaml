@@ -259,3 +259,6 @@ issues:
         - wrapcheck
         - gocognit
         - cyclop
+    # Ignore the file, this is part of the prompt flow which isn't currently setup to be tested
+    - linters: [testpackage]
+      path: "pkg/bundle/prompt_test.go"
