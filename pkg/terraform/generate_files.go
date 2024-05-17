@@ -76,14 +76,14 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 	}
 
 	for _, task := range varFileTasks {
-		schemaBytes, err := json.Marshal(task.schema)
-		if err != nil {
-			return err
+		schemaBytes, marshallErr := json.Marshal(task.schema)
+		if marshallErr != nil {
+			return marshallErr
 		}
 
-		content, err := terraform.SchemaToTf(bytes.NewReader(schemaBytes))
-		if err != nil {
-			return err
+		content, transpileErr := terraform.SchemaToTf(bytes.NewReader(schemaBytes))
+		if transpileErr != nil {
+			return transpileErr
 		}
 
 		filePath := fmt.Sprintf("/_%s_variables.tf", task.label)
