@@ -128,3 +128,50 @@ func (b *Bundle) buildEnvsInput() (map[string]interface{}, error) {
 
 	return result, nil
 }
+
+func (b *Bundle) LintMatchRequired() error {
+	return matchRequired(b.Params)
+}
+
+func matchRequired(input map[string]interface{}) error {
+	var properties map[string]interface{}
+
+	if val, ok := input["properties"]; ok {
+		properties = val.(map[string]interface{})
+	}
+
+	for _, prop := range properties {
+		var propType string
+
+		propMap := prop.(map[string]interface{})
+
+		if val, ok := propMap["type"]; ok {
+			propType = val.(string)
+		} else {
+			propType = "object"
+		}
+		if propType == "object" {
+			if val, ok := propMap["properties"]; ok {
+				err := matchRequired(val.(map[string]interface{}))
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	var required []string
+
+	if val, ok := input["required"]; ok {
+		required = val.([]string)
+	}
+
+	for _, req := range required {
+		if _, ok := properties[req]; !ok {
+			return fmt.Errorf("required parameter %s is not defined in properties", req)
+		}
+	}
+
+	return nil
+
+}
