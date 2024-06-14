@@ -1,0 +1,109 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Generated schema for Root",
+    "type": "object",
+    "required": [
+        "md_metadata"
+    ],
+    "properties": {
+        "md_metadata": {
+            "type": "object",
+            "required": [
+                "default_tags",
+                "deployment",
+                "name_prefix",
+                "observability",
+                "package",
+                "target"
+            ],
+            "properties": {
+                "default_tags": {
+                    "type": "object",
+                    "properties": {
+                        "managed-by": {
+                            "type": "string"
+                        },
+                        "md-manifest": {
+                            "type": "string"
+                        },
+                        "md-package": {
+                            "type": "string"
+                        },
+                        "md-project": {
+                            "type": "string"
+                        },
+                        "md-target": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "managed-by",
+                        "md-manifest",
+                        "md-package",
+                        "md-project",
+                        "md-target"
+                    ]
+                },
+                "deployment": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "id"
+                    ]
+                },
+                "name_prefix": {
+                    "type": "string"
+                },
+                "observability": {
+                    "type": "object",
+                    "properties": {
+                        "alarm_webhook_url": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "alarm_webhook_url"
+                    ]
+                },
+                "package": {
+                    "type": "object",
+                    "properties": {
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "deployment_enqueued_at": {
+                            "type": "string"
+                        },
+                        "previous_status": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "created_at",
+                        "deployment_enqueued_at",
+                        "previous_status",
+                        "updated_at"
+                    ]
+                },
+                "target": {
+                    "type": "object",
+                    "properties": {
+                        "contact_email": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "contact_email"
+                    ]
+                }
+            }
+        }
+    }
+}

@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 
 	"github.com/itchyny/gojq"
+	"github.com/massdriver-cloud/airlock/pkg/terraform"
 	"github.com/massdriver-cloud/schema2json"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -127,4 +129,77 @@ func (b *Bundle) buildEnvsInput() (map[string]interface{}, error) {
 	result["secrets"] = secrets
 
 	return result, nil
+}
+
+func (b *Bundle) LintProvisioners() error {
+	return nil
+}
+
+func (b *Bundle) LintParamsMatchVariables() error {
+	for _, step := range b.Steps {
+		if step.Provisioner == "terraform" || step.Provisioner == "opentofu" {
+			paramsConns := map[string]interface{}{}
+			if params, ok := b.Params["properties"]; ok {
+				maps.Copy(paramsConns, params.(map[string]interface{}))
+			}
+			if conns, ok := b.Connections["properties"]; ok {
+				maps.Copy(paramsConns, conns.(map[string]interface{}))
+			}
+			paramsConns["md_metadata"] = map[string]interface{}{}
+
+			tfvarsString, err := terraform.TfToSchema(step.Path)
+			if err != nil {
+				return err
+			}
+
+			tfvars := map[string]interface{}{}
+			err = json.Unmarshal([]byte(tfvarsString), &tfvars)
+			if err != nil {
+				return err
+			}
+
+			missingTfvars := []string{}
+			for paramName := range paramsConns {
+				match := false
+				for tfvarName := range tfvars["properties"].(map[string]interface{}) {
+					if paramName == tfvarName {
+						match = true
+						break
+					}
+				}
+				if !match && paramName != "md_metadata" {
+					missingTfvars = append(missingTfvars, paramName)
+				}
+			}
+
+			missingParamsConns := []string{}
+			for tfvarName := range tfvars["properties"].(map[string]interface{}) {
+				match := false
+				for paramName := range paramsConns {
+					if paramName == tfvarName {
+						match = true
+						break
+					}
+				}
+				if !match {
+					missingParamsConns = append(missingParamsConns, tfvarName)
+				}
+			}
+
+			if len(missingParamsConns) > 0 || len(missingTfvars) > 0 {
+				err := fmt.Sprintf("missing params or variables detected in step %s:\n", step.Path)
+
+				for _, p := range missingParamsConns {
+					err += fmt.Sprintf("\t- variable \"%s\" missing param declaration\n", p)
+				}
+				for _, v := range missingTfvars {
+					err += fmt.Sprintf("\t- param \"%s\" missing variable declaration\n", v)
+				}
+
+				return errors.New(err)
+			}
+		}
+	}
+
+	return nil
 }
