@@ -309,7 +309,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	generateFiles, err := cmd.Flags().GetBool("build-directory")
+	generateFiles, err := cmd.Flags().GetBool("generate-files")
 	if err != nil {
 		return err
 	}
