@@ -163,7 +163,11 @@ func matchRequired(input map[string]interface{}) error {
 	var required []string
 
 	if val, ok := input["required"]; ok {
-		required = val.([]string)
+		requiredInterface := val.([]interface{})
+		required = make([]string, len(requiredInterface))
+		for i, req := range requiredInterface {
+			required[i] = req.(string)
+		}
 	}
 
 	for _, req := range required {
