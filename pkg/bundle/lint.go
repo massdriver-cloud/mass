@@ -137,16 +137,23 @@ func matchRequired(input map[string]interface{}) error {
 	var properties map[string]interface{}
 
 	if val, ok := input["properties"]; ok {
-		properties = val.(map[string]interface{})
+		if properties, ok = val.(map[string]interface{}); !ok {
+			return fmt.Errorf("properties is not a map[string]interface{}")
+		}
 	}
 
 	for _, prop := range properties {
 		var propType string
 
-		propMap := prop.(map[string]interface{})
+		propMap, ok := prop.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("property is not a map[string]interface{}")
+		}
 
 		if val, ok := propMap["type"]; ok {
-			propType = val.(string)
+			if propType, ok = val.(string); !ok {
+				return fmt.Errorf("type is not a string")
+			}
 		} else {
 			propType = "object"
 		}
@@ -163,10 +170,16 @@ func matchRequired(input map[string]interface{}) error {
 	var required []string
 
 	if val, ok := input["required"]; ok {
-		requiredInterface := val.([]interface{})
+		requiredInterface, ok := val.([]interface{})
+		if !ok {
+			return fmt.Errorf("required is not a []interface{}")
+		}
+
 		required = make([]string, len(requiredInterface))
 		for i, req := range requiredInterface {
-			required[i] = req.(string)
+			if required[i], ok = req.(string); !ok {
+				return fmt.Errorf("required is not a []string")
+			}
 		}
 	}
 
