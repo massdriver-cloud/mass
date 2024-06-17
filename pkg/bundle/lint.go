@@ -136,8 +136,8 @@ func (b *Bundle) LintMatchRequired() error {
 func matchRequired(input map[string]interface{}) error {
 	var properties map[string]interface{}
 
-	if val, ok := input["properties"]; ok {
-		if properties, ok = val.(map[string]interface{}); !ok {
+	if val, propOk := input["properties"]; propOk {
+		if properties, propOk = val.(map[string]interface{}); !propOk {
 			return fmt.Errorf("properties is not a map[string]interface{}")
 		}
 	}
@@ -145,20 +145,20 @@ func matchRequired(input map[string]interface{}) error {
 	for _, prop := range properties {
 		var propType string
 
-		propMap, ok := prop.(map[string]interface{})
-		if !ok {
+		propMap, mapOk := prop.(map[string]interface{})
+		if !mapOk {
 			return fmt.Errorf("property is not a map[string]interface{}")
 		}
 
-		if val, ok := propMap["type"]; ok {
-			if propType, ok = val.(string); !ok {
+		if val, typeOk := propMap["type"]; typeOk {
+			if propType, typeOk = val.(string); !typeOk {
 				return fmt.Errorf("type is not a string")
 			}
 		} else {
 			propType = "object"
 		}
 		if propType == "object" {
-			if _, ok := propMap["properties"]; ok {
+			if _, objectOk := propMap["properties"]; objectOk {
 				err := matchRequired(propMap)
 				if err != nil {
 					return err
@@ -169,22 +169,22 @@ func matchRequired(input map[string]interface{}) error {
 
 	var required []string
 
-	if val, ok := input["required"]; ok {
-		requiredInterface, ok := val.([]interface{})
-		if !ok {
+	if val, reqOk := input["required"]; reqOk {
+		requiredInterface, reqIntOk := val.([]interface{})
+		if !reqIntOk {
 			return fmt.Errorf("required is not a []interface{}")
 		}
 
 		required = make([]string, len(requiredInterface))
 		for i, req := range requiredInterface {
-			if required[i], ok = req.(string); !ok {
+			if required[i], reqOk = req.(string); !reqOk {
 				return fmt.Errorf("required is not a []string")
 			}
 		}
 	}
 
 	for _, req := range required {
-		if _, ok := properties[req]; !ok {
+		if _, propReqOk := properties[req]; !propReqOk {
 			return fmt.Errorf("required parameter %s is not defined in properties", req)
 		}
 	}
