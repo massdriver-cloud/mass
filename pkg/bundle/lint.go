@@ -151,8 +151,8 @@ func matchRequired(input map[string]interface{}) error {
 			propType = "object"
 		}
 		if propType == "object" {
-			if val, ok := propMap["properties"]; ok {
-				err := matchRequired(val.(map[string]interface{}))
+			if _, ok := propMap["properties"]; ok {
+				err := matchRequired(propMap)
 				if err != nil {
 					return err
 				}
