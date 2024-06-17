@@ -23,6 +23,11 @@ var mdVars = map[string]interface{}{
 	},
 }
 
+const (
+	ParamsFile = "_params.auto.tfvars.json"
+	ConnsFile  = "_connections.auto.tfvars.json"
+)
+
 func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {
 	err := generateTfVarsFiles(buildPath, stepPath, b, fs)
 
@@ -30,7 +35,7 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 		return err
 	}
 
-	devParamPath := path.Join(buildPath, stepPath, bundle.ParamsFile)
+	devParamPath := path.Join(buildPath, stepPath, ParamsFile)
 
 	err = transpileAndWriteDevParams(devParamPath, b, fs)
 
@@ -38,7 +43,7 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 		return fmt.Errorf("error compiling dev params: %w", err)
 	}
 
-	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, bundle.ConnsFile), b, fs)
+	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, ConnsFile), b, fs)
 
 	if err != nil {
 		return err
