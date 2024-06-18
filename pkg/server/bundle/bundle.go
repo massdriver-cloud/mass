@@ -104,6 +104,8 @@ func (h *Handler) GetEnvironmentVariables(w http.ResponseWriter, _ *http.Request
 //	@Success		200	{object}	map[string]any
 //	@Router			/bundle/params [post, get, options]
 func (h *Handler) Params(w http.ResponseWriter, r *http.Request) {
+	var steps = []bundle.Step{bundle.DefaultStep}
+
 	if r.Method != http.MethodPost && r.Method != http.MethodOptions && r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -114,8 +116,22 @@ func (h *Handler) Params(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(h.parsedBundle.Steps) > 0 {
+		steps = h.parsedBundle.Steps
+	}
+
 	if r.Method == http.MethodGet {
-		content, err := afero.ReadFile(h.fs, path.Join(h.bundleDir, "src", paramsFile))
+		reader, err := NewInputHandler(steps[0].Provisioner)
+
+		if err != nil {
+			slog.Debug("Error creating reader", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		paramsPath := path.Join(h.bundleDir, steps[0].Path)
+		content, err := reader.ReadParams(paramsPath)
+
 		if err != nil {
 			slog.Debug("Error reading params file", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -150,10 +166,20 @@ func (h *Handler) Params(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = ReconcileParams(h.bundleDir, payload); err != nil {
-		slog.Debug("Error writing params contents", "error", err)
-		http.Error(w, "unable to write params file", http.StatusBadRequest)
-		return
+	for _, step := range h.parsedBundle.Steps {
+		writePath := path.Join(h.bundleDir, step.Path)
+		writer, err := NewInputHandler(step.Provisioner)
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if err = writer.WriteParams(writePath, payload); err != nil {
+			slog.Debug("Error writing params contents", "error", err)
+			http.Error(w, "unable to write params file", http.StatusBadRequest)
+			return
+		}
 	}
 
 	_, err = w.Write([]byte("{}"))
@@ -251,14 +277,30 @@ func (h *Handler) Connections(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	bundle.Connections
 //	@Router			/bundle/connections [get]
 func (h *Handler) getConnections(w http.ResponseWriter) {
-	f, err := afero.ReadFile(h.fs, path.Join(h.bundleDir, "src", bundle.ConnsFile))
+	var steps = []bundle.Step{bundle.DefaultStep}
+
+	if len(h.parsedBundle.Steps) > 0 {
+		steps = h.parsedBundle.Steps
+	}
+
+	reader, err := NewInputHandler(steps[0].Provisioner)
+
+	if err != nil {
+		slog.Debug("Error creating reader", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	paramsPath := path.Join(h.bundleDir, steps[0].Path)
+	content, err := reader.ReadConnections(paramsPath)
+
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(f)
+	_, err = w.Write(content)
 	if err != nil {
 		slog.Error(err.Error())
 	}

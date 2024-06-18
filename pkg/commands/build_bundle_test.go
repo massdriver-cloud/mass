@@ -211,36 +211,42 @@ var expectedBicepContent = map[string][]byte{
     "contentVersion": "1.0.0.0",
     "parameters": {
         "connections": {
-            "draft_node_foo": {
-                "foo": {
-                    "infrastructure": {
-                        "arn": "REPLACE ME"
+            "value": {
+                "draft_node_foo": {
+                    "foo": {
+                        "infrastructure": {
+                            "arn": "REPLACE ME"
+                        }
                     }
                 }
             }
         },
         "md_metadata": {
-            "default_tags": {
-                "md-manifest": "draft-node",
-                "md-package": "local-dev-draft-node-000",
-                "md-project": "local",
-                "md-target": "dev"
-            },
-            "deployment": {
-                "id": "local-dev-id"
-            },
-            "name_prefix": "local-dev-draft-node-000",
-            "observability": {
-                "alarm_webhook_url": "https://placeholder.com"
+            "value": {
+                "default_tags": {
+                    "md-manifest": "draft-node",
+                    "md-package": "local-dev-draft-node-000",
+                    "md-project": "local",
+                    "md-target": "dev"
+                },
+                "deployment": {
+                    "id": "local-dev-id"
+                },
+                "name_prefix": "local-dev-draft-node-000",
+                "observability": {
+                    "alarm_webhook_url": "https://placeholder.com"
+                }
             }
         },
         "params": {
-            "foo": {
-                "bar": 1,
-                "qux": 2
-            },
-            "resource_name": "REPLACE ME",
-            "resource_type": "Network"
+            "value": {
+                "foo": {
+                    "bar": 1,
+                    "qux": 2
+                },
+                "resource_name": "REPLACE ME",
+                "resource_type": "Network"
+            }
         }
     }
 }`),

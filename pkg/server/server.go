@@ -134,7 +134,11 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 		os.Exit(1)
 	}
 
-	containerHandler := container.NewHandler(b.BaseDir, b.DockerCli)
+	containerHandler, err := container.NewHandler(b.BaseDir, b.DockerCli)
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
 
 	http.Handle("/bundle/build", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Build)))
 	http.Handle("/bundle/secrets", originHeaderMiddleware(http.HandlerFunc(bundleHandler.GetSecrets)))

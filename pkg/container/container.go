@@ -21,8 +21,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/strslice"
-	"github.com/massdriver-cloud/mass/pkg/files"
-	"github.com/massdriver-cloud/mass/pkg/server/bundle"
+	"github.com/massdriver-cloud/mass/pkg/bundle"
+	sb "github.com/massdriver-cloud/mass/pkg/server/bundle"
 	"github.com/moby/moby/client"
 	"github.com/moby/moby/pkg/jsonmessage"
 	"github.com/moby/moby/pkg/namesgenerator"
@@ -33,8 +33,9 @@ import (
 const allowedMethods = "OPTIONS, GET, POST"
 
 type Handler struct {
-	baseDir   string
-	dockerCLI *client.Client
+	baseDir      string
+	dockerCLI    *client.Client
+	parsedBundle bundle.Bundle
 }
 
 type DeployPayload struct {
@@ -48,11 +49,18 @@ type deployReply struct {
 	ContainerID string `json:"containerID"`
 }
 
-func NewHandler(baseDir string, dockerCLI *client.Client) *Handler {
-	return &Handler{
-		baseDir:   baseDir,
-		dockerCLI: dockerCLI,
+func NewHandler(baseDir string, dockerCLI *client.Client) (*Handler, error) {
+	b, err := bundle.Unmarshal(baseDir)
+
+	if err != nil {
+		return nil, err
 	}
+
+	return &Handler{
+		baseDir:      baseDir,
+		dockerCLI:    dockerCLI,
+		parsedBundle: *b,
+	}, nil
 }
 
 // List lists containers
@@ -194,11 +202,6 @@ func (h *Handler) StreamLogs(w http.ResponseWriter, r *http.Request) {
 	wc.Close(websocket.StatusNormalClosure, "")
 }
 
-const (
-	varsFile   = "secrets.tfvars.json"
-	paramsFile = "_params.auto.tfvars.json"
-)
-
 // Deploy runs the provisioner container locally
 //
 //	@Summary		Deploy the bundle
@@ -243,20 +246,25 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(payload.Secrets) != 0 {
-		err = files.Write(path.Join(h.baseDir, "src", varsFile), payload.Secrets)
-		if err != nil {
-			slog.Debug("Error writing secrets contents", "error", err)
-			http.Error(w, "unable to write secrets file", http.StatusBadRequest)
-			return
-		}
-	}
+	for _, step := range h.parsedBundle.Steps {
+		inputHandler, _ := sb.NewInputHandler(step.Provisioner)
+		basePath := path.Join(h.baseDir, step.Path)
 
-	if len(payload.Params) != 0 {
-		if err = bundle.ReconcileParams(h.baseDir, payload.Params); err != nil {
-			slog.Debug("Error writing params contents", "error", err)
-			http.Error(w, "unable to write params file", http.StatusBadRequest)
-			return
+		if len(payload.Secrets) != 0 {
+			err = inputHandler.WriteSecrets(basePath, payload.Secrets)
+			if err != nil {
+				slog.Debug("Error writing secrets contents", "error", err)
+				http.Error(w, "unable to write secrets file", http.StatusBadRequest)
+				return
+			}
+		}
+
+		if len(payload.Params) != 0 {
+			if err = inputHandler.WriteParams(basePath, payload.Params); err != nil {
+				slog.Debug("Error writing params contents", "error", err)
+				http.Error(w, "unable to write params file", http.StatusBadRequest)
+				return
+			}
 		}
 	}
 
