@@ -128,3 +128,66 @@ func (b *Bundle) buildEnvsInput() (map[string]interface{}, error) {
 
 	return result, nil
 }
+
+func (b *Bundle) LintMatchRequired() error {
+	return matchRequired(b.Params)
+}
+
+func matchRequired(input map[string]interface{}) error {
+	var properties map[string]interface{}
+
+	if val, propOk := input["properties"]; propOk {
+		if properties, propOk = val.(map[string]interface{}); !propOk {
+			return fmt.Errorf("properties is not a map[string]interface{}")
+		}
+	}
+
+	for _, prop := range properties {
+		var propType string
+
+		propMap, mapOk := prop.(map[string]interface{})
+		if !mapOk {
+			return fmt.Errorf("property is not a map[string]interface{}")
+		}
+
+		if val, typeOk := propMap["type"]; typeOk {
+			if propType, typeOk = val.(string); !typeOk {
+				return fmt.Errorf("type is not a string")
+			}
+		} else {
+			propType = "object"
+		}
+		if propType == "object" {
+			if _, objectOk := propMap["properties"]; objectOk {
+				err := matchRequired(propMap)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	var required []string
+
+	if val, reqOk := input["required"]; reqOk {
+		requiredInterface, reqIntOk := val.([]interface{})
+		if !reqIntOk {
+			return fmt.Errorf("required is not a []interface{}")
+		}
+
+		required = make([]string, len(requiredInterface))
+		for i, req := range requiredInterface {
+			if required[i], reqOk = req.(string); !reqOk {
+				return fmt.Errorf("required is not a []string")
+			}
+		}
+	}
+
+	for _, req := range required {
+		if _, propReqOk := properties[req]; !propReqOk {
+			return fmt.Errorf("required parameter %s is not defined in properties", req)
+		}
+	}
+
+	return nil
+}

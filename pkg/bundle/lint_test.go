@@ -257,3 +257,127 @@ func TestLintEnvs(t *testing.T) {
 		})
 	}
 }
+
+func TestLintMatchRequired(t *testing.T) {
+	type test struct {
+		name string
+		bun  *bundle.Bundle
+		err  error
+	}
+	tests := []test{
+		{
+			name: "Valid pass",
+			bun: &bundle.Bundle{
+				Name:        "example",
+				Description: "description",
+				Access:      "private",
+				Schema:      "draft-07",
+				Type:        "infrastructure",
+				Params: map[string]interface{}{
+					"required": []interface{}{"foo"},
+					"properties": map[string]interface{}{
+						"foo": map[string]interface{}{
+							"type": "string",
+						},
+					},
+				},
+				Connections: map[string]interface{}{},
+				Artifacts:   map[string]interface{}{},
+				UI:          map[string]interface{}{},
+			},
+			err: nil,
+		},
+		{
+			name: "Invalid missing param",
+			bun: &bundle.Bundle{
+				Name:        "example",
+				Description: "description",
+				Access:      "private",
+				Schema:      "draft-07",
+				Type:        "infrastructure",
+				Params: map[string]interface{}{
+					"required": []interface{}{"bar"},
+					"properties": map[string]interface{}{
+						"foo": map[string]interface{}{
+							"type": "string",
+						},
+					},
+				},
+				Connections: map[string]interface{}{},
+				Artifacts:   map[string]interface{}{},
+				UI:          map[string]interface{}{},
+			},
+			err: errors.New("required parameter bar is not defined in properties"),
+		},
+		{
+			name: "Nested valid test",
+			bun: &bundle.Bundle{
+				Name:        "example",
+				Description: "description",
+				Access:      "private",
+				Schema:      "draft-07",
+				Type:        "infrastructure",
+				Params: map[string]interface{}{
+					"required": []interface{}{"foo"},
+					"properties": map[string]interface{}{
+						"foo": map[string]interface{}{
+							"type":     "object",
+							"required": []interface{}{"bar"},
+							"properties": map[string]interface{}{
+								"bar": map[string]interface{}{
+									"type": "string",
+								},
+							},
+						},
+					},
+				},
+				Connections: map[string]interface{}{},
+				Artifacts:   map[string]interface{}{},
+				UI:          map[string]interface{}{},
+			},
+			err: nil,
+		},
+		{
+			name: "Nested invalid test",
+			bun: &bundle.Bundle{
+				Name:        "example",
+				Description: "description",
+				Access:      "private",
+				Schema:      "draft-07",
+				Type:        "infrastructure",
+				Params: map[string]interface{}{
+					"required": []interface{}{"foo"},
+					"properties": map[string]interface{}{
+						"foo": map[string]interface{}{
+							"type":     "object",
+							"required": []interface{}{"baz", "bar"},
+							"properties": map[string]interface{}{
+								"bar": map[string]interface{}{
+									"type": "string",
+								},
+							},
+						},
+					},
+				},
+				Connections: map[string]interface{}{},
+				Artifacts:   map[string]interface{}{},
+				UI:          map[string]interface{}{},
+			},
+			err: errors.New("required parameter baz is not defined in properties"),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.bun.LintMatchRequired()
+			if tc.err != nil {
+				if err == nil {
+					t.Errorf("expected an error, got nil")
+				} else if tc.err.Error() != err.Error() {
+					t.Errorf("got %v, want %v", err.Error(), tc.err.Error())
+				}
+			} else if err != nil {
+				t.Fatalf("%d, unexpected error", err)
+			}
+		})
+	}
+}
