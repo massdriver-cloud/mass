@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-func BuildBundle(buildPath string, generateFiles bool, b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs) error {
+func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs) error {
 	err := b.DereferenceSchemas(buildPath, c, fs)
 
 	if err != nil {
@@ -25,11 +25,9 @@ func BuildBundle(buildPath string, generateFiles bool, b *bundle.Bundle, c *rest
 	for _, step := range stepsOrDefault(b.Steps) {
 		switch step.Provisioner {
 		case "terraform":
-			if generateFiles {
-				err = terraform.GenerateFiles(buildPath, step.Path, b, fs)
-				if err != nil {
-					return err
-				}
+			err = terraform.GenerateFiles(buildPath, step.Path, b, fs)
+			if err != nil {
+				return err
 			}
 		case "helm":
 			continue

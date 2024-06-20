@@ -131,10 +131,6 @@ func (b *Bundle) buildEnvsInput() (map[string]interface{}, error) {
 	return result, nil
 }
 
-func (b *Bundle) LintProvisioners() error {
-	return nil
-}
-
 func (b *Bundle) LintParamsMatchVariables() error {
 	for _, step := range b.Steps {
 		if step.Provisioner == "terraform" || step.Provisioner == "opentofu" {

@@ -210,7 +210,7 @@ func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = commands.BuildBundle(h.bundleDir, false, unmarshalledBundle, restclient.NewClient(), afero.NewOsFs()); err != nil {
+	if err = commands.BuildBundle(h.bundleDir, unmarshalledBundle, restclient.NewClient(), afero.NewOsFs()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

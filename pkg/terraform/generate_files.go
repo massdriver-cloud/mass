@@ -5,7 +5,9 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
+	"slices"
 
 	"github.com/massdriver-cloud/airlock/pkg/terraform"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
@@ -57,6 +59,17 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 		return err
 	}
 
+	// read existing terraform variables for this step
+	existingTfvarsString, err := terraform.TfToSchema(path.Join(buildPath, stepPath))
+	if err != nil {
+		return err
+	}
+	existingTfvars := map[string]interface{}{}
+	err = json.Unmarshal([]byte(existingTfvarsString), &existingTfvars)
+	if err != nil {
+		return err
+	}
+
 	varFileTasks := []schema{
 		{
 			label:     "params",
@@ -76,7 +89,34 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 	}
 
 	for _, task := range varFileTasks {
-		schemaBytes, marshallErr := json.Marshal(task.schema)
+		newVariables := map[string]interface{}{
+			"required":   []string{},
+			"properties": map[string]any{},
+		}
+
+		// check each variable in the schema, and if doesn't already exist as a declared variable in the terraform, add it to be rendered
+		for key, value := range task.schema["properties"].(map[string]any) {
+			if _, exists := existingTfvars["properties"]; exists {
+				existingTfvarsProperties := existingTfvars["properties"].(map[string]any)
+
+				if _, exists := existingTfvarsProperties[key]; !exists {
+					newVariables["properties"].(map[string]any)[key] = value
+					if _, exists := existingTfvars["required"]; exists {
+						existingTfvarsRequired := existingTfvars["required"].([]string)
+
+						if slices.Contains(existingTfvarsRequired, key) {
+							newVariables["required"] = append(newVariables["required"].([]string), key)
+						}
+					}
+				}
+			}
+		}
+
+		if len(newVariables["properties"].(map[string]any)) == 0 {
+			break
+		}
+
+		schemaBytes, marshallErr := json.Marshal(newVariables)
 		if marshallErr != nil {
 			return marshallErr
 		}
@@ -87,10 +127,15 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 		}
 
 		filePath := fmt.Sprintf("/_%s_variables.tf", task.label)
-		err = afero.WriteFile(fs, path.Join(buildPath, stepPath, filePath), content, 0755)
+		fh, openErr := fs.OpenFile(path.Join(buildPath, stepPath, filePath), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
+		if openErr != nil {
+			return openErr
+		}
+		defer fh.Close()
 
-		if err != nil {
-			return err
+		_, writeErr := fh.Write(content)
+		if writeErr != nil {
+			return writeErr
 		}
 	}
 

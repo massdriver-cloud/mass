@@ -253,7 +253,7 @@ func TestBundleBuildSchemas(t *testing.T) {
 	c.WithBaseURL(testServer.URL)
 	c.WithAPIKey("dummy")
 
-	err = commands.BuildBundle(writeDir, true, unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(writeDir, unmarshalledBundle, c, fs)
 
 	if err != nil {
 		t.Fatal(err)
@@ -300,7 +300,7 @@ func TestBundleBuildTFVars(t *testing.T) {
 	c.WithBaseURL(testServer.URL)
 	c.WithAPIKey("dummy")
 
-	err = commands.BuildBundle(writeDir, true, unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(writeDir, unmarshalledBundle, c, fs)
 
 	if err != nil {
 		t.Fatal(err)
