@@ -26,7 +26,7 @@ var mdVars = map[string]interface{}{
 const (
 	ParamsFile  = "_params.auto.tfvars.json"
 	ConnsFile   = "_connections.auto.tfvars.json"
-	SecretsFile = "secrets.tfvars.json"
+	SecretsFile = "secrets.tfvars.json" //nolint:gosec
 )
 
 func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {

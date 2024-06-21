@@ -175,17 +175,20 @@ func (h *Handler) StreamLogs(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		b := scanner.Bytes()
-		if json.Valid(b) {
-			err = wc.Write(ctx, websocket.MessageText, b)
-			if err != nil {
-				slog.Error("Websocket write error", "error", err.Error())
-				break
-			}
-		} else if !utf8.ValidString(string(b)) {
+
+		if !utf8.ValidString(string(b)) {
 			// If a container is ran without TTY then the logs coming back from docker
 			// can potentially have invalid utf-8 characters which won't pass the valid json
 			// check above. At least warn so there is indication why nothing is coming through
 			slog.Warn("Container log has invalid utf-8", "log", string([]rune(scanner.Text())))
+			continue
+		}
+
+		err = wc.Write(ctx, websocket.MessageText, b)
+
+		if err != nil {
+			slog.Error("Websocket write error", "error", err.Error())
+			break
 		}
 	}
 
@@ -211,6 +214,8 @@ func (h *Handler) StreamLogs(w http.ResponseWriter, r *http.Request) {
 //	@Success		200				{object}	container.deployReply
 //	@Param			deployPayload	body		container.DeployPayload	true	"DeployPayload"
 //	@Router			/bundle/deploy [post]
+//
+//nolint:funlen,gocognit
 func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost && r.Method != http.MethodOptions {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -223,11 +228,13 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	conns, err := io.ReadAll(r.Body)
+
 	if err != nil {
 		slog.Debug("Error reading payload", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	defer r.Body.Close()
 
 	payload := DeployPayload{}
@@ -337,7 +344,8 @@ func (h *Handler) runContainer(ctx context.Context, action, image string) (strin
 	}
 
 	host := &container.HostConfig{
-		Binds: []string{abs + ":/bundle"},
+		Binds:      []string{abs + ":/bundle"},
+		AutoRemove: true,
 	}
 
 	// Prefix with mass_ for easy searching/deleting later

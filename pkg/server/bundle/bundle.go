@@ -168,9 +168,9 @@ func (h *Handler) Params(w http.ResponseWriter, r *http.Request) {
 
 	for _, step := range h.parsedBundle.Steps {
 		writePath := path.Join(h.bundleDir, step.Path)
-		writer, err := NewInputHandler(step.Provisioner)
+		writer, writerErr := NewInputHandler(step.Provisioner)
 
-		if err != nil {
+		if writerErr != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -316,39 +316,45 @@ func (h *Handler) getConnections(w http.ResponseWriter) {
 //	@Param			connectons	body		bundle.Connections	true	"Connections"
 //	@Router			/bundle/connections [post]
 func (h *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
-	conns, err := io.ReadAll(r.Body)
+	params, err := io.ReadAll(r.Body)
+
 	if err != nil {
 		slog.Debug("Error reading payload", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	defer r.Body.Close()
 
-	connMap := make(map[string]any)
+	payload := make(map[string]any)
 
-	// We have to go through the unmarshal/marshal dance to ensure
-	// we keep the formatting in the final file. If the json payload
-	// is a single line that would end up back in the file and make
-	// it unreadable.
-	err = json.Unmarshal(conns, &connMap)
+	err = json.Unmarshal(params, &payload)
+
 	if err != nil {
 		slog.Debug("Error unmarshalling payload", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	bytes, err := json.MarshalIndent(connMap, "", "    ")
-	if err != nil {
-		slog.Debug("Error marshalling payload", "error", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	for _, step := range h.parsedBundle.Steps {
+		writePath := path.Join(h.bundleDir, step.Path)
+		writer, writerErr := NewInputHandler(step.Provisioner)
+
+		if writerErr != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if err = writer.WriteConnections(writePath, payload); err != nil {
+			slog.Debug("Error writing params contents", "error", err)
+			http.Error(w, "unable to write params file", http.StatusBadRequest)
+			return
+		}
 	}
 
-	err = afero.WriteFile(h.fs, path.Join(h.bundleDir, "src", bundle.ConnsFile), bytes, 0755)
+	_, err = w.Write([]byte("{}"))
 	if err != nil {
-		slog.Debug("Error writing file", "error", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		slog.Warn("failed to write response", "error", err)
 	}
 }
 
@@ -359,3 +365,5 @@ func (h *Handler) options(w http.ResponseWriter, r *http.Request) {
 	headers["Access-Control-Allow-Methods"] = []string{allowedMethods}
 	w.WriteHeader(http.StatusOK)
 }
+
+func (h *Handler) write()
