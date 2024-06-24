@@ -16,8 +16,6 @@ type VirtualFile struct {
 	Content []byte
 }
 
-const srcPath = "src"
-
 /*
 Sets up a mock bundle in the location specified by rootTemplateDir.
 Includes a parsable massdriver.yaml template, and an empty src/main.tf
@@ -25,6 +23,7 @@ Includes a parsable massdriver.yaml template, and an empty src/main.tf
 func SetupBundleTemplate(rootTemplateDir string, fs afero.Fs) error {
 	repoPath := "massdriver-cloud/infrastructure-templates"
 	templatePath := "terraform"
+	srcPath := "src"
 
 	directories := []string{
 		path.Join(rootTemplateDir, repoPath),
@@ -64,54 +63,8 @@ func SetupBundleTemplate(rootTemplateDir string, fs afero.Fs) error {
 	return nil
 }
 
-func SetupBicepBundle(rootDir string, fs afero.Fs) error {
-	directories := []string{
-		rootDir,
-		path.Join(rootDir, srcPath),
-	}
-
-	fixturePath := path.Join(projectRoot(), "/pkg/mockfilesystem/testdata/bicep/massdriver.yaml")
-
-	massdriverYamlFile, err := os.ReadFile(fixturePath)
-
-	if err != nil {
-		return err
-	}
-
-	mainPath := path.Join(projectRoot(), "/pkg/mockfilesystem/testdata/bicep/template.bicep")
-	mainBicep, err := os.ReadFile(mainPath)
-
-	if err != nil {
-		return err
-	}
-
-	files := []VirtualFile{
-		{
-			Path:    fmt.Sprintf("%s/massdriver.yaml", rootDir),
-			Content: massdriverYamlFile,
-		},
-		{
-			Path:    fmt.Sprintf("%s/template.bicep", path.Join(rootDir, srcPath)),
-			Content: mainBicep,
-		},
-	}
-
-	err = MakeDirectories(directories, fs)
-
-	if err != nil {
-		return err
-	}
-
-	err = MakeFiles(files, fs)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func SetupBundle(rootDir string, fs afero.Fs) error {
+	srcPath := "src"
 	deployPath := "deploy"
 
 	directories := []string{
