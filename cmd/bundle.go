@@ -199,7 +199,7 @@ func runBundleNew(input *bundleNew) {
 
 	c, configErr := config.Get()
 	if configErr != nil {
-		log.Fatal(err)
+		log.Fatal(configErr)
 	}
 	gqlclient := api.NewClient(c.URL, c.APIKey)
 
