@@ -133,6 +133,7 @@ func (b *Bundle) LintMatchRequired() error {
 	return matchRequired(b.Params)
 }
 
+//nolint:gocognit
 func matchRequired(input map[string]interface{}) error {
 	var properties map[string]interface{}
 
