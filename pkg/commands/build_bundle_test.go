@@ -207,19 +207,18 @@ var expectedTFContent = map[string][]byte{
 
 var expectedBicepContent = map[string][]byte{
 	"template.parameters.json": []byte(`{
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-        "connections": {
-            "draft_node_foo": {
-                "foo": {
-                    "infrastructure": {
-                        "arn": "REPLACE ME"
-                    }
-                }
-            }
-        },
-        "md_metadata": {
+    "params": {
+        "value": {
+            "foo": {
+                "bar": 1,
+                "qux": 2
+            },
+            "resource_name": "REPLACE ME",
+            "resource_type": "Network"
+        }
+    },
+    "md_metadata": {
+        "value": {
             "default_tags": {
                 "md-manifest": "draft-node",
                 "md-package": "local-dev-draft-node-000",
@@ -233,14 +232,17 @@ var expectedBicepContent = map[string][]byte{
             "observability": {
                 "alarm_webhook_url": "https://placeholder.com"
             }
-        },
-        "params": {
-            "foo": {
-                "bar": 1,
-                "qux": 2
-            },
-            "resource_name": "REPLACE ME",
-            "resource_type": "Network"
+        }
+    },
+    "connections": {
+        "value": {
+            "draft_node_foo": {
+                "foo": {
+                    "infrastructure": {
+                        "arn": "REPLACE ME"
+                    }
+                }
+            }
         }
     }
 }`),

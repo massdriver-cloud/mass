@@ -16,6 +16,11 @@ const (
 	ConnsFile  = "_connections.auto.tfvars.json"
 )
 
+var DefaultStep = Step{
+	Provisioner: "terraform",
+	Path:        "src",
+}
+
 type Step struct {
 	Path        string `json:"path" yaml:"path"`
 	Provisioner string `json:"provisioner" yaml:"provisioner"`
