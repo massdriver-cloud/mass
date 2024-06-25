@@ -12,8 +12,7 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
+	dockerContainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -50,11 +49,11 @@ func StartDevelopmentSimulator() error {
 
 	container, err := cli.ContainerCreate(
 		context.Background(),
-		&container.Config{
+		&dockerContainer.Config{
 			Image:        "massdrivercloud/massdriver-bundle-preview",
 			ExposedPorts: nat.PortSet{"6006/tcp": struct{}{}},
 		},
-		&container.HostConfig{
+		&dockerContainer.HostConfig{
 			PortBindings: portBinding,
 			Mounts: []mount.Mount{
 				{
@@ -72,13 +71,13 @@ func StartDevelopmentSimulator() error {
 		return err
 	}
 
-	err = cli.ContainerStart(context.Background(), container.ID, types.ContainerStartOptions{})
+	err = cli.ContainerStart(context.Background(), container.ID, dockerContainer.StartOptions{})
 
 	if err != nil {
 		return err
 	}
 
-	logstream, err := cli.ContainerLogs(context.Background(), container.ID, types.ContainerLogsOptions{
+	logstream, err := cli.ContainerLogs(context.Background(), container.ID, dockerContainer.LogsOptions{
 		Follow:     true,
 		ShowStdout: true,
 		ShowStderr: true,
