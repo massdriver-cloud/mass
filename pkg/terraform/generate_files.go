@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"slices"
 
 	"github.com/massdriver-cloud/airlock/pkg/terraform"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
@@ -102,10 +101,12 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 				if _, exists := existingTfvarsProperties[key]; !exists {
 					newVariables["properties"].(map[string]any)[key] = value
 					if _, exists := existingTfvars["required"]; exists {
-						existingTfvarsRequired := existingTfvars["required"].([]string)
+						existingTfvarsRequired := existingTfvars["required"].([]interface{})
 
-						if slices.Contains(existingTfvarsRequired, key) {
-							newVariables["required"] = append(newVariables["required"].([]string), key)
+						for _, elem := range existingTfvarsRequired {
+							if key == elem.(string) {
+								newVariables["required"] = append(newVariables["required"].([]string), key)
+							}
 						}
 					}
 				}
