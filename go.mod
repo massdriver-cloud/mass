@@ -2,6 +2,8 @@ module github.com/massdriver-cloud/mass
 
 go 1.22.0
 
+replace github.com/osteele/liquid => github.com/massdriver-cloud/liquid v1.4.0
+
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/BurntSushi/toml v1.2.1
@@ -19,10 +21,10 @@ require (
 	github.com/itchyny/gojq v0.12.12
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/airlock v0.0.2
-	github.com/massdriver-cloud/liquid v1.2.4
 	github.com/massdriver-cloud/schema2json v0.0.2
 	github.com/moby/moby v24.0.8+incompatible
 	github.com/moby/term v0.0.0-20221205130635-1aeaba878587
+	github.com/osteele/liquid v1.4.0
 	github.com/rs/zerolog v1.29.0
 	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/spf13/afero v1.9.3

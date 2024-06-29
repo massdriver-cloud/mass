@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/massdriver-cloud/liquid"
+	"github.com/osteele/liquid"
 	"github.com/spf13/afero"
 )
 
