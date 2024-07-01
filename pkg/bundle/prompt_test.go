@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -54,5 +55,49 @@ func TestConnNameValidate(t *testing.T) {
 		if err := connNameValidate(val); err == nil {
 			t.Errorf("expected error for '%s'", val)
 		}
+	}
+}
+
+func TestGetConnectionEnvs(t *testing.T) {
+	type test struct {
+		name               string
+		connectionName     string
+		artifactDefinition map[string]interface{}
+		want               map[string]string
+	}
+	tests := []test{
+		{
+			name:           "Basic",
+			connectionName: "foobar",
+			artifactDefinition: map[string]interface{}{
+				"$md": map[string]interface{}{
+					"envTemplates": map[string]interface{}{
+						"SOME_ENV":    ".connection_name.data.foo.bar",
+						"ANOTHER_ENV": "lol | split() | .connection_name | abc",
+					},
+				},
+			},
+			want: map[string]string{
+				"SOME_ENV":    ".foobar.data.foo.bar",
+				"ANOTHER_ENV": "lol | split() | .foobar | abc",
+			},
+		},
+		{
+			name:           "Empty",
+			connectionName: "foobar",
+			artifactDefinition: map[string]interface{}{
+				"$md": map[string]interface{}{},
+			},
+			want: map[string]string{},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := GetConnectionEnvs(tc.connectionName, tc.artifactDefinition)
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("got %v, want %v", got, tc.want)
+			}
+		})
 	}
 }

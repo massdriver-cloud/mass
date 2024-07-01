@@ -3,7 +3,9 @@ package bundle
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -23,7 +25,7 @@ var (
 	connNameError   = fmt.Sprintf(baseNameError, "underscores", "_", "_", "_")
 )
 
-var massdriverArtifactDefinitions []string
+var massdriverArtifactDefinitions map[string]map[string]interface{}
 
 var promptsNew = []func(t *templatecache.TemplateData) error{
 	getName,
@@ -34,7 +36,7 @@ var promptsNew = []func(t *templatecache.TemplateData) error{
 }
 
 // SetMassdriverArtifactDefinitions sets the defs used to specify connections in a bundle
-func SetMassdriverArtifactDefinitions(in []string) {
+func SetMassdriverArtifactDefinitions(in map[string]map[string]interface{}) {
 	massdriverArtifactDefinitions = in
 }
 
@@ -151,10 +153,17 @@ func connNameValidate(name string) error {
 func GetConnections(t *templatecache.TemplateData) error {
 	none := "(None)"
 
+	artifactDefinitionsTypes := []string{}
+	// in 1.23 we can use maps.Keys(), but until then we'll extract the keys manually
+	for adt := range massdriverArtifactDefinitions {
+		artifactDefinitionsTypes = append(artifactDefinitionsTypes, adt)
+	}
+	sort.StringSlice(artifactDefinitionsTypes).Sort()
+
 	var selectedDeps []string
 	multiselect := &survey.MultiSelect{
 		Message: "What connections do you need?\n  If you don't need any, just hit enter or select (None)\n",
-		Options: append([]string{none}, massdriverArtifactDefinitions...),
+		Options: artifactDefinitionsTypes,
 	}
 
 	err := survey.AskOne(multiselect, &selectedDeps)
@@ -163,16 +172,17 @@ func GetConnections(t *templatecache.TemplateData) error {
 	}
 
 	var depMap []templatecache.Connection
+	envs := map[string]string{}
 
-	for i, v := range selectedDeps {
-		if v == none {
+	for _, currentDep := range selectedDeps {
+		if currentDep == none {
 			if len(selectedDeps) > 1 {
 				return fmt.Errorf("if selecting %v, you cannot select other dependecies. selected %#v", none, selectedDeps)
 			}
 			return nil
 		}
 
-		fmt.Printf("Please enter a name for the connection: \"%v\"\nThis will be the variable name used to reference it in your app|bundle IaC\n", v)
+		fmt.Printf("Please enter a name for the connection: \"%v\"\nThis will be the variable name used to reference it in your app|bundle IaC\n", currentDep)
 
 		prompt := promptui.Prompt{
 			Label:    `Name`,
@@ -184,10 +194,13 @@ func GetConnections(t *templatecache.TemplateData) error {
 			return errName
 		}
 
-		depMap = append(depMap, templatecache.Connection{Name: result, ArtifactDefinition: selectedDeps[i]})
+		depMap = append(depMap, templatecache.Connection{Name: result, ArtifactDefinition: currentDep})
+
+		maps.Copy(envs, GetConnectionEnvs(result, massdriverArtifactDefinitions[currentDep]))
 	}
 
 	t.Connections = depMap
+	t.Envs = envs
 	return nil
 }
 
@@ -227,4 +240,21 @@ func getExistingParamsPath(in string) (string, error) {
 	}
 
 	return prompt.Run()
+}
+
+func GetConnectionEnvs(connectionName string, artifactDefinition map[string]interface{}) map[string]string {
+	envs := map[string]string{}
+
+	mdBlock, mdBlockExists := artifactDefinition["$md"]
+	if mdBlockExists {
+		envsBlock, envsBlockExists := mdBlock.(map[string]interface{})["envTemplates"]
+		if envsBlockExists {
+			for envName, value := range envsBlock.(map[string]interface{}) {
+				envValue := value.(string)
+				envs[envName] = strings.ReplaceAll(envValue, "connection_name", connectionName)
+			}
+		}
+	}
+
+	return envs
 }
