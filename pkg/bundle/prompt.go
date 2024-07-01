@@ -174,15 +174,15 @@ func GetConnections(t *templatecache.TemplateData) error {
 	var depMap []templatecache.Connection
 	envs := map[string]string{}
 
-	for i, v := range selectedDeps {
-		if v == none {
+	for _, currentDep := range selectedDeps {
+		if currentDep == none {
 			if len(selectedDeps) > 1 {
 				return fmt.Errorf("if selecting %v, you cannot select other dependecies. selected %#v", none, selectedDeps)
 			}
 			return nil
 		}
 
-		fmt.Printf("Please enter a name for the connection: \"%v\"\nThis will be the variable name used to reference it in your app|bundle IaC\n", v)
+		fmt.Printf("Please enter a name for the connection: \"%v\"\nThis will be the variable name used to reference it in your app|bundle IaC\n", currentDep)
 
 		prompt := promptui.Prompt{
 			Label:    `Name`,
@@ -194,9 +194,9 @@ func GetConnections(t *templatecache.TemplateData) error {
 			return errName
 		}
 
-		depMap = append(depMap, templatecache.Connection{Name: result, ArtifactDefinition: selectedDeps[i]})
+		depMap = append(depMap, templatecache.Connection{Name: result, ArtifactDefinition: currentDep})
 
-		maps.Copy(envs, getConnectionEnvs(result, massdriverArtifactDefinitions[v]))
+		maps.Copy(envs, GetConnectionEnvs(result, massdriverArtifactDefinitions[currentDep]))
 	}
 
 	t.Connections = depMap
@@ -242,12 +242,12 @@ func getExistingParamsPath(in string) (string, error) {
 	return prompt.Run()
 }
 
-func getConnectionEnvs(connectionName string, artifactDefinition map[string]interface{}) map[string]string {
+func GetConnectionEnvs(connectionName string, artifactDefinition map[string]interface{}) map[string]string {
 	envs := map[string]string{}
 
 	mdBlock, mdBlockExists := artifactDefinition["$md"]
 	if mdBlockExists {
-		envsBlock, envsBlockExists := mdBlock.(map[string]interface{})["envs"]
+		envsBlock, envsBlockExists := mdBlock.(map[string]interface{})["envTemplates"]
 		if envsBlockExists {
 			for envName, value := range envsBlock.(map[string]interface{}) {
 				envValue := value.(string)
