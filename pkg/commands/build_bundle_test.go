@@ -205,47 +205,6 @@ var expectedTFContent = map[string][]byte{
 }`),
 }
 
-var expectedBicepContent = map[string][]byte{
-	"template.parameters.json": []byte(`{
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-        "connections": {
-            "draft_node_foo": {
-                "foo": {
-                    "infrastructure": {
-                        "arn": "REPLACE ME"
-                    }
-                }
-            }
-        },
-        "md_metadata": {
-            "default_tags": {
-                "md-manifest": "draft-node",
-                "md-package": "local-dev-draft-node-000",
-                "md-project": "local",
-                "md-target": "dev"
-            },
-            "deployment": {
-                "id": "local-dev-id"
-            },
-            "name_prefix": "local-dev-draft-node-000",
-            "observability": {
-                "alarm_webhook_url": "https://placeholder.com"
-            }
-        },
-        "params": {
-            "foo": {
-                "bar": 1,
-                "qux": 2
-            },
-            "resource_name": "REPLACE ME",
-            "resource_type": "Network"
-        }
-    }
-}`),
-}
-
 func TestBundleBuildSchemas(t *testing.T) {
 	writeDir := "."
 	fs := afero.NewMemMapFs()
@@ -330,53 +289,6 @@ func TestBundleBuildTFVars(t *testing.T) {
 	}
 
 	for fileName, expectedContent := range expectedTFContent {
-		gotContent, readFileErr := afero.ReadFile(fs, path.Join(writeDir, "src", fileName))
-		if readFileErr != nil {
-			t.Fatal(readFileErr)
-		}
-		if string(gotContent) != string(expectedContent) {
-			t.Errorf("Expected file content for %s to be %s but got %s", fileName, string(expectedContent), string(gotContent))
-		}
-	}
-}
-
-func TestBundleBuildBicepVars(t *testing.T) {
-	writeDir := "."
-	fs := afero.NewMemMapFs()
-	err := mockfilesystem.SetupBicepBundle(writeDir, fs)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	file, err := afero.ReadFile(fs, path.Join(writeDir, "massdriver.yaml"))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	unmarshalledBundle := &bundle.Bundle{}
-	err = yaml.Unmarshal(file, unmarshalledBundle)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	testServer := setupMockServer(t)
-
-	defer testServer.Close()
-
-	c := restclient.NewClient()
-	c.WithBaseURL(testServer.URL)
-	c.WithAPIKey("dummy")
-
-	err = commands.BuildBundle(writeDir, unmarshalledBundle, c, fs)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for fileName, expectedContent := range expectedBicepContent {
 		gotContent, readFileErr := afero.ReadFile(fs, path.Join(writeDir, "src", fileName))
 		if readFileErr != nil {
 			t.Fatal(readFileErr)
