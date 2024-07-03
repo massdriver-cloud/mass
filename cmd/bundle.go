@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
@@ -208,17 +207,15 @@ func runBundleNew(input *bundleNew) {
 		log.Fatal(err)
 	}
 
-	var artifacts []string
+	artifactDefinitions := map[string]map[string]interface{}{}
 	for _, v := range artifactDefs {
 		if _, ok := hiddenArtifacts[v.Name]; ok {
 			continue
 		}
-		artifacts = append(artifacts, v.Name)
+		artifactDefinitions[v.Name] = v.Schema
 	}
 
-	sort.StringSlice(artifacts).Sort()
-
-	bundle.SetMassdriverArtifactDefinitions(artifacts)
+	bundle.SetMassdriverArtifactDefinitions(artifactDefinitions)
 
 	var templateData *templatecache.TemplateData
 	if input.name == "" || input.templateName == "" {
