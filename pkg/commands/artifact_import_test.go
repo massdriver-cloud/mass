@@ -5,7 +5,6 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
-	"github.com/spf13/afero"
 )
 
 func TestArtifactImport(t *testing.T) {
@@ -42,21 +41,7 @@ func TestArtifactImport(t *testing.T) {
 		},
 	})
 
-	var fs = afero.NewMemMapFs()
-
-	file, err := fs.Create("artifact.json")
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = file.Write([]byte(`{"name":"fake"}`))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	got, err := commands.ArtifactImport(client, "faux-org-id", fs, "artifact-name", "massdriver/fake-artifact-schema", "artifact.json")
+	got, err := commands.ArtifactImport(client, "faux-org-id", "artifact-name", "massdriver/fake-artifact-schema", "testdata/artifact.json")
 
 	if err != nil {
 		t.Fatal(err)

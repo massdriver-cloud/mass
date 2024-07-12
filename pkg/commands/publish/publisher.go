@@ -13,7 +13,6 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/spf13/afero"
 )
 
 const (
@@ -32,7 +31,6 @@ const (
 type Publisher struct {
 	Bundle     *bundle.Bundle
 	RestClient *restclient.MassdriverClient
-	Fs         afero.Fs
 	BuildDir   string
 }
 
@@ -70,7 +68,7 @@ var fileAllows = []string{
 
 func (p *Publisher) SubmitBundle() (string, error) {
 	//TODO: Add log message for publish and response
-	body, err := p.Bundle.GenerateBundlePublishBody(p.BuildDir, p.Fs)
+	body, err := p.Bundle.GenerateBundlePublishBody(p.BuildDir)
 
 	if err != nil {
 		return "", err
@@ -89,7 +87,7 @@ func (p *Publisher) ArchiveBundle(buf io.Writer) error {
 	gzipWriter := gzip.NewWriter(buf)
 	tarWriter := tar.NewWriter(gzipWriter)
 
-	packager := newPackager(&copyConfig, p.Fs)
+	packager := newPackager(&copyConfig)
 	errCompress := packager.createArchiveWithFilter(p.BuildDir, PackageManagerDirectoryPrefix, tarWriter)
 
 	if errCompress != nil {

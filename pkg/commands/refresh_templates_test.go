@@ -2,19 +2,20 @@ package commands_test
 
 import (
 	"fmt"
+	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
-	"github.com/spf13/afero"
 )
 
 func TestRefreshTemplates(t *testing.T) {
-	rootTemplateDir := "/home/md-cloud"
-	var fs = afero.NewMemMapFs()
+	testDir := t.TempDir()
+	rootTemplateDir := path.Join(testDir, "/home/md-cloud")
 
-	bundleCache := templatecache.NewMockClient(rootTemplateDir, fs)
+	bundleCache := templatecache.NewMockClient(rootTemplateDir)
 
 	err := commands.RefreshTemplates(bundleCache)
 
@@ -22,11 +23,11 @@ func TestRefreshTemplates(t *testing.T) {
 		t.Error(err)
 	}
 
-	got, _ := afero.Glob(fs, fmt.Sprintf("%s/**/**/*", rootTemplateDir))
+	got, _ := filepath.Glob(fmt.Sprintf("%s/**/**/*", rootTemplateDir))
 
 	want := []string{
-		"/home/md-cloud/massdriver-cloud/application-templates/aws-lambda",
-		"/home/md-cloud/massdriver-cloud/application-templates/aws-vm",
+		path.Join(testDir, "/home/md-cloud/massdriver-cloud/application-templates/aws-lambda"),
+		path.Join(testDir, "/home/md-cloud/massdriver-cloud/application-templates/aws-vm"),
 	}
 
 	if !reflect.DeepEqual(got, want) {

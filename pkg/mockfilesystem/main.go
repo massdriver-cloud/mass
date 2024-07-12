@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-
-	"github.com/spf13/afero"
 )
 
 type VirtualFile struct {
@@ -17,10 +15,10 @@ type VirtualFile struct {
 }
 
 /*
-Sets up a mock bundle in the location specified by rootTemplateDir.
+Sets up a test bundle in the location specified by rootTemplateDir.
 Includes a parsable massdriver.yaml template, and an empty src/main.tf
 */
-func SetupBundleTemplate(rootTemplateDir string, fs afero.Fs) error {
+func SetupBundleTemplate(rootTemplateDir string) error {
 	repoPath := "massdriver-cloud/infrastructure-templates"
 	templatePath := "terraform"
 	srcPath := "src"
@@ -48,13 +46,13 @@ func SetupBundleTemplate(rootTemplateDir string, fs afero.Fs) error {
 		},
 	}
 
-	err = MakeDirectories(directories, fs)
+	err = MakeDirectories(directories)
 
 	if err != nil {
 		return err
 	}
 
-	err = MakeFiles(files, fs)
+	err = MakeFiles(files)
 
 	if err != nil {
 		return err
@@ -63,7 +61,7 @@ func SetupBundleTemplate(rootTemplateDir string, fs afero.Fs) error {
 	return nil
 }
 
-func SetupBundle(rootDir string, fs afero.Fs) error {
+func SetupBundle(rootDir string) error {
 	srcPath := "src"
 	deployPath := "deploy"
 
@@ -102,13 +100,13 @@ func SetupBundle(rootDir string, fs afero.Fs) error {
 		},
 	}
 
-	err = MakeDirectories(directories, fs)
+	err = MakeDirectories(directories)
 
 	if err != nil {
 		return err
 	}
 
-	err = MakeFiles(files, fs)
+	err = MakeFiles(files)
 
 	if err != nil {
 		return err
@@ -117,7 +115,7 @@ func SetupBundle(rootDir string, fs afero.Fs) error {
 	return nil
 }
 
-func WithOperatorGuide(rootDir string, guideType string, fs afero.Fs) error {
+func WithOperatorGuide(rootDir string, guideType string) error {
 	operatorGuideFilePath := fmt.Sprintf("%s/pkg/mockfilesystem/testdata/operator.md", projectRoot())
 	operatorGuideMd, err := os.ReadFile(operatorGuideFilePath)
 
@@ -132,7 +130,7 @@ func WithOperatorGuide(rootDir string, guideType string, fs afero.Fs) error {
 		},
 	}
 
-	err = MakeFiles(files, fs)
+	err = MakeFiles(files)
 
 	if err != nil {
 		return err
@@ -141,7 +139,7 @@ func WithOperatorGuide(rootDir string, guideType string, fs afero.Fs) error {
 	return nil
 }
 
-func WithFilesToIgnore(rootDir string, fs afero.Fs) error {
+func WithFilesToIgnore(rootDir string) error {
 	directories := []string{
 		path.Join(rootDir, "shouldntexist"),
 	}
@@ -155,13 +153,13 @@ func WithFilesToIgnore(rootDir string, fs afero.Fs) error {
 		},
 	}
 
-	err := MakeDirectories(directories, fs)
+	err := MakeDirectories(directories)
 
 	if err != nil {
 		return err
 	}
 
-	err = MakeFiles(files, fs)
+	err = MakeFiles(files)
 
 	if err != nil {
 		return err
@@ -170,9 +168,9 @@ func WithFilesToIgnore(rootDir string, fs afero.Fs) error {
 	return nil
 }
 
-func MakeFiles(files []VirtualFile, fs afero.Fs) error {
+func MakeFiles(files []VirtualFile) error {
 	for _, file := range files {
-		err := afero.WriteFile(fs, file.Path, file.Content, 0755)
+		err := os.WriteFile(file.Path, file.Content, 0755)
 		if err != nil {
 			return err
 		}
@@ -181,9 +179,9 @@ func MakeFiles(files []VirtualFile, fs afero.Fs) error {
 	return nil
 }
 
-func MakeDirectories(names []string, fs afero.Fs) error {
+func MakeDirectories(names []string) error {
 	for _, name := range names {
-		err := fs.MkdirAll(name, 0755)
+		err := os.MkdirAll(name, 0755)
 		if err != nil {
 			return err
 		}
@@ -192,8 +190,8 @@ func MakeDirectories(names []string, fs afero.Fs) error {
 	return nil
 }
 
-func AssertDirectoryContents(fs afero.Fs, path string, want []string) (string, bool) {
-	filesInDirectory, _ := afero.ReadDir(fs, path)
+func AssertDirectoryContents(path string, want []string) (string, bool) {
+	filesInDirectory, _ := os.ReadDir(path)
 	got := []string{}
 	for _, file := range filesInDirectory {
 		got = append(got, file.Name())

@@ -3,16 +3,16 @@ package terraform
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/spf13/afero"
 )
 
-func transpileAndWriteDevParams(path string, b *bundle.Bundle, fs afero.Fs) error {
+func transpileAndWriteDevParams(path string, b *bundle.Bundle) error {
 	emptyParams := checkEmptySchema(b.Params)
 
 	if emptyParams {
-		err := afero.WriteFile(fs, path, []byte("{}"), 0755)
+		err := os.WriteFile(path, []byte("{}"), 0755)
 
 		if err != nil {
 			return err
@@ -21,7 +21,7 @@ func transpileAndWriteDevParams(path string, b *bundle.Bundle, fs afero.Fs) erro
 		return nil
 	}
 
-	existingParams, err := getExistingVars(path, fs)
+	existingParams, err := getExistingVars(path)
 
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func transpileAndWriteDevParams(path string, b *bundle.Bundle, fs afero.Fs) erro
 		return err
 	}
 
-	err = afero.WriteFile(fs, path, bytes, 0755)
+	err = os.WriteFile(path, bytes, 0755)
 
 	return err
 }
@@ -97,9 +97,9 @@ func mergeMdMetadata(params map[string]interface{}, bundleName string) map[strin
 	return params
 }
 
-func getExistingVars(path string, fs afero.Fs) (map[string]interface{}, error) {
+func getExistingVars(path string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	content, err := afero.ReadFile(fs, path)
+	content, err := os.ReadFile(path)
 
 	if err != nil {
 		if len(content) == 0 {

@@ -6,17 +6,16 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/massdriver-cloud/mass/pkg/terraform"
-	"github.com/spf13/afero"
 )
 
-func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs) error {
-	err := b.DereferenceSchemas(buildPath, c, fs)
+func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverClient) error {
+	err := b.DereferenceSchemas(buildPath, c)
 
 	if err != nil {
 		return err
 	}
 
-	err = b.WriteSchemas(buildPath, fs)
+	err = b.WriteSchemas(buildPath)
 
 	if err != nil {
 		return err
@@ -25,7 +24,7 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 	for _, step := range stepsOrDefault(b.Steps) {
 		switch step.Provisioner {
 		case "terraform":
-			err = terraform.GenerateFiles(buildPath, step.Path, b, fs)
+			err = terraform.GenerateFiles(buildPath, step.Path, b)
 			if err != nil {
 				return err
 			}

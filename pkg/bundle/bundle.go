@@ -3,12 +3,12 @@ package bundle
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/spf13/afero"
 )
 
 const (
@@ -51,7 +51,7 @@ type Secret struct {
 	Description string `json:"description" yaml:"description"`
 }
 
-func (b *Bundle) GenerateBundlePublishBody(srcDir string, fs afero.Fs) (restclient.PublishPost, error) {
+func (b *Bundle) GenerateBundlePublishBody(srcDir string) (restclient.PublishPost, error) {
 	var body restclient.PublishPost
 
 	body.Name = b.Name
@@ -81,7 +81,7 @@ func (b *Bundle) GenerateBundlePublishBody(srcDir string, fs afero.Fs) (restclie
 
 	body.AppSpec = appSpec
 
-	err = checkForOperatorGuideAndSetValue(srcDir, &body, fs)
+	err = checkForOperatorGuideAndSetValue(srcDir, &body)
 
 	if err != nil {
 		return restclient.PublishPost{}, err
@@ -99,17 +99,17 @@ func (b *Bundle) IsApplication() bool {
 	return b.Type == "application"
 }
 
-func checkForOperatorGuideAndSetValue(path string, body *restclient.PublishPost, fs afero.Fs) error {
+func checkForOperatorGuideAndSetValue(path string, body *restclient.PublishPost) error {
 	pathsToCheck := []string{"operator.mdx", "operator.md"}
 
 	for _, fileName := range pathsToCheck {
-		_, err := fs.Stat(filepath.Join(path, fileName))
+		_, err := os.Stat(filepath.Join(path, fileName))
 
 		if err != nil {
 			continue
 		}
 
-		content, err := afero.ReadFile(fs, filepath.Join(path, fileName))
+		content, err := os.ReadFile(filepath.Join(path, fileName))
 
 		if err != nil {
 			return fmt.Errorf("error reading %s", fileName)

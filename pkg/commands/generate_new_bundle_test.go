@@ -2,6 +2,7 @@ package commands_test
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"reflect"
 	"testing"
@@ -10,23 +11,20 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
-	"github.com/spf13/afero"
 	"sigs.k8s.io/yaml"
 )
 
 func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
-	rootTemplateDir := "/home/md-cloud"
-	writePath := "."
+	testDir := t.TempDir()
+	rootTemplateDir := path.Join(testDir, "/home/md-cloud")
+	writePath := testDir
 
-	var fs = afero.NewMemMapFs()
-
-	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir, fs)
+	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 	checkErr(err, t)
 
 	bundleCache := &templatecache.BundleTemplateCache{
 		TemplatePath: rootTemplateDir,
 		Fetch:        func(filePath string) error { return nil },
-		Fs:           fs,
 	}
 
 	templateData := mockTemplateData(writePath)
@@ -41,31 +39,30 @@ func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 		"src",
 	}
 
-	if errorString, assertion := mockfilesystem.AssertDirectoryContents(fs, writePath, wantTopLevel); assertion != true {
+	if errorString, assertion := mockfilesystem.AssertDirectoryContents(writePath, wantTopLevel); assertion != true {
 		t.Errorf(errorString)
 	}
 
 	wantSecondLevel := []string{"main.tf"}
 
-	if errorString, assertion := mockfilesystem.AssertDirectoryContents(fs, path.Join(writePath, "src"), wantSecondLevel); assertion != true {
+	if errorString, assertion := mockfilesystem.AssertDirectoryContents(path.Join(writePath, "src"), wantSecondLevel); assertion != true {
 		t.Errorf(errorString)
 	}
 }
 
 func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
-	rootTemplateDir := "/home/md-cloud"
-	writePath := "./bundles/aws-sqs-queue"
+	testDir := t.TempDir()
 
-	var fs = afero.NewMemMapFs()
+	rootTemplateDir := path.Join(testDir, "/home/md-cloud")
+	writePath := path.Join(testDir, "./bundles/aws-sqs-queue")
 
-	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir, fs)
+	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 
 	checkErr(err, t)
 
 	bundleCache := &templatecache.BundleTemplateCache{
 		TemplatePath: rootTemplateDir,
 		Fetch:        func(filePath string) error { return nil },
-		Fs:           fs,
 	}
 
 	templateData := mockTemplateData(writePath)
@@ -79,31 +76,29 @@ func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
 		"src",
 	}
 
-	if errorString, assertion := mockfilesystem.AssertDirectoryContents(fs, writePath, wantTopLevel); assertion != true {
+	if errorString, assertion := mockfilesystem.AssertDirectoryContents(writePath, wantTopLevel); assertion != true {
 		t.Errorf(errorString)
 	}
 
 	wantSecondLevel := []string{"main.tf"}
 
-	if errorString, assertion := mockfilesystem.AssertDirectoryContents(fs, path.Join(writePath, "src"), wantSecondLevel); assertion != true {
+	if errorString, assertion := mockfilesystem.AssertDirectoryContents(path.Join(writePath, "src"), wantSecondLevel); assertion != true {
 		t.Errorf(errorString)
 	}
 }
 
 func TestTemplateRender(t *testing.T) {
-	rootTemplateDir := "/home/md-cloud"
-	writePath := "."
+	testDir := t.TempDir()
+	rootTemplateDir := path.Join(testDir, "/home/md-cloud")
+	writePath := testDir
 
-	var fs = afero.NewMemMapFs()
-
-	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir, fs)
+	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 
 	checkErr(err, t)
 
 	bundleCache := &templatecache.BundleTemplateCache{
 		TemplatePath: rootTemplateDir,
 		Fetch:        func(filePath string) error { return nil },
-		Fs:           fs,
 	}
 
 	templateData := mockTemplateData(writePath)
@@ -112,7 +107,7 @@ func TestTemplateRender(t *testing.T) {
 
 	checkErr(err, t)
 
-	renderedTemplate, err := afero.ReadFile(fs, "massdriver.yaml")
+	renderedTemplate, err := os.ReadFile(path.Join(writePath, "massdriver.yaml"))
 	fmt.Println(string(renderedTemplate))
 
 	checkErr(err, t)

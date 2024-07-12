@@ -3,16 +3,16 @@ package terraform
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/spf13/afero"
 )
 
-func transpileConnectionVarFile(path string, b *bundle.Bundle, fs afero.Fs) error {
+func transpileConnectionVarFile(path string, b *bundle.Bundle) error {
 	emptyConnections := checkEmptySchema(b.Connections)
 
 	if emptyConnections {
-		err := afero.WriteFile(fs, path, []byte("{}"), 0755)
+		err := os.WriteFile(path, []byte("{}"), 0755)
 
 		if err != nil {
 			return err
@@ -21,7 +21,7 @@ func transpileConnectionVarFile(path string, b *bundle.Bundle, fs afero.Fs) erro
 		return nil
 	}
 
-	existingConnectionsVars, err := getExistingVars(path, fs)
+	existingConnectionsVars, err := getExistingVars(path)
 
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func transpileConnectionVarFile(path string, b *bundle.Bundle, fs afero.Fs) erro
 		return err
 	}
 
-	err = afero.WriteFile(fs, path, bytes, 0755)
+	err = os.WriteFile(path, bytes, 0755)
 
 	return err
 }

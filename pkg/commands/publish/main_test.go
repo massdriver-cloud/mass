@@ -11,13 +11,12 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/commands/publish"
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/spf13/afero"
 )
 
 func TestPublishBundle(t *testing.T) {
 	var gotPublishBody []byte
 
-	buildDir := "/publishtest"
+	buildDir := t.TempDir()
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bytes, err := io.ReadAll(r.Body)
@@ -40,21 +39,19 @@ func TestPublishBundle(t *testing.T) {
 	}))
 	defer testServer.Close()
 
-	fs := afero.NewMemMapFs()
-
-	err := mockfilesystem.SetupBundle(buildDir, fs)
+	err := mockfilesystem.SetupBundle(buildDir)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = mockfilesystem.WithFilesToIgnore(buildDir, fs)
+	err = mockfilesystem.WithFilesToIgnore(buildDir)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = mockfilesystem.WithOperatorGuide(buildDir, "md", fs)
+	err = mockfilesystem.WithOperatorGuide(buildDir, "md")
 
 	if err != nil {
 		t.Fatal(err)
@@ -63,7 +60,7 @@ func TestPublishBundle(t *testing.T) {
 	c := restclient.NewClient().WithBaseURL(testServer.URL)
 	b := mockBundle()
 
-	err = publish.Run(b, c, fs, buildDir)
+	err = publish.Run(b, c, buildDir)
 
 	if err != nil {
 		t.Fatal(err)

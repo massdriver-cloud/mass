@@ -2,6 +2,7 @@ package commands_test
 
 import (
 	"fmt"
+	"path"
 	"reflect"
 	"sort"
 	"testing"
@@ -9,12 +10,11 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
-	"github.com/spf13/afero"
 )
 
 func TestListTemplates(t *testing.T) {
-	rootTemplateDir := "/home/md-cloud"
-	var fs = afero.NewMemMapFs()
+	testDir := t.TempDir()
+	rootTemplateDir := path.Join(testDir, "/home/md-cloud")
 
 	directories := []string{
 		rootTemplateDir,
@@ -23,7 +23,7 @@ func TestListTemplates(t *testing.T) {
 		fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/palumi", rootTemplateDir),
 	}
 
-	err := mockfilesystem.MakeDirectories(directories, fs)
+	err := mockfilesystem.MakeDirectories(directories)
 
 	if err != nil {
 		t.Fatal(err)
@@ -35,13 +35,13 @@ func TestListTemplates(t *testing.T) {
 		{Path: fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/palumi/massdriver.yaml", rootTemplateDir)},
 	}
 
-	err = mockfilesystem.MakeFiles(files, fs)
+	err = mockfilesystem.MakeFiles(files)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	bundleCache := templatecache.NewMockClient(rootTemplateDir, fs)
+	bundleCache := templatecache.NewMockClient(rootTemplateDir)
 
 	got, err := commands.ListTemplates(bundleCache)
 

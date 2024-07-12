@@ -6,7 +6,6 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/artifact"
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/config"
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -47,8 +46,6 @@ func runArtifactImport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var fs = afero.NewOsFs()
-
 	c, configErr := config.Get()
 	if configErr != nil {
 		return configErr
@@ -61,6 +58,6 @@ func runArtifactImport(cmd *cobra.Command, args []string) error {
 		return promptErr
 	}
 
-	_, importErr := commands.ArtifactImport(gqlclient, c.OrgID, fs, promptData.Name, promptData.Type, promptData.File)
+	_, importErr := commands.ArtifactImport(gqlclient, c.OrgID, promptData.Name, promptData.Type, promptData.File)
 	return importErr
 }
