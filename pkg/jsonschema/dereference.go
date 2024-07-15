@@ -7,19 +7,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 
 	"github.com/massdriver-cloud/mass/pkg/definition"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/spf13/afero"
 )
 
 type DereferenceOptions struct {
 	Client *restclient.MassdriverClient
 	Cwd    string
-	Fs     afero.Fs
 }
 
 // relativeFilePathPattern only accepts relative file path prefixes "./" and "../"
@@ -149,7 +148,7 @@ func dereferenceFilePathRef(hydratedSchema map[string]interface{}, schema map[st
 	}
 
 	schemaRefDir = filepath.Dir(schemaRefAbsPath)
-	referencedSchema, readErr := readJSONFile(schemaRefAbsPath, opts.Fs)
+	referencedSchema, readErr := readJSONFile(schemaRefAbsPath)
 
 	if readErr != nil {
 		return hydratedSchema, readErr
@@ -174,9 +173,9 @@ func getValue(anyVal interface{}) reflect.Value {
 	return val
 }
 
-func readJSONFile(filepath string, fs afero.Fs) (map[string]interface{}, error) {
+func readJSONFile(filepath string) (map[string]interface{}, error) {
 	var result map[string]interface{}
-	data, err := afero.ReadFile(fs, filepath)
+	data, err := os.ReadFile(filepath)
 
 	if err != nil {
 		return result, err

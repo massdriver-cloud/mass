@@ -8,8 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/spf13/afero"
 )
 
 /*
@@ -27,7 +25,6 @@ const templateDir = "*"
 type BundleTemplateCache struct {
 	TemplatePath string
 	Fetch        Fetcher
-	Fs           afero.Fs
 }
 
 type TemplateList struct {
@@ -53,7 +50,7 @@ func (b *BundleTemplateCache) ListTemplates() ([]TemplateList, error) {
 		If we want to support arbitrarily nested matching we will likely have to introduce this library: https://github.com/bmatcuk/doublestar
 		Issue here: https://linear.app/massdriver/issue/PLAT-262/support-glob-in-mass-cli-for-arbitrarily-nested-template-repositories
 	*/
-	matches, err := afero.Glob(b.Fs, fmt.Sprintf("%s/%s/%s/%s/massdriver.yaml", b.TemplatePath, gitOrg, repoName, templateDir))
+	matches, err := filepath.Glob(fmt.Sprintf("%s/%s/%s/%s/massdriver.yaml", b.TemplatePath, gitOrg, repoName, templateDir))
 
 	if err != nil {
 		return nil, err
@@ -74,7 +71,6 @@ Clones the desired template to the directory specified by the user and renders t
 */
 func (b *BundleTemplateCache) RenderTemplate(data *TemplateData) error {
 	fileManager := &fileManager{
-		fs:                    b.Fs,
 		readDirectory:         path.Join(b.TemplatePath, data.TemplateRepo, data.TemplateName),
 		writeDirectory:        data.OutputDir,
 		templateData:          data,
@@ -94,8 +90,8 @@ func (b *BundleTemplateCache) RenderTemplate(data *TemplateData) error {
 Template cache factory which will create a new instance of BundleTemplateCache.
 Requires a function as a dependency to handle retreival of templates which can in turn be mocked for testing.
 */
-func NewBundleTemplateCache(fetch Fetcher, fs afero.Fs) (TemplateCache, error) {
-	templatePath, err := GetOrCreateMassDir(fs)
+func NewBundleTemplateCache(fetch Fetcher) (TemplateCache, error) {
+	templatePath, err := GetOrCreateMassDir()
 
 	if err != nil {
 		return nil, err
@@ -104,17 +100,16 @@ func NewBundleTemplateCache(fetch Fetcher, fs afero.Fs) (TemplateCache, error) {
 	bundleTemplateCache := &BundleTemplateCache{
 		TemplatePath: templatePath,
 		Fetch:        fetch,
-		Fs:           fs,
 	}
 
 	return bundleTemplateCache, nil
 }
 
-func GetOrCreateMassDir(fs afero.Fs) (string, error) {
+func GetOrCreateMassDir() (string, error) {
 	localDevTemplatesPath := os.Getenv("MD_TEMPLATES_PATH")
 
 	if localDevTemplatesPath == "" {
-		templatesPath, err := doGetOrCreate(fs)
+		templatesPath, err := doGetOrCreate()
 		if err != nil {
 			return "", err
 		}
@@ -124,15 +119,15 @@ func GetOrCreateMassDir(fs afero.Fs) (string, error) {
 	return localDevTemplatesPath, nil
 }
 
-func doGetOrCreate(fs afero.Fs) (string, error) {
+func doGetOrCreate() (string, error) {
 	usr, _ := user.Current()
 	dir := usr.HomeDir
 	cacheDir := filepath.Join(dir, ".massdriver")
-	if _, err := fs.Stat(cacheDir); !os.IsNotExist(err) {
+	if _, err := os.Stat(cacheDir); !os.IsNotExist(err) {
 		return cacheDir, err
 	}
 
-	if errMkdir := fs.Mkdir(cacheDir, 0755); errMkdir != nil {
+	if errMkdir := os.Mkdir(cacheDir, 0755); errMkdir != nil {
 		return cacheDir, errMkdir
 	}
 

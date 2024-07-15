@@ -15,7 +15,6 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/params"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -111,8 +110,7 @@ func NewCmdBundle() *cobra.Command {
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
-	var fs = afero.NewOsFs()
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
 	templateList, err := commands.ListTemplates(cache)
 	if err != nil {
 		return err
@@ -130,8 +128,7 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 }
 
 func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
-	var fs = afero.NewOsFs()
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
 
 	return commands.RefreshTemplates(cache)
 }
@@ -181,8 +178,7 @@ func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
 }
 
 func runBundleNew(input *bundleNew) {
-	fs := afero.NewOsFs()
-	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -257,8 +253,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient()
 
-	fs := afero.NewOsFs()
-	return commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
+	return commands.BuildBundle(buildDirectory, unmarshalledBundle, c)
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {
@@ -279,8 +274,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
-	fs := afero.NewOsFs()
-	err = unmarshalledBundle.DereferenceSchemas(buildDirectory, c, fs)
+	err = unmarshalledBundle.DereferenceSchemas(buildDirectory, c)
 	if err != nil {
 		return err
 	}
@@ -311,11 +305,10 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
-	fs := afero.NewOsFs()
-	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c)
 	if err != nil {
 		return err
 	}
 
-	return publish.Run(unmarshalledBundle, c, fs, buildDirectory)
+	return publish.Run(unmarshalledBundle, c, buildDirectory)
 }

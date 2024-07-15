@@ -3,6 +3,7 @@ package commands_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path"
 	"testing"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/spf13/afero"
 	"sigs.k8s.io/yaml"
 )
 
@@ -206,15 +206,14 @@ var expectedTFContent = map[string][]byte{
 }
 
 func TestBundleBuildSchemas(t *testing.T) {
-	writeDir := "."
-	fs := afero.NewMemMapFs()
-	err := mockfilesystem.SetupBundle(writeDir, fs)
+	testDir := t.TempDir()
+	err := mockfilesystem.SetupBundle(testDir)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	file, err := afero.ReadFile(fs, path.Join(writeDir, "massdriver.yaml"))
+	file, err := os.ReadFile(path.Join(testDir, "massdriver.yaml"))
 
 	if err != nil {
 		t.Fatal(err)
@@ -235,14 +234,14 @@ func TestBundleBuildSchemas(t *testing.T) {
 	c.WithBaseURL(testServer.URL)
 	c.WithAPIKey("dummy")
 
-	err = commands.BuildBundle(writeDir, unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(testDir, unmarshalledBundle, c)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for fileName, expectedFileContent := range expectedSchemaContents {
-		gotContent, readFileErr := afero.ReadFile(fs, path.Join(writeDir, fileName))
+		gotContent, readFileErr := os.ReadFile(path.Join(testDir, fileName))
 		if readFileErr != nil {
 			t.Fatal(readFileErr)
 		}
@@ -253,15 +252,14 @@ func TestBundleBuildSchemas(t *testing.T) {
 }
 
 func TestBundleBuildTFVars(t *testing.T) {
-	writeDir := "."
-	fs := afero.NewMemMapFs()
-	err := mockfilesystem.SetupBundle(writeDir, fs)
+	testDir := t.TempDir()
+	err := mockfilesystem.SetupBundle(testDir)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	file, err := afero.ReadFile(fs, path.Join(writeDir, "massdriver.yaml"))
+	file, err := os.ReadFile(path.Join(testDir, "massdriver.yaml"))
 
 	if err != nil {
 		t.Fatal(err)
@@ -282,14 +280,14 @@ func TestBundleBuildTFVars(t *testing.T) {
 	c.WithBaseURL(testServer.URL)
 	c.WithAPIKey("dummy")
 
-	err = commands.BuildBundle(writeDir, unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(testDir, unmarshalledBundle, c)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for fileName, expectedContent := range expectedTFContent {
-		gotContent, readFileErr := afero.ReadFile(fs, path.Join(writeDir, "src", fileName))
+		gotContent, readFileErr := os.ReadFile(path.Join(testDir, "src", fileName))
 		if readFileErr != nil {
 			t.Fatal(readFileErr)
 		}

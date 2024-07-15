@@ -8,8 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/spf13/afero"
 )
 
 type CopyConfig struct {
@@ -19,13 +17,11 @@ type CopyConfig struct {
 
 type Packager struct {
 	Filter *CopyConfig
-	Fs     afero.Fs
 }
 
-func newPackager(filter *CopyConfig, fs afero.Fs) Packager {
+func newPackager(filter *CopyConfig) Packager {
 	return Packager{
 		Filter: filter,
-		Fs:     fs,
 	}
 }
 
@@ -37,7 +33,7 @@ func (p *Packager) createArchiveWithFilter(dirPath string, prefix string, tarWri
 	}
 
 	// walk through every file in the folder
-	if err := afero.Walk(p.Fs, absolutePath, func(file string, fi os.FileInfo, err error) error {
+	if err := filepath.Walk(absolutePath, func(file string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -74,7 +70,7 @@ func (p *Packager) createArchiveWithFilter(dirPath string, prefix string, tarWri
 
 		// if not a dir, write file content
 		if !fi.IsDir() {
-			data, openErr := p.Fs.Open(file)
+			data, openErr := os.Open(file)
 			if openErr != nil {
 				return openErr
 			}

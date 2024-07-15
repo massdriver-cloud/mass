@@ -11,7 +11,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/manifoldco/promptui"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
-	"github.com/spf13/afero"
 )
 
 var (
@@ -107,8 +106,7 @@ func getDescription(t *templatecache.TemplateData) error {
 var ignoredTemplateDirs = map[string]bool{"alpha": true}
 
 func getTemplate(t *templatecache.TemplateData) error {
-	var fs = afero.NewOsFs()
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
 	templates, err := cache.ListTemplates()
 
 	filteredTemplates := removeIgnoredTemplateDirectories(templates)

@@ -2,10 +2,10 @@ package terraform
 
 import (
 	"fmt"
+	"os"
 	"path"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/spf13/afero"
 )
 
 type schema struct {
@@ -23,8 +23,8 @@ var mdVars = map[string]interface{}{
 	},
 }
 
-func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {
-	err := generateTfVarsFiles(buildPath, stepPath, b, fs)
+func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle) error {
+	err := generateTfVarsFiles(buildPath, stepPath, b)
 
 	if err != nil {
 		return err
@@ -32,13 +32,13 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 
 	devParamPath := path.Join(buildPath, stepPath, bundle.ParamsFile)
 
-	err = transpileAndWriteDevParams(devParamPath, b, fs)
+	err = transpileAndWriteDevParams(devParamPath, b)
 
 	if err != nil {
 		return fmt.Errorf("error compiling dev params: %w", err)
 	}
 
-	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, bundle.ConnsFile), b, fs)
+	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, bundle.ConnsFile), b)
 
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 	return nil
 }
 
-func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {
+func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle) error {
 	varFileTasks := []schema{
 		{
 			label:     "params",
@@ -83,7 +83,7 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 		}
 
 		filePath := fmt.Sprintf("/_%s_variables.tf.json", task.label)
-		err = afero.WriteFile(fs, path.Join(buildPath, stepPath, filePath), content, 0755)
+		err = os.WriteFile(path.Join(buildPath, stepPath, filePath), content, 0644)
 
 		if err != nil {
 			return err

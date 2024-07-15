@@ -5,19 +5,18 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"path"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/spf13/afero"
 )
 
 const allowedMethods = "OPTIONS, POST"
 
 type Handler struct {
 	parsedBundle bundle.Bundle
-	fs           afero.Fs
 	bundleDir    string
 }
 
@@ -27,8 +26,7 @@ func NewHandler(dir string) (*Handler, error) {
 		return nil, err
 	}
 	bundle.ApplyAppBlockDefaults(b)
-	fs := afero.NewOsFs()
-	return &Handler{parsedBundle: *b, fs: fs, bundleDir: dir}, nil
+	return &Handler{parsedBundle: *b, bundleDir: dir}, nil
 }
 
 // GetSecrets returns the secrets from the bundle
@@ -115,7 +113,7 @@ func (h *Handler) Params(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodGet {
-		content, err := afero.ReadFile(h.fs, path.Join(h.bundleDir, "src", paramsFile))
+		content, err := os.ReadFile(path.Join(h.bundleDir, "src", paramsFile))
 		if err != nil {
 			slog.Debug("Error reading params file", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -186,7 +184,7 @@ func (h *Handler) getUserInput() (map[string]interface{}, error) {
 func (h *Handler) readFileAndUnmarshal(readPath string) (map[string]interface{}, error) {
 	output := make(map[string]interface{})
 
-	file, err := afero.ReadFile(h.fs, path.Join(h.bundleDir, "src", readPath))
+	file, err := os.ReadFile(path.Join(h.bundleDir, "src", readPath))
 
 	if err != nil {
 		return output, err
@@ -210,7 +208,7 @@ func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = commands.BuildBundle(h.bundleDir, unmarshalledBundle, restclient.NewClient(), afero.NewOsFs()); err != nil {
+	if err = commands.BuildBundle(h.bundleDir, unmarshalledBundle, restclient.NewClient()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -251,7 +249,7 @@ func (h *Handler) Connections(w http.ResponseWriter, r *http.Request) {
 //	@Success		200	{object}	bundle.Connections
 //	@Router			/bundle/connections [get]
 func (h *Handler) getConnections(w http.ResponseWriter) {
-	f, err := afero.ReadFile(h.fs, path.Join(h.bundleDir, "src", bundle.ConnsFile))
+	f, err := os.ReadFile(path.Join(h.bundleDir, "src", bundle.ConnsFile))
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -302,7 +300,7 @@ func (h *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = afero.WriteFile(h.fs, path.Join(h.bundleDir, "src", bundle.ConnsFile), bytes, 0755)
+	err = os.WriteFile(path.Join(h.bundleDir, "src", bundle.ConnsFile), bytes, 0644)
 	if err != nil {
 		slog.Debug("Error writing file", "error", err)
 		w.WriteHeader(http.StatusBadRequest)

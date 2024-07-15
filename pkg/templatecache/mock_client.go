@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
-	"github.com/spf13/afero"
 )
 
-func NewMockClient(rootTemplateDir string, fs afero.Fs) TemplateCache {
+func NewMockClient(rootTemplateDir string) TemplateCache {
 	fetcher := func(filePath string) error {
 		directories := []string{
 			filePath,
@@ -15,7 +14,7 @@ func NewMockClient(rootTemplateDir string, fs afero.Fs) TemplateCache {
 			fmt.Sprintf("%s/massdriver-cloud/application-templates/aws-vm", filePath),
 		}
 
-		err := mockfilesystem.MakeDirectories(directories, fs)
+		err := mockfilesystem.MakeDirectories(directories)
 
 		return err
 	}
@@ -23,6 +22,5 @@ func NewMockClient(rootTemplateDir string, fs afero.Fs) TemplateCache {
 	return &BundleTemplateCache{
 		TemplatePath: rootTemplateDir,
 		Fetch:        fetcher,
-		Fs:           fs,
 	}
 }
