@@ -12,7 +12,7 @@ func transpileConnectionVarFile(path string, b *bundle.Bundle) error {
 	emptyConnections := checkEmptySchema(b.Connections)
 
 	if emptyConnections {
-		err := os.WriteFile(path, []byte("{}"), 0755)
+		err := os.WriteFile(path, []byte("{}"), 0644)
 
 		if err != nil {
 			return err
@@ -40,7 +40,7 @@ func transpileConnectionVarFile(path string, b *bundle.Bundle) error {
 		return err
 	}
 
-	err = os.WriteFile(path, bytes, 0755)
+	err = os.WriteFile(path, bytes, 0644)
 
 	return err
 }

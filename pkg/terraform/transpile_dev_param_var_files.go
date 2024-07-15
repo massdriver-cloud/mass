@@ -12,7 +12,7 @@ func transpileAndWriteDevParams(path string, b *bundle.Bundle) error {
 	emptyParams := checkEmptySchema(b.Params)
 
 	if emptyParams {
-		err := os.WriteFile(path, []byte("{}"), 0755)
+		err := os.WriteFile(path, []byte("{}"), 0644)
 
 		if err != nil {
 			return err
@@ -59,7 +59,7 @@ func transpileAndWriteDevParams(path string, b *bundle.Bundle) error {
 		return err
 	}
 
-	err = os.WriteFile(path, bytes, 0755)
+	err = os.WriteFile(path, bytes, 0644)
 
 	return err
 }

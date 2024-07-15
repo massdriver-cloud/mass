@@ -170,7 +170,7 @@ func WithFilesToIgnore(rootDir string) error {
 
 func MakeFiles(files []VirtualFile) error {
 	for _, file := range files {
-		err := os.WriteFile(file.Path, file.Content, 0755)
+		err := os.WriteFile(file.Path, file.Content, 0644)
 		if err != nil {
 			return err
 		}

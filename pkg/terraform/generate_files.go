@@ -83,7 +83,7 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle) error {
 		}
 
 		filePath := fmt.Sprintf("/_%s_variables.tf.json", task.label)
-		err = os.WriteFile(path.Join(buildPath, stepPath, filePath), content, 0755)
+		err = os.WriteFile(path.Join(buildPath, stepPath, filePath), content, 0644)
 
 		if err != nil {
 			return err

@@ -300,7 +300,7 @@ func (h *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = os.WriteFile(path.Join(h.bundleDir, "src", bundle.ConnsFile), bytes, 0755)
+	err = os.WriteFile(path.Join(h.bundleDir, "src", bundle.ConnsFile), bytes, 0644)
 	if err != nil {
 		slog.Debug("Error writing file", "error", err)
 		w.WriteHeader(http.StatusBadRequest)

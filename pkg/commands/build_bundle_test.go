@@ -207,7 +207,6 @@ var expectedTFContent = map[string][]byte{
 
 func TestBundleBuildSchemas(t *testing.T) {
 	testDir := t.TempDir()
-
 	err := mockfilesystem.SetupBundle(testDir)
 
 	if err != nil {

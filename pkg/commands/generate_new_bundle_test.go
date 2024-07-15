@@ -17,7 +17,6 @@ import (
 func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 	testDir := t.TempDir()
 	rootTemplateDir := path.Join(testDir, "/home/md-cloud")
-	writePath := testDir
 
 	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 	checkErr(err, t)
@@ -27,7 +26,7 @@ func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 		Fetch:        func(filePath string) error { return nil },
 	}
 
-	templateData := mockTemplateData(writePath)
+	templateData := mockTemplateData(testDir)
 
 	err = commands.GenerateNewBundle(bundleCache, templateData)
 
@@ -39,20 +38,19 @@ func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 		"src",
 	}
 
-	if errorString, assertion := mockfilesystem.AssertDirectoryContents(writePath, wantTopLevel); assertion != true {
+	if errorString, assertion := mockfilesystem.AssertDirectoryContents(testDir, wantTopLevel); assertion != true {
 		t.Errorf(errorString)
 	}
 
 	wantSecondLevel := []string{"main.tf"}
 
-	if errorString, assertion := mockfilesystem.AssertDirectoryContents(path.Join(writePath, "src"), wantSecondLevel); assertion != true {
+	if errorString, assertion := mockfilesystem.AssertDirectoryContents(path.Join(testDir, "src"), wantSecondLevel); assertion != true {
 		t.Errorf(errorString)
 	}
 }
 
 func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
 	testDir := t.TempDir()
-
 	rootTemplateDir := path.Join(testDir, "/home/md-cloud")
 	writePath := path.Join(testDir, "./bundles/aws-sqs-queue")
 
@@ -90,7 +88,6 @@ func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
 func TestTemplateRender(t *testing.T) {
 	testDir := t.TempDir()
 	rootTemplateDir := path.Join(testDir, "/home/md-cloud")
-	writePath := testDir
 
 	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 
@@ -101,13 +98,13 @@ func TestTemplateRender(t *testing.T) {
 		Fetch:        func(filePath string) error { return nil },
 	}
 
-	templateData := mockTemplateData(writePath)
+	templateData := mockTemplateData(testDir)
 
 	err = bundleCache.RenderTemplate(templateData)
 
 	checkErr(err, t)
 
-	renderedTemplate, err := os.ReadFile(path.Join(writePath, "massdriver.yaml"))
+	renderedTemplate, err := os.ReadFile(path.Join(testDir, "massdriver.yaml"))
 	fmt.Println(string(renderedTemplate))
 
 	checkErr(err, t)
