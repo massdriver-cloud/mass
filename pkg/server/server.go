@@ -26,7 +26,6 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/massdriver-cloud/mass/pkg/version"
 	"github.com/moby/moby/client"
-	"github.com/spf13/afero"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -241,8 +240,7 @@ func getUIFiles(ctx context.Context, baseDir string) error {
 
 // setupUIDir creates the base dir for the bundle-ui based off the mass dir
 func setupUIDir() (string, error) {
-	localFs := afero.NewOsFs()
-	massDir, err := templatecache.GetOrCreateMassDir(localFs)
+	massDir, err := templatecache.GetOrCreateMassDir()
 	if err != nil {
 		return "", err
 	}
@@ -257,7 +255,7 @@ func setupUIDir() (string, error) {
 		}
 	}
 
-	return bundleUIDir, localFs.MkdirAll(bundleUIDir, os.ModePerm)
+	return bundleUIDir, os.MkdirAll(bundleUIDir, os.ModePerm)
 }
 
 // sanitizeArchivePath from "G305: Zip Slip vulnerability" - stop naughty path traversal like ../..

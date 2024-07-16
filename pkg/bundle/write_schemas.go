@@ -3,9 +3,8 @@ package bundle
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
-
-	"github.com/spf13/afero"
 )
 
 const idURLPattern = "https://schemas.massdriver.cloud/schemas/bundles/%s/schema-%s.json"
@@ -16,8 +15,8 @@ type Schema struct {
 	label  string
 }
 
-func (b *Bundle) WriteSchemas(buildPath string, fs afero.Fs) error {
-	mkdirErr := fs.MkdirAll(buildPath, 0755)
+func (b *Bundle) WriteSchemas(buildPath string) error {
+	mkdirErr := os.MkdirAll(buildPath, 0755)
 
 	if mkdirErr != nil {
 		return mkdirErr
@@ -39,7 +38,7 @@ func (b *Bundle) WriteSchemas(buildPath string, fs afero.Fs) error {
 
 		filepath := fmt.Sprintf("/schema-%s.json", task.label)
 
-		err = afero.WriteFile(fs, path.Join(buildPath, filepath), content, 0755)
+		err = os.WriteFile(path.Join(buildPath, filepath), content, 0644)
 
 		if err != nil {
 			return err

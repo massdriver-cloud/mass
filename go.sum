@@ -440,8 +440,8 @@ github.com/manifoldco/promptui v0.9.0 h1:3V4HzJk1TtXW1MTZMP7mdlwbBpIinw3HztaIlYt
 github.com/manifoldco/promptui v0.9.0/go.mod h1:ka04sppxSGFAtxX0qhlYQjISsg9mR4GWtQEhdbn6Pgg=
 github.com/massdriver-cloud/airlock v0.0.2 h1:sXWMgsLuZySLg0w/OYMpgi7HSjIsgsbWWf9mcLnfLH0=
 github.com/massdriver-cloud/airlock v0.0.2/go.mod h1:lOiYJFY6PkJsBFha99xxqLuy5HiCureZEwQrnU6+MbA=
-github.com/massdriver-cloud/liquid v1.2.4 h1:gLGL3yq7e9oY15WZKFBs8j2Q3LOG/SfS0LmBHnSvNA4=
-github.com/massdriver-cloud/liquid v1.2.4/go.mod h1:lHQ8awCExKKWnko2axSyC2/ONv5btPOjhDZyQ0ND2PE=
+github.com/massdriver-cloud/liquid v1.4.0 h1:807qhdLOHFbbIG7huhxB1bZRt/qOZWuHhhhjuA/bVjc=
+github.com/massdriver-cloud/liquid v1.4.0/go.mod h1:VmzQQHa5v4E0GvGzqccfAfLgMwRk2V+s1QbxYx9dGak=
 github.com/massdriver-cloud/schema2json v0.0.2 h1:ohcx8233BJ6sKBYUKh7gdcbbJ2ASSdkjE81fUUIFfgk=
 github.com/massdriver-cloud/schema2json v0.0.2/go.mod h1:EwuRNUGTQsq0KFfUoAFgdmUwcKWzNv5y1n49sOylBK0=
 github.com/matryer/moq v0.2.3/go.mod h1:9RtPYjTnH1bSBIkpvtHkFN7nbWAnO7oRpdJkEIn6UtE=

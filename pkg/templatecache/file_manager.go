@@ -10,12 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/massdriver-cloud/liquid"
-	"github.com/spf13/afero"
+	"github.com/osteele/liquid"
 )
 
 type fileManager struct {
-	fs                    afero.Fs
 	readDirectory         string
 	writeDirectory        string
 	templateRootDirectory string
@@ -27,7 +25,7 @@ type fileManager struct {
 Copies a bundle template in to the desired directory and writes templated values.
 */
 func (f *fileManager) CopyTemplate() error {
-	return afero.Walk(f.fs, f.readDirectory, f.mkDirOrWriteFile)
+	return filepath.Walk(f.readDirectory, f.mkDirOrWriteFile)
 }
 
 func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkErr error) error {
@@ -38,18 +36,18 @@ func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkEr
 	relativeWritePath := relativeWritePath(filePath, f.readDirectory)
 	outputPath := path.Join(f.writeDirectory, relativeWritePath)
 	if info.IsDir() {
-		if _, checkDirExistsErr := f.fs.Stat(outputPath); errors.Is(checkDirExistsErr, os.ErrNotExist) {
+		if _, checkDirExistsErr := os.Stat(outputPath); errors.Is(checkDirExistsErr, os.ErrNotExist) {
 			if isBundleRootDirectory(relativeWritePath) {
-				return makeWriteDirectoryAndParents(f.writeDirectory, f.fs)
+				return makeWriteDirectoryAndParents(f.writeDirectory)
 			}
 
-			return f.fs.Mkdir(outputPath, 0755)
+			return os.Mkdir(outputPath, 0755)
 		}
 
 		return nil
 	}
 
-	readBytes, readErr := afero.ReadFile(f.fs, filePath)
+	readBytes, readErr := os.ReadFile(filePath)
 	if readErr != nil {
 		return readErr
 	}
@@ -70,7 +68,7 @@ func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkEr
 }
 
 func (f *fileManager) promptAndWrite(template []byte, outputPath string) error {
-	if _, err := f.fs.Stat(outputPath); err == nil && !f.overwriteAll {
+	if _, err := os.Stat(outputPath); err == nil && !f.overwriteAll {
 		fmt.Printf("%s exists. Overwrite? (y|N|all): ", outputPath)
 		var response string
 		fmt.Scanln(&response)
@@ -103,7 +101,7 @@ func (f *fileManager) renderFile(template []byte) ([]byte, error) {
 }
 
 func (f *fileManager) writeToFile(outputPath string, outBytes []byte) error {
-	return afero.WriteFile(f.fs, outputPath, outBytes, 0600)
+	return os.WriteFile(outputPath, outBytes, 0600)
 }
 
 func relativeWritePath(currentFilePath, readDirectory string) string {
@@ -115,9 +113,9 @@ func relativeWritePath(currentFilePath, readDirectory string) string {
 	return path
 }
 
-func makeWriteDirectoryAndParents(writeDirectory string, fs afero.Fs) error {
-	if _, err := fs.Stat(writeDirectory); err != nil {
-		return fs.MkdirAll(writeDirectory, 0755)
+func makeWriteDirectoryAndParents(writeDirectory string) error {
+	if _, err := os.Stat(writeDirectory); err != nil {
+		return os.MkdirAll(writeDirectory, 0755)
 	}
 
 	return nil

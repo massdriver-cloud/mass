@@ -7,14 +7,12 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/spf13/afero"
 )
 
-func Run(b *bundle.Bundle, c *restclient.MassdriverClient, fs afero.Fs, buildFromDir string) error {
+func Run(b *bundle.Bundle, c *restclient.MassdriverClient, buildFromDir string) error {
 	publisher := &Publisher{
 		Bundle:     b,
 		RestClient: c,
-		Fs:         fs,
 		BuildDir:   buildFromDir,
 	}
 

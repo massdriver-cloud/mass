@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
@@ -16,7 +15,6 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/params"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -112,8 +110,7 @@ func NewCmdBundle() *cobra.Command {
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
-	var fs = afero.NewOsFs()
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
 	templateList, err := commands.ListTemplates(cache)
 	if err != nil {
 		return err
@@ -131,8 +128,7 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 }
 
 func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
-	var fs = afero.NewOsFs()
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
 
 	return commands.RefreshTemplates(cache)
 }
@@ -182,8 +178,7 @@ func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
 }
 
 func runBundleNew(input *bundleNew) {
-	fs := afero.NewOsFs()
-	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher, fs)
+	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -199,7 +194,7 @@ func runBundleNew(input *bundleNew) {
 
 	c, configErr := config.Get()
 	if configErr != nil {
-		log.Fatal(err)
+		log.Fatal(configErr)
 	}
 	gqlclient := api.NewClient(c.URL, c.APIKey)
 
@@ -208,17 +203,15 @@ func runBundleNew(input *bundleNew) {
 		log.Fatal(err)
 	}
 
-	var artifacts []string
+	artifactDefinitions := map[string]map[string]interface{}{}
 	for _, v := range artifactDefs {
 		if _, ok := hiddenArtifacts[v.Name]; ok {
 			continue
 		}
-		artifacts = append(artifacts, v.Name)
+		artifactDefinitions[v.Name] = v.Schema
 	}
 
-	sort.StringSlice(artifacts).Sort()
-
-	bundle.SetMassdriverArtifactDefinitions(artifacts)
+	bundle.SetMassdriverArtifactDefinitions(artifactDefinitions)
 
 	var templateData *templatecache.TemplateData
 	if input.name == "" || input.templateName == "" {
@@ -260,10 +253,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient()
 
-	var fs = afero.NewOsFs()
-	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
-
-	return err
+	return commands.BuildBundle(buildDirectory, unmarshalledBundle, c)
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {
@@ -284,8 +274,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
-	fs := afero.NewOsFs()
-	err = unmarshalledBundle.DereferenceSchemas(buildDirectory, c, fs)
+	err = unmarshalledBundle.DereferenceSchemas(buildDirectory, c)
 	if err != nil {
 		return err
 	}
@@ -316,11 +305,10 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
-	fs := afero.NewOsFs()
-	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c, fs)
+	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c)
 	if err != nil {
 		return err
 	}
 
-	return publish.Run(unmarshalledBundle, c, fs, buildDirectory)
+	return publish.Run(unmarshalledBundle, c, buildDirectory)
 }

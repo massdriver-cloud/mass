@@ -5,32 +5,24 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/jsonschema"
-	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/spf13/afero"
 )
 
-type TestCase struct {
-	Name                string
-	Input               interface{}
-	Expected            interface{}
-	ExpectedErrorSuffix string
-	Fs                  afero.Fs
-	Cwd                 string
-}
-
 func TestDereference(t *testing.T) {
-	fs := afero.NewMemMapFs()
-	mockFilesErr := setupMockFiles(fs)
+	wd, _ := os.Getwd()
 
-	if mockFilesErr != nil {
-		t.Fatal(mockFilesErr)
+	type TestCase struct {
+		Name                string
+		Input               interface{}
+		Expected            interface{}
+		ExpectedErrorSuffix string
+		Cwd                 string
 	}
 
 	cases := []TestCase{
@@ -40,7 +32,6 @@ func TestDereference(t *testing.T) {
 			Expected: map[string]string{
 				"id": "fake-schema-id",
 			},
-			Fs: fs,
 		},
 		{
 			Name:  "Dereferences a $ref alongside arbitrary values",
@@ -50,7 +41,6 @@ func TestDereference(t *testing.T) {
 				"bar": map[string]interface{}{},
 				"id":  "fake-schema-id",
 			},
-			Fs: fs,
 		},
 		{
 			Name:  "Dereferences a nested $ref",
@@ -60,7 +50,6 @@ func TestDereference(t *testing.T) {
 					"id": "fake-schema-id",
 				},
 			},
-			Fs: fs,
 		},
 		{
 			Name:  "Does not dereference fragment (#) refs",
@@ -68,7 +57,6 @@ func TestDereference(t *testing.T) {
 			Expected: map[string]string{
 				"$ref": "#/its-in-this-file",
 			},
-			Fs: fs,
 		},
 		{
 			Name:  "Dereferences $refs in a list",
@@ -81,7 +69,6 @@ func TestDereference(t *testing.T) {
 					},
 				},
 			},
-			Fs: fs,
 		},
 		{
 			Name:  "Dereferences a $ref deterministically (keys outside of ref always win)",
@@ -90,7 +77,6 @@ func TestDereference(t *testing.T) {
 				"conflictingKey": "not-from-ref",
 				"nonConflictKey": "from-ref",
 			},
-			Fs: fs,
 		},
 		{
 			Name:  "Dereferences a $ref recursively",
@@ -100,7 +86,6 @@ func TestDereference(t *testing.T) {
 					"id": "fake-schema-id",
 				},
 			},
-			Fs: fs,
 		},
 		{
 			Name:  "Dereferences a $ref recursively",
@@ -110,13 +95,11 @@ func TestDereference(t *testing.T) {
 					"id": "fake-schema-id",
 				},
 			},
-			Fs: fs,
 		},
 		{
 			Name:                "Reports not found when $ref is not found",
 			Input:               jsonDecode(`{"$ref": "./testdata/no-type.json"}`),
-			ExpectedErrorSuffix: "testdata/no-type.json: file does not exist",
-			Fs:                  fs,
+			ExpectedErrorSuffix: fmt.Sprintf("open %s: no such file or directory", path.Join(wd, "testdata/no-type.json")),
 		},
 		{
 			Name:  "Dereferences remote (massdriver) ref",
@@ -124,7 +107,6 @@ func TestDereference(t *testing.T) {
 			Expected: map[string]string{
 				"foo": "bar",
 			},
-			Fs: fs,
 		},
 	}
 
@@ -149,7 +131,6 @@ func TestDereference(t *testing.T) {
 			opts := jsonschema.DereferenceOptions{
 				Client: c,
 				Cwd:    ".",
-				Fs:     test.Fs,
 			}
 
 			got, gotErr := jsonschema.Dereference(test.Input, opts)
@@ -235,46 +216,4 @@ func jsonDecode(data string) map[string]interface{} {
 		panic(err)
 	}
 	return result
-}
-
-func setupMockFiles(fs afero.Fs) error {
-	awsExample := []byte(`
-{
-    "id": "fake-schema-id"
-}
-	`)
-	conflictingKeysExample := []byte(`
-{
-    "conflictingKey": "from-ref",
-    "nonConflictKey": "from-ref"
-}
-	`)
-	refAwsExample := []byte(`
-{
-    "properties": {
-        "$ref": "./aws-example.json"
-    }
-}
-	`)
-
-	refLowerDirAwsExample := []byte(`
-	{
-    "properties": {
-        "$ref": "../artifacts/aws-example.json"
-    }
-}
-	`)
-
-	cwd, _ := filepath.Abs(".")
-
-	_ = fs.MkdirAll(path.Join(cwd, "/testdata/artifacts"), 0755)
-
-	files := []mockfilesystem.VirtualFile{
-		{Path: path.Join(cwd, "/testdata/artifacts", "/aws-example.json"), Content: awsExample},
-		{Path: path.Join(cwd, "/testdata/artifacts", "/conflicting-keys.json"), Content: conflictingKeysExample},
-		{Path: path.Join(cwd, "/testdata/artifacts", "/ref-aws-example.json"), Content: refAwsExample},
-		{Path: path.Join(cwd, "/testdata/artifacts", "/ref-lower-dir-aws-example.json"), Content: refLowerDirAwsExample},
-	}
-
-	return mockfilesystem.MakeFiles(files, fs)
 }

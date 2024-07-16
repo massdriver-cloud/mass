@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path"
 	"reflect"
 	"testing"
@@ -17,13 +18,11 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/commands/publish"
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/spf13/afero"
 )
 
 func TestPublish(t *testing.T) {
 	type test struct {
 		name      string
-		path      string
 		guideType string
 		bundle    bundle.Bundle
 		wantBody  string
@@ -31,7 +30,6 @@ func TestPublish(t *testing.T) {
 	tests := []test{
 		{
 			name:      "Does not submit an app block field if one does not exist",
-			path:      "./templates",
 			guideType: "",
 			bundle: bundle.Bundle{
 				Name:        "the-bundle",
@@ -59,7 +57,6 @@ func TestPublish(t *testing.T) {
 		},
 		{
 			name:      "Submits an app block field if one does exist",
-			path:      "./templates",
 			guideType: "",
 			bundle: bundle.Bundle{
 				Name:        "the-bundle",
@@ -100,7 +97,6 @@ func TestPublish(t *testing.T) {
 		},
 		{
 			name:      "Submits an operator.md guide if it exist",
-			path:      "/md",
 			guideType: "md",
 			bundle: bundle.Bundle{
 				Name:        "the-bundle",
@@ -141,7 +137,6 @@ func TestPublish(t *testing.T) {
 		},
 		{
 			name:      "Submits an operator.mdx guide if it exist",
-			path:      "/mdx",
 			guideType: "mdx",
 			bundle: bundle.Bundle{
 				Name:        "the-bundle",
@@ -184,6 +179,7 @@ func TestPublish(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			testDir := t.TempDir()
 			var gotBody string
 			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				bytes, readErr := io.ReadAll(r.Body)
@@ -200,22 +196,20 @@ func TestPublish(t *testing.T) {
 			defer testServer.Close()
 
 			c := restclient.NewClient().WithBaseURL(testServer.URL)
-			fs := afero.NewMemMapFs()
 
 			publisher := &publish.Publisher{
 				Bundle:     &tc.bundle,
 				RestClient: c,
-				Fs:         fs,
-				BuildDir:   tc.path,
+				BuildDir:   testDir,
 			}
 
-			err := mockfilesystem.SetupBundle(tc.path, fs)
+			err := mockfilesystem.SetupBundle(testDir)
 
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			err = mockfilesystem.WithOperatorGuide(tc.path, tc.guideType, fs)
+			err = mockfilesystem.WithOperatorGuide(testDir, tc.guideType)
 
 			if err != nil {
 				t.Fatal(err)
@@ -280,16 +274,15 @@ func TestArchive(t *testing.T) {
 		},
 	}
 
-	fs := afero.NewMemMapFs()
-	buildDir := "/archive"
+	buildDir := t.TempDir()
 
-	err := mockfilesystem.SetupBundle(buildDir, fs)
+	err := mockfilesystem.SetupBundle(buildDir)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = mockfilesystem.WithFilesToIgnore(buildDir, fs)
+	err = mockfilesystem.WithFilesToIgnore(buildDir)
 
 	if err != nil {
 		t.Fatal(err)
@@ -297,7 +290,6 @@ func TestArchive(t *testing.T) {
 
 	publisher := &publish.Publisher{
 		Bundle:   &b,
-		Fs:       fs,
 		BuildDir: buildDir,
 	}
 
@@ -309,13 +301,13 @@ func TestArchive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	extractTarGz(bytes.NewReader(buf.Bytes()), fs)
+	extractTarGz(bytes.NewReader(buf.Bytes()), buildDir)
 
 	wantSrc := []string{"main.tf"}
 	wantTopLevel := []string{"deploy", "massdriver.yaml", "src"}
 
-	assertDirContains(wantTopLevel, "/untar/bundle", fs, t)
-	assertDirContains(wantSrc, "/untar/bundle/src", fs, t)
+	assertDirContains(wantTopLevel, path.Join(buildDir, "/untar/bundle"), t)
+	assertDirContains(wantSrc, path.Join(buildDir, "/untar/bundle/src"), t)
 }
 
 func TestUploadToPresignedS3URL(t *testing.T) {
@@ -358,10 +350,10 @@ func TestUploadToPresignedS3URL(t *testing.T) {
 	}
 }
 
-func assertDirContains(want []string, dir string, fs afero.Fs, t *testing.T) {
+func assertDirContains(want []string, dir string, t *testing.T) {
 	got := []string{}
 
-	info, err := afero.ReadDir(fs, dir)
+	info, err := os.ReadDir(dir)
 
 	if err != nil {
 		t.Fatal(err)
@@ -376,7 +368,7 @@ func assertDirContains(want []string, dir string, fs afero.Fs, t *testing.T) {
 	}
 }
 
-func extractTarGz(gzipStream io.Reader, fs afero.Fs) {
+func extractTarGz(gzipStream io.Reader, extractPath string) {
 	uncompressedStream, err := gzip.NewReader(gzipStream)
 	if err != nil {
 		log.Fatal("ExtractTarGz: NewReader failed")
@@ -397,12 +389,12 @@ func extractTarGz(gzipStream io.Reader, fs afero.Fs) {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			dirErr := fs.Mkdir(path.Join("/untar/", header.Name), 0755)
+			dirErr := os.MkdirAll(path.Join(extractPath, "/untar/", header.Name), 0755)
 			if dirErr != nil {
 				log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
 			}
 		case tar.TypeReg:
-			outFile, headerErr := fs.Create(path.Join("/untar/", header.Name))
+			outFile, headerErr := os.Create(path.Join(extractPath, "/untar/", header.Name))
 			if headerErr != nil {
 				log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())
 			}

@@ -3,16 +3,16 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/artifact"
-	"github.com/spf13/afero"
 	"github.com/xeipuuv/gojsonschema"
 )
 
-func ArtifactImport(client graphql.Client, orgID string, fs afero.Fs, artifactName string, artifactType string, artifactFile string) (string, error) {
-	bytes, readErr := afero.ReadFile(fs, artifactFile)
+func ArtifactImport(client graphql.Client, orgID string, artifactName string, artifactType string, artifactFile string) (string, error) {
+	bytes, readErr := os.ReadFile(artifactFile)
 	if readErr != nil {
 		return "", readErr
 	}

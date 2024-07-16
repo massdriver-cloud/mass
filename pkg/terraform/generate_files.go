@@ -10,7 +10,6 @@ import (
 
 	"github.com/massdriver-cloud/airlock/pkg/terraform"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/spf13/afero"
 )
 
 //go:embed schemas/metadata-schema.json
@@ -22,8 +21,8 @@ type schema struct {
 	writePath string
 }
 
-func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {
-	err := generateTfVarsFiles(buildPath, stepPath, b, fs)
+func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle) error {
+	err := generateTfVarsFiles(buildPath, stepPath, b)
 
 	if err != nil {
 		return err
@@ -31,13 +30,13 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 
 	devParamPath := path.Join(buildPath, stepPath, bundle.ParamsFile)
 
-	err = transpileAndWriteDevParams(devParamPath, b, fs)
+	err = transpileAndWriteDevParams(devParamPath, b)
 
 	if err != nil {
 		return fmt.Errorf("error compiling dev params: %w", err)
 	}
 
-	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, bundle.ConnsFile), b, fs)
+	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, bundle.ConnsFile), b)
 
 	if err != nil {
 		return err
@@ -46,7 +45,7 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) er
 	return nil
 }
 
-func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.Fs) error {
+func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle) error {
 	metadataBytes, err := bundleFS.ReadFile("schemas/metadata-schema.json")
 	if err != nil {
 		return err
@@ -93,20 +92,26 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 			"properties": map[string]any{},
 		}
 
+		taskProperties := map[string]any{}
+		taskRequired := []any{}
+
+		if _, exists := task.schema["properties"]; exists {
+			taskProperties = task.schema["properties"].(map[string]any)
+		}
+		if _, exists := task.schema["required"]; exists {
+			taskRequired = task.schema["required"].([]any)
+		}
+
 		// check each variable in the schema, and if doesn't already exist as a declared variable in the terraform, add it to be rendered
-		for key, value := range task.schema["properties"].(map[string]any) {
+		for key, value := range taskProperties {
 			if _, exists := existingTfvars["properties"]; exists {
 				existingTfvarsProperties := existingTfvars["properties"].(map[string]any)
 
 				if _, exists := existingTfvarsProperties[key]; !exists {
 					newVariables["properties"].(map[string]any)[key] = value
-					if _, exists := existingTfvars["required"]; exists {
-						existingTfvarsRequired := existingTfvars["required"].([]interface{})
-
-						for _, elem := range existingTfvarsRequired {
-							if key == elem.(string) {
-								newVariables["required"] = append(newVariables["required"].([]string), key)
-							}
+					for _, elem := range taskRequired {
+						if key == elem.(string) {
+							newVariables["required"] = append(newVariables["required"].([]string), key)
 						}
 					}
 				}
@@ -128,7 +133,7 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle, fs afero.
 		}
 
 		filePath := fmt.Sprintf("/_%s_variables.tf", task.label)
-		fh, openErr := fs.OpenFile(path.Join(buildPath, stepPath, filePath), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
+		fh, openErr := os.OpenFile(path.Join(buildPath, stepPath, filePath), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if openErr != nil {
 			return openErr
 		}

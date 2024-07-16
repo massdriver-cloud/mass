@@ -6,7 +6,6 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/jsonschema"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/spf13/afero"
 )
 
 type DereferenceTarget struct {
@@ -14,7 +13,7 @@ type DereferenceTarget struct {
 	label  string
 }
 
-func (b *Bundle) DereferenceSchemas(path string, c *restclient.MassdriverClient, fs afero.Fs) error {
+func (b *Bundle) DereferenceSchemas(path string, c *restclient.MassdriverClient) error {
 	cwd := filepath.Dir(path)
 	tasks := []DereferenceTarget{
 		{schema: &b.Artifacts, label: "artifacts"},
@@ -30,7 +29,7 @@ func (b *Bundle) DereferenceSchemas(path string, c *restclient.MassdriverClient,
 			}
 		}
 
-		dereferencedSchema, err := jsonschema.Dereference(*task.schema, jsonschema.DereferenceOptions{Fs: fs, Client: c, Cwd: cwd})
+		dereferencedSchema, err := jsonschema.Dereference(*task.schema, jsonschema.DereferenceOptions{Client: c, Cwd: cwd})
 
 		if err != nil {
 			return err

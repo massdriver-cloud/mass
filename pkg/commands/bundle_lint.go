@@ -24,6 +24,11 @@ func LintBundle(b *bundle.Bundle) error {
 		return err
 	}
 
+	err = b.LintMatchRequired()
+	if err != nil {
+		return err
+	}
+
 	err = b.LintParamsMatchVariables()
 	if err != nil {
 		return err
