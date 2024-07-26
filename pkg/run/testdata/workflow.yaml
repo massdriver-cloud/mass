@@ -1,0 +1,57 @@
+name: aws-aurora-postgresql
+# People can build there own or we make some common ones
+# workflow: massdriver-cloud/terraform-infracost-opa
+workflows:
+  plan: # mass workflow run plan
+    ui:
+      label: Plan
+      placement: footer
+      changeMangement: none # Any number of these: none | sod | confirm | mfa | we could make any number of these
+    # not v1
+    # env: # global workflow env vars, helm namespace, container auth
+    #   FOO: bar
+    #   QUX: qaz
+
+    steps:
+      - name: rds
+        image: massdriver/terraform
+        path: ./rds
+        # not v1
+        # env: # override globals
+        #   QUX: qaz # strings would be checked for jq expressions and eval'd vs params/conns
+        with: # named configs that the provisioner understands ... it might make them an env var, put it in the command, etc.
+          someNamedConfigTheProvisionerUndestands: foobar # strings would be checked for jq expressions and eval'd vs params/conns
+          terraformStateConfig: foobar
+          helmNamespace: foobar
+        # Our container would set some env vars after users to make sure they dont change things like TF_IN_AUTOMATION
+        # default command in the container, this is an override
+        command: terraform plan -out tfplan.binary && terraform show -json tfplan.binary > plan.json
+        outputs:
+        - name: plan
+          path: ./plan.json
+
+      - name: infracost
+        image: massdriver/infracost
+        inputs:
+          - from: rds.plan
+            path: ./plan.json
+        command: infracost breakdown --path plan.json
+
+      - name: opa
+        image: massdriver/opa
+        path: ./opa
+        inputs:
+          - from: rds.plan
+            path: ./plan.json
+        command: opa exec --decision terraform/analysis/authz --bundle . plan.json
+
+  apply: # mass workflow run apply
+    ui:
+      label: Apply
+      placement: footer
+      changeMangement: sod # Any number of these: none | sod | confirm | mfa | we could make any number of these
+
+    steps:
+      - name: rds
+        image: massdriver/terraform
+        src: ./rds
