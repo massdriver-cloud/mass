@@ -1,9 +1,8 @@
 package params
 
 import (
-	"encoding/json"
-
 	"github.com/massdriver-cloud/airlock/pkg/helm"
+	"github.com/massdriver-cloud/airlock/pkg/schema"
 	"github.com/massdriver-cloud/airlock/pkg/terraform"
 	"sigs.k8s.io/yaml"
 )
@@ -14,7 +13,7 @@ func GetFromPath(templateName, path string) (string, error) {
 	}
 
 	var (
-		paramSchema string
+		paramSchema *schema.Schema
 		err         error
 	)
 
@@ -33,13 +32,8 @@ func GetFromPath(templateName, path string) (string, error) {
 		return "", nil
 	}
 
-	var params map[string]any
-	if err = json.Unmarshal([]byte(paramSchema), &params); err != nil {
-		return "", err
-	}
-
 	props := map[string]any{
-		"params": params,
+		"params": paramSchema,
 	}
 	out, err := yaml.Marshal(props)
 	if err != nil {

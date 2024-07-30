@@ -29,6 +29,11 @@ func LintBundle(b *bundle.Bundle) error {
 		return err
 	}
 
+	err = b.LintParamsMatchVariables()
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("Linting complete, massdriver.yaml is valid!")
 
 	return nil

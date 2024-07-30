@@ -136,39 +136,57 @@ var expectedSchemaContents = map[string][]byte{
 }
 
 var expectedTFContent = map[string][]byte{
-	"_connections_variables.tf.json": []byte(`{
-    "variable": {
-        "draft_node_foo": {
-            "type": "any",
-            "default": null
-        }
-    }
+	"_connections_variables.tf": []byte(`variable "draft_node_foo" {
+  type = object({
+    foo = optional(object({
+      infrastructure = optional(object({
+        arn = optional(string)
+      }))
+    }))
+  })
 }
 `),
-	"_md_variables.tf.json": []byte(`{
-    "variable": {
-        "md_metadata": {
-            "type": "any",
-            "default": null
-        }
-    }
+	"_md_variables.tf": []byte(`variable "md_metadata" {
+  type = object({
+    default_tags = object({
+      managed-by  = string
+      md-manifest = string
+      md-package  = string
+      md-project  = string
+      md-target   = string
+    })
+    deployment = object({
+      id = string
+    })
+    name_prefix = string
+    observability = object({
+      alarm_webhook_url = string
+    })
+    package = object({
+      created_at             = string
+      deployment_enqueued_at = string
+      previous_status        = string
+      updated_at             = string
+    })
+    target = object({
+      contact_email = string
+    })
+  })
 }
 `),
-	"_params_variables.tf.json": []byte(`{
-    "variable": {
-        "foo": {
-            "type": "any",
-            "default": null
-        },
-        "resource_name": {
-            "type": "string",
-            "default": null
-        },
-        "resource_type": {
-            "type": "string",
-            "default": null
-        }
-    }
+	"_params_variables.tf": []byte(`variable "foo" {
+  type = object({
+    bar = number
+    qux = optional(number)
+  })
+  default = null
+}
+variable "resource_name" {
+  type    = string
+  default = null
+}
+variable "resource_type" {
+  type = string
 }
 `),
 	"_params.auto.tfvars.json": []byte(`{

@@ -258,6 +258,131 @@ func TestLintEnvs(t *testing.T) {
 	}
 }
 
+func TestLintParamsMatchVariables(t *testing.T) {
+	{
+		type test struct {
+			name string
+			bun  *bundle.Bundle
+			err  error
+		}
+		tests := []test{
+			{
+				name: "Valid all params",
+				bun: &bundle.Bundle{
+					Name:        "example",
+					Description: "description",
+					Access:      "private",
+					Schema:      "draft-07",
+					Type:        "infrastructure",
+					Steps: []bundle.Step{{
+						Path:        "testdata/lintmodule",
+						Provisioner: "terraform",
+					}},
+					Params: map[string]interface{}{
+						"properties": map[string]interface{}{
+							"foo": map[string]interface{}{},
+							"bar": map[string]interface{}{},
+						},
+					},
+					Connections: map[string]interface{}{},
+					Artifacts:   map[string]interface{}{},
+					UI:          map[string]interface{}{},
+				},
+				err: nil,
+			}, {
+				name: "Valid param and connection",
+				bun: &bundle.Bundle{
+					Name:        "example",
+					Description: "description",
+					Access:      "private",
+					Schema:      "draft-07",
+					Type:        "infrastructure",
+					Steps: []bundle.Step{{
+						Path:        "testdata/lintmodule",
+						Provisioner: "terraform",
+					}},
+					Params: map[string]interface{}{
+						"properties": map[string]interface{}{
+							"foo": map[string]interface{}{},
+						},
+					},
+					Connections: map[string]interface{}{
+						"properties": map[string]interface{}{
+							"bar": map[string]interface{}{},
+						},
+					},
+					Artifacts: map[string]interface{}{},
+					UI:        map[string]interface{}{},
+				},
+				err: nil,
+			}, {
+				name: "Invalid missing param",
+				bun: &bundle.Bundle{
+					Name:        "example",
+					Description: "description",
+					Access:      "private",
+					Type:        "infrastructure",
+					Steps: []bundle.Step{{
+						Path:        "testdata/lintmodule",
+						Provisioner: "terraform",
+					}},
+					Params: map[string]interface{}{
+						"properties": map[string]interface{}{
+							"foo": map[string]interface{}{},
+						},
+					},
+					Connections: map[string]interface{}{},
+					Artifacts:   map[string]interface{}{},
+					UI:          map[string]interface{}{},
+				},
+				err: errors.New(`missing params or variables detected in step testdata/lintmodule:
+	- variable "bar" missing param declaration
+`),
+			}, {
+				name: "Invalid missing variable",
+				bun: &bundle.Bundle{
+					Name:        "example",
+					Description: "description",
+					Access:      "private",
+					Type:        "infrastructure",
+					Steps: []bundle.Step{{
+						Path:        "testdata/lintmodule",
+						Provisioner: "terraform",
+					}},
+					Params: map[string]interface{}{
+						"properties": map[string]interface{}{
+							"foo": map[string]interface{}{},
+							"bar": map[string]interface{}{},
+							"baz": map[string]interface{}{},
+						},
+					},
+					Connections: map[string]interface{}{},
+					Artifacts:   map[string]interface{}{},
+					UI:          map[string]interface{}{},
+				},
+				err: errors.New(`missing params or variables detected in step testdata/lintmodule:
+	- param "baz" missing variable declaration
+`),
+			},
+		}
+
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				err := tc.bun.LintParamsMatchVariables()
+				if tc.err != nil {
+					if err == nil {
+						t.Errorf("expected an error, got nil")
+					} else if tc.err.Error() != err.Error() {
+						t.Errorf("got %v, want %v", err.Error(), tc.err.Error())
+					}
+				} else if err != nil {
+					t.Fatalf("%d, unexpected error", err)
+				}
+			})
+		}
+	}
+}
+
 func TestLintMatchRequired(t *testing.T) {
 	type test struct {
 		name string
