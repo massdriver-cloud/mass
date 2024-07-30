@@ -16,7 +16,6 @@ mass bundle build [flags]
 
 ```
   -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
-  -g, --generate-files           Generate files for provisioners
   -h, --help                     help for build
 ```
 
