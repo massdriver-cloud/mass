@@ -207,13 +207,7 @@ func (b *Bundle) LintParamsMatchVariables() error {
 			}
 			paramsConns["md_metadata"] = map[string]interface{}{}
 
-			tfvarsString, err := terraform.TfToSchema(step.Path)
-			if err != nil {
-				return err
-			}
-
-			tfvars := map[string]interface{}{}
-			err = json.Unmarshal([]byte(tfvarsString), &tfvars)
+			tfvars, err := terraform.TfToSchema(step.Path)
 			if err != nil {
 				return err
 			}
@@ -221,8 +215,8 @@ func (b *Bundle) LintParamsMatchVariables() error {
 			missingTfvars := []string{}
 			for paramName := range paramsConns {
 				match := false
-				for tfvarName := range tfvars["properties"].(map[string]interface{}) {
-					if paramName == tfvarName {
+				for prop := tfvars.Properties.Oldest(); prop != nil; prop = prop.Next() {
+					if paramName == prop.Key {
 						match = true
 						break
 					}
@@ -233,16 +227,16 @@ func (b *Bundle) LintParamsMatchVariables() error {
 			}
 
 			missingParamsConns := []string{}
-			for tfvarName := range tfvars["properties"].(map[string]interface{}) {
+			for prop := tfvars.Properties.Oldest(); prop != nil; prop = prop.Next() {
 				match := false
 				for paramName := range paramsConns {
-					if paramName == tfvarName {
+					if paramName == prop.Key {
 						match = true
 						break
 					}
 				}
 				if !match {
-					missingParamsConns = append(missingParamsConns, tfvarName)
+					missingParamsConns = append(missingParamsConns, prop.Key)
 				}
 			}
 

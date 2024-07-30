@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 
 	"github.com/massdriver-cloud/airlock/pkg/terraform"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
@@ -58,14 +59,13 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle) error {
 	}
 
 	// read existing terraform variables for this step
-	existingTfvarsString, err := terraform.TfToSchema(path.Join(buildPath, stepPath))
+	existingTfvarsSchema, err := terraform.TfToSchema(path.Join(buildPath, stepPath))
 	if err != nil {
 		return err
 	}
-	existingTfvars := map[string]interface{}{}
-	err = json.Unmarshal([]byte(existingTfvarsString), &existingTfvars)
-	if err != nil {
-		return err
+	existingTfvarsNames := []string{}
+	for tfvar := existingTfvarsSchema.Properties.Oldest(); tfvar != nil; tfvar = tfvar.Next() {
+		existingTfvarsNames = append(existingTfvarsNames, tfvar.Key)
 	}
 
 	varFileTasks := []schema{
@@ -104,16 +104,13 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle) error {
 
 		// check each variable in the schema, and if doesn't already exist as a declared variable in the terraform, add it to be rendered
 		for key, value := range taskProperties {
-			if _, exists := existingTfvars["properties"]; exists {
-				existingTfvarsProperties := existingTfvars["properties"].(map[string]any)
-
-				if _, exists := existingTfvarsProperties[key]; !exists {
-					newVariables["properties"].(map[string]any)[key] = value
-					for _, elem := range taskRequired {
-						if key == elem.(string) {
-							newVariables["required"] = append(newVariables["required"].([]string), key)
-						}
+			if !slices.Contains(existingTfvarsNames, key) {
+				newVariables["properties"].(map[string]any)[key] = value
+				for _, elem := range taskRequired {
+					if key == elem.(string) {
+						newVariables["required"] = append(newVariables["required"].([]string), key)
 					}
+
 				}
 			}
 		}
