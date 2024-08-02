@@ -23,9 +23,9 @@ func TestLintSchema(t *testing.T) {
 				Access:      "private",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params:      map[string]interface{}{},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
+				Params:      &bundle.Schema{},
+				Connections: &bundle.Schema{},
+				Artifacts:   &bundle.Schema{},
 				UI:          map[string]interface{}{},
 			},
 			err: nil,
@@ -37,9 +37,9 @@ func TestLintSchema(t *testing.T) {
 				Description: "description",
 				Access:      "private",
 				Type:        "infrastructure",
-				Params:      map[string]interface{}{},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
+				Params:      &bundle.Schema{},
+				Connections: &bundle.Schema{},
+				Artifacts:   &bundle.Schema{},
 				UI:          map[string]interface{}{},
 			},
 			err: errors.New(`massdriver.yaml has schema violations:
@@ -74,14 +74,14 @@ func TestLintParamsConnectionsNameCollision(t *testing.T) {
 		{
 			name: "Valid Pass",
 			bun: &bundle.Bundle{
-				Params: map[string]interface{}{
-					"properties": map[string]interface{}{
-						"param": "foo",
+				Params: &bundle.Schema{
+					Properties: map[string]*bundle.Schema{
+						"param": {},
 					},
 				},
-				Connections: map[string]interface{}{
-					"properties": map[string]interface{}{
-						"connection": "foo",
+				Connections: &bundle.Schema{
+					Properties: map[string]*bundle.Schema{
+						"connection": {},
 					},
 				},
 			},
@@ -90,14 +90,14 @@ func TestLintParamsConnectionsNameCollision(t *testing.T) {
 		{
 			name: "Invalid Error",
 			bun: &bundle.Bundle{
-				Params: map[string]interface{}{
-					"properties": map[string]interface{}{
-						"database": "foo",
+				Params: &bundle.Schema{
+					Properties: map[string]*bundle.Schema{
+						"database": {},
 					},
 				},
-				Connections: map[string]interface{}{
-					"properties": map[string]interface{}{
-						"database": "foo",
+				Connections: &bundle.Schema{
+					Properties: map[string]*bundle.Schema{
+						"database": {},
 					},
 				},
 			},
@@ -143,23 +143,23 @@ func TestLintEnvs(t *testing.T) {
 						"shh": {},
 					},
 				},
-				Params: map[string]interface{}{
-					"properties": map[string]interface{}{
-						"foo": map[string]interface{}{
-							"type":  "string",
-							"const": "bar",
+				Params: &bundle.Schema{
+					Properties: map[string]*bundle.Schema{
+						"foo": {
+							Type:  "string",
+							Const: "bar",
 						},
-						"int": map[string]interface{}{
-							"type":  "integer",
-							"const": 4,
+						"int": {
+							Type:  "integer",
+							Const: 4,
 						},
 					},
 				},
-				Connections: map[string]interface{}{
-					"properties": map[string]interface{}{
-						"connection1": map[string]interface{}{
-							"type":  "string",
-							"const": "whatever",
+				Connections: &bundle.Schema{
+					Properties: map[string]*bundle.Schema{
+						"connection1": {
+							Type:  "string",
+							Const: "whatever",
 						},
 					},
 				},
@@ -181,8 +181,9 @@ func TestLintEnvs(t *testing.T) {
 					},
 					Secrets: map[string]bundle.Secret{},
 				},
-				Params:      map[string]interface{}{},
-				Connections: map[string]interface{}{},
+				Params:      &bundle.Schema{},
+				Connections: &bundle.Schema{},
+				Artifacts:   &bundle.Schema{},
 			},
 			want: map[string]string{},
 			err:  errors.New("the jq query for environment variable FOO didn't produce a result"),
@@ -196,8 +197,9 @@ func TestLintEnvs(t *testing.T) {
 					},
 					Secrets: map[string]bundle.Secret{},
 				},
-				Params:      map[string]interface{}{},
-				Connections: map[string]interface{}{},
+				Params:      &bundle.Schema{},
+				Connections: &bundle.Schema{},
+				Artifacts:   &bundle.Schema{},
 			},
 			want: map[string]string{},
 			err:  errors.New("the jq query for environment variable FOO produced an error: function not defined: laksdjf/0"),
@@ -211,18 +213,18 @@ func TestLintEnvs(t *testing.T) {
 					},
 					Secrets: map[string]bundle.Secret{},
 				},
-				Params: map[string]interface{}{
-					"properties": map[string]interface{}{
-						"array": map[string]interface{}{
-							"type":     "array",
-							"minItems": 2,
-							"items": map[string]interface{}{
-								"type": "integer",
+				Params: &bundle.Schema{
+					Properties: map[string]*bundle.Schema{
+						"array": {
+							Type:     "array",
+							MinItems: bundle.Ptr(uint64(2)),
+							Items: &bundle.Schema{
+								Type: "integer",
 							},
 						},
 					},
 				},
-				Connections: map[string]interface{}{},
+				Connections: &bundle.Schema{},
 			},
 			want: map[string]string{},
 			err:  errors.New("the jq query for environment variable FOO produced multiple values, which isn't supported"),
@@ -278,14 +280,14 @@ func TestLintParamsMatchVariables(t *testing.T) {
 						Path:        "testdata/lintmodule",
 						Provisioner: "terraform",
 					}},
-					Params: map[string]interface{}{
-						"properties": map[string]interface{}{
-							"foo": map[string]interface{}{},
-							"bar": map[string]interface{}{},
+					Params: &bundle.Schema{
+						Properties: map[string]*bundle.Schema{
+							"foo": {},
+							"bar": {},
 						},
 					},
-					Connections: map[string]interface{}{},
-					Artifacts:   map[string]interface{}{},
+					Connections: &bundle.Schema{},
+					Artifacts:   &bundle.Schema{},
 					UI:          map[string]interface{}{},
 				},
 				err: nil,
@@ -301,17 +303,17 @@ func TestLintParamsMatchVariables(t *testing.T) {
 						Path:        "testdata/lintmodule",
 						Provisioner: "terraform",
 					}},
-					Params: map[string]interface{}{
-						"properties": map[string]interface{}{
-							"foo": map[string]interface{}{},
+					Params: &bundle.Schema{
+						Properties: map[string]*bundle.Schema{
+							"foo": &bundle.Schema{},
 						},
 					},
-					Connections: map[string]interface{}{
-						"properties": map[string]interface{}{
-							"bar": map[string]interface{}{},
+					Connections: &bundle.Schema{
+						Properties: map[string]*bundle.Schema{
+							"bar": &bundle.Schema{},
 						},
 					},
-					Artifacts: map[string]interface{}{},
+					Artifacts: &bundle.Schema{},
 					UI:        map[string]interface{}{},
 				},
 				err: nil,
@@ -326,13 +328,13 @@ func TestLintParamsMatchVariables(t *testing.T) {
 						Path:        "testdata/lintmodule",
 						Provisioner: "terraform",
 					}},
-					Params: map[string]interface{}{
-						"properties": map[string]interface{}{
-							"foo": map[string]interface{}{},
+					Params: &bundle.Schema{
+						Properties: map[string]*bundle.Schema{
+							"foo": &bundle.Schema{},
 						},
 					},
-					Connections: map[string]interface{}{},
-					Artifacts:   map[string]interface{}{},
+					Connections: &bundle.Schema{},
+					Artifacts:   &bundle.Schema{},
 					UI:          map[string]interface{}{},
 				},
 				err: errors.New(`missing params or variables detected in step testdata/lintmodule:
@@ -349,15 +351,15 @@ func TestLintParamsMatchVariables(t *testing.T) {
 						Path:        "testdata/lintmodule",
 						Provisioner: "terraform",
 					}},
-					Params: map[string]interface{}{
-						"properties": map[string]interface{}{
-							"foo": map[string]interface{}{},
-							"bar": map[string]interface{}{},
-							"baz": map[string]interface{}{},
+					Params: &bundle.Schema{
+						Properties: map[string]*bundle.Schema{
+							"foo": &bundle.Schema{},
+							"bar": &bundle.Schema{},
+							"baz": &bundle.Schema{},
 						},
 					},
-					Connections: map[string]interface{}{},
-					Artifacts:   map[string]interface{}{},
+					Connections: &bundle.Schema{},
+					Artifacts:   &bundle.Schema{},
 					UI:          map[string]interface{}{},
 				},
 				err: errors.New(`missing params or variables detected in step testdata/lintmodule:
@@ -398,16 +400,16 @@ func TestLintMatchRequired(t *testing.T) {
 				Access:      "private",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params: map[string]interface{}{
-					"required": []interface{}{"foo"},
-					"properties": map[string]interface{}{
-						"foo": map[string]interface{}{
-							"type": "string",
+				Params: &bundle.Schema{
+					Required: []string{"foo"},
+					Properties: map[string]*bundle.Schema{
+						"foo": {
+							Type: "string",
 						},
 					},
 				},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
+				Connections: &bundle.Schema{},
+				Artifacts:   &bundle.Schema{},
 				UI:          map[string]interface{}{},
 			},
 			err: nil,
@@ -420,16 +422,16 @@ func TestLintMatchRequired(t *testing.T) {
 				Access:      "private",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params: map[string]interface{}{
-					"required": []interface{}{"bar"},
-					"properties": map[string]interface{}{
-						"foo": map[string]interface{}{
-							"type": "string",
+				Params: &bundle.Schema{
+					Required: []string{"bar"},
+					Properties: map[string]*bundle.Schema{
+						"foo": {
+							Type: "string",
 						},
 					},
 				},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
+				Connections: &bundle.Schema{},
+				Artifacts:   &bundle.Schema{},
 				UI:          map[string]interface{}{},
 			},
 			err: errors.New("required parameter bar is not defined in properties"),
@@ -442,22 +444,22 @@ func TestLintMatchRequired(t *testing.T) {
 				Access:      "private",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params: map[string]interface{}{
-					"required": []interface{}{"foo"},
-					"properties": map[string]interface{}{
-						"foo": map[string]interface{}{
-							"type":     "object",
-							"required": []interface{}{"bar"},
-							"properties": map[string]interface{}{
-								"bar": map[string]interface{}{
-									"type": "string",
+				Params: &bundle.Schema{
+					Required: []string{"foo"},
+					Properties: map[string]*bundle.Schema{
+						"foo": {
+							Type:     "object",
+							Required: []string{"bar"},
+							Properties: map[string]*bundle.Schema{
+								"bar": {
+									Type: "string",
 								},
 							},
 						},
 					},
 				},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
+				Connections: &bundle.Schema{},
+				Artifacts:   &bundle.Schema{},
 				UI:          map[string]interface{}{},
 			},
 			err: nil,
@@ -470,22 +472,22 @@ func TestLintMatchRequired(t *testing.T) {
 				Access:      "private",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params: map[string]interface{}{
-					"required": []interface{}{"foo"},
-					"properties": map[string]interface{}{
-						"foo": map[string]interface{}{
-							"type":     "object",
-							"required": []interface{}{"baz", "bar"},
-							"properties": map[string]interface{}{
-								"bar": map[string]interface{}{
-									"type": "string",
+				Params: &bundle.Schema{
+					Required: []string{"foo"},
+					Properties: map[string]*bundle.Schema{
+						"foo": {
+							Type:     "object",
+							Required: []string{"baz", "bar"},
+							Properties: map[string]*bundle.Schema{
+								"bar": {
+									Type: "string",
 								},
 							},
 						},
 					},
 				},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
+				Connections: &bundle.Schema{},
+				Artifacts:   &bundle.Schema{},
 				UI:          map[string]interface{}{},
 			},
 			err: errors.New("required parameter baz is not defined in properties"),

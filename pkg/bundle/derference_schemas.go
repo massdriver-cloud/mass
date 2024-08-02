@@ -9,7 +9,7 @@ import (
 )
 
 type DereferenceTarget struct {
-	schema *map[string]interface{}
+	schema *map[string]*Schema
 	label  string
 }
 

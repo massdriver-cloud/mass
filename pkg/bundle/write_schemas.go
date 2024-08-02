@@ -10,19 +10,19 @@ import (
 const idURLPattern = "https://schemas.massdriver.cloud/schemas/bundles/%s/schema-%s.json"
 const jsonSchemaURLPattern = "http://json-schema.org/%s/schema"
 
-type Schema struct {
-	schema map[string]interface{}
-	label  string
-}
-
 func (b *Bundle) WriteSchemas(buildPath string) error {
+	type WriteTask struct {
+		schema interface{}
+		label  string
+	}
+
 	mkdirErr := os.MkdirAll(buildPath, 0755)
 
 	if mkdirErr != nil {
 		return mkdirErr
 	}
 
-	tasks := []Schema{
+	tasks := []WriteTask{
 		{schema: b.Artifacts, label: "artifacts"},
 		{schema: b.Params, label: "params"},
 		{schema: b.Connections, label: "connections"},
@@ -30,7 +30,10 @@ func (b *Bundle) WriteSchemas(buildPath string) error {
 	}
 
 	for _, task := range tasks {
-		content, err := generateSchema(task.schema, buildMetadata(task.label, *b))
+		if sch, ok := task.schema.(*Schema); ok {
+			setMetadata(sch, task.label, *b)
+		}
+		content, err := generateSchema(task.schema)
 
 		if err != nil {
 			return err
@@ -49,24 +52,13 @@ func (b *Bundle) WriteSchemas(buildPath string) error {
 }
 
 // generateSchema generates a specific *-schema.json file
-func generateSchema(schema map[string]interface{}, metadata map[string]string) ([]byte, error) {
-	var err error
-	var mergedSchema = mergeMaps(schema, metadata)
-
-	json, err := json.MarshalIndent(mergedSchema, "", "    ")
+func generateSchema(schema interface{}) ([]byte, error) {
+	json, err := json.MarshalIndent(schema, "", "    ")
 	if err != nil {
 		return nil, err
 	}
 
 	return []byte(fmt.Sprintf("%s\n", string(json))), nil
-}
-
-func mergeMaps(a map[string]interface{}, b map[string]string) map[string]interface{} {
-	for k, v := range b {
-		a[k] = v
-	}
-
-	return a
 }
 
 func generateIDURL(mdName string, schemaType string) string {
@@ -78,15 +70,9 @@ func generateSchemaURL(schema string) string {
 }
 
 // Metadata returns common metadata fields for each JSON Schema
-func buildMetadata(schemaType string, b Bundle) map[string]string {
-	if schemaType == "ui" {
-		return make(map[string]string)
-	}
-
-	return map[string]string{
-		"$schema":     generateSchemaURL(b.Schema),
-		"$id":         generateIDURL(b.Name, schemaType),
-		"title":       b.Name,
-		"description": b.Description,
-	}
+func setMetadata(sch *Schema, schemaType string, b Bundle) {
+	sch.Version = generateSchemaURL(b.Schema)
+	sch.ID = generateIDURL(b.Name, schemaType)
+	sch.Title = b.Name
+	sch.Description = b.Description
 }

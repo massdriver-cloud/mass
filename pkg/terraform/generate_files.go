@@ -16,29 +16,8 @@ import (
 //go:embed schemas/metadata-schema.json
 var bundleFS embed.FS
 
-type schema struct {
-	label     string
-	schema    map[string]interface{}
-	writePath string
-}
-
 func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle) error {
 	err := generateTfVarsFiles(buildPath, stepPath, b)
-
-	if err != nil {
-		return err
-	}
-
-	devParamPath := path.Join(buildPath, stepPath, bundle.ParamsFile)
-
-	err = transpileAndWriteDevParams(devParamPath, b)
-
-	if err != nil {
-		return fmt.Errorf("error compiling dev params: %w", err)
-	}
-
-	err = transpileConnectionVarFile(path.Join(buildPath, stepPath, bundle.ConnsFile), b)
-
 	if err != nil {
 		return err
 	}
@@ -68,7 +47,12 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle) error {
 		existingTfvarsNames = append(existingTfvarsNames, tfvar.Key)
 	}
 
-	varFileTasks := []schema{
+	type task struct {
+		label     string
+		schema    *bundle.Schema
+		writePath string
+	}
+	varFileTasks := []task{
 		{
 			label:     "params",
 			schema:    b.Params,
@@ -79,43 +63,40 @@ func generateTfVarsFiles(buildPath, stepPath string, b *bundle.Bundle) error {
 			schema:    b.Connections,
 			writePath: path.Join(buildPath, stepPath),
 		},
-		{
-			label:     "md",
-			schema:    metadata,
-			writePath: path.Join(buildPath, stepPath),
-		},
+		// {
+		// 	label:     "md",
+		// 	schema:    metadata,
+		// 	writePath: path.Join(buildPath, stepPath),
+		// },
 	}
 
 	for _, task := range varFileTasks {
-		newVariables := map[string]interface{}{
-			"required":   []string{},
-			"properties": map[string]any{},
+		newVariables := &bundle.Schema{
+			Required:   []string{},
+			Properties: map[string]*bundle.Schema{},
 		}
 
-		taskProperties := map[string]any{}
-		taskRequired := []any{}
-
-		if _, exists := task.schema["properties"]; exists {
-			taskProperties = task.schema["properties"].(map[string]any)
-		}
-		if _, exists := task.schema["required"]; exists {
-			taskRequired = task.schema["required"].([]any)
-		}
+		// if _, exists := task.schema["properties"]; exists {
+		// 	taskProperties = task.schema["properties"].(map[string]any)
+		// }
+		// if _, exists := task.schema["required"]; exists {
+		// 	taskRequired = task.schema["required"].([]any)
+		// }
 
 		// check each variable in the schema, and if doesn't already exist as a declared variable in the terraform, add it to be rendered
-		for key, value := range taskProperties {
+		for key, value := range task.schema.Properties {
 			if !slices.Contains(existingTfvarsNames, key) {
-				newVariables["properties"].(map[string]any)[key] = value
-				for _, elem := range taskRequired {
-					if key == elem.(string) {
-						newVariables["required"] = append(newVariables["required"].([]string), key)
+				newVariables.Properties[key] = value
+				for _, elem := range task.schema.Required {
+					if key == elem {
+						newVariables.Required = append(newVariables.Required, key)
 					}
 
 				}
 			}
 		}
 
-		if len(newVariables["properties"].(map[string]any)) == 0 {
+		if len(newVariables.Properties) == 0 {
 			break
 		}
 

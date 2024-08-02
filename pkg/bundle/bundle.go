@@ -16,41 +16,6 @@ const (
 	ConnsFile  = "_connections.auto.tfvars.json"
 )
 
-type Step struct {
-	Path        string `json:"path" yaml:"path"`
-	Provisioner string `json:"provisioner" yaml:"provisioner"`
-}
-
-type Bundle struct {
-	Schema      string                 `json:"schema" yaml:"schema"`
-	Name        string                 `json:"name" yaml:"name"`
-	Description string                 `json:"description" yaml:"description"`
-	SourceURL   string                 `json:"source_url" yaml:"source_url"`
-	Type        string                 `json:"type" yaml:"type"`
-	Access      string                 `json:"access" yaml:"access"`
-	Steps       []Step                 `json:"steps" yaml:"steps"`
-	Artifacts   map[string]interface{} `json:"artifacts" yaml:"artifacts"`
-	Params      map[string]interface{} `json:"params" yaml:"params"`
-	Connections Connections            `json:"connections" yaml:"connections"`
-	UI          map[string]interface{} `json:"ui" yaml:"ui"`
-	AppSpec     *AppSpec               `json:"app,omitempty" yaml:"app,omitempty"`
-}
-
-type Connections = map[string]any
-
-type AppSpec struct {
-	Envs     map[string]string `json:"envs" yaml:"envs"`
-	Policies []string          `json:"policies" yaml:"policies"`
-	Secrets  map[string]Secret `json:"secrets" yaml:"secrets"`
-}
-
-type Secret struct {
-	Required    bool   `json:"required" yaml:"required"`
-	JSON        bool   `json:"json" yaml:"json"`
-	Title       string `json:"title" yaml:"title"`
-	Description string `json:"description" yaml:"description"`
-}
-
 func (b *Bundle) GenerateBundlePublishBody(srcDir string) (restclient.PublishPost, error) {
 	var body restclient.PublishPost
 
@@ -141,20 +106,25 @@ func UnmarshalandApplyDefaults(readDirectory string) (*Bundle, error) {
 	}
 
 	// This looks weird but we have to be careful we don't overwrite things that do exist in the bundle file
-	if unmarshalledBundle.Connections == nil {
-		unmarshalledBundle.Connections = make(map[string]any)
+	if unmarshalledBundle.Params == nil {
+		unmarshalledBundle.Params = &Schema{}
+	}
+	if unmarshalledBundle.Params.Properties == nil {
+		unmarshalledBundle.Params.Properties = make(map[string]*Schema)
 	}
 
-	if unmarshalledBundle.Connections["properties"] == nil {
-		unmarshalledBundle.Connections["properties"] = make(map[string]any)
+	if unmarshalledBundle.Connections == nil {
+		unmarshalledBundle.Connections = &Schema{}
+	}
+	if unmarshalledBundle.Connections.Properties == nil {
+		unmarshalledBundle.Connections.Properties = make(map[string]*Schema)
 	}
 
 	if unmarshalledBundle.Artifacts == nil {
-		unmarshalledBundle.Artifacts = make(map[string]any)
+		unmarshalledBundle.Artifacts = &Schema{}
 	}
-
-	if unmarshalledBundle.Artifacts["properties"] == nil {
-		unmarshalledBundle.Artifacts["properties"] = make(map[string]any)
+	if unmarshalledBundle.Artifacts.Properties == nil {
+		unmarshalledBundle.Artifacts.Properties = make(map[string]*Schema)
 	}
 
 	return unmarshalledBundle, nil

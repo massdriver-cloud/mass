@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -38,16 +39,12 @@ func (b *Bundle) LintSchema() error {
 }
 
 func (b *Bundle) LintParamsConnectionsNameCollision() error {
-	if b.Params != nil {
-		if params, ok := b.Params["properties"]; ok {
-			if b.Connections != nil {
-				if connections, connectionsOk := b.Connections["properties"]; connectionsOk {
-					for param := range params.(map[string]interface{}) {
-						for connection := range connections.(map[string]interface{}) {
-							if param == connection {
-								return fmt.Errorf("a parameter and connection have the same name: %s", param)
-							}
-						}
+	if b.Params != nil && b.Params.Properties != nil {
+		if b.Connections != nil && b.Connections.Properties != nil {
+			for param := range b.Params.Properties {
+				for connection := range b.Connections.Properties {
+					if param == connection {
+						return fmt.Errorf("a parameter and connection have the same name: %s", param)
 					}
 				}
 			}
@@ -105,11 +102,19 @@ func (b *Bundle) LintEnvs() (map[string]string, error) {
 func (b *Bundle) buildEnvsInput() (map[string]interface{}, error) {
 	result := map[string]interface{}{}
 
-	paramsSchema, err := schema2json.ParseMapStringInterface(b.Params)
+	paramsBytes, err := json.Marshal(b.Params)
 	if err != nil {
 		return nil, err
 	}
-	connectionsSchema, err := schema2json.ParseMapStringInterface(b.Connections)
+	paramsSchema, err := schema2json.Parse(bytes.NewReader(paramsBytes))
+	if err != nil {
+		return nil, err
+	}
+	connectionsBytes, err := json.Marshal(b.Connections)
+	if err != nil {
+		return nil, err
+	}
+	connectionsSchema, err := schema2json.Parse(bytes.NewReader(connectionsBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -136,59 +141,35 @@ func (b *Bundle) LintMatchRequired() error {
 }
 
 //nolint:gocognit
-func matchRequired(input map[string]interface{}) error {
-	var properties map[string]interface{}
+func matchRequired(input *Schema) error {
+	var properties map[string]*Schema
 
-	if val, propOk := input["properties"]; propOk {
-		if properties, propOk = val.(map[string]interface{}); !propOk {
-			return fmt.Errorf("properties is not a map[string]interface{}")
-		}
+	if input.Properties != nil {
+		properties = input.Properties
+	} else {
+		properties = map[string]*Schema{}
 	}
 
 	for _, prop := range properties {
 		var propType string
-
-		propMap, mapOk := prop.(map[string]interface{})
-		if !mapOk {
-			return fmt.Errorf("property is not a map[string]interface{}")
-		}
-
-		if val, typeOk := propMap["type"]; typeOk {
-			if propType, typeOk = val.(string); !typeOk {
-				return fmt.Errorf("type is not a string")
-			}
-		} else {
+		if prop.Type == "" {
 			propType = "object"
+		} else {
+			propType = prop.Type
 		}
 		if propType == "object" {
-			if _, objectOk := propMap["properties"]; objectOk {
-				err := matchRequired(propMap)
-				if err != nil {
-					return err
-				}
+			err := matchRequired(prop)
+			if err != nil {
+				return err
 			}
 		}
 	}
 
-	var required []string
-
-	if val, reqOk := input["required"]; reqOk {
-		requiredInterface, reqIntOk := val.([]interface{})
-		if !reqIntOk {
-			return fmt.Errorf("required is not a []interface{}")
-		}
-
-		required = make([]string, len(requiredInterface))
-		for i, req := range requiredInterface {
-			if required[i], reqOk = req.(string); !reqOk {
-				return fmt.Errorf("required is not a []string")
+	if input.Required != nil {
+		for _, req := range input.Required {
+			if _, propReqOk := properties[req]; !propReqOk {
+				return fmt.Errorf("required parameter %s is not defined in properties", req)
 			}
-		}
-	}
-
-	for _, req := range required {
-		if _, propReqOk := properties[req]; !propReqOk {
-			return fmt.Errorf("required parameter %s is not defined in properties", req)
 		}
 	}
 
@@ -198,14 +179,14 @@ func matchRequired(input map[string]interface{}) error {
 func (b *Bundle) LintParamsMatchVariables() error {
 	for _, step := range b.Steps {
 		if step.Provisioner == "terraform" || step.Provisioner == "opentofu" {
-			paramsConns := map[string]interface{}{}
-			if params, ok := b.Params["properties"]; ok {
-				maps.Copy(paramsConns, params.(map[string]interface{}))
+			paramsConns := map[string]*Schema{}
+			if b.Params != nil && b.Params.Properties != nil {
+				maps.Copy(paramsConns, b.Params.Properties)
 			}
-			if conns, ok := b.Connections["properties"]; ok {
-				maps.Copy(paramsConns, conns.(map[string]interface{}))
+			if b.Connections != nil && b.Connections.Properties != nil {
+				maps.Copy(paramsConns, b.Connections.Properties)
 			}
-			paramsConns["md_metadata"] = map[string]interface{}{}
+			paramsConns["md_metadata"] = &Schema{}
 
 			tfvars, err := terraform.TfToSchema(step.Path)
 			if err != nil {
