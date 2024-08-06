@@ -197,7 +197,7 @@ func matchRequired(input map[string]interface{}) error {
 
 func (b *Bundle) LintParamsMatchVariables() error {
 	for _, step := range b.Steps {
-		if step.Provisioner == "terraform" || step.Provisioner == "opentofu" {
+		if step.Provisioner == "opentofu" || step.Provisioner == "terraform" {
 			paramsConns := map[string]interface{}{}
 			if params, ok := b.Params["properties"]; ok {
 				maps.Copy(paramsConns, params.(map[string]interface{}))

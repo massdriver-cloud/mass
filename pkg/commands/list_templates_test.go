@@ -19,8 +19,8 @@ func TestListTemplates(t *testing.T) {
 	directories := []string{
 		rootTemplateDir,
 		fmt.Sprintf("%s/massdriver-cloud/application-templates/kubernetes-cronjob", rootTemplateDir),
-		fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/terraform", rootTemplateDir),
-		fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/palumi", rootTemplateDir),
+		fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/opentofu", rootTemplateDir),
+		fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/bicep", rootTemplateDir),
 	}
 
 	err := mockfilesystem.MakeDirectories(directories)
@@ -31,8 +31,8 @@ func TestListTemplates(t *testing.T) {
 
 	files := []mockfilesystem.VirtualFile{
 		{Path: fmt.Sprintf("%s/massdriver-cloud/application-templates/kubernetes-cronjob/massdriver.yaml", rootTemplateDir)},
-		{Path: fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/terraform/massdriver.yaml", rootTemplateDir)},
-		{Path: fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/palumi/massdriver.yaml", rootTemplateDir)},
+		{Path: fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/opentofu/massdriver.yaml", rootTemplateDir)},
+		{Path: fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/bicep/massdriver.yaml", rootTemplateDir)},
 	}
 
 	err = mockfilesystem.MakeFiles(files)
@@ -56,7 +56,7 @@ func TestListTemplates(t *testing.T) {
 		},
 		{
 			Repository: "massdriver-cloud/infrastructure-templates",
-			Templates:  []string{"palumi", "terraform"},
+			Templates:  []string{"bicep", "opentofu"},
 		},
 	}
 

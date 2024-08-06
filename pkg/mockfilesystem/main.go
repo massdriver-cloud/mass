@@ -20,7 +20,7 @@ Includes a parsable massdriver.yaml template, and an empty src/main.tf
 */
 func SetupBundleTemplate(rootTemplateDir string) error {
 	repoPath := "massdriver-cloud/infrastructure-templates"
-	templatePath := "terraform"
+	templatePath := "opentofu"
 	srcPath := "src"
 
 	directories := []string{

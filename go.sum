@@ -487,6 +487,8 @@ github.com/massdriver-cloud/airlock v0.0.2 h1:sXWMgsLuZySLg0w/OYMpgi7HSjIsgsbWWf
 github.com/massdriver-cloud/airlock v0.0.2/go.mod h1:lOiYJFY6PkJsBFha99xxqLuy5HiCureZEwQrnU6+MbA=
 github.com/massdriver-cloud/airlock v0.0.3 h1:Ji1KMgfA8rTTZ3L3A1RkDgkAS2j1eAHr/b0oh9RPwUg=
 github.com/massdriver-cloud/airlock v0.0.3/go.mod h1:P2KZ/LsyMb99lNm96yhpgRtnQiRISB24MfKsRq89Es0=
+github.com/massdriver-cloud/airlock v0.0.4-0.20240802170524-1dbc0f1f3bd6 h1:czEaGOkB/i8iUcjZDNrG5aXnj4pzeN0AF+8tVCvwUKk=
+github.com/massdriver-cloud/airlock v0.0.4-0.20240802170524-1dbc0f1f3bd6/go.mod h1:P2KZ/LsyMb99lNm96yhpgRtnQiRISB24MfKsRq89Es0=
 github.com/massdriver-cloud/liquid v1.4.0 h1:807qhdLOHFbbIG7huhxB1bZRt/qOZWuHhhhjuA/bVjc=
 github.com/massdriver-cloud/liquid v1.4.0/go.mod h1:VmzQQHa5v4E0GvGzqccfAfLgMwRk2V+s1QbxYx9dGak=
 github.com/massdriver-cloud/schema2json v0.0.2 h1:ohcx8233BJ6sKBYUKh7gdcbbJ2ASSdkjE81fUUIFfgk=
