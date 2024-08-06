@@ -21,7 +21,6 @@ func GenerateFiles(buildPath, stepPath string, b *bundle.Bundle) error {
 }
 
 func generateBicepParams(buildPath, stepPath string, b *bundle.Bundle) error {
-
 	// read existing bicep params for this step
 	bicepParamsSchema, err := bicep.BicepToSchema(path.Join(buildPath, stepPath, "template.bicep"))
 	if err != nil {
