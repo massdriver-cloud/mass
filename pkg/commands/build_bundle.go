@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
+	"github.com/massdriver-cloud/mass/pkg/provisioners/bicep"
+	"github.com/massdriver-cloud/mass/pkg/provisioners/opentofu"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/massdriver-cloud/mass/pkg/terraform"
 )
 
 func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverClient) error {
@@ -23,8 +24,13 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 
 	for _, step := range stepsOrDefault(b.Steps) {
 		switch step.Provisioner {
-		case "terraform":
-			err = terraform.GenerateFiles(buildPath, step.Path, b)
+		case "terraform", "opentofu":
+			err = opentofu.GenerateFiles(buildPath, step.Path, b)
+			if err != nil {
+				return err
+			}
+		case "bicep":
+			err = bicep.GenerateFiles(buildPath, step.Path, b)
 			if err != nil {
 				return err
 			}

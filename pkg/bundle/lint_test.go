@@ -276,7 +276,7 @@ func TestLintParamsMatchVariables(t *testing.T) {
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lintmodule",
-						Provisioner: "terraform",
+						Provisioner: "opentofu",
 					}},
 					Params: map[string]interface{}{
 						"properties": map[string]interface{}{
@@ -299,7 +299,7 @@ func TestLintParamsMatchVariables(t *testing.T) {
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lintmodule",
-						Provisioner: "terraform",
+						Provisioner: "opentofu",
 					}},
 					Params: map[string]interface{}{
 						"properties": map[string]interface{}{
@@ -324,7 +324,7 @@ func TestLintParamsMatchVariables(t *testing.T) {
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lintmodule",
-						Provisioner: "terraform",
+						Provisioner: "opentofu",
 					}},
 					Params: map[string]interface{}{
 						"properties": map[string]interface{}{
@@ -347,7 +347,7 @@ func TestLintParamsMatchVariables(t *testing.T) {
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lintmodule",
-						Provisioner: "terraform",
+						Provisioner: "opentofu",
 					}},
 					Params: map[string]interface{}{
 						"properties": map[string]interface{}{

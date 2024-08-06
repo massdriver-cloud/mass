@@ -83,7 +83,7 @@ func mockBundle() *bundle.Bundle {
 		Steps: []bundle.Step{
 			{
 				Path:        "deploy",
-				Provisioner: "terraform",
+				Provisioner: "opentofu",
 			},
 		},
 		Artifacts: map[string]interface{}{

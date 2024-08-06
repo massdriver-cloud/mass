@@ -22,7 +22,7 @@ require (
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/itchyny/gojq v0.12.12
 	github.com/manifoldco/promptui v0.9.0
-	github.com/massdriver-cloud/airlock v0.0.3
+	github.com/massdriver-cloud/airlock v0.0.4-0.20240802170524-1dbc0f1f3bd6
 	github.com/massdriver-cloud/schema2json v0.0.2
 	github.com/moby/moby v24.0.8+incompatible
 	github.com/moby/term v0.5.0
