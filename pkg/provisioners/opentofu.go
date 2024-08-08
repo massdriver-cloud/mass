@@ -11,7 +11,7 @@ import (
 
 type OpentofuProvisioner struct{}
 
-func (p *OpentofuProvisioner) ExportMassdriverVariables(stepPath string, variables map[string]interface{}) error {
+func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]interface{}) error {
 	// read existing OpenTofu variables for this step
 	existingTfvarsSchema, err := terraform.TfToSchema(stepPath)
 	if err != nil {
@@ -50,7 +50,7 @@ func (p *OpentofuProvisioner) ExportMassdriverVariables(stepPath string, variabl
 	return nil
 }
 
-func (p *OpentofuProvisioner) ReadProvisionerVariables(stepPath string) (map[string]interface{}, error) {
+func (p *OpentofuProvisioner) ReadProvisionerInputs(stepPath string) (map[string]interface{}, error) {
 	opentofuVariablesSchema, err := terraform.TfToSchema(stepPath)
 	if err != nil {
 		return nil, err

@@ -199,7 +199,7 @@ func (b *Bundle) LintInputsMatchProvisioner() error {
 	massdriverInputsProperties := massdriverInputs["properties"].(map[string]interface{})
 	for _, step := range b.Steps {
 		prov := provisioners.NewProvisioner(step.Provisioner)
-		provisionerInputs, err := prov.ReadProvisionerVariables(step.Path)
+		provisionerInputs, err := prov.ReadProvisionerInputs(step.Path)
 		if err != nil {
 			return err
 		}

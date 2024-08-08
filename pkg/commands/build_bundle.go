@@ -24,7 +24,7 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 	combined := b.CombineParamsConnsMetadata()
 	for _, step := range stepsOrDefault(b.Steps) {
 		prov := provisioners.NewProvisioner(step.Provisioner)
-		err = prov.ExportMassdriverVariables(path.Join(buildPath, step.Path), combined)
+		err = prov.ExportMassdriverInputs(path.Join(buildPath, step.Path), combined)
 		if err != nil {
 			return err
 		}

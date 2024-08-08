@@ -11,7 +11,7 @@ import (
 
 type BicepProvisioner struct{}
 
-func (p *BicepProvisioner) ExportMassdriverVariables(stepPath string, variables map[string]interface{}) error {
+func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]interface{}) error {
 	// read existing bicep params for this step
 	bicepParamsSchema, err := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
 	if err != nil {
@@ -49,7 +49,7 @@ func (p *BicepProvisioner) ExportMassdriverVariables(stepPath string, variables 
 	return nil
 }
 
-func (p *BicepProvisioner) ReadProvisionerVariables(stepPath string) (map[string]interface{}, error) {
+func (p *BicepProvisioner) ReadProvisionerInputs(stepPath string) (map[string]interface{}, error) {
 	bicepParamsSchema, err := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
 	if err != nil {
 		return nil, err

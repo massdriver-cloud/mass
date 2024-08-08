@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
 )
 
-func TestGenerateFiles(t *testing.T) {
+func TestBicepExportMassdriverInputs(t *testing.T) {
 	type test struct {
 		name      string
 		variables map[string]interface{}
@@ -83,8 +84,8 @@ param bar string
 				t.Fatalf("%d, unexpected error", err)
 			}
 
-			p := provisioners.BicepProvisioner{}
-			err = p.ExportMassdriverVariables(testDir, tc.variables)
+			prov := provisioners.BicepProvisioner{}
+			err = prov.ExportMassdriverInputs(testDir, tc.variables)
 			if err != nil {
 				t.Errorf("Error during validation: %s", err)
 			}
@@ -96,6 +97,59 @@ param bar string
 
 			if string(got) != tc.want {
 				t.Errorf("got %s want %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestBicepReadProvisionerInputs(t *testing.T) {
+	type test struct {
+		name string
+		want map[string]interface{}
+	}
+	tests := []test{
+		{
+			name: "same",
+			want: map[string]interface{}{
+				"required": []interface{}{"bar", "foo"},
+				"properties": map[string]interface{}{
+					"foo": map[string]interface{}{
+						"title": "foo",
+						"type":  "string",
+					},
+					"bar": map[string]interface{}{
+						"title": "bar",
+						"type":  "string",
+					},
+				},
+				"type": "object",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testDir := t.TempDir()
+
+			content, err := os.ReadFile(path.Join("testdata", "bicep", fmt.Sprintf("%s.bicep", tc.name)))
+			if err != nil {
+				t.Fatalf("%d, unexpected error", err)
+			}
+
+			testFile := path.Join(testDir, "template.bicep")
+			err = os.WriteFile(testFile, content, 0644)
+			if err != nil {
+				t.Fatalf("%d, unexpected error", err)
+			}
+
+			prov := provisioners.BicepProvisioner{}
+			got, err := prov.ReadProvisionerInputs(testDir)
+			if err != nil {
+				t.Errorf("Error during validation: %s", err)
+			}
+
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("want %v got %v", got, tc.want)
 			}
 		})
 	}
