@@ -10,13 +10,11 @@ import (
 
 func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverClient) error {
 	err := b.DereferenceSchemas(buildPath, c)
-
 	if err != nil {
 		return err
 	}
 
 	err = b.WriteSchemas(buildPath)
-
 	if err != nil {
 		return err
 	}
