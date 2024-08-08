@@ -1,11 +1,10 @@
-package provisioners_test
+package bundle_test
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/massdriver-cloud/mass/pkg/provisioners"
 )
 
 var md_metadata_map = map[string]interface{}{
@@ -101,7 +100,7 @@ func TestCombineParamsConnsMetadata(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := provisioners.CombineParamsConnsMetadata(tc.bundle)
+			got := tc.bundle.CombineParamsConnsMetadata()
 
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("got %v want %v", got, tc.want)

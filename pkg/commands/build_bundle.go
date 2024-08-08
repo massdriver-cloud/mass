@@ -1,11 +1,10 @@
 package commands
 
 import (
-	"fmt"
+	"path"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/massdriver-cloud/mass/pkg/provisioners/bicep"
-	"github.com/massdriver-cloud/mass/pkg/provisioners/opentofu"
+	"github.com/massdriver-cloud/mass/pkg/provisioners"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 )
 
@@ -22,23 +21,30 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 		return err
 	}
 
+	combined := b.CombineParamsConnsMetadata()
 	for _, step := range stepsOrDefault(b.Steps) {
-		switch step.Provisioner {
-		case "terraform", "opentofu":
-			err = opentofu.GenerateFiles(buildPath, step.Path, b)
-			if err != nil {
-				return err
-			}
-		case "bicep":
-			err = bicep.GenerateFiles(buildPath, step.Path, b)
-			if err != nil {
-				return err
-			}
-		case "helm":
-			continue
-		default:
-			return fmt.Errorf("%s is not a supported provisioner", step.Provisioner)
+		prov := provisioners.NewProvisioner(step.Provisioner)
+		err = prov.ExportMassdriverVariables(path.Join(buildPath, step.Path), combined)
+		if err != nil {
+			return err
 		}
+
+		// switch step.Provisioner {
+		// case "terraform", "opentofu":
+		// 	err = opentofu.ExportVariables(buildPath, step.Path, b)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// case "bicep":
+		// 	err = bicep.GenerateFiles(buildPath, step.Path, b)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// case "helm":
+		// 	continue
+		// default:
+		// 	return fmt.Errorf("%s is not a supported provisioner", step.Provisioner)
+		// }
 	}
 
 	return nil

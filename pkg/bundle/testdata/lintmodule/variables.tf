@@ -5,3 +5,7 @@ variable "foo" {
 variable "bar" {
     type = number
 }
+
+variable "md_metadata" {
+    type = any
+}
