@@ -28,23 +28,6 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 		if err != nil {
 			return err
 		}
-
-		// switch step.Provisioner {
-		// case "terraform", "opentofu":
-		// 	err = opentofu.ExportVariables(buildPath, step.Path, b)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// case "bicep":
-		// 	err = bicep.GenerateFiles(buildPath, step.Path, b)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// case "helm":
-		// 	continue
-		// default:
-		// 	return fmt.Errorf("%s is not a supported provisioner", step.Provisioner)
-		// }
 	}
 
 	return nil
