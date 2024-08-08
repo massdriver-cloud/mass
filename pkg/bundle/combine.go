@@ -1,12 +1,10 @@
-package provisioners
+package bundle
 
 import (
 	"maps"
-
-	"github.com/massdriver-cloud/mass/pkg/bundle"
 )
 
-func CombineParamsConnsMetadata(bun *bundle.Bundle) map[string]interface{} {
+func (bun *Bundle) CombineParamsConnsMetadata() map[string]interface{} {
 	combined := map[string]any{
 		"properties": map[string]any{},
 		"required":   []any{},

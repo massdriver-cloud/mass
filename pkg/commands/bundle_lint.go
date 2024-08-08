@@ -29,7 +29,7 @@ func LintBundle(b *bundle.Bundle) error {
 		return err
 	}
 
-	err = b.LintParamsMatchVariables()
+	err = b.LintInputsMatchProvisioner()
 	if err != nil {
 		return err
 	}

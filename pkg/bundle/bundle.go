@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,6 +11,11 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 )
+
+//go:embed schemas/metadata-schema.json
+var embedFS embed.FS
+
+var MetadataSchema = parseMetadataSchema()
 
 const (
 	ParamsFile = "_params.auto.tfvars.json"
@@ -172,4 +178,19 @@ func ApplyAppBlockDefaults(b *Bundle) {
 			b.AppSpec.Secrets = map[string]Secret{}
 		}
 	}
+}
+
+func parseMetadataSchema() map[string]interface{} {
+	metadataBytes, err := embedFS.ReadFile("schemas/metadata-schema.json")
+	if err != nil {
+		return nil
+	}
+
+	var metadata map[string]interface{}
+	err = json.Unmarshal(metadataBytes, &metadata)
+	if err != nil {
+		return nil
+	}
+
+	return metadata
 }
