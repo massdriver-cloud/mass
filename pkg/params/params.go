@@ -1,6 +1,7 @@
 package params
 
 import (
+	"github.com/massdriver-cloud/airlock/pkg/bicep"
 	"github.com/massdriver-cloud/airlock/pkg/helm"
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 	"github.com/massdriver-cloud/airlock/pkg/terraform"
@@ -18,13 +19,18 @@ func GetFromPath(templateName, path string) (string, error) {
 	)
 
 	switch templateName {
-	case "terraform-module":
+	case "terraform-module", "opentofu-module":
 		paramSchema, err = terraform.TfToSchema(path)
 		if err != nil {
 			return "", err
 		}
 	case "helm-chart":
 		paramSchema, err = helm.HelmToSchema(path)
+		if err != nil {
+			return "", err
+		}
+	case "bicep-template":
+		paramSchema, err = bicep.BicepToSchema(path)
 		if err != nil {
 			return "", err
 		}
