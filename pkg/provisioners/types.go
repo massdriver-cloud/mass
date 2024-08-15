@@ -1,26 +1,26 @@
 package provisioners
 
-import (
-	"embed"
-	"encoding/json"
-)
+type Provisioner interface {
+	ExportMassdriverInputs(stepPath string, variables map[string]interface{}) error
+	ReadProvisionerInputs(stepPath string) (map[string]interface{}, error)
+}
 
-//go:embed schemas/metadata-schema.json
-var embedFS embed.FS
-
-var MetadataSchema = parseMetadataSchema()
-
-func parseMetadataSchema() map[string]interface{} {
-	metadataBytes, err := embedFS.ReadFile("schemas/metadata-schema.json")
-	if err != nil {
-		return nil
+func NewProvisioner(provisionerType string) Provisioner {
+	switch provisionerType {
+	case "opentofu", "terraform":
+		return new(OpentofuProvisioner)
+	case "bicep":
+		return new(BicepProvisioner)
+	default:
+		return new(NoopProvisioner)
 	}
+}
 
-	var metadata map[string]interface{}
-	err = json.Unmarshal(metadataBytes, &metadata)
-	if err != nil {
-		return nil
-	}
+type NoopProvisioner struct{}
 
-	return metadata
+func (p *NoopProvisioner) ExportMassdriverInputs(_ string, _ map[string]interface{}) error {
+	return nil
+}
+func (p *NoopProvisioner) ReadProvisionerInputs(_ string) (map[string]interface{}, error) {
+	return nil, nil
 }
