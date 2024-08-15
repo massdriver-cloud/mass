@@ -127,7 +127,7 @@ func getTemplate(t *templatecache.TemplateData) error {
 	t.TemplateName = result
 
 	// "helm-chart" doesn't exist yet but seems like the right thing to call the template
-	if result == "terraform-module" || result == "helm-chart" {
+	if result == "terraform-module" || result == "opentofu-module" || result == "helm-chart" || result == "bicep-template" {
 		paramPath, paramsErr := getExistingParamsPath(result)
 		if paramsErr != nil {
 			return paramsErr
