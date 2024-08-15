@@ -10,16 +10,23 @@ func FindMissingFromAirlock(mdParamsSchema map[string]any, airlockParams *schema
 	mdProperties := map[string]any{}
 	mdRequired := []any{}
 
+	var ok bool
 	if _, exists := mdParamsSchema["properties"]; exists {
-		mdProperties = mdParamsSchema["properties"].(map[string]any)
+		mdProperties, ok = mdParamsSchema["properties"].(map[string]any)
+		if !ok {
+			return nil
+		}
 	}
 	if _, exists := mdParamsSchema["required"]; exists {
-		mdRequired = mdParamsSchema["required"].([]any)
+		mdRequired, ok = mdParamsSchema["required"].([]any)
+		if !ok {
+			return nil
+		}
 	}
 
 	airlockParamsNames := []string{}
-	for tfvar := airlockParams.Properties.Oldest(); tfvar != nil; tfvar = tfvar.Next() {
-		airlockParamsNames = append(airlockParamsNames, tfvar.Key)
+	for airlockParam := airlockParams.Properties.Oldest(); airlockParam != nil; airlockParam = airlockParam.Next() {
+		airlockParamsNames = append(airlockParamsNames, airlockParam.Key)
 	}
 
 	missingProperties := map[string]any{}

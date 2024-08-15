@@ -18,9 +18,9 @@ func NewProvisioner(provisionerType string) Provisioner {
 
 type NoopProvisioner struct{}
 
-func (p *NoopProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]interface{}) error {
+func (p *NoopProvisioner) ExportMassdriverInputs(_ string, _ map[string]interface{}) error {
 	return nil
 }
-func (p *NoopProvisioner) ReadProvisionerInputs(stepPath string) (map[string]interface{}, error) {
+func (p *NoopProvisioner) ReadProvisionerInputs(_ string) (map[string]interface{}, error) {
 	return nil, nil
 }

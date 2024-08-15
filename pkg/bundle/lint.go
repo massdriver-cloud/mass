@@ -196,7 +196,10 @@ func matchRequired(input map[string]interface{}) error {
 
 func (b *Bundle) LintInputsMatchProvisioner() error {
 	massdriverInputs := b.CombineParamsConnsMetadata()
-	massdriverInputsProperties := massdriverInputs["properties"].(map[string]interface{})
+	massdriverInputsProperties, ok := massdriverInputs["properties"].(map[string]interface{})
+	if !ok {
+		return errors.New("enabled to convert to map[string]interface")
+	}
 	for _, step := range b.Steps {
 		prov := provisioners.NewProvisioner(step.Provisioner)
 		provisionerInputs, err := prov.ReadProvisionerInputs(step.Path)
@@ -215,14 +218,14 @@ func (b *Bundle) LintInputsMatchProvisioner() error {
 
 		missingProvisionerInputs := []string{}
 		for name := range massdriverInputsProperties {
-			if _, exists := provisionerInputsProperties[name]; !exists {
+			if _, exists = provisionerInputsProperties[name]; !exists {
 				missingProvisionerInputs = append(missingProvisionerInputs, name)
 			}
 		}
 
 		missingMassdriverInputs := []string{}
 		for name := range provisionerInputsProperties {
-			if _, exists := massdriverInputsProperties[name]; !exists {
+			if _, exists = massdriverInputsProperties[name]; !exists {
 				missingMassdriverInputs = append(missingMassdriverInputs, name)
 			}
 		}

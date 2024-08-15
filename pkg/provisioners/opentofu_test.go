@@ -88,16 +88,16 @@ variable "bar" {
 
 			expectedFilepath := path.Join(testDir, "_massdriver_variables.tf")
 			if len(tc.want) > 0 {
-				got, err := os.ReadFile(expectedFilepath)
-				if err != nil {
-					t.Fatalf("%d, unexpected error", err)
+				got, readErr := os.ReadFile(expectedFilepath)
+				if readErr != nil {
+					t.Fatalf("%d, unexpected error", readErr)
 				}
 
 				if string(got) != tc.want {
 					t.Errorf("got %s want %s", got, tc.want)
 				}
 			} else {
-				if _, err := os.Stat(expectedFilepath); !errors.Is(err, os.ErrNotExist) {
+				if _, statErr := os.Stat(expectedFilepath); !errors.Is(statErr, os.ErrNotExist) {
 					t.Fatalf("file exists when it shouldn't")
 				}
 			}

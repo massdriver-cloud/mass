@@ -7,7 +7,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 )
 
-var md_metadata_map = map[string]interface{}{
+var mdMetadataMap = map[string]interface{}{
 	"properties": map[string]interface{}{
 		"default_tags": map[string]interface{}{
 			"properties": map[string]interface{}{
@@ -92,7 +92,7 @@ func TestCombineParamsConnsMetadata(t *testing.T) {
 					"conn": map[string]interface{}{
 						"type": "string",
 					},
-					"md_metadata": md_metadata_map,
+					"md_metadata": mdMetadataMap,
 				},
 			},
 		},
