@@ -3,6 +3,7 @@ package provisioners
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path"
 
@@ -68,4 +69,33 @@ func (p *OpentofuProvisioner) ReadProvisionerInputs(stepPath string) (map[string
 	}
 
 	return variables, nil
+}
+
+func (p *OpentofuProvisioner) InitializeStep(stepPath string, sourcePath string) error {
+	pathInfo, statErr := os.Stat(sourcePath)
+	if statErr != nil {
+		return statErr
+	}
+	if !pathInfo.IsDir() {
+		return errors.New("path is not a directory, cannot initialize")
+	}
+
+	// remove the dummy main.tf if we are copying from a source
+	maintfPath := path.Join(stepPath, "main.tf")
+	if _, maintfErr := os.Stat(maintfPath); maintfErr == nil {
+		err := os.Remove(maintfPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	// intentionally not ignoring the .terraform.lock.hcl file since it should be copied
+	ignorePatterns := []string{
+		".terraform",
+		"*.tfstate",
+		"*.tfstate.backup",
+		"*.tfvars",
+		"*.tfvars.json",
+	}
+	return copyDir(sourcePath, stepPath, ignorePatterns)
 }
