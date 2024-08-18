@@ -46,7 +46,6 @@ func copyDir(src string, dst string, ignorePatterns []string) error {
 		srcPath := filepath.Join(src, entry.Name())
 		dstPath := filepath.Join(dst, entry.Name())
 
-		// Check if the entry matches any of the ignore patterns.
 		if shouldIgnore(srcPath, ignorePatterns) {
 			continue
 		}
