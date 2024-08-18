@@ -178,7 +178,6 @@ func TestOpentofuInitializeStep(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			testDir := t.TempDir()
 
-			// Create an empty file
 			_, createErr := os.Create(path.Join(testDir, "main.tf"))
 			if createErr != nil {
 				t.Fatalf("unexpected error: %s", createErr)
