@@ -202,7 +202,7 @@ func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	unmarshalledBundle, err := bundle.UnmarshalandApplyDefaults(h.bundleDir)
+	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(h.bundleDir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

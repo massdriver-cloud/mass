@@ -246,7 +246,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	unmarshalledBundle, err := bundle.UnmarshalandApplyDefaults(buildDirectory)
+	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(buildDirectory)
 	if err != nil {
 		return err
 	}
@@ -267,7 +267,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	unmarshalledBundle, err := bundle.UnmarshalandApplyDefaults(buildDirectory)
+	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(buildDirectory)
 	if err != nil {
 		return err
 	}
@@ -293,7 +293,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	unmarshalledBundle, err := bundle.UnmarshalandApplyDefaults(buildDirectory)
+	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(buildDirectory)
 	if err != nil {
 		return err
 	}
