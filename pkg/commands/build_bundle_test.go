@@ -136,7 +136,8 @@ var expectedSchemaContents = map[string][]byte{
 }
 
 var expectedTFContent = map[string][]byte{
-	"_connections_variables.tf": []byte(`variable "draft_node_foo" {
+	"_massdriver_variables.tf": []byte(`// Auto-generated variable declarations from massdriver.yaml
+variable "draft_node_foo" {
   type = object({
     foo = optional(object({
       infrastructure = optional(object({
@@ -145,8 +146,14 @@ var expectedTFContent = map[string][]byte{
     }))
   })
 }
-`),
-	"_md_variables.tf": []byte(`variable "md_metadata" {
+variable "foo" {
+  type = object({
+    bar = number
+    qux = optional(number)
+  })
+  default = null
+}
+variable "md_metadata" {
   type = object({
     default_tags = object({
       managed-by  = string
@@ -173,14 +180,6 @@ var expectedTFContent = map[string][]byte{
     })
   })
 }
-`),
-	"_params_variables.tf": []byte(`variable "foo" {
-  type = object({
-    bar = number
-    qux = optional(number)
-  })
-  default = null
-}
 variable "resource_name" {
   type    = string
   default = null
@@ -189,38 +188,6 @@ variable "resource_type" {
   type = string
 }
 `),
-	"_params.auto.tfvars.json": []byte(`{
-    "foo": {
-        "bar": 1,
-        "qux": 2
-    },
-    "md_metadata": {
-        "default_tags": {
-            "md-manifest": "draft-node",
-            "md-package": "local-dev-draft-node-000",
-            "md-project": "local",
-            "md-target": "dev"
-        },
-        "deployment": {
-            "id": "local-dev-id"
-        },
-        "name_prefix": "local-dev-draft-node-000",
-        "observability": {
-            "alarm_webhook_url": "https://placeholder.com"
-        }
-    },
-    "resource_name": "REPLACE ME",
-    "resource_type": "Network"
-}`),
-	"_connections.auto.tfvars.json": []byte(`{
-    "draft_node_foo": {
-        "foo": {
-            "infrastructure": {
-                "arn": "REPLACE ME"
-            }
-        }
-    }
-}`),
 }
 
 func TestBundleBuildSchemas(t *testing.T) {

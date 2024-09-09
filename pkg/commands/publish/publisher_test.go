@@ -241,7 +241,7 @@ func TestArchive(t *testing.T) {
 		Steps: []bundle.Step{
 			{
 				Path:        "deploy",
-				Provisioner: "terraform",
+				Provisioner: "opentofu",
 			},
 		},
 		Artifacts: map[string]interface{}{

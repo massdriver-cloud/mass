@@ -260,7 +260,7 @@ func TestLintEnvs(t *testing.T) {
 	}
 }
 
-func TestLintParamsMatchVariables(t *testing.T) {
+func TestLintInputsMatchProvisioner(t *testing.T) {
 	{
 		type test struct {
 			name string
@@ -278,7 +278,7 @@ func TestLintParamsMatchVariables(t *testing.T) {
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lintmodule",
-						Provisioner: "terraform",
+						Provisioner: "opentofu",
 					}},
 					Params: &bundle.Schema{
 						Properties: map[string]*bundle.Schema{
@@ -301,7 +301,7 @@ func TestLintParamsMatchVariables(t *testing.T) {
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lintmodule",
-						Provisioner: "terraform",
+						Provisioner: "opentofu",
 					}},
 					Params: &bundle.Schema{
 						Properties: map[string]*bundle.Schema{
@@ -318,7 +318,7 @@ func TestLintParamsMatchVariables(t *testing.T) {
 				},
 				err: nil,
 			}, {
-				name: "Invalid missing param",
+				name: "Invalid missing massdriver input",
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
@@ -326,7 +326,7 @@ func TestLintParamsMatchVariables(t *testing.T) {
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lintmodule",
-						Provisioner: "terraform",
+						Provisioner: "opentofu",
 					}},
 					Params: &bundle.Schema{
 						Properties: map[string]*bundle.Schema{
@@ -337,11 +337,11 @@ func TestLintParamsMatchVariables(t *testing.T) {
 					Artifacts:   &bundle.Schema{},
 					UI:          map[string]interface{}{},
 				},
-				err: errors.New(`missing params or variables detected in step testdata/lintmodule:
-	- variable "bar" missing param declaration
+				err: errors.New(`missing inputs detected in step testdata/lintmodule:
+	- input "bar" declared in provisioner but missing massdriver.yaml declaration
 `),
 			}, {
-				name: "Invalid missing variable",
+				name: "Invalid missing provisioner input",
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
@@ -349,7 +349,7 @@ func TestLintParamsMatchVariables(t *testing.T) {
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lintmodule",
-						Provisioner: "terraform",
+						Provisioner: "opentofu",
 					}},
 					Params: &bundle.Schema{
 						Properties: map[string]*bundle.Schema{
@@ -362,15 +362,15 @@ func TestLintParamsMatchVariables(t *testing.T) {
 					Artifacts:   &bundle.Schema{},
 					UI:          map[string]interface{}{},
 				},
-				err: errors.New(`missing params or variables detected in step testdata/lintmodule:
-	- param "baz" missing variable declaration
+				err: errors.New(`missing inputs detected in step testdata/lintmodule:
+	- input "baz" declared in massdriver.yaml but missing provisioner declaration
 `),
 			},
 		}
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				err := tc.bun.LintParamsMatchVariables()
+				err := tc.bun.LintInputsMatchProvisioner()
 				if tc.err != nil {
 					if err == nil {
 						t.Errorf("expected an error, got nil")

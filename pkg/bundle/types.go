@@ -114,3 +114,21 @@ type Schema struct {
 func Ptr[T any](v T) *T {
 	return &v
 }
+
+func (s *Schema) ToMap() map[string]interface{} {
+	b, _ := json.Marshal(s)
+
+	result := map[string]interface{}{}
+	json.Unmarshal(b, result)
+
+	return result
+}
+
+func (s *Schema) FromMap(m map[string]any) error {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(b, s)
+}

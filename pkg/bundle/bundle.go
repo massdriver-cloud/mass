@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,6 +11,11 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 )
+
+//go:embed schemas/metadata-schema.json
+var embedFS embed.FS
+
+var MetadataSchema = parseMetadataSchema()
 
 const (
 	ParamsFile = "_params.auto.tfvars.json"
@@ -24,9 +30,9 @@ func (b *Bundle) GenerateBundlePublishBody(srcDir string) (restclient.PublishPos
 	body.Type = b.Type
 	body.SourceURL = b.SourceURL
 	body.Access = b.Access
-	body.ArtifactsSchema = b.Artifacts
-	body.ConnectionsSchema = b.Connections
-	body.ParamsSchema = b.Params
+	body.ArtifactsSchema = b.Artifacts.ToMap()
+	body.ConnectionsSchema = b.Connections.ToMap()
+	body.ParamsSchema = b.Params.ToMap()
 	body.UISchema = b.UI
 
 	var appSpec map[string]interface{}
@@ -95,7 +101,7 @@ func Unmarshal(readDirectory string) (*Bundle, error) {
 	return unmarshalledBundle, nil
 }
 
-func UnmarshalandApplyDefaults(readDirectory string) (*Bundle, error) {
+func UnmarshalAndApplyDefaults(readDirectory string) (*Bundle, error) {
 	unmarshalledBundle, err := Unmarshal(readDirectory)
 	if err != nil {
 		return nil, err
@@ -142,4 +148,19 @@ func ApplyAppBlockDefaults(b *Bundle) {
 			b.AppSpec.Secrets = map[string]Secret{}
 		}
 	}
+}
+
+func parseMetadataSchema() *Schema {
+	metadataBytes, err := embedFS.ReadFile("schemas/metadata-schema.json")
+	if err != nil {
+		return nil
+	}
+
+	metadata := new(Schema)
+	err = json.Unmarshal(metadataBytes, metadata)
+	if err != nil {
+		return nil
+	}
+
+	return metadata
 }

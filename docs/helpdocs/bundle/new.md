@@ -9,10 +9,10 @@ To get started in interactive mode run `mass bundle new` then follow the prompts
 
 ## Examples with Flags
 
-Create a new bundle using an existing Terraform module to populate params:
+Create a new bundle using an existing OpenTofu module to populate params:
 
 ```shell
-mass bundle new -n foo -o massdriver -t terraform-module -c network=massdriver/vpc -p /path/to/terraform/dir
+mass bundle new -n foo -o massdriver -t opentofu-module -c network=massdriver/vpc -p /path/to/opentofu/dir
 ```
 
 Create a new bundle using an existing Helm chart's values.yaml to populate params:

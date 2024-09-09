@@ -140,7 +140,7 @@ func mockTemplateData(writePath string) *templatecache.TemplateData {
 	return &templatecache.TemplateData{
 		OutputDir:    writePath,
 		Type:         "infrastructure",
-		TemplateName: "terraform",
+		TemplateName: "opentofu",
 		TemplateRepo: "massdriver-cloud/infrastructure-templates",
 		Name:         "aws-dynamodb",
 		Access:       "private",

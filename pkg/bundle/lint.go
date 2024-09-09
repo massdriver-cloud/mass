@@ -6,10 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 
 	"github.com/itchyny/gojq"
-	"github.com/massdriver-cloud/airlock/pkg/terraform"
+	"github.com/massdriver-cloud/mass/pkg/provisioners"
 	"github.com/massdriver-cloud/schema2json"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -176,65 +175,56 @@ func matchRequired(input *Schema) error {
 	return nil
 }
 
-func (b *Bundle) LintParamsMatchVariables() error {
+func (b *Bundle) LintInputsMatchProvisioner() error {
+	massdriverInputs := b.CombineParamsConnsMetadata()
+	massdriverInputsProperties, ok := massdriverInputs["properties"].(map[string]interface{})
+	if !ok {
+		return errors.New("enabled to convert to map[string]interface")
+	}
 	for _, step := range b.Steps {
-		if step.Provisioner == "terraform" || step.Provisioner == "opentofu" {
-			paramsConns := map[string]*Schema{}
-			if b.Params != nil && b.Params.Properties != nil {
-				maps.Copy(paramsConns, b.Params.Properties)
-			}
-			if b.Connections != nil && b.Connections.Properties != nil {
-				maps.Copy(paramsConns, b.Connections.Properties)
-			}
-			paramsConns["md_metadata"] = &Schema{}
+		prov := provisioners.NewProvisioner(step.Provisioner)
+		provisionerInputs, err := prov.ReadProvisionerInputs(step.Path)
+		if err != nil {
+			return err
+		}
+		// If this provisioner doesn't have "ReadProvisionerVariables" implemented, it returns nil
+		if provisionerInputs == nil {
+			return nil
+		}
+		var provisionerInputsProperties map[string]interface{}
+		var exists bool
+		if provisionerInputsProperties, exists = provisionerInputs["properties"].(map[string]interface{}); !exists {
+			provisionerInputsProperties = map[string]interface{}{}
+		}
 
-			tfvars, err := terraform.TfToSchema(step.Path)
-			if err != nil {
-				return err
-			}
-
-			missingTfvars := []string{}
-			for paramName := range paramsConns {
-				match := false
-				for prop := tfvars.Properties.Oldest(); prop != nil; prop = prop.Next() {
-					if paramName == prop.Key {
-						match = true
-						break
-					}
-				}
-				if !match && paramName != "md_metadata" {
-					missingTfvars = append(missingTfvars, paramName)
-				}
-			}
-
-			missingParamsConns := []string{}
-			for prop := tfvars.Properties.Oldest(); prop != nil; prop = prop.Next() {
-				match := false
-				for paramName := range paramsConns {
-					if paramName == prop.Key {
-						match = true
-						break
-					}
-				}
-				if !match {
-					missingParamsConns = append(missingParamsConns, prop.Key)
-				}
-			}
-
-			if len(missingParamsConns) > 0 || len(missingTfvars) > 0 {
-				err := fmt.Sprintf("missing params or variables detected in step %s:\n", step.Path)
-
-				for _, p := range missingParamsConns {
-					err += fmt.Sprintf("\t- variable \"%s\" missing param declaration\n", p)
-				}
-				for _, v := range missingTfvars {
-					err += fmt.Sprintf("\t- param \"%s\" missing variable declaration\n", v)
-				}
-
-				return errors.New(err)
+		missingProvisionerInputs := []string{}
+		for name := range massdriverInputsProperties {
+			if _, exists = provisionerInputsProperties[name]; !exists {
+				missingProvisionerInputs = append(missingProvisionerInputs, name)
 			}
 		}
+
+		missingMassdriverInputs := []string{}
+		for name := range provisionerInputsProperties {
+			if _, exists = massdriverInputsProperties[name]; !exists {
+				missingMassdriverInputs = append(missingMassdriverInputs, name)
+			}
+		}
+
+		if len(missingMassdriverInputs) > 0 || len(missingProvisionerInputs) > 0 {
+			err := fmt.Sprintf("missing inputs detected in step %s:\n", step.Path)
+
+			for _, p := range missingMassdriverInputs {
+				err += fmt.Sprintf("\t- input \"%s\" declared in provisioner but missing massdriver.yaml declaration\n", p)
+			}
+			for _, v := range missingProvisionerInputs {
+				err += fmt.Sprintf("\t- input \"%s\" declared in massdriver.yaml but missing provisioner declaration\n", v)
+			}
+
+			return errors.New(err)
+		}
 	}
+	// }
 
 	return nil
 }

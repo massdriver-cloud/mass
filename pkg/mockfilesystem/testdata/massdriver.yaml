@@ -7,7 +7,7 @@ type: bundle
 
 steps:
   - path: src
-    provisioner: terraform
+    provisioner: opentofu
 
 params:
   examples:
