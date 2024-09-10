@@ -3,6 +3,7 @@ package provisioners
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path"
 
@@ -67,4 +68,16 @@ func (p *BicepProvisioner) ReadProvisionerInputs(stepPath string) (map[string]in
 	}
 
 	return variables, nil
+}
+
+func (p *BicepProvisioner) InitializeStep(stepPath string, sourcePath string) error {
+	pathInfo, statErr := os.Stat(sourcePath)
+	if statErr != nil {
+		return statErr
+	}
+	if pathInfo.IsDir() {
+		return errors.New("path is a directory not a bicep template")
+	}
+
+	return copyFile(sourcePath, path.Join(stepPath, "template.bicep"))
 }

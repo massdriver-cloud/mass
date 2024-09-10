@@ -136,7 +136,7 @@ func Unmarshal(readDirectory string) (*Bundle, error) {
 	return unmarshalledBundle, nil
 }
 
-func UnmarshalandApplyDefaults(readDirectory string) (*Bundle, error) {
+func UnmarshalAndApplyDefaults(readDirectory string) (*Bundle, error) {
 	unmarshalledBundle, err := Unmarshal(readDirectory)
 	if err != nil {
 		return nil, err

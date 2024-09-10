@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
@@ -151,6 +152,56 @@ func TestOpentofuReadProvisionerInputs(t *testing.T) {
 
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("want %v got %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestOpentofuInitializeStep(t *testing.T) {
+	type test struct {
+		name       string
+		modulePath string
+		want       []string
+	}
+	tests := []test{
+		{
+			name:       "same",
+			modulePath: "testdata/opentofu/initializetest",
+			want: []string{
+				"foo.tf",
+				".terraform.lock.hcl",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testDir := t.TempDir()
+
+			_, createErr := os.Create(path.Join(testDir, "main.tf"))
+			if createErr != nil {
+				t.Fatalf("unexpected error: %s", createErr)
+				return
+			}
+
+			prov := provisioners.OpentofuProvisioner{}
+			initErr := prov.InitializeStep(testDir, tc.modulePath)
+			if initErr != nil {
+				t.Fatalf("unexpected error: %s", initErr)
+			}
+
+			got, gotErr := os.ReadDir(testDir)
+			if gotErr != nil {
+				t.Fatalf("unexpected error: %s", gotErr)
+			}
+
+			if len(got) != len(tc.want) {
+				t.Errorf("want %v got %v", got, tc.want)
+			}
+			for _, curr := range got {
+				if !slices.Contains(tc.want, curr.Name()) {
+					t.Errorf("%v doesn't exist in %v", curr.Name(), tc.want)
+				}
 			}
 		})
 	}
