@@ -15,6 +15,8 @@ import (
 )
 
 func ImportParams(buildPath string, skipVerify bool) error {
+	fmt.Println("Checking IaC for missing parameters...")
+
 	b := bundle.Bundle{}
 	var node yaml3.Node
 
@@ -49,6 +51,11 @@ func ImportParams(buildPath string, skipVerify bool) error {
 		if verifyError != nil {
 			return verifyError
 		}
+	}
+
+	if len(missing["properties"].(map[string]any)) == 0 {
+		fmt.Println("No missing parameters found.")
+		return nil
 	}
 
 	var encodedMissing yaml3.Node
@@ -116,6 +123,8 @@ func ImportParams(buildPath string, skipVerify bool) error {
 		return writeErr
 	}
 
+	fmt.Println("Updated massdriver.yaml with missing parameters.")
+
 	return nil
 }
 
@@ -137,7 +146,7 @@ func verifyImport(params map[string]any) (map[string]any, error) {
 
 	for paramName := range missingProperties {
 		prompt := promptui.Prompt{
-			Label:     "Would you like to import the parameter \"" + paramName + "\"?",
+			Label:     "Would you like to import the parameter \"" + paramName + "\"",
 			Default:   "y",
 			IsConfirm: true,
 		}
