@@ -17,22 +17,22 @@ import (
 func ImportParams(buildPath string, skipVerify bool) error {
 	fmt.Println("Checking IaC for missing parameters...")
 
-	b := bundle.Bundle{}
-	var node yaml3.Node
-
 	mdYamlPath := path.Join(buildPath, "massdriver.yaml")
 	fileBytes, readErr := os.ReadFile(mdYamlPath)
 	if readErr != nil {
 		return readErr
 	}
 
+	// unmarshaling into a yaml3.Node to maintain ordering, format and comments (for rewriting)
+	var node yaml3.Node
 	unmashalNodeErr := yaml3.Unmarshal(fileBytes, &node)
 	if unmashalNodeErr != nil {
 		return unmashalNodeErr
 	}
-	unmarshalBundleErr := yaml3.Unmarshal(fileBytes, &b)
-	if unmarshalBundleErr != nil {
-		return unmarshalBundleErr
+	// unmarshaling into a bundle to access fields
+	b, err := bundle.UnmarshalAndApplyDefaults(buildPath)
+	if err != nil {
+		return err
 	}
 
 	missing := map[string]any{}
@@ -69,6 +69,7 @@ func ImportParams(buildPath string, skipVerify bool) error {
 		iiNodeName := node.Content[0].Content[ii]
 		if iiNodeName.Value == "params" {
 			paramsNodeValue = node.Content[0].Content[ii+1]
+			paramsNodeValue.Style = 0
 			for jj := 0; jj < len(paramsNodeValue.Content); jj += 2 {
 				jjNodeName := paramsNodeValue.Content[jj]
 				if jjNodeName.Value == "properties" {
@@ -87,7 +88,7 @@ func ImportParams(buildPath string, skipVerify bool) error {
 	if paramsNodePropertiesNodeValue == nil {
 		paramsNodePropertiesNodeValue = &yaml3.Node{
 			Kind:  yaml3.MappingNode,
-			Style: yaml3.FlowStyle,
+			Style: 0,
 		}
 		paramsNodeValue.Content = append(paramsNodeValue.Content, &yaml3.Node{Kind: yaml3.ScalarNode, Value: "properties", Style: 0}, paramsNodePropertiesNodeValue)
 	}
@@ -98,18 +99,21 @@ func ImportParams(buildPath string, skipVerify bool) error {
 		paramsNodeValue.Content = append(paramsNodeValue.Content, &yaml3.Node{Kind: yaml3.ScalarNode, Value: "required", Style: 0}, paramsNodeRequiredNodeValue)
 	}
 
+	// Convert the missing properties and required to yaml3.Nodes
 	var missingPropertiesNodeValue *yaml3.Node
 	var missingRequiredNodeValue *yaml3.Node
 	for kk := 0; kk < len(encodedMissing.Content); kk += 2 {
 		kkNodeName := encodedMissing.Content[kk]
 		if kkNodeName.Value == "properties" {
 			missingPropertiesNodeValue = encodedMissing.Content[kk+1]
+			missingPropertiesNodeValue.Style = 0
 		}
 		if kkNodeName.Value == "required" {
 			missingRequiredNodeValue = encodedMissing.Content[kk+1]
 		}
 	}
 
+	// Append the missing properties and required to the existing params node
 	paramsNodePropertiesNodeValue.Content = append(paramsNodePropertiesNodeValue.Content, missingPropertiesNodeValue.Content...)
 	paramsNodeRequiredNodeValue.Content = append(paramsNodeRequiredNodeValue.Content, missingRequiredNodeValue.Content...)
 

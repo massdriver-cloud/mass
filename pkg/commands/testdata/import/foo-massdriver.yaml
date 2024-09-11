@@ -1,0 +1,18 @@
+schema: draft-07
+name: "test-bundle"
+description: "Bundles to test things"
+source_url: github.com/YOUR_NAME_HERE/test-bundle
+access: private
+type: infrastructure
+steps:
+  - path: src
+    provisioner: opentofu
+params:
+  properties:
+    foo:
+      type: string
+  required:
+    - foo
+connections: {}
+artifacts: {}
+ui: {}
