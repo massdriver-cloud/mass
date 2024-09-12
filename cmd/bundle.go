@@ -51,6 +51,7 @@ func NewCmdBundle() *cobra.Command {
 	bundleImportCmd := &cobra.Command{
 		Use:          "import",
 		Short:        "Import declared variables from IaC into massdriver.yaml params",
+		Long:         helpdocs.MustRender("bundle/import"),
 		RunE:         runBundleImport,
 		SilenceUsage: true,
 	}
@@ -70,8 +71,8 @@ func NewCmdBundle() *cobra.Command {
 	bundleNewCmd := &cobra.Command{
 		Use:   "new",
 		Short: "Create a new bundle from a template",
-		Run:   func(cmd *cobra.Command, args []string) { runBundleNew(&bundleNewInput) },
 		Long:  helpdocs.MustRender("bundle/new"),
+		Run:   func(cmd *cobra.Command, args []string) { runBundleNew(&bundleNewInput) },
 	}
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.name, "name", "n", "", "Name of the new bundle")
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.description, "description", "d", "", "Description of the new bundle")
