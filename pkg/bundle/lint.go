@@ -234,10 +234,10 @@ func (b *Bundle) LintInputsMatchProvisioner() error {
 			err := fmt.Sprintf("missing inputs detected in step %s:\n", step.Path)
 
 			for _, p := range missingMassdriverInputs {
-				err += fmt.Sprintf("\t- input \"%s\" declared in provisioner but missing massdriver.yaml declaration\n", p)
+				err += fmt.Sprintf("\t- input \"%s\" declared in IaC but missing massdriver.yaml declaration\n", p)
 			}
 			for _, v := range missingProvisionerInputs {
-				err += fmt.Sprintf("\t- input \"%s\" declared in massdriver.yaml but missing provisioner declaration\n", v)
+				err += fmt.Sprintf("\t- input \"%s\" declared in massdriver.yaml but missing IaC declaration\n", v)
 			}
 
 			return errors.New(err)
