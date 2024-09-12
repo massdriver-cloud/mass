@@ -8,22 +8,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var bicepProvisionerDefaultParams = map[string]interface{}{
-	"required": []string{"provisioner"},
-	"properties": map[string]interface{}{
-		"provisioner": map[string]interface{}{
-			"required": []string{"region"},
-			"properties": map[string]interface{}{
-				"region": map[string]interface{}{
-					"type":        "string",
-					"title":       "Region",
-					"description": "Region to deploy Azure bicep template into",
-				},
-			},
-		},
-	},
-}
-
 func GetFromPath(templateName, path string) (string, error) {
 	if path == "" {
 		return "", nil
