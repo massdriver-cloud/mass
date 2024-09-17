@@ -43,10 +43,20 @@ func NewCmdBundle() *cobra.Command {
 
 	bundleBuildCmd := &cobra.Command{
 		Use:   "build",
-		Short: "Build schemas from massdriver.yaml file",
+		Short: "Build schemas and generate IaC files from massdriver.yaml file",
 		RunE:  runBundleBuild,
 	}
 	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+
+	bundleImportCmd := &cobra.Command{
+		Use:          "import",
+		Short:        "Import declared variables from IaC into massdriver.yaml params",
+		Long:         helpdocs.MustRender("bundle/import"),
+		RunE:         runBundleImport,
+		SilenceUsage: true,
+	}
+	bundleImportCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleImportCmd.Flags().BoolP("all", "a", false, "Import all variables without prompting")
 
 	bundleLintCmd := &cobra.Command{
 		Use:          "lint",
@@ -61,8 +71,8 @@ func NewCmdBundle() *cobra.Command {
 	bundleNewCmd := &cobra.Command{
 		Use:   "new",
 		Short: "Create a new bundle from a template",
-		Run:   func(cmd *cobra.Command, args []string) { runBundleNew(&bundleNewInput) },
 		Long:  helpdocs.MustRender("bundle/new"),
+		Run:   func(cmd *cobra.Command, args []string) { runBundleNew(&bundleNewInput) },
 	}
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.name, "name", "n", "", "Name of the new bundle")
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.description, "description", "d", "", "Description of the new bundle")
@@ -100,6 +110,7 @@ func NewCmdBundle() *cobra.Command {
 	}
 
 	bundleCmd.AddCommand(bundleBuildCmd)
+	bundleCmd.AddCommand(bundleImportCmd)
 	bundleCmd.AddCommand(bundleLintCmd)
 	bundleCmd.AddCommand(bundleNewCmd)
 	bundleCmd.AddCommand(bundlePublishCmd)
@@ -254,6 +265,19 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 	c := restclient.NewClient()
 
 	return commands.BuildBundle(buildDirectory, unmarshalledBundle, c)
+}
+
+func runBundleImport(cmd *cobra.Command, args []string) error {
+	buildDirectory, err := cmd.Flags().GetString("build-directory")
+	if err != nil {
+		return err
+	}
+	skipVerify, err := cmd.Flags().GetBool("all")
+	if err != nil {
+		return err
+	}
+
+	return commands.ImportParams(buildDirectory, skipVerify)
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {

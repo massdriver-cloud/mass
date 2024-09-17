@@ -23,6 +23,7 @@ func (p *NoopProvisioner) ExportMassdriverInputs(string, map[string]interface{})
 	return nil
 }
 func (p *NoopProvisioner) ReadProvisionerInputs(string) (map[string]interface{}, error) {
+	//nolint:nilnil
 	return nil, nil
 }
 func (p *NoopProvisioner) InitializeStep(string, string) error {

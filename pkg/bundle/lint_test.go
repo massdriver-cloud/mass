@@ -336,10 +336,10 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					UI:          map[string]interface{}{},
 				},
 				err: errors.New(`missing inputs detected in step testdata/lintmodule:
-	- input "bar" declared in provisioner but missing massdriver.yaml declaration
+	- input "bar" declared in IaC but missing massdriver.yaml declaration
 `),
 			}, {
-				name: "Invalid missing provisioner input",
+				name: "Invalid missing IaC input",
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
@@ -361,7 +361,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					UI:          map[string]interface{}{},
 				},
 				err: errors.New(`missing inputs detected in step testdata/lintmodule:
-	- input "baz" declared in massdriver.yaml but missing provisioner declaration
+	- input "baz" declared in massdriver.yaml but missing IaC declaration
 `),
 			},
 		}
