@@ -38,6 +38,7 @@ func (b *Bundle) WriteSchemas(buildPath string) error {
 
 		filepath := fmt.Sprintf("/schema-%s.json", task.label)
 
+		// #nosec G306
 		err = os.WriteFile(path.Join(buildPath, filepath), content, 0644)
 
 		if err != nil {

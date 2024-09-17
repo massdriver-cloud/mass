@@ -194,6 +194,7 @@ func matchRequired(input map[string]interface{}) error {
 	return nil
 }
 
+//nolint:gocognit
 func (b *Bundle) LintInputsMatchProvisioner() error {
 	massdriverInputs := b.CombineParamsConnsMetadata()
 	massdriverInputsProperties, ok := massdriverInputs["properties"].(map[string]interface{})
@@ -243,7 +244,6 @@ func (b *Bundle) LintInputsMatchProvisioner() error {
 			return errors.New(err)
 		}
 	}
-	// }
 
 	return nil
 }

@@ -37,9 +37,9 @@ func copyFile(src, dst string) error {
 // CopyDir copies a whole directory recursively from src to dst,
 // ignoring files and directories that match any of the ignore patterns.
 func copyDir(src string, dst string, ignorePatterns []string) error {
-	entries, err := os.ReadDir(src)
-	if err != nil {
-		return err
+	entries, readErr := os.ReadDir(src)
+	if readErr != nil {
+		return readErr
 	}
 
 	for _, entry := range entries {

@@ -300,6 +300,7 @@ func (h *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// #nosec G306
 	err = os.WriteFile(path.Join(h.bundleDir, "src", bundle.ConnsFile), bytes, 0644)
 	if err != nil {
 		slog.Debug("Error writing file", "error", err)

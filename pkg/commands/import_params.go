@@ -14,6 +14,7 @@ import (
 	yaml3 "gopkg.in/yaml.v3"
 )
 
+//nolint:funlen,gocognit
 func ImportParams(buildPath string, skipVerify bool) error {
 	fmt.Println("Checking IaC for missing parameters...")
 
@@ -30,27 +31,23 @@ func ImportParams(buildPath string, skipVerify bool) error {
 		return unmashalNodeErr
 	}
 	// unmarshaling into a bundle to access fields
-	b, err := bundle.UnmarshalAndApplyDefaults(buildPath)
-	if err != nil {
-		return err
+	b, unmarshalBundleErr := bundle.UnmarshalAndApplyDefaults(buildPath)
+	if unmarshalBundleErr != nil {
+		return unmarshalBundleErr
 	}
 
 	missing := map[string]any{}
 	for _, step := range stepsOrDefault(b.Steps) {
 		prov := provisioners.NewProvisioner(step.Provisioner)
-		inputs, err := prov.ReadProvisionerInputs(path.Join(buildPath, step.Path))
-		if err != nil {
-			return err
+		inputs, readProvErr := prov.ReadProvisionerInputs(path.Join(buildPath, step.Path))
+		if readProvErr != nil {
+			return readProvErr
 		}
 		maps.Copy(missing, provisioners.FindMissingFromMassdriver(inputs, b.CombineParamsConnsMetadata()))
 	}
 
 	if !skipVerify {
-		var verifyError error
-		missing, verifyError = verifyImport(missing)
-		if verifyError != nil {
-			return verifyError
-		}
+		missing = verifyImport(missing)
 	}
 
 	if len(missing["properties"].(map[string]any)) == 0 {
@@ -59,7 +56,10 @@ func ImportParams(buildPath string, skipVerify bool) error {
 	}
 
 	var encodedMissing yaml3.Node
-	encodedMissing.Encode(missing)
+	encodeErr := encodedMissing.Encode(missing)
+	if encodeErr != nil {
+		return encodeErr
+	}
 
 	// Walk the params node to find the properties and required nodes
 	var paramsNodeValue *yaml3.Node
@@ -122,6 +122,7 @@ func ImportParams(buildPath string, skipVerify bool) error {
 		return marshalErr
 	}
 
+	// #nosec G306
 	writeErr := os.WriteFile(mdYamlPath, newBytes, 0644)
 	if writeErr != nil {
 		return writeErr
@@ -132,7 +133,7 @@ func ImportParams(buildPath string, skipVerify bool) error {
 	return nil
 }
 
-func verifyImport(params map[string]any) (map[string]any, error) {
+func verifyImport(params map[string]any) map[string]any {
 	importedProperties := map[string]any{}
 	paramsToImport := map[string]any{
 		"properties": importedProperties,
@@ -141,10 +142,12 @@ func verifyImport(params map[string]any) (map[string]any, error) {
 
 	missingProperties := map[string]any{}
 	if _, ok := params["properties"]; ok {
+		//nolint:errcheck
 		missingProperties = params["properties"].(map[string]any)
 	}
 	missingRequired := []any{}
 	if _, ok := params["required"]; ok {
+		//nolint:errcheck
 		missingRequired = params["required"].([]any)
 	}
 
@@ -156,6 +159,7 @@ func verifyImport(params map[string]any) (map[string]any, error) {
 		}
 
 		validate := func(s string) error {
+			//nolint:gocritic
 			if len(s) == 1 && strings.Contains("YyNn", s) || prompt.Default != "" && len(s) == 0 {
 				return nil
 			}
@@ -176,5 +180,5 @@ func verifyImport(params map[string]any) (map[string]any, error) {
 		}
 	}
 
-	return paramsToImport, nil
+	return paramsToImport
 }

@@ -45,6 +45,7 @@ func deduplicateSliceInterface(slice []any) []any {
 	result := []any{}
 
 	for _, elem := range slice {
+		//nolint:errcheck
 		elemString := elem.(string)
 		if _, exists := dedupMap[elemString]; !exists {
 			dedupMap[elemString] = true

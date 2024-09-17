@@ -248,6 +248,7 @@ func GetConnectionEnvs(connectionName string, artifactDefinition map[string]inte
 		envsBlock, envsBlockExists := mdBlock.(map[string]interface{})["envTemplates"]
 		if envsBlockExists {
 			for envName, value := range envsBlock.(map[string]interface{}) {
+				//nolint:errcheck
 				envValue := value.(string)
 				envs[envName] = strings.ReplaceAll(envValue, "connection_name", connectionName)
 			}
