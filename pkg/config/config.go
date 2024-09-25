@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/sethvargo/go-envconfig"
@@ -33,6 +34,10 @@ func Get() (*Config, error) {
 
 	if c.OrgID == "" {
 		return nil, fmt.Errorf(envvarError, "MASSDRIVER_ORG_ID")
+	}
+	uuidRegex := `^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$`
+	if regexp.MustCompile(uuidRegex).MatchString(c.OrgID) {
+		fmt.Println("WARNING: environment variable MASSDRIVER_ORG_ID is a UUID. This is deprecated and will be removed in a future release. Please use the organization abbreviation instead.")
 	}
 
 	setDefaults(&c)
