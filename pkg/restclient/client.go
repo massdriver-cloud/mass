@@ -33,6 +33,7 @@ type PublishPost struct {
 	UISchema          map[string]interface{} `json:"ui_schema"`
 	OperatorGuide     []byte                 `json:"operator_guide,omitempty"`
 	AppSpec           map[string]interface{} `json:"app,omitempty"`
+	Spec              map[string]interface{} `json:"spec,omitempty"`
 }
 
 type PublishResponse struct {

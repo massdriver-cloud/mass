@@ -71,21 +71,28 @@ func (b *Bundle) GenerateBundlePublishBody(srcDir string) (restclient.PublishPos
 	body.UISchema = b.UI
 
 	var appSpec map[string]interface{}
-
 	marshalledAppSpec, err := json.Marshal(b.AppSpec)
-
 	if err != nil {
 		return restclient.PublishPost{}, err
 	}
-
 	err = json.Unmarshal(marshalledAppSpec, &appSpec)
-
 	if err != nil {
 		fmt.Println(err)
 		return restclient.PublishPost{}, err
 	}
-
 	body.AppSpec = appSpec
+
+	var bundleSpec map[string]interface{}
+	marshalledBundleSpec, err := json.Marshal(b)
+	if err != nil {
+		return restclient.PublishPost{}, err
+	}
+	err = json.Unmarshal(marshalledBundleSpec, &bundleSpec)
+	if err != nil {
+		fmt.Println(err)
+		return restclient.PublishPost{}, err
+	}
+	body.Spec = bundleSpec
 
 	err = checkForOperatorGuideAndSetValue(srcDir, &body)
 
@@ -97,7 +104,6 @@ func (b *Bundle) GenerateBundlePublishBody(srcDir string) (restclient.PublishPos
 }
 
 func (b *Bundle) IsInfrastructure() bool {
-	// a Deprecation warning is printed in the bundle parse function
 	return b.Type == "bundle" || b.Type == "infrastructure"
 }
 
