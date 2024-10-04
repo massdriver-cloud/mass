@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/pkg/files"
+	"github.com/massdriver-cloud/mass/pkg/prettylogs"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 )
 
@@ -152,6 +153,8 @@ func UnmarshalAndApplyDefaults(readDirectory string) (*Bundle, error) {
 		ApplyAppBlockDefaults(unmarshalledBundle)
 	}
 
+	applyStepDefaults(unmarshalledBundle)
+
 	// This looks weird but we have to be careful we don't overwrite things that do exist in the bundle file
 	if unmarshalledBundle.Connections == nil {
 		unmarshalledBundle.Connections = make(map[string]any)
@@ -183,6 +186,17 @@ func ApplyAppBlockDefaults(b *Bundle) {
 		if b.AppSpec.Secrets == nil {
 			b.AppSpec.Secrets = map[string]Secret{}
 		}
+	}
+}
+
+func applyStepDefaults(b *Bundle) {
+	if b.Steps == nil || len(b.Steps) == 0 {
+		msg := fmt.Sprintf(`%s: No steps defined in massdriver.yaml, defaulting to Terraform provisioner. This will be deprecated in a future release. To avoid this warning, please add the following to massdriver.yaml:
+steps:
+    path: src
+    provisioner: terraform`, prettylogs.Orange("Warning"))
+		fmt.Println(msg + "\n")
+		b.Steps = append(b.Steps, Step{Path: "src", Provisioner: "terraform"})
 	}
 }
 
