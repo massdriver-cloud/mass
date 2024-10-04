@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/pkg/files"
+	"github.com/massdriver-cloud/mass/pkg/prettylogs"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 )
 
@@ -71,21 +72,28 @@ func (b *Bundle) GenerateBundlePublishBody(srcDir string) (restclient.PublishPos
 	body.UISchema = b.UI
 
 	var appSpec map[string]interface{}
-
 	marshalledAppSpec, err := json.Marshal(b.AppSpec)
-
 	if err != nil {
 		return restclient.PublishPost{}, err
 	}
-
 	err = json.Unmarshal(marshalledAppSpec, &appSpec)
-
 	if err != nil {
 		fmt.Println(err)
 		return restclient.PublishPost{}, err
 	}
-
 	body.AppSpec = appSpec
+
+	var bundleSpec map[string]interface{}
+	marshalledBundleSpec, err := json.Marshal(b)
+	if err != nil {
+		return restclient.PublishPost{}, err
+	}
+	err = json.Unmarshal(marshalledBundleSpec, &bundleSpec)
+	if err != nil {
+		fmt.Println(err)
+		return restclient.PublishPost{}, err
+	}
+	body.Spec = bundleSpec
 
 	err = checkForOperatorGuideAndSetValue(srcDir, &body)
 
@@ -97,7 +105,6 @@ func (b *Bundle) GenerateBundlePublishBody(srcDir string) (restclient.PublishPos
 }
 
 func (b *Bundle) IsInfrastructure() bool {
-	// a Deprecation warning is printed in the bundle parse function
 	return b.Type == "bundle" || b.Type == "infrastructure"
 }
 
@@ -146,6 +153,8 @@ func UnmarshalAndApplyDefaults(readDirectory string) (*Bundle, error) {
 		ApplyAppBlockDefaults(unmarshalledBundle)
 	}
 
+	applyStepDefaults(unmarshalledBundle)
+
 	// This looks weird but we have to be careful we don't overwrite things that do exist in the bundle file
 	if unmarshalledBundle.Connections == nil {
 		unmarshalledBundle.Connections = make(map[string]any)
@@ -177,6 +186,17 @@ func ApplyAppBlockDefaults(b *Bundle) {
 		if b.AppSpec.Secrets == nil {
 			b.AppSpec.Secrets = map[string]Secret{}
 		}
+	}
+}
+
+func applyStepDefaults(b *Bundle) {
+	if b.Steps == nil || len(b.Steps) == 0 {
+		msg := fmt.Sprintf(`%s: No steps defined in massdriver.yaml, defaulting to Terraform provisioner. This will be deprecated in a future release. To avoid this warning, please add the following to massdriver.yaml:
+steps:
+    path: src
+    provisioner: terraform`, prettylogs.Orange("Warning"))
+		fmt.Println(msg + "\n")
+		b.Steps = append(b.Steps, Step{Path: "src", Provisioner: "terraform"})
 	}
 }
 

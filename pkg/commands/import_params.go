@@ -37,7 +37,7 @@ func ImportParams(buildPath string, skipVerify bool) error {
 	}
 
 	missing := map[string]any{}
-	for _, step := range stepsOrDefault(b.Steps) {
+	for _, step := range b.Steps {
 		prov := provisioners.NewProvisioner(step.Provisioner)
 		inputs, readProvErr := prov.ReadProvisionerInputs(path.Join(buildPath, step.Path))
 		if readProvErr != nil {

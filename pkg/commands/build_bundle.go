@@ -20,7 +20,7 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 	}
 
 	combined := b.CombineParamsConnsMetadata()
-	for _, step := range stepsOrDefault(b.Steps) {
+	for _, step := range b.Steps {
 		prov := provisioners.NewProvisioner(step.Provisioner)
 		err = prov.ExportMassdriverInputs(path.Join(buildPath, step.Path), combined)
 		if err != nil {
@@ -29,14 +29,4 @@ func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverCli
 	}
 
 	return nil
-}
-
-func stepsOrDefault(steps []bundle.Step) []bundle.Step {
-	if steps == nil {
-		return []bundle.Step{
-			{Path: "src", Provisioner: "terraform"},
-		}
-	}
-
-	return steps
 }
