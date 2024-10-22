@@ -193,7 +193,7 @@ func applyStepDefaults(b *Bundle) {
 	if b.Steps == nil || len(b.Steps) == 0 {
 		msg := fmt.Sprintf(`%s: No steps defined in massdriver.yaml, defaulting to Terraform provisioner. This will be deprecated in a future release. To avoid this warning, please add the following to massdriver.yaml:
 steps:
-    path: src
+  - path: src
     provisioner: terraform`, prettylogs.Orange("Warning"))
 		fmt.Println(msg + "\n")
 		b.Steps = append(b.Steps, Step{Path: "src", Provisioner: "terraform"})
