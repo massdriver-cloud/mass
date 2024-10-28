@@ -24,8 +24,9 @@ const (
 )
 
 type Step struct {
-	Path        string `json:"path" yaml:"path"`
-	Provisioner string `json:"provisioner" yaml:"provisioner"`
+	Path         string `json:"path" yaml:"path"`
+	Provisioner  string `json:"provisioner" yaml:"provisioner"`
+	SkipOnDelete bool   `json:"skip_on_delete,omitempty" yaml:"skip_on_delete,omitempty"`
 }
 
 type Bundle struct {
