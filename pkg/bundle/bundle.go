@@ -24,9 +24,10 @@ const (
 )
 
 type Step struct {
-	Path         string `json:"path" yaml:"path"`
-	Provisioner  string `json:"provisioner" yaml:"provisioner"`
-	SkipOnDelete bool   `json:"skip_on_delete,omitempty" yaml:"skip_on_delete,omitempty"`
+	Path         string                 `json:"path" yaml:"path"`
+	Provisioner  string                 `json:"provisioner" yaml:"provisioner"`
+	SkipOnDelete bool                   `json:"skip_on_delete,omitempty" yaml:"skip_on_delete,omitempty"`
+	Config       map[string]interface{} `json:"config,omitempty" yaml:"config,omitempty"`
 }
 
 type Bundle struct {
@@ -39,12 +40,10 @@ type Bundle struct {
 	Steps       []Step                 `json:"steps" yaml:"steps"`
 	Artifacts   map[string]interface{} `json:"artifacts" yaml:"artifacts"`
 	Params      map[string]interface{} `json:"params" yaml:"params"`
-	Connections Connections            `json:"connections" yaml:"connections"`
+	Connections map[string]interface{} `json:"connections" yaml:"connections"`
 	UI          map[string]interface{} `json:"ui" yaml:"ui"`
 	AppSpec     *AppSpec               `json:"app,omitempty" yaml:"app,omitempty"`
 }
-
-type Connections = map[string]any
 
 type AppSpec struct {
 	Envs     map[string]string `json:"envs" yaml:"envs"`

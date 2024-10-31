@@ -164,8 +164,12 @@ func TestPublish(t *testing.T) {
 				Access:      "public",
 				Steps: []bundle.Step{
 					{
-						Path:        "deploy",
-						Provisioner: "opentofu",
+						Path:         "deploy",
+						Provisioner:  "opentofu",
+						SkipOnDelete: true,
+						Config: map[string]interface{}{
+							"foo": "bar",
+						},
 					},
 				},
 				Artifacts: map[string]interface{}{
@@ -197,7 +201,7 @@ func TestPublish(t *testing.T) {
 					},
 				},
 			},
-			wantBody: `{"name":"the-bundle","description":"something","type":"bundle","source_url":"github.com/some-repo","access":"public","artifacts_schema":{"artifacts":"foo"},"connections_schema":{"connections":"bar"},"params_schema":{"params":{"hello":"world"}},"ui_schema":{"ui":"baz"},"operator_guide":"IyBTb21lIE1hcmtkb3duIQo=","app":{"envs":{"LOG_LEVEL":"warn"},"policies":[".connections.vpc.data.infrastructure.arn"],"secrets":{"STRIPE_KEY":{"description":"Access key for live stripe accounts","json":false,"required":true,"title":"A secret"}}},"spec":{"access":"public","app":{"envs":{"LOG_LEVEL":"warn"},"policies":[".connections.vpc.data.infrastructure.arn"],"secrets":{"STRIPE_KEY":{"description":"Access key for live stripe accounts","json":false,"required":true,"title":"A secret"}}},"artifacts":{"artifacts":"foo"},"connections":{"connections":"bar"},"description":"something","name":"the-bundle","params":{"params":{"hello":"world"}},"schema":"","source_url":"github.com/some-repo","steps":[{"path":"deploy","provisioner":"opentofu"}],"type":"bundle","ui":{"ui":"baz"}}}`,
+			wantBody: `{"name":"the-bundle","description":"something","type":"bundle","source_url":"github.com/some-repo","access":"public","artifacts_schema":{"artifacts":"foo"},"connections_schema":{"connections":"bar"},"params_schema":{"params":{"hello":"world"}},"ui_schema":{"ui":"baz"},"operator_guide":"IyBTb21lIE1hcmtkb3duIQo=","app":{"envs":{"LOG_LEVEL":"warn"},"policies":[".connections.vpc.data.infrastructure.arn"],"secrets":{"STRIPE_KEY":{"description":"Access key for live stripe accounts","json":false,"required":true,"title":"A secret"}}},"spec":{"access":"public","app":{"envs":{"LOG_LEVEL":"warn"},"policies":[".connections.vpc.data.infrastructure.arn"],"secrets":{"STRIPE_KEY":{"description":"Access key for live stripe accounts","json":false,"required":true,"title":"A secret"}}},"artifacts":{"artifacts":"foo"},"connections":{"connections":"bar"},"description":"something","name":"the-bundle","params":{"params":{"hello":"world"}},"schema":"","source_url":"github.com/some-repo","steps":[{"config":{"foo":"bar"},"path":"deploy","provisioner":"opentofu","skip_on_delete":true}],"type":"bundle","ui":{"ui":"baz"}}}`,
 		},
 	}
 
