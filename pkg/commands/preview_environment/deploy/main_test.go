@@ -42,7 +42,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 	}
 
 	got := env.URL
-	want := "https://app.massdriver.cloud/projects/projUUID/targets/envUUID"
+	want := "https://app.massdriver.cloud/orgs/faux-org-id/projects/projUUID/targets/envUUID"
 
 	if got != want {
 		t.Errorf("got %s , wanted %s", got, want)
