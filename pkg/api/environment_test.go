@@ -138,7 +138,7 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 	_, err := api.DeployPreviewEnvironment(client, "faux-org-id", "faux-project-id", credentials, packageParams, ciContext)
 
 	if err == nil {
-		t.Error("expected error when   both params and remote references are set, got nil")
+		t.Error("expected error when both params and remote references are set, got nil")
 	}
 
 	expectedError := "package 'network': \"params\" and \"remoteReferences\" are mutually exclusive"
