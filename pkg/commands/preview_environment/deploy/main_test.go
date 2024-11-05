@@ -71,7 +71,9 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 
 		want := map[string]interface{}{
 			"myApp": map[string]interface{}{
-				"hostname": "preview-9000.example.com",
+				"params": map[string]interface{}{
+					"hostname": "preview-9000.example.com",
+				},
 			},
 		}
 
