@@ -44,7 +44,7 @@ type Model struct {
 }
 
 func (m Model) PreviewConfig() *api.PreviewConfig {
-	var credentials []api.Credential
+	credentials := make([]api.Credential, 0) // Initialize with empty slice
 
 	for _, p := range m.prompts {
 		credentials = append(credentials, api.Credential{ArtifactDefinitionType: p.artifactDefinitionName, ArtifactId: p.selection.ID})

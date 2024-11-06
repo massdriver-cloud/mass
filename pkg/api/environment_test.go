@@ -24,14 +24,22 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 		},
 	})
 
-	confMap := map[string]interface{}{
-		"network": map[string]interface{}{
-			"cidr": "10.0.0.0/16",
+	credentials := []api.Credential{}
+
+	packageParams := map[string]api.PreviewPackage{
+		"network": {
+			Params: map[string]interface{}{
+				"cidr": "10.0.0.0/16",
+			},
 		},
-		"cluster": map[string]interface{}{
-			"maxNodes": 10,
+
+		"cluster": {
+			Params: map[string]interface{}{
+				"maxNodes": 10,
+			},
 		},
 	}
+
 	ciContext := map[string]interface{}{
 		"pull_request": map[string]interface{}{
 			"title":  "First commit!",
@@ -39,9 +47,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 		},
 	}
 
-	credentials := []api.Credential{}
-
-	environment, err := api.DeployPreviewEnvironment(client, "faux-org-id", "faux-project-id", credentials, confMap, ciContext)
+	environment, err := api.DeployPreviewEnvironment(client, "faux-org-id", "faux-project-id", credentials, packageParams, ciContext)
 
 	if err != nil {
 		t.Fatal(err)
@@ -82,5 +88,61 @@ func TestDecommissionPreviewEnvironment(t *testing.T) {
 
 	if got != want {
 		t.Errorf("got %s , wanted %s", got, want)
+	}
+}
+
+func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) {
+	prNumber := 69
+	slug := fmt.Sprintf("p%d", prNumber)
+
+	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+		"data": map[string]interface{}{
+			"deployPreviewEnvironment": map[string]interface{}{
+				"result": map[string]interface{}{
+					"slug": slug,
+					"id":   "envuuid1",
+				},
+				"successful": true,
+			},
+		},
+	})
+
+	credentials := []api.Credential{}
+
+	packageParams := map[string]api.PreviewPackage{
+		"network": {
+			Params: map[string]interface{}{
+				"cidr": "10.0.0.0/16",
+			},
+			RemoteReferences: []api.RemoteRef{
+				{
+					ArtifactID: "00000000-0000-0000-0000-000000000000",
+					Field:      "some-field",
+				},
+			},
+		},
+		"cluster": {
+			Params: map[string]interface{}{
+				"maxNodes": 9,
+			},
+		},
+	}
+
+	ciContext := map[string]interface{}{
+		"pull_request": map[string]interface{}{
+			"title":  "First commit!",
+			"number": prNumber,
+		},
+	}
+
+	_, err := api.DeployPreviewEnvironment(client, "faux-org-id", "faux-project-id", credentials, packageParams, ciContext)
+
+	if err == nil {
+		t.Error("expected error when both params and remote references are set, got nil")
+	}
+
+	expectedError := "package 'network': \"params\" and \"remoteReferences\" are mutually exclusive"
+	if err.Error() != expectedError {
+		t.Errorf("got error %q, wanted %q", err.Error(), expectedError)
 	}
 }
