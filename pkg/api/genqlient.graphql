@@ -8,11 +8,15 @@ query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
   }
 }
 
+query projects($organizationId: ID!){
+  projects(organizationId: $organizationId){
+    id, name, defaultParams, slug, description
+  }
+}
+
 query getProjectById($organizationId: ID!, $id: ID!) {
   project(organizationId: $organizationId, id: $id) {
-    id
-    defaultParams
-    slug
+    id, name, defaultParams, slug, description
   }
 }
 
