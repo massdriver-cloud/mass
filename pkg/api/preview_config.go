@@ -7,7 +7,7 @@ type PreviewConfig struct {
 }
 
 type PreviewPackage struct {
-	Params           map[string]interface{} `json:"params"`
+	Params           map[string]interface{} `json:"params,omitempty"`
 	Secrets          []Secret               `json:"secrets,omitempty"`
 	RemoteReferences []RemoteRef            `json:"remoteReferences,omitempty"`
 }

@@ -57,7 +57,7 @@ func TestListProjects(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := len(*projects)
+	got := len(projects)
 
 	want := 2
 

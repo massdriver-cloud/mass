@@ -44,10 +44,10 @@ func runProjList(cmd *cobra.Command, args []string) error {
 	projects, err := api.ListProjects(client, config.OrgID)
 
 	w := tabwriter.NewWriter(os.Stdout, 10, 1, 5, ' ', 0)
-	fmt.Fprintln(w, "ID\tNAME\tSLUG")
+	fmt.Fprintln(w, "SLUG\tNAME\tMONTHLY\tDAILY")
 
-	for _, project := range *projects {
-		line := fmt.Sprintf("%s\t%s\t%s", project.ID, project.Name, project.Slug)
+	for _, project := range projects {
+		line := fmt.Sprintf("%s\t%s\t%.2f\t%.2f", project.Slug, project.Name, project.MonthlyAverageCost, project.DailyAverageCost)
 		fmt.Fprintln(w, line)
 	}
 

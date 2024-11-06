@@ -1346,27 +1346,32 @@ func (v *getProjectByIdResponse) GetProject() getProjectByIdProject { return v.P
 
 // projectsProjectsProject includes the requested fields of the GraphQL type Project.
 type projectsProjectsProject struct {
-	Id            string                 `json:"id"`
 	Name          string                 `json:"name"`
-	DefaultParams map[string]interface{} `json:"-"`
+	Id            string                 `json:"id"`
 	Slug          string                 `json:"slug"`
 	Description   string                 `json:"description"`
+	DefaultParams map[string]interface{} `json:"-"`
+	// Cloud provider costs for this project
+	Cost projectsProjectsProjectCost `json:"cost"`
 }
-
-// GetId returns projectsProjectsProject.Id, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProject) GetId() string { return v.Id }
 
 // GetName returns projectsProjectsProject.Name, and is useful for accessing the field via an interface.
 func (v *projectsProjectsProject) GetName() string { return v.Name }
 
-// GetDefaultParams returns projectsProjectsProject.DefaultParams, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProject) GetDefaultParams() map[string]interface{} { return v.DefaultParams }
+// GetId returns projectsProjectsProject.Id, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProject) GetId() string { return v.Id }
 
 // GetSlug returns projectsProjectsProject.Slug, and is useful for accessing the field via an interface.
 func (v *projectsProjectsProject) GetSlug() string { return v.Slug }
 
 // GetDescription returns projectsProjectsProject.Description, and is useful for accessing the field via an interface.
 func (v *projectsProjectsProject) GetDescription() string { return v.Description }
+
+// GetDefaultParams returns projectsProjectsProject.DefaultParams, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProject) GetDefaultParams() map[string]interface{} { return v.DefaultParams }
+
+// GetCost returns projectsProjectsProject.Cost, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProject) GetCost() projectsProjectsProjectCost { return v.Cost }
 
 func (v *projectsProjectsProject) UnmarshalJSON(b []byte) error {
 
@@ -1402,15 +1407,17 @@ func (v *projectsProjectsProject) UnmarshalJSON(b []byte) error {
 }
 
 type __premarshalprojectsProjectsProject struct {
-	Id string `json:"id"`
-
 	Name string `json:"name"`
 
-	DefaultParams json.RawMessage `json:"defaultParams"`
+	Id string `json:"id"`
 
 	Slug string `json:"slug"`
 
 	Description string `json:"description"`
+
+	DefaultParams json.RawMessage `json:"defaultParams"`
+
+	Cost projectsProjectsProjectCost `json:"cost"`
 }
 
 func (v *projectsProjectsProject) MarshalJSON() ([]byte, error) {
@@ -1424,8 +1431,10 @@ func (v *projectsProjectsProject) MarshalJSON() ([]byte, error) {
 func (v *projectsProjectsProject) __premarshalJSON() (*__premarshalprojectsProjectsProject, error) {
 	var retval __premarshalprojectsProjectsProject
 
-	retval.Id = v.Id
 	retval.Name = v.Name
+	retval.Id = v.Id
+	retval.Slug = v.Slug
+	retval.Description = v.Description
 	{
 
 		dst := &retval.DefaultParams
@@ -1438,9 +1447,64 @@ func (v *projectsProjectsProject) __premarshalJSON() (*__premarshalprojectsProje
 				"unable to marshal projectsProjectsProject.DefaultParams: %w", err)
 		}
 	}
-	retval.Slug = v.Slug
-	retval.Description = v.Description
+	retval.Cost = v.Cost
 	return &retval, nil
+}
+
+// projectsProjectsProjectCost includes the requested fields of the GraphQL type Cost.
+type projectsProjectsProjectCost struct {
+	Monthly projectsProjectsProjectCostMonthlySummary `json:"monthly"`
+	Daily   projectsProjectsProjectCostDailySummary   `json:"daily"`
+}
+
+// GetMonthly returns projectsProjectsProjectCost.Monthly, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProjectCost) GetMonthly() projectsProjectsProjectCostMonthlySummary {
+	return v.Monthly
+}
+
+// GetDaily returns projectsProjectsProjectCost.Daily, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProjectCost) GetDaily() projectsProjectsProjectCostDailySummary {
+	return v.Daily
+}
+
+// projectsProjectsProjectCostDailySummary includes the requested fields of the GraphQL type Summary.
+type projectsProjectsProjectCostDailySummary struct {
+	Average projectsProjectsProjectCostDailySummaryAverageCostSample `json:"average"`
+}
+
+// GetAverage returns projectsProjectsProjectCostDailySummary.Average, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProjectCostDailySummary) GetAverage() projectsProjectsProjectCostDailySummaryAverageCostSample {
+	return v.Average
+}
+
+// projectsProjectsProjectCostDailySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+type projectsProjectsProjectCostDailySummaryAverageCostSample struct {
+	Amount float64 `json:"amount"`
+}
+
+// GetAmount returns projectsProjectsProjectCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProjectCostDailySummaryAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// projectsProjectsProjectCostMonthlySummary includes the requested fields of the GraphQL type Summary.
+type projectsProjectsProjectCostMonthlySummary struct {
+	Average projectsProjectsProjectCostMonthlySummaryAverageCostSample `json:"average"`
+}
+
+// GetAverage returns projectsProjectsProjectCostMonthlySummary.Average, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProjectCostMonthlySummary) GetAverage() projectsProjectsProjectCostMonthlySummaryAverageCostSample {
+	return v.Average
+}
+
+// projectsProjectsProjectCostMonthlySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+type projectsProjectsProjectCostMonthlySummaryAverageCostSample struct {
+	Amount float64 `json:"amount"`
+}
+
+// GetAmount returns projectsProjectsProjectCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProjectCostMonthlySummaryAverageCostSample) GetAmount() float64 {
+	return v.Amount
 }
 
 // projectsResponse is returned by projects on success.
@@ -1947,11 +2011,23 @@ func getProjectById(
 const projects_Operation = `
 query projects ($organizationId: ID!) {
 	projects(organizationId: $organizationId) {
-		id
 		name
-		defaultParams
+		id
 		slug
 		description
+		defaultParams
+		cost {
+			monthly {
+				average {
+					amount
+				}
+			}
+			daily {
+				average {
+					amount
+				}
+			}
+		}
 	}
 }
 `

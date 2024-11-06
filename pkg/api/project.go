@@ -9,11 +9,13 @@ import (
 )
 
 type Project struct {
-	ID            string
-	Name          string
-	Slug          string
-	Description   string
-	DefaultParams map[string]interface{}
+	ID                 string
+	Name               string
+	Slug               string
+	Description        string
+	DefaultParams      map[string]interface{}
+	MonthlyAverageCost float64
+	DailyAverageCost   float64
 }
 
 func GetProject(client graphql.Client, orgID string, idOrSlug string) (*Project, error) {
@@ -34,15 +36,17 @@ func (p *getProjectByIdProject) toProject() *Project {
 
 func (p *projectsProjectsProject) toProject() Project {
 	return Project{
-		ID:            p.Id,
-		Slug:          p.Slug,
-		Name:          p.Name,
-		Description:   p.Description,
-		DefaultParams: p.DefaultParams,
+		ID:                 p.Id,
+		Slug:               p.Slug,
+		Name:               p.Name,
+		Description:        p.Description,
+		DefaultParams:      p.DefaultParams,
+		MonthlyAverageCost: p.Cost.Monthly.Average.Amount,
+		DailyAverageCost:   p.Cost.Daily.Average.Amount,
 	}
 }
 
-func ListProjects(client graphql.Client, orgID string) (*[]Project, error) {
+func ListProjects(client graphql.Client, orgID string) ([]Project, error) {
 	response, err := projects(context.Background(), client, orgID)
 	records := []Project{}
 
@@ -50,7 +54,7 @@ func ListProjects(client graphql.Client, orgID string) (*[]Project, error) {
 		records = append(records, prj.toProject())
 	}
 
-	return &records, err
+	return records, err
 }
 
 func (p *Project) GetDefaultParams() map[string]PreviewPackage {
