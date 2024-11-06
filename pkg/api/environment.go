@@ -26,14 +26,14 @@ func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID str
 
 	ctx := context.Background()
 
-	packageParamsJson := make(map[string]interface{})
+	packageParamsJSON := make(map[string]interface{})
 	for k, v := range packageParams {
-		packageParamsJson[k] = v
+		packageParamsJSON[k] = v
 	}
 
 	input := PreviewEnvironmentInput{
 		Credentials:           credentials,
-		PackageConfigurations: packageParamsJson,
+		PackageConfigurations: packageParamsJSON,
 		CiContext:             ciContext,
 	}
 
