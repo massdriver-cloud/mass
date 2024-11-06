@@ -6,7 +6,7 @@ sidebar_label: Mass Bundle Build
 ---
 ## mass bundle build
 
-Build schemas from massdriver.yaml file
+Build schemas and generate IaC files from massdriver.yaml file
 
 ```
 mass bundle build [flags]
