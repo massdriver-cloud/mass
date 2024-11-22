@@ -31,7 +31,7 @@ func (b *Bundle) LintSchema() error {
 		for _, violation := range result.Errors() {
 			errors += fmt.Sprintf("\t- %v\n", violation)
 		}
-		return fmt.Errorf(errors)
+		return fmt.Errorf("%s", errors)
 	}
 	return nil
 }

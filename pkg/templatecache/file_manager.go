@@ -71,7 +71,10 @@ func (f *fileManager) promptAndWrite(template []byte, outputPath string) error {
 	if _, err := os.Stat(outputPath); err == nil && !f.overwriteAll {
 		fmt.Printf("%s exists. Overwrite? (y|N|all): ", outputPath)
 		var response string
-		fmt.Scanln(&response)
+		if _, scanErr := fmt.Scanln(&response); scanErr != nil {
+			fmt.Println("Error reading input:", scanErr)
+			return scanErr
+		}
 
 		if !(response == "y" || response == "Y" || response == "yes" || response == "all") {
 			fmt.Println("keeping existing file")
@@ -92,7 +95,6 @@ func (f *fileManager) renderFile(template []byte) ([]byte, error) {
 	inrec, _ := json.Marshal(f.templateData)
 
 	err := json.Unmarshal(inrec, &bindings)
-
 	if err != nil {
 		return nil, err
 	}
