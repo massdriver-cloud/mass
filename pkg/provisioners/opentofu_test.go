@@ -22,12 +22,12 @@ func TestOpentofuExportMassdriverInputs(t *testing.T) {
 		{
 			name: "same",
 			variables: map[string]interface{}{
-				"required": []interface{}{"foo", "bar"},
+				"required": []interface{}{"bar", "foo"},
 				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
+					"bar": map[string]interface{}{
 						"type": "string",
 					},
-					"bar": map[string]interface{}{
+					"foo": map[string]interface{}{
 						"type": "string",
 					},
 				},
@@ -37,12 +37,12 @@ func TestOpentofuExportMassdriverInputs(t *testing.T) {
 		{
 			name: "missingopentofu",
 			variables: map[string]interface{}{
-				"required": []interface{}{"foo", "bar"},
+				"required": []interface{}{"bar", "foo"},
 				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
+					"bar": map[string]interface{}{
 						"type": "string",
 					},
-					"bar": map[string]interface{}{
+					"foo": map[string]interface{}{
 						"type": "string",
 					},
 				},
@@ -115,14 +115,14 @@ func TestOpentofuReadProvisionerInputs(t *testing.T) {
 		{
 			name: "same",
 			want: map[string]interface{}{
-				"required": []interface{}{"foo", "bar"},
+				"required": []interface{}{"bar", "foo"},
 				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
-						"title": "foo",
-						"type":  "string",
-					},
 					"bar": map[string]interface{}{
 						"title": "bar",
+						"type":  "string",
+					},
+					"foo": map[string]interface{}{
+						"title": "foo",
 						"type":  "string",
 					},
 				},

@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	dockerClient "github.com/docker/docker/client"
@@ -48,7 +47,7 @@ func StartDevelopmentSimulator() error {
 		return err
 	}
 
-	container, err := cli.ContainerCreate(
+	devContainer, err := cli.ContainerCreate(
 		context.Background(),
 		&container.Config{
 			Image:        "massdrivercloud/massdriver-bundle-preview",
@@ -72,13 +71,13 @@ func StartDevelopmentSimulator() error {
 		return err
 	}
 
-	err = cli.ContainerStart(context.Background(), container.ID, types.ContainerStartOptions{})
+	err = cli.ContainerStart(context.Background(), devContainer.ID, container.StartOptions{})
 
 	if err != nil {
 		return err
 	}
 
-	logstream, err := cli.ContainerLogs(context.Background(), container.ID, types.ContainerLogsOptions{
+	logstream, err := cli.ContainerLogs(context.Background(), devContainer.ID, container.LogsOptions{
 		Follow:     true,
 		ShowStdout: true,
 		ShowStderr: true,
@@ -95,7 +94,7 @@ func StartDevelopmentSimulator() error {
 	go func() {
 		<-c
 		logstream.Close()
-		err = cli.ContainerKill(context.Background(), container.ID, "SIGTERM")
+		err = cli.ContainerKill(context.Background(), devContainer.ID, "SIGTERM")
 		if err != nil {
 			os.Exit(1)
 		}

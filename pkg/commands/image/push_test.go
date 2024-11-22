@@ -11,6 +11,7 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/docker/docker/api/types"
+	dockerImage "github.com/docker/docker/api/types/image"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/image"
 )
@@ -32,7 +33,7 @@ func (mockCli) ImageBuild(ctx context.Context, buildContext io.Reader, options t
 	return types.ImageBuildResponse{Body: NopCloser(buffer)}, nil
 }
 
-func (mockCli) ImagePush(ctx context.Context, image string, options types.ImagePushOptions) (io.ReadCloser, error) {
+func (mockCli) ImagePush(ctx context.Context, image string, options dockerImage.PushOptions) (io.ReadCloser, error) {
 	return NopCloser(bytes.NewBuffer(make([]byte, 0))), nil
 }
 

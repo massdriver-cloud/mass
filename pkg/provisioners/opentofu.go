@@ -7,14 +7,14 @@ import (
 	"os"
 	"path"
 
-	"github.com/massdriver-cloud/airlock/pkg/terraform"
+	"github.com/massdriver-cloud/airlock/pkg/opentofu"
 )
 
 type OpentofuProvisioner struct{}
 
 func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]interface{}) error {
 	// read existing OpenTofu variables for this step
-	existingTfvarsSchema, err := terraform.TfToSchema(stepPath)
+	existingTfvarsSchema, err := opentofu.TofuToSchema(stepPath)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables 
 		return marshallErr
 	}
 
-	content, transpileErr := terraform.SchemaToTf(bytes.NewReader(schemaBytes))
+	content, transpileErr := opentofu.SchemaToTofu(bytes.NewReader(schemaBytes))
 	if transpileErr != nil {
 		return transpileErr
 	}
@@ -52,7 +52,7 @@ func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables 
 }
 
 func (p *OpentofuProvisioner) ReadProvisionerInputs(stepPath string) (map[string]interface{}, error) {
-	opentofuVariablesSchema, err := terraform.TfToSchema(stepPath)
+	opentofuVariablesSchema, err := opentofu.TofuToSchema(stepPath)
 	if err != nil {
 		return nil, err
 	}

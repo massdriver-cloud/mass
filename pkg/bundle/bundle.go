@@ -96,7 +96,6 @@ func (b *Bundle) GenerateBundlePublishBody(srcDir string) (restclient.PublishPos
 	body.Spec = bundleSpec
 
 	err = checkForOperatorGuideAndSetValue(srcDir, &body)
-
 	if err != nil {
 		return restclient.PublishPost{}, err
 	}
@@ -117,13 +116,11 @@ func checkForOperatorGuideAndSetValue(path string, body *restclient.PublishPost)
 
 	for _, fileName := range pathsToCheck {
 		_, err := os.Stat(filepath.Join(path, fileName))
-
 		if err != nil {
 			continue
 		}
 
 		content, err := os.ReadFile(filepath.Join(path, fileName))
-
 		if err != nil {
 			return fmt.Errorf("error reading %s", fileName)
 		}
@@ -190,7 +187,7 @@ func ApplyAppBlockDefaults(b *Bundle) {
 }
 
 func applyStepDefaults(b *Bundle) {
-	if b.Steps == nil || len(b.Steps) == 0 {
+	if len(b.Steps) == 0 {
 		msg := fmt.Sprintf(`%s: No steps defined in massdriver.yaml, defaulting to Terraform provisioner. This will be deprecated in a future release. To avoid this warning, please add the following to massdriver.yaml:
 steps:
   - path: src

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/registry"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
@@ -22,7 +23,7 @@ var dockerURIPattern = regexp.MustCompile("[a-zA-Z0-9-_]+.docker.pkg.dev")
 
 type DockerClient interface {
 	ImageBuild(ctx context.Context, buildContext io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error)
-	ImagePush(ctx context.Context, image string, options types.ImagePushOptions) (io.ReadCloser, error)
+	ImagePush(ctx context.Context, image string, options image.PushOptions) (io.ReadCloser, error)
 	ImageTag(ctx context.Context, source, target string) error
 }
 
@@ -99,7 +100,7 @@ func (c *Client) PushImage(input PushImageInput, containerRepository *api.Contai
 		}
 
 		fmt.Println("Pushing image to repository. This may take a few minutes")
-		res, err := c.Cli.ImagePush(ctx, imageFQN, types.ImagePushOptions{RegistryAuth: auth})
+		res, err := c.Cli.ImagePush(ctx, imageFQN, image.PushOptions{RegistryAuth: auth})
 		if err != nil {
 			return err
 		}

@@ -39,13 +39,13 @@ func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 	}
 
 	if errorString, assertion := mockfilesystem.AssertDirectoryContents(testDir, wantTopLevel); assertion != true {
-		t.Errorf(errorString)
+		t.Errorf("%s", errorString)
 	}
 
 	wantSecondLevel := []string{"main.tf"}
 
 	if errorString, assertion := mockfilesystem.AssertDirectoryContents(path.Join(testDir, "src"), wantSecondLevel); assertion != true {
-		t.Errorf(errorString)
+		t.Errorf("%s", errorString)
 	}
 }
 
@@ -75,13 +75,13 @@ func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
 	}
 
 	if errorString, assertion := mockfilesystem.AssertDirectoryContents(writePath, wantTopLevel); assertion != true {
-		t.Errorf(errorString)
+		t.Errorf("%s", errorString)
 	}
 
 	wantSecondLevel := []string{"main.tf"}
 
 	if errorString, assertion := mockfilesystem.AssertDirectoryContents(path.Join(writePath, "src"), wantSecondLevel); assertion != true {
-		t.Errorf(errorString)
+		t.Errorf("%s", errorString)
 	}
 }
 
