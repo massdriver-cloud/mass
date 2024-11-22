@@ -17,9 +17,10 @@ import (
 	"unicode/utf8"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/docker/docker/api/types"
+	"github.com/coder/websocket"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/massdriver-cloud/mass/pkg/server/bundle"
@@ -27,7 +28,6 @@ import (
 	"github.com/moby/moby/pkg/jsonmessage"
 	"github.com/moby/moby/pkg/namesgenerator"
 	"github.com/moby/term"
-	"nhooyr.io/websocket"
 )
 
 const allowedMethods = "OPTIONS, GET, POST"
@@ -71,7 +71,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 
-	var listOpts types.ContainerListOptions
+	var listOpts container.ListOptions
 	if queries.Get("all") == "true" {
 		listOpts.All = true
 	}
@@ -129,7 +129,7 @@ func (h *Handler) StreamLogs(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	reader, err := h.dockerCLI.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{
+	reader, err := h.dockerCLI.ContainerLogs(ctx, containerID, container.LogsOptions{
 		ShowStderr: true,
 		ShowStdout: true,
 		Timestamps: false,
@@ -260,24 +260,24 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	image := "massdrivercloud/local-terraform-provisioner:latest"
+	provImage := "massdrivercloud/local-terraform-provisioner:latest"
 	if payload.Image != "" {
-		image = payload.Image
+		provImage = payload.Image
 	}
 
 	// Allow running of a local image without bombing out trying to pull it
 	// The image string in the payload would be "local/my-dev-image:latest"
-	if strings.HasPrefix(image, "local/") {
-		image = strings.TrimPrefix(image, "local/")
+	if strings.HasPrefix(provImage, "local/") {
+		provImage = strings.TrimPrefix(provImage, "local/")
 	} else {
-		err = h.pullImage(r.Context(), image)
+		err = h.pullImage(r.Context(), provImage)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
 
-	containerID, err := h.runContainer(r.Context(), payload.Action, image)
+	containerID, err := h.runContainer(r.Context(), payload.Action, provImage)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -294,8 +294,8 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) pullImage(ctx context.Context, image string) error {
-	reader, err := h.dockerCLI.ImagePull(ctx, image, types.ImagePullOptions{})
+func (h *Handler) pullImage(ctx context.Context, provImage string) error {
+	reader, err := h.dockerCLI.ImagePull(ctx, provImage, image.PullOptions{})
 	if err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func (h *Handler) pullImage(ctx context.Context, image string) error {
 	return jsonmessage.DisplayJSONMessagesStream(reader, os.Stderr, termFd, isTerm, nil)
 }
 
-func (h *Handler) runContainer(ctx context.Context, action, image string) (string, error) {
+func (h *Handler) runContainer(ctx context.Context, action, provImage string) (string, error) {
 	// TODO: This is aws only at this point
 	envs, err := h.getAWSCreds(ctx)
 	if err != nil {
@@ -318,7 +318,7 @@ func (h *Handler) runContainer(ctx context.Context, action, image string) (strin
 
 	c := &container.Config{
 		Cmd:   strslice.StrSlice{"run.sh", action},
-		Image: image,
+		Image: provImage,
 		Env:   envs,
 		Tty:   true,
 	}
@@ -340,7 +340,7 @@ func (h *Handler) runContainer(ctx context.Context, action, image string) (strin
 		return "", err
 	}
 
-	err = h.dockerCLI.ContainerStart(ctx, response.ID, types.ContainerStartOptions{})
+	err = h.dockerCLI.ContainerStart(ctx, response.ID, container.StartOptions{})
 
 	return response.ID, err
 }
