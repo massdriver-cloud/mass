@@ -3,8 +3,8 @@ package params
 import (
 	"github.com/massdriver-cloud/airlock/pkg/bicep"
 	"github.com/massdriver-cloud/airlock/pkg/helm"
-	"github.com/massdriver-cloud/airlock/pkg/schema"
 	"github.com/massdriver-cloud/airlock/pkg/opentofu"
+	"github.com/massdriver-cloud/airlock/pkg/schema"
 	"sigs.k8s.io/yaml"
 )
 
