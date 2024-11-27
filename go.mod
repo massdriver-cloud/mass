@@ -22,7 +22,7 @@ require (
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/itchyny/gojq v0.12.16
 	github.com/manifoldco/promptui v0.9.0
-	github.com/massdriver-cloud/airlock v0.0.5
+	github.com/massdriver-cloud/airlock v0.0.6
 	github.com/massdriver-cloud/schema2json v0.0.2
 	github.com/moby/moby v27.3.1+incompatible
 	github.com/moby/term v0.5.0
@@ -142,7 +142,7 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
 	github.com/yuin/goldmark-emoji v1.0.4 // indirect
-	github.com/zclconf/go-cty v1.15.0 // indirect
+	github.com/zclconf/go-cty v1.15.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.57.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.19.0 // indirect
