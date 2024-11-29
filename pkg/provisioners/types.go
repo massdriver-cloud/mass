@@ -10,6 +10,8 @@ func NewProvisioner(provisionerType string) Provisioner {
 	switch provisionerType {
 	case "opentofu", "terraform":
 		return new(OpentofuProvisioner)
+	case "helm":
+		return new(HelmProvisioner)
 	case "bicep":
 		return new(BicepProvisioner)
 	default:
@@ -23,7 +25,6 @@ func (p *NoopProvisioner) ExportMassdriverInputs(string, map[string]interface{})
 	return nil
 }
 func (p *NoopProvisioner) ReadProvisionerInputs(string) (map[string]interface{}, error) {
-	//nolint:nilnil
 	return nil, nil
 }
 func (p *NoopProvisioner) InitializeStep(string, string) error {
