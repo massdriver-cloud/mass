@@ -232,6 +232,7 @@ func getOutputDir(t *templatecache.TemplateData) error {
 	return nil
 }
 
+// #nolint:gocognit
 func getExistingParamsPath(templateName string) (string, error) {
 	prompt := promptui.Prompt{}
 
