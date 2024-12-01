@@ -11,7 +11,7 @@ import (
 
 type HelmProvisioner struct{}
 
-func (p *HelmProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]interface{}) error {
+func (p *HelmProvisioner) ExportMassdriverInputs(_ string, _ map[string]interface{}) error {
 	// Nothing to do here. Helm doesn't require variables to be declared before use, nor does it require types to be specified
 	return nil
 }
