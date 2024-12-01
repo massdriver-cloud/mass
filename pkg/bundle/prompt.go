@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -119,21 +122,18 @@ func getTemplate(t *templatecache.TemplateData) error {
 		Items: filteredTemplates,
 	}
 
-	_, result, err := prompt.Run()
+	_, templateName, err := prompt.Run()
 	if err != nil {
 		return err
 	}
 
-	t.TemplateName = result
+	t.TemplateName = templateName
 
-	// "helm-chart" doesn't exist yet but seems like the right thing to call the template
-	if result == "terraform-module" || result == "opentofu-module" || result == "helm-chart" || result == "bicep-template" {
-		paramPath, paramsErr := getExistingParamsPath(result)
-		if paramsErr != nil {
-			return paramsErr
-		}
-		t.ExistingParamsPath = paramPath
+	paramsPath, paramsErr := getExistingParamsPath(templateName)
+	if paramsErr != nil {
+		return paramsErr
 	}
+	t.ExistingParamsPath = paramsPath
 
 	return nil
 }
@@ -232,9 +232,71 @@ func getOutputDir(t *templatecache.TemplateData) error {
 	return nil
 }
 
-func getExistingParamsPath(in string) (string, error) {
-	prompt := promptui.Prompt{
-		Label: fmt.Sprintf("Path to an existing %s to generate params from, leave blank to skip", in),
+//nolint:gocognit
+func getExistingParamsPath(templateName string) (string, error) {
+	prompt := promptui.Prompt{}
+
+	switch templateName {
+	case "terraform-module", "opentofu-module":
+		prompt.Label = "Path to an existing Terraform/OpenTofu module to generate a bundle from, leave blank to skip"
+		prompt.Validate = func(input string) error {
+			if input == "" {
+				return nil
+			}
+			pathInfo, statErr := os.Stat(input)
+			if statErr != nil {
+				return statErr
+			}
+			if !pathInfo.IsDir() {
+				return errors.New("path must be a directory containing a Terraform/OpenTofu module")
+			}
+			matches, err := filepath.Glob(path.Join(input, "*.tf"))
+			if err != nil {
+				return errors.New("unable to read directory")
+			}
+			if len(matches) == 0 {
+				return errors.New("path does not contain any '.tf' files, and therefore isn't a valid Terraform/OpenTofu module")
+			}
+			return nil
+		}
+	case "helm-chart":
+		prompt.Label = "Path to an existing Helm chart to generate a bundle from, leave blank to skip"
+		prompt.Validate = func(input string) error {
+			if input == "" {
+				return nil
+			}
+			pathInfo, statErr := os.Stat(input)
+			if statErr != nil {
+				return statErr
+			}
+			if !pathInfo.IsDir() {
+				return errors.New("path must be a directory containing a helm chart")
+			}
+			if _, chartErr := os.Stat(path.Join(input, "Chart.yaml")); errors.Is(chartErr, os.ErrNotExist) {
+				return errors.New("path does not contain 'Chart.yaml' file, and therefore isn't a valid Helm chart")
+			}
+			if _, valuesErr := os.Stat(path.Join(input, "values.yaml")); errors.Is(valuesErr, os.ErrNotExist) {
+				return errors.New("path does not contain 'values.yaml' file, and therefore isn't a valid Helm chart")
+			}
+			return nil
+		}
+	case "bicep-template":
+		prompt.Label = "Path to an existing Bicep template file to generate a bundle from, leave blank to skip"
+		prompt.Validate = func(input string) error {
+			if input == "" {
+				return nil
+			}
+			pathInfo, statErr := os.Stat(input)
+			if statErr != nil {
+				return statErr
+			}
+			if pathInfo.IsDir() {
+				return errors.New("path must be a file containing a Bicep template")
+			}
+			return nil
+		}
+	default:
+		return "", nil
 	}
 
 	return prompt.Run()
