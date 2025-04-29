@@ -26,13 +26,13 @@ func Get(c *restclient.MassdriverClient, definitionType string) (map[string]inte
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return definition, errors.New("received non-200 response from Massdriver: " + resp.Status + " " + definitionType)
+	}
+
 	respBodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return definition, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return definition, errors.New("received non-200 response from Massdriver: " + resp.Status + " " + definitionType)
 	}
 
 	err = json.Unmarshal(respBodyBytes, &definition)

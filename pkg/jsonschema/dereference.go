@@ -101,6 +101,14 @@ func dereferenceMassdriverRef(hydratedSchema map[string]interface{}, schema map[
 		return hydratedSchema, err
 	}
 
+	if nestedSchema, exists := referencedSchema["schema"]; exists {
+		var ok bool
+		referencedSchema, ok = nestedSchema.(map[string]interface{})
+		if !ok {
+			return hydratedSchema, fmt.Errorf("schema is not a map")
+		}
+	}
+
 	hydratedSchema, err = replaceRef(schema, referencedSchema, opts)
 	if err != nil {
 		return hydratedSchema, err
