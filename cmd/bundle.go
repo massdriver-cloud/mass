@@ -86,7 +86,6 @@ func NewCmdBundle() *cobra.Command {
 		Short: "Publish bundle to Massdriver's package manager",
 		RunE:  runBundlePublish,
 	}
-	bundlePublishCmd.Flags().String("access", "private", "Override the access, useful in CI for deploying to sandboxes.")
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	bundleTemplateCmd := &cobra.Command{
@@ -320,11 +319,6 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(buildDirectory)
 	if err != nil {
 		return err
-	}
-
-	access, err := cmd.Flags().GetString("access")
-	if err == nil {
-		unmarshalledBundle.Access = access
 	}
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
