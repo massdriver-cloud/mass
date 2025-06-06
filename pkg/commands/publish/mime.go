@@ -65,5 +65,5 @@ func getMimeTypeFromExtension(ext string) string {
 	if mimeType, exists := mimeTypesFromExt[ext]; exists {
 		return mimeType
 	}
-	return "application/octet-stream"
+	return "nil"
 }
