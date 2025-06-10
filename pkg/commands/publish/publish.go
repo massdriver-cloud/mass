@@ -29,10 +29,8 @@ func getRepo(b *bundle.Bundle, mdClient *client.Client) (oras.Target, error) {
 	if mdClient.Auth.Method != config.AuthAPIKey {
 		return nil, fmt.Errorf("bundle publish requires API key auth")
 	}
-	// reg := mdClient.Auth.URL
-	// repo, repoErr := remote.NewRepository(filepath.Join(reg, mdClient.Auth.AccountID, b.Name))
-	reg := "2d67-47-229-209-228.ngrok-free.app"
-	repo, repoErr := remote.NewRepository(filepath.Join(reg, "sandbox", b.Name))
+	reg := mdClient.Auth.URL
+	repo, repoErr := remote.NewRepository(filepath.Join(reg, mdClient.Auth.AccountID, b.Name))
 	if repoErr != nil {
 		return nil, repoErr
 	}
