@@ -14,9 +14,6 @@ import (
 func Run(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, tag string) error {
 	ctx := context.Background()
 
-	//TODO remove this hardcoding
-	tag = "latest"
-
 	var printBundleName = prettylogs.Underline(b.Name)
 	fmt.Printf("Publishing %s to package manager\n", printBundleName)
 

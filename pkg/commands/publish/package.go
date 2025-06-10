@@ -9,7 +9,7 @@ import (
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	ignore "github.com/sabhiram/go-gitignore"
-	"oras.land/oras-go/v2"
+	oras "oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content"
 )
 

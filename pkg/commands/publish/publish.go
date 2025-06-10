@@ -9,7 +9,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"oras.land/oras-go/v2"
+	oras "oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
 	"oras.land/oras-go/v2/registry/remote/retry"
