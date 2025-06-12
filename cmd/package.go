@@ -49,17 +49,17 @@ func runPkgGet(cmd *cobra.Command, args []string) error {
 	}
 
 	client := api.NewClient(config.URL, config.APIKey)
-	pkgId := args[0]
+	pkgID := args[0]
 
-	pkg, err := api.GetPackageByName(client, config.OrgID, pkgId)
+	pkg, err := api.GetPackageByName(client, config.OrgID, pkgID)
 
 	if err != nil {
 		return err
 	}
 
-	renderPackage(pkg)
+	err = renderPackage(pkg)
 
-	return nil
+	return err
 }
 
 func renderPackage(pkg *api.Package) error {
