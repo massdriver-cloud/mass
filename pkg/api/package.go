@@ -32,9 +32,13 @@ func (p *getPackageByNamingConventionGetPackageByNamingConventionPackage) toPack
 		Params:     p.Params,
 		Manifest: Manifest{
 			ID: p.Manifest.Id,
+			Bundle: Bundle{
+				Name: p.Manifest.Bundle.Name,
+			},
 		},
 		Environment: Environment{
-			ID: p.Environment.Id,
+			ID:   p.Environment.Id,
+			Slug: p.Environment.Slug,
 		},
 	}
 }

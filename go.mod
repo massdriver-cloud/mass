@@ -16,9 +16,11 @@ require (
 	github.com/charmbracelet/glamour v0.8.0
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/cli/browser v1.3.0
+	github.com/coder/websocket v1.8.12
 	github.com/docker/docker v27.3.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/evertras/bubble-table v0.17.1
+	github.com/fatih/color v1.17.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/itchyny/gojq v0.12.16
 	github.com/manifoldco/promptui v0.9.0
@@ -27,6 +29,7 @@ require (
 	github.com/moby/moby v27.3.1+incompatible
 	github.com/moby/term v0.5.0
 	github.com/osteele/liquid v1.6.0
+	github.com/rodaine/table v1.3.0
 	github.com/rs/zerolog v1.33.0
 	github.com/sethvargo/go-envconfig v1.1.0
 	github.com/spf13/cobra v1.8.1
@@ -73,7 +76,6 @@ require (
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/cloudflare/circl v1.5.0 // indirect
-	github.com/coder/websocket v1.8.12 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.3.4 // indirect
 	github.com/distribution/reference v0.6.0 // indirect

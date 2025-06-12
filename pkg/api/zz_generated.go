@@ -1194,12 +1194,18 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDe
 // getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment includes the requested fields of the GraphQL type Environment.
 type getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment struct {
 	Id      string                                                                            `json:"id"`
+	Slug    string                                                                            `json:"slug"`
 	Project getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject `json:"project"`
 }
 
 // GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment.Id, and is useful for accessing the field via an interface.
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment) GetId() string {
 	return v.Id
+}
+
+// GetSlug returns getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment) GetSlug() string {
+	return v.Slug
 }
 
 // GetProject returns getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment.Project, and is useful for accessing the field via an interface.
@@ -1209,7 +1215,8 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironm
 
 // getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject includes the requested fields of the GraphQL type Project.
 type getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject struct {
-	Id string `json:"id"`
+	Id   string `json:"id"`
+	Slug string `json:"slug"`
 }
 
 // GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject.Id, and is useful for accessing the field via an interface.
@@ -1217,14 +1224,35 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironm
 	return v.Id
 }
 
+// GetSlug returns getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject.Slug, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject) GetSlug() string {
+	return v.Slug
+}
+
 // getPackageByNamingConventionGetPackageByNamingConventionPackageManifest includes the requested fields of the GraphQL type Manifest.
 type getPackageByNamingConventionGetPackageByNamingConventionPackageManifest struct {
-	Id string `json:"id"`
+	Id     string                                                                        `json:"id"`
+	Bundle getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle `json:"bundle"`
 }
 
 // GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Id, and is useful for accessing the field via an interface.
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetId() string {
 	return v.Id
+}
+
+// GetBundle returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Bundle, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetBundle() getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle {
+	return v.Bundle
+}
+
+// getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle includes the requested fields of the GraphQL type Bundle.
+type getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle struct {
+	Name string `json:"name"`
+}
+
+// GetName returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Name, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetName() string {
+	return v.Name
 }
 
 // getPackageByNamingConventionResponse is returned by getPackageByNamingConvention on success.
@@ -1924,6 +1952,9 @@ query getPackageByNamingConvention ($organizationId: ID!, $name: String!) {
 		params
 		manifest {
 			id
+			bundle {
+				name
+			}
 		}
 		activeDeployment {
 			id
@@ -1931,8 +1962,10 @@ query getPackageByNamingConvention ($organizationId: ID!, $name: String!) {
 		}
 		environment {
 			id
+			slug
 			project {
 				id
+				slug
 			}
 		}
 	}

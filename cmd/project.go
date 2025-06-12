@@ -1,14 +1,13 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"text/tabwriter"
-
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/spf13/cobra"
+
+	"github.com/fatih/color"
+	"github.com/rodaine/table"
 )
 
 var projCmdHelp = helpdocs.MustRender("project")
@@ -43,18 +42,17 @@ func runProjList(cmd *cobra.Command, args []string) error {
 
 	projects, err := api.ListProjects(client, config.OrgID)
 
-	w := tabwriter.NewWriter(os.Stdout, 10, 1, 5, ' ', 0)
-	fmt.Fprintln(w, "SLUG\tNAME\tMONTHLY\tDAILY")
+	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
+	columnFmt := color.New(color.FgYellow).SprintfFunc()
+
+	tbl := table.New("ID", "Name", "Monthly $", "Daily $")
+	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
 
 	for _, project := range projects {
-		line := fmt.Sprintf("%s\t%s\t%.2f\t%.2f", project.Slug, project.Name, project.MonthlyAverageCost, project.DailyAverageCost)
-		fmt.Fprintln(w, line)
+		tbl.AddRow(project.Slug, project.Name, project.MonthlyAverageCost, project.DailyAverageCost)
 	}
 
-	w.Flush()
-
-	// TODO: present UI
-	// _, err := commands.DeployPackage(client, config.OrgID, name)
+	tbl.Print()
 
 	return err
 }
