@@ -68,9 +68,7 @@ func renderPackage(pkg *api.Package) error {
 		return err
 	}
 
-	md := fmt.Sprintf(`# Package Summary
-
-**Package:** %s
+	md := fmt.Sprintf(`# Package: %s
 
 **Bundle:** %s
 
