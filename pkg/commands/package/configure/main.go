@@ -23,7 +23,7 @@ func Run(client graphql.Client, orgID string, name string, params map[string]int
 		return nil, err
 	}
 
-	return api.ConfigurePackage(client, orgID, pkg.Target.ID, pkg.Manifest.ID, interpolatedParams)
+	return api.ConfigurePackage(client, orgID, pkg.Environment.ID, pkg.Manifest.ID, interpolatedParams)
 }
 
 func interpolateParams(params map[string]interface{}, interpolatedParams *map[string]interface{}) error {

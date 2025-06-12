@@ -8,11 +8,11 @@ import (
 )
 
 type Package struct {
-	ID         string
-	NamePrefix string
-	Params     map[string]interface{}
-	Manifest   Manifest
-	Target     Target
+	ID          string
+	NamePrefix  string
+	Params      map[string]interface{}
+	Manifest    Manifest
+	Environment Environment
 }
 
 func GetPackageByName(client graphql.Client, orgID string, name string) (*Package, error) {
@@ -33,8 +33,8 @@ func (p *getPackageByNamingConventionGetPackageByNamingConventionPackage) toPack
 		Manifest: Manifest{
 			ID: p.Manifest.Id,
 		},
-		Target: Target{
-			ID: p.Target.Id,
+		Environment: Environment{
+			ID: p.Environment.Id,
 		},
 	}
 }

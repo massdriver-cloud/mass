@@ -73,7 +73,7 @@ query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
       id
       status
     }
-    target {
+    environment {
       id
       project {
         id
