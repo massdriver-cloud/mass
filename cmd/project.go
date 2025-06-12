@@ -42,8 +42,8 @@ func runProjList(cmd *cobra.Command, args []string) error {
 
 	projects, err := api.ListProjects(client, config.OrgID)
 
-	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
-	columnFmt := color.New(color.FgYellow).SprintfFunc()
+	headerFmt := color.New(color.FgHiBlue, color.Underline).SprintfFunc()
+	columnFmt := color.New(color.FgHiWhite).SprintfFunc()
 
 	tbl := table.New("ID", "Name", "Monthly $", "Daily $")
 	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
