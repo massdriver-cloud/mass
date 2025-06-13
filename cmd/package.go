@@ -5,42 +5,10 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/spf13/cobra"
 )
-
-var pkgCmdHelp = helpdocs.MustRender("package")
-var pkgGetCmdHelp = helpdocs.MustRender("package/get")
-
-// TODO: support common READ outputs: table, json, 'show'
-
-var pkgCmd = &cobra.Command{
-	Use:     "package",
-	Aliases: []string{"pkg"},
-	Short:   "Manage deployed packages",
-	Long:    pkgCmdHelp,
-}
-
-var pkgGetCmd = &cobra.Command{
-	Use:     `get`,
-	Short:   "Get a package",
-	Aliases: []string{"g"},
-	Long:    pkgGetCmdHelp,
-	Args:    cobra.ExactArgs(1), // Enforce exactly one argument
-	RunE:    runPkgGet,
-}
-
-// Bundle: foo
-// ActiveDeployment: nil or id
-// Params: pretty print?
-// Env: name
-
-func init() {
-	rootCmd.AddCommand(pkgCmd)
-	pkgCmd.AddCommand(pkgGetCmd)
-}
 
 func runPkgGet(cmd *cobra.Command, args []string) error {
 	config, configErr := config.Get()

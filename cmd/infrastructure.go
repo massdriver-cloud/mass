@@ -28,17 +28,18 @@ func NewCmdInfra() *cobra.Command {
 	}
 
 	infraConfigureCmd := &cobra.Command{
-		Use:     `configure <project>-<target>-<manifest>`,
+		Use:     `configure <project>-<env>-<manifest>`,
 		Short:   "Configure infrastructure",
 		Aliases: []string{"cfg"},
 		Long:    helpdocs.MustRender("infrastructure/configure"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInfraConfigure,
 	}
+
 	infraConfigureCmd.Flags().StringVarP(&infraParamsPath, "params", "p", infraParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 
 	infraDeployCmd := &cobra.Command{
-		Use:   `deploy <project>-<target>-<manifest>`,
+		Use:   `deploy <project>-<env>-<manifest>`,
 		Short: "Deploy infrastructure",
 		Long:  helpdocs.MustRender("infrastructure/deploy"),
 		Args:  cobra.ExactArgs(1),
@@ -48,18 +49,30 @@ func NewCmdInfra() *cobra.Command {
 	infraDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
 
 	infraPatchCmd := &cobra.Command{
-		Use:     `patch <project>-<target>-<manifest>`,
+		Use:     `patch <project>-<env>-<manifest>`,
 		Short:   "Patch individual package parameter values",
 		Aliases: []string{"cfg"},
 		Long:    helpdocs.MustRender("infrastructure/patch"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInfraPatch,
 	}
+
 	infraPatchCmd.Flags().StringArrayVarP(&infraPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
+
+	// app and infra are the same, lets reuse a get command/template here.
+	pkgGetCmd := &cobra.Command{
+		Use:     `get <project>-<env>-<manifest>`,
+		Short:   "Get an infrastructure package",
+		Aliases: []string{"g"},
+		Long:    helpdocs.MustRender("package/get"),
+		Args:    cobra.ExactArgs(1), // Enforce exactly one argument
+		RunE:    runPkgGet,
+	}
 
 	infraCmd.AddCommand(infraConfigureCmd)
 	infraCmd.AddCommand(infraDeployCmd)
 	infraCmd.AddCommand(infraPatchCmd)
+	infraCmd.AddCommand(pkgGetCmd)
 
 	return infraCmd
 }
