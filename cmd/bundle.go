@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/massdriver-cloud/airlock/pkg/prettylogs"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
@@ -92,7 +93,7 @@ func NewCmdBundle() *cobra.Command {
 		RunE:    runBundlePublish,
 	}
 	bundlePublishCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
-	bundlePublishCmd.Flags().String("access", "private", "Override the access, useful in CI for deploying to sandboxes.")
+	bundlePublishCmd.Flags().String("access", "", "Override the access, useful in CI for deploying to sandboxes.")
 
 	bundlePullCmd := &cobra.Command{
 		Use:   "pull <bundle-name>",
@@ -330,7 +331,8 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 
 	access, _ := cmd.Flags().GetString("access")
 	if access != "" {
-		fmt.Println("Warning: The --access flag is deprecated and will be removed in a future release.")
+		prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release.")
+		fmt.Println(prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release."))
 	}
 
 	bundleDirectory, err := cmd.Flags().GetString("bundle-directory")
@@ -371,7 +373,7 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 	// Check if bundle exists in the specified directory and if so prompt the user
 	mdYamlPath := filepath.Join(directory, "massdriver.yaml")
 	if _, err := os.Stat(mdYamlPath); err == nil && !force {
-		fmt.Printf("Warning: bundle already exists at %s. Continuing will overwrite its contents. Continue? (y/N): ", mdYamlPath)
+		fmt.Printf("Bundle already exists at %s. Continuing will overwrite its contents. Continue? (y/N): ", mdYamlPath)
 		reader := bufio.NewReader(os.Stdin)
 		answer, _ := reader.ReadString('\n')
 		answer = strings.TrimSpace(strings.ToLower(answer))
