@@ -6,7 +6,7 @@ sidebar_label: Mass Package
 ---
 ## mass package
 
-Manage deployed packages
+Manage packages of IaC deployed in environments.
 
 ### Synopsis
 
@@ -24,4 +24,7 @@ Manage deployed packages
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
+* [mass package configure](/cli/commands/mass_package_configure)	 - Configure package
+* [mass package deploy](/cli/commands/mass_package_deploy)	 - Deploy packages
 * [mass package get](/cli/commands/mass_package_get)	 - Get a package
+* [mass package patch](/cli/commands/mass_package_patch)	 - Patch individual package parameter values

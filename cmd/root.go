@@ -44,6 +44,7 @@ func Execute() {
 	rootCmd.AddCommand(NewCmdSchema())
 	rootCmd.AddCommand(NewCmdServer())
 	rootCmd.AddCommand(NewCmdVersion())
+	rootCmd.AddCommand(NewCmdPkg())
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/commands/package/configure"
@@ -14,6 +15,69 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/spf13/cobra"
 )
+
+var (
+	pkgParamsPath   = "./params.json"
+	pkgPatchQueries []string
+)
+
+func NewCmdPkg() *cobra.Command {
+	pkgCmd := &cobra.Command{
+		Use:     "package",
+		Aliases: []string{"pkg"},
+		Short:   "Manage packages of IaC deployed in environments.",
+		Long:    helpdocs.MustRender("package"),
+	}
+
+	pkgConfigureCmd := &cobra.Command{
+		Use:     `configure <project>-<env>-<manifest>`,
+		Short:   "Configure package",
+		Aliases: []string{"cfg"},
+		Long:    helpdocs.MustRender("package/configure"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgConfigure,
+	}
+
+	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params JSON file. This file supports bash interpolation.")
+
+	pkgDeployCmd := &cobra.Command{
+		Use:   `deploy <project>-<env>-<manifest>`,
+		Short: "Deploy packages",
+		Long:  helpdocs.MustRender("package/deploy"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runPkgDeploy,
+	}
+
+	pkgDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
+
+	pkgPatchCmd := &cobra.Command{
+		Use:     `patch <project>-<env>-<manifest>`,
+		Short:   "Patch individual package parameter values",
+		Aliases: []string{"cfg"},
+		Long:    helpdocs.MustRender("package/patch"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgPatch,
+	}
+
+	pkgPatchCmd.Flags().StringArrayVarP(&pkgPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
+
+	// pkg and infra are the same, lets reuse a get command/template here.
+	pkgGetCmd := &cobra.Command{
+		Use:     `get  <project>-<env>-<manifest>`,
+		Short:   "Get a package",
+		Aliases: []string{"g"},
+		Long:    helpdocs.MustRender("package/get"),
+		Args:    cobra.ExactArgs(1), // Enforce exactly one argument
+		RunE:    runPkgGet,
+	}
+
+	pkgCmd.AddCommand(pkgDeployCmd)
+	pkgCmd.AddCommand(pkgConfigureCmd)
+	pkgCmd.AddCommand(pkgPatchCmd)
+	pkgCmd.AddCommand(pkgGetCmd)
+
+	return pkgCmd
+}
 
 func runPkgGet(cmd *cobra.Command, args []string) error {
 	config, configErr := config.Get()
@@ -93,7 +157,7 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 	}
 	client := api.NewClient(config.URL, config.APIKey)
 	params := map[string]interface{}{}
-	if err := files.Read(appParamsPath, &params); err != nil {
+	if err := files.Read(pkgParamsPath, &params); err != nil {
 		return err
 	}
 
@@ -114,7 +178,7 @@ func runPkgPatch(cmd *cobra.Command, args []string) error {
 	}
 	client := api.NewClient(config.URL, config.APIKey)
 
-	_, err := patch.Run(client, config.OrgID, packageSlugOrID, appPatchQueries)
+	_, err := patch.Run(client, config.OrgID, packageSlugOrID, pkgPatchQueries)
 
 	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Patching: %s", name)

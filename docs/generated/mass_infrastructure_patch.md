@@ -46,7 +46,7 @@ mass infra patch DC8F1D9B-BD82-4E5A-9C40-8653BC794ABC --set='.version = "13.4"'
 
 
 ```
-mass infrastructure patch <project>-<target>-<manifest> [flags]
+mass infrastructure patch <project>-<env>-<manifest> [flags]
 ```
 
 ### Options

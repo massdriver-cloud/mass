@@ -42,7 +42,7 @@ mass app cfg DC8F1D9B-BD82-4E5A-9C40-8653BC794ABC -p params.json
 
 
 ```
-mass application configure <project>-<target>-<manifest> [flags]
+mass application configure <project>-<env>-<manifest> [flags]
 ```
 
 ### Options
