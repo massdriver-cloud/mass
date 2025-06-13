@@ -68,15 +68,20 @@ query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
     params
     manifest {
       id
+      bundle{
+        name
+      }
     }
     activeDeployment {
       id
       status
     }
-    target {
+    environment {
       id
+      slug
       project {
         id
+        slug
       }
     }
   }

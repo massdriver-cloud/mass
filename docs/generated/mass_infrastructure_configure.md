@@ -44,7 +44,7 @@ mass infra cfg DC8F1D9B-BD82-4E5A-9C40-8653BC794ABC -p params.json
 
 
 ```
-mass infrastructure configure <project>-<target>-<manifest> [flags]
+mass infrastructure configure <project>-<env>-<manifest> [flags]
 ```
 
 ### Options

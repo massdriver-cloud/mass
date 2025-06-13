@@ -19,7 +19,7 @@ func TestGetPackageByName(t *testing.T) {
 				"manifest": map[string]interface{}{
 					"id": "manifest-id",
 				},
-				"target": map[string]interface{}{
+				"environment": map[string]interface{}{
 					"id": "target-id",
 				},
 			},
@@ -37,7 +37,7 @@ func TestGetPackageByName(t *testing.T) {
 		Manifest: api.Manifest{
 			ID: "manifest-id",
 		},
-		Target: api.Target{
+		Environment: api.Environment{
 			ID: "target-id",
 		},
 	}

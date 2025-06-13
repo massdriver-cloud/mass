@@ -24,4 +24,5 @@ Manage applications
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
 * [mass application configure](/cli/commands/mass_application_configure)	 - Configure application
 * [mass application deploy](/cli/commands/mass_application_deploy)	 - Deploy applications
+* [mass application get](/cli/commands/mass_application_get)	 - Get an applicaton package
 * [mass application patch](/cli/commands/mass_application_patch)	 - Patch individual package parameter values

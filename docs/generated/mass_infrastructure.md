@@ -24,4 +24,5 @@ Manage infrastructure
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
 * [mass infrastructure configure](/cli/commands/mass_infrastructure_configure)	 - Configure infrastructure
 * [mass infrastructure deploy](/cli/commands/mass_infrastructure_deploy)	 - Deploy infrastructure
+* [mass infrastructure get](/cli/commands/mass_infrastructure_get)	 - Get an infrastructure package
 * [mass infrastructure patch](/cli/commands/mass_infrastructure_patch)	 - Patch individual package parameter values

@@ -1,16 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/charmbracelet/lipgloss"
-	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/pkg/api"
-	"github.com/massdriver-cloud/mass/pkg/commands"
-	"github.com/massdriver-cloud/mass/pkg/commands/package/configure"
-	"github.com/massdriver-cloud/mass/pkg/commands/package/patch"
-	"github.com/massdriver-cloud/mass/pkg/config"
-	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/spf13/cobra"
 )
 
@@ -21,103 +11,53 @@ var (
 
 func NewCmdApp() *cobra.Command {
 	appCmd := &cobra.Command{
-		Use:     "application",
-		Aliases: []string{"app"},
-		Short:   "Manage applications",
-		Long:    helpdocs.MustRender("application"),
+		Use:        "application",
+		Aliases:    []string{"app"},
+		Deprecated: "This has been renamed to `package`. This command will be removed in v2.",
 	}
-
-	appDeployCmd := &cobra.Command{
-		Use:   `deploy <project>-<target>-<manifest>`,
-		Short: "Deploy applications",
-		Long:  helpdocs.MustRender("application/deploy"),
-		Args:  cobra.ExactArgs(1),
-		RunE:  runAppDeploy,
-	}
-
-	appDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
 
 	appConfigureCmd := &cobra.Command{
-		Use:     `configure <project>-<target>-<manifest>`,
-		Short:   "Configure application",
-		Aliases: []string{"cfg"},
-		Long:    helpdocs.MustRender("application/configure"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runAppConfigure,
+		Use:        `configure <project>-<env>-<manifest>`,
+		Aliases:    []string{"cfg"},
+		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
+		Args:       cobra.ExactArgs(1),
+		RunE:       runPkgConfigure,
 	}
 
 	appConfigureCmd.Flags().StringVarP(&appParamsPath, "params", "p", appParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 
+	appDeployCmd := &cobra.Command{
+		Use:        `deploy <project>-<env>-<manifest>`,
+		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
+		Args:       cobra.ExactArgs(1),
+		RunE:       runPkgDeploy,
+	}
+
+	appDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
+
 	appPatchCmd := &cobra.Command{
-		Use:     `patch <project>-<target>-<manifest>`,
-		Short:   "Patch individual package parameter values",
-		Aliases: []string{"cfg"},
-		Long:    helpdocs.MustRender("application/patch"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runAppPatch,
+		Use:        `patch <project>-<env>-<manifest>`,
+		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
+		Aliases:    []string{"cfg"},
+		Args:       cobra.ExactArgs(1),
+		RunE:       runPkgPatch,
 	}
 
 	appPatchCmd.Flags().StringArrayVarP(&appPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 
+	// app and infra are the same, lets reuse a get command/template here.
+	pkgGetCmd := &cobra.Command{
+		Use:        `get  <project>-<env>-<manifest>`,
+		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
+		Aliases:    []string{"g"},
+		Args:       cobra.ExactArgs(1), // Enforce exactly one argument
+		RunE:       runPkgGet,
+	}
+
 	appCmd.AddCommand(appDeployCmd)
 	appCmd.AddCommand(appConfigureCmd)
 	appCmd.AddCommand(appPatchCmd)
+	appCmd.AddCommand(pkgGetCmd)
 
 	return appCmd
-}
-
-func runAppDeploy(cmd *cobra.Command, args []string) error {
-	name := args[0]
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
-	client := api.NewClient(config.URL, config.APIKey)
-
-	msg, err := cmd.Flags().GetString("message")
-	if err != nil {
-		return err
-	}
-
-	_, err = commands.DeployPackage(client, config.OrgID, name, msg)
-
-	return err
-}
-
-func runAppConfigure(cmd *cobra.Command, args []string) error {
-	packageSlugOrID := args[0]
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
-	client := api.NewClient(config.URL, config.APIKey)
-	params := map[string]interface{}{}
-	if err := files.Read(appParamsPath, &params); err != nil {
-		return err
-	}
-
-	_, err := configure.Run(client, config.OrgID, packageSlugOrID, params)
-
-	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
-	msg := fmt.Sprintf("Configuring: %s", name)
-	fmt.Println(msg)
-
-	return err
-}
-
-func runAppPatch(cmd *cobra.Command, args []string) error {
-	packageSlugOrID := args[0]
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
-	client := api.NewClient(config.URL, config.APIKey)
-
-	_, err := patch.Run(client, config.OrgID, packageSlugOrID, appPatchQueries)
-
-	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
-	msg := fmt.Sprintf("Patching: %s", name)
-	fmt.Println(msg)
-
-	return err
 }

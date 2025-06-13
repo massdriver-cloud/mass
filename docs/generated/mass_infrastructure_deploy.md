@@ -34,7 +34,7 @@ mass infra deploy ecomm-prod-vpc-x12g
 
 
 ```
-mass infrastructure deploy <project>-<target>-<manifest> [flags]
+mass infrastructure deploy <project>-<env>-<manifest> [flags]
 ```
 
 ### Options
