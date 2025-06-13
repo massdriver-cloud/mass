@@ -16,7 +16,8 @@ func Run(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, tag str
 	ctx := context.Background()
 
 	var printBundleName = prettylogs.Underline(b.Name)
-	fmt.Printf("Publishing %s to package manager\n", printBundleName)
+	var printOrganizationId = prettylogs.Underline(mdClient.Config.OrganizationID)
+	fmt.Printf("Publishing %s to organization %s...\n", printBundleName, printOrganizationId)
 
 	repo, repoErr := sdkbundle.GetBundleRepository(mdClient, b.Name)
 	if repoErr != nil {
@@ -28,7 +29,7 @@ func Run(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, tag str
 		Repo:  repo,
 	}
 
-	fmt.Printf("Packaging bundle %s for package manager\n", printBundleName)
+	fmt.Printf("Packaging bundle %s...\n", printBundleName)
 
 	manifestDescriptor, packageErr := publisher.PackageBundle(ctx, buildFromDir, tag)
 	if packageErr != nil {
@@ -36,14 +37,14 @@ func Run(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, tag str
 	}
 
 	fmt.Printf("Package %s created with digest: %s\n", printBundleName, manifestDescriptor.Digest)
-	fmt.Printf("Pushing packaged bundle %s to package manager\n", printBundleName)
+	fmt.Printf("Pushing %s to package manager\n", printBundleName)
 
 	publishErr := publisher.PublishBundle(ctx, tag)
 	if publishErr != nil {
 		return fmt.Errorf("publishing bundle: %w", publishErr)
 	}
 
-	fmt.Printf("Bundle %s successfully published\n", printBundleName)
+	fmt.Printf("Bundle %s successfully published to organization %s!\n", printBundleName, printOrganizationId)
 
 	return nil
 }

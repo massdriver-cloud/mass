@@ -96,6 +96,7 @@ func getIgnores(ignorePath string) (*ignore.GitIgnore, error) {
 		// Ignore all files in top level directory except for the following
 		"/*",
 		"!/massdriver.yaml",
+		"!/icon.svg",
 		"!/operator.md",
 		"!/operator.mdx",
 		"!/schema-artifacts.json",

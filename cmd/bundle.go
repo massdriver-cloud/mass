@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
@@ -11,6 +13,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/commands/publish"
+	"github.com/massdriver-cloud/mass/pkg/commands/pull"
 	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/params"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
@@ -83,11 +86,23 @@ func NewCmdBundle() *cobra.Command {
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.paramsDir, "params-directory", "p", "", "Path with existing params to use - opentofu module directory or helm chart values.yaml")
 
 	bundlePublishCmd := &cobra.Command{
-		Use:   "publish",
-		Short: "Publish bundle to Massdriver's package manager",
-		RunE:  runBundlePublish,
+		Use:     "publish",
+		Aliases: []string{"push"},
+		Short:   "Publish bundle to Massdriver's package manager",
+		RunE:    runBundlePublish,
 	}
 	bundlePublishCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundlePublishCmd.Flags().String("access", "private", "Override the access, useful in CI for deploying to sandboxes.")
+
+	bundlePullCmd := &cobra.Command{
+		Use:   "pull <bundle-name>",
+		Short: "Pull bundle from Massdriver to local directory",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runBundlePull,
+	}
+	bundlePullCmd.Flags().StringP("directory", "d", "", "Directory to output the bundle. Defaults to bundle name.")
+	bundlePullCmd.Flags().BoolP("force", "f", false, "Force pull even if the directory already exists. This will overwrite existing files.")
+	bundlePullCmd.Flags().StringP("tag", "t", "latest", "Bundle tag (defaults to 'latest')")
 
 	bundleTemplateCmd := &cobra.Command{
 		Use:   "template",
@@ -114,6 +129,7 @@ func NewCmdBundle() *cobra.Command {
 	bundleCmd.AddCommand(bundleLintCmd)
 	bundleCmd.AddCommand(bundleNewCmd)
 	bundleCmd.AddCommand(bundlePublishCmd)
+	bundleCmd.AddCommand(bundlePullCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
@@ -312,6 +328,11 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return configErr
 	}
 
+	access, _ := cmd.Flags().GetString("access")
+	if access != "" {
+		fmt.Println("Warning: The --access flag is deprecated and will be removed in a future release.")
+	}
+
 	bundleDirectory, err := cmd.Flags().GetString("bundle-directory")
 	if err != nil {
 		return err
@@ -336,4 +357,39 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	}
 
 	return publish.Run(unmarshalledBundle, mdClient, bundleDirectory, tag)
+}
+
+func runBundlePull(cmd *cobra.Command, args []string) error {
+	bundleName := args[0]
+	directory, _ := cmd.Flags().GetString("directory")
+	if directory == "" {
+		directory = bundleName
+	}
+	force, _ := cmd.Flags().GetBool("force")
+	tag, _ := cmd.Flags().GetString("tag")
+
+	// Check if bundle exists in the specified directory and if so prompt the user
+	mdYamlPath := filepath.Join(directory, "massdriver.yaml")
+	if _, err := os.Stat(mdYamlPath); err == nil && !force {
+		fmt.Printf("Warning: bundle already exists at %s. Continuing will overwrite its contents. Continue? (y/N): ", mdYamlPath)
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(strings.ToLower(answer))
+		if answer != "y" && answer != "yes" {
+			fmt.Println("Bundle pull aborted!")
+			return nil
+		}
+	}
+
+	mdClient, clientErr := client.New()
+	if clientErr != nil {
+		return clientErr
+	}
+
+	pullErr := pull.Run(mdClient, bundleName, tag, directory)
+	if pullErr != nil {
+		return fmt.Errorf("error pulling bundle: %w", pullErr)
+	}
+
+	return nil
 }
