@@ -28,6 +28,7 @@ _Note:_ Parameter files support bash interpolation.
 mass package configure ecomm-prod-vpc --params=params.json
 ```
 
+
 ```
 mass package configure <project>-<env>-<manifest> [flags]
 ```
