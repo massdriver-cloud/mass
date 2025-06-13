@@ -1,20 +1,25 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/massdriver-cloud/airlock/pkg/prettylogs"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/commands/publish"
+	"github.com/massdriver-cloud/mass/pkg/commands/pull"
 	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/params"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
 
@@ -46,7 +51,7 @@ func NewCmdBundle() *cobra.Command {
 		Short: "Build schemas and generate IaC files from massdriver.yaml file",
 		RunE:  runBundleBuild,
 	}
-	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleBuildCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	bundleImportCmd := &cobra.Command{
 		Use:          "import",
@@ -55,7 +60,7 @@ func NewCmdBundle() *cobra.Command {
 		RunE:         runBundleImport,
 		SilenceUsage: true,
 	}
-	bundleImportCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleImportCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleImportCmd.Flags().BoolP("all", "a", false, "Import all variables without prompting")
 
 	bundleLintCmd := &cobra.Command{
@@ -64,7 +69,7 @@ func NewCmdBundle() *cobra.Command {
 		SilenceUsage: true,
 		RunE:         runBundleLint,
 	}
-	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleLintCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	var bundleNewInput bundleNew
 
@@ -82,12 +87,23 @@ func NewCmdBundle() *cobra.Command {
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.paramsDir, "params-directory", "p", "", "Path with existing params to use - opentofu module directory or helm chart values.yaml")
 
 	bundlePublishCmd := &cobra.Command{
-		Use:   "publish",
-		Short: "Publish bundle to Massdriver's package manager",
-		RunE:  runBundlePublish,
+		Use:     "publish",
+		Aliases: []string{"push"},
+		Short:   "Publish bundle to Massdriver's package manager",
+		RunE:    runBundlePublish,
 	}
-	bundlePublishCmd.Flags().String("access", "private", "Override the access, useful in CI for deploying to sandboxes.")
-	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundlePublishCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundlePublishCmd.Flags().String("access", "", "(Deprecated) Only here for backwards compatibility. Will be removed in a future release.")
+
+	bundlePullCmd := &cobra.Command{
+		Use:   "pull <bundle-name>",
+		Short: "Pull bundle from Massdriver to local directory",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runBundlePull,
+	}
+	bundlePullCmd.Flags().StringP("directory", "d", "", "Directory to output the bundle. Defaults to bundle name.")
+	bundlePullCmd.Flags().BoolP("force", "f", false, "Force pull even if the directory already exists. This will overwrite existing files.")
+	bundlePullCmd.Flags().StringP("tag", "t", "latest", "Bundle tag (defaults to 'latest')")
 
 	bundleTemplateCmd := &cobra.Command{
 		Use:   "template",
@@ -114,6 +130,7 @@ func NewCmdBundle() *cobra.Command {
 	bundleCmd.AddCommand(bundleLintCmd)
 	bundleCmd.AddCommand(bundleNewCmd)
 	bundleCmd.AddCommand(bundlePublishCmd)
+	bundleCmd.AddCommand(bundlePullCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
@@ -252,23 +269,23 @@ func runBundleNew(input *bundleNew) {
 }
 
 func runBundleBuild(cmd *cobra.Command, args []string) error {
-	buildDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := cmd.Flags().GetString("bundle-directory")
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(buildDirectory)
+	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(bundleDirectory)
 	if err != nil {
 		return err
 	}
 
 	c := restclient.NewClient()
 
-	return commands.BuildBundle(buildDirectory, unmarshalledBundle, c)
+	return commands.BuildBundle(bundleDirectory, unmarshalledBundle, c)
 }
 
 func runBundleImport(cmd *cobra.Command, args []string) error {
-	buildDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := cmd.Flags().GetString("bundle-directory")
 	if err != nil {
 		return err
 	}
@@ -277,7 +294,7 @@ func runBundleImport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return commands.ImportParams(buildDirectory, skipVerify)
+	return commands.ImportParams(bundleDirectory, skipVerify)
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {
@@ -286,19 +303,19 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return configErr
 	}
 
-	buildDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := cmd.Flags().GetString("bundle-directory")
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(buildDirectory)
+	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(bundleDirectory)
 	if err != nil {
 		return err
 	}
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
-	err = unmarshalledBundle.DereferenceSchemas(buildDirectory, c)
+	err = unmarshalledBundle.DereferenceSchemas(bundleDirectory, c)
 	if err != nil {
 		return err
 	}
@@ -312,27 +329,69 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return configErr
 	}
 
-	buildDirectory, err := cmd.Flags().GetString("build-directory")
+	access, _ := cmd.Flags().GetString("access")
+	if access != "" {
+		prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release.")
+		fmt.Println(prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release."))
+	}
+
+	bundleDirectory, err := cmd.Flags().GetString("bundle-directory")
 	if err != nil {
 		return err
 	}
+	tag := "latest"
 
-	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(buildDirectory)
+	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(bundleDirectory)
 	if err != nil {
 		return err
-	}
-
-	access, err := cmd.Flags().GetString("access")
-	if err == nil {
-		unmarshalledBundle.Access = access
 	}
 
 	c := restclient.NewClient().WithAPIKey(config.APIKey)
 
-	err = commands.BuildBundle(buildDirectory, unmarshalledBundle, c)
+	err = commands.BuildBundle(bundleDirectory, unmarshalledBundle, c)
 	if err != nil {
 		return err
 	}
 
-	return publish.Run(unmarshalledBundle, c, buildDirectory)
+	mdClient, clientErr := client.New()
+	if clientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", clientErr)
+	}
+
+	return publish.Run(unmarshalledBundle, mdClient, bundleDirectory, tag)
+}
+
+func runBundlePull(cmd *cobra.Command, args []string) error {
+	bundleName := args[0]
+	directory, _ := cmd.Flags().GetString("directory")
+	if directory == "" {
+		directory = bundleName
+	}
+	force, _ := cmd.Flags().GetBool("force")
+	tag, _ := cmd.Flags().GetString("tag")
+
+	// Check if bundle exists in the specified directory and if so prompt the user
+	mdYamlPath := filepath.Join(directory, "massdriver.yaml")
+	if _, err := os.Stat(mdYamlPath); err == nil && !force {
+		fmt.Printf("Bundle already exists at %s. Continuing will overwrite its contents. Continue? (y/N): ", mdYamlPath)
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(strings.ToLower(answer))
+		if answer != "y" && answer != "yes" {
+			fmt.Println("Bundle pull aborted!")
+			return nil
+		}
+	}
+
+	mdClient, clientErr := client.New()
+	if clientErr != nil {
+		return clientErr
+	}
+
+	pullErr := pull.Run(mdClient, bundleName, tag, directory)
+	if pullErr != nil {
+		return fmt.Errorf("error pulling bundle: %w", pullErr)
+	}
+
+	return nil
 }

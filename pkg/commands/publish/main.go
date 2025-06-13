@@ -1,54 +1,50 @@
 package publish
 
 import (
-	"bytes"
+	"context"
 	"fmt"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
-	"github.com/massdriver-cloud/mass/pkg/restclient"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	sdkbundle "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/bundle"
+
+	"oras.land/oras-go/v2/content/memory"
 )
 
-func Run(b *bundle.Bundle, c *restclient.MassdriverClient, buildFromDir string) error {
+func Run(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, tag string) error {
+	ctx := context.Background()
+
+	var printBundleName = prettylogs.Underline(b.Name)
+	var printOrganizationId = prettylogs.Underline(mdClient.Config.OrganizationID)
+	fmt.Printf("Publishing %s to organization %s...\n", printBundleName, printOrganizationId)
+
+	repo, repoErr := sdkbundle.GetBundleRepository(mdClient, b.Name)
+	if repoErr != nil {
+		return fmt.Errorf("getting repository: %w", repoErr)
+	}
+	store := memory.New()
 	publisher := &Publisher{
-		Bundle:     b,
-		RestClient: c,
-		BuildDir:   buildFromDir,
+		Store: store,
+		Repo:  repo,
 	}
 
-	var bundleName = prettylogs.Underline(b.Name)
-	var access = prettylogs.Underline(b.Access)
-	msg := fmt.Sprintf("Publishing %s with %s visibility", bundleName, access)
-	fmt.Println(msg)
+	fmt.Printf("Packaging bundle %s...\n", printBundleName)
 
-	s3SignedURL, err := publisher.SubmitBundle()
-
-	if err != nil {
-		fmt.Println(err)
-		return err
+	manifestDescriptor, packageErr := publisher.PackageBundle(ctx, buildFromDir, tag)
+	if packageErr != nil {
+		return fmt.Errorf("packaging bundle: %w", packageErr)
 	}
 
-	var buf bytes.Buffer
+	fmt.Printf("Package %s created with digest: %s\n", printBundleName, manifestDescriptor.Digest)
+	fmt.Printf("Pushing %s to package manager\n", printBundleName)
 
-	msg = fmt.Sprintf("Packaging bundle %s for package manager", bundleName)
-	fmt.Println(msg)
-	if err = publisher.ArchiveBundle(&buf); err != nil {
-		fmt.Println(err)
-		return err
+	publishErr := publisher.PublishBundle(ctx, tag)
+	if publishErr != nil {
+		return fmt.Errorf("publishing bundle: %w", publishErr)
 	}
 
-	msg = fmt.Sprintf("Package %s created", bundleName)
-	fmt.Println(msg)
-
-	msg = fmt.Sprintf("Pushing packaged bundle %s to package manager", bundleName)
-	fmt.Println(msg)
-	if err = publisher.PushArchiveToPackageManager(s3SignedURL, &buf); err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	msg = fmt.Sprintf("Bundle %s successfully published", bundleName)
-	fmt.Println(msg)
+	fmt.Printf("Bundle %s successfully published to organization %s!\n", printBundleName, printOrganizationId)
 
 	return nil
 }

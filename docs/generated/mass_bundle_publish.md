@@ -15,9 +15,9 @@ mass bundle publish [flags]
 ### Options
 
 ```
-      --access string            Override the access, useful in CI for deploying to sandboxes. (default "private")
-  -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
-  -h, --help                     help for publish
+      --access string             (Deprecated) Only here for backwards compatibility. Will be removed in a future release.
+  -b, --bundle-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
+  -h, --help                      help for publish
 ```
 
 ### SEE ALSO

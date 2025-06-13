@@ -15,8 +15,8 @@ mass bundle build [flags]
 ### Options
 
 ```
-  -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
-  -h, --help                     help for build
+  -b, --bundle-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
+  -h, --help                      help for build
 ```
 
 ### SEE ALSO
