@@ -36,9 +36,9 @@ mass bundle import [flags]
 ### Options
 
 ```
-  -a, --all                      Import all variables without prompting
-  -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
-  -h, --help                     help for import
+  -a, --all                       Import all variables without prompting
+  -b, --bundle-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
+  -h, --help                      help for import
 ```
 
 ### SEE ALSO

@@ -27,4 +27,5 @@ Generate and publish bundles
 * [mass bundle lint](/cli/commands/mass_bundle_lint)	 - Check massdriver.yaml file for common errors
 * [mass bundle new](/cli/commands/mass_bundle_new)	 - Create a new bundle from a template
 * [mass bundle publish](/cli/commands/mass_bundle_publish)	 - Publish bundle to Massdriver's package manager
+* [mass bundle pull](/cli/commands/mass_bundle_pull)	 - Pull bundle from Massdriver to local directory
 * [mass bundle template](/cli/commands/mass_bundle_template)	 - Application template development tools

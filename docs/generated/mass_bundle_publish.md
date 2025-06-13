@@ -15,9 +15,9 @@ mass bundle publish [flags]
 ### Options
 
 ```
-  -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
-  -h, --help                     help for publish
-  -t, --tag string               Bundle tag (default "latest")
+      --access string             (Deprecated) Only here for backwards compatibility. Will be removed in a future release.
+  -b, --bundle-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
+  -h, --help                      help for publish
 ```
 
 ### SEE ALSO

@@ -93,7 +93,7 @@ func NewCmdBundle() *cobra.Command {
 		RunE:    runBundlePublish,
 	}
 	bundlePublishCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
-	bundlePublishCmd.Flags().String("access", "", "Override the access, useful in CI for deploying to sandboxes.")
+	bundlePublishCmd.Flags().String("access", "", "(Deprecated) Only here for backwards compatibility. Will be removed in a future release.")
 
 	bundlePullCmd := &cobra.Command{
 		Use:   "pull <bundle-name>",

@@ -15,8 +15,8 @@ mass bundle lint [flags]
 ### Options
 
 ```
-  -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
-  -h, --help                     help for lint
+  -b, --bundle-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
+  -h, --help                      help for lint
 ```
 
 ### SEE ALSO
