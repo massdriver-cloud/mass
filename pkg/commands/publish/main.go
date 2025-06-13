@@ -7,6 +7,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	sdkbundle "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/bundle"
 
 	"oras.land/oras-go/v2/content/memory"
 )
@@ -17,7 +18,7 @@ func Run(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, tag str
 	var printBundleName = prettylogs.Underline(b.Name)
 	fmt.Printf("Publishing %s to package manager\n", printBundleName)
 
-	repo, repoErr := getRepo(b, mdClient)
+	repo, repoErr := sdkbundle.GetBundleRepository(mdClient, b.Name)
 	if repoErr != nil {
 		return fmt.Errorf("getting repository: %w", repoErr)
 	}

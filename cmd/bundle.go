@@ -47,7 +47,7 @@ func NewCmdBundle() *cobra.Command {
 		Short: "Build schemas and generate IaC files from massdriver.yaml file",
 		RunE:  runBundleBuild,
 	}
-	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleBuildCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	bundleImportCmd := &cobra.Command{
 		Use:          "import",
@@ -56,7 +56,7 @@ func NewCmdBundle() *cobra.Command {
 		RunE:         runBundleImport,
 		SilenceUsage: true,
 	}
-	bundleImportCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleImportCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleImportCmd.Flags().BoolP("all", "a", false, "Import all variables without prompting")
 
 	bundleLintCmd := &cobra.Command{
@@ -65,7 +65,7 @@ func NewCmdBundle() *cobra.Command {
 		SilenceUsage: true,
 		RunE:         runBundleLint,
 	}
-	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleLintCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	var bundleNewInput bundleNew
 
@@ -87,8 +87,7 @@ func NewCmdBundle() *cobra.Command {
 		Short: "Publish bundle to Massdriver's package manager",
 		RunE:  runBundlePublish,
 	}
-	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
-	bundlePublishCmd.Flags().StringP("tag", "t", "latest", "Bundle tag")
+	bundlePublishCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	bundleTemplateCmd := &cobra.Command{
 		Use:   "template",
@@ -253,7 +252,7 @@ func runBundleNew(input *bundleNew) {
 }
 
 func runBundleBuild(cmd *cobra.Command, args []string) error {
-	bundleDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := cmd.Flags().GetString("bundle-directory")
 	if err != nil {
 		return err
 	}
@@ -269,7 +268,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 }
 
 func runBundleImport(cmd *cobra.Command, args []string) error {
-	bundleDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := cmd.Flags().GetString("bundle-directory")
 	if err != nil {
 		return err
 	}
@@ -287,7 +286,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return configErr
 	}
 
-	bundleDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := cmd.Flags().GetString("bundle-directory")
 	if err != nil {
 		return err
 	}
@@ -313,14 +312,11 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return configErr
 	}
 
-	bundleDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := cmd.Flags().GetString("bundle-directory")
 	if err != nil {
 		return err
 	}
-	tag, err := cmd.Flags().GetString("tag")
-	if err != nil {
-		return err
-	}
+	tag := "latest"
 
 	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(bundleDirectory)
 	if err != nil {

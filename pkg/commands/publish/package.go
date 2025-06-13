@@ -20,6 +20,7 @@ func (p *Publisher) PackageBundle(ctx context.Context, bundleDir string, tag str
 	}
 
 	var layers []ocispec.Descriptor
+	var pushedDigests = make(map[string]string)
 	if walkErr := filepath.Walk(bundleDir, func(file string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -38,7 +39,7 @@ func (p *Publisher) PackageBundle(ctx context.Context, bundleDir string, tag str
 			return nil
 		}
 
-		descriptor, addErr := addFileToStore(ctx, p.Store, file, bundleRelativePath)
+		descriptor, addErr := addFileToStore(ctx, p.Store, file, bundleRelativePath, pushedDigests)
 		if addErr != nil {
 			return addErr
 		}
@@ -66,7 +67,7 @@ func (p *Publisher) PackageBundle(ctx context.Context, bundleDir string, tag str
 	return manifestDescriptor, nil
 }
 
-func addFileToStore(ctx context.Context, store content.Pusher, filePath string, relativePath string) (*ocispec.Descriptor, error) {
+func addFileToStore(ctx context.Context, store content.Pusher, filePath string, relativePath string, pushedDigests map[string]string) (*ocispec.Descriptor, error) {
 	data, readErr := os.ReadFile(filePath)
 	if readErr != nil {
 		return nil, fmt.Errorf("reading %s: %w", filePath, readErr)
@@ -78,9 +79,13 @@ func addFileToStore(ctx context.Context, store content.Pusher, filePath string, 
 		ocispec.AnnotationTitle: relativePath,
 	}
 
-	pushErr := store.Push(ctx, descriptor, bytes.NewReader(data))
-	if pushErr != nil {
-		return nil, fmt.Errorf("pushing %s: %w", filePath, pushErr)
+	digest := descriptor.Digest.String()
+	if _, exists := pushedDigests[digest]; !exists {
+		pushErr := store.Push(ctx, descriptor, bytes.NewReader(data))
+		if pushErr != nil {
+			return nil, fmt.Errorf("pushing %s: %w", filePath, pushErr)
+		}
+		pushedDigests[digest] = relativePath
 	}
 	return &descriptor, nil
 }
