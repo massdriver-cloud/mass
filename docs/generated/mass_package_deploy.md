@@ -29,6 +29,12 @@ mass package deploy ecomm-prod-vpc
 mass package deploy <project>-<env>-<manifest> [flags]
 ```
 
+### Examples
+
+```
+mass package deploy ecomm-prod-vpc
+```
+
 ### Options
 
 ```
