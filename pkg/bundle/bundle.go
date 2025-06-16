@@ -65,7 +65,6 @@ func (b *Bundle) GenerateBundlePublishBody(srcDir string) (restclient.PublishPos
 	body.Description = b.Description
 	body.Type = b.Type
 	body.SourceURL = b.SourceURL
-	body.Access = b.Access
 	body.ArtifactsSchema = b.Artifacts
 	body.ConnectionsSchema = b.Connections
 	body.ParamsSchema = b.Params
@@ -144,6 +143,13 @@ func UnmarshalAndApplyDefaults(readDirectory string) (*Bundle, error) {
 	unmarshalledBundle, err := Unmarshal(readDirectory)
 	if err != nil {
 		return nil, err
+	}
+
+	if unmarshalledBundle.Access != "" {
+		fmt.Println(prettylogs.Orange("Warning: the 'access' field in massdriver.yaml is no longer supported and should be removed."))
+	}
+	if unmarshalledBundle.Type != "infrastructure" && unmarshalledBundle.Type != "application" {
+		fmt.Println(prettylogs.Orange("Warning: the 'type' field in massdriver.yaml should be either 'infrastructure' or 'application'. This will be enforced in a future release."))
 	}
 
 	if unmarshalledBundle.IsApplication() {

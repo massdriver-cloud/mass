@@ -9,7 +9,6 @@
         "ui",
         "schema",
         "description",
-        "access",
         "type"
     ],
     "properties": {
@@ -98,15 +97,6 @@
             "title": "Source URL",
             "type": "string",
             "description": "Link to the bundle source code."
-        },
-        "access": {
-            "title": "Access",
-            "type": "string",
-            "description": "The access level of the bundle. Private bundles will only be accessible by the organization it is published under.",
-            "enum": [
-                "public",
-                "private"
-            ]
         },
         "type": {
             "title": "Type",
