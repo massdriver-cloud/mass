@@ -12,10 +12,10 @@ type ArtifactDefinition struct {
 }
 
 type ArtifactDefinitionWithSchema struct {
-	ID        string
-	Name      string
-	Label     string
-	URL       string
-	UpdatedAt time.Time
-	Schema    map[string]interface{}
+	ID        string                 `json:"id"`
+	Name      string                 `json:"name"`
+	Label     string                 `json:"label"`
+	URL       string                 `json:"url"`
+	UpdatedAt time.Time             `json:"updatedAt"`
+	Schema    map[string]interface{} `json:"schema"`
 }

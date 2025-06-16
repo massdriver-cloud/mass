@@ -8,11 +8,25 @@ import (
 )
 
 type Package struct {
-	ID          string
-	NamePrefix  string
-	Params      map[string]interface{}
-	Manifest    Manifest
-	Environment Environment
+	ID          string                 `json:"id"`
+	NamePrefix  string                 `json:"namePrefix"`
+	Params      map[string]interface{} `json:"params"`
+	Manifest    PackageManifest        `json:"manifest"`
+	Environment PackageEnvironment     `json:"environment"`
+}
+
+type PackageManifest struct {
+	ID     string        `json:"id"`
+	Bundle PackageBundle `json:"bundle"`
+}
+
+type PackageBundle struct {
+	Name string `json:"name"`
+}
+
+type PackageEnvironment struct {
+	ID   string `json:"id"`
+	Slug string `json:"slug"`
 }
 
 func GetPackageByName(client graphql.Client, orgID string, name string) (*Package, error) {
@@ -30,13 +44,13 @@ func (p *getPackageByNamingConventionGetPackageByNamingConventionPackage) toPack
 	return &Package{
 		NamePrefix: p.NamePrefix,
 		Params:     p.Params,
-		Manifest: Manifest{
+		Manifest: PackageManifest{
 			ID: p.Manifest.Id,
-			Bundle: Bundle{
+			Bundle: PackageBundle{
 				Name: p.Manifest.Bundle.Name,
 			},
 		},
-		Environment: Environment{
+		Environment: PackageEnvironment{
 			ID:   p.Environment.Id,
 			Slug: p.Environment.Slug,
 		},

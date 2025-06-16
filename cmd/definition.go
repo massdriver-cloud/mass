@@ -31,6 +31,7 @@ func NewCmdDefinition() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE:  runDefinitionGet,
 	}
+	definitionGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	definitionListCmd := &cobra.Command{
 		Use:   "list [definition]",
@@ -56,9 +57,14 @@ func NewCmdDefinition() *cobra.Command {
 
 func runDefinitionGet(cmd *cobra.Command, args []string) error {
 	definitionName := args[0]
+	outputFormat, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
 
 	c := restclient.NewClient()
 
+	// debt: switch to reading from the graphql API, it has more data in it than the old rest endpoint.
 	adMap, err := definition.Get(c, definitionName)
 	if err != nil {
 		return err
@@ -70,9 +76,23 @@ func runDefinitionGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to decode definition: %w", err)
 	}
 
-	err = renderDefinition(&ad)
+	switch outputFormat {
+	case "json":
+		jsonBytes, err := json.MarshalIndent(ad, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal definition to JSON: %w", err)
+		}
+		fmt.Println(string(jsonBytes))
+	case "text":
+		err = renderDefinition(&ad)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
 
-	return err
+	return nil
 }
 
 func runDefinitionPublish(cmd *cobra.Command, args []string) error {

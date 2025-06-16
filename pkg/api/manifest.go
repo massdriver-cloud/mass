@@ -1,6 +1,6 @@
 package api
 
 type Manifest struct {
-	ID     string
-	Bundle Bundle
+	ID     string `json:"id"`
+	Bundle Bundle `json:"bundle"`
 }
