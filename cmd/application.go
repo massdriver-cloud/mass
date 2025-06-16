@@ -4,11 +4,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	appParamsPath   = "./params.json"
-	appPatchQueries []string
-)
-
 func NewCmdApp() *cobra.Command {
 	appCmd := &cobra.Command{
 		Use:        "application",
@@ -24,7 +19,7 @@ func NewCmdApp() *cobra.Command {
 		RunE:       runPkgConfigure,
 	}
 
-	appConfigureCmd.Flags().StringVarP(&appParamsPath, "params", "p", appParamsPath, "Path to params JSON file. This file supports bash interpolation.")
+	appConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 
 	appDeployCmd := &cobra.Command{
 		Use:        `deploy <project>-<env>-<manifest>`,
@@ -43,7 +38,7 @@ func NewCmdApp() *cobra.Command {
 		RunE:       runPkgPatch,
 	}
 
-	appPatchCmd.Flags().StringArrayVarP(&appPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
+	appPatchCmd.Flags().StringArrayVarP(&pkgPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 
 	// app and infra are the same, lets reuse a get command/template here.
 	pkgGetCmd := &cobra.Command{

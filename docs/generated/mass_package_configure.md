@@ -33,6 +33,12 @@ mass package configure ecomm-prod-vpc --params=params.json
 mass package configure <project>-<env>-<manifest> [flags]
 ```
 
+### Examples
+
+```
+mass package configure ecomm-prod-vpc --params=params.json
+```
+
 ### Options
 
 ```

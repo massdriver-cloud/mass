@@ -35,6 +35,12 @@ mass package patch ecomm-prod-db --set='.version = "13.4"'
 mass package patch <project>-<env>-<manifest> [flags]
 ```
 
+### Examples
+
+```
+mass package patch ecomm-prod-db --set='.version = "13.4"'
+```
+
 ### Options
 
 ```

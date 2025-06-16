@@ -31,6 +31,12 @@ mass package get ecomm-prod-vpc
 mass package get  <project>-<env>-<manifest> [flags]
 ```
 
+### Examples
+
+```
+mass package get ecomm-prod-vpc
+```
+
 ### Options
 
 ```

@@ -33,6 +33,7 @@ func NewCmdPkg() *cobra.Command {
 		Use:     `configure <project>-<env>-<manifest>`,
 		Short:   "Configure package",
 		Aliases: []string{"cfg"},
+		Example: `mass package configure ecomm-prod-vpc --params=params.json`,
 		Long:    helpdocs.MustRender("package/configure"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgConfigure,
@@ -41,11 +42,12 @@ func NewCmdPkg() *cobra.Command {
 	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 
 	pkgDeployCmd := &cobra.Command{
-		Use:   `deploy <project>-<env>-<manifest>`,
-		Short: "Deploy packages",
-		Long:  helpdocs.MustRender("package/deploy"),
-		Args:  cobra.ExactArgs(1),
-		RunE:  runPkgDeploy,
+		Use:     `deploy <project>-<env>-<manifest>`,
+		Short:   "Deploy packages",
+		Example: `mass package deploy ecomm-prod-vpc`,
+		Long:    helpdocs.MustRender("package/deploy"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgDeploy,
 	}
 
 	pkgDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
@@ -54,6 +56,7 @@ func NewCmdPkg() *cobra.Command {
 		Use:     `patch <project>-<env>-<manifest>`,
 		Short:   "Patch individual package parameter values",
 		Aliases: []string{"cfg"},
+		Example: `mass package patch ecomm-prod-db --set='.version = "13.4"'`,
 		Long:    helpdocs.MustRender("package/patch"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgPatch,
@@ -66,6 +69,7 @@ func NewCmdPkg() *cobra.Command {
 		Use:     `get  <project>-<env>-<manifest>`,
 		Short:   "Get a package",
 		Aliases: []string{"g"},
+		Example: `mass package get ecomm-prod-vpc`,
 		Long:    helpdocs.MustRender("package/get"),
 		Args:    cobra.ExactArgs(1), // Enforce exactly one argument
 		RunE:    runPkgGet,
