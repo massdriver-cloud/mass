@@ -1451,11 +1451,12 @@ func (v *listArtifactDefinitionsResponse) GetArtifactDefinitions() []listArtifac
 
 // projectsProjectsProject includes the requested fields of the GraphQL type Project.
 type projectsProjectsProject struct {
-	Name          string                 `json:"name"`
-	Id            string                 `json:"id"`
-	Slug          string                 `json:"slug"`
-	Description   string                 `json:"description"`
-	DefaultParams map[string]interface{} `json:"-"`
+	Name          string                                           `json:"name"`
+	Id            string                                           `json:"id"`
+	Slug          string                                           `json:"slug"`
+	Description   string                                           `json:"description"`
+	DefaultParams map[string]interface{}                           `json:"-"`
+	Environments  []projectsProjectsProjectEnvironmentsEnvironment `json:"environments"`
 	// Cloud provider costs for this project
 	Cost projectsProjectsProjectCost `json:"cost"`
 }
@@ -1474,6 +1475,11 @@ func (v *projectsProjectsProject) GetDescription() string { return v.Description
 
 // GetDefaultParams returns projectsProjectsProject.DefaultParams, and is useful for accessing the field via an interface.
 func (v *projectsProjectsProject) GetDefaultParams() map[string]interface{} { return v.DefaultParams }
+
+// GetEnvironments returns projectsProjectsProject.Environments, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProject) GetEnvironments() []projectsProjectsProjectEnvironmentsEnvironment {
+	return v.Environments
+}
 
 // GetCost returns projectsProjectsProject.Cost, and is useful for accessing the field via an interface.
 func (v *projectsProjectsProject) GetCost() projectsProjectsProjectCost { return v.Cost }
@@ -1522,6 +1528,8 @@ type __premarshalprojectsProjectsProject struct {
 
 	DefaultParams json.RawMessage `json:"defaultParams"`
 
+	Environments []projectsProjectsProjectEnvironmentsEnvironment `json:"environments"`
+
 	Cost projectsProjectsProjectCost `json:"cost"`
 }
 
@@ -1552,6 +1560,7 @@ func (v *projectsProjectsProject) __premarshalJSON() (*__premarshalprojectsProje
 				"unable to marshal projectsProjectsProject.DefaultParams: %w", err)
 		}
 	}
+	retval.Environments = v.Environments
 	retval.Cost = v.Cost
 	return &retval, nil
 }
@@ -1611,6 +1620,18 @@ type projectsProjectsProjectCostMonthlySummaryAverageCostSample struct {
 func (v *projectsProjectsProjectCostMonthlySummaryAverageCostSample) GetAmount() float64 {
 	return v.Amount
 }
+
+// projectsProjectsProjectEnvironmentsEnvironment includes the requested fields of the GraphQL type Environment.
+type projectsProjectsProjectEnvironmentsEnvironment struct {
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+// GetName returns projectsProjectsProjectEnvironmentsEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProjectEnvironmentsEnvironment) GetName() string { return v.Name }
+
+// GetSlug returns projectsProjectsProjectEnvironmentsEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *projectsProjectsProjectEnvironmentsEnvironment) GetSlug() string { return v.Slug }
 
 // projectsResponse is returned by projects on success.
 type projectsResponse struct {
@@ -2135,6 +2156,10 @@ query projects ($organizationId: ID!) {
 		slug
 		description
 		defaultParams
+		environments {
+			name
+			slug
+		}
 		cost {
 			monthly {
 				average {

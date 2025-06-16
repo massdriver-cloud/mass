@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bytes"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"text/template"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
@@ -20,6 +23,9 @@ var (
 	pkgParamsPath   = "./params.json"
 	pkgPatchQueries []string
 )
+
+//go:embed templates/package.get.md.tmpl
+var packageTemplates embed.FS
 
 func NewCmdPkg() *cobra.Command {
 	pkgCmd := &cobra.Command{
@@ -124,24 +130,59 @@ func renderPackage(pkg *api.Package) error {
 		return err
 	}
 
-	md := fmt.Sprintf(`# Package: %s
+	tmplBytes, err := packageTemplates.ReadFile("templates/package.get.md.tmpl")
+	if err != nil {
+		return fmt.Errorf("failed to read template: %w", err)
+	}
 
-**Bundle:** %s
+	tmpl, err := template.New("package").Parse(string(tmplBytes))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
 
-**Environment:** %s
+	data := struct {
+		NamePrefix string
+		Manifest   struct {
+			Bundle struct {
+				Name string
+			}
+		}
+		Environment struct {
+			Slug string
+		}
+		ParamsJSON string
+	}{
+		NamePrefix: pkg.NamePrefix,
+		Manifest: struct {
+			Bundle struct {
+				Name string
+			}
+		}{
+			Bundle: struct {
+				Name string
+			}{
+				Name: pkg.Manifest.Bundle.Name,
+			},
+		},
+		Environment: struct {
+			Slug string
+		}{
+			Slug: pkg.Environment.Slug,
+		},
+		ParamsJSON: string(paramsJSON),
+	}
 
-## Parameters
-`+"```json"+`
-%s
-`+"```"+`
-`, pkg.NamePrefix, pkg.Manifest.Bundle.Name, pkg.Environment.Slug, string(paramsJSON))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
 
 	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
 	if err != nil {
 		return err
 	}
 
-	out, err := r.Render(md)
+	out, err := r.Render(buf.String())
 	if err != nil {
 		return err
 	}

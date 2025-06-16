@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"bytes"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"os"
+	"text/template"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/fatih/color"
@@ -16,6 +19,9 @@ import (
 	"github.com/rodaine/table"
 	"github.com/spf13/cobra"
 )
+
+//go:embed templates/definition.get.md.tmpl
+var definitionTemplates embed.FS
 
 func NewCmdDefinition() *cobra.Command {
 	definitionCmd := &cobra.Command{
@@ -153,22 +159,37 @@ func renderDefinition(ad *api.ArtifactDefinitionWithSchema) error {
 		return err
 	}
 
-	md := fmt.Sprintf(`# Artifact Definition: %s
+	tmplBytes, err := definitionTemplates.ReadFile("templates/definition.get.md.tmpl")
+	if err != nil {
+		return fmt.Errorf("failed to read template: %w", err)
+	}
 
-**ID:** %s
+	tmpl, err := template.New("definition").Parse(string(tmplBytes))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
 
-## Schema
-`+"```json"+`
-%s
-`+"```"+`
-`, ad.Label, ad.Name, string(schemaJSON))
+	data := struct {
+		Label      string
+		Name       string
+		SchemaJSON string
+	}{
+		Label:      ad.Label,
+		Name:       ad.Name,
+		SchemaJSON: string(schemaJSON),
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
 
 	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
 	if err != nil {
 		return err
 	}
 
-	out, err := r.Render(md)
+	out, err := r.Render(buf.String())
 	if err != nil {
 		return err
 	}

@@ -15,6 +15,10 @@ query projects($organizationId: ID!){
     slug
     description
     defaultParams
+    environments{
+      name
+      slug
+    }
     cost{
       monthly{
         average{

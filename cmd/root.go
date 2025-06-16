@@ -41,6 +41,7 @@ func Execute() {
 	rootCmd.AddCommand(NewCmdImage())
 	rootCmd.AddCommand(NewCmdInfra())
 	rootCmd.AddCommand(NewCmdPreview())
+	rootCmd.AddCommand(NewCmdProject())
 	rootCmd.AddCommand(NewCmdSchema())
 	rootCmd.AddCommand(NewCmdServer())
 	rootCmd.AddCommand(NewCmdVersion())

@@ -1,0 +1,14 @@
+# Project: {{.Name}}
+
+**Slug:** {{.Slug}}
+
+**Description:** {{.Description}}
+
+## Environments
+{{range .Environments}}
+- **{{.Name}}** ({{.Slug}})
+{{end}}
+
+## Cost
+**Monthly Average:** ${{.MonthlyAverageCost}}
+**Daily Average:** ${{.DailyAverageCost}}
