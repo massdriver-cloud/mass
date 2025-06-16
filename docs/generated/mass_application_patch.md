@@ -46,7 +46,7 @@ mass app patch DC8F1D9B-BD82-4E5A-9C40-8653BC794ABC --set='.image.repository = "
 
 
 ```
-mass application patch <project>-<target>-<manifest> [flags]
+mass application patch <project>-<env>-<manifest> [flags]
 ```
 
 ### Options

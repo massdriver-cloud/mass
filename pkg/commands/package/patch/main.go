@@ -43,5 +43,5 @@ func Run(client graphql.Client, orgID string, name string, setValues []string) (
 		}
 	}
 
-	return api.ConfigurePackage(client, orgID, pkg.Target.ID, pkg.Manifest.ID, updatedParams)
+	return api.ConfigurePackage(client, orgID, pkg.Environment.ID, pkg.Manifest.ID, updatedParams)
 }

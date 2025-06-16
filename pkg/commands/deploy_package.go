@@ -18,7 +18,7 @@ func DeployPackage(client graphql.Client, orgID, name, message string) (*api.Dep
 		return nil, err
 	}
 
-	deployment, err := api.DeployPackage(client, orgID, pkg.Target.ID, pkg.Manifest.ID, message)
+	deployment, err := api.DeployPackage(client, orgID, pkg.Environment.ID, pkg.Manifest.ID, message)
 	if err != nil {
 		return deployment, err
 	}

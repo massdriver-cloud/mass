@@ -40,7 +40,7 @@ For more info see [deploying](https://docs.massdriver.cloud/applications/deployi
 
 
 ```
-mass application deploy <project>-<target>-<manifest> [flags]
+mass application deploy <project>-<env>-<manifest> [flags]
 ```
 
 ### Options

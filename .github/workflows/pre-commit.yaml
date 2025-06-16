@@ -11,7 +11,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v2
-    - uses: pre-commit/action@v2.0.3
+    - uses: pre-commit/action@v3.0.1
       env:
         # this check prevents devs from commit to main.
         # however, we don't want it to fail on commits to main in CI.
