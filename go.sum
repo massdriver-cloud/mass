@@ -232,8 +232,8 @@ github.com/massdriver-cloud/airlock v0.0.6 h1:XGNDwZDr/EeGGDQnxM/oovXBsmIoEALJU0
 github.com/massdriver-cloud/airlock v0.0.6/go.mod h1:VULNe2TXFGexs2YtEPOtp2PNFq9eq1LOK5UoXjJ/mOw=
 github.com/massdriver-cloud/liquid v1.4.0 h1:807qhdLOHFbbIG7huhxB1bZRt/qOZWuHhhhjuA/bVjc=
 github.com/massdriver-cloud/liquid v1.4.0/go.mod h1:VmzQQHa5v4E0GvGzqccfAfLgMwRk2V+s1QbxYx9dGak=
-github.com/massdriver-cloud/massdriver-sdk-go v0.0.6 h1:8hyCHH8E8LlLSa2YzpICfUKxArZfAj6WWLX+FDsi0HE=
-github.com/massdriver-cloud/massdriver-sdk-go v0.0.6/go.mod h1:8zdX6sdZzghK7bmYSp3U9n07XT/qb1pXNGwq8Cj11/4=
+github.com/massdriver-cloud/massdriver-sdk-go v0.0.5 h1:AtBdPZo/Luovn7XtpyV413CG5/tV92267pJCPxkckr0=
+github.com/massdriver-cloud/massdriver-sdk-go v0.0.5/go.mod h1:8zdX6sdZzghK7bmYSp3U9n07XT/qb1pXNGwq8Cj11/4=
 github.com/massdriver-cloud/schema2json v0.0.2 h1:ohcx8233BJ6sKBYUKh7gdcbbJ2ASSdkjE81fUUIFfgk=
 github.com/massdriver-cloud/schema2json v0.0.2/go.mod h1:EwuRNUGTQsq0KFfUoAFgdmUwcKWzNv5y1n49sOylBK0=
 github.com/massdriver-cloud/terraform-config-inspect v0.0.1 h1:eLtKFRaklHIxcPvUtZmNacl28n4QIHr29pJzw/u/FKU=
