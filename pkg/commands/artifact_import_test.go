@@ -9,7 +9,7 @@ import (
 
 func TestArtifactImport(t *testing.T) {
 	client := gqlmock.NewClientWithJSONResponseMap(map[string]interface{}{
-		"getArtifactDefinitions": map[string]interface{}{
+		"listArtifactDefinitions": map[string]interface{}{
 			"data": map[string]interface{}{
 				"artifactDefinitions": []map[string]interface{}{
 					{

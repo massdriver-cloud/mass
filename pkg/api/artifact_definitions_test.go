@@ -8,7 +8,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
 )
 
-func TestGetArtifactDefinitions(t *testing.T) {
+func TestListArtifactDefinitions(t *testing.T) {
 	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"artifactDefinitions": []map[string]interface{}{
@@ -26,7 +26,7 @@ func TestGetArtifactDefinitions(t *testing.T) {
 		},
 	})
 
-	got, err := api.GetArtifactDefinitions(client, "faux-org-id")
+	got, err := api.ListArtifactDefinitions(client, "faux-org-id")
 
 	if err != nil {
 		t.Fatal(err)

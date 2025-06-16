@@ -5,9 +5,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charmbracelet/glamour"
+	"github.com/fatih/color"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
+	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/definition"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
+	"github.com/mitchellh/mapstructure"
+	"github.com/rodaine/table"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +32,12 @@ func NewCmdDefinition() *cobra.Command {
 		RunE:  runDefinitionGet,
 	}
 
+	definitionListCmd := &cobra.Command{
+		Use:   "list [definition]",
+		Short: "List artifact definitions",
+		RunE:  runDefinitionList,
+	}
+
 	definitionPublishCmd := &cobra.Command{
 		Use:          "publish",
 		Short:        "Publish an artifact definition to Massdriver",
@@ -37,6 +49,7 @@ func NewCmdDefinition() *cobra.Command {
 
 	definitionCmd.AddCommand(definitionGetCmd)
 	definitionCmd.AddCommand(definitionPublishCmd)
+	definitionCmd.AddCommand(definitionListCmd)
 
 	return definitionCmd
 }
@@ -46,19 +59,20 @@ func runDefinitionGet(cmd *cobra.Command, args []string) error {
 
 	c := restclient.NewClient()
 
-	def, err := definition.Get(c, definitionName)
+	adMap, err := definition.Get(c, definitionName)
 	if err != nil {
 		return err
 	}
 
-	bytes, err := json.Marshal(def)
-	if err != nil {
-		return err
+	// Convert map to ArtifactDefinitionWithSchema
+	var ad api.ArtifactDefinitionWithSchema
+	if err := mapstructure.Decode(adMap, &ad); err != nil {
+		return fmt.Errorf("failed to decode definition: %w", err)
 	}
 
-	fmt.Println(string(bytes))
+	err = renderDefinition(&ad)
 
-	return nil
+	return err
 }
 
 func runDefinitionPublish(cmd *cobra.Command, args []string) error {
@@ -86,5 +100,59 @@ func runDefinitionPublish(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Definition published successfully!")
 
+	return nil
+}
+
+func runDefinitionList(cmd *cobra.Command, args []string) error {
+	config, configErr := config.Get()
+	if configErr != nil {
+		return configErr
+	}
+
+	client := api.NewClient(config.URL, config.APIKey)
+	definitions, err := api.ListArtifactDefinitions(client, config.OrgID)
+
+	headerFmt := color.New(color.FgHiBlue, color.Underline).SprintfFunc()
+	columnFmt := color.New(color.FgHiWhite).SprintfFunc()
+
+	tbl := table.New("ID", "Label", "Updated At")
+	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
+
+	for _, definition := range definitions {
+		tbl.AddRow(definition.Name, definition.Label, definition.UpdatedAt)
+	}
+
+	tbl.Print()
+
+	return err
+}
+
+func renderDefinition(ad *api.ArtifactDefinitionWithSchema) error {
+	schemaJSON, err := json.MarshalIndent(ad.Schema, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	md := fmt.Sprintf(`# Artifact Definition: %s
+
+**ID:** %s
+
+## Schema
+`+"```json"+`
+%s
+`+"```"+`
+`, ad.Label, ad.Name, string(schemaJSON))
+
+	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
+	if err != nil {
+		return err
+	}
+
+	out, err := r.Render(md)
+	if err != nil {
+		return err
+	}
+
+	fmt.Print(out)
 	return nil
 }

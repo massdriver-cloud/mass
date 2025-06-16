@@ -6,9 +6,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/pkg/api/scalars"
+)
+
+type ArtifactDefinitionUiConnectionOrientation string
+
+const (
+	ArtifactDefinitionUiConnectionOrientationLink               ArtifactDefinitionUiConnectionOrientation = "LINK"
+	ArtifactDefinitionUiConnectionOrientationEnvironmentDefault ArtifactDefinitionUiConnectionOrientation = "ENVIRONMENT_DEFAULT"
 )
 
 // Arguments required to get container repositories
@@ -458,14 +466,6 @@ func (v *__deployPreviewEnvironmentInput) GetProjectId() string { return v.Proje
 // GetInput returns __deployPreviewEnvironmentInput.Input, and is useful for accessing the field via an interface.
 func (v *__deployPreviewEnvironmentInput) GetInput() PreviewEnvironmentInput { return v.Input }
 
-// __getArtifactDefinitionsInput is used internally by genqlient
-type __getArtifactDefinitionsInput struct {
-	OrganizationId string `json:"organizationId"`
-}
-
-// GetOrganizationId returns __getArtifactDefinitionsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getArtifactDefinitionsInput) GetOrganizationId() string { return v.OrganizationId }
-
 // __getArtifactsByTypeInput is used internally by genqlient
 type __getArtifactsByTypeInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -513,6 +513,14 @@ func (v *__getProjectByIdInput) GetOrganizationId() string { return v.Organizati
 
 // GetId returns __getProjectByIdInput.Id, and is useful for accessing the field via an interface.
 func (v *__getProjectByIdInput) GetId() string { return v.Id }
+
+// __listArtifactDefinitionsInput is used internally by genqlient
+type __listArtifactDefinitionsInput struct {
+	OrganizationId string `json:"organizationId"`
+}
+
+// GetOrganizationId returns __listArtifactDefinitionsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listArtifactDefinitionsInput) GetOrganizationId() string { return v.OrganizationId }
 
 // __projectsInput is used internally by genqlient
 type __projectsInput struct {
@@ -907,97 +915,6 @@ func (v *deployPreviewEnvironmentResponse) GetDeployPreviewEnvironment() deployP
 	return v.DeployPreviewEnvironment
 }
 
-// getArtifactDefinitionsArtifactDefinitionsArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
-type getArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
-	// The name of this type. Organization scoped: my-org/aws-iam-role
-	Name   string                 `json:"name"`
-	Schema map[string]interface{} `json:"-"`
-}
-
-// GetName returns getArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Name, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetName() string { return v.Name }
-
-// GetSchema returns getArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetSchema() map[string]interface{} {
-	return v.Schema
-}
-
-func (v *getArtifactDefinitionsArtifactDefinitionsArtifactDefinition) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getArtifactDefinitionsArtifactDefinitionsArtifactDefinition
-		Schema json.RawMessage `json:"schema"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getArtifactDefinitionsArtifactDefinitionsArtifactDefinition = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Schema
-		src := firstPass.Schema
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalgetArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
-	Name string `json:"name"`
-
-	Schema json.RawMessage `json:"schema"`
-}
-
-func (v *getArtifactDefinitionsArtifactDefinitionsArtifactDefinition) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getArtifactDefinitionsArtifactDefinitionsArtifactDefinition) __premarshalJSON() (*__premarshalgetArtifactDefinitionsArtifactDefinitionsArtifactDefinition, error) {
-	var retval __premarshalgetArtifactDefinitionsArtifactDefinitionsArtifactDefinition
-
-	retval.Name = v.Name
-	{
-
-		dst := &retval.Schema
-		src := v.Schema
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema: %w", err)
-		}
-	}
-	return &retval, nil
-}
-
-// getArtifactDefinitionsResponse is returned by getArtifactDefinitions on success.
-type getArtifactDefinitionsResponse struct {
-	ArtifactDefinitions []getArtifactDefinitionsArtifactDefinitionsArtifactDefinition `json:"artifactDefinitions"`
-}
-
-// GetArtifactDefinitions returns getArtifactDefinitionsResponse.ArtifactDefinitions, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionsResponse) GetArtifactDefinitions() []getArtifactDefinitionsArtifactDefinitionsArtifactDefinition {
-	return v.ArtifactDefinitions
-}
-
 // getArtifactsByTypeArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
 type getArtifactsByTypeArtifactsPaginatedArtifacts struct {
 	// A cursor to the next page of items in the list.
@@ -1372,6 +1289,165 @@ type getProjectByIdResponse struct {
 
 // GetProject returns getProjectByIdResponse.Project, and is useful for accessing the field via an interface.
 func (v *getProjectByIdResponse) GetProject() getProjectByIdProject { return v.Project }
+
+// listArtifactDefinitionsArtifactDefinitionsArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+type listArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
+	Id     string                 `json:"id"`
+	Schema map[string]interface{} `json:"-"`
+	// The name of this type. Organization scoped: my-org/aws-iam-role
+	Name      string                                                         `json:"name"`
+	Icon      string                                                         `json:"icon"`
+	Label     string                                                         `json:"label"`
+	UpdatedAt time.Time                                                      `json:"updatedAt"`
+	Url       string                                                         `json:"url"`
+	Ui        listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi `json:"ui"`
+}
+
+// GetId returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Id, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetId() string { return v.Id }
+
+// GetSchema returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetSchema() map[string]interface{} {
+	return v.Schema
+}
+
+// GetName returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Name, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetName() string {
+	return v.Name
+}
+
+// GetIcon returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Icon, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetIcon() string {
+	return v.Icon
+}
+
+// GetLabel returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Label, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetLabel() string {
+	return v.Label
+}
+
+// GetUpdatedAt returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetUrl returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Url, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetUrl() string { return v.Url }
+
+// GetUi returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Ui, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetUi() listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi {
+	return v.Ui
+}
+
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*listArtifactDefinitionsArtifactDefinitionsArtifactDefinition
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.listArtifactDefinitionsArtifactDefinitionsArtifactDefinition = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallistArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
+	Id string `json:"id"`
+
+	Schema json.RawMessage `json:"schema"`
+
+	Name string `json:"name"`
+
+	Icon string `json:"icon"`
+
+	Label string `json:"label"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Url string `json:"url"`
+
+	Ui listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi `json:"ui"`
+}
+
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) __premarshalJSON() (*__premarshallistArtifactDefinitionsArtifactDefinitionsArtifactDefinition, error) {
+	var retval __premarshallistArtifactDefinitionsArtifactDefinitionsArtifactDefinition
+
+	retval.Id = v.Id
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema: %w", err)
+		}
+	}
+	retval.Name = v.Name
+	retval.Icon = v.Icon
+	retval.Label = v.Label
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Url = v.Url
+	retval.Ui = v.Ui
+	return &retval, nil
+}
+
+// listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi includes the requested fields of the GraphQL type ArtifactDefinitionUi.
+type listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi struct {
+	ConnectionOrientation   ArtifactDefinitionUiConnectionOrientation `json:"connectionOrientation"`
+	EnvironmentDefaultGroup string                                    `json:"environmentDefaultGroup"`
+}
+
+// GetConnectionOrientation returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi) GetConnectionOrientation() ArtifactDefinitionUiConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetEnvironmentDefaultGroup returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi.EnvironmentDefaultGroup, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi) GetEnvironmentDefaultGroup() string {
+	return v.EnvironmentDefaultGroup
+}
+
+// listArtifactDefinitionsResponse is returned by listArtifactDefinitions on success.
+type listArtifactDefinitionsResponse struct {
+	ArtifactDefinitions []listArtifactDefinitionsArtifactDefinitionsArtifactDefinition `json:"artifactDefinitions"`
+}
+
+// GetArtifactDefinitions returns listArtifactDefinitionsResponse.ArtifactDefinitions, and is useful for accessing the field via an interface.
+func (v *listArtifactDefinitionsResponse) GetArtifactDefinitions() []listArtifactDefinitionsArtifactDefinitionsArtifactDefinition {
+	return v.ArtifactDefinitions
+}
 
 // projectsProjectsProject includes the requested fields of the GraphQL type Project.
 type projectsProjectsProject struct {
@@ -1828,42 +1904,6 @@ func deployPreviewEnvironment(
 	return &data, err
 }
 
-// The query or mutation executed by getArtifactDefinitions.
-const getArtifactDefinitions_Operation = `
-query getArtifactDefinitions ($organizationId: ID!) {
-	artifactDefinitions(organizationId: $organizationId) {
-		name
-		schema
-	}
-}
-`
-
-func getArtifactDefinitions(
-	ctx context.Context,
-	client graphql.Client,
-	organizationId string,
-) (*getArtifactDefinitionsResponse, error) {
-	req := &graphql.Request{
-		OpName: "getArtifactDefinitions",
-		Query:  getArtifactDefinitions_Operation,
-		Variables: &__getArtifactDefinitionsInput{
-			OrganizationId: organizationId,
-		},
-	}
-	var err error
-
-	var data getArtifactDefinitionsResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
 // The query or mutation executed by getArtifactsByType.
 const getArtifactsByType_Operation = `
 query getArtifactsByType ($organizationId: ID!, $artifactType: String!) {
@@ -2030,6 +2070,51 @@ func getProjectById(
 	var err error
 
 	var data getProjectByIdResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by listArtifactDefinitions.
+const listArtifactDefinitions_Operation = `
+query listArtifactDefinitions ($organizationId: ID!) {
+	artifactDefinitions(organizationId: $organizationId) {
+		id
+		schema
+		name
+		icon
+		label
+		updatedAt
+		url
+		ui {
+			connectionOrientation
+			environmentDefaultGroup
+		}
+	}
+}
+`
+
+func listArtifactDefinitions(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+) (*listArtifactDefinitionsResponse, error) {
+	req := &graphql.Request{
+		OpName: "listArtifactDefinitions",
+		Query:  listArtifactDefinitions_Operation,
+		Variables: &__listArtifactDefinitionsInput{
+			OrganizationId: organizationId,
+		},
+	}
+	var err error
+
+	var data listArtifactDefinitionsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

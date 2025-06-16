@@ -29,7 +29,7 @@ var promptsNew = []func(t *ImportedArtifact) error{
 func RunArtifactImportPrompt(client graphql.Client, orgId string, t *ImportedArtifact) error {
 	var err error
 
-	ads, err := api.GetArtifactDefinitions(client, orgId)
+	ads, err := api.ListArtifactDefinitions(client, orgId)
 	if err != nil {
 		return err
 	}
