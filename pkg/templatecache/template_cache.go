@@ -10,7 +10,6 @@ type TemplateCache interface {
 type TemplateData struct {
 	Name         string            `json:"name"`
 	Description  string            `json:"description"`
-	Access       string            `json:"access"`
 	Location     string            `json:"location"`
 	TemplateName string            `json:"templateName"`
 	TemplateRepo string            `json:"templateRepo"`

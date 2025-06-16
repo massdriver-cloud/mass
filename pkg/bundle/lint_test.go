@@ -20,7 +20,6 @@ func TestLintSchema(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Access:      "private",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
 				Params:      map[string]interface{}{},
@@ -35,7 +34,6 @@ func TestLintSchema(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Access:      "private",
 				Type:        "infrastructure",
 				Params:      map[string]interface{}{},
 				Connections: map[string]interface{}{},
@@ -271,7 +269,6 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
-					Access:      "private",
 					Schema:      "draft-07",
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
@@ -294,7 +291,6 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
-					Access:      "private",
 					Schema:      "draft-07",
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
@@ -320,7 +316,6 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
-					Access:      "private",
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lintmodule",
@@ -343,7 +338,6 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
-					Access:      "private",
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lintmodule",
@@ -395,7 +389,6 @@ func TestLintMatchRequired(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Access:      "private",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
 				Params: map[string]interface{}{
@@ -417,7 +410,6 @@ func TestLintMatchRequired(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Access:      "private",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
 				Params: map[string]interface{}{
@@ -439,7 +431,6 @@ func TestLintMatchRequired(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Access:      "private",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
 				Params: map[string]interface{}{
@@ -467,7 +458,6 @@ func TestLintMatchRequired(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Access:      "private",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
 				Params: map[string]interface{}{
