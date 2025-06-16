@@ -29,6 +29,7 @@ func NewCmdProject() *cobra.Command {
 	projectGetCmd := &cobra.Command{
 		Use:   "get [project]",
 		Short: "Get a project from Massdriver",
+		Long:  helpdocs.MustRender("project/get"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runProjectGet,
 	}
@@ -37,6 +38,7 @@ func NewCmdProject() *cobra.Command {
 	projectListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List projects",
+		Long:  helpdocs.MustRender("project/list"),
 		RunE:  runProjectList,
 	}
 

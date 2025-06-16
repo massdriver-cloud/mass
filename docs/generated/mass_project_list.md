@@ -12,7 +12,20 @@ List projects
 
 # List Projects
 
-Lists Massdriver projects.
+Lists all Massdriver projects in your organization.
+
+## Usage
+
+```bash
+mass project list
+```
+
+## Examples
+
+```bash
+# List all projects
+mass project list
+```
 
 
 ```
@@ -27,4 +40,4 @@ mass project list [flags]
 
 ### SEE ALSO
 
-* [mass project](/cli/commands/mass_project)	 - Manage Projects
+* [mass project](/cli/commands/mass_project)	 - Project management

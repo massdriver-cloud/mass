@@ -33,6 +33,7 @@ func NewCmdDefinition() *cobra.Command {
 	definitionGetCmd := &cobra.Command{
 		Use:   "get [definition]",
 		Short: "Get an artifact definition from Massdriver",
+		Long:  helpdocs.MustRender("definition/get"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runDefinitionGet,
 	}
@@ -41,12 +42,14 @@ func NewCmdDefinition() *cobra.Command {
 	definitionListCmd := &cobra.Command{
 		Use:   "list [definition]",
 		Short: "List artifact definitions",
+		Long:  helpdocs.MustRender("definition/list"),
 		RunE:  runDefinitionList,
 	}
 
 	definitionPublishCmd := &cobra.Command{
 		Use:          "publish",
 		Short:        "Publish an artifact definition to Massdriver",
+		Long:         helpdocs.MustRender("definition/publish"),
 		RunE:         runDefinitionPublish,
 		SilenceUsage: true,
 	}

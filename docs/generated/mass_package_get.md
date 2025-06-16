@@ -12,19 +12,24 @@ Get a package
 
 # Get Package
 
-Gets a package's details from Massdriver.
+Retrieves detailed information about a specific package from Massdriver.
 
-Your IaC must be published as a [bundle](https://docs.massdriver.cloud/bundles) to Massdriver first and be added to an environment's canvas.
+Your infrastructure must be published as a [bundle](https://docs.massdriver.cloud/bundles) to Massdriver first and be added to an environment's canvas.
+
+## Usage
+
+```bash
+mass package get <package-slug>
+```
 
 ## Examples
 
-You can get package details using the `slug` identifier.
-
-The `slug` can be found by hovering over the bundle in the Massdriver diagram. The package slug is a combination of the <project-slug>-<env-slug>-<manifest-slug>
-
-```shell
+```bash
+# Get details for a VPC package in the ecommerce production environment
 mass package get ecomm-prod-vpc
 ```
+
+The package slug can be found by hovering over the bundle in the Massdriver diagram. It follows the format: `<project-slug>-<env-slug>-<manifest-slug>`.
 
 
 ```
@@ -34,7 +39,8 @@ mass package get  <project>-<env>-<manifest> [flags]
 ### Options
 
 ```
-  -h, --help   help for get
+  -h, --help            help for get
+  -o, --output string   Output format (text or json) (default "text")
 ```
 
 ### SEE ALSO
