@@ -8,11 +8,10 @@ import (
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/fatih/color"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/pkg/cli"
 	"github.com/massdriver-cloud/mass/pkg/config"
-	"github.com/rodaine/table"
 	"github.com/spf13/cobra"
 )
 
@@ -108,14 +107,10 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	headerFmt := color.New(color.FgHiBlue, color.Underline).SprintfFunc()
-	columnFmt := color.New(color.FgHiWhite).SprintfFunc()
-
-	tbl := table.New("Name", "Slug", "Description", "Monthly $", "Daily $")
-	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
+	tbl := cli.NewTable("ID/Slug", "Name", "Description", "Monthly $", "Daily $")
 
 	for _, project := range projects {
-		tbl.AddRow(project.Name, project.Slug, project.Description, project.MonthlyAverageCost, project.DailyAverageCost)
+		tbl.AddRow(project.Slug, project.Name, project.Description, project.MonthlyAverageCost, project.DailyAverageCost)
 	}
 
 	tbl.Print()

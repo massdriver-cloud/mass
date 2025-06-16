@@ -9,14 +9,13 @@ import (
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/fatih/color"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/pkg/cli"
 	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/definition"
 	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rodaine/table"
 	"github.com/spf13/cobra"
 )
 
@@ -138,11 +137,7 @@ func runDefinitionList(cmd *cobra.Command, args []string) error {
 	client := api.NewClient(config.URL, config.APIKey)
 	definitions, err := api.ListArtifactDefinitions(client, config.OrgID)
 
-	headerFmt := color.New(color.FgHiBlue, color.Underline).SprintfFunc()
-	columnFmt := color.New(color.FgHiWhite).SprintfFunc()
-
-	tbl := table.New("ID", "Label", "Updated At")
-	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
+	tbl := cli.NewTable("Name", "Label", "Updated At")
 
 	for _, definition := range definitions {
 		tbl.AddRow(definition.Name, definition.Label, definition.UpdatedAt)
