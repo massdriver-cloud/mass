@@ -143,7 +143,6 @@ func mockTemplateData(writePath string) *templatecache.TemplateData {
 		TemplateName: "opentofu",
 		TemplateRepo: "massdriver-cloud/infrastructure-templates",
 		Name:         "aws-dynamodb",
-		Access:       "private",
 		Description:  "whatever",
 		Connections: []templatecache.Connection{
 			{ArtifactDefinition: "massdriver/aws-dynamodb-table", Name: "dynamo"},

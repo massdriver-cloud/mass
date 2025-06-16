@@ -52,6 +52,11 @@ func runImagePush(cmd *cobra.Command, args []string) error {
 	if configErr != nil {
 		return configErr
 	}
+
+	if !strings.Contains(config.URL, "https://api.massdriver.cloud") {
+		return fmt.Errorf("image management is only supported in the Massdriver Cloud. Your current API URL is %s, which is not supported for image management", config.URL)
+	}
+
 	pushInput.OrganizationID = config.OrgID
 	pushInput.ImageName = args[0]
 

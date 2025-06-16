@@ -111,10 +111,12 @@ func getIgnores(ignorePath string) (*ignore.GitIgnore, error) {
 		"/.*",
 		"/*/.*",
 
-		// Ignore certain provisioner files
+		// Ignore certain terraform/opentofu files
 		"**/.terraform",
 		"**/*.tfstate*",
 		"**/*.tfvars*",
+		// Allow terraform lock files
+		"!**/*.terraform.lock.hcl",
 	}
 
 	_, err := os.Stat(ignorePath)
