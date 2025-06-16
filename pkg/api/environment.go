@@ -9,9 +9,10 @@ import (
 )
 
 type Environment struct {
-	ID   string
-	Slug string
-	URL  string
+	ID   string `json:"id,omitempty"`
+	Slug string `json:"slug"`
+	URL  string `json:"url,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
 const urlTemplate = "https://app.massdriver.cloud/orgs/%s/projects/%s/targets/%v"

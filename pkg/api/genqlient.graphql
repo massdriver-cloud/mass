@@ -15,6 +15,10 @@ query projects($organizationId: ID!){
     slug
     description
     defaultParams
+    environments{
+      name
+      slug
+    }
     cost{
       monthly{
         average{
@@ -159,9 +163,18 @@ mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactS
   }
 }
 
-query getArtifactDefinitions($organizationId: ID!) {
+query listArtifactDefinitions($organizationId: ID!) {
   artifactDefinitions(organizationId: $organizationId) {
-    name
+    id
     schema
+    name
+    icon
+    label
+    updatedAt
+    url
+    ui {
+      connectionOrientation
+      environmentDefaultGroup
+    }
   }
 }

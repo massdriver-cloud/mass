@@ -1,5 +1,7 @@
 package api
 
+import "time"
+
 type Artifact struct {
 	Name string
 	ID   string
@@ -10,6 +12,10 @@ type ArtifactDefinition struct {
 }
 
 type ArtifactDefinitionWithSchema struct {
-	Name   string
-	Schema map[string]interface{}
+	ID        string                 `json:"id"`
+	Name      string                 `json:"name"`
+	Label     string                 `json:"label"`
+	URL       string                 `json:"url"`
+	UpdatedAt time.Time             `json:"updatedAt"`
+	Schema    map[string]interface{} `json:"schema"`
 }

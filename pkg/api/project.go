@@ -9,13 +9,14 @@ import (
 )
 
 type Project struct {
-	ID                 string
-	Name               string
-	Slug               string
-	Description        string
-	DefaultParams      map[string]interface{}
-	MonthlyAverageCost float64
-	DailyAverageCost   float64
+	ID                 string                 `json:"id"`
+	Name               string                 `json:"name"`
+	Slug               string                 `json:"slug"`
+	Description        string                 `json:"description"`
+	DefaultParams      map[string]interface{} `json:"defaultParams"`
+	MonthlyAverageCost float64                `json:"monthlyAverageCost"`
+	DailyAverageCost   float64                `json:"dailyAverageCost"`
+	Environments       []Environment          `json:"environments"`
 }
 
 func GetProject(client graphql.Client, orgID string, idOrSlug string) (*Project, error) {
@@ -35,6 +36,14 @@ func (p *getProjectByIdProject) toProject() *Project {
 }
 
 func (p *projectsProjectsProject) toProject() Project {
+	environments := make([]Environment, len(p.Environments))
+	for i, env := range p.Environments {
+		environments[i] = Environment{
+			Name: env.Name,
+			Slug: env.Slug,
+		}
+	}
+
 	return Project{
 		ID:                 p.Id,
 		Slug:               p.Slug,
@@ -43,6 +52,7 @@ func (p *projectsProjectsProject) toProject() Project {
 		DefaultParams:      p.DefaultParams,
 		MonthlyAverageCost: p.Cost.Monthly.Average.Amount,
 		DailyAverageCost:   p.Cost.Daily.Average.Amount,
+		Environments:       environments,
 	}
 }
 

@@ -1,5 +1,5 @@
 package api
 
 type Bundle struct {
-	Name string
+	Name string `json:"name"`
 }

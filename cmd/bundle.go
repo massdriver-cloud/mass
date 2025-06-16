@@ -224,7 +224,7 @@ func runBundleNew(input *bundleNew) {
 	}
 	gqlclient := api.NewClient(c.URL, c.APIKey)
 
-	artifactDefs, err := api.GetArtifactDefinitions(gqlclient, c.OrgID)
+	artifactDefs, err := api.ListArtifactDefinitions(gqlclient, c.OrgID)
 	if err != nil {
 		log.Fatal(err)
 	}

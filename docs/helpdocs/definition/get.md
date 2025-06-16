@@ -1,9 +1,24 @@
-# Fetch a Massdriver Artifact Definition
+# Get Artifact Definition
 
-Fetch and print the JSON schema formatted artifact definition
+Retrieves detailed information about a specific artifact definition, including:
+- Definition name and label
+- Schema
+- UI configuration
+- Connection settings
+
+## Usage
+
+```bash
+mass definition get <definition-name>
+```
 
 ## Examples
 
-```shell
-mass definition get massdriver/aws-vpc
+```bash
+# Get details for the "aws-s3" definition
+mass definition get aws-s3
 ```
+
+## Options
+
+- `--output`: Output format (text or json)

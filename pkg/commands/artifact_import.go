@@ -39,7 +39,7 @@ func ArtifactImport(client graphql.Client, orgID string, artifactName string, ar
 }
 
 func validateArtifact(client graphql.Client, orgID string, artifactType string, artifact *artifact.Artifact) error {
-	ads, adsErr := api.GetArtifactDefinitions(client, orgID)
+	ads, adsErr := api.ListArtifactDefinitions(client, orgID)
 	if adsErr != nil {
 		return adsErr
 	}

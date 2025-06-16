@@ -11,3 +11,5 @@ bindings:
     type: map[string]interface{}
     marshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.MarshalJSON
     unmarshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.UnmarshalJSON
+  DateTime:
+    type: time.Time

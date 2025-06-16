@@ -1,17 +1,23 @@
-# Publish a Massdriver Artifact Definition
+# Publish Artifact Definition
 
-Publish an artifact definition to Massdriver. Publishing is an upsert operation, so it will create or update an existing artifact.
+Publishes a new or updated artifact definition to Massdriver.
+
+## Usage
+
+```bash
+mass definition publish --file <definition-file>
+```
 
 ## Examples
 
-**Publish from a file**
+```bash
+# Publish a definition from a file
+mass definition publish --file my-definition.json
 
-```shell
-mass definition publish -f definition.json
+# Publish a definition from stdin
+cat my-definition.json | mass definition publish --file -
 ```
 
-**Publish from stdin**
+## Options
 
-```shell
-cat definition.json | mass definition publish -f -
-```
+- `--file`: Path to the definition file (use - for stdin)

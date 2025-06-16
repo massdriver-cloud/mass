@@ -6,7 +6,7 @@ sidebar_label: Mass Project
 ---
 ## mass project
 
-Manage Projects
+Project management
 
 ### Synopsis
 
@@ -15,6 +15,11 @@ Manage Projects
 [Projects](https://docs.massdriver.cloud/concepts/projects) act as permission and replication boundaries in Massdriver.
 
 A project can encompass many environments (permanent or ephemeral) and manages the parity across those environments.
+
+## Commands
+
+- `get`: Retrieve project details and configuration
+- `list`: List all projects in your organization
 
 
 ### Options
@@ -26,4 +31,5 @@ A project can encompass many environments (permanent or ephemeral) and manages t
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
+* [mass project get](/cli/commands/mass_project_get)	 - Get a project from Massdriver
 * [mass project list](/cli/commands/mass_project_list)	 - List projects

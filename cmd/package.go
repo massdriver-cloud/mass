@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bytes"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"text/template"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
@@ -20,6 +23,9 @@ var (
 	pkgParamsPath   = "./params.json"
 	pkgPatchQueries []string
 )
+
+//go:embed templates/package.get.md.tmpl
+var packageTemplates embed.FS
 
 func NewCmdPkg() *cobra.Command {
 	pkgCmd := &cobra.Command{
@@ -74,6 +80,7 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1), // Enforce exactly one argument
 		RunE:    runPkgGet,
 	}
+	pkgGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	pkgCmd.AddCommand(pkgDeployCmd)
 	pkgCmd.AddCommand(pkgConfigureCmd)
@@ -89,44 +96,60 @@ func runPkgGet(cmd *cobra.Command, args []string) error {
 		return configErr
 	}
 
+	outputFormat, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+
 	client := api.NewClient(config.URL, config.APIKey)
 	pkgID := args[0]
 
 	pkg, err := api.GetPackageByName(client, config.OrgID, pkgID)
-
 	if err != nil {
 		return err
 	}
 
-	err = renderPackage(pkg)
+	switch outputFormat {
+	case "json":
+		jsonBytes, err := json.MarshalIndent(pkg, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal package to JSON: %w", err)
+		}
+		fmt.Println(string(jsonBytes))
+	case "text":
+		err = renderPackage(pkg)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
 
-	return err
+	return nil
 }
 
 func renderPackage(pkg *api.Package) error {
-	paramsJSON, err := json.MarshalIndent(pkg.Params, "", "  ")
+	tmplBytes, err := packageTemplates.ReadFile("templates/package.get.md.tmpl")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read template: %w", err)
 	}
 
-	md := fmt.Sprintf(`# Package: %s
+	tmpl, err := template.New("package").Parse(string(tmplBytes))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
 
-**Bundle:** %s
-
-**Environment:** %s
-
-## Parameters
-`+"```json"+`
-%s
-`+"```"+`
-`, pkg.NamePrefix, pkg.Manifest.Bundle.Name, pkg.Environment.Slug, string(paramsJSON))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, pkg); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
 
 	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
 	if err != nil {
 		return err
 	}
 
-	out, err := r.Render(md)
+	out, err := r.Render(buf.String())
 	if err != nil {
 		return err
 	}

@@ -728,6 +728,9 @@ type RootQueryType {
 
   compareDeployments(organizationId: ID!, fromDeploymentId: ID!, toDeploymentId: ID!): Changeset
 
+  "Marketplace Blueprints"
+  templates(organizationId: ID!): [Bundle]
+
   bundles(organizationId: ID!): [Bundle]
 
   bundle(organizationId: ID!, id: ID!): Bundle
@@ -960,6 +963,10 @@ type ManifestRecommendation {
 
 type ArtifactDefinition {
   id: ID!
+
+  createdAt: DateTime!
+
+  updatedAt: DateTime!
 
   "The name of this type. Organization scoped: my-org\/aws-iam-role"
   name: String!
@@ -1566,10 +1573,17 @@ type Bundle {
 
   name: String!
 
+  version: String
+
+  "Icon SVG"
+  icon: String
+
+  specVersion: String
+
   "Application or bundle"
   type: String!
 
-  "Public or private"
+  "Private bundle or public template"
   access: String!
 
   description: String
