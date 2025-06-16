@@ -125,11 +125,6 @@ func runPkgGet(cmd *cobra.Command, args []string) error {
 }
 
 func renderPackage(pkg *api.Package) error {
-	paramsJSON, err := json.MarshalIndent(pkg.Params, "", "  ")
-	if err != nil {
-		return err
-	}
-
 	tmplBytes, err := packageTemplates.ReadFile("templates/package.get.md.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to read template: %w", err)
@@ -140,40 +135,8 @@ func renderPackage(pkg *api.Package) error {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
-	data := struct {
-		NamePrefix string
-		Manifest   struct {
-			Bundle struct {
-				Name string
-			}
-		}
-		Environment struct {
-			Slug string
-		}
-		ParamsJSON string
-	}{
-		NamePrefix: pkg.NamePrefix,
-		Manifest: struct {
-			Bundle struct {
-				Name string
-			}
-		}{
-			Bundle: struct {
-				Name string
-			}{
-				Name: pkg.Manifest.Bundle.Name,
-			},
-		},
-		Environment: struct {
-			Slug string
-		}{
-			Slug: pkg.Environment.Slug,
-		},
-		ParamsJSON: string(paramsJSON),
-	}
-
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
+	if err := tmpl.Execute(&buf, pkg); err != nil {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 

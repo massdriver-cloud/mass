@@ -111,11 +111,11 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 	headerFmt := color.New(color.FgHiBlue, color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgHiWhite).SprintfFunc()
 
-	tbl := table.New("Name", "Description")
+	tbl := table.New("Name", "Slug", "Description", "Monthly $", "Daily $")
 	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
 
 	for _, project := range projects {
-		tbl.AddRow(project.Name, project.Description)
+		tbl.AddRow(project.Name, project.Slug, project.Description, project.MonthlyAverageCost, project.DailyAverageCost)
 	}
 
 	tbl.Print()

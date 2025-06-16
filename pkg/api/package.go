@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/Khan/genqlient/graphql"
@@ -13,6 +14,14 @@ type Package struct {
 	Params      map[string]interface{} `json:"params"`
 	Manifest    Manifest               `json:"manifest"`
 	Environment Environment            `json:"environment"`
+}
+
+func (p *Package) ParamsJSON() (string, error) {
+	paramsJSON, err := json.MarshalIndent(p.Params, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal params to JSON: %w", err)
+	}
+	return string(paramsJSON), nil
 }
 
 func GetPackageByName(client graphql.Client, orgID string, name string) (*Package, error) {
