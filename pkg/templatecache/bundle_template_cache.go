@@ -10,17 +10,13 @@ import (
 	"strings"
 )
 
-/*
-Adding additional repositories will create the appropriate subdirectories and list
-them accordingly in bunde templates list. In the future this should be read form .massrc.
-*/
-var massdriverApplicationTemplatesRepositories = []string{
-	"https://github.com/massdriver-cloud/application-templates",
-}
-
 const gitOrg = "*"
 const repoName = "*"
 const templateDir = "*"
+
+var defaultApplicationTemplatesRepositories = []string{
+	"https://github.com/massdriver-cloud/application-templates",
+}
 
 type BundleTemplateCache struct {
 	TemplatePath string
@@ -35,6 +31,20 @@ type TemplateList struct {
 type CloneError struct {
 	Repository string
 	Error      string
+}
+
+/*
+Adding additional repositories will create the appropriate subdirectories and list
+them accordingly in bunde templates list. In the future this should be read form .massrc.
+*/
+func massdriverApplicationTemplatesRepositories() []string {
+	templateSrcs := os.Getenv("MD_TEMPLATES_SRCS")
+
+	if templateSrcs == "" {
+		return defaultApplicationTemplatesRepositories
+	}
+
+	return strings.Split(templateSrcs, ",")
 }
 
 // Refresh available templates from Massdriver official Github repository.
