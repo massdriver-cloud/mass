@@ -13,11 +13,12 @@ import (
 	"regexp"
 
 	"github.com/massdriver-cloud/mass/pkg/definition"
-	"github.com/massdriver-cloud/mass/pkg/restclient"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 type DereferenceOptions struct {
-	Client *restclient.MassdriverClient
+	Client *client.Client
 	Cwd    string
 }
 
@@ -26,7 +27,7 @@ var relativeFilePathPattern = regexp.MustCompile(`^(\.\/|\.\.\/)`)
 var massdriverDefinitionPattern = regexp.MustCompile(`^[a-zA-Z0-9]`)
 var httpPattern = regexp.MustCompile(`^(http|https)://`)
 
-func Dereference(anyVal interface{}, opts DereferenceOptions) (interface{}, error) {
+func Dereference(anyVal any, opts DereferenceOptions) (any, error) {
 	val := getValue(anyVal)
 
 	switch val.Kind() { //nolint:exhaustive
@@ -34,11 +35,11 @@ func Dereference(anyVal interface{}, opts DereferenceOptions) (interface{}, erro
 		return dereferenceList(val, opts)
 	case reflect.Map:
 		schemaInterface := val.Interface()
-		schema, ok := schemaInterface.(map[string]interface{})
+		schema, ok := schemaInterface.(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("schema is not an object")
 		}
-		hydratedSchema := map[string]interface{}{}
+		hydratedSchema := map[string]any{}
 
 		// if this part of the schema has a $ref that is a local file, read it and make it
 		// the map that we hydrate into. This causes any keys in the ref'ing object to override anything in the ref'd object
@@ -71,7 +72,7 @@ func Dereference(anyVal interface{}, opts DereferenceOptions) (interface{}, erro
 	}
 }
 
-func dereferenceMap(hydratedSchema map[string]interface{}, schema map[string]interface{}, opts DereferenceOptions) (map[string]interface{}, error) {
+func dereferenceMap(hydratedSchema map[string]any, schema map[string]any, opts DereferenceOptions) (map[string]any, error) {
 	for key, value := range schema {
 		var valueInterface = value
 		hydratedValue, err := Dereference(valueInterface, opts)
@@ -83,8 +84,8 @@ func dereferenceMap(hydratedSchema map[string]interface{}, schema map[string]int
 	return hydratedSchema, nil
 }
 
-func dereferenceList(val reflect.Value, opts DereferenceOptions) ([]interface{}, error) {
-	hydratedList := make([]interface{}, 0)
+func dereferenceList(val reflect.Value, opts DereferenceOptions) ([]any, error) {
+	hydratedList := make([]any, 0)
 	for i := 0; i < val.Len(); i++ {
 		hydratedVal, err := Dereference(val.Index(i).Interface(), opts)
 		if err != nil {
@@ -95,15 +96,15 @@ func dereferenceList(val reflect.Value, opts DereferenceOptions) ([]interface{},
 	return hydratedList, nil
 }
 
-func dereferenceMassdriverRef(hydratedSchema map[string]interface{}, schema map[string]interface{}, schemaRefValue string, opts DereferenceOptions) (map[string]interface{}, error) {
-	referencedSchema, err := definition.Get(opts.Client, schemaRefValue)
+func dereferenceMassdriverRef(hydratedSchema map[string]any, schema map[string]any, schemaRefValue string, opts DereferenceOptions) (map[string]any, error) {
+	referencedSchema, err := definition.GetAsMap(context.Background(), opts.Client, schemaRefValue)
 	if err != nil {
 		return hydratedSchema, err
 	}
 
 	if nestedSchema, exists := referencedSchema["schema"]; exists {
 		var ok bool
-		referencedSchema, ok = nestedSchema.(map[string]interface{})
+		referencedSchema, ok = nestedSchema.(map[string]any)
 		if !ok {
 			return hydratedSchema, fmt.Errorf("schema is not a map")
 		}
@@ -116,14 +117,16 @@ func dereferenceMassdriverRef(hydratedSchema map[string]interface{}, schema map[
 	return hydratedSchema, nil
 }
 
-func dereferenceHTTPRef(hydratedSchema map[string]interface{}, schema map[string]interface{}, schemaRefValue string, opts DereferenceOptions) (map[string]interface{}, error) {
+func dereferenceHTTPRef(hydratedSchema map[string]any, schema map[string]any, schemaRefValue string, opts DereferenceOptions) (map[string]any, error) {
 	ctx := context.Background()
-	var referencedSchema map[string]interface{}
+	var referencedSchema map[string]any
+
+	client := http.Client{}
 	request, err := http.NewRequestWithContext(ctx, "GET", schemaRefValue, nil)
 	if err != nil {
 		return hydratedSchema, err
 	}
-	resp, doErr := opts.Client.Client.Do(request)
+	resp, doErr := client.Do(request)
 	if doErr != nil {
 		return hydratedSchema, doErr
 	}
@@ -146,8 +149,8 @@ func dereferenceHTTPRef(hydratedSchema map[string]interface{}, schema map[string
 	return hydratedSchema, err
 }
 
-func dereferenceFilePathRef(hydratedSchema map[string]interface{}, schema map[string]interface{}, schemaRefValue string, opts DereferenceOptions) (map[string]interface{}, error) {
-	var referencedSchema map[string]interface{}
+func dereferenceFilePathRef(hydratedSchema map[string]any, schema map[string]any, schemaRefValue string, opts DereferenceOptions) (map[string]any, error) {
+	var referencedSchema map[string]any
 	var schemaRefDir string
 	schemaRefAbsPath, err := filepath.Abs(filepath.Join(opts.Cwd, schemaRefValue))
 
@@ -171,7 +174,7 @@ func dereferenceFilePathRef(hydratedSchema map[string]interface{}, schema map[st
 	return hydratedSchema, nil
 }
 
-func getValue(anyVal interface{}) reflect.Value {
+func getValue(anyVal any) reflect.Value {
 	val := reflect.ValueOf(anyVal)
 
 	if val.Kind() == reflect.Ptr {
@@ -181,8 +184,8 @@ func getValue(anyVal interface{}) reflect.Value {
 	return val
 }
 
-func readJSONFile(filepath string) (map[string]interface{}, error) {
-	var result map[string]interface{}
+func readJSONFile(filepath string) (map[string]any, error) {
+	var result map[string]any
 	data, err := os.ReadFile(filepath)
 
 	if err != nil {
@@ -193,8 +196,8 @@ func readJSONFile(filepath string) (map[string]interface{}, error) {
 	return result, err
 }
 
-func replaceRef(base map[string]interface{}, referenced map[string]interface{}, opts DereferenceOptions) (map[string]interface{}, error) {
-	hydratedSchema := map[string]interface{}{}
+func replaceRef(base map[string]any, referenced map[string]any, opts DereferenceOptions) (map[string]any, error) {
+	hydratedSchema := map[string]any{}
 	delete(base, "$ref")
 
 	for k, v := range referenced {

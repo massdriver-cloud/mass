@@ -1,15 +1,17 @@
 package api_test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestCreateArtifact(t *testing.T) {
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"createArtifact": map[string]interface{}{
 				"result": map[string]interface{}{
@@ -20,8 +22,11 @@ func TestCreateArtifact(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	got, err := api.CreateArtifact(client, "org-id", "artifact-name", "artifact-type", map[string]interface{}{}, map[string]interface{}{})
+	got, err := api.CreateArtifact(context.Background(), &mdClient, "artifact-name", "artifact-type", map[string]interface{}{}, map[string]interface{}{})
 	if err != nil {
 		t.Fatal(err)
 	}

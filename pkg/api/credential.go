@@ -4,7 +4,7 @@ package api
 import (
 	"context"
 
-	"github.com/Khan/genqlient/graphql"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 var credentialArtifactDefinitions = []*ArtifactDefinition{
@@ -20,9 +20,9 @@ func ListCredentialTypes() []*ArtifactDefinition {
 }
 
 // Get the first page of credentials for an artifact type
-func ListCredentials(client graphql.Client, orgID string, artifactType string) ([]*Artifact, error) {
+func ListCredentials(ctx context.Context, mdClient *client.Client, artifactType string) ([]*Artifact, error) {
 	artifactList := []*Artifact{}
-	response, err := getArtifactsByType(context.Background(), client, orgID, artifactType)
+	response, err := getArtifactsByType(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactType)
 
 	for _, artifactRecord := range response.Artifacts.Items {
 		artifactList = append(artifactList, artifactRecord.toArtifact())

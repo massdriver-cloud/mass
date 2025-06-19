@@ -1,14 +1,17 @@
 package commands_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestArtifactImport(t *testing.T) {
-	client := gqlmock.NewClientWithJSONResponseMap(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithJSONResponseMap(map[string]interface{}{
 		"listArtifactDefinitions": map[string]interface{}{
 			"data": map[string]interface{}{
 				"artifactDefinitions": []map[string]interface{}{
@@ -41,7 +44,11 @@ func TestArtifactImport(t *testing.T) {
 		},
 	})
 
-	got, err := commands.ArtifactImport(client, "faux-org-id", "artifact-name", "massdriver/fake-artifact-schema", "testdata/artifact.json")
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
+
+	got, err := commands.ArtifactImport(context.Background(), &mdClient, "artifact-name", "massdriver/fake-artifact-schema", "testdata/artifact.json")
 
 	if err != nil {
 		t.Fatal(err)

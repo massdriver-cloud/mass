@@ -466,6 +466,18 @@ func (v *__deployPreviewEnvironmentInput) GetProjectId() string { return v.Proje
 // GetInput returns __deployPreviewEnvironmentInput.Input, and is useful for accessing the field via an interface.
 func (v *__deployPreviewEnvironmentInput) GetInput() PreviewEnvironmentInput { return v.Input }
 
+// __getArtifactDefinitionInput is used internally by genqlient
+type __getArtifactDefinitionInput struct {
+	OrganizationId string `json:"organizationId"`
+	Name           string `json:"name"`
+}
+
+// GetOrganizationId returns __getArtifactDefinitionInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getArtifactDefinitionInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetName returns __getArtifactDefinitionInput.Name, and is useful for accessing the field via an interface.
+func (v *__getArtifactDefinitionInput) GetName() string { return v.Name }
+
 // __getArtifactsByTypeInput is used internally by genqlient
 type __getArtifactsByTypeInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -514,6 +526,14 @@ func (v *__getProjectByIdInput) GetOrganizationId() string { return v.Organizati
 // GetId returns __getProjectByIdInput.Id, and is useful for accessing the field via an interface.
 func (v *__getProjectByIdInput) GetId() string { return v.Id }
 
+// __getProjectsInput is used internally by genqlient
+type __getProjectsInput struct {
+	OrganizationId string `json:"organizationId"`
+}
+
+// GetOrganizationId returns __getProjectsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getProjectsInput) GetOrganizationId() string { return v.OrganizationId }
+
 // __listArtifactDefinitionsInput is used internally by genqlient
 type __listArtifactDefinitionsInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -522,13 +542,83 @@ type __listArtifactDefinitionsInput struct {
 // GetOrganizationId returns __listArtifactDefinitionsInput.OrganizationId, and is useful for accessing the field via an interface.
 func (v *__listArtifactDefinitionsInput) GetOrganizationId() string { return v.OrganizationId }
 
-// __projectsInput is used internally by genqlient
-type __projectsInput struct {
-	OrganizationId string `json:"organizationId"`
+// __publishArtifactDefinitionInput is used internally by genqlient
+type __publishArtifactDefinitionInput struct {
+	OrganizationId string                 `json:"organizationId"`
+	Schema         map[string]interface{} `json:"-"`
 }
 
-// GetOrganizationId returns __projectsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__projectsInput) GetOrganizationId() string { return v.OrganizationId }
+// GetOrganizationId returns __publishArtifactDefinitionInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__publishArtifactDefinitionInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetSchema returns __publishArtifactDefinitionInput.Schema, and is useful for accessing the field via an interface.
+func (v *__publishArtifactDefinitionInput) GetSchema() map[string]interface{} { return v.Schema }
+
+func (v *__publishArtifactDefinitionInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*__publishArtifactDefinitionInput
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.__publishArtifactDefinitionInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal __publishArtifactDefinitionInput.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshal__publishArtifactDefinitionInput struct {
+	OrganizationId string `json:"organizationId"`
+
+	Schema json.RawMessage `json:"schema"`
+}
+
+func (v *__publishArtifactDefinitionInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *__publishArtifactDefinitionInput) __premarshalJSON() (*__premarshal__publishArtifactDefinitionInput, error) {
+	var retval __premarshal__publishArtifactDefinitionInput
+
+	retval.OrganizationId = v.OrganizationId
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal __publishArtifactDefinitionInput.Schema: %w", err)
+		}
+	}
+	return &retval, nil
+}
 
 // configurePackageConfigurePackagePackagePayload includes the requested fields of the GraphQL type PackagePayload.
 type configurePackageConfigurePackagePackagePayload struct {
@@ -554,11 +644,16 @@ func (v *configurePackageConfigurePackagePackagePayload) GetMessages() []Mutatio
 }
 
 // configurePackageConfigurePackagePackagePayloadResultPackage includes the requested fields of the GraphQL type Package.
+// The GraphQL type's documentation follows.
+//
+// A deployed instance of a bundle in the context of its manifest
 type configurePackageConfigurePackagePackagePayloadResultPackage struct {
+	// Unique identifier
 	Id string `json:"id"`
 	// Package configuration parameters
-	Params     map[string]interface{} `json:"-"`
-	NamePrefix string                 `json:"namePrefix"`
+	Params map[string]interface{} `json:"-"`
+	// Prefix for resource names
+	NamePrefix string `json:"namePrefix"`
 }
 
 // GetId returns configurePackageConfigurePackagePackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
@@ -823,6 +918,9 @@ func (v *deployPackageDeployPackageDeploymentPayload) GetMessages() []MutationVa
 }
 
 // deployPackageDeployPackageDeploymentPayloadResultDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A deployment represents an instance of a bundle being deployed to a target environment
 type deployPackageDeployPackageDeploymentPayloadResultDeployment struct {
 	Id string `json:"id"`
 }
@@ -915,6 +1013,158 @@ func (v *deployPreviewEnvironmentResponse) GetDeployPreviewEnvironment() deployP
 	return v.DeployPreviewEnvironment
 }
 
+// getArtifactDefinitionArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+// The GraphQL type's documentation follows.
+//
+// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
+type getArtifactDefinitionArtifactDefinition struct {
+	Id     string                 `json:"id"`
+	Schema map[string]interface{} `json:"-"`
+	// The name of this type. Organization scoped: my-org/aws-iam-role
+	Name      string                                    `json:"name"`
+	Icon      string                                    `json:"icon"`
+	Label     string                                    `json:"label"`
+	UpdatedAt time.Time                                 `json:"updatedAt"`
+	Url       string                                    `json:"url"`
+	Ui        getArtifactDefinitionArtifactDefinitionUi `json:"ui"`
+}
+
+// GetId returns getArtifactDefinitionArtifactDefinition.Id, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionArtifactDefinition) GetId() string { return v.Id }
+
+// GetSchema returns getArtifactDefinitionArtifactDefinition.Schema, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionArtifactDefinition) GetSchema() map[string]interface{} { return v.Schema }
+
+// GetName returns getArtifactDefinitionArtifactDefinition.Name, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionArtifactDefinition) GetName() string { return v.Name }
+
+// GetIcon returns getArtifactDefinitionArtifactDefinition.Icon, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionArtifactDefinition) GetIcon() string { return v.Icon }
+
+// GetLabel returns getArtifactDefinitionArtifactDefinition.Label, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionArtifactDefinition) GetLabel() string { return v.Label }
+
+// GetUpdatedAt returns getArtifactDefinitionArtifactDefinition.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionArtifactDefinition) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetUrl returns getArtifactDefinitionArtifactDefinition.Url, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionArtifactDefinition) GetUrl() string { return v.Url }
+
+// GetUi returns getArtifactDefinitionArtifactDefinition.Ui, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionArtifactDefinition) GetUi() getArtifactDefinitionArtifactDefinitionUi {
+	return v.Ui
+}
+
+func (v *getArtifactDefinitionArtifactDefinition) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getArtifactDefinitionArtifactDefinition
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getArtifactDefinitionArtifactDefinition = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getArtifactDefinitionArtifactDefinition.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetArtifactDefinitionArtifactDefinition struct {
+	Id string `json:"id"`
+
+	Schema json.RawMessage `json:"schema"`
+
+	Name string `json:"name"`
+
+	Icon string `json:"icon"`
+
+	Label string `json:"label"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Url string `json:"url"`
+
+	Ui getArtifactDefinitionArtifactDefinitionUi `json:"ui"`
+}
+
+func (v *getArtifactDefinitionArtifactDefinition) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getArtifactDefinitionArtifactDefinition) __premarshalJSON() (*__premarshalgetArtifactDefinitionArtifactDefinition, error) {
+	var retval __premarshalgetArtifactDefinitionArtifactDefinition
+
+	retval.Id = v.Id
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getArtifactDefinitionArtifactDefinition.Schema: %w", err)
+		}
+	}
+	retval.Name = v.Name
+	retval.Icon = v.Icon
+	retval.Label = v.Label
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Url = v.Url
+	retval.Ui = v.Ui
+	return &retval, nil
+}
+
+// getArtifactDefinitionArtifactDefinitionUi includes the requested fields of the GraphQL type ArtifactDefinitionUi.
+type getArtifactDefinitionArtifactDefinitionUi struct {
+	ConnectionOrientation   ArtifactDefinitionUiConnectionOrientation `json:"connectionOrientation"`
+	EnvironmentDefaultGroup string                                    `json:"environmentDefaultGroup"`
+}
+
+// GetConnectionOrientation returns getArtifactDefinitionArtifactDefinitionUi.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionArtifactDefinitionUi) GetConnectionOrientation() ArtifactDefinitionUiConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetEnvironmentDefaultGroup returns getArtifactDefinitionArtifactDefinitionUi.EnvironmentDefaultGroup, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionArtifactDefinitionUi) GetEnvironmentDefaultGroup() string {
+	return v.EnvironmentDefaultGroup
+}
+
+// getArtifactDefinitionResponse is returned by getArtifactDefinition on success.
+type getArtifactDefinitionResponse struct {
+	ArtifactDefinition getArtifactDefinitionArtifactDefinition `json:"artifactDefinition"`
+}
+
+// GetArtifactDefinition returns getArtifactDefinitionResponse.ArtifactDefinition, and is useful for accessing the field via an interface.
+func (v *getArtifactDefinitionResponse) GetArtifactDefinition() getArtifactDefinitionArtifactDefinition {
+	return v.ArtifactDefinition
+}
+
 // getArtifactsByTypeArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
 type getArtifactsByTypeArtifactsPaginatedArtifacts struct {
 	// A cursor to the next page of items in the list.
@@ -955,6 +1205,9 @@ func (v *getArtifactsByTypeResponse) GetArtifacts() getArtifactsByTypeArtifactsP
 }
 
 // getDeploymentByIdDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A deployment represents an instance of a bundle being deployed to a target environment
 type getDeploymentByIdDeployment struct {
 	Id     string `json:"id"`
 	Status string `json:"status"`
@@ -975,12 +1228,18 @@ type getDeploymentByIdResponse struct {
 func (v *getDeploymentByIdResponse) GetDeployment() getDeploymentByIdDeployment { return v.Deployment }
 
 // getPackageByNamingConventionGetPackageByNamingConventionPackage includes the requested fields of the GraphQL type Package.
+// The GraphQL type's documentation follows.
+//
+// A deployed instance of a bundle in the context of its manifest
 type getPackageByNamingConventionGetPackageByNamingConventionPackage struct {
-	Id         string `json:"id"`
+	// Unique identifier
+	Id string `json:"id"`
+	// Prefix for resource names
 	NamePrefix string `json:"namePrefix"`
 	// Package configuration parameters
-	Params           map[string]interface{}                                                          `json:"-"`
-	Manifest         getPackageByNamingConventionGetPackageByNamingConventionPackageManifest         `json:"manifest"`
+	Params   map[string]interface{}                                                  `json:"-"`
+	Manifest getPackageByNamingConventionGetPackageByNamingConventionPackageManifest `json:"manifest"`
+	// Currently active deployment for this package
 	ActiveDeployment getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment `json:"activeDeployment"`
 	// The environment this package will be deployed to
 	Environment getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment `json:"environment"`
@@ -1093,6 +1352,9 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) __prem
 }
 
 // getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A deployment represents an instance of a bundle being deployed to a target environment
 type getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment struct {
 	Id     string `json:"id"`
 	Status string `json:"status"`
@@ -1147,6 +1409,9 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironm
 }
 
 // getPackageByNamingConventionGetPackageByNamingConventionPackageManifest includes the requested fields of the GraphQL type Manifest.
+// The GraphQL type's documentation follows.
+//
+// An instance of a bundle in a project's architecture, providing context for how the bundle is used
 type getPackageByNamingConventionGetPackageByNamingConventionPackageManifest struct {
 	Id     string                                                                        `json:"id"`
 	Bundle getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle `json:"bundle"`
@@ -1163,7 +1428,11 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest
 }
 
 // getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle includes the requested fields of the GraphQL type Bundle.
+// The GraphQL type's documentation follows.
+//
+// A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component
 type getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle struct {
+	// Name of the bundle
 	Name string `json:"name"`
 }
 
@@ -1290,7 +1559,225 @@ type getProjectByIdResponse struct {
 // GetProject returns getProjectByIdResponse.Project, and is useful for accessing the field via an interface.
 func (v *getProjectByIdResponse) GetProject() getProjectByIdProject { return v.Project }
 
+// getProjectsProjectsProject includes the requested fields of the GraphQL type Project.
+type getProjectsProjectsProject struct {
+	Name          string                                              `json:"name"`
+	Id            string                                              `json:"id"`
+	Slug          string                                              `json:"slug"`
+	Description   string                                              `json:"description"`
+	DefaultParams map[string]interface{}                              `json:"-"`
+	Environments  []getProjectsProjectsProjectEnvironmentsEnvironment `json:"environments"`
+	// Cloud provider costs for this project
+	Cost getProjectsProjectsProjectCost `json:"cost"`
+}
+
+// GetName returns getProjectsProjectsProject.Name, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProject) GetName() string { return v.Name }
+
+// GetId returns getProjectsProjectsProject.Id, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProject) GetId() string { return v.Id }
+
+// GetSlug returns getProjectsProjectsProject.Slug, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProject) GetSlug() string { return v.Slug }
+
+// GetDescription returns getProjectsProjectsProject.Description, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProject) GetDescription() string { return v.Description }
+
+// GetDefaultParams returns getProjectsProjectsProject.DefaultParams, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProject) GetDefaultParams() map[string]interface{} {
+	return v.DefaultParams
+}
+
+// GetEnvironments returns getProjectsProjectsProject.Environments, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProject) GetEnvironments() []getProjectsProjectsProjectEnvironmentsEnvironment {
+	return v.Environments
+}
+
+// GetCost returns getProjectsProjectsProject.Cost, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProject) GetCost() getProjectsProjectsProjectCost { return v.Cost }
+
+func (v *getProjectsProjectsProject) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getProjectsProjectsProject
+		DefaultParams json.RawMessage `json:"defaultParams"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getProjectsProjectsProject = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.DefaultParams
+		src := firstPass.DefaultParams
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getProjectsProjectsProject.DefaultParams: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetProjectsProjectsProject struct {
+	Name string `json:"name"`
+
+	Id string `json:"id"`
+
+	Slug string `json:"slug"`
+
+	Description string `json:"description"`
+
+	DefaultParams json.RawMessage `json:"defaultParams"`
+
+	Environments []getProjectsProjectsProjectEnvironmentsEnvironment `json:"environments"`
+
+	Cost getProjectsProjectsProjectCost `json:"cost"`
+}
+
+func (v *getProjectsProjectsProject) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getProjectsProjectsProject) __premarshalJSON() (*__premarshalgetProjectsProjectsProject, error) {
+	var retval __premarshalgetProjectsProjectsProject
+
+	retval.Name = v.Name
+	retval.Id = v.Id
+	retval.Slug = v.Slug
+	retval.Description = v.Description
+	{
+
+		dst := &retval.DefaultParams
+		src := v.DefaultParams
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getProjectsProjectsProject.DefaultParams: %w", err)
+		}
+	}
+	retval.Environments = v.Environments
+	retval.Cost = v.Cost
+	return &retval, nil
+}
+
+// getProjectsProjectsProjectCost includes the requested fields of the GraphQL type Cost.
+// The GraphQL type's documentation follows.
+//
+// Cost information for a resource
+type getProjectsProjectsProjectCost struct {
+	// Monthly cost summary
+	Monthly getProjectsProjectsProjectCostMonthlySummary `json:"monthly"`
+	// Daily cost summary
+	Daily getProjectsProjectsProjectCostDailySummary `json:"daily"`
+}
+
+// GetMonthly returns getProjectsProjectsProjectCost.Monthly, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProjectCost) GetMonthly() getProjectsProjectsProjectCostMonthlySummary {
+	return v.Monthly
+}
+
+// GetDaily returns getProjectsProjectsProjectCost.Daily, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProjectCost) GetDaily() getProjectsProjectsProjectCostDailySummary {
+	return v.Daily
+}
+
+// getProjectsProjectsProjectCostDailySummary includes the requested fields of the GraphQL type Summary.
+// The GraphQL type's documentation follows.
+//
+// Summary of costs over a time period
+type getProjectsProjectsProjectCostDailySummary struct {
+	// Average cost sample for the period
+	Average getProjectsProjectsProjectCostDailySummaryAverageCostSample `json:"average"`
+}
+
+// GetAverage returns getProjectsProjectsProjectCostDailySummary.Average, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProjectCostDailySummary) GetAverage() getProjectsProjectsProjectCostDailySummaryAverageCostSample {
+	return v.Average
+}
+
+// getProjectsProjectsProjectCostDailySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement
+type getProjectsProjectsProjectCostDailySummaryAverageCostSample struct {
+	// The cost amount
+	Amount float64 `json:"amount"`
+}
+
+// GetAmount returns getProjectsProjectsProjectCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProjectCostDailySummaryAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// getProjectsProjectsProjectCostMonthlySummary includes the requested fields of the GraphQL type Summary.
+// The GraphQL type's documentation follows.
+//
+// Summary of costs over a time period
+type getProjectsProjectsProjectCostMonthlySummary struct {
+	// Average cost sample for the period
+	Average getProjectsProjectsProjectCostMonthlySummaryAverageCostSample `json:"average"`
+}
+
+// GetAverage returns getProjectsProjectsProjectCostMonthlySummary.Average, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProjectCostMonthlySummary) GetAverage() getProjectsProjectsProjectCostMonthlySummaryAverageCostSample {
+	return v.Average
+}
+
+// getProjectsProjectsProjectCostMonthlySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement
+type getProjectsProjectsProjectCostMonthlySummaryAverageCostSample struct {
+	// The cost amount
+	Amount float64 `json:"amount"`
+}
+
+// GetAmount returns getProjectsProjectsProjectCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProjectCostMonthlySummaryAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// getProjectsProjectsProjectEnvironmentsEnvironment includes the requested fields of the GraphQL type Environment.
+type getProjectsProjectsProjectEnvironmentsEnvironment struct {
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+// GetName returns getProjectsProjectsProjectEnvironmentsEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProjectEnvironmentsEnvironment) GetName() string { return v.Name }
+
+// GetSlug returns getProjectsProjectsProjectEnvironmentsEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *getProjectsProjectsProjectEnvironmentsEnvironment) GetSlug() string { return v.Slug }
+
+// getProjectsResponse is returned by getProjects on success.
+type getProjectsResponse struct {
+	Projects []getProjectsProjectsProject `json:"projects"`
+}
+
+// GetProjects returns getProjectsResponse.Projects, and is useful for accessing the field via an interface.
+func (v *getProjectsResponse) GetProjects() []getProjectsProjectsProject { return v.Projects }
+
 // listArtifactDefinitionsArtifactDefinitionsArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+// The GraphQL type's documentation follows.
+//
+// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
 type listArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
 	Id     string                 `json:"id"`
 	Schema map[string]interface{} `json:"-"`
@@ -1449,197 +1936,60 @@ func (v *listArtifactDefinitionsResponse) GetArtifactDefinitions() []listArtifac
 	return v.ArtifactDefinitions
 }
 
-// projectsProjectsProject includes the requested fields of the GraphQL type Project.
-type projectsProjectsProject struct {
-	Name          string                                           `json:"name"`
-	Id            string                                           `json:"id"`
-	Slug          string                                           `json:"slug"`
-	Description   string                                           `json:"description"`
-	DefaultParams map[string]interface{}                           `json:"-"`
-	Environments  []projectsProjectsProjectEnvironmentsEnvironment `json:"environments"`
-	// Cloud provider costs for this project
-	Cost projectsProjectsProjectCost `json:"cost"`
+// publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload includes the requested fields of the GraphQL type ArtifactDefinitionPayload.
+type publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
 }
 
-// GetName returns projectsProjectsProject.Name, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProject) GetName() string { return v.Name }
-
-// GetId returns projectsProjectsProject.Id, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProject) GetId() string { return v.Id }
-
-// GetSlug returns projectsProjectsProject.Slug, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProject) GetSlug() string { return v.Slug }
-
-// GetDescription returns projectsProjectsProject.Description, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProject) GetDescription() string { return v.Description }
-
-// GetDefaultParams returns projectsProjectsProject.DefaultParams, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProject) GetDefaultParams() map[string]interface{} { return v.DefaultParams }
-
-// GetEnvironments returns projectsProjectsProject.Environments, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProject) GetEnvironments() []projectsProjectsProjectEnvironmentsEnvironment {
-	return v.Environments
+// GetResult returns publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload.Result, and is useful for accessing the field via an interface.
+func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload) GetResult() publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition {
+	return v.Result
 }
 
-// GetCost returns projectsProjectsProject.Cost, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProject) GetCost() projectsProjectsProjectCost { return v.Cost }
-
-func (v *projectsProjectsProject) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*projectsProjectsProject
-		DefaultParams json.RawMessage `json:"defaultParams"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.projectsProjectsProject = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.DefaultParams
-		src := firstPass.DefaultParams
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal projectsProjectsProject.DefaultParams: %w", err)
-			}
-		}
-	}
-	return nil
+// GetSuccessful returns publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload.Successful, and is useful for accessing the field via an interface.
+func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload) GetSuccessful() bool {
+	return v.Successful
 }
 
-type __premarshalprojectsProjectsProject struct {
+// GetMessages returns publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload.Messages, and is useful for accessing the field via an interface.
+func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+// The GraphQL type's documentation follows.
+//
+// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
+type publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition struct {
+	// The name of this type. Organization scoped: my-org/aws-iam-role
 	Name string `json:"name"`
-
-	Id string `json:"id"`
-
-	Slug string `json:"slug"`
-
-	Description string `json:"description"`
-
-	DefaultParams json.RawMessage `json:"defaultParams"`
-
-	Environments []projectsProjectsProjectEnvironmentsEnvironment `json:"environments"`
-
-	Cost projectsProjectsProjectCost `json:"cost"`
+	Id   string `json:"id"`
 }
 
-func (v *projectsProjectsProject) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
+// GetName returns publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition.Name, and is useful for accessing the field via an interface.
+func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition) GetName() string {
+	return v.Name
 }
 
-func (v *projectsProjectsProject) __premarshalJSON() (*__premarshalprojectsProjectsProject, error) {
-	var retval __premarshalprojectsProjectsProject
-
-	retval.Name = v.Name
-	retval.Id = v.Id
-	retval.Slug = v.Slug
-	retval.Description = v.Description
-	{
-
-		dst := &retval.DefaultParams
-		src := v.DefaultParams
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal projectsProjectsProject.DefaultParams: %w", err)
-		}
-	}
-	retval.Environments = v.Environments
-	retval.Cost = v.Cost
-	return &retval, nil
+// GetId returns publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition.Id, and is useful for accessing the field via an interface.
+func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition) GetId() string {
+	return v.Id
 }
 
-// projectsProjectsProjectCost includes the requested fields of the GraphQL type Cost.
-type projectsProjectsProjectCost struct {
-	Monthly projectsProjectsProjectCostMonthlySummary `json:"monthly"`
-	Daily   projectsProjectsProjectCostDailySummary   `json:"daily"`
+// publishArtifactDefinitionResponse is returned by publishArtifactDefinition on success.
+type publishArtifactDefinitionResponse struct {
+	PublishArtifactDefinition publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload `json:"publishArtifactDefinition"`
 }
 
-// GetMonthly returns projectsProjectsProjectCost.Monthly, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProjectCost) GetMonthly() projectsProjectsProjectCostMonthlySummary {
-	return v.Monthly
+// GetPublishArtifactDefinition returns publishArtifactDefinitionResponse.PublishArtifactDefinition, and is useful for accessing the field via an interface.
+func (v *publishArtifactDefinitionResponse) GetPublishArtifactDefinition() publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload {
+	return v.PublishArtifactDefinition
 }
-
-// GetDaily returns projectsProjectsProjectCost.Daily, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProjectCost) GetDaily() projectsProjectsProjectCostDailySummary {
-	return v.Daily
-}
-
-// projectsProjectsProjectCostDailySummary includes the requested fields of the GraphQL type Summary.
-type projectsProjectsProjectCostDailySummary struct {
-	Average projectsProjectsProjectCostDailySummaryAverageCostSample `json:"average"`
-}
-
-// GetAverage returns projectsProjectsProjectCostDailySummary.Average, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProjectCostDailySummary) GetAverage() projectsProjectsProjectCostDailySummaryAverageCostSample {
-	return v.Average
-}
-
-// projectsProjectsProjectCostDailySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
-type projectsProjectsProjectCostDailySummaryAverageCostSample struct {
-	Amount float64 `json:"amount"`
-}
-
-// GetAmount returns projectsProjectsProjectCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProjectCostDailySummaryAverageCostSample) GetAmount() float64 {
-	return v.Amount
-}
-
-// projectsProjectsProjectCostMonthlySummary includes the requested fields of the GraphQL type Summary.
-type projectsProjectsProjectCostMonthlySummary struct {
-	Average projectsProjectsProjectCostMonthlySummaryAverageCostSample `json:"average"`
-}
-
-// GetAverage returns projectsProjectsProjectCostMonthlySummary.Average, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProjectCostMonthlySummary) GetAverage() projectsProjectsProjectCostMonthlySummaryAverageCostSample {
-	return v.Average
-}
-
-// projectsProjectsProjectCostMonthlySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
-type projectsProjectsProjectCostMonthlySummaryAverageCostSample struct {
-	Amount float64 `json:"amount"`
-}
-
-// GetAmount returns projectsProjectsProjectCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProjectCostMonthlySummaryAverageCostSample) GetAmount() float64 {
-	return v.Amount
-}
-
-// projectsProjectsProjectEnvironmentsEnvironment includes the requested fields of the GraphQL type Environment.
-type projectsProjectsProjectEnvironmentsEnvironment struct {
-	Name string `json:"name"`
-	Slug string `json:"slug"`
-}
-
-// GetName returns projectsProjectsProjectEnvironmentsEnvironment.Name, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProjectEnvironmentsEnvironment) GetName() string { return v.Name }
-
-// GetSlug returns projectsProjectsProjectEnvironmentsEnvironment.Slug, and is useful for accessing the field via an interface.
-func (v *projectsProjectsProjectEnvironmentsEnvironment) GetSlug() string { return v.Slug }
-
-// projectsResponse is returned by projects on success.
-type projectsResponse struct {
-	Projects []projectsProjectsProject `json:"projects"`
-}
-
-// GetProjects returns projectsResponse.Projects, and is useful for accessing the field via an interface.
-func (v *projectsResponse) GetProjects() []projectsProjectsProject { return v.Projects }
 
 // The query or mutation executed by configurePackage.
 const configurePackage_Operation = `
@@ -1925,6 +2275,53 @@ func deployPreviewEnvironment(
 	return &data, err
 }
 
+// The query or mutation executed by getArtifactDefinition.
+const getArtifactDefinition_Operation = `
+query getArtifactDefinition ($organizationId: ID!, $name: String!) {
+	artifactDefinition(organizationId: $organizationId, name: $name) {
+		id
+		schema
+		name
+		icon
+		label
+		updatedAt
+		url
+		ui {
+			connectionOrientation
+			environmentDefaultGroup
+		}
+	}
+}
+`
+
+func getArtifactDefinition(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	name string,
+) (*getArtifactDefinitionResponse, error) {
+	req := &graphql.Request{
+		OpName: "getArtifactDefinition",
+		Query:  getArtifactDefinition_Operation,
+		Variables: &__getArtifactDefinitionInput{
+			OrganizationId: organizationId,
+			Name:           name,
+		},
+	}
+	var err error
+
+	var data getArtifactDefinitionResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by getArtifactsByType.
 const getArtifactsByType_Operation = `
 query getArtifactsByType ($organizationId: ID!, $artifactType: String!) {
@@ -2102,6 +2499,61 @@ func getProjectById(
 	return &data, err
 }
 
+// The query or mutation executed by getProjects.
+const getProjects_Operation = `
+query getProjects ($organizationId: ID!) {
+	projects(organizationId: $organizationId) {
+		name
+		id
+		slug
+		description
+		defaultParams
+		environments {
+			name
+			slug
+		}
+		cost {
+			monthly {
+				average {
+					amount
+				}
+			}
+			daily {
+				average {
+					amount
+				}
+			}
+		}
+	}
+}
+`
+
+func getProjects(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+) (*getProjectsResponse, error) {
+	req := &graphql.Request{
+		OpName: "getProjects",
+		Query:  getProjects_Operation,
+		Variables: &__getProjectsInput{
+			OrganizationId: organizationId,
+		},
+	}
+	var err error
+
+	var data getProjectsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by listArtifactDefinitions.
 const listArtifactDefinitions_Operation = `
 query listArtifactDefinitions ($organizationId: ID!) {
@@ -2147,50 +2599,39 @@ func listArtifactDefinitions(
 	return &data, err
 }
 
-// The query or mutation executed by projects.
-const projects_Operation = `
-query projects ($organizationId: ID!) {
-	projects(organizationId: $organizationId) {
-		name
-		id
-		slug
-		description
-		defaultParams
-		environments {
+// The query or mutation executed by publishArtifactDefinition.
+const publishArtifactDefinition_Operation = `
+mutation publishArtifactDefinition ($organizationId: ID!, $schema: JSON!) {
+	publishArtifactDefinition(organizationId: $organizationId, schema: $schema) {
+		result {
 			name
-			slug
+			id
 		}
-		cost {
-			monthly {
-				average {
-					amount
-				}
-			}
-			daily {
-				average {
-					amount
-				}
-			}
+		successful
+		messages {
+			message
 		}
 	}
 }
 `
 
-func projects(
+func publishArtifactDefinition(
 	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
-) (*projectsResponse, error) {
+	schema map[string]interface{},
+) (*publishArtifactDefinitionResponse, error) {
 	req := &graphql.Request{
-		OpName: "projects",
-		Query:  projects_Operation,
-		Variables: &__projectsInput{
+		OpName: "publishArtifactDefinition",
+		Query:  publishArtifactDefinition_Operation,
+		Variables: &__publishArtifactDefinitionInput{
 			OrganizationId: organizationId,
+			Schema:         schema,
 		},
 	}
 	var err error
 
-	var data projectsResponse
+	var data publishArtifactDefinitionResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

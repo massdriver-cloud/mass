@@ -5,9 +5,8 @@ import (
 	"strings"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/image"
-	"github.com/massdriver-cloud/mass/pkg/config"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
 
@@ -48,16 +47,18 @@ func NewCmdImage() *cobra.Command {
 }
 
 func runImagePush(cmd *cobra.Command, args []string) error {
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
+	ctx := cmd.Context()
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	if !strings.Contains(config.URL, "https://api.massdriver.cloud") {
-		return fmt.Errorf("image management is only supported in the Massdriver Cloud. Your current API URL is %s, which is not supported for image management", config.URL)
+	if !strings.Contains(mdClient.Config.URL, "https://api.massdriver.cloud") {
+		return fmt.Errorf("image management is only supported in the Massdriver Cloud. Your current API URL is %s, which is not supported for image management", mdClient.Config.URL)
 	}
 
-	pushInput.OrganizationID = config.OrgID
+	pushInput.OrganizationID = mdClient.Config.OrganizationID
 	pushInput.ImageName = args[0]
 
 	err := validatePushInputAndAddFlags(&pushInput)
@@ -65,14 +66,13 @@ func runImagePush(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	gqlclient := api.NewClient(config.URL, config.APIKey)
 	imageClient, err := image.NewImageClient()
 
 	if err != nil {
 		return err
 	}
 
-	return image.Push(gqlclient, pushInput, imageClient)
+	return image.Push(ctx, mdClient, pushInput, imageClient)
 }
 
 func validatePushInputAndAddFlags(input *image.PushImageInput) error {

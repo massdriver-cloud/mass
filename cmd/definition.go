@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"text/template"
 
@@ -12,10 +14,8 @@ import (
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/cli"
-	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/definition"
-	"github.com/massdriver-cloud/mass/pkg/restclient"
-	"github.com/mitchellh/mapstructure"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
 
@@ -64,24 +64,22 @@ func NewCmdDefinition() *cobra.Command {
 }
 
 func runDefinitionGet(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
 	definitionName := args[0]
 	outputFormat, err := cmd.Flags().GetString("output")
 	if err != nil {
 		return err
 	}
 
-	c := restclient.NewClient()
-
-	// debt: switch to reading from the graphql API, it has more data in it than the old rest endpoint.
-	adMap, err := definition.Get(c, definitionName)
-	if err != nil {
-		return err
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	// Convert map to ArtifactDefinitionWithSchema
-	var ad api.ArtifactDefinitionWithSchema
-	if err := mapstructure.Decode(adMap, &ad); err != nil {
-		return fmt.Errorf("failed to decode definition: %w", err)
+	ad, getErr := definition.Get(ctx, mdClient, definitionName)
+	if getErr != nil {
+		return fmt.Errorf("error getting artifact definition: %w", getErr)
 	}
 
 	switch outputFormat {
@@ -92,7 +90,7 @@ func runDefinitionGet(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
-		err = renderDefinition(&ad)
+		err = renderDefinition(ad)
 		if err != nil {
 			return err
 		}
@@ -104,12 +102,12 @@ func runDefinitionGet(cmd *cobra.Command, args []string) error {
 }
 
 func runDefinitionPublish(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
 	defPath, err := cmd.Flags().GetString("file")
 	if err != nil {
 		return err
 	}
-
-	c := restclient.NewClient()
 
 	var defFile *os.File
 	if defPath == "-" {
@@ -122,8 +120,30 @@ func runDefinitionPublish(cmd *cobra.Command, args []string) error {
 		defer defFile.Close()
 	}
 
-	if pubErr := definition.Publish(c, defFile); pubErr != nil {
-		return pubErr
+	defBytes, readErr := io.ReadAll(defFile)
+	if readErr != nil {
+		return fmt.Errorf("error reading artifact definition: %w", readErr)
+	}
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	def := map[string]any{}
+	jsonErr := json.Unmarshal(defBytes, &def)
+	if jsonErr != nil {
+		return jsonErr
+	}
+
+	_, nameExists := def["name"].(string)
+	if !nameExists {
+		return fmt.Errorf("artifact definition must have a 'name' field")
+	}
+
+	_, publishErr := api.PublishArtifactDefinition(ctx, mdClient, def)
+	if publishErr != nil {
+		return fmt.Errorf("error publishing artifact definition: %w", publishErr)
 	}
 
 	fmt.Println("Definition published successfully!")
@@ -132,13 +152,14 @@ func runDefinitionPublish(cmd *cobra.Command, args []string) error {
 }
 
 func runDefinitionList(cmd *cobra.Command, args []string) error {
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
+	ctx := context.Background()
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	client := api.NewClient(config.URL, config.APIKey)
-	definitions, err := api.ListArtifactDefinitions(client, config.OrgID)
+	definitions, err := api.ListArtifactDefinitions(ctx, mdClient)
 
 	tbl := cli.NewTable("Name", "Label", "Updated At")
 

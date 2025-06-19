@@ -3,42 +3,27 @@ package definition
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"io"
-	"net/http"
-	"path"
 
-	"github.com/massdriver-cloud/mass/pkg/restclient"
+	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func Get(c *restclient.MassdriverClient, definitionType string) (map[string]interface{}, error) {
-	var definition map[string]interface{}
+func Get(ctx context.Context, mdClient *client.Client, definitionName string) (*api.ArtifactDefinitionWithSchema, error) {
+	return api.GetArtifactDefinition(ctx, mdClient, definitionName)
+}
 
-	endpoint := path.Join("artifact-definitions", definitionType)
-
-	req := restclient.NewRequest("GET", endpoint, nil)
-
-	ctx := context.Background()
-	resp, err := c.Do(&ctx, req)
-
-	if err != nil {
-		return definition, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return definition, errors.New("received non-200 response from Massdriver: " + resp.Status + " " + definitionType)
+func GetAsMap(ctx context.Context, mdClient *client.Client, definitionName string) (map[string]any, error) {
+	ad, getErr := Get(ctx, mdClient, definitionName)
+	if getErr != nil {
+		return nil, getErr
 	}
 
-	respBodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return definition, err
+	adData, marshallErr := json.Marshal(ad)
+	if marshallErr != nil {
+		return nil, marshallErr
 	}
 
-	err = json.Unmarshal(respBodyBytes, &definition)
-	if err != nil {
-		return definition, err
-	}
-
-	return definition, nil
+	var result map[string]interface{}
+	unmarshalErr := json.Unmarshal(adData, &result)
+	return result, unmarshalErr
 }

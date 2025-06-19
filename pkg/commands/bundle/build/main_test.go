@@ -1,18 +1,39 @@
-package commands_test
+package build_test
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/massdriver-cloud/mass/pkg/commands"
+	"github.com/massdriver-cloud/mass/pkg/commands/bundle/build"
+	"github.com/massdriver-cloud/mass/pkg/gqlmock"
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
-	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"sigs.k8s.io/yaml"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
+
+var draftNodeSchema = map[string]any{
+	"schema": map[string]any{
+		"properties": map[string]any{
+			"foo": map[string]any{
+				"properties": map[string]any{
+					"infrastructure": map[string]any{
+						"properties": map[string]any{
+							"arn": map[string]any{
+								"type": "string",
+							},
+						},
+						"type": "object",
+					},
+				},
+				"type": "object",
+			},
+		},
+		"type": "object",
+	},
+}
 
 var expectedSchemaContents = map[string][]byte{
 	"schema-ui.json": []byte(`{
@@ -211,15 +232,15 @@ func TestBundleBuildSchemas(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testServer := setupMockServer(t)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+			"data": map[string]interface{}{
+				"artifactDefinition": draftNodeSchema,
+			},
+		}),
+	}
 
-	defer testServer.Close()
-
-	c := restclient.NewClient()
-	c.WithBaseURL(testServer.URL)
-	c.WithAPIKey("dummy")
-
-	err = commands.BuildBundle(testDir, unmarshalledBundle, c)
+	err = build.Run(testDir, unmarshalledBundle, &mdClient)
 
 	if err != nil {
 		t.Fatal(err)
@@ -257,15 +278,15 @@ func TestBundleBuildTFVars(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testServer := setupMockServer(t)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+			"data": map[string]interface{}{
+				"artifactDefinition": draftNodeSchema,
+			},
+		}),
+	}
 
-	defer testServer.Close()
-
-	c := restclient.NewClient()
-	c.WithBaseURL(testServer.URL)
-	c.WithAPIKey("dummy")
-
-	err = commands.BuildBundle(testDir, unmarshalledBundle, c)
+	err = build.Run(testDir, unmarshalledBundle, &mdClient)
 
 	if err != nil {
 		t.Fatal(err)
@@ -280,20 +301,4 @@ func TestBundleBuildTFVars(t *testing.T) {
 			t.Errorf("Expected file content for %s to be %s but got %s", fileName, string(expectedContent), string(gotContent))
 		}
 	}
-}
-
-var draftNodeAD = []byte(`{"type": "object", "properties": {"foo": {"type": "object", "properties": {"infrastructure": {"type": "object", "properties": {"arn": {"type": "string"}}}}}}}`)
-
-func setupMockServer(t *testing.T) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		urlPath := r.URL.Path
-		switch urlPath {
-		case "/artifact-definitions/massdriver/draft-node":
-			if _, err := w.Write(draftNodeAD); err != nil {
-				t.Fatalf("Failed to write response: %v", err)
-			}
-		default:
-			t.Fatalf("unknown schema: %v", urlPath)
-		}
-	}))
 }

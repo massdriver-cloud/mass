@@ -1,14 +1,16 @@
 package artifact
 
 import (
+	"context"
 	"errors"
 	"regexp"
 	"sort"
 
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/Khan/genqlient/graphql"
-	"github.com/manifoldco/promptui"
 	"github.com/massdriver-cloud/mass/pkg/api"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/manifoldco/promptui"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 var artifactNameFormat = regexp.MustCompile(`[a-z][a-z0-9-]*[a-z0-9]`)
@@ -26,10 +28,10 @@ var promptsNew = []func(t *ImportedArtifact) error{
 	getFile,
 }
 
-func RunArtifactImportPrompt(client graphql.Client, orgId string, t *ImportedArtifact) error {
+func RunArtifactImportPrompt(ctx context.Context, mdClient *client.Client, t *ImportedArtifact) error {
 	var err error
 
-	ads, err := api.ListArtifactDefinitions(client, orgId)
+	ads, err := api.ListArtifactDefinitions(ctx, mdClient)
 	if err != nil {
 		return err
 	}

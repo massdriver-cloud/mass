@@ -18,7 +18,6 @@ import (
 
 	"github.com/cli/browser"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/container"
 	"github.com/massdriver-cloud/mass/pkg/proxy"
 	sb "github.com/massdriver-cloud/mass/pkg/server/bundle"
@@ -142,13 +141,13 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 	http.Handle("/bundle/envs", originHeaderMiddleware(http.HandlerFunc(bundleHandler.GetEnvironmentVariables)))
 	http.Handle("/bundle/params", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Params)))
 
-	configHandler, err := config.NewHandler() //nolint:contextcheck
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	// configHandler, err := config.NewHandler() //nolint:contextcheck
+	// if err != nil {
+	// 	slog.Error(err.Error())
+	// 	os.Exit(1)
+	// }
 
-	http.Handle("/config", originHeaderMiddleware(configHandler))
+	// http.Handle("/config", originHeaderMiddleware(configHandler))
 
 	http.Handle("/containers/logs", originHeaderMiddleware(http.HandlerFunc(containerHandler.StreamLogs)))
 	http.Handle("/containers/list", originHeaderMiddleware(http.HandlerFunc(containerHandler.List)))

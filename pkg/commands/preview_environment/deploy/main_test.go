@@ -1,6 +1,7 @@
 package deploy_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"reflect"
@@ -9,6 +10,9 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/deploy"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
 )
 
 func TestDeployPreviewEnvironment(t *testing.T) {
@@ -25,7 +29,12 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 		}),
 	}
 
-	client := gqlmock.NewClientWithJSONResponseArray(responses)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithJSONResponseArray(responses),
+		Config: config.Config{
+			OrganizationID: "faux-org-id",
+		},
+	}
 
 	previewCfg := api.PreviewConfig{
 		ProjectSlug: "fake-project-slug",
@@ -35,7 +44,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 
 	ciContext := map[string]interface{}{}
 
-	env, err := deploy.Run(client, "faux-org-id", projectSlug, &previewCfg, &ciContext)
+	env, err := deploy.Run(context.Background(), &mdClient, projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		t.Fatal(err)
@@ -94,7 +103,9 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 		gqlmock.MustWrite(w, string(data))
 	})
 
-	client := gqlmock.NewClient(mux)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClient(mux),
+	}
 
 	previewCfg := api.PreviewConfig{
 		ProjectSlug: "",
@@ -111,7 +122,7 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 	ciContext := map[string]interface{}{}
 
 	t.Setenv("PR_NUMBER", "9000")
-	_, err := deploy.Run(client, "faux-org-id", projectSlug, &previewCfg, &ciContext)
+	_, err := deploy.Run(context.Background(), &mdClient, projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		t.Fatal(err)

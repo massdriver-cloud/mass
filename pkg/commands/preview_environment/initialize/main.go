@@ -1,19 +1,22 @@
 package initialize
 
 import (
-	"github.com/Khan/genqlient/graphql"
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
+	"context"
+
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/debuglog"
 	"github.com/massdriver-cloud/mass/pkg/tui/components/artdeftable"
+
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 // New returns a new tea.Model for initializing a preview env config
-func New(client graphql.Client, orgID string, projectSlug string) (*Model, error) {
-	cmdLog := debuglog.Log().With().Str("orgID", orgID).Str("projectSlug", projectSlug).Logger()
+func New(ctx context.Context, mdClient *client.Client, projectSlug string) (*Model, error) {
+	cmdLog := debuglog.Log().With().Str("orgID", mdClient.Config.OrganizationID).Str("projectSlug", projectSlug).Logger()
 	cmdLog.Info().Msg("Initializing preview environment.")
-	project, err := api.GetProject(client, orgID, projectSlug)
+	project, err := api.GetProject(ctx, mdClient, projectSlug)
 
 	if err != nil {
 		return nil, err
@@ -49,7 +52,7 @@ func New(client graphql.Client, orgID string, projectSlug string) (*Model, error
 		promptCursor: -1,
 		artDefTable:  artDefTable,
 		listCredentials: func(artDefType string) ([]*api.Artifact, error) {
-			return api.ListCredentials(client, orgID, artDefType)
+			return api.ListCredentials(ctx, mdClient, artDefType)
 		},
 	}
 

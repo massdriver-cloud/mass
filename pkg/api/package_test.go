@@ -1,18 +1,20 @@
 package api_test
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestGetPackageByName(t *testing.T) {
 	pkgName := "ecomm-prod-cache"
 
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"getPackageByNamingConvention": map[string]interface{}{
 				"namePrefix": fmt.Sprintf("%s-0000", pkgName),
@@ -25,8 +27,11 @@ func TestGetPackageByName(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	got, err := api.GetPackageByName(client, "faux-org-id", pkgName)
+	got, err := api.GetPackageByName(context.Background(), &mdClient, pkgName)
 
 	if err != nil {
 		t.Fatal(err)
@@ -52,7 +57,7 @@ func TestConfigurePackage(t *testing.T) {
 		"cidr": "10.0.0.0/16",
 	}
 
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"configurePackage": map[string]interface{}{
 				"result": map[string]interface{}{
@@ -63,8 +68,11 @@ func TestConfigurePackage(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	pkg, err := api.ConfigurePackage(client, "faux-org-id", "faux-target-id", "faux-manifest-id", params)
+	pkg, err := api.ConfigurePackage(context.Background(), &mdClient, "faux-target-id", "faux-manifest-id", params)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -42,6 +42,7 @@ enum CloudCostStatus {
   INACTIVE
 }
 
+"Represents a user's membership in an organization or group"
 type AccountMembership {
   groupId: ID
 }
@@ -86,8 +87,12 @@ which can be retrieved in decoded form.
 """
 scalar Markdown
 
+"Summary of costs over a time period"
 type Summary {
+  "Previous period's cost sample"
   previous: CostSample!
+
+  "Average cost sample for the period"
   average: CostSample!
 }
 
@@ -101,6 +106,7 @@ type AuditLog {
   actor: Actor!
 }
 
+"A state record for a package alarm"
 type PackageAlarmState {
   "Unique identifier for this alarm state record."
   id: ID!
@@ -118,6 +124,7 @@ type PackageAlarmState {
   occurredAt: DateTime!
 }
 
+"A manifest node in the diagram"
 type ManifestResource {
   "ID of the underlying manifest"
   id: ID!
@@ -127,6 +134,7 @@ type ManifestResource {
 
   package: Package @deprecated
 
+  "The manifest"
   manifest: Manifest
 
   artifacts: [Artifact] @deprecated
@@ -134,6 +142,7 @@ type ManifestResource {
   deployments: [Deployment] @deprecated
 }
 
+"An artifact node in the diagram"
 type ArtifactResource {
   "Artifact name"
   name: String
@@ -141,14 +150,19 @@ type ArtifactResource {
   "Artifact type"
   type: String
 
+  "Unique identifier"
   id: ID
 
+  "ID of the underlying artifact"
   artifactId: ID
 
+  "Origin of the artifact"
   origin: String
 
+  "ID of the source target"
   sourceTargetId: ID
 
+  "ID of the source project"
   sourceProjectId: ID
 }
 
@@ -221,11 +235,16 @@ type ArtifactDefinitionUiInstructions {
   content: Markdown!
 }
 
+"Error information for target deletion"
 type TargetDeletionLifecyclePackageError {
+  "Package causing the deletion error"
   package: Package!
+
+  "Error message"
   message: String!
 }
 
+"Metadata associated with a deployment log entry"
 type DeploymentLogStreamLogMetadata {
   step: String!
   timestamp: DateTime!
@@ -389,21 +408,30 @@ input Credential {
   artifactId: ID!
 }
 
+"A deployment environment where bundles can be deployed"
 type Target {
+  "Unique identifier"
   id: ID
 
+  "Name of the target"
   name: String
 
+  "URL-friendly identifier"
   slug: String
 
+  "Description of the target"
   description: String
 
+  "Operation mode of the target"
   mode: TargetMode
 
+  "Information about whether the target can be deleted"
   deletable: TargetDeletionLifecycle!
 
+  "When the target was created"
   createdAt: DateTime
 
+  "When the target was last updated"
   updatedAt: DateTime
 
   "Target's diagram links and resources"
@@ -412,15 +440,20 @@ type Target {
   "Manifests for this target's package"
   manifests: [Manifest]
 
+  "The project this target belongs to"
   project: Project
 
+  "Packages deployed to this target"
   packages: [Package]
 
+  "Connections configured for this target"
   connections: [TargetConnection]
 
+  "Default connections for this target"
   defaultConnections: [DefaultTargetConnection]
 }
 
+"A service account represents a non-human account used for automated access"
 type ServiceAccount {
   id: ID!
   name: String!
@@ -442,7 +475,9 @@ type DeploymentStatistic {
   errorRate: Float!
 }
 
+"Error information for bundle deletion"
 type BundleDeletionLifecycleError {
+  "Error message"
   message: String!
 }
 
@@ -486,6 +521,7 @@ type ValidationOption {
   value: String!
 }
 
+"A package node in the diagram"
 type PackageResource {
   "ID of the underlying package"
   id: ID!
@@ -493,12 +529,16 @@ type PackageResource {
   "Manifest name for the current package name"
   name: String
 
+  "The package"
   package: Package
 
+  "The manifest"
   manifest: Manifest
 
+  "Artifacts associated with this package"
   artifacts: [Artifact]
 
+  "Deployments associated with this package"
   deployments: [Deployment]
 }
 
@@ -567,23 +607,33 @@ type ContainerRepositoryAuth {
   token: String!
 }
 
+"Lifecycle information for package deletion"
 type PackageDeletionLifecycle {
+  "Whether deletion is possible"
   result: Boolean!
+
+  "List of deletion errors if any"
   messages: [PackageDeletionLifecycleArtifactError]
 }
 
+"A deployed instance of a bundle in the context of its manifest"
 type Package {
+  "Unique identifier"
   id: ID!
 
+  "Prefix for resource names"
   namePrefix: String!
 
   "Package configuration parameters"
   params: JSON!
 
+  "Current status of the package"
   status: PackageStatus!
 
+  "When the package was created"
   createdAt: DateTime!
 
+  "When the package was last updated"
   updatedAt: DateTime!
 
   "Cloud alarms configured through IaC for this package"
@@ -592,6 +642,7 @@ type Package {
   "Secret configuration for application packages"
   secretFields: [SecretField]
 
+  "Currently active deployment for this package"
   activeDeployment: Deployment
 
   "Checks if this package can be decommissioned."
@@ -621,35 +672,69 @@ type Package {
   cost: Cost
 }
 
+"A node in the diagram"
 type Node {
+  "ID of the manifest"
   manifestId: ID!
+
+  "Name of the node"
   name: String!
+
+  "Type of the node (organization\/bundle)"
   type: String!
+
+  "X coordinate position in the diagram"
   positionX: Int!
+
+  "Y coordinate position in the diagram"
   positionY: Int!
+
+  "Handles for artifact connections"
   artifactHandles: [Handle]!
+
+  "Handles for resource connections"
   connectionHandles: [Handle]!
 }
 
+"Lifecycle information for bundle deletion"
 type BundleDeletionLifecycle {
+  "Whether deletion is possible"
   result: Boolean!
+
+  "List of deletion errors if any"
   messages: [BundleDeletionLifecycleError]
 }
 
+"Context information for a node"
 type NodeContext {
+  "ID of the manifest"
   manifestId: ID!
+
+  "ID of the package"
   packageId: ID!
+
+  "Slug of the package"
   packageSlug: String!
 }
 
+"Context information for a link"
 type LinkContext {
+  "ID of the link"
   id: ID!
+
+  "ID of the environment"
   environmentId: ID!
+
+  "Whether this is a connection"
   isConnection: Boolean
 }
 
+"Cost information for a resource"
 type Cost {
+  "Monthly cost summary"
   monthly: Summary
+
+  "Daily cost summary"
   daily: Summary
 }
 
@@ -675,6 +760,13 @@ enum PermissionAccessLevel {
 
 type RootQueryType {
   me: Account
+
+  artifactDefinition(
+    "Get an artifact definition"
+    organizationId: ID!
+
+    name: String!
+  ): ArtifactDefinition
 
   artifactDefinitions(
     "List all artifact definitions"
@@ -729,20 +821,43 @@ type RootQueryType {
   compareDeployments(organizationId: ID!, fromDeploymentId: ID!, toDeploymentId: ID!): Changeset
 
   "Marketplace Blueprints"
-  templates(organizationId: ID!): [Bundle]
+  templates(
+    "Organization ID"
+    organizationId: ID!
+  ): [Bundle]
 
-  bundles(organizationId: ID!): [Bundle]
+  "List all bundles"
+  bundles(
+    "Organization ID"
+    organizationId: ID!
+  ): [Bundle]
 
-  bundle(organizationId: ID!, id: ID!): Bundle
+  "Get a specific bundle"
+  bundle(
+    "Organization ID"
+    organizationId: ID!
 
+    "Bundle ID"
+    id: ID!
+  ): Bundle
+
+  "Search for bundles"
   searchBundles(
+    "Organization ID"
     organizationId: ID!
 
     "Filter bundle search results"
     input: BundleSearchFilters
   ): [Bundle]
 
-  bundleSourceCode(organizationId: ID!, id: ID!): BundleSource
+  "Get bundle source code"
+  bundleSourceCode(
+    "Organization ID"
+    organizationId: ID!
+
+    "Bundle ID"
+    id: ID!
+  ): BundleSource
 
   containerRepository(organizationId: ID!, artifactId: ID!, input: ContainerRepositoryInput!): ContainerRepositoryAuth @deprecated(reason: "This function will be removed in the near future.")
 
@@ -788,7 +903,14 @@ type RootQueryType {
     id: ID!
   ): DeploymentLogStream
 
-  nodes(organizationId: ID!, projectId: ID!): [Node]
+  "Get all nodes in a diagram"
+  nodes(
+    "Organization ID"
+    organizationId: ID!
+
+    "Project ID"
+    projectId: ID!
+  ): [Node]
 
   links(organizationId: ID!, projectId: ID!): [Link]
 
@@ -816,7 +938,19 @@ type RootQueryType {
   groups(organizationId: ID!): [Group]
 
   "Gets all VM instance types for a given region"
-  instanceTypes(organizationId: ID!, artifactId: ID!, packageId: ID!, input: InstanceTypeInput!): [InstanceType]
+  instanceTypes(
+    "Organization ID"
+    organizationId: ID!
+
+    "Artifact ID"
+    artifactId: ID!
+
+    "Package ID"
+    packageId: ID!
+
+    "Input parameters for instance type query"
+    input: InstanceTypeInput!
+  ): [InstanceType]
 
   manifest(
     organizationId: ID!
@@ -860,6 +994,7 @@ type RootQueryType {
 
   "Deprecated, use environment instead"
   target(
+    "Organization ID"
     organizationId: ID!
 
     "Target ID or slug"
@@ -875,6 +1010,7 @@ be converted to UTC if there is an offset.
 """
 scalar DateTime
 
+"An instance of a bundle in a project's architecture, providing context for how the bundle is used"
 type Manifest {
   id: ID!
 
@@ -944,14 +1080,25 @@ input BundleSearchFilters {
   query: String
 }
 
+"Default connection configuration for a target"
 type DefaultTargetConnection {
+  "Unique identifier"
   id: ID!
+
+  "Group name for the connection"
   defaultTargetConnectionGroup: String!
+
+  "Display label for the connection group"
   defaultTargetConnectionGroupLabel: String!
+
+  "Type of the connection"
   defaultTargetConnectionType: String!
+
+  "The artifact being connected"
   artifact: Artifact!
 }
 
+"An invitation to join an organization or group"
 type Invitation {
   id: ID!
 }
@@ -961,6 +1108,7 @@ type ManifestRecommendation {
   manifest: Manifest!
 }
 
+"A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)"
 type ArtifactDefinition {
   id: ID!
 
@@ -988,6 +1136,7 @@ type ArtifactDefinition {
   exportFormats: [ArtifactDefinitionExportFormat]
 }
 
+"An invitation that has been sent but not yet accepted"
 type PendingInvitation {
   id: ID!
   group: Group
@@ -1029,8 +1178,12 @@ type Alarm {
   currentState: PackageAlarmState
 }
 
+"Lifecycle information for target deletion"
 type TargetDeletionLifecycle {
+  "Whether deletion is possible"
   result: Boolean!
+
+  "List of deletion errors if any"
   messages: [TargetDeletionLifecyclePackageError]
 }
 
@@ -1039,8 +1192,12 @@ type ProjectDeletionLifecycle {
   messages: [ProjectDeletionLifecyclePackageError]
 }
 
+"A single cost measurement"
 type CostSample {
+  "The cost amount"
   amount: Float!
+
+  "The currency code (e.g. USD)"
   currency: String!
 }
 
@@ -1147,9 +1304,15 @@ type OrganizationBilling {
   subscriptionManagementUrl: String! @deprecated(reason: "Use `organization_billing_plans` instead.")
 }
 
+"Mode of operation for a target"
 enum TargetMode {
+  "Preview mode for testing"
   PREVIEW
+
+  "Demo mode for demonstrations"
   DEMO
+
+  "Standard production mode"
   STANDARD
 }
 
@@ -1197,8 +1360,23 @@ type DeploymentPayload {
   result: Deployment
 }
 
+type ArtifactDefinitionPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: ArtifactDefinition
+}
+
+"Error information for package deletion"
 type PackageDeletionLifecycleArtifactError {
+  "Artifact causing the deletion error"
   artifact: Artifact!
+
+  "Error message"
   message: String!
 }
 
@@ -1248,8 +1426,12 @@ type Actor {
   name: String!
 }
 
+"A dimension for cloud metrics"
 type Dimension {
+  "Name of the dimension"
   name: String!
+
+  "Value of the dimension"
   value: String!
 }
 
@@ -1286,15 +1468,19 @@ type ManifestDeletionLifecycle {
 
 "A VM type in the cloud"
 type InstanceType {
+  "The name\/identifier of the instance type"
   name: String!
 
   "Compute class defined by the cloud"
   size: String
 
+  "Amount of memory in gigabytes"
   memoryGb: String!
 
+  "Number of virtual CPUs"
   vCpus: String!
 
+  "Input\/output operations per second"
   iops: String
 }
 
@@ -1392,16 +1578,36 @@ input RemoteReferenceParams {
   field: String
 }
 
+"A connection between two nodes in the diagram"
 type Link {
+  "Unique identifier for the link"
   id: ID!
+
+  "Source field name"
   srcField: String!
+
+  "Destination field name"
   destField: String!
+
+  "Whether this link represents a connection"
   isConnection: Boolean
+
+  "When the link was created"
   createdAt: DateTime!
+
+  "When the link was last updated"
   updatedAt: DateTime!
+
+  "ID of the source manifest"
   srcId: ID!
+
+  "ID of the destination manifest"
   destId: ID!
+
+  "Source manifest"
   srcManifest: Manifest!
+
+  "Destination manifest"
   destManifest: Manifest!
 }
 
@@ -1411,13 +1617,18 @@ type ArtifactDefinitionUi {
   instructions: [ArtifactDefinitionUiInstructions]!
 }
 
+"A single log entry in a deployment log stream"
 type DeploymentLogStreamLog {
   content: String!
   metadata: DeploymentLogStreamLogMetadata!
 }
 
+"Source code information for a bundle"
 type BundleSource {
+  "The bundle"
   bundle: Bundle!
+
+  "Source code content"
   source: String!
 }
 
@@ -1506,6 +1717,7 @@ type ArtifactDefinitionExportFormat {
   templateLang: String!
 }
 
+"A user account in the system"
 type Account {
   id: ID!
 
@@ -1556,28 +1768,42 @@ type AccountMember {
   email: String!
 }
 
+"A stream of logs associated with a deployment"
 type DeploymentLogStream {
   id: ID!
   logs: [DeploymentLogStreamLog]
 }
 
+"A connection handle in the diagram"
 type Handle {
+  "Name of the field"
   fieldName: String!
+
+  "Type of the handle"
   type: String!
+
+  "Whether this handle can be linked"
   isLinkable: Boolean!
+
+  "Whether this handle is required"
   required: Boolean!
 }
 
+"A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component"
 type Bundle {
+  "Unique identifier"
   id: ID!
 
+  "Name of the bundle"
   name: String!
 
+  "Version of the bundle"
   version: String
 
   "Icon SVG"
   icon: String
 
+  "Version of the bundle specification"
   specVersion: String
 
   "Application or bundle"
@@ -1586,27 +1812,36 @@ type Bundle {
   "Private bundle or public template"
   access: String!
 
+  "Description of the bundle"
   description: String
 
   ref: String @deprecated(reason: "Replaced with sourceUrl")
 
+  "URL to the source code repository"
   sourceUrl: String
 
+  "JSON schema for bundle parameters"
   paramsSchema: JSON!
 
+  "JSON schema for bundle connections"
   connectionsSchema: JSON!
 
+  "JSON schema for bundle artifacts"
   artifactsSchema: JSON!
 
+  "JSON schema for bundle UI configuration"
   uiSchema: JSON!
 
   "The operator guide for the bundle in markdown."
   operatorGuide: Markdown
 
+  "When the bundle was created"
   createdAt: DateTime!
 
+  "When the bundle was last updated"
   updatedAt: DateTime!
 
+  "Information about whether the bundle can be deleted"
   deletable: BundleDeletionLifecycle!
 
   "The full name of the bundle"
@@ -1633,6 +1868,7 @@ input PreviewEnvironmentInput {
   ciContext: JSON!
 }
 
+"A deployment represents an instance of a bundle being deployed to a target environment"
 type Deployment {
   id: ID!
 
@@ -1760,9 +1996,30 @@ type RootMutationType {
   """
   deleteArtifact(organizationId: ID!, id: ID!): ArtifactPayload
 
-  deleteBundle(organizationId: ID!, id: ID!): BundlePayload
+  publishArtifactDefinition(
+    organizationId: ID!
 
-  addBundleToCatalog(organizationId: ID!, id: ID!): BundlePayload
+    "JSON Schema with $md config"
+    schema: JSON!
+  ): ArtifactDefinitionPayload
+
+  "Delete a bundle"
+  deleteBundle(
+    "Organization ID"
+    organizationId: ID!
+
+    "Bundle ID"
+    id: ID!
+  ): BundlePayload
+
+  "Add a bundle to the catalog"
+  addBundleToCatalog(
+    "Organization ID"
+    organizationId: ID!
+
+    "Bundle ID"
+    id: ID!
+  ): BundlePayload
 
   "Assign a credential to be used to retrieve cloud costs"
   assignCloudCostCredential(organizationId: ID!, artifactId: ID!): CloudCostCredentialPayload
@@ -1921,14 +2178,17 @@ type RootMutationType {
   Reset a package to its initialized state. This is useful for:
   - Forcing a stuck bundle off the canvas
   - Redeploying a package from scratch
-  - Clearing state when destroy_state is true
+  - Clearing state when delete_state is true
 
-  The package's status will be set to INITIALIZED.
+  The package's status _will_ be set to INITIALIZED.
 
-  By default, the state will not be destroyed. If you want to destroy the state, set destroy_state to true.
-  By default, the params will not be cleared. If you want to clear the params, set clear_params to true.
+  By default, the state will not be destroyed. If you want to destroy the state, set delete_state to true.
+  By default, the params will not be cleared. If you want to clear the params, set delete_params to true.
+  By default, the deployments will not be deleted. If you want to delete the deployments, set delete_deployments to true.
 
-  This mutation is an escape hatch and can lose data. Please make sure to pull any state first.
+  This mutation is an escape hatch and can lose data.
+
+  Please make sure to pull any state first.
 
   [Read our manage state guide](https://docs.massdriver.cloud/guides/managing-state#3-pull-existing-state) on setting up your state backend.
 
@@ -1947,10 +2207,13 @@ type RootMutationType {
     id: ID!
 
     "Destroy the state of the package"
-    destroyState: Boolean!
+    deleteState: Boolean!
 
     "Clear the params of the package"
-    clearParams: Boolean!
+    deleteParams: Boolean!
+
+    "Delete deployment history for this package"
+    deleteDeployments: Boolean!
   ): PackagePayload
 
   "Update a Package's parameters"
@@ -2017,10 +2280,28 @@ type RootMutationType {
   deleteTargetConnection(organizationId: ID!, id: ID!): TargetConnectionPayload @deprecated(reason: "use deleteEnvironmentConnection instead")
 
   "Deprecated. use updateEnvironment instead"
-  updateTarget(organizationId: ID!, id: ID!, name: String!, description: String): TargetPayload @deprecated(reason: "use updateEnvironment instead")
+  updateTarget(
+    "Organization ID"
+    organizationId: ID!
+
+    "Target ID"
+    id: ID!
+
+    "New name for the target"
+    name: String!
+
+    "New description for the target"
+    description: String
+  ): TargetPayload @deprecated(reason: "use updateEnvironment instead")
 
   "Deprecated. use deleteTarget instead"
-  deleteTarget(organizationId: ID!, id: ID!): TargetPayload @deprecated(reason: "use deleteTarget instead")
+  deleteTarget(
+    "Organization ID"
+    organizationId: ID!
+
+    "Target ID"
+    id: ID!
+  ): TargetPayload @deprecated(reason: "use deleteTarget instead")
 }
 
 type EnvironmentConnection {
@@ -2031,9 +2312,15 @@ type EnvironmentConnection {
   updatedAt: DateTime
 }
 
+"A diagram representing relationships between resources"
 type Diagram {
+  "Unique identifier for the diagram"
   id: ID!
+
+  "Links between nodes in the diagram"
   links: [Link]
+
+  "Resources (nodes) in the diagram"
   resources: [Resource]
 }
 
@@ -2064,17 +2351,28 @@ type LinkPayload {
   result: Link
 }
 
+"An event that occurs during the deployment lifecycle"
 type DeploymentLifecycleEvent {
   id: ID!
   status: String!
   deployment: Deployment!
 }
 
+"Status of a package"
 enum PackageStatus {
+  "Package has been created but not yet provisioned"
   INITIALIZED
+
+  "Package has been successfully provisioned"
   PROVISIONED
+
+  "Package has been decommissioned"
   DECOMMISSIONED
+
+  "Package provisioning failed"
   FAILED
+
+  "Package exists externally"
   EXTERNAL
 }
 
@@ -2117,16 +2415,30 @@ type Organization {
   onboardingTasks: [OnboardingTask]
 }
 
+"A connection between a package and an artifact"
 type Connection {
+  "Unique identifier for the connection"
   id: ID
+
+  "The field in the package that this connection is bound to"
   packageField: String
+
+  "The artifact being connected"
   artifact: Artifact
+
+  "The package that owns this connection"
   package: Package
+
+  "When the connection was created"
   createdAt: DateTime
+
+  "When the connection was last updated"
   updatedAt: DateTime
 }
 
+"Information about a deleted node"
 type DeletedNode {
+  "ID of the deleted manifest"
   manifestId: ID!
 }
 

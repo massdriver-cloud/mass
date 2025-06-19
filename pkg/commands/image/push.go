@@ -1,14 +1,16 @@
 package image
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/moby/moby/pkg/jsonmessage"
 	"github.com/moby/term"
 )
@@ -17,14 +19,14 @@ const AWS = "AWS"
 const GCP = "GCP"
 const AZURE = "Azure"
 
-func Push(client graphql.Client, input PushImageInput, imageClient Client) error {
+func Push(ctx context.Context, mdClient *client.Client, input PushImageInput, imageClient Client) error {
 	var imageName = prettylogs.Underline(input.ImageName)
 	var location = prettylogs.Underline(input.Location)
 
 	msg := fmt.Sprintf("Creating repository for image %s in region %s and fetching single use credentials", imageName, location)
 	fmt.Println(msg)
 
-	containerRepository, err := api.GetContainerRepository(client, input.ArtifactID, input.OrganizationID, input.ImageName, input.Location)
+	containerRepository, err := api.GetContainerRepository(ctx, mdClient, input.ArtifactID, input.ImageName, input.Location)
 
 	if err != nil {
 		return err

@@ -10,8 +10,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/massdriver-cloud/mass/pkg/gqlmock"
 	"github.com/massdriver-cloud/mass/pkg/jsonschema"
-	"github.com/massdriver-cloud/mass/pkg/restclient"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestDereference(t *testing.T) {
@@ -104,7 +107,7 @@ func TestDereference(t *testing.T) {
 		{
 			Name:  "Dereferences remote (massdriver) ref",
 			Input: jsonDecode(`{"$ref": "massdriver/test-schema"}`),
-			Expected: map[string]string{
+			Expected: map[string]any{
 				"foo": "bar",
 			},
 		},
@@ -112,24 +115,22 @@ func TestDereference(t *testing.T) {
 
 	for _, test := range cases {
 		t.Run(test.Name, func(t *testing.T) {
-			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				urlPath := r.URL.Path
-				switch urlPath {
-				case "/artifact-definitions/massdriver/test-schema":
-					if _, err := w.Write([]byte(`{"foo":"bar"}`)); err != nil {
-						t.Fatalf("Failed to write response: %v", err)
-					}
-				default:
-					t.Fatalf("unknown schema: %v", urlPath)
-				}
-			}))
-			defer testServer.Close()
-
-			c := restclient.NewClient()
-			c.WithBaseURL(testServer.URL)
+			mdClient := client.Client{
+				GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+					"data": map[string]interface{}{
+						"artifactDefinition": map[string]any{
+							"id":   "123-456",
+							"name": "massdriver/test-schema",
+							"schema": map[string]any{
+								"foo": "bar",
+							},
+						},
+					},
+				}),
+			}
 
 			opts := jsonschema.DereferenceOptions{
-				Client: c,
+				Client: &mdClient,
 				Cwd:    ".",
 			}
 
@@ -173,7 +174,8 @@ func TestDereference(t *testing.T) {
 		}))
 		defer testServer.Close()
 
-		c := restclient.NewClient().WithBaseURL(testServer.URL)
+		mdClient := &client.Client{}
+		mdClient.HTTP = resty.New().SetBaseURL(testServer.URL)
 
 		recursive := fmt.Sprintf(`{"baz":{"$ref":"%s/endpoint"}}`, testServer.URL)
 		recursivePtr = &recursive
@@ -181,7 +183,7 @@ func TestDereference(t *testing.T) {
 		input := jsonDecode(fmt.Sprintf(`{"$ref":"%s/recursive"}`, testServer.URL))
 
 		opts := jsonschema.DereferenceOptions{
-			Client: c,
+			Client: mdClient,
 			Cwd:    ".",
 		}
 		got, _ := jsonschema.Dereference(input, opts)
@@ -198,7 +200,7 @@ func TestDereference(t *testing.T) {
 		input = jsonDecode(fmt.Sprintf(`{"$ref":"%s/not-found"}`, testServer.URL))
 
 		opts = jsonschema.DereferenceOptions{
-			Client: c,
+			Client: mdClient,
 			Cwd:    ".",
 		}
 		_, gotErr := jsonschema.Dereference(input, opts)

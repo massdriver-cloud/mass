@@ -1,14 +1,16 @@
 package api_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestGetProject(t *testing.T) {
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"project": map[string]interface{}{
 				"id":   "uuid1",
@@ -19,8 +21,11 @@ func TestGetProject(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	project, err := api.GetProject(client, "faux-org-id", "sluggy")
+	project, err := api.GetProject(context.Background(), &mdClient, "sluggy")
 
 	if err != nil {
 		t.Fatal(err)
@@ -36,7 +41,7 @@ func TestGetProject(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"projects": []map[string]interface{}{
 				{
@@ -50,8 +55,11 @@ func TestListProjects(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	projects, err := api.ListProjects(client, "faux-org-id")
+	projects, err := api.ListProjects(context.Background(), &mdClient)
 
 	if err != nil {
 		t.Fatal(err)

@@ -1,18 +1,20 @@
 package api_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestDeployPreviewEnvironment(t *testing.T) {
 	prNumber := 69
 	slug := fmt.Sprintf("p%d", prNumber)
 
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"deployPreviewEnvironment": map[string]interface{}{
 				"result": map[string]interface{}{
@@ -23,6 +25,9 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
 	credentials := []api.Credential{}
 
@@ -47,7 +52,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 		},
 	}
 
-	environment, err := api.DeployPreviewEnvironment(client, "faux-org-id", "faux-project-id", credentials, packageParams, ciContext)
+	environment, err := api.DeployPreviewEnvironment(context.Background(), &mdClient, "faux-project-id", credentials, packageParams, ciContext)
 
 	if err != nil {
 		t.Fatal(err)
@@ -65,7 +70,7 @@ func TestDecommissionPreviewEnvironment(t *testing.T) {
 	prNumber := 69
 	targetSlug := fmt.Sprintf("p%d", prNumber)
 	projectTargetSlug := "ecomm-" + targetSlug
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"decommissionPreviewEnvironment": map[string]interface{}{
 				"result": map[string]interface{}{
@@ -76,8 +81,11 @@ func TestDecommissionPreviewEnvironment(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	environment, err := api.DecommissionPreviewEnvironment(client, "faux-org-id", projectTargetSlug)
+	environment, err := api.DecommissionPreviewEnvironment(context.Background(), &mdClient, projectTargetSlug)
 
 	if err != nil {
 		t.Fatal(err)
@@ -95,7 +103,7 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 	prNumber := 69
 	slug := fmt.Sprintf("p%d", prNumber)
 
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]interface{}{
 			"deployPreviewEnvironment": map[string]interface{}{
 				"result": map[string]interface{}{
@@ -106,6 +114,9 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
 	credentials := []api.Credential{}
 
@@ -135,7 +146,7 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 		},
 	}
 
-	_, err := api.DeployPreviewEnvironment(client, "faux-org-id", "faux-project-id", credentials, packageParams, ciContext)
+	_, err := api.DeployPreviewEnvironment(context.Background(), &mdClient, "faux-project-id", credentials, packageParams, ciContext)
 
 	if err == nil {
 		t.Error("expected error when both params and remote references are set, got nil")

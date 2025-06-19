@@ -1,6 +1,7 @@
 package patch_test
 
 import (
+	"context"
 	"net/http"
 	"reflect"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/package/patch"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestPatchPackage(t *testing.T) {
@@ -36,10 +38,12 @@ func TestPatchPackage(t *testing.T) {
 		},
 	}
 
-	client := gqlmock.NewClientWithFuncResponseArray(responses)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithFuncResponseArray(responses),
+	}
 	setValues := []string{".cidr = \"10.0.0.0/20\""}
 
-	pkg, err := patch.Run(client, "faux-org-id", "ecomm-prod-cache", setValues)
+	pkg, err := patch.Run(context.Background(), &mdClient, "ecomm-prod-cache", setValues)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,15 +1,16 @@
-package commands
+package build
 
 import (
 	"path"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
-	"github.com/massdriver-cloud/mass/pkg/restclient"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func BuildBundle(buildPath string, b *bundle.Bundle, c *restclient.MassdriverClient) error {
-	err := b.DereferenceSchemas(buildPath, c)
+func Run(buildPath string, b *bundle.Bundle, mdClient *client.Client) error {
+	err := b.DereferenceSchemas(buildPath, mdClient)
 	if err != nil {
 		return err
 	}

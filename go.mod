@@ -20,12 +20,12 @@ require (
 	github.com/evertras/bubble-table v0.17.1
 	github.com/fatih/color v1.17.0
 	github.com/go-git/go-git/v5 v5.12.0
+	github.com/go-resty/resty/v2 v2.16.5
 	github.com/itchyny/gojq v0.12.16
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/airlock v0.0.6
-	github.com/massdriver-cloud/massdriver-sdk-go v0.0.5
+	github.com/massdriver-cloud/massdriver-sdk-go v0.0.6-0.20250618190509-b3c14f7e2a4f
 	github.com/massdriver-cloud/schema2json v0.0.2
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/moby v27.3.1+incompatible
 	github.com/moby/term v0.5.0
 	github.com/opencontainers/image-spec v1.1.1
@@ -33,14 +33,13 @@ require (
 	github.com/rodaine/table v1.3.0
 	github.com/rs/zerolog v1.33.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
-	github.com/sethvargo/go-envconfig v1.1.0
 	github.com/spf13/cobra v1.8.1
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.4
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/mod v0.22.0
-	golang.org/x/text v0.24.0
+	golang.org/x/mod v0.25.0
+	golang.org/x/text v0.26.0
 	gopkg.in/yaml.v3 v3.0.1
 	oras.land/oras-go/v2 v2.6.0
 	sigs.k8s.io/yaml v1.4.0
@@ -95,7 +94,6 @@ require (
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/spec v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
-	github.com/go-resty/resty/v2 v2.16.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
@@ -155,13 +153,13 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
-	golang.org/x/crypto v0.37.0 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
-	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/sync v0.14.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/term v0.31.0 // indirect
-	golang.org/x/tools v0.27.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/term v0.32.0 // indirect
+	golang.org/x/tools v0.33.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gotest.tools/v3 v3.5.2 // indirect

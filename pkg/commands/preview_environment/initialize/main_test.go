@@ -1,14 +1,17 @@
 package initialize_test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/initialize"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
 	"github.com/massdriver-cloud/mass/pkg/tui/teahelper"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestRun(t *testing.T) {
@@ -30,9 +33,11 @@ func TestRun(t *testing.T) {
 		}),
 	}
 
-	client := gqlmock.NewClientWithJSONResponseArray(responses)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithJSONResponseArray(responses),
+	}
 
-	model, _ := initialize.New(client, "faux-org-id", projectSlug)
+	model, _ := initialize.New(context.Background(), &mdClient, projectSlug)
 
 	selectRow := tea.KeyMsg{Type: tea.KeySpace}
 	pressNext := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}}

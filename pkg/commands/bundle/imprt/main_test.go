@@ -1,11 +1,11 @@
-package commands_test
+package imprt_test
 
 import (
 	"os"
 	"path"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/pkg/commands"
+	"github.com/massdriver-cloud/mass/pkg/commands/bundle/imprt"
 )
 
 func TestImportParams(t *testing.T) {
@@ -18,7 +18,7 @@ func TestImportParams(t *testing.T) {
 	tests := []test{
 		{
 			name:       "empty-params",
-			mdyamlPath: "testdata/import/empty-massdriver.yaml",
+			mdyamlPath: "testdata/empty-massdriver.yaml",
 			tfContent:  `variable "new" {type = string}`,
 			want: `schema: draft-07
 name: "test-bundle"
@@ -43,7 +43,7 @@ ui: {}
 		},
 		{
 			name:       "same-params",
-			mdyamlPath: "testdata/import/foo-massdriver.yaml",
+			mdyamlPath: "testdata/foo-massdriver.yaml",
 			tfContent:  `variable "foo" {type = string}`,
 			want: `schema: draft-07
 name: "test-bundle"
@@ -67,7 +67,7 @@ ui: {}
 		},
 		{
 			name:       "simple-add",
-			mdyamlPath: "testdata/import/foo-massdriver.yaml",
+			mdyamlPath: "testdata/foo-massdriver.yaml",
 			tfContent:  `variable "new" {type = string}`,
 			want: `schema: draft-07
 name: "test-bundle"
@@ -120,7 +120,7 @@ ui: {}
 			}
 
 			// Run the ImportParams function
-			err = commands.ImportParams(testDir, true)
+			err = imprt.Run(testDir, true)
 			if err != nil {
 				t.Fatalf("ImportParams returned an error: %v", err)
 			}

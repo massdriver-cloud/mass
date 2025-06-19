@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/pkg/commands/pull"
+	"github.com/massdriver-cloud/mass/pkg/commands/bundle/pull"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	oras "oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content"

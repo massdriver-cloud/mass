@@ -16,7 +16,7 @@ func GenerateNewBundle(bundleCache templatecache.TemplateCache, templateData *te
 
 	// if we imported params from existing IaC, pass that to the provisioner in case more initialization should be done
 	if templateData.ExistingParamsPath != "" {
-		b, unmarshalErr := bundle.UnmarshalAndApplyDefaults(templateData.OutputDir)
+		b, unmarshalErr := bundle.Unmarshal(templateData.OutputDir)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}

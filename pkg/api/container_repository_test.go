@@ -1,15 +1,17 @@
 package api_test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestDockerRegistryToken(t *testing.T) {
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
 		"data": map[string]map[string]string{
 			"containerRepository": {
 				"token":   "bogustoken",
@@ -17,9 +19,11 @@ func TestDockerRegistryToken(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	got, err := api.GetContainerRepository(client, "artifactId", "orgId", "westus", "massdriver/test-image")
-
+	got, err := api.GetContainerRepository(context.Background(), &mdClient, "artifactId", "westus", "massdriver/test-image")
 	if err != nil {
 		t.Fatal(err)
 	}

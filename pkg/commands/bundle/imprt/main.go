@@ -1,4 +1,4 @@
-package commands
+package imprt
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ import (
 )
 
 //nolint:funlen,gocognit
-func ImportParams(buildPath string, skipVerify bool) error {
+func Run(buildPath string, skipVerify bool) error {
 	fmt.Println("Checking IaC for missing parameters...")
 
 	mdYamlPath := path.Join(buildPath, "massdriver.yaml")
@@ -31,7 +31,7 @@ func ImportParams(buildPath string, skipVerify bool) error {
 		return unmashalNodeErr
 	}
 	// unmarshaling into a bundle to access fields
-	b, unmarshalBundleErr := bundle.UnmarshalAndApplyDefaults(buildPath)
+	b, unmarshalBundleErr := bundle.Unmarshal(buildPath)
 	if unmarshalBundleErr != nil {
 		return unmarshalBundleErr
 	}

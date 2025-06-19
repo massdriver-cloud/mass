@@ -1,6 +1,7 @@
 package configure_test
 
 import (
+	"context"
 	"net/http"
 	"reflect"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/package/configure"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestConfigurePackage(t *testing.T) {
@@ -36,9 +38,11 @@ func TestConfigurePackage(t *testing.T) {
 		"cidr": "10.0.0.0/16",
 	}
 
-	client := gqlmock.NewClientWithFuncResponseArray(responses)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithFuncResponseArray(responses),
+	}
 
-	pkg, err := configure.Run(client, "faux-org-id", "ecomm-prod-cache", params)
+	pkg, err := configure.Run(context.Background(), &mdClient, "ecomm-prod-cache", params)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,12 +77,13 @@ func TestConfigurePackageInterpolation(t *testing.T) {
 		},
 	}
 
-	client := gqlmock.NewClientWithFuncResponseArray(responses)
-
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithFuncResponseArray(responses),
+	}
 	params := map[string]interface{}{"size": "${MEMORY_AMT}GB"}
 	t.Setenv("MEMORY_AMT", "6")
 
-	pkg, err := configure.Run(client, "faux-org-id", "ecomm-prod-cache", params)
+	pkg, err := configure.Run(context.Background(), &mdClient, "ecomm-prod-cache", params)
 	if err != nil {
 		t.Fatal(err)
 	}
