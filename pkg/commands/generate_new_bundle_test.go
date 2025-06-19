@@ -115,16 +115,16 @@ func TestTemplateRender(t *testing.T) {
 
 	checkErr(err, t)
 
-	wantConnections := map[string]interface{}{
-		"properties": map[string]interface{}{
-			"aws_authentication": map[string]interface{}{
+	wantConnections := map[string]any{
+		"properties": map[string]any{
+			"aws_authentication": map[string]any{
 				"$ref": "massdriver/aws-iam-role",
 			},
-			"dynamo": map[string]interface{}{
+			"dynamo": map[string]any{
 				"$ref": "massdriver/aws-dynamodb-table",
 			},
 		},
-		"required": []interface{}{"aws_authentication", "dynamo"},
+		"required": []any{"aws_authentication", "dynamo"},
 	}
 
 	if got.Name != templateData.Name {

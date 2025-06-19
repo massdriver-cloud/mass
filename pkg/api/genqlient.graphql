@@ -1,3 +1,25 @@
+# ARTIFACTS
+
+mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactSpecs: JSON!, $artifactType: String! $artifactData: JSON!) {
+  createArtifact(
+    organizationId: $organizationId,
+    name: $artifactName,
+    specs: $artifactSpecs,
+    type: $artifactType,
+    data: $artifactData
+  ) {
+    result {
+      name
+      id
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
 query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
   artifacts(organizationId: $organizationId, input: {filter: {type: $artifactType}}) {
     next
@@ -8,37 +30,66 @@ query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
   }
 }
 
-query projects($organizationId: ID!){
-  projects(organizationId: $organizationId){
-    name
+
+# ARTIFACT-DEFINITIONS
+
+query getArtifactDefinition($organizationId: ID!, $name: String!) {
+  artifactDefinition(organizationId: $organizationId, name: $name) {
     id
-    slug
-    description
-    defaultParams
-    environments{
-      name
-      slug
-    }
-    cost{
-      monthly{
-        average{
-          amount
-        }
-      }
-      daily{
-        average{
-          amount
-        }
-      }
+    schema
+    name
+    icon
+    label
+    updatedAt
+    url
+    ui {
+      connectionOrientation
+      environmentDefaultGroup
     }
   }
 }
 
-query getProjectById($organizationId: ID!, $id: ID!) {
-  project(organizationId: $organizationId, id: $id) {
-    id, name, defaultParams, slug, description
+query listArtifactDefinitions($organizationId: ID!) {
+  artifactDefinitions(organizationId: $organizationId) {
+    id
+    schema
+    name
+    icon
+    label
+    updatedAt
+    url
+    ui {
+      connectionOrientation
+      environmentDefaultGroup
+    }
   }
 }
+
+mutation publishArtifactDefinition($organizationId: ID!, $schema: JSON!) {
+  publishArtifactDefinition(organizationId: $organizationId, schema: $schema) {
+    result {
+      name
+      id
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
+
+# CONTAINER REPOSITORIES
+
+query containerRepository($orgId: ID!, $artifactId: ID!, $input: ContainerRepositoryInput!) {
+  containerRepository(organizationId: $orgId, artifactId: $artifactId, input: $input) {
+    token, repoUri
+  }
+}
+
+
+# DEPLOYMENTS
 
 query getDeploymentById($organizationId: ID!, $id: ID!) {
   deployment(organizationId: $organizationId, id: $id) {
@@ -47,16 +98,14 @@ query getDeploymentById($organizationId: ID!, $id: ID!) {
   }
 }
 
-mutation deployPreviewEnvironment($organizationId: ID!, $projectId: ID!, $input: PreviewEnvironmentInput!) {
-  deployPreviewEnvironment(projectId: $projectId, organizationId: $organizationId, input: $input) {
+
+# PACKAGES
+
+mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $message: String!) {
+  deployPackage(organizationId: $organizationId, manifestId: $manifestId, targetId: $targetId, message: $message) {
     successful
     result {
       id
-      slug
-      project{
-        id
-        slug
-      }
     }
     # @genqlient(typename: "MutationValidationError")
     messages {
@@ -91,19 +140,6 @@ query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
   }
 }
 
-mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $message: String!) {
-  deployPackage(organizationId: $organizationId, manifestId: $manifestId, targetId: $targetId, message: $message) {
-    successful
-    result {
-      id
-    }
-    # @genqlient(typename: "MutationValidationError")
-    messages {
-      message
-    }
-  }
-}
-
 mutation configurePackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $params: JSON!) {
   configurePackage(organizationId: $organizationId, targetId: $targetId, manifestId: $manifestId, params: $params) {
     result {
@@ -118,6 +154,44 @@ mutation configurePackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!
     }
   }
 }
+
+
+# PROJECTS
+
+query getProjects($organizationId: ID!){
+  projects(organizationId: $organizationId){
+    name
+    id
+    slug
+    description
+    defaultParams
+    environments{
+      name
+      slug
+    }
+    cost{
+      monthly{
+        average{
+          amount
+        }
+      }
+      daily{
+        average{
+          amount
+        }
+      }
+    }
+  }
+}
+
+query getProjectById($organizationId: ID!, $id: ID!) {
+  project(organizationId: $organizationId, id: $id) {
+    id, name, defaultParams, slug, description
+  }
+}
+
+
+# PREVIEW ENVIRONMENTS
 
 mutation decommissionPreviewEnvironment($orgId: ID!, $targetId: ID!) {
   decommissionPreviewEnvironment(organizationId: $orgId, targetId: $targetId) {
@@ -137,44 +211,20 @@ mutation decommissionPreviewEnvironment($orgId: ID!, $targetId: ID!) {
   }
 }
 
-query containerRepository($orgId: ID!, $artifactId: ID!, $input: ContainerRepositoryInput!) {
-  containerRepository(organizationId: $orgId, artifactId: $artifactId, input: $input) {
-    token, repoUri
-  }
-}
-
-mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactSpecs: JSON!, $artifactType: String! $artifactData: JSON!) {
-  createArtifact(
-    organizationId: $organizationId,
-    name: $artifactName,
-    specs: $artifactSpecs,
-    type: $artifactType,
-    data: $artifactData
-  ) {
-    result {
-      name
-      id
-    }
+mutation deployPreviewEnvironment($organizationId: ID!, $projectId: ID!, $input: PreviewEnvironmentInput!) {
+  deployPreviewEnvironment(projectId: $projectId, organizationId: $organizationId, input: $input) {
     successful
+    result {
+      id
+      slug
+      project{
+        id
+        slug
+      }
+    }
     # @genqlient(typename: "MutationValidationError")
     messages {
       message
-    }
-  }
-}
-
-query listArtifactDefinitions($organizationId: ID!) {
-  artifactDefinitions(organizationId: $organizationId) {
-    id
-    schema
-    name
-    icon
-    label
-    updatedAt
-    url
-    ui {
-      connectionOrientation
-      environmentDefaultGroup
     }
   }
 }

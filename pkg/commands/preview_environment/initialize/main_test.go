@@ -4,35 +4,39 @@ import (
 	"reflect"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/initialize"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
 	"github.com/massdriver-cloud/mass/pkg/tui/teahelper"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestRun(t *testing.T) {
 	projectSlug := "ecomm"
 
-	responses := []interface{}{
-		gqlmock.MockQueryResponse("project", map[string]interface{}{
+	responses := []any{
+		gqlmock.MockQueryResponse("project", map[string]any{
 			"slug": projectSlug,
-			"defaultParams": map[string]interface{}{
-				"database": map[string]interface{}{"username": "root"},
+			"defaultParams": map[string]any{
+				"database": map[string]any{"username": "root"},
 			},
 		}),
 
-		gqlmock.MockQueryResponse("artifacts", map[string]interface{}{
+		gqlmock.MockQueryResponse("artifacts", map[string]any{
 			"next": "",
-			"items": []map[string]interface{}{
+			"items": []map[string]any{
 				{"id": "uuid-here", "name": "aws-credentials"},
 			},
 		}),
 	}
 
-	client := gqlmock.NewClientWithJSONResponseArray(responses)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithJSONResponseArray(responses),
+	}
 
-	model, _ := initialize.New(client, "faux-org-id", projectSlug)
+	model, _ := initialize.New(t.Context(), &mdClient, projectSlug)
 
 	selectRow := tea.KeyMsg{Type: tea.KeySpace}
 	pressNext := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}}
@@ -58,7 +62,7 @@ func TestRun(t *testing.T) {
 		},
 		Packages: map[string]api.PreviewPackage{
 			"database": {
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"username": "root",
 				},
 			},

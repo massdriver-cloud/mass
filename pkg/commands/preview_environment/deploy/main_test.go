@@ -9,23 +9,31 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/deploy"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
 )
 
 func TestDeployPreviewEnvironment(t *testing.T) {
 	projectSlug := "ecomm"
 	envSlug := "p9000"
-	responses := []interface{}{
-		gqlmock.MockMutationResponse("deployPreviewEnvironment", map[string]interface{}{
+	responses := []any{
+		gqlmock.MockMutationResponse("deployPreviewEnvironment", map[string]any{
 			"id":   "envUUID",
 			"slug": envSlug,
-			"project": map[string]interface{}{
+			"project": map[string]any{
 				"id":   "projUUID",
 				"slug": projectSlug,
 			},
 		}),
 	}
 
-	client := gqlmock.NewClientWithJSONResponseArray(responses)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithJSONResponseArray(responses),
+		Config: config.Config{
+			OrganizationID: "faux-org-id",
+		},
+	}
 
 	previewCfg := api.PreviewConfig{
 		ProjectSlug: "fake-project-slug",
@@ -33,9 +41,9 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 		Packages:    make(map[string]api.PreviewPackage),
 	}
 
-	ciContext := map[string]interface{}{}
+	ciContext := map[string]any{}
 
-	env, err := deploy.Run(client, "faux-org-id", projectSlug, &previewCfg, &ciContext)
+	env, err := deploy.Run(t.Context(), &mdClient, projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		t.Fatal(err)
@@ -61,17 +69,17 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 		}
 
 		input := parsedReq.Variables["input"]
-		inputMap, ok := input.(map[string]interface{})
+		inputMap, ok := input.(map[string]any)
 		_ = ok
 
 		paramsJSON := []byte((inputMap["packageConfigurations"]).(string))
 
-		got := map[string]interface{}{}
+		got := map[string]any{}
 		gqlmock.MustUnmarshalJSON(paramsJSON, &got)
 
-		want := map[string]interface{}{
-			"myApp": map[string]interface{}{
-				"params": map[string]interface{}{
+		want := map[string]any{
+			"myApp": map[string]any{
+				"params": map[string]any{
 					"hostname": "preview-9000.example.com",
 				},
 			},
@@ -81,10 +89,10 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 			t.Errorf("got %v, wanted %v", got, want)
 		}
 
-		response := gqlmock.MockMutationResponse("deployPreviewEnvironment", map[string]interface{}{
+		response := gqlmock.MockMutationResponse("deployPreviewEnvironment", map[string]any{
 			"id":   "envUUID",
 			"slug": envSlug,
-			"project": map[string]interface{}{
+			"project": map[string]any{
 				"id":   "projUUID",
 				"slug": projectSlug,
 			},
@@ -94,24 +102,26 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 		gqlmock.MustWrite(w, string(data))
 	})
 
-	client := gqlmock.NewClient(mux)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClient(mux),
+	}
 
 	previewCfg := api.PreviewConfig{
 		ProjectSlug: "",
 		Credentials: []api.Credential{},
 		Packages: map[string]api.PreviewPackage{
 			"myApp": {
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"hostname": "preview-${PR_NUMBER}.example.com",
 				},
 			},
 		},
 	}
 
-	ciContext := map[string]interface{}{}
+	ciContext := map[string]any{}
 
 	t.Setenv("PR_NUMBER", "9000")
-	_, err := deploy.Run(client, "faux-org-id", projectSlug, &previewCfg, &ciContext)
+	_, err := deploy.Run(t.Context(), &mdClient, projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		t.Fatal(err)

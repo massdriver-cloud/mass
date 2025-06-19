@@ -4,11 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Khan/genqlient/graphql"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func CreateArtifact(client graphql.Client, orgID string, artifactName string, artifactType string, artifactData map[string]interface{}, artifactSpecs map[string]interface{}) (*Artifact, error) {
-	response, err := createArtifact(context.Background(), client, orgID, artifactName, artifactSpecs, artifactType, artifactData)
+type Artifact struct {
+	Name string
+	ID   string
+}
+
+func CreateArtifact(ctx context.Context, mdClient *client.Client, artifactName string, artifactType string, artifactData map[string]any, artifactSpecs map[string]any) (*Artifact, error) {
+	response, err := createArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactName, artifactSpecs, artifactType, artifactData)
 	if err != nil {
 		return nil, err
 	}

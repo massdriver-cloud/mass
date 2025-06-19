@@ -91,7 +91,7 @@ func (f *fileManager) promptAndWrite(template []byte, outputPath string) error {
 func (f *fileManager) renderFile(template []byte) ([]byte, error) {
 	engine := liquid.NewEngine()
 
-	var bindings map[string]interface{}
+	var bindings map[string]any
 	inrec, _ := json.Marshal(f.templateData)
 
 	err := json.Unmarshal(inrec, &bindings)

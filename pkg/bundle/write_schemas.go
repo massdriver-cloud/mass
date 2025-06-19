@@ -11,7 +11,7 @@ const idURLPattern = "https://schemas.massdriver.cloud/schemas/bundles/%s/schema
 const jsonSchemaURLPattern = "http://json-schema.org/%s/schema"
 
 type Schema struct {
-	schema map[string]interface{}
+	schema map[string]any
 	label  string
 }
 
@@ -50,7 +50,7 @@ func (b *Bundle) WriteSchemas(buildPath string) error {
 }
 
 // generateSchema generates a specific *-schema.json file
-func generateSchema(schema map[string]interface{}, metadata map[string]string) ([]byte, error) {
+func generateSchema(schema map[string]any, metadata map[string]string) ([]byte, error) {
 	var err error
 	var mergedSchema = mergeMaps(schema, metadata)
 
@@ -62,7 +62,7 @@ func generateSchema(schema map[string]interface{}, metadata map[string]string) (
 	return []byte(fmt.Sprintf("%s\n", string(json))), nil
 }
 
-func mergeMaps(a map[string]interface{}, b map[string]string) map[string]interface{} {
+func mergeMaps(a map[string]any, b map[string]string) map[string]any {
 	for k, v := range b {
 		a[k] = v
 	}

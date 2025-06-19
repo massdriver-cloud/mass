@@ -1,14 +1,14 @@
 package definition
 
 import (
-	"bytes"
 	"context"
 	"embed"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io"
 
-	"github.com/massdriver-cloud/mass/pkg/restclient"
+	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -16,7 +16,7 @@ import (
 //go:embed schemas/meta-schema.json
 var definitionFS embed.FS
 
-func Publish(c *restclient.MassdriverClient, in io.Reader) error {
+func Publish(ctx context.Context, mdClient *client.Client, in io.Reader) error {
 	artdefBytes, err := io.ReadAll(in)
 	if err != nil {
 		return err
@@ -41,24 +41,15 @@ func Publish(c *restclient.MassdriverClient, in io.Reader) error {
 		return err
 	}
 
-	req := restclient.NewRequest("PUT", "artifact-definitions", bytes.NewBuffer(artdefBytes))
-	ctx := context.Background()
-	resp, err := c.Do(&ctx, req)
+	var artdefMap map[string]any
+	err = json.Unmarshal(artdefBytes, &artdefMap)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
-	if resp.Status != "200 OK" {
-		respBodyBytes, err2 := io.ReadAll(resp.Body)
-		if err2 != nil {
-			return err2
-		}
-		fmt.Println(string(respBodyBytes))
-		return errors.New("received non-200 response from Massdriver: " + resp.Status)
-	}
+	_, err = api.PublishArtifactDefinition(ctx, mdClient, artdefMap)
 
-	return nil
+	return err
 }
 
 func validateArtifactDefinition(artdefBytes, schemaBytes []byte) error {

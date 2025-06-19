@@ -5,22 +5,26 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestGetProject(t *testing.T) {
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"project": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"project": map[string]any{
 				"id":   "uuid1",
 				"slug": "sluggy",
-				"defaultParams": map[string]interface{}{
+				"defaultParams": map[string]any{
 					"foo": "bar",
 				},
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	project, err := api.GetProject(client, "faux-org-id", "sluggy")
+	project, err := api.GetProject(t.Context(), &mdClient, "sluggy")
 
 	if err != nil {
 		t.Fatal(err)
@@ -36,9 +40,9 @@ func TestGetProject(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"projects": []map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"projects": []map[string]any{
 				{
 					"id":   "uuid1",
 					"name": "project1",
@@ -50,8 +54,11 @@ func TestListProjects(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	projects, err := api.ListProjects(client, "faux-org-id")
+	projects, err := api.ListProjects(t.Context(), &mdClient)
 
 	if err != nil {
 		t.Fatal(err)

@@ -27,7 +27,7 @@ var (
 	connNameError   = fmt.Sprintf(baseNameError, "underscores", "_", "_", "_")
 )
 
-var massdriverArtifactDefinitions map[string]map[string]interface{}
+var massdriverArtifactDefinitions map[string]map[string]any
 
 var promptsNew = []func(t *templatecache.TemplateData) error{
 	getName,
@@ -38,7 +38,7 @@ var promptsNew = []func(t *templatecache.TemplateData) error{
 }
 
 // SetMassdriverArtifactDefinitions sets the defs used to specify connections in a bundle
-func SetMassdriverArtifactDefinitions(in map[string]map[string]interface{}) {
+func SetMassdriverArtifactDefinitions(in map[string]map[string]any) {
 	massdriverArtifactDefinitions = in
 }
 
@@ -302,14 +302,14 @@ func getExistingParamsPath(templateName string) (string, error) {
 	return prompt.Run()
 }
 
-func GetConnectionEnvs(connectionName string, artifactDefinition map[string]interface{}) map[string]string {
+func GetConnectionEnvs(connectionName string, artifactDefinition map[string]any) map[string]string {
 	envs := map[string]string{}
 
 	mdBlock, mdBlockExists := artifactDefinition["$md"]
 	if mdBlockExists {
-		envsBlock, envsBlockExists := mdBlock.(map[string]interface{})["envTemplates"]
+		envsBlock, envsBlockExists := mdBlock.(map[string]any)["envTemplates"]
 		if envsBlockExists {
-			for envName, value := range envsBlock.(map[string]interface{}) {
+			for envName, value := range envsBlock.(map[string]any) {
 				//nolint:errcheck
 				envValue := value.(string)
 				envs[envName] = strings.ReplaceAll(envValue, "connection_name", connectionName)

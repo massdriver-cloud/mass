@@ -1,15 +1,16 @@
-package commands_test
+package deploy_test
 
 import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
-	"github.com/massdriver-cloud/mass/pkg/commands"
+	"github.com/massdriver-cloud/mass/pkg/commands/package/deploy"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestDeployPackage(t *testing.T) {
-	responses := []interface{}{
+	responses := []any{
 		gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
 			Manifest:    api.Manifest{ID: "manifest-id"},
 			Environment: api.Environment{ID: "target-id"},
@@ -28,10 +29,12 @@ func TestDeployPackage(t *testing.T) {
 		}),
 	}
 
-	client := gqlmock.NewClientWithJSONResponseArray(responses)
-	commands.DeploymentStatusSleep = 0
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithJSONResponseArray(responses),
+	}
+	deploy.DeploymentStatusSleep = 0
 
-	deployment, err := commands.DeployPackage(client, "faux-org-id", "ecomm-prod-cache", "foo")
+	deployment, err := deploy.Run(t.Context(), &mdClient, "ecomm-prod-cache", "foo")
 	if err != nil {
 		t.Fatal(err)
 	}

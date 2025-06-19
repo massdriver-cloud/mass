@@ -6,16 +6,17 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestDeployPreviewEnvironment(t *testing.T) {
 	prNumber := 69
 	slug := fmt.Sprintf("p%d", prNumber)
 
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"deployPreviewEnvironment": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"deployPreviewEnvironment": map[string]any{
+				"result": map[string]any{
 					"id":   "envuuid1",
 					"slug": slug,
 				},
@@ -23,31 +24,34 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
 	credentials := []api.Credential{}
 
 	packageParams := map[string]api.PreviewPackage{
 		"network": {
-			Params: map[string]interface{}{
+			Params: map[string]any{
 				"cidr": "10.0.0.0/16",
 			},
 		},
 
 		"cluster": {
-			Params: map[string]interface{}{
+			Params: map[string]any{
 				"maxNodes": 10,
 			},
 		},
 	}
 
-	ciContext := map[string]interface{}{
-		"pull_request": map[string]interface{}{
+	ciContext := map[string]any{
+		"pull_request": map[string]any{
 			"title":  "First commit!",
 			"number": prNumber,
 		},
 	}
 
-	environment, err := api.DeployPreviewEnvironment(client, "faux-org-id", "faux-project-id", credentials, packageParams, ciContext)
+	environment, err := api.DeployPreviewEnvironment(t.Context(), &mdClient, "faux-project-id", credentials, packageParams, ciContext)
 
 	if err != nil {
 		t.Fatal(err)
@@ -65,10 +69,10 @@ func TestDecommissionPreviewEnvironment(t *testing.T) {
 	prNumber := 69
 	targetSlug := fmt.Sprintf("p%d", prNumber)
 	projectTargetSlug := "ecomm-" + targetSlug
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"decommissionPreviewEnvironment": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"decommissionPreviewEnvironment": map[string]any{
+				"result": map[string]any{
 					"id":   "envuuid1",
 					"slug": targetSlug,
 				},
@@ -76,8 +80,11 @@ func TestDecommissionPreviewEnvironment(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	environment, err := api.DecommissionPreviewEnvironment(client, "faux-org-id", projectTargetSlug)
+	environment, err := api.DecommissionPreviewEnvironment(t.Context(), &mdClient, projectTargetSlug)
 
 	if err != nil {
 		t.Fatal(err)
@@ -95,10 +102,10 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 	prNumber := 69
 	slug := fmt.Sprintf("p%d", prNumber)
 
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"deployPreviewEnvironment": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"deployPreviewEnvironment": map[string]any{
+				"result": map[string]any{
 					"slug": slug,
 					"id":   "envuuid1",
 				},
@@ -106,12 +113,15 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
 	credentials := []api.Credential{}
 
 	packageParams := map[string]api.PreviewPackage{
 		"network": {
-			Params: map[string]interface{}{
+			Params: map[string]any{
 				"cidr": "10.0.0.0/16",
 			},
 			RemoteReferences: []api.RemoteRef{
@@ -122,20 +132,20 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 			},
 		},
 		"cluster": {
-			Params: map[string]interface{}{
+			Params: map[string]any{
 				"maxNodes": 9,
 			},
 		},
 	}
 
-	ciContext := map[string]interface{}{
-		"pull_request": map[string]interface{}{
+	ciContext := map[string]any{
+		"pull_request": map[string]any{
 			"title":  "First commit!",
 			"number": prNumber,
 		},
 	}
 
-	_, err := api.DeployPreviewEnvironment(client, "faux-org-id", "faux-project-id", credentials, packageParams, ciContext)
+	_, err := api.DeployPreviewEnvironment(t.Context(), &mdClient, "faux-project-id", credentials, packageParams, ciContext)
 
 	if err == nil {
 		t.Error("expected error when both params and remote references are set, got nil")

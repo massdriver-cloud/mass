@@ -9,11 +9,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/pkg/commands/image"
+
 	"github.com/Khan/genqlient/graphql"
 	"github.com/docker/docker/api/types"
 	dockerImage "github.com/docker/docker/api/types/image"
-	"github.com/massdriver-cloud/mass/pkg/api"
-	"github.com/massdriver-cloud/mass/pkg/commands/image"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 type nopCloser struct {
@@ -64,7 +66,9 @@ func TestPushLatestImage(t *testing.T) {
 		log.SetOutput((os.Stderr))
 	}()
 
-	mockGQLClient := &mockGQLClient{}
+	mdClient := client.Client{
+		GQL: &mockGQLClient{},
+	}
 	imageClient := image.Client{
 		Cli: &mockCli{},
 	}
@@ -78,7 +82,7 @@ func TestPushLatestImage(t *testing.T) {
 		Dockerfile:         "DockerFile",
 	}
 
-	err := image.Push(mockGQLClient, input, imageClient)
+	err := image.Push(t.Context(), &mdClient, input, imageClient)
 
 	if err != nil {
 		t.Fatal(err)
@@ -92,7 +96,9 @@ func TestPushImage(t *testing.T) {
 		log.SetOutput((os.Stderr))
 	}()
 
-	mockGQLClient := &mockGQLClient{}
+	mdClient := client.Client{
+		GQL: &mockGQLClient{},
+	}
 	imageClient := image.Client{
 		Cli: &mockCli{},
 	}
@@ -106,7 +112,7 @@ func TestPushImage(t *testing.T) {
 		Dockerfile:         "DockerFile",
 	}
 
-	err := image.Push(mockGQLClient, input, imageClient)
+	err := image.Push(t.Context(), &mdClient, input, imageClient)
 
 	if err != nil {
 		t.Fatal(err)

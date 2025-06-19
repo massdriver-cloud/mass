@@ -13,16 +13,16 @@ import (
 func TestFindMissingFromAirlock(t *testing.T) {
 	type test struct {
 		name           string
-		mdParamsSchema map[string]interface{}
+		mdParamsSchema map[string]any
 		airlockSchema  *schema.Schema
-		want           map[string]interface{}
+		want           map[string]any
 	}
 	tests := []test{
 		{
 			name: "none",
-			mdParamsSchema: map[string]interface{}{
-				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
+			mdParamsSchema: map[string]any{
+				"properties": map[string]any{
+					"foo": map[string]any{
 						"const": "bar",
 					},
 				},
@@ -39,25 +39,25 @@ func TestFindMissingFromAirlock(t *testing.T) {
 				)),
 				Required: []string{"foo"},
 			},
-			want: map[string]interface{}{
-				"properties": map[string]interface{}{},
-				"required":   []interface{}{},
+			want: map[string]any{
+				"properties": map[string]any{},
+				"required":   []any{},
 			},
 		},
 		{
 			name: "missing airlock params",
-			mdParamsSchema: map[string]interface{}{
-				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
+			mdParamsSchema: map[string]any{
+				"properties": map[string]any{
+					"foo": map[string]any{
 						"const": "bar",
 					},
 				},
 				"required": []any{"foo"},
 			},
 			airlockSchema: &schema.Schema{},
-			want: map[string]interface{}{
-				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
+			want: map[string]any{
+				"properties": map[string]any{
+					"foo": map[string]any{
 						"const": "bar",
 					},
 				},
@@ -66,7 +66,7 @@ func TestFindMissingFromAirlock(t *testing.T) {
 		},
 		{
 			name:           "missing md params",
-			mdParamsSchema: map[string]interface{}{},
+			mdParamsSchema: map[string]any{},
 			airlockSchema: &schema.Schema{
 				Properties: orderedmap.New[string, *schema.Schema](orderedmap.WithInitialData[string, *schema.Schema](
 					orderedmap.Pair[string, *schema.Schema]{
@@ -78,9 +78,9 @@ func TestFindMissingFromAirlock(t *testing.T) {
 				)),
 				Required: []string{"foo"},
 			},
-			want: map[string]interface{}{
-				"properties": map[string]interface{}{},
-				"required":   []interface{}{},
+			want: map[string]any{
+				"properties": map[string]any{},
+				"required":   []any{},
 			},
 		},
 	}

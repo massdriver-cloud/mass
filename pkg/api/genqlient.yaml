@@ -8,7 +8,7 @@ generated: zz_generated.go
 package: api
 bindings:
   JSON:
-    type: map[string]interface{}
+    type: map[string]any
     marshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.MarshalJSON
     unmarshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.UnmarshalJSON
   DateTime:

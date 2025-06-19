@@ -4,13 +4,10 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
-	"github.com/massdriver-cloud/mass/pkg/restclient"
 )
 
 //go:embed schemas/metadata-schema.json
@@ -24,25 +21,25 @@ const (
 )
 
 type Step struct {
-	Path         string                 `json:"path" yaml:"path"`
-	Provisioner  string                 `json:"provisioner" yaml:"provisioner"`
-	SkipOnDelete bool                   `json:"skip_on_delete,omitempty" yaml:"skip_on_delete,omitempty"`
-	Config       map[string]interface{} `json:"config,omitempty" yaml:"config,omitempty"`
+	Path         string         `json:"path" yaml:"path"`
+	Provisioner  string         `json:"provisioner" yaml:"provisioner"`
+	SkipOnDelete bool           `json:"skip_on_delete,omitempty" yaml:"skip_on_delete,omitempty"`
+	Config       map[string]any `json:"config,omitempty" yaml:"config,omitempty"`
 }
 
 type Bundle struct {
-	Schema      string                 `json:"schema" yaml:"schema"`
-	Name        string                 `json:"name" yaml:"name"`
-	Description string                 `json:"description" yaml:"description"`
-	SourceURL   string                 `json:"source_url" yaml:"source_url"`
-	Type        string                 `json:"type" yaml:"type"`
-	Access      string                 `json:"access" yaml:"access"`
-	Steps       []Step                 `json:"steps" yaml:"steps"`
-	Artifacts   map[string]interface{} `json:"artifacts" yaml:"artifacts"`
-	Params      map[string]interface{} `json:"params" yaml:"params"`
-	Connections map[string]interface{} `json:"connections" yaml:"connections"`
-	UI          map[string]interface{} `json:"ui" yaml:"ui"`
-	AppSpec     *AppSpec               `json:"app,omitempty" yaml:"app,omitempty"`
+	Schema      string         `json:"schema" yaml:"schema"`
+	Name        string         `json:"name" yaml:"name"`
+	Description string         `json:"description" yaml:"description"`
+	SourceURL   string         `json:"source_url" yaml:"source_url"`
+	Type        string         `json:"type" yaml:"type"`
+	Access      string         `json:"access" yaml:"access"`
+	Steps       []Step         `json:"steps" yaml:"steps"`
+	Artifacts   map[string]any `json:"artifacts" yaml:"artifacts"`
+	Params      map[string]any `json:"params" yaml:"params"`
+	Connections map[string]any `json:"connections" yaml:"connections"`
+	UI          map[string]any `json:"ui" yaml:"ui"`
+	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty"`
 }
 
 type AppSpec struct {
@@ -58,50 +55,6 @@ type Secret struct {
 	Description string `json:"description" yaml:"description"`
 }
 
-func (b *Bundle) GenerateBundlePublishBody(srcDir string) (restclient.PublishPost, error) {
-	var body restclient.PublishPost
-
-	body.Name = b.Name
-	body.Description = b.Description
-	body.Type = b.Type
-	body.SourceURL = b.SourceURL
-	body.ArtifactsSchema = b.Artifacts
-	body.ConnectionsSchema = b.Connections
-	body.ParamsSchema = b.Params
-	body.UISchema = b.UI
-
-	var appSpec map[string]interface{}
-	marshalledAppSpec, err := json.Marshal(b.AppSpec)
-	if err != nil {
-		return restclient.PublishPost{}, err
-	}
-	err = json.Unmarshal(marshalledAppSpec, &appSpec)
-	if err != nil {
-		fmt.Println(err)
-		return restclient.PublishPost{}, err
-	}
-	body.AppSpec = appSpec
-
-	var bundleSpec map[string]interface{}
-	marshalledBundleSpec, err := json.Marshal(b)
-	if err != nil {
-		return restclient.PublishPost{}, err
-	}
-	err = json.Unmarshal(marshalledBundleSpec, &bundleSpec)
-	if err != nil {
-		fmt.Println(err)
-		return restclient.PublishPost{}, err
-	}
-	body.Spec = bundleSpec
-
-	err = checkForOperatorGuideAndSetValue(srcDir, &body)
-	if err != nil {
-		return restclient.PublishPost{}, err
-	}
-
-	return body, nil
-}
-
 func (b *Bundle) IsInfrastructure() bool {
 	return b.Type == "bundle" || b.Type == "infrastructure"
 }
@@ -110,38 +63,9 @@ func (b *Bundle) IsApplication() bool {
 	return b.Type == "application"
 }
 
-func checkForOperatorGuideAndSetValue(path string, body *restclient.PublishPost) error {
-	pathsToCheck := []string{"operator.mdx", "operator.md"}
-
-	for _, fileName := range pathsToCheck {
-		_, err := os.Stat(filepath.Join(path, fileName))
-		if err != nil {
-			continue
-		}
-
-		content, err := os.ReadFile(filepath.Join(path, fileName))
-		if err != nil {
-			return fmt.Errorf("error reading %s", fileName)
-		}
-
-		body.OperatorGuide = content
-	}
-
-	return nil
-}
-
 func Unmarshal(readDirectory string) (*Bundle, error) {
 	unmarshalledBundle := &Bundle{}
 	if err := files.Read(path.Join(readDirectory, "massdriver.yaml"), unmarshalledBundle); err != nil {
-		return nil, err
-	}
-
-	return unmarshalledBundle, nil
-}
-
-func UnmarshalAndApplyDefaults(readDirectory string) (*Bundle, error) {
-	unmarshalledBundle, err := Unmarshal(readDirectory)
-	if err != nil {
 		return nil, err
 	}
 
@@ -203,13 +127,13 @@ steps:
 	}
 }
 
-func parseMetadataSchema() map[string]interface{} {
+func parseMetadataSchema() map[string]any {
 	metadataBytes, err := embedFS.ReadFile("schemas/metadata-schema.json")
 	if err != nil {
 		return nil
 	}
 
-	var metadata map[string]interface{}
+	var metadata map[string]any
 	err = json.Unmarshal(metadataBytes, &metadata)
 	if err != nil {
 		return nil

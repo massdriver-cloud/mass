@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -13,11 +14,11 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/commands"
-	"github.com/massdriver-cloud/mass/pkg/commands/publish"
-	"github.com/massdriver-cloud/mass/pkg/commands/pull"
-	"github.com/massdriver-cloud/mass/pkg/config"
+	"github.com/massdriver-cloud/mass/pkg/commands/bundle/build"
+	"github.com/massdriver-cloud/mass/pkg/commands/bundle/imprt"
+	"github.com/massdriver-cloud/mass/pkg/commands/bundle/publish"
+	"github.com/massdriver-cloud/mass/pkg/commands/bundle/pull"
 	"github.com/massdriver-cloud/mass/pkg/params"
-	"github.com/massdriver-cloud/mass/pkg/restclient"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
@@ -204,6 +205,8 @@ func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
 }
 
 func runBundleNew(input *bundleNew) {
+	ctx := context.Background()
+
 	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
 	if err != nil {
 		log.Fatal(err)
@@ -218,18 +221,17 @@ func runBundleNew(input *bundleNew) {
 		}
 	}
 
-	c, configErr := config.Get()
-	if configErr != nil {
-		log.Fatal(configErr)
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		log.Fatal(fmt.Errorf("error initializing massdriver client: %w", mdClientErr))
 	}
-	gqlclient := api.NewClient(c.URL, c.APIKey)
 
-	artifactDefs, err := api.ListArtifactDefinitions(gqlclient, c.OrgID)
+	artifactDefs, err := api.ListArtifactDefinitions(ctx, mdClient)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	artifactDefinitions := map[string]map[string]interface{}{}
+	artifactDefinitions := map[string]map[string]any{}
 	for _, v := range artifactDefs {
 		if _, ok := hiddenArtifacts[v.Name]; ok {
 			continue
@@ -272,14 +274,17 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(bundleDirectory)
+	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
 	if err != nil {
 		return err
 	}
 
-	c := restclient.NewClient()
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
 
-	return commands.BuildBundle(bundleDirectory, unmarshalledBundle, c)
+	return build.Run(bundleDirectory, unmarshalledBundle, mdClient)
 }
 
 func runBundleImport(cmd *cobra.Command, args []string) error {
@@ -292,28 +297,27 @@ func runBundleImport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return commands.ImportParams(bundleDirectory, skipVerify)
+	return imprt.Run(bundleDirectory, skipVerify)
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
 
 	bundleDirectory, err := cmd.Flags().GetString("build-directory")
 	if err != nil {
 		return err
 	}
 
-	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(bundleDirectory)
+	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
 	if err != nil {
 		return err
 	}
 
-	c := restclient.NewClient().WithAPIKey(config.APIKey)
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
 
-	err = unmarshalledBundle.DereferenceSchemas(bundleDirectory, c)
+	err = unmarshalledBundle.DereferenceSchemas(bundleDirectory, mdClient)
 	if err != nil {
 		return err
 	}
@@ -322,11 +326,6 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 }
 
 func runBundlePublish(cmd *cobra.Command, args []string) error {
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
-
 	access, _ := cmd.Flags().GetString("access")
 	if access != "" {
 		prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release.")
@@ -339,21 +338,19 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	}
 	tag := "latest"
 
-	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(bundleDirectory)
+	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
 	if err != nil {
 		return err
 	}
 
-	c := restclient.NewClient().WithAPIKey(config.APIKey)
-
-	err = commands.BuildBundle(bundleDirectory, unmarshalledBundle, c)
-	if err != nil {
-		return err
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	mdClient, clientErr := client.New()
-	if clientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", clientErr)
+	err = build.Run(bundleDirectory, unmarshalledBundle, mdClient)
+	if err != nil {
+		return err
 	}
 
 	return publish.Run(unmarshalledBundle, mdClient, bundleDirectory, tag)
@@ -381,9 +378,9 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	mdClient, clientErr := client.New()
-	if clientErr != nil {
-		return clientErr
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return mdClientErr
 	}
 
 	pullErr := pull.Run(mdClient, bundleName, tag, directory)

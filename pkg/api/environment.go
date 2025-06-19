@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/pkg/debuglog"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 type Environment struct {
@@ -17,7 +17,7 @@ type Environment struct {
 
 const urlTemplate = "https://app.massdriver.cloud/orgs/%s/projects/%s/targets/%v"
 
-func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID string, credentials []Credential, packageParams map[string]PreviewPackage, ciContext map[string]interface{}) (*Environment, error) {
+func DeployPreviewEnvironment(ctx context.Context, mdClient *client.Client, projectID string, credentials []Credential, packageParams map[string]PreviewPackage, ciContext map[string]any) (*Environment, error) {
 	// Validate that no package has both params and remote references
 	for packageName, pkg := range packageParams {
 		if pkg.Params != nil && len(pkg.RemoteReferences) > 0 {
@@ -25,9 +25,7 @@ func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID str
 		}
 	}
 
-	ctx := context.Background()
-
-	packageParamsJSON := make(map[string]interface{})
+	packageParamsJSON := make(map[string]any)
 	for k, v := range packageParams {
 		packageParamsJSON[k] = v
 	}
@@ -38,14 +36,14 @@ func DeployPreviewEnvironment(client graphql.Client, orgID string, projectID str
 		CiContext:             ciContext,
 	}
 
-	response, err := deployPreviewEnvironment(ctx, client, orgID, projectID, input)
+	response, err := deployPreviewEnvironment(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectID, input)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if response.DeployPreviewEnvironment.Successful {
-		return response.DeployPreviewEnvironment.Result.toEnvironment(orgID), nil
+		return response.DeployPreviewEnvironment.Result.toEnvironment(mdClient.Config.OrganizationID), nil
 	}
 
 	return nil, NewMutationError("failed to deploy environment", response.DeployPreviewEnvironment.Messages)
@@ -61,19 +59,18 @@ func (e *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResul
 	}
 }
 
-func DecommissionPreviewEnvironment(client graphql.Client, orgID string, projectTargetSlugOrTargetID string) (*Environment, error) {
-	ctx := context.Background()
-	cmdLog := debuglog.Log().With().Str("orgID", orgID).Str("projectTargetSlugOrTargetID", projectTargetSlugOrTargetID).Logger()
+func DecommissionPreviewEnvironment(ctx context.Context, mdClient *client.Client, projectTargetSlugOrTargetID string) (*Environment, error) {
+	cmdLog := debuglog.Log().With().Str("orgID", mdClient.Config.OrganizationID).Str("projectTargetSlugOrTargetID", projectTargetSlugOrTargetID).Logger()
 	cmdLog.Info().Msg("Decommissioning preview environment.")
 
-	response, err := decommissionPreviewEnvironment(ctx, client, orgID, projectTargetSlugOrTargetID)
+	response, err := decommissionPreviewEnvironment(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectTargetSlugOrTargetID)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if response.DecommissionPreviewEnvironment.Successful {
-		return response.DecommissionPreviewEnvironment.Result.toEnvironment(orgID), nil
+		return response.DecommissionPreviewEnvironment.Result.toEnvironment(mdClient.Config.OrganizationID), nil
 	}
 
 	return nil, NewMutationError("failed to decommission environment", response.DecommissionPreviewEnvironment.Messages)

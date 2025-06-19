@@ -4,7 +4,7 @@ import (
 	"maps"
 )
 
-func (b *Bundle) CombineParamsConnsMetadata() map[string]interface{} {
+func (b *Bundle) CombineParamsConnsMetadata() map[string]any {
 	combined := map[string]any{
 		"properties": map[string]any{},
 		"required":   []any{},

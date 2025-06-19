@@ -8,37 +8,40 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/package/configure"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestConfigurePackage(t *testing.T) {
 	responses := []gqlmock.ResponseFunc{
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
 				Manifest:    api.Manifest{ID: "manifest-id"},
 				Environment: api.Environment{ID: "target-id"},
 			})
 		},
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			vars := gqlmock.ParseInputVariables(req)
 			paramsJSON := []byte(vars["params"].(string))
 
-			params := map[string]interface{}{}
+			params := map[string]any{}
 			gqlmock.MustUnmarshalJSON(paramsJSON, &params)
 
-			return gqlmock.MockMutationResponse("configurePackage", map[string]interface{}{
+			return gqlmock.MockMutationResponse("configurePackage", map[string]any{
 				"id":     "pkg-id",
 				"params": params,
 			})
 		},
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"cidr": "10.0.0.0/16",
 	}
 
-	client := gqlmock.NewClientWithFuncResponseArray(responses)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithFuncResponseArray(responses),
+	}
 
-	pkg, err := configure.Run(client, "faux-org-id", "ecomm-prod-cache", params)
+	pkg, err := configure.Run(t.Context(), &mdClient, "ecomm-prod-cache", params)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,38 +56,39 @@ func TestConfigurePackage(t *testing.T) {
 
 func TestConfigurePackageInterpolation(t *testing.T) {
 	responses := []gqlmock.ResponseFunc{
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
 				Manifest:    api.Manifest{ID: "manifest-id"},
 				Environment: api.Environment{ID: "target-id"},
 			})
 		},
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			vars := gqlmock.ParseInputVariables(req)
 			paramsJSON := []byte(vars["params"].(string))
 
-			params := map[string]interface{}{}
+			params := map[string]any{}
 			gqlmock.MustUnmarshalJSON(paramsJSON, &params)
 
-			return gqlmock.MockMutationResponse("configurePackage", map[string]interface{}{
+			return gqlmock.MockMutationResponse("configurePackage", map[string]any{
 				"id":     "pkg-id",
 				"params": params,
 			})
 		},
 	}
 
-	client := gqlmock.NewClientWithFuncResponseArray(responses)
-
-	params := map[string]interface{}{"size": "${MEMORY_AMT}GB"}
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithFuncResponseArray(responses),
+	}
+	params := map[string]any{"size": "${MEMORY_AMT}GB"}
 	t.Setenv("MEMORY_AMT", "6")
 
-	pkg, err := configure.Run(client, "faux-org-id", "ecomm-prod-cache", params)
+	pkg, err := configure.Run(t.Context(), &mdClient, "ecomm-prod-cache", params)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	got := pkg.Params
-	want := map[string]interface{}{
+	want := map[string]any{
 		"size": "6GB",
 	}
 

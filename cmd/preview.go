@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,8 +11,8 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/decommission"
 	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/deploy"
 	peinit "github.com/massdriver-cloud/mass/pkg/commands/preview_environment/initialize"
-	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/files"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
 
@@ -64,14 +65,16 @@ func NewCmdPreview() *cobra.Command {
 }
 
 func runPreviewInit(cmd *cobra.Command, args []string) error {
-	projectSlug := args[0]
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
-	client := api.NewClient(config.URL, config.APIKey)
+	ctx := context.Background()
 
-	initModel, err := peinit.New(client, config.OrgID, projectSlug)
+	projectSlug := args[0]
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	initModel, err := peinit.New(ctx, mdClient, projectSlug)
 	if err != nil {
 		return err
 	}
@@ -89,13 +92,15 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 }
 
 func runPreviewDeploy(cmd *cobra.Command, args []string) error {
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
+	ctx := context.Background()
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
-	client := api.NewClient(config.URL, config.APIKey)
+
 	previewCfg := api.PreviewConfig{}
-	ciContext := map[string]interface{}{}
+	ciContext := map[string]any{}
 
 	if err := files.Read(previewInitParamsPath, &previewCfg); err != nil {
 		return err
@@ -105,7 +110,7 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	env, err := deploy.Run(client, config.OrgID, previewCfg.ProjectSlug, &previewCfg, &ciContext)
+	env, err := deploy.Run(ctx, mdClient, previewCfg.ProjectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		return err
@@ -120,14 +125,16 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 }
 
 func runPreviewDecommission(cmd *cobra.Command, args []string) error {
-	projectTargetSlugOrTargetID := args[0]
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
-	client := api.NewClient(config.URL, config.APIKey)
+	ctx := context.Background()
 
-	env, err := decommission.Run(client, config.OrgID, projectTargetSlugOrTargetID)
+	projectTargetSlugOrTargetID := args[0]
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	env, err := decommission.Run(ctx, mdClient, projectTargetSlugOrTargetID)
 
 	if err != nil {
 		return err

@@ -5,19 +5,23 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestGetDeployment(t *testing.T) {
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"deployment": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"deployment": map[string]any{
 				"id":     "uuid1",
 				"status": "PROVISIONING",
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	deployment, err := api.GetDeployment(client, "faux-org-id", "uuid1")
+	deployment, err := api.GetDeployment(t.Context(), &mdClient, "uuid1")
 
 	if err != nil {
 		t.Fatal(err)
@@ -33,18 +37,21 @@ func TestGetDeployment(t *testing.T) {
 
 func TestDeployPackage(t *testing.T) {
 	want := "deployment-uuid1"
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"deployPackage": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"deployPackage": map[string]any{
+				"result": map[string]any{
 					"id": want,
 				},
 				"successful": true,
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	deployment, err := api.DeployPackage(client, "faux-org-id", "target-id", "manifest-id", "foo")
+	deployment, err := api.DeployPackage(t.Context(), &mdClient, "target-id", "manifest-id", "foo")
 
 	if err != nil {
 		t.Fatal(err)

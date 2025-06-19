@@ -117,6 +117,9 @@ func getIgnores(ignorePath string) (*ignore.GitIgnore, error) {
 		"**/*.tfvars*",
 		// Allow terraform lock files
 		"!**/*.terraform.lock.hcl",
+
+		// Allow checkov config file
+		"!**/.checkov.yml",
 	}
 
 	_, err := os.Stat(ignorePath)

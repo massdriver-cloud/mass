@@ -2,20 +2,22 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
 	"text/template"
 
-	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
-	"github.com/massdriver-cloud/mass/pkg/commands"
 	"github.com/massdriver-cloud/mass/pkg/commands/package/configure"
+	"github.com/massdriver-cloud/mass/pkg/commands/package/deploy"
 	"github.com/massdriver-cloud/mass/pkg/commands/package/patch"
-	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/files"
+
+	"github.com/charmbracelet/glamour"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
 
@@ -61,7 +63,6 @@ func NewCmdPkg() *cobra.Command {
 	pkgPatchCmd := &cobra.Command{
 		Use:     `patch <project>-<env>-<manifest>`,
 		Short:   "Patch individual package parameter values",
-		Aliases: []string{"cfg"},
 		Example: `mass package patch ecomm-prod-db --set='.version = "13.4"'`,
 		Long:    helpdocs.MustRender("package/patch"),
 		Args:    cobra.ExactArgs(1),
@@ -91,20 +92,21 @@ func NewCmdPkg() *cobra.Command {
 }
 
 func runPkgGet(cmd *cobra.Command, args []string) error {
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
+	ctx := context.Background()
 
 	outputFormat, err := cmd.Flags().GetString("output")
 	if err != nil {
 		return err
 	}
 
-	client := api.NewClient(config.URL, config.APIKey)
 	pkgID := args[0]
 
-	pkg, err := api.GetPackageByName(client, config.OrgID, pkgID)
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	pkg, err := api.GetPackageByName(ctx, mdClient, pkgID)
 	if err != nil {
 		return err
 	}
@@ -159,36 +161,41 @@ func renderPackage(pkg *api.Package) error {
 }
 
 func runPkgDeploy(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
 	name := args[0]
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
-	client := api.NewClient(config.URL, config.APIKey)
 
 	msg, err := cmd.Flags().GetString("message")
 	if err != nil {
 		return err
 	}
 
-	_, err = commands.DeployPackage(client, config.OrgID, name, msg)
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	_, err = deploy.Run(ctx, mdClient, name, msg)
 
 	return err
 }
 
 func runPkgConfigure(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
 	packageSlugOrID := args[0]
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
-	client := api.NewClient(config.URL, config.APIKey)
-	params := map[string]interface{}{}
+
+	params := map[string]any{}
 	if err := files.Read(pkgParamsPath, &params); err != nil {
 		return err
 	}
 
-	_, err := configure.Run(client, config.OrgID, packageSlugOrID, params)
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	_, err := configure.Run(ctx, mdClient, packageSlugOrID, params)
 
 	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Configuring: %s", name)
@@ -198,14 +205,16 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 }
 
 func runPkgPatch(cmd *cobra.Command, args []string) error {
-	packageSlugOrID := args[0]
-	config, configErr := config.Get()
-	if configErr != nil {
-		return configErr
-	}
-	client := api.NewClient(config.URL, config.APIKey)
+	ctx := context.Background()
 
-	_, err := patch.Run(client, config.OrgID, packageSlugOrID, pkgPatchQueries)
+	packageSlugOrID := args[0]
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	_, err := patch.Run(ctx, mdClient, packageSlugOrID, pkgPatchQueries)
 
 	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Patching: %s", name)

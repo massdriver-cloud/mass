@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/artifact"
 	"github.com/massdriver-cloud/mass/pkg/commands"
-	"github.com/massdriver-cloud/mass/pkg/config"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
 
@@ -33,6 +35,8 @@ func NewCmdArtifact() *cobra.Command {
 }
 
 func runArtifactImport(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
 	artifactName, err := cmd.Flags().GetString("name")
 	if err != nil {
 		return err
@@ -46,18 +50,17 @@ func runArtifactImport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	c, configErr := config.Get()
-	if configErr != nil {
-		return configErr
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
-	gqlclient := api.NewClient(c.URL, c.APIKey)
 
 	promptData := artifact.ImportedArtifact{Name: artifactName, Type: artifactType, File: artifactFile}
-	promptErr := artifact.RunArtifactImportPrompt(gqlclient, c.OrgID, &promptData)
+	promptErr := artifact.RunArtifactImportPrompt(ctx, mdClient, &promptData)
 	if promptErr != nil {
 		return promptErr
 	}
 
-	_, importErr := commands.ArtifactImport(gqlclient, c.OrgID, promptData.Name, promptData.Type, promptData.File)
+	_, importErr := commands.ArtifactImport(ctx, mdClient, promptData.Name, promptData.Type, promptData.File)
 	return importErr
 }

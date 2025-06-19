@@ -1,11 +1,10 @@
 package publish_test
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/pkg/commands/publish"
+	"github.com/massdriver-cloud/mass/pkg/commands/bundle/publish"
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2/content/memory"
@@ -37,7 +36,6 @@ func TestPackageBundle(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
 			memStore := memory.New()
 
 			p := publish.Publisher{
@@ -45,13 +43,13 @@ func TestPackageBundle(t *testing.T) {
 			}
 
 			tag := "test-tag"
-			desc, err := p.PackageBundle(ctx, tc.bundleDir, tag)
+			desc, err := p.PackageBundle(t.Context(), tc.bundleDir, tag)
 			if err != nil {
 				t.Fatalf("PackageBundle failed: %v", err)
 			}
 
 			// Fetch and parse the manifest
-			manifestReader, err := memStore.Fetch(ctx, desc)
+			manifestReader, err := memStore.Fetch(t.Context(), desc)
 			if err != nil {
 				t.Fatalf("failed to fetch manifest: %v", err)
 			}

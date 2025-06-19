@@ -7,26 +7,30 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestGetPackageByName(t *testing.T) {
 	pkgName := "ecomm-prod-cache"
 
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"getPackageByNamingConvention": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"getPackageByNamingConvention": map[string]any{
 				"namePrefix": fmt.Sprintf("%s-0000", pkgName),
-				"manifest": map[string]interface{}{
+				"manifest": map[string]any{
 					"id": "manifest-id",
 				},
-				"environment": map[string]interface{}{
+				"environment": map[string]any{
 					"id": "target-id",
 				},
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	got, err := api.GetPackageByName(client, "faux-org-id", pkgName)
+	got, err := api.GetPackageByName(t.Context(), &mdClient, pkgName)
 
 	if err != nil {
 		t.Fatal(err)
@@ -48,14 +52,14 @@ func TestGetPackageByName(t *testing.T) {
 }
 
 func TestConfigurePackage(t *testing.T) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"cidr": "10.0.0.0/16",
 	}
 
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"configurePackage": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"configurePackage": map[string]any{
+				"result": map[string]any{
 					"id":     "pkg-uuid1",
 					"params": params,
 				},
@@ -63,8 +67,11 @@ func TestConfigurePackage(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	pkg, err := api.ConfigurePackage(client, "faux-org-id", "faux-target-id", "faux-manifest-id", params)
+	pkg, err := api.ConfigurePackage(t.Context(), &mdClient, "faux-target-id", "faux-manifest-id", params)
 	if err != nil {
 		t.Fatal(err)
 	}

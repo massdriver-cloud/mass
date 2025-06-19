@@ -41,8 +41,8 @@ func (b *Bundle) LintParamsConnectionsNameCollision() error {
 		if params, ok := b.Params["properties"]; ok {
 			if b.Connections != nil {
 				if connections, connectionsOk := b.Connections["properties"]; connectionsOk {
-					for param := range params.(map[string]interface{}) {
-						for connection := range connections.(map[string]interface{}) {
+					for param := range params.(map[string]any) {
+						for connection := range connections.(map[string]any) {
 							if param == connection {
 								return fmt.Errorf("a parameter and connection have the same name: %s", param)
 							}
@@ -101,8 +101,8 @@ func (b *Bundle) LintEnvs() (map[string]string, error) {
 	return result, nil
 }
 
-func (b *Bundle) buildEnvsInput() (map[string]interface{}, error) {
-	result := map[string]interface{}{}
+func (b *Bundle) buildEnvsInput() (map[string]any, error) {
+	result := map[string]any{}
 
 	paramsSchema, err := schema2json.ParseMapStringInterface(b.Params)
 	if err != nil {
@@ -121,7 +121,7 @@ func (b *Bundle) buildEnvsInput() (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	secrets := map[string]interface{}{}
+	secrets := map[string]any{}
 	for name := range b.AppSpec.Secrets {
 		secrets[name] = "some-secret-value"
 	}
@@ -135,21 +135,21 @@ func (b *Bundle) LintMatchRequired() error {
 }
 
 //nolint:gocognit
-func matchRequired(input map[string]interface{}) error {
-	var properties map[string]interface{}
+func matchRequired(input map[string]any) error {
+	var properties map[string]any
 
 	if val, propOk := input["properties"]; propOk {
-		if properties, propOk = val.(map[string]interface{}); !propOk {
-			return fmt.Errorf("properties is not a map[string]interface{}")
+		if properties, propOk = val.(map[string]any); !propOk {
+			return fmt.Errorf("properties is not a map[string]any")
 		}
 	}
 
 	for _, prop := range properties {
 		var propType string
 
-		propMap, mapOk := prop.(map[string]interface{})
+		propMap, mapOk := prop.(map[string]any)
 		if !mapOk {
-			return fmt.Errorf("property is not a map[string]interface{}")
+			return fmt.Errorf("property is not a map[string]any")
 		}
 
 		if val, typeOk := propMap["type"]; typeOk {
@@ -172,9 +172,9 @@ func matchRequired(input map[string]interface{}) error {
 	var required []string
 
 	if val, reqOk := input["required"]; reqOk {
-		requiredInterface, reqIntOk := val.([]interface{})
+		requiredInterface, reqIntOk := val.([]any)
 		if !reqIntOk {
-			return fmt.Errorf("required is not a []interface{}")
+			return fmt.Errorf("required is not a []any")
 		}
 
 		required = make([]string, len(requiredInterface))
@@ -197,7 +197,7 @@ func matchRequired(input map[string]interface{}) error {
 //nolint:gocognit
 func (b *Bundle) LintInputsMatchProvisioner() error {
 	massdriverInputs := b.CombineParamsConnsMetadata()
-	massdriverInputsProperties, ok := massdriverInputs["properties"].(map[string]interface{})
+	massdriverInputsProperties, ok := massdriverInputs["properties"].(map[string]any)
 	if !ok {
 		return errors.New("enabled to convert to map[string]interface")
 	}
@@ -211,10 +211,10 @@ func (b *Bundle) LintInputsMatchProvisioner() error {
 		if provisionerInputs == nil {
 			return nil
 		}
-		var provisionerInputsProperties map[string]interface{}
+		var provisionerInputsProperties map[string]any
 		var exists bool
-		if provisionerInputsProperties, exists = provisionerInputs["properties"].(map[string]interface{}); !exists {
-			provisionerInputsProperties = map[string]interface{}{}
+		if provisionerInputsProperties, exists = provisionerInputs["properties"].(map[string]any); !exists {
+			provisionerInputsProperties = map[string]any{}
 		}
 
 		missingProvisionerInputs := []string{}

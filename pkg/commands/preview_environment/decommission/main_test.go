@@ -6,16 +6,18 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/decommission"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestDecommissionPreviewEnvironment(t *testing.T) {
 	prNumber := 69
 	targetSlug := fmt.Sprintf("p%d", prNumber)
 	projectTargetSlug := "ecomm-" + targetSlug
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"decommissionPreviewEnvironment": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"decommissionPreviewEnvironment": map[string]any{
+				"result": map[string]any{
 					"id":   "envuuid1",
 					"slug": targetSlug,
 				},
@@ -24,7 +26,11 @@ func TestDecommissionPreviewEnvironment(t *testing.T) {
 		},
 	})
 
-	environment, err := decommission.Run(client, "faux-org-id", projectTargetSlug)
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
+
+	environment, err := decommission.Run(t.Context(), &mdClient, projectTargetSlug)
 
 	if err != nil {
 		t.Fatal(err)

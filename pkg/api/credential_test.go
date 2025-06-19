@@ -5,13 +5,14 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestListCredentials(t *testing.T) {
-	client := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"artifacts": map[string]interface{}{
-				"items": []map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"artifacts": map[string]any{
+				"items": []map[string]any{
 					{
 						"id":   "uuid1",
 						"name": "artifact1",
@@ -24,8 +25,11 @@ func TestListCredentials(t *testing.T) {
 			},
 		},
 	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
 
-	credentials, err := api.ListCredentials(client, "faux-org-id", "massdriver/aws-iam-role")
+	credentials, err := api.ListCredentials(t.Context(), &mdClient, "massdriver/aws-iam-role")
 
 	if err != nil {
 		t.Fatal(err)

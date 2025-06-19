@@ -1,33 +1,34 @@
-package commands
+package deploy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 var DeploymentStatusSleep = time.Duration(10) * time.Second
 var DeploymentTimeout = time.Duration(5) * time.Minute
 
-func DeployPackage(client graphql.Client, orgID, name, message string) (*api.Deployment, error) {
-	pkg, err := api.GetPackageByName(client, orgID, name)
+func Run(ctx context.Context, mdClient *client.Client, name, message string) (*api.Deployment, error) {
+	pkg, err := api.GetPackageByName(ctx, mdClient, name)
 	if err != nil {
 		return nil, err
 	}
 
-	deployment, err := api.DeployPackage(client, orgID, pkg.Environment.ID, pkg.Manifest.ID, message)
+	deployment, err := api.DeployPackage(ctx, mdClient, pkg.Environment.ID, pkg.Manifest.ID, message)
 	if err != nil {
 		return deployment, err
 	}
 
-	return checkDeploymentStatus(client, orgID, deployment.ID, DeploymentTimeout)
+	return checkDeploymentStatus(ctx, mdClient, deployment.ID, DeploymentTimeout)
 }
 
-func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeout time.Duration) (*api.Deployment, error) {
-	deployment, err := api.GetDeployment(client, orgID, id)
+func checkDeploymentStatus(ctx context.Context, mdClient *client.Client, id string, timeout time.Duration) (*api.Deployment, error) {
+	deployment, err := api.GetDeployment(ctx, mdClient, id)
 
 	if err != nil {
 		return nil, err
@@ -47,6 +48,6 @@ func checkDeploymentStatus(client graphql.Client, orgID string, id string, timeo
 		return nil, errors.New("deployment failed")
 	default:
 		time.Sleep(DeploymentStatusSleep)
-		return checkDeploymentStatus(client, orgID, id, timeout)
+		return checkDeploymentStatus(ctx, mdClient, id, timeout)
 	}
 }

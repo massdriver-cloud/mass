@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/Khan/genqlient/graphql"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 type Deployment struct {
@@ -11,8 +11,8 @@ type Deployment struct {
 	Status string `json:"status"`
 }
 
-func GetDeployment(client graphql.Client, orgID string, id string) (*Deployment, error) {
-	response, err := getDeploymentById(context.Background(), client, orgID, id)
+func GetDeployment(ctx context.Context, mdClient *client.Client, id string) (*Deployment, error) {
+	response, err := getDeploymentById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id)
 
 	return response.Deployment.toDeployment(), err
 }
@@ -24,9 +24,8 @@ func (d *getDeploymentByIdDeployment) toDeployment() *Deployment {
 	}
 }
 
-func DeployPackage(client graphql.Client, orgID, targetID, manifestID, message string) (*Deployment, error) {
-	ctx := context.Background()
-	response, err := deployPackage(ctx, client, orgID, targetID, manifestID, message)
+func DeployPackage(ctx context.Context, mdClient *client.Client, targetID, manifestID, message string) (*Deployment, error) {
+	response, err := deployPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, targetID, manifestID, message)
 
 	if err != nil {
 		return nil, err

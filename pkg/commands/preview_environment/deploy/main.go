@@ -1,22 +1,24 @@
 package deploy
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 
-	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/pkg/api"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 // Runs a preview environment deployment
-func Run(client graphql.Client, orgID string, projectSlug string, previewCfg *api.PreviewConfig, ciContext *map[string]interface{}) (*api.Environment, error) {
+func Run(ctx context.Context, mdClient *client.Client, projectSlug string, previewCfg *api.PreviewConfig, ciContext *map[string]any) (*api.Environment, error) {
 	packagesWithInterpolatedParams, err := interpolateParams(previewCfg.Packages)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return api.DeployPreviewEnvironment(client, orgID, projectSlug, previewCfg.GetCredentials(), packagesWithInterpolatedParams, *ciContext)
+	return api.DeployPreviewEnvironment(ctx, mdClient, projectSlug, previewCfg.GetCredentials(), packagesWithInterpolatedParams, *ciContext)
 }
 
 func interpolateParams(packages map[string]api.PreviewPackage) (map[string]api.PreviewPackage, error) {
@@ -28,7 +30,7 @@ func interpolateParams(packages map[string]api.PreviewPackage) (map[string]api.P
 
 		config := os.ExpandEnv(string(templateData))
 
-		expandedParams := make(map[string]interface{})
+		expandedParams := make(map[string]any)
 		err = json.Unmarshal([]byte(config), &expandedParams)
 		if err != nil {
 			return nil, err

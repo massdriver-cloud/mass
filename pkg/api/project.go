@@ -5,22 +5,22 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/Khan/genqlient/graphql"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 type Project struct {
-	ID                 string                 `json:"id"`
-	Name               string                 `json:"name"`
-	Slug               string                 `json:"slug"`
-	Description        string                 `json:"description"`
-	DefaultParams      map[string]interface{} `json:"defaultParams"`
-	MonthlyAverageCost float64                `json:"monthlyAverageCost"`
-	DailyAverageCost   float64                `json:"dailyAverageCost"`
-	Environments       []Environment          `json:"environments"`
+	ID                 string         `json:"id"`
+	Name               string         `json:"name"`
+	Slug               string         `json:"slug"`
+	Description        string         `json:"description"`
+	DefaultParams      map[string]any `json:"defaultParams"`
+	MonthlyAverageCost float64        `json:"monthlyAverageCost"`
+	DailyAverageCost   float64        `json:"dailyAverageCost"`
+	Environments       []Environment  `json:"environments"`
 }
 
-func GetProject(client graphql.Client, orgID string, idOrSlug string) (*Project, error) {
-	response, err := getProjectById(context.Background(), client, orgID, idOrSlug)
+func GetProject(ctx context.Context, mdClient *client.Client, idOrSlug string) (*Project, error) {
+	response, err := getProjectById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, idOrSlug)
 
 	return response.Project.toProject(), err
 }
@@ -35,7 +35,7 @@ func (p *getProjectByIdProject) toProject() *Project {
 	}
 }
 
-func (p *projectsProjectsProject) toProject() Project {
+func (p *getProjectsProjectsProject) toProject() Project {
 	environments := make([]Environment, len(p.Environments))
 	for i, env := range p.Environments {
 		environments[i] = Environment{
@@ -56,8 +56,8 @@ func (p *projectsProjectsProject) toProject() Project {
 	}
 }
 
-func ListProjects(client graphql.Client, orgID string) ([]Project, error) {
-	response, err := projects(context.Background(), client, orgID)
+func ListProjects(ctx context.Context, mdClient *client.Client) ([]Project, error) {
+	response, err := getProjects(ctx, mdClient.GQL, mdClient.Config.OrganizationID)
 	records := []Project{}
 
 	for _, prj := range response.Projects {

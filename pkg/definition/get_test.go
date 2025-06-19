@@ -1,57 +1,65 @@
 package definition_test
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"reflect"
 	"testing"
 
+	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/definition"
-	"github.com/massdriver-cloud/mass/pkg/restclient"
+	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestGet(t *testing.T) {
 	type test struct {
 		name       string
-		definition string
-		want       map[string]interface{}
+		definition map[string]any
+		want       api.ArtifactDefinitionWithSchema
 	}
 	tests := []test{
 		{
-			name:       "simple",
-			definition: `{"foo":{"hello":"world"}}`,
-			want: map[string]interface{}{
-				"foo": map[string]interface{}{
-					"hello": "world",
+			name: "simple",
+			definition: map[string]any{
+				"id":   "123-456",
+				"name": "massdriver/test-schema",
+				"schema": map[string]any{
+					"$id":         "https://example.com/schemas/test-schema.json",
+					"$schema":     "http://json-schema.org/draft-07/schema#",
+					"description": "A test schema for demonstration purposes.",
 				},
+				"label": "Test Schema",
+			},
+			want: api.ArtifactDefinitionWithSchema{
+				ID:   "123-456",
+				Name: "massdriver/test-schema",
+				Schema: map[string]any{
+					"$id":         "https://example.com/schemas/test-schema.json",
+					"$schema":     "http://json-schema.org/draft-07/schema#",
+					"description": "A test schema for demonstration purposes.",
+				},
+				Label: "Test Schema",
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				urlPath := r.URL.Path
-				switch urlPath {
-				case "/artifact-definitions/massdriver/test-schema":
-					if _, err := w.Write([]byte(tc.definition)); err != nil {
-						t.Errorf("Encountered error writing schema: %v", err)
-					}
-				default:
-					t.Fatalf("unknown schema: %v", urlPath)
-				}
-			}))
-			defer testServer.Close()
+			responses := []any{
+				gqlmock.MockQueryResponse("artifactDefinition", tc.definition),
+			}
 
-			c := restclient.NewClient().WithBaseURL(testServer.URL)
+			mdClient := client.Client{
+				GQL: gqlmock.NewClientWithJSONResponseArray(responses),
+			}
 
-			got, err := definition.Get(c, "massdriver/test-schema")
+			got, err := definition.Get(t.Context(), &mdClient, "massdriver/test-schema")
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}
 
-			if !reflect.DeepEqual(got, tc.want) {
-				t.Errorf("got %v, want %v", got, tc.want)
+			if !reflect.DeepEqual(*got, tc.want) {
+				t.Errorf("got %v, want %v", *got, tc.want)
 			}
 		})
 	}

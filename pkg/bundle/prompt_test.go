@@ -62,16 +62,16 @@ func TestGetConnectionEnvs(t *testing.T) {
 	type test struct {
 		name               string
 		connectionName     string
-		artifactDefinition map[string]interface{}
+		artifactDefinition map[string]any
 		want               map[string]string
 	}
 	tests := []test{
 		{
 			name:           "Basic",
 			connectionName: "foobar",
-			artifactDefinition: map[string]interface{}{
-				"$md": map[string]interface{}{
-					"envTemplates": map[string]interface{}{
+			artifactDefinition: map[string]any{
+				"$md": map[string]any{
+					"envTemplates": map[string]any{
 						"SOME_ENV":    ".connection_name.data.foo.bar",
 						"ANOTHER_ENV": "lol | split() | .connection_name | abc",
 					},
@@ -85,8 +85,8 @@ func TestGetConnectionEnvs(t *testing.T) {
 		{
 			name:           "Empty",
 			connectionName: "foobar",
-			artifactDefinition: map[string]interface{}{
-				"$md": map[string]interface{}{},
+			artifactDefinition: map[string]any{
+				"$md": map[string]any{},
 			},
 			want: map[string]string{},
 		},

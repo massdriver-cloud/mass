@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/cli"
-	"github.com/massdriver-cloud/mass/pkg/config"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
 
@@ -49,19 +50,20 @@ func NewCmdProject() *cobra.Command {
 }
 
 func runProjectGet(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
 	projectSlug := args[0]
 	outputFormat, err := cmd.Flags().GetString("output")
 	if err != nil {
 		return err
 	}
 
-	config, err := config.Get()
-	if err != nil {
-		return err
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	client := api.NewClient(config.URL, config.APIKey)
-	projects, err := api.ListProjects(client, config.OrgID)
+	projects, err := api.ListProjects(ctx, mdClient)
 	if err != nil {
 		return err
 	}
@@ -98,13 +100,14 @@ func runProjectGet(cmd *cobra.Command, args []string) error {
 }
 
 func runProjectList(cmd *cobra.Command, args []string) error {
-	config, err := config.Get()
-	if err != nil {
-		return err
+	ctx := context.Background()
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	client := api.NewClient(config.URL, config.APIKey)
-	projects, err := api.ListProjects(client, config.OrgID)
+	projects, err := api.ListProjects(ctx, mdClient)
 	if err != nil {
 		return err
 	}

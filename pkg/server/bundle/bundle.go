@@ -9,8 +9,9 @@ import (
 	"path"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/massdriver-cloud/mass/pkg/commands"
-	"github.com/massdriver-cloud/mass/pkg/restclient"
+	"github.com/massdriver-cloud/mass/pkg/commands/bundle/build"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 const allowedMethods = "OPTIONS, POST"
@@ -18,15 +19,17 @@ const allowedMethods = "OPTIONS, POST"
 type Handler struct {
 	parsedBundle bundle.Bundle
 	bundleDir    string
+	mdClient     *client.Client
 }
 
-func NewHandler(dir string) (*Handler, error) {
+func NewHandler(dir string, mdClient *client.Client) (*Handler, error) {
 	b, err := bundle.Unmarshal(dir)
 	if err != nil {
 		return nil, err
 	}
 	bundle.ApplyAppBlockDefaults(b)
-	return &Handler{parsedBundle: *b, bundleDir: dir}, nil
+
+	return &Handler{parsedBundle: *b, bundleDir: dir, mdClient: mdClient}, nil
 }
 
 // GetSecrets returns the secrets from the bundle
@@ -160,8 +163,8 @@ func (h *Handler) Params(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) getUserInput() (map[string]interface{}, error) {
-	output := make(map[string]interface{})
+func (h *Handler) getUserInput() (map[string]any, error) {
+	output := make(map[string]any)
 
 	conns, err := h.readFileAndUnmarshal(bundle.ConnsFile)
 
@@ -181,8 +184,8 @@ func (h *Handler) getUserInput() (map[string]interface{}, error) {
 	return output, nil
 }
 
-func (h *Handler) readFileAndUnmarshal(readPath string) (map[string]interface{}, error) {
-	output := make(map[string]interface{})
+func (h *Handler) readFileAndUnmarshal(readPath string) (map[string]any, error) {
+	output := make(map[string]any)
 
 	file, err := os.ReadFile(path.Join(h.bundleDir, "src", readPath))
 
@@ -202,13 +205,13 @@ func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	unmarshalledBundle, err := bundle.UnmarshalAndApplyDefaults(h.bundleDir)
+	unmarshalledBundle, err := bundle.Unmarshal(h.bundleDir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err = commands.BuildBundle(h.bundleDir, unmarshalledBundle, restclient.NewClient()); err != nil {
+	if err = build.Run(h.bundleDir, unmarshalledBundle, h.mdClient); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

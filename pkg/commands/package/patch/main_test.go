@@ -8,44 +8,47 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/package/patch"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestPatchPackage(t *testing.T) {
 	// Client-side patch gets params, patches, and reconfigures
 	responses := []gqlmock.ResponseFunc{
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
 				Manifest:    api.Manifest{ID: "manifest-id"},
 				Environment: api.Environment{ID: "target-id"},
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"cidr": "10.0.0.0/16",
 				},
 			})
 		},
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			vars := gqlmock.ParseInputVariables(req)
 			paramsJSON := []byte(vars["params"].(string))
 
-			params := map[string]interface{}{}
+			params := map[string]any{}
 			gqlmock.MustUnmarshalJSON(paramsJSON, &params)
 
-			return gqlmock.MockMutationResponse("configurePackage", map[string]interface{}{
+			return gqlmock.MockMutationResponse("configurePackage", map[string]any{
 				"id":     "pkg-id",
 				"params": params,
 			})
 		},
 	}
 
-	client := gqlmock.NewClientWithFuncResponseArray(responses)
+	mdClient := client.Client{
+		GQL: gqlmock.NewClientWithFuncResponseArray(responses),
+	}
 	setValues := []string{".cidr = \"10.0.0.0/20\""}
 
-	pkg, err := patch.Run(client, "faux-org-id", "ecomm-prod-cache", setValues)
+	pkg, err := patch.Run(t.Context(), &mdClient, "ecomm-prod-cache", setValues)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	got := pkg.Params
-	want := map[string]interface{}{
+	want := map[string]any{
 		"cidr": "10.0.0.0/20",
 	}
 

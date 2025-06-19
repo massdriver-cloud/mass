@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Khan/genqlient/graphql"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 type Package struct {
-	ID          string                 `json:"id"`
-	NamePrefix  string                 `json:"namePrefix"`
-	Params      map[string]interface{} `json:"params"`
-	Manifest    Manifest               `json:"manifest"`
-	Environment Environment            `json:"environment"`
+	ID          string         `json:"id"`
+	NamePrefix  string         `json:"namePrefix"`
+	Params      map[string]any `json:"params"`
+	Manifest    Manifest       `json:"manifest"`
+	Environment Environment    `json:"environment"`
 }
 
 func (p *Package) ParamsJSON() (string, error) {
@@ -24,9 +24,8 @@ func (p *Package) ParamsJSON() (string, error) {
 	return string(paramsJSON), nil
 }
 
-func GetPackageByName(client graphql.Client, orgID string, name string) (*Package, error) {
-	ctx := context.Background()
-	response, err := getPackageByNamingConvention(ctx, client, orgID, name)
+func GetPackageByName(ctx context.Context, mdClient *client.Client, name string) (*Package, error) {
+	response, err := getPackageByNamingConvention(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name)
 
 	if err != nil {
 		return nil, fmt.Errorf("error when querying for package %s - ensure your project, target and package abbreviations are correct:\n\t%w", name, err)
@@ -52,9 +51,8 @@ func (p *getPackageByNamingConventionGetPackageByNamingConventionPackage) toPack
 	}
 }
 
-func ConfigurePackage(client graphql.Client, orgID string, targetID string, manifestID string, params map[string]interface{}) (*Package, error) {
-	ctx := context.Background()
-	response, err := configurePackage(ctx, client, orgID, targetID, manifestID, params)
+func ConfigurePackage(ctx context.Context, mdClient *client.Client, targetID string, manifestID string, params map[string]any) (*Package, error) {
+	response, err := configurePackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, targetID, manifestID, params)
 
 	if err != nil {
 		return nil, err

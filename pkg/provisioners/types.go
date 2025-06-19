@@ -1,8 +1,8 @@
 package provisioners
 
 type Provisioner interface {
-	ExportMassdriverInputs(stepPath string, variables map[string]interface{}) error
-	ReadProvisionerInputs(stepPath string) (map[string]interface{}, error)
+	ExportMassdriverInputs(stepPath string, variables map[string]any) error
+	ReadProvisionerInputs(stepPath string) (map[string]any, error)
 	InitializeStep(stepPath string, sourcePath string) error
 }
 
@@ -21,10 +21,10 @@ func NewProvisioner(provisionerType string) Provisioner {
 
 type NoopProvisioner struct{}
 
-func (p *NoopProvisioner) ExportMassdriverInputs(string, map[string]interface{}) error {
+func (p *NoopProvisioner) ExportMassdriverInputs(string, map[string]any) error {
 	return nil
 }
-func (p *NoopProvisioner) ReadProvisionerInputs(string) (map[string]interface{}, error) {
+func (p *NoopProvisioner) ReadProvisionerInputs(string) (map[string]any, error) {
 	return nil, nil
 }
 func (p *NoopProvisioner) InitializeStep(string, string) error {
