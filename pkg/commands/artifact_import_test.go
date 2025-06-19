@@ -1,7 +1,6 @@
 package commands_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/commands"
@@ -48,7 +47,7 @@ func TestArtifactImport(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	got, err := commands.ArtifactImport(context.Background(), &mdClient, "artifact-name", "massdriver/fake-artifact-schema", "testdata/artifact.json")
+	got, err := commands.ArtifactImport(t.Context(), &mdClient, "artifact-name", "massdriver/fake-artifact-schema", "testdata/artifact.json")
 
 	if err != nil {
 		t.Fatal(err)

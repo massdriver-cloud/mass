@@ -122,7 +122,7 @@ func dereferenceHTTPRef(hydratedSchema map[string]any, schema map[string]any, sc
 	var referencedSchema map[string]any
 
 	client := http.Client{}
-	request, err := http.NewRequestWithContext(ctx, "GET", schemaRefValue, nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRefValue, nil)
 	if err != nil {
 		return hydratedSchema, err
 	}

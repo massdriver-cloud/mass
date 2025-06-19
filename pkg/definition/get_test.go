@@ -1,7 +1,6 @@
 package definition_test
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -54,7 +53,7 @@ func TestGet(t *testing.T) {
 				GQL: gqlmock.NewClientWithJSONResponseArray(responses),
 			}
 
-			got, err := definition.Get(context.Background(), &mdClient, "massdriver/test-schema")
+			got, err := definition.Get(t.Context(), &mdClient, "massdriver/test-schema")
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

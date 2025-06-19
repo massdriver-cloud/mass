@@ -1,7 +1,6 @@
 package initialize_test
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -37,7 +36,7 @@ func TestRun(t *testing.T) {
 		GQL: gqlmock.NewClientWithJSONResponseArray(responses),
 	}
 
-	model, _ := initialize.New(context.Background(), &mdClient, projectSlug)
+	model, _ := initialize.New(t.Context(), &mdClient, projectSlug)
 
 	selectRow := tea.KeyMsg{Type: tea.KeySpace}
 	pressNext := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}}

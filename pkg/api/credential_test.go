@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
@@ -30,7 +29,7 @@ func TestListCredentials(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	credentials, err := api.ListCredentials(context.Background(), &mdClient, "massdriver/aws-iam-role")
+	credentials, err := api.ListCredentials(t.Context(), &mdClient, "massdriver/aws-iam-role")
 
 	if err != nil {
 		t.Fatal(err)

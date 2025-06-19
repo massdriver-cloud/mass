@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"net/http"
 	"reflect"
 	"testing"
@@ -31,7 +30,7 @@ func TestGetArtifactDefinitions(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	got, err := api.GetArtifactDefinition(context.Background(), &mdClient, "massdriver/aws-ecs-cluster")
+	got, err := api.GetArtifactDefinition(t.Context(), &mdClient, "massdriver/aws-ecs-cluster")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +72,7 @@ func TestListArtifactDefinitions(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	got, err := api.ListArtifactDefinitions(context.Background(), &mdClient)
+	got, err := api.ListArtifactDefinitions(t.Context(), &mdClient)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +114,7 @@ func TestPublishArtifactDefinition(t *testing.T) {
 		GQL: gqlmock.NewClientWithFuncResponseArray(responses),
 	}
 
-	got, err := api.PublishArtifactDefinition(context.Background(), &mdClient, artDef)
+	got, err := api.PublishArtifactDefinition(t.Context(), &mdClient, artDef)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -82,7 +82,7 @@ func TestPushLatestImage(t *testing.T) {
 		Dockerfile:         "DockerFile",
 	}
 
-	err := image.Push(context.Background(), &mdClient, input, imageClient)
+	err := image.Push(t.Context(), &mdClient, input, imageClient)
 
 	if err != nil {
 		t.Fatal(err)
@@ -112,7 +112,7 @@ func TestPushImage(t *testing.T) {
 		Dockerfile:         "DockerFile",
 	}
 
-	err := image.Push(context.Background(), &mdClient, input, imageClient)
+	err := image.Push(t.Context(), &mdClient, input, imageClient)
 
 	if err != nil {
 		t.Fatal(err)

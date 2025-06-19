@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -31,7 +30,7 @@ func TestGetPackageByName(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	got, err := api.GetPackageByName(context.Background(), &mdClient, pkgName)
+	got, err := api.GetPackageByName(t.Context(), &mdClient, pkgName)
 
 	if err != nil {
 		t.Fatal(err)
@@ -72,7 +71,7 @@ func TestConfigurePackage(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	pkg, err := api.ConfigurePackage(context.Background(), &mdClient, "faux-target-id", "faux-manifest-id", params)
+	pkg, err := api.ConfigurePackage(t.Context(), &mdClient, "faux-target-id", "faux-manifest-id", params)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -52,7 +51,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 		},
 	}
 
-	environment, err := api.DeployPreviewEnvironment(context.Background(), &mdClient, "faux-project-id", credentials, packageParams, ciContext)
+	environment, err := api.DeployPreviewEnvironment(t.Context(), &mdClient, "faux-project-id", credentials, packageParams, ciContext)
 
 	if err != nil {
 		t.Fatal(err)
@@ -85,7 +84,7 @@ func TestDecommissionPreviewEnvironment(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	environment, err := api.DecommissionPreviewEnvironment(context.Background(), &mdClient, projectTargetSlug)
+	environment, err := api.DecommissionPreviewEnvironment(t.Context(), &mdClient, projectTargetSlug)
 
 	if err != nil {
 		t.Fatal(err)
@@ -146,7 +145,7 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 		},
 	}
 
-	_, err := api.DeployPreviewEnvironment(context.Background(), &mdClient, "faux-project-id", credentials, packageParams, ciContext)
+	_, err := api.DeployPreviewEnvironment(t.Context(), &mdClient, "faux-project-id", credentials, packageParams, ciContext)
 
 	if err == nil {
 		t.Error("expected error when both params and remote references are set, got nil")

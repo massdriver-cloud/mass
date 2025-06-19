@@ -2,7 +2,6 @@ package definition_test
 
 import (
 	"bytes"
-	"context"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
@@ -38,7 +37,7 @@ func TestPublish(t *testing.T) {
 				GQL: gqlmock.NewClientWithJSONResponseArray(responses),
 			}
 
-			err := definition.Publish(context.Background(), &mdClient, tc.definition)
+			err := definition.Publish(t.Context(), &mdClient, tc.definition)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

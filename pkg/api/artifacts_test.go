@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -26,7 +25,7 @@ func TestCreateArtifact(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	got, err := api.CreateArtifact(context.Background(), &mdClient, "artifact-name", "artifact-type", map[string]any{}, map[string]any{})
+	got, err := api.CreateArtifact(t.Context(), &mdClient, "artifact-name", "artifact-type", map[string]any{}, map[string]any{})
 	if err != nil {
 		t.Fatal(err)
 	}

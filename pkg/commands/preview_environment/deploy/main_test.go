@@ -1,7 +1,6 @@
 package deploy_test
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"reflect"
@@ -44,7 +43,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 
 	ciContext := map[string]any{}
 
-	env, err := deploy.Run(context.Background(), &mdClient, projectSlug, &previewCfg, &ciContext)
+	env, err := deploy.Run(t.Context(), &mdClient, projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		t.Fatal(err)
@@ -122,7 +121,7 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 	ciContext := map[string]any{}
 
 	t.Setenv("PR_NUMBER", "9000")
-	_, err := deploy.Run(context.Background(), &mdClient, projectSlug, &previewCfg, &ciContext)
+	_, err := deploy.Run(t.Context(), &mdClient, projectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		t.Fatal(err)

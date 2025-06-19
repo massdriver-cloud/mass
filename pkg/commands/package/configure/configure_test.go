@@ -1,7 +1,6 @@
 package configure_test
 
 import (
-	"context"
 	"net/http"
 	"reflect"
 	"testing"
@@ -42,7 +41,7 @@ func TestConfigurePackage(t *testing.T) {
 		GQL: gqlmock.NewClientWithFuncResponseArray(responses),
 	}
 
-	pkg, err := configure.Run(context.Background(), &mdClient, "ecomm-prod-cache", params)
+	pkg, err := configure.Run(t.Context(), &mdClient, "ecomm-prod-cache", params)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +82,7 @@ func TestConfigurePackageInterpolation(t *testing.T) {
 	params := map[string]any{"size": "${MEMORY_AMT}GB"}
 	t.Setenv("MEMORY_AMT", "6")
 
-	pkg, err := configure.Run(context.Background(), &mdClient, "ecomm-prod-cache", params)
+	pkg, err := configure.Run(t.Context(), &mdClient, "ecomm-prod-cache", params)
 	if err != nil {
 		t.Fatal(err)
 	}

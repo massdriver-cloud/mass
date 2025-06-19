@@ -1,7 +1,6 @@
 package patch_test
 
 import (
-	"context"
 	"net/http"
 	"reflect"
 	"testing"
@@ -43,7 +42,7 @@ func TestPatchPackage(t *testing.T) {
 	}
 	setValues := []string{".cidr = \"10.0.0.0/20\""}
 
-	pkg, err := patch.Run(context.Background(), &mdClient, "ecomm-prod-cache", setValues)
+	pkg, err := patch.Run(t.Context(), &mdClient, "ecomm-prod-cache", setValues)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
@@ -22,7 +21,7 @@ func TestGetDeployment(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	deployment, err := api.GetDeployment(context.Background(), &mdClient, "uuid1")
+	deployment, err := api.GetDeployment(t.Context(), &mdClient, "uuid1")
 
 	if err != nil {
 		t.Fatal(err)
@@ -52,7 +51,7 @@ func TestDeployPackage(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	deployment, err := api.DeployPackage(context.Background(), &mdClient, "target-id", "manifest-id", "foo")
+	deployment, err := api.DeployPackage(t.Context(), &mdClient, "target-id", "manifest-id", "foo")
 
 	if err != nil {
 		t.Fatal(err)

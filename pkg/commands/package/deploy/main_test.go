@@ -1,7 +1,6 @@
 package deploy_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
@@ -35,7 +34,7 @@ func TestDeployPackage(t *testing.T) {
 	}
 	deploy.DeploymentStatusSleep = 0
 
-	deployment, err := deploy.Run(context.Background(), &mdClient, "ecomm-prod-cache", "foo")
+	deployment, err := deploy.Run(t.Context(), &mdClient, "ecomm-prod-cache", "foo")
 	if err != nil {
 		t.Fatal(err)
 	}

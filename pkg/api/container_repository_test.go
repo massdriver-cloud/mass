@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -23,7 +22,7 @@ func TestDockerRegistryToken(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	got, err := api.GetContainerRepository(context.Background(), &mdClient, "artifactId", "westus", "massdriver/test-image")
+	got, err := api.GetContainerRepository(t.Context(), &mdClient, "artifactId", "westus", "massdriver/test-image")
 	if err != nil {
 		t.Fatal(err)
 	}

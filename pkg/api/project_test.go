@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
@@ -25,7 +24,7 @@ func TestGetProject(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	project, err := api.GetProject(context.Background(), &mdClient, "sluggy")
+	project, err := api.GetProject(t.Context(), &mdClient, "sluggy")
 
 	if err != nil {
 		t.Fatal(err)
@@ -59,7 +58,7 @@ func TestListProjects(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	projects, err := api.ListProjects(context.Background(), &mdClient)
+	projects, err := api.ListProjects(t.Context(), &mdClient)
 
 	if err != nil {
 		t.Fatal(err)

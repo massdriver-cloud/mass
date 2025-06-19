@@ -1,7 +1,6 @@
 package decommission_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -31,7 +30,7 @@ func TestDecommissionPreviewEnvironment(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	environment, err := decommission.Run(context.Background(), &mdClient, projectTargetSlug)
+	environment, err := decommission.Run(t.Context(), &mdClient, projectTargetSlug)
 
 	if err != nil {
 		t.Fatal(err)
