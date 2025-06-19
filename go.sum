@@ -234,6 +234,8 @@ github.com/massdriver-cloud/liquid v1.4.0 h1:807qhdLOHFbbIG7huhxB1bZRt/qOZWuHhhh
 github.com/massdriver-cloud/liquid v1.4.0/go.mod h1:VmzQQHa5v4E0GvGzqccfAfLgMwRk2V+s1QbxYx9dGak=
 github.com/massdriver-cloud/massdriver-sdk-go v0.0.6-0.20250618190509-b3c14f7e2a4f h1:OnlwLigdc39AyIz+9bv9WLo0sZerowBDwqSpIkK7uXA=
 github.com/massdriver-cloud/massdriver-sdk-go v0.0.6-0.20250618190509-b3c14f7e2a4f/go.mod h1:6bXMPQmfeKHD3Tm/cwnrkqiZaDEgRUUq0+uZckKRsbM=
+github.com/massdriver-cloud/massdriver-sdk-go v0.0.7 h1:6mo2oFpQ/rqnhIp96Biz1TnfWtPYf2Lt0f62dBjTlAw=
+github.com/massdriver-cloud/massdriver-sdk-go v0.0.7/go.mod h1:6bXMPQmfeKHD3Tm/cwnrkqiZaDEgRUUq0+uZckKRsbM=
 github.com/massdriver-cloud/schema2json v0.0.2 h1:ohcx8233BJ6sKBYUKh7gdcbbJ2ASSdkjE81fUUIFfgk=
 github.com/massdriver-cloud/schema2json v0.0.2/go.mod h1:EwuRNUGTQsq0KFfUoAFgdmUwcKWzNv5y1n49sOylBK0=
 github.com/massdriver-cloud/terraform-config-inspect v0.0.1 h1:eLtKFRaklHIxcPvUtZmNacl28n4QIHr29pJzw/u/FKU=
