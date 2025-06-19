@@ -10,9 +10,9 @@ import (
 )
 
 func TestGetDeployment(t *testing.T) {
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"deployment": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"deployment": map[string]any{
 				"id":     "uuid1",
 				"status": "PROVISIONING",
 			},
@@ -38,10 +38,10 @@ func TestGetDeployment(t *testing.T) {
 
 func TestDeployPackage(t *testing.T) {
 	want := "deployment-uuid1"
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"deployPackage": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"deployPackage": map[string]any{
+				"result": map[string]any{
 					"id": want,
 				},
 				"successful": true,

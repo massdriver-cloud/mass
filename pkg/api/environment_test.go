@@ -14,10 +14,10 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 	prNumber := 69
 	slug := fmt.Sprintf("p%d", prNumber)
 
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"deployPreviewEnvironment": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"deployPreviewEnvironment": map[string]any{
+				"result": map[string]any{
 					"id":   "envuuid1",
 					"slug": slug,
 				},
@@ -33,20 +33,20 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 
 	packageParams := map[string]api.PreviewPackage{
 		"network": {
-			Params: map[string]interface{}{
+			Params: map[string]any{
 				"cidr": "10.0.0.0/16",
 			},
 		},
 
 		"cluster": {
-			Params: map[string]interface{}{
+			Params: map[string]any{
 				"maxNodes": 10,
 			},
 		},
 	}
 
-	ciContext := map[string]interface{}{
-		"pull_request": map[string]interface{}{
+	ciContext := map[string]any{
+		"pull_request": map[string]any{
 			"title":  "First commit!",
 			"number": prNumber,
 		},
@@ -70,10 +70,10 @@ func TestDecommissionPreviewEnvironment(t *testing.T) {
 	prNumber := 69
 	targetSlug := fmt.Sprintf("p%d", prNumber)
 	projectTargetSlug := "ecomm-" + targetSlug
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"decommissionPreviewEnvironment": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"decommissionPreviewEnvironment": map[string]any{
+				"result": map[string]any{
 					"id":   "envuuid1",
 					"slug": targetSlug,
 				},
@@ -103,10 +103,10 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 	prNumber := 69
 	slug := fmt.Sprintf("p%d", prNumber)
 
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"deployPreviewEnvironment": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"deployPreviewEnvironment": map[string]any{
+				"result": map[string]any{
 					"slug": slug,
 					"id":   "envuuid1",
 				},
@@ -122,7 +122,7 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 
 	packageParams := map[string]api.PreviewPackage{
 		"network": {
-			Params: map[string]interface{}{
+			Params: map[string]any{
 				"cidr": "10.0.0.0/16",
 			},
 			RemoteReferences: []api.RemoteRef{
@@ -133,14 +133,14 @@ func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) 
 			},
 		},
 		"cluster": {
-			Params: map[string]interface{}{
+			Params: map[string]any{
 				"maxNodes": 9,
 			},
 		},
 	}
 
-	ciContext := map[string]interface{}{
-		"pull_request": map[string]interface{}{
+	ciContext := map[string]any{
+		"pull_request": map[string]any{
 			"title":  "First commit!",
 			"number": prNumber,
 		},

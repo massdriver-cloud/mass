@@ -5,7 +5,7 @@ import (
 )
 
 // MarshalJSON marshals a value twice to create an escaped string of JSON
-func MarshalJSON(v interface{}) ([]byte, error) {
+func MarshalJSON(v any) ([]byte, error) {
 	bytes, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -13,6 +13,6 @@ func MarshalJSON(v interface{}) ([]byte, error) {
 	return json.Marshal(string(bytes))
 }
 
-func UnmarshalJSON(data []byte, v *map[string]interface{}) error {
+func UnmarshalJSON(data []byte, v *map[string]any) error {
 	return json.Unmarshal(data, v)
 }

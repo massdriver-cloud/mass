@@ -56,7 +56,7 @@ func (response *listArtifactDefinitionsResponse) toArtifactDefinitions() []Artif
 	return ads
 }
 
-func PublishArtifactDefinition(ctx context.Context, mdClient *client.Client, schema map[string]interface{}) (*ArtifactDefinitionWithSchema, error) {
+func PublishArtifactDefinition(ctx context.Context, mdClient *client.Client, schema map[string]any) (*ArtifactDefinitionWithSchema, error) {
 	response, err := publishArtifactDefinition(ctx, mdClient.GQL, mdClient.Config.OrganizationID, schema)
 	if err != nil {
 		return nil, err

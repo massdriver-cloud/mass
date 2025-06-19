@@ -15,23 +15,23 @@ import (
 func TestPatchPackage(t *testing.T) {
 	// Client-side patch gets params, patches, and reconfigures
 	responses := []gqlmock.ResponseFunc{
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
 				Manifest:    api.Manifest{ID: "manifest-id"},
 				Environment: api.Environment{ID: "target-id"},
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"cidr": "10.0.0.0/16",
 				},
 			})
 		},
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			vars := gqlmock.ParseInputVariables(req)
 			paramsJSON := []byte(vars["params"].(string))
 
-			params := map[string]interface{}{}
+			params := map[string]any{}
 			gqlmock.MustUnmarshalJSON(paramsJSON, &params)
 
-			return gqlmock.MockMutationResponse("configurePackage", map[string]interface{}{
+			return gqlmock.MockMutationResponse("configurePackage", map[string]any{
 				"id":     "pkg-id",
 				"params": params,
 			})
@@ -49,7 +49,7 @@ func TestPatchPackage(t *testing.T) {
 	}
 
 	got := pkg.Params
-	want := map[string]interface{}{
+	want := map[string]any{
 		"cidr": "10.0.0.0/20",
 	}
 

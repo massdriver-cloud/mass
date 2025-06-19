@@ -22,8 +22,8 @@ func TestDereference(t *testing.T) {
 
 	type TestCase struct {
 		Name                string
-		Input               interface{}
-		Expected            interface{}
+		Input               any
+		Expected            any
 		ExpectedErrorSuffix string
 		Cwd                 string
 	}
@@ -39,9 +39,9 @@ func TestDereference(t *testing.T) {
 		{
 			Name:  "Dereferences a $ref alongside arbitrary values",
 			Input: jsonDecode(`{"foo": true, "bar": {}, "$ref": "./testdata/artifacts/aws-example.json"}`),
-			Expected: map[string]interface{}{
+			Expected: map[string]any{
 				"foo": true,
-				"bar": map[string]interface{}{},
+				"bar": map[string]any{},
 				"id":  "fake-schema-id",
 			},
 		},
@@ -64,10 +64,10 @@ func TestDereference(t *testing.T) {
 		{
 			Name:  "Dereferences $refs in a list",
 			Input: jsonDecode(`{"list": ["string", {"$ref": "./testdata/artifacts/aws-example.json"}]}`),
-			Expected: map[string]interface{}{
-				"list": []interface{}{
+			Expected: map[string]any{
+				"list": []any{
 					"string",
-					map[string]interface{}{
+					map[string]any{
 						"id": "fake-schema-id",
 					},
 				},
@@ -116,8 +116,8 @@ func TestDereference(t *testing.T) {
 	for _, test := range cases {
 		t.Run(test.Name, func(t *testing.T) {
 			mdClient := client.Client{
-				GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-					"data": map[string]interface{}{
+				GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+					"data": map[string]any{
 						"artifactDefinition": map[string]any{
 							"id":   "123-456",
 							"name": "massdriver/test-schema",
@@ -187,7 +187,7 @@ func TestDereference(t *testing.T) {
 			Cwd:    ".",
 		}
 		got, _ := jsonschema.Dereference(input, opts)
-		expected := map[string]interface{}{
+		expected := map[string]any{
 			"baz": map[string]string{
 				"foo": "bar",
 			},
@@ -212,8 +212,8 @@ func TestDereference(t *testing.T) {
 	})
 }
 
-func jsonDecode(data string) map[string]interface{} {
-	var result map[string]interface{}
+func jsonDecode(data string) map[string]any {
+	var result map[string]any
 	if err := json.Unmarshal([]byte(data), &result); err != nil {
 		panic(err)
 	}

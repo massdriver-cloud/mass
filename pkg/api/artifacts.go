@@ -12,7 +12,7 @@ type Artifact struct {
 	ID   string
 }
 
-func CreateArtifact(ctx context.Context, mdClient *client.Client, artifactName string, artifactType string, artifactData map[string]interface{}, artifactSpecs map[string]interface{}) (*Artifact, error) {
+func CreateArtifact(ctx context.Context, mdClient *client.Client, artifactName string, artifactType string, artifactData map[string]any, artifactSpecs map[string]any) (*Artifact, error) {
 	response, err := createArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactName, artifactSpecs, artifactType, artifactData)
 	if err != nil {
 		return nil, err

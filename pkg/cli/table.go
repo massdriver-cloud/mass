@@ -6,7 +6,7 @@ import (
 )
 
 // NewTable creates a new table with consistent formatting
-func NewTable(headers ...interface{}) table.Table {
+func NewTable(headers ...any) table.Table {
 	headerFmt := color.New(color.FgHiBlue, color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgHiWhite).SprintfFunc()
 

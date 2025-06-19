@@ -17,17 +17,17 @@ import (
 func TestRun(t *testing.T) {
 	projectSlug := "ecomm"
 
-	responses := []interface{}{
-		gqlmock.MockQueryResponse("project", map[string]interface{}{
+	responses := []any{
+		gqlmock.MockQueryResponse("project", map[string]any{
 			"slug": projectSlug,
-			"defaultParams": map[string]interface{}{
-				"database": map[string]interface{}{"username": "root"},
+			"defaultParams": map[string]any{
+				"database": map[string]any{"username": "root"},
 			},
 		}),
 
-		gqlmock.MockQueryResponse("artifacts", map[string]interface{}{
+		gqlmock.MockQueryResponse("artifacts", map[string]any{
 			"next": "",
-			"items": []map[string]interface{}{
+			"items": []map[string]any{
 				{"id": "uuid-here", "name": "aws-credentials"},
 			},
 		}),
@@ -63,7 +63,7 @@ func TestRun(t *testing.T) {
 		},
 		Packages: map[string]api.PreviewPackage{
 			"database": {
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"username": "root",
 				},
 			},

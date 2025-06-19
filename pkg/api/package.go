@@ -9,11 +9,11 @@ import (
 )
 
 type Package struct {
-	ID          string                 `json:"id"`
-	NamePrefix  string                 `json:"namePrefix"`
-	Params      map[string]interface{} `json:"params"`
-	Manifest    Manifest               `json:"manifest"`
-	Environment Environment            `json:"environment"`
+	ID          string         `json:"id"`
+	NamePrefix  string         `json:"namePrefix"`
+	Params      map[string]any `json:"params"`
+	Manifest    Manifest       `json:"manifest"`
+	Environment Environment    `json:"environment"`
 }
 
 func (p *Package) ParamsJSON() (string, error) {
@@ -51,7 +51,7 @@ func (p *getPackageByNamingConventionGetPackageByNamingConventionPackage) toPack
 	}
 }
 
-func ConfigurePackage(ctx context.Context, mdClient *client.Client, targetID string, manifestID string, params map[string]interface{}) (*Package, error) {
+func ConfigurePackage(ctx context.Context, mdClient *client.Client, targetID string, manifestID string, params map[string]any) (*Package, error) {
 	response, err := configurePackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, targetID, manifestID, params)
 
 	if err != nil {

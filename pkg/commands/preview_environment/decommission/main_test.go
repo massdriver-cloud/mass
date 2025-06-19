@@ -15,10 +15,10 @@ func TestDecommissionPreviewEnvironment(t *testing.T) {
 	prNumber := 69
 	targetSlug := fmt.Sprintf("p%d", prNumber)
 	projectTargetSlug := "ecomm-" + targetSlug
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"decommissionPreviewEnvironment": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"decommissionPreviewEnvironment": map[string]any{
+				"result": map[string]any{
 					"id":   "envuuid1",
 					"slug": targetSlug,
 				},

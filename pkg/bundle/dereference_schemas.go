@@ -10,7 +10,7 @@ import (
 )
 
 type DereferenceTarget struct {
-	schema *map[string]interface{}
+	schema *map[string]any
 	label  string
 }
 
@@ -25,8 +25,8 @@ func (b *Bundle) DereferenceSchemas(path string, mdClient *client.Client) error 
 
 	for _, task := range tasks {
 		if task.schema == nil {
-			*task.schema = map[string]interface{}{
-				"properties": make(map[string]interface{}),
+			*task.schema = map[string]any{
+				"properties": make(map[string]any),
 			}
 		}
 
@@ -37,7 +37,7 @@ func (b *Bundle) DereferenceSchemas(path string, mdClient *client.Client) error 
 		}
 
 		var ok bool
-		*task.schema, ok = dereferencedSchema.(map[string]interface{})
+		*task.schema, ok = dereferencedSchema.(map[string]any)
 
 		if !ok {
 			return fmt.Errorf("hydrated %s is not a map", task.label)

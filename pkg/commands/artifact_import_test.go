@@ -11,18 +11,18 @@ import (
 )
 
 func TestArtifactImport(t *testing.T) {
-	gqlClient := gqlmock.NewClientWithJSONResponseMap(map[string]interface{}{
-		"listArtifactDefinitions": map[string]interface{}{
-			"data": map[string]interface{}{
-				"artifactDefinitions": []map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithJSONResponseMap(map[string]any{
+		"listArtifactDefinitions": map[string]any{
+			"data": map[string]any{
+				"artifactDefinitions": []map[string]any{
 					{
 						"name": "massdriver/fake-artifact-schema",
-						"schema": map[string]interface{}{
+						"schema": map[string]any{
 							"$id":     "id",
 							"$schema": "http://json-schema.org/draft-07/schema",
 							"type":    "object",
-							"properties": map[string]interface{}{
-								"name": map[string]interface{}{
+							"properties": map[string]any{
+								"name": map[string]any{
 									"type": "string",
 								},
 							},
@@ -31,10 +31,10 @@ func TestArtifactImport(t *testing.T) {
 				},
 			},
 		},
-		"createArtifact": map[string]interface{}{
-			"data": map[string]interface{}{
-				"createArtifact": map[string]interface{}{
-					"result": map[string]interface{}{
+		"createArtifact": map[string]any{
+			"data": map[string]any{
+				"createArtifact": map[string]any{
+					"result": map[string]any{
 						"id":   "artifact-id",
 						"name": "artifact-name",
 					},

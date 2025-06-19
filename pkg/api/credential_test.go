@@ -10,10 +10,10 @@ import (
 )
 
 func TestListCredentials(t *testing.T) {
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"artifacts": map[string]interface{}{
-				"items": []map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"artifacts": map[string]any{
+				"items": []map[string]any{
 					{
 						"id":   "uuid1",
 						"name": "artifact1",

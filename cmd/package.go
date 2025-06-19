@@ -185,7 +185,7 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 
 	packageSlugOrID := args[0]
 
-	params := map[string]interface{}{}
+	params := map[string]any{}
 	if err := files.Read(pkgParamsPath, &params); err != nil {
 		return err
 	}

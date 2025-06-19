@@ -12,7 +12,7 @@ import (
 
 const UserRW = 0600
 
-func Write(path string, data interface{}) error {
+func Write(path string, data any) error {
 	var formattedData []byte
 	ext := filepath.Ext(path)
 

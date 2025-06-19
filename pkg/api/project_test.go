@@ -10,12 +10,12 @@ import (
 )
 
 func TestGetProject(t *testing.T) {
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"project": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"project": map[string]any{
 				"id":   "uuid1",
 				"slug": "sluggy",
-				"defaultParams": map[string]interface{}{
+				"defaultParams": map[string]any{
 					"foo": "bar",
 				},
 			},
@@ -41,9 +41,9 @@ func TestGetProject(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"projects": []map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"projects": []map[string]any{
 				{
 					"id":   "uuid1",
 					"name": "project1",

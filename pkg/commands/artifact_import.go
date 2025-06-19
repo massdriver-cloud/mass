@@ -46,7 +46,7 @@ func validateArtifact(ctx context.Context, mdClient *client.Client, artifactType
 		return adsErr
 	}
 
-	var schema map[string]interface{}
+	var schema map[string]any
 
 	for _, ad := range ads {
 		if ad.Name == artifactType {

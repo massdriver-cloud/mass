@@ -22,10 +22,10 @@ func TestLintSchema(t *testing.T) {
 				Description: "description",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params:      map[string]interface{}{},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
-				UI:          map[string]interface{}{},
+				Params:      map[string]any{},
+				Connections: map[string]any{},
+				Artifacts:   map[string]any{},
+				UI:          map[string]any{},
 			},
 			err: nil,
 		},
@@ -35,10 +35,10 @@ func TestLintSchema(t *testing.T) {
 				Name:        "example",
 				Description: "description",
 				Type:        "infrastructure",
-				Params:      map[string]interface{}{},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
-				UI:          map[string]interface{}{},
+				Params:      map[string]any{},
+				Connections: map[string]any{},
+				Artifacts:   map[string]any{},
+				UI:          map[string]any{},
 			},
 			err: errors.New(`massdriver.yaml has schema violations:
 	- schema: schema must be one of the following: "draft-07"
@@ -72,13 +72,13 @@ func TestLintParamsConnectionsNameCollision(t *testing.T) {
 		{
 			name: "Valid Pass",
 			bun: &bundle.Bundle{
-				Params: map[string]interface{}{
-					"properties": map[string]interface{}{
+				Params: map[string]any{
+					"properties": map[string]any{
 						"param": "foo",
 					},
 				},
-				Connections: map[string]interface{}{
-					"properties": map[string]interface{}{
+				Connections: map[string]any{
+					"properties": map[string]any{
 						"connection": "foo",
 					},
 				},
@@ -88,13 +88,13 @@ func TestLintParamsConnectionsNameCollision(t *testing.T) {
 		{
 			name: "Invalid Error",
 			bun: &bundle.Bundle{
-				Params: map[string]interface{}{
-					"properties": map[string]interface{}{
+				Params: map[string]any{
+					"properties": map[string]any{
 						"database": "foo",
 					},
 				},
-				Connections: map[string]interface{}{
-					"properties": map[string]interface{}{
+				Connections: map[string]any{
+					"properties": map[string]any{
 						"database": "foo",
 					},
 				},
@@ -141,21 +141,21 @@ func TestLintEnvs(t *testing.T) {
 						"shh": {},
 					},
 				},
-				Params: map[string]interface{}{
-					"properties": map[string]interface{}{
-						"foo": map[string]interface{}{
+				Params: map[string]any{
+					"properties": map[string]any{
+						"foo": map[string]any{
 							"type":  "string",
 							"const": "bar",
 						},
-						"int": map[string]interface{}{
+						"int": map[string]any{
 							"type":  "integer",
 							"const": 4,
 						},
 					},
 				},
-				Connections: map[string]interface{}{
-					"properties": map[string]interface{}{
-						"connection1": map[string]interface{}{
+				Connections: map[string]any{
+					"properties": map[string]any{
+						"connection1": map[string]any{
 							"type":  "string",
 							"const": "whatever",
 						},
@@ -179,8 +179,8 @@ func TestLintEnvs(t *testing.T) {
 					},
 					Secrets: map[string]bundle.Secret{},
 				},
-				Params:      map[string]interface{}{},
-				Connections: map[string]interface{}{},
+				Params:      map[string]any{},
+				Connections: map[string]any{},
 			},
 			want: map[string]string{},
 			err:  errors.New("the jq query for environment variable FOO didn't produce a result"),
@@ -194,8 +194,8 @@ func TestLintEnvs(t *testing.T) {
 					},
 					Secrets: map[string]bundle.Secret{},
 				},
-				Params:      map[string]interface{}{},
-				Connections: map[string]interface{}{},
+				Params:      map[string]any{},
+				Connections: map[string]any{},
 			},
 			want: map[string]string{},
 			err:  errors.New("the jq query for environment variable FOO produced an error: function not defined: laksdjf/0"),
@@ -209,18 +209,18 @@ func TestLintEnvs(t *testing.T) {
 					},
 					Secrets: map[string]bundle.Secret{},
 				},
-				Params: map[string]interface{}{
-					"properties": map[string]interface{}{
-						"array": map[string]interface{}{
+				Params: map[string]any{
+					"properties": map[string]any{
+						"array": map[string]any{
 							"type":     "array",
 							"minItems": 2,
-							"items": map[string]interface{}{
+							"items": map[string]any{
 								"type": "integer",
 							},
 						},
 					},
 				},
-				Connections: map[string]interface{}{},
+				Connections: map[string]any{},
 			},
 			want: map[string]string{},
 			err:  errors.New("the jq query for environment variable FOO produced multiple values, which isn't supported"),
@@ -275,15 +275,15 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 						Path:        "testdata/lintmodule",
 						Provisioner: "opentofu",
 					}},
-					Params: map[string]interface{}{
-						"properties": map[string]interface{}{
-							"foo": map[string]interface{}{},
-							"bar": map[string]interface{}{},
+					Params: map[string]any{
+						"properties": map[string]any{
+							"foo": map[string]any{},
+							"bar": map[string]any{},
 						},
 					},
-					Connections: map[string]interface{}{},
-					Artifacts:   map[string]interface{}{},
-					UI:          map[string]interface{}{},
+					Connections: map[string]any{},
+					Artifacts:   map[string]any{},
+					UI:          map[string]any{},
 				},
 				err: nil,
 			}, {
@@ -297,18 +297,18 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 						Path:        "testdata/lintmodule",
 						Provisioner: "opentofu",
 					}},
-					Params: map[string]interface{}{
-						"properties": map[string]interface{}{
-							"foo": map[string]interface{}{},
+					Params: map[string]any{
+						"properties": map[string]any{
+							"foo": map[string]any{},
 						},
 					},
-					Connections: map[string]interface{}{
-						"properties": map[string]interface{}{
-							"bar": map[string]interface{}{},
+					Connections: map[string]any{
+						"properties": map[string]any{
+							"bar": map[string]any{},
 						},
 					},
-					Artifacts: map[string]interface{}{},
-					UI:        map[string]interface{}{},
+					Artifacts: map[string]any{},
+					UI:        map[string]any{},
 				},
 				err: nil,
 			}, {
@@ -321,14 +321,14 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 						Path:        "testdata/lintmodule",
 						Provisioner: "opentofu",
 					}},
-					Params: map[string]interface{}{
-						"properties": map[string]interface{}{
-							"foo": map[string]interface{}{},
+					Params: map[string]any{
+						"properties": map[string]any{
+							"foo": map[string]any{},
 						},
 					},
-					Connections: map[string]interface{}{},
-					Artifacts:   map[string]interface{}{},
-					UI:          map[string]interface{}{},
+					Connections: map[string]any{},
+					Artifacts:   map[string]any{},
+					UI:          map[string]any{},
 				},
 				err: errors.New(`missing inputs detected in step testdata/lintmodule:
 	- input "bar" declared in IaC but missing massdriver.yaml declaration
@@ -343,16 +343,16 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 						Path:        "testdata/lintmodule",
 						Provisioner: "opentofu",
 					}},
-					Params: map[string]interface{}{
-						"properties": map[string]interface{}{
-							"foo": map[string]interface{}{},
-							"bar": map[string]interface{}{},
-							"baz": map[string]interface{}{},
+					Params: map[string]any{
+						"properties": map[string]any{
+							"foo": map[string]any{},
+							"bar": map[string]any{},
+							"baz": map[string]any{},
 						},
 					},
-					Connections: map[string]interface{}{},
-					Artifacts:   map[string]interface{}{},
-					UI:          map[string]interface{}{},
+					Connections: map[string]any{},
+					Artifacts:   map[string]any{},
+					UI:          map[string]any{},
 				},
 				err: errors.New(`missing inputs detected in step testdata/lintmodule:
 	- input "baz" declared in massdriver.yaml but missing IaC declaration
@@ -391,17 +391,17 @@ func TestLintMatchRequired(t *testing.T) {
 				Description: "description",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params: map[string]interface{}{
-					"required": []interface{}{"foo"},
-					"properties": map[string]interface{}{
-						"foo": map[string]interface{}{
+				Params: map[string]any{
+					"required": []any{"foo"},
+					"properties": map[string]any{
+						"foo": map[string]any{
 							"type": "string",
 						},
 					},
 				},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
-				UI:          map[string]interface{}{},
+				Connections: map[string]any{},
+				Artifacts:   map[string]any{},
+				UI:          map[string]any{},
 			},
 			err: nil,
 		},
@@ -412,17 +412,17 @@ func TestLintMatchRequired(t *testing.T) {
 				Description: "description",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params: map[string]interface{}{
-					"required": []interface{}{"bar"},
-					"properties": map[string]interface{}{
-						"foo": map[string]interface{}{
+				Params: map[string]any{
+					"required": []any{"bar"},
+					"properties": map[string]any{
+						"foo": map[string]any{
 							"type": "string",
 						},
 					},
 				},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
-				UI:          map[string]interface{}{},
+				Connections: map[string]any{},
+				Artifacts:   map[string]any{},
+				UI:          map[string]any{},
 			},
 			err: errors.New("required parameter bar is not defined in properties"),
 		},
@@ -433,23 +433,23 @@ func TestLintMatchRequired(t *testing.T) {
 				Description: "description",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params: map[string]interface{}{
-					"required": []interface{}{"foo"},
-					"properties": map[string]interface{}{
-						"foo": map[string]interface{}{
+				Params: map[string]any{
+					"required": []any{"foo"},
+					"properties": map[string]any{
+						"foo": map[string]any{
 							"type":     "object",
-							"required": []interface{}{"bar"},
-							"properties": map[string]interface{}{
-								"bar": map[string]interface{}{
+							"required": []any{"bar"},
+							"properties": map[string]any{
+								"bar": map[string]any{
 									"type": "string",
 								},
 							},
 						},
 					},
 				},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
-				UI:          map[string]interface{}{},
+				Connections: map[string]any{},
+				Artifacts:   map[string]any{},
+				UI:          map[string]any{},
 			},
 			err: nil,
 		},
@@ -460,23 +460,23 @@ func TestLintMatchRequired(t *testing.T) {
 				Description: "description",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params: map[string]interface{}{
-					"required": []interface{}{"foo"},
-					"properties": map[string]interface{}{
-						"foo": map[string]interface{}{
+				Params: map[string]any{
+					"required": []any{"foo"},
+					"properties": map[string]any{
+						"foo": map[string]any{
 							"type":     "object",
-							"required": []interface{}{"baz", "bar"},
-							"properties": map[string]interface{}{
-								"bar": map[string]interface{}{
+							"required": []any{"baz", "bar"},
+							"properties": map[string]any{
+								"bar": map[string]any{
 									"type": "string",
 								},
 							},
 						},
 					},
 				},
-				Connections: map[string]interface{}{},
-				Artifacts:   map[string]interface{}{},
-				UI:          map[string]interface{}{},
+				Connections: map[string]any{},
+				Artifacts:   map[string]any{},
+				UI:          map[string]any{},
 			},
 			err: errors.New("required parameter baz is not defined in properties"),
 		},

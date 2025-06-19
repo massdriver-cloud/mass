@@ -36,7 +36,7 @@ func Run(ctx context.Context, mdClient *client.Client, name string, setValues []
 				return nil, err
 			}
 
-			updatedParams, ok = v.(map[string]interface{})
+			updatedParams, ok = v.(map[string]any)
 
 			if !ok {
 				return nil, errors.New("failed to cast params")

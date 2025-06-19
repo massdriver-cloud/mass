@@ -9,14 +9,14 @@ import (
 )
 
 var params = map[string]any{
-	"params": map[string]interface{}{
+	"params": map[string]any{
 		"logLevel":     "ERROR",
 		"databaseName": "production",
 	},
-	"connections": map[string]interface{}{
-		"postgres": map[string]interface{}{
-			"data": map[string]interface{}{
-				"authentication": map[string]interface{}{
+	"connections": map[string]any{
+		"postgres": map[string]any{
+			"data": map[string]any{
+				"authentication": map[string]any{
 					"username": "test",
 					"password": "root",
 					"hostname": "admin.com",

@@ -8,7 +8,7 @@ import (
 )
 
 func TestMarshalJSON(t *testing.T) {
-	data := map[string]interface{}{"foo": "bar"}
+	data := map[string]any{"foo": "bar"}
 	got, _ := scalars.MarshalJSON(data)
 
 	want := `"{\"foo\":\"bar\"}"`
@@ -19,10 +19,10 @@ func TestMarshalJSON(t *testing.T) {
 }
 
 func TestUnmarshalJSON(t *testing.T) {
-	want := map[string]interface{}{"foo": "bar"}
+	want := map[string]any{"foo": "bar"}
 
 	data := []byte(`{"foo": "bar"}`)
-	got := map[string]interface{}{}
+	got := map[string]any{}
 
 	if err := scalars.UnmarshalJSON(data, &got); err != nil {
 		t.Errorf("unexpected error: %v", err)

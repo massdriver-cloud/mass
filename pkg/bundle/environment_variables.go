@@ -14,7 +14,7 @@ type ParsedEnvironmentVariable struct {
 
 const nonStringReturnErrorMessage = "failed to return value of type string"
 
-func ParseEnvironmentVariables(params map[string]interface{}, query map[string]string) map[string]ParsedEnvironmentVariable {
+func ParseEnvironmentVariables(params map[string]any, query map[string]string) map[string]ParsedEnvironmentVariable {
 	results := make(map[string]ParsedEnvironmentVariable)
 
 	for k, v := range query {

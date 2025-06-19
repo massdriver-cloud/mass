@@ -11,7 +11,7 @@ import (
 )
 
 // Runs a preview environment deployment
-func Run(ctx context.Context, mdClient *client.Client, projectSlug string, previewCfg *api.PreviewConfig, ciContext *map[string]interface{}) (*api.Environment, error) {
+func Run(ctx context.Context, mdClient *client.Client, projectSlug string, previewCfg *api.PreviewConfig, ciContext *map[string]any) (*api.Environment, error) {
 	packagesWithInterpolatedParams, err := interpolateParams(previewCfg.Packages)
 
 	if err != nil {
@@ -30,7 +30,7 @@ func interpolateParams(packages map[string]api.PreviewPackage) (map[string]api.P
 
 		config := os.ExpandEnv(string(templateData))
 
-		expandedParams := make(map[string]interface{})
+		expandedParams := make(map[string]any)
 		err = json.Unmarshal([]byte(config), &expandedParams)
 		if err != nil {
 			return nil, err

@@ -29,7 +29,7 @@ func TestLoader(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			sl := jsonschema.Loader(tc.input)
 			schema, _ := sl.LoadJSON()
-			got := schema.(map[string]interface{})["$id"]
+			got := schema.(map[string]any)["$id"]
 
 			if got != tc.want {
 				t.Fatalf("expected: %v, got: %v", tc.want, got)

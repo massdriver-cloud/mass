@@ -231,7 +231,7 @@ func runBundleNew(input *bundleNew) {
 		log.Fatal(err)
 	}
 
-	artifactDefinitions := map[string]map[string]interface{}{}
+	artifactDefinitions := map[string]map[string]any{}
 	for _, v := range artifactDefs {
 		if _, ok := hiddenArtifacts[v.Name]; ok {
 			continue

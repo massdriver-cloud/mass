@@ -21,25 +21,25 @@ const (
 )
 
 type Step struct {
-	Path         string                 `json:"path" yaml:"path"`
-	Provisioner  string                 `json:"provisioner" yaml:"provisioner"`
-	SkipOnDelete bool                   `json:"skip_on_delete,omitempty" yaml:"skip_on_delete,omitempty"`
-	Config       map[string]interface{} `json:"config,omitempty" yaml:"config,omitempty"`
+	Path         string         `json:"path" yaml:"path"`
+	Provisioner  string         `json:"provisioner" yaml:"provisioner"`
+	SkipOnDelete bool           `json:"skip_on_delete,omitempty" yaml:"skip_on_delete,omitempty"`
+	Config       map[string]any `json:"config,omitempty" yaml:"config,omitempty"`
 }
 
 type Bundle struct {
-	Schema      string                 `json:"schema" yaml:"schema"`
-	Name        string                 `json:"name" yaml:"name"`
-	Description string                 `json:"description" yaml:"description"`
-	SourceURL   string                 `json:"source_url" yaml:"source_url"`
-	Type        string                 `json:"type" yaml:"type"`
-	Access      string                 `json:"access" yaml:"access"`
-	Steps       []Step                 `json:"steps" yaml:"steps"`
-	Artifacts   map[string]interface{} `json:"artifacts" yaml:"artifacts"`
-	Params      map[string]interface{} `json:"params" yaml:"params"`
-	Connections map[string]interface{} `json:"connections" yaml:"connections"`
-	UI          map[string]interface{} `json:"ui" yaml:"ui"`
-	AppSpec     *AppSpec               `json:"app,omitempty" yaml:"app,omitempty"`
+	Schema      string         `json:"schema" yaml:"schema"`
+	Name        string         `json:"name" yaml:"name"`
+	Description string         `json:"description" yaml:"description"`
+	SourceURL   string         `json:"source_url" yaml:"source_url"`
+	Type        string         `json:"type" yaml:"type"`
+	Access      string         `json:"access" yaml:"access"`
+	Steps       []Step         `json:"steps" yaml:"steps"`
+	Artifacts   map[string]any `json:"artifacts" yaml:"artifacts"`
+	Params      map[string]any `json:"params" yaml:"params"`
+	Connections map[string]any `json:"connections" yaml:"connections"`
+	UI          map[string]any `json:"ui" yaml:"ui"`
+	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty"`
 }
 
 type AppSpec struct {
@@ -127,13 +127,13 @@ steps:
 	}
 }
 
-func parseMetadataSchema() map[string]interface{} {
+func parseMetadataSchema() map[string]any {
 	metadataBytes, err := embedFS.ReadFile("schemas/metadata-schema.json")
 	if err != nil {
 		return nil
 	}
 
-	var metadata map[string]interface{}
+	var metadata map[string]any
 	err = json.Unmarshal(metadataBytes, &metadata)
 	if err != nil {
 		return nil

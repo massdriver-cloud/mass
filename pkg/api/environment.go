@@ -17,7 +17,7 @@ type Environment struct {
 
 const urlTemplate = "https://app.massdriver.cloud/orgs/%s/projects/%s/targets/%v"
 
-func DeployPreviewEnvironment(ctx context.Context, mdClient *client.Client, projectID string, credentials []Credential, packageParams map[string]PreviewPackage, ciContext map[string]interface{}) (*Environment, error) {
+func DeployPreviewEnvironment(ctx context.Context, mdClient *client.Client, projectID string, credentials []Credential, packageParams map[string]PreviewPackage, ciContext map[string]any) (*Environment, error) {
 	// Validate that no package has both params and remote references
 	for packageName, pkg := range packageParams {
 		if pkg.Params != nil && len(pkg.RemoteReferences) > 0 {
@@ -25,7 +25,7 @@ func DeployPreviewEnvironment(ctx context.Context, mdClient *client.Client, proj
 		}
 	}
 
-	packageParamsJSON := make(map[string]interface{})
+	packageParamsJSON := make(map[string]any)
 	for k, v := range packageParams {
 		packageParamsJSON[k] = v
 	}

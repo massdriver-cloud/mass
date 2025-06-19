@@ -75,22 +75,22 @@ type MutationValidationError struct {
 func (v *MutationValidationError) GetMessage() string { return v.Message }
 
 type PreviewEnvironmentInput struct {
-	Credentials           []Credential           `json:"credentials"`
-	PackageConfigurations map[string]interface{} `json:"-"`
+	Credentials           []Credential   `json:"credentials"`
+	PackageConfigurations map[string]any `json:"-"`
 	// CI/CD event information (e.g.: GitHub Action Pull Request Event)
-	CiContext map[string]interface{} `json:"-"`
+	CiContext map[string]any `json:"-"`
 }
 
 // GetCredentials returns PreviewEnvironmentInput.Credentials, and is useful for accessing the field via an interface.
 func (v *PreviewEnvironmentInput) GetCredentials() []Credential { return v.Credentials }
 
 // GetPackageConfigurations returns PreviewEnvironmentInput.PackageConfigurations, and is useful for accessing the field via an interface.
-func (v *PreviewEnvironmentInput) GetPackageConfigurations() map[string]interface{} {
+func (v *PreviewEnvironmentInput) GetPackageConfigurations() map[string]any {
 	return v.PackageConfigurations
 }
 
 // GetCiContext returns PreviewEnvironmentInput.CiContext, and is useful for accessing the field via an interface.
-func (v *PreviewEnvironmentInput) GetCiContext() map[string]interface{} { return v.CiContext }
+func (v *PreviewEnvironmentInput) GetCiContext() map[string]any { return v.CiContext }
 
 func (v *PreviewEnvironmentInput) UnmarshalJSON(b []byte) error {
 
@@ -188,10 +188,10 @@ func (v *PreviewEnvironmentInput) __premarshalJSON() (*__premarshalPreviewEnviro
 
 // __configurePackageInput is used internally by genqlient
 type __configurePackageInput struct {
-	OrganizationId string                 `json:"organizationId"`
-	TargetId       string                 `json:"targetId"`
-	ManifestId     string                 `json:"manifestId"`
-	Params         map[string]interface{} `json:"-"`
+	OrganizationId string         `json:"organizationId"`
+	TargetId       string         `json:"targetId"`
+	ManifestId     string         `json:"manifestId"`
+	Params         map[string]any `json:"-"`
 }
 
 // GetOrganizationId returns __configurePackageInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -204,7 +204,7 @@ func (v *__configurePackageInput) GetTargetId() string { return v.TargetId }
 func (v *__configurePackageInput) GetManifestId() string { return v.ManifestId }
 
 // GetParams returns __configurePackageInput.Params, and is useful for accessing the field via an interface.
-func (v *__configurePackageInput) GetParams() map[string]interface{} { return v.Params }
+func (v *__configurePackageInput) GetParams() map[string]any { return v.Params }
 
 func (v *__configurePackageInput) UnmarshalJSON(b []byte) error {
 
@@ -296,11 +296,11 @@ func (v *__containerRepositoryInput) GetInput() ContainerRepositoryInput { retur
 
 // __createArtifactInput is used internally by genqlient
 type __createArtifactInput struct {
-	OrganizationId string                 `json:"organizationId"`
-	ArtifactName   string                 `json:"artifactName"`
-	ArtifactSpecs  map[string]interface{} `json:"-"`
-	ArtifactType   string                 `json:"artifactType"`
-	ArtifactData   map[string]interface{} `json:"-"`
+	OrganizationId string         `json:"organizationId"`
+	ArtifactName   string         `json:"artifactName"`
+	ArtifactSpecs  map[string]any `json:"-"`
+	ArtifactType   string         `json:"artifactType"`
+	ArtifactData   map[string]any `json:"-"`
 }
 
 // GetOrganizationId returns __createArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -310,13 +310,13 @@ func (v *__createArtifactInput) GetOrganizationId() string { return v.Organizati
 func (v *__createArtifactInput) GetArtifactName() string { return v.ArtifactName }
 
 // GetArtifactSpecs returns __createArtifactInput.ArtifactSpecs, and is useful for accessing the field via an interface.
-func (v *__createArtifactInput) GetArtifactSpecs() map[string]interface{} { return v.ArtifactSpecs }
+func (v *__createArtifactInput) GetArtifactSpecs() map[string]any { return v.ArtifactSpecs }
 
 // GetArtifactType returns __createArtifactInput.ArtifactType, and is useful for accessing the field via an interface.
 func (v *__createArtifactInput) GetArtifactType() string { return v.ArtifactType }
 
 // GetArtifactData returns __createArtifactInput.ArtifactData, and is useful for accessing the field via an interface.
-func (v *__createArtifactInput) GetArtifactData() map[string]interface{} { return v.ArtifactData }
+func (v *__createArtifactInput) GetArtifactData() map[string]any { return v.ArtifactData }
 
 func (v *__createArtifactInput) UnmarshalJSON(b []byte) error {
 
@@ -544,15 +544,15 @@ func (v *__listArtifactDefinitionsInput) GetOrganizationId() string { return v.O
 
 // __publishArtifactDefinitionInput is used internally by genqlient
 type __publishArtifactDefinitionInput struct {
-	OrganizationId string                 `json:"organizationId"`
-	Schema         map[string]interface{} `json:"-"`
+	OrganizationId string         `json:"organizationId"`
+	Schema         map[string]any `json:"-"`
 }
 
 // GetOrganizationId returns __publishArtifactDefinitionInput.OrganizationId, and is useful for accessing the field via an interface.
 func (v *__publishArtifactDefinitionInput) GetOrganizationId() string { return v.OrganizationId }
 
 // GetSchema returns __publishArtifactDefinitionInput.Schema, and is useful for accessing the field via an interface.
-func (v *__publishArtifactDefinitionInput) GetSchema() map[string]interface{} { return v.Schema }
+func (v *__publishArtifactDefinitionInput) GetSchema() map[string]any { return v.Schema }
 
 func (v *__publishArtifactDefinitionInput) UnmarshalJSON(b []byte) error {
 
@@ -651,7 +651,7 @@ type configurePackageConfigurePackagePackagePayloadResultPackage struct {
 	// Unique identifier
 	Id string `json:"id"`
 	// Package configuration parameters
-	Params map[string]interface{} `json:"-"`
+	Params map[string]any `json:"-"`
 	// Prefix for resource names
 	NamePrefix string `json:"namePrefix"`
 }
@@ -660,7 +660,7 @@ type configurePackageConfigurePackagePackagePayloadResultPackage struct {
 func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetId() string { return v.Id }
 
 // GetParams returns configurePackageConfigurePackagePackagePayloadResultPackage.Params, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetParams() map[string]interface{} {
+func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetParams() map[string]any {
 	return v.Params
 }
 
@@ -1018,8 +1018,8 @@ func (v *deployPreviewEnvironmentResponse) GetDeployPreviewEnvironment() deployP
 //
 // A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
 type getArtifactDefinitionArtifactDefinition struct {
-	Id     string                 `json:"id"`
-	Schema map[string]interface{} `json:"-"`
+	Id     string         `json:"id"`
+	Schema map[string]any `json:"-"`
 	// The name of this type. Organization scoped: my-org/aws-iam-role
 	Name      string                                    `json:"name"`
 	Icon      string                                    `json:"icon"`
@@ -1033,7 +1033,7 @@ type getArtifactDefinitionArtifactDefinition struct {
 func (v *getArtifactDefinitionArtifactDefinition) GetId() string { return v.Id }
 
 // GetSchema returns getArtifactDefinitionArtifactDefinition.Schema, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinition) GetSchema() map[string]interface{} { return v.Schema }
+func (v *getArtifactDefinitionArtifactDefinition) GetSchema() map[string]any { return v.Schema }
 
 // GetName returns getArtifactDefinitionArtifactDefinition.Name, and is useful for accessing the field via an interface.
 func (v *getArtifactDefinitionArtifactDefinition) GetName() string { return v.Name }
@@ -1237,7 +1237,7 @@ type getPackageByNamingConventionGetPackageByNamingConventionPackage struct {
 	// Prefix for resource names
 	NamePrefix string `json:"namePrefix"`
 	// Package configuration parameters
-	Params   map[string]interface{}                                                  `json:"-"`
+	Params   map[string]any                                                          `json:"-"`
 	Manifest getPackageByNamingConventionGetPackageByNamingConventionPackageManifest `json:"manifest"`
 	// Currently active deployment for this package
 	ActiveDeployment getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment `json:"activeDeployment"`
@@ -1254,7 +1254,7 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetNam
 }
 
 // GetParams returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Params, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetParams() map[string]interface{} {
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetParams() map[string]any {
 	return v.Params
 }
 
@@ -1454,11 +1454,11 @@ func (v *getPackageByNamingConventionResponse) GetGetPackageByNamingConvention()
 
 // getProjectByIdProject includes the requested fields of the GraphQL type Project.
 type getProjectByIdProject struct {
-	Id            string                 `json:"id"`
-	Name          string                 `json:"name"`
-	DefaultParams map[string]interface{} `json:"-"`
-	Slug          string                 `json:"slug"`
-	Description   string                 `json:"description"`
+	Id            string         `json:"id"`
+	Name          string         `json:"name"`
+	DefaultParams map[string]any `json:"-"`
+	Slug          string         `json:"slug"`
+	Description   string         `json:"description"`
 }
 
 // GetId returns getProjectByIdProject.Id, and is useful for accessing the field via an interface.
@@ -1468,7 +1468,7 @@ func (v *getProjectByIdProject) GetId() string { return v.Id }
 func (v *getProjectByIdProject) GetName() string { return v.Name }
 
 // GetDefaultParams returns getProjectByIdProject.DefaultParams, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetDefaultParams() map[string]interface{} { return v.DefaultParams }
+func (v *getProjectByIdProject) GetDefaultParams() map[string]any { return v.DefaultParams }
 
 // GetSlug returns getProjectByIdProject.Slug, and is useful for accessing the field via an interface.
 func (v *getProjectByIdProject) GetSlug() string { return v.Slug }
@@ -1565,7 +1565,7 @@ type getProjectsProjectsProject struct {
 	Id            string                                              `json:"id"`
 	Slug          string                                              `json:"slug"`
 	Description   string                                              `json:"description"`
-	DefaultParams map[string]interface{}                              `json:"-"`
+	DefaultParams map[string]any                                      `json:"-"`
 	Environments  []getProjectsProjectsProjectEnvironmentsEnvironment `json:"environments"`
 	// Cloud provider costs for this project
 	Cost getProjectsProjectsProjectCost `json:"cost"`
@@ -1584,9 +1584,7 @@ func (v *getProjectsProjectsProject) GetSlug() string { return v.Slug }
 func (v *getProjectsProjectsProject) GetDescription() string { return v.Description }
 
 // GetDefaultParams returns getProjectsProjectsProject.DefaultParams, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProject) GetDefaultParams() map[string]interface{} {
-	return v.DefaultParams
-}
+func (v *getProjectsProjectsProject) GetDefaultParams() map[string]any { return v.DefaultParams }
 
 // GetEnvironments returns getProjectsProjectsProject.Environments, and is useful for accessing the field via an interface.
 func (v *getProjectsProjectsProject) GetEnvironments() []getProjectsProjectsProjectEnvironmentsEnvironment {
@@ -1779,8 +1777,8 @@ func (v *getProjectsResponse) GetProjects() []getProjectsProjectsProject { retur
 //
 // A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
 type listArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
-	Id     string                 `json:"id"`
-	Schema map[string]interface{} `json:"-"`
+	Id     string         `json:"id"`
+	Schema map[string]any `json:"-"`
 	// The name of this type. Organization scoped: my-org/aws-iam-role
 	Name      string                                                         `json:"name"`
 	Icon      string                                                         `json:"icon"`
@@ -1794,7 +1792,7 @@ type listArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
 func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetId() string { return v.Id }
 
 // GetSchema returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetSchema() map[string]interface{} {
+func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetSchema() map[string]any {
 	return v.Schema
 }
 
@@ -2014,7 +2012,7 @@ func configurePackage(
 	organizationId string,
 	targetId string,
 	manifestId string,
-	params map[string]interface{},
+	params map[string]any,
 ) (*configurePackageResponse, error) {
 	req := &graphql.Request{
 		OpName: "configurePackage",
@@ -2101,9 +2099,9 @@ func createArtifact(
 	client graphql.Client,
 	organizationId string,
 	artifactName string,
-	artifactSpecs map[string]interface{},
+	artifactSpecs map[string]any,
 	artifactType string,
-	artifactData map[string]interface{},
+	artifactData map[string]any,
 ) (*createArtifactResponse, error) {
 	req := &graphql.Request{
 		OpName: "createArtifact",
@@ -2619,7 +2617,7 @@ func publishArtifactDefinition(
 	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
-	schema map[string]interface{},
+	schema map[string]any,
 ) (*publishArtifactDefinitionResponse, error) {
 	req := &graphql.Request{
 		OpName: "publishArtifactDefinition",

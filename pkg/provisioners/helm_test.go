@@ -15,20 +15,20 @@ import (
 func TestHelmReadProvisionerInputs(t *testing.T) {
 	type test struct {
 		name string
-		want map[string]interface{}
+		want map[string]any
 	}
 	tests := []test{
 		{
 			name: "same",
-			want: map[string]interface{}{
-				"required": []interface{}{"foo", "baz"},
-				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
+			want: map[string]any{
+				"required": []any{"foo", "baz"},
+				"properties": map[string]any{
+					"foo": map[string]any{
 						"title":   "foo",
 						"type":    "string",
 						"default": "bar",
 					},
-					"baz": map[string]interface{}{
+					"baz": map[string]any{
 						"title":   "baz",
 						"type":    "string",
 						"default": "qux",

@@ -11,12 +11,12 @@ import (
 
 type HelmProvisioner struct{}
 
-func (p *HelmProvisioner) ExportMassdriverInputs(_ string, _ map[string]interface{}) error {
+func (p *HelmProvisioner) ExportMassdriverInputs(_ string, _ map[string]any) error {
 	// Nothing to do here. Helm doesn't require variables to be declared before use, nor does it require types to be specified
 	return nil
 }
 
-func (p *HelmProvisioner) ReadProvisionerInputs(stepPath string) (map[string]interface{}, error) {
+func (p *HelmProvisioner) ReadProvisionerInputs(stepPath string) (map[string]any, error) {
 	helmParamsSchema, err := helm.HelmToSchema(path.Join(stepPath, "values.yaml"))
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (p *HelmProvisioner) ReadProvisionerInputs(stepPath string) (map[string]int
 		return nil, marshallErr
 	}
 
-	variables := map[string]interface{}{}
+	variables := map[string]any{}
 	err = json.Unmarshal(schemaBytes, &variables)
 	if err != nil {
 		return nil, err

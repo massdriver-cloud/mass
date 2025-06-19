@@ -9,14 +9,14 @@ import (
 )
 
 type Project struct {
-	ID                 string                 `json:"id"`
-	Name               string                 `json:"name"`
-	Slug               string                 `json:"slug"`
-	Description        string                 `json:"description"`
-	DefaultParams      map[string]interface{} `json:"defaultParams"`
-	MonthlyAverageCost float64                `json:"monthlyAverageCost"`
-	DailyAverageCost   float64                `json:"dailyAverageCost"`
-	Environments       []Environment          `json:"environments"`
+	ID                 string         `json:"id"`
+	Name               string         `json:"name"`
+	Slug               string         `json:"slug"`
+	Description        string         `json:"description"`
+	DefaultParams      map[string]any `json:"defaultParams"`
+	MonthlyAverageCost float64        `json:"monthlyAverageCost"`
+	DailyAverageCost   float64        `json:"dailyAverageCost"`
+	Environments       []Environment  `json:"environments"`
 }
 
 func GetProject(ctx context.Context, mdClient *client.Client, idOrSlug string) (*Project, error) {

@@ -23,7 +23,7 @@ func GetAsMap(ctx context.Context, mdClient *client.Client, definitionName strin
 		return nil, marshallErr
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	unmarshalErr := json.Unmarshal(adData, &result)
 	return result, unmarshalErr
 }

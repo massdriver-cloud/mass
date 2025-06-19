@@ -13,19 +13,19 @@ import (
 func TestBicepExportMassdriverInputs(t *testing.T) {
 	type test struct {
 		name      string
-		variables map[string]interface{}
+		variables map[string]any
 		want      string
 	}
 	tests := []test{
 		{
 			name: "same",
-			variables: map[string]interface{}{
-				"required": []interface{}{"foo", "bar"},
-				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
+			variables: map[string]any{
+				"required": []any{"foo", "bar"},
+				"properties": map[string]any{
+					"foo": map[string]any{
 						"type": "string",
 					},
-					"bar": map[string]interface{}{
+					"bar": map[string]any{
 						"type": "string",
 					},
 				},
@@ -36,13 +36,13 @@ param bar string
 		},
 		{
 			name: "missingbicep",
-			variables: map[string]interface{}{
-				"required": []interface{}{"foo", "bar"},
-				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
+			variables: map[string]any{
+				"required": []any{"foo", "bar"},
+				"properties": map[string]any{
+					"foo": map[string]any{
 						"type": "string",
 					},
-					"bar": map[string]interface{}{
+					"bar": map[string]any{
 						"type": "string",
 					},
 				},
@@ -55,10 +55,10 @@ param bar string
 		},
 		{
 			name: "missingmassdriver",
-			variables: map[string]interface{}{
-				"required": []interface{}{"foo"},
-				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
+			variables: map[string]any{
+				"required": []any{"foo"},
+				"properties": map[string]any{
+					"foo": map[string]any{
 						"type": "string",
 					},
 				},
@@ -105,19 +105,19 @@ param bar string
 func TestBicepReadProvisionerInputs(t *testing.T) {
 	type test struct {
 		name string
-		want map[string]interface{}
+		want map[string]any
 	}
 	tests := []test{
 		{
 			name: "same",
-			want: map[string]interface{}{
-				"required": []interface{}{"bar", "foo"},
-				"properties": map[string]interface{}{
-					"foo": map[string]interface{}{
+			want: map[string]any{
+				"required": []any{"bar", "foo"},
+				"properties": map[string]any{
+					"foo": map[string]any{
 						"title": "foo",
 						"type":  "string",
 					},
-					"bar": map[string]interface{}{
+					"bar": map[string]any{
 						"title": "bar",
 						"type":  "string",
 					},

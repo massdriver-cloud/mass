@@ -14,14 +14,14 @@ import (
 func TestGetPackageByName(t *testing.T) {
 	pkgName := "ecomm-prod-cache"
 
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"getPackageByNamingConvention": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"getPackageByNamingConvention": map[string]any{
 				"namePrefix": fmt.Sprintf("%s-0000", pkgName),
-				"manifest": map[string]interface{}{
+				"manifest": map[string]any{
 					"id": "manifest-id",
 				},
-				"environment": map[string]interface{}{
+				"environment": map[string]any{
 					"id": "target-id",
 				},
 			},
@@ -53,14 +53,14 @@ func TestGetPackageByName(t *testing.T) {
 }
 
 func TestConfigurePackage(t *testing.T) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"cidr": "10.0.0.0/16",
 	}
 
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-		"data": map[string]interface{}{
-			"configurePackage": map[string]interface{}{
-				"result": map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"configurePackage": map[string]any{
+				"result": map[string]any{
 					"id":     "pkg-uuid1",
 					"params": params,
 				},

@@ -100,7 +100,7 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	previewCfg := api.PreviewConfig{}
-	ciContext := map[string]interface{}{}
+	ciContext := map[string]any{}
 
 	if err := files.Read(previewInitParamsPath, &previewCfg); err != nil {
 		return err

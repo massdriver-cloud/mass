@@ -12,7 +12,7 @@ import (
 
 type OpentofuProvisioner struct{}
 
-func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]interface{}) error {
+func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]any) error {
 	// read existing OpenTofu variables for this step
 	existingTfvarsSchema, err := opentofu.TofuToSchema(stepPath)
 	if err != nil {
@@ -51,7 +51,7 @@ func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables 
 	return nil
 }
 
-func (p *OpentofuProvisioner) ReadProvisionerInputs(stepPath string) (map[string]interface{}, error) {
+func (p *OpentofuProvisioner) ReadProvisionerInputs(stepPath string) (map[string]any, error) {
 	opentofuVariablesSchema, err := opentofu.TofuToSchema(stepPath)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (p *OpentofuProvisioner) ReadProvisionerInputs(stepPath string) (map[string
 		return nil, marshallErr
 	}
 
-	variables := map[string]interface{}{}
+	variables := map[string]any{}
 	err = json.Unmarshal(schemaBytes, &variables)
 	if err != nil {
 		return nil, err

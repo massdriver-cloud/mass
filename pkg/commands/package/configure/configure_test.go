@@ -14,27 +14,27 @@ import (
 
 func TestConfigurePackage(t *testing.T) {
 	responses := []gqlmock.ResponseFunc{
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
 				Manifest:    api.Manifest{ID: "manifest-id"},
 				Environment: api.Environment{ID: "target-id"},
 			})
 		},
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			vars := gqlmock.ParseInputVariables(req)
 			paramsJSON := []byte(vars["params"].(string))
 
-			params := map[string]interface{}{}
+			params := map[string]any{}
 			gqlmock.MustUnmarshalJSON(paramsJSON, &params)
 
-			return gqlmock.MockMutationResponse("configurePackage", map[string]interface{}{
+			return gqlmock.MockMutationResponse("configurePackage", map[string]any{
 				"id":     "pkg-id",
 				"params": params,
 			})
 		},
 	}
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"cidr": "10.0.0.0/16",
 	}
 
@@ -57,20 +57,20 @@ func TestConfigurePackage(t *testing.T) {
 
 func TestConfigurePackageInterpolation(t *testing.T) {
 	responses := []gqlmock.ResponseFunc{
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
 				Manifest:    api.Manifest{ID: "manifest-id"},
 				Environment: api.Environment{ID: "target-id"},
 			})
 		},
-		func(req *http.Request) interface{} {
+		func(req *http.Request) any {
 			vars := gqlmock.ParseInputVariables(req)
 			paramsJSON := []byte(vars["params"].(string))
 
-			params := map[string]interface{}{}
+			params := map[string]any{}
 			gqlmock.MustUnmarshalJSON(paramsJSON, &params)
 
-			return gqlmock.MockMutationResponse("configurePackage", map[string]interface{}{
+			return gqlmock.MockMutationResponse("configurePackage", map[string]any{
 				"id":     "pkg-id",
 				"params": params,
 			})
@@ -80,7 +80,7 @@ func TestConfigurePackageInterpolation(t *testing.T) {
 	mdClient := client.Client{
 		GQL: gqlmock.NewClientWithFuncResponseArray(responses),
 	}
-	params := map[string]interface{}{"size": "${MEMORY_AMT}GB"}
+	params := map[string]any{"size": "${MEMORY_AMT}GB"}
 	t.Setenv("MEMORY_AMT", "6")
 
 	pkg, err := configure.Run(context.Background(), &mdClient, "ecomm-prod-cache", params)
@@ -89,7 +89,7 @@ func TestConfigurePackageInterpolation(t *testing.T) {
 	}
 
 	got := pkg.Params
-	want := map[string]interface{}{
+	want := map[string]any{
 		"size": "6GB",
 	}
 

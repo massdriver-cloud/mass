@@ -162,8 +162,8 @@ func (h *Handler) Params(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) getUserInput() (map[string]interface{}, error) {
-	output := make(map[string]interface{})
+func (h *Handler) getUserInput() (map[string]any, error) {
+	output := make(map[string]any)
 
 	conns, err := h.readFileAndUnmarshal(bundle.ConnsFile)
 
@@ -183,8 +183,8 @@ func (h *Handler) getUserInput() (map[string]interface{}, error) {
 	return output, nil
 }
 
-func (h *Handler) readFileAndUnmarshal(readPath string) (map[string]interface{}, error) {
-	output := make(map[string]interface{})
+func (h *Handler) readFileAndUnmarshal(readPath string) (map[string]any, error) {
+	output := make(map[string]any)
 
 	file, err := os.ReadFile(path.Join(h.bundleDir, "src", readPath))
 

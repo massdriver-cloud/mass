@@ -10,14 +10,14 @@ import (
 )
 
 // Updates a packages configuration parameters.
-func Run(ctx context.Context, mdClient *client.Client, name string, params map[string]interface{}) (*api.Package, error) {
+func Run(ctx context.Context, mdClient *client.Client, name string, params map[string]any) (*api.Package, error) {
 	pkg, err := api.GetPackageByName(ctx, mdClient, name)
 
 	if err != nil {
 		return nil, err
 	}
 
-	interpolatedParams := map[string]interface{}{}
+	interpolatedParams := map[string]any{}
 	err = interpolateParams(params, &interpolatedParams)
 
 	if err != nil {
@@ -27,7 +27,7 @@ func Run(ctx context.Context, mdClient *client.Client, name string, params map[s
 	return api.ConfigurePackage(ctx, mdClient, pkg.Environment.ID, pkg.Manifest.ID, interpolatedParams)
 }
 
-func interpolateParams(params map[string]interface{}, interpolatedParams *map[string]interface{}) error {
+func interpolateParams(params map[string]any, interpolatedParams *map[string]any) error {
 	templateData, err := json.Marshal(params)
 	if err != nil {
 		return err

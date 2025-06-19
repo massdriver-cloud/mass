@@ -11,7 +11,7 @@ import (
 )
 
 func TestDockerRegistryToken(t *testing.T) {
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]map[string]string{
 			"containerRepository": {
 				"token":   "bogustoken",

@@ -233,8 +233,8 @@ func TestBundleBuildSchemas(t *testing.T) {
 	}
 
 	mdClient := client.Client{
-		GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-			"data": map[string]interface{}{
+		GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+			"data": map[string]any{
 				"artifactDefinition": draftNodeSchema,
 			},
 		}),
@@ -279,8 +279,8 @@ func TestBundleBuildTFVars(t *testing.T) {
 	}
 
 	mdClient := client.Client{
-		GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]interface{}{
-			"data": map[string]interface{}{
+		GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+			"data": map[string]any{
 				"artifactDefinition": draftNodeSchema,
 			},
 		}),
