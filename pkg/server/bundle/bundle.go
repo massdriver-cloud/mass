@@ -22,13 +22,14 @@ type Handler struct {
 	mdClient     *client.Client
 }
 
-func NewHandler(dir string) (*Handler, error) {
+func NewHandler(dir string, mdClient *client.Client) (*Handler, error) {
 	b, err := bundle.Unmarshal(dir)
 	if err != nil {
 		return nil, err
 	}
 	bundle.ApplyAppBlockDefaults(b)
-	return &Handler{parsedBundle: *b, bundleDir: dir}, nil
+
+	return &Handler{parsedBundle: *b, bundleDir: dir, mdClient: mdClient}, nil
 }
 
 // GetSecrets returns the secrets from the bundle

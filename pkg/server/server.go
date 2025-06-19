@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -24,22 +25,30 @@ import (
 	sv "github.com/massdriver-cloud/mass/pkg/server/version"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/massdriver-cloud/mass/pkg/version"
-	"github.com/moby/moby/client"
+
+	mdclient "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	dockerclient "github.com/moby/moby/client"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type BundleServer struct {
-	BaseDir   string
-	Bundle    *bundle.Bundle
-	DockerCli *client.Client
+	BaseDir          string
+	Bundle           *bundle.Bundle
+	DockerCli        *dockerclient.Client
+	MassdriverClient *mdclient.Client
 
 	httpServer *http.Server
 }
 
 func New(dir string) (*BundleServer, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.41"))
+	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithVersion("1.41"))
 	if err != nil {
 		return nil, fmt.Errorf("error creating docker client %w", err)
+	}
+
+	mdClient, err := mdclient.New()
+	if err != nil {
+		return nil, fmt.Errorf("error creating massdriver client %w", err)
 	}
 
 	bundler, err := bundle.Unmarshal(dir)
@@ -50,10 +59,11 @@ func New(dir string) (*BundleServer, error) {
 	server := &http.Server{ReadHeaderTimeout: 60 * time.Second}
 
 	return &BundleServer{
-		BaseDir:    dir,
-		Bundle:     bundler,
-		DockerCli:  cli,
-		httpServer: server,
+		BaseDir:          dir,
+		Bundle:           bundler,
+		DockerCli:        cli,
+		MassdriverClient: mdClient,
+		httpServer:       server,
 	}, nil
 }
 
@@ -126,7 +136,7 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 
 	http.Handle("/proxy/", originHeaderMiddleware(proxy))
 
-	bundleHandler, err := sb.NewHandler(b.BaseDir)
+	bundleHandler, err := sb.NewHandler(b.BaseDir, b.MassdriverClient)
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -148,6 +158,30 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 	// }
 
 	// http.Handle("/config", originHeaderMiddleware(configHandler))
+	http.Handle("/config", originHeaderMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		type ConfigResponse struct {
+			OrgID  string `json:"orgID"`
+			APIKey string `json:"apiKey"`
+			URL    string `json:"url"`
+		}
+
+		response := ConfigResponse{
+			OrgID:  b.MassdriverClient.Config.OrganizationID,
+			APIKey: b.MassdriverClient.Config.Credentials.Secret,
+			URL:    b.MassdriverClient.Config.URL,
+		}
+
+		out, err := json.Marshal(response)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if _, err = w.Write(out); err != nil {
+			slog.Error("Error writing config response", "error", err.Error())
+		}
+	})))
 
 	http.Handle("/containers/logs", originHeaderMiddleware(http.HandlerFunc(containerHandler.StreamLogs)))
 	http.Handle("/containers/list", originHeaderMiddleware(http.HandlerFunc(containerHandler.List)))

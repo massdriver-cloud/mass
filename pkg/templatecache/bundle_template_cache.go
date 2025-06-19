@@ -122,7 +122,7 @@ func GetOrCreateMassDir() (string, error) {
 func doGetOrCreate() (string, error) {
 	usr, _ := user.Current()
 	dir := usr.HomeDir
-	cacheDir := filepath.Join(dir, ".massdriver")
+	cacheDir := filepath.Join(dir, ".config/massdriver")
 	if _, err := os.Stat(cacheDir); !os.IsNotExist(err) {
 		return cacheDir, err
 	}

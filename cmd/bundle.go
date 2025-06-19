@@ -223,7 +223,7 @@ func runBundleNew(input *bundleNew) {
 
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {
-		log.Fatal("error initializing massdriver client: %w", mdClientErr)
+		log.Fatal(fmt.Errorf("error initializing massdriver client: %w", mdClientErr))
 	}
 
 	artifactDefs, err := api.ListArtifactDefinitions(ctx, mdClient)
