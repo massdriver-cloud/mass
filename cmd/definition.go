@@ -130,13 +130,18 @@ func runDefinitionPublish(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
+	// TODO: All the logic from here to Publish should be moved into the commands package
 	def := map[string]any{}
 	jsonErr := json.Unmarshal(defBytes, &def)
 	if jsonErr != nil {
 		return jsonErr
 	}
 
-	_, nameExists := def["name"].(string)
+	mdBlock, mdExists := def["$md"].(map[string]any)
+	if !mdExists {
+		return fmt.Errorf("artifact definition must have a '$md' block with a 'name' field")
+	}
+	_, nameExists := mdBlock["name"].(string)
 	if !nameExists {
 		return fmt.Errorf("artifact definition must have a 'name' field")
 	}
