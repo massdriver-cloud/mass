@@ -10,9 +10,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
-	"github.com/massdriver-cloud/mass/pkg/commands/package/configure"
-	"github.com/massdriver-cloud/mass/pkg/commands/package/deploy"
-	"github.com/massdriver-cloud/mass/pkg/commands/package/patch"
+	"github.com/massdriver-cloud/mass/pkg/commands/pkg"
 	"github.com/massdriver-cloud/mass/pkg/files"
 
 	"github.com/charmbracelet/glamour"
@@ -175,7 +173,7 @@ func runPkgDeploy(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	_, err = deploy.Run(ctx, mdClient, name, msg)
+	_, err = pkg.RunDeploy(ctx, mdClient, name, msg)
 
 	return err
 }
@@ -195,7 +193,7 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	_, err := configure.Run(ctx, mdClient, packageSlugOrID, params)
+	_, err := pkg.RunConfigure(ctx, mdClient, packageSlugOrID, params)
 
 	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Configuring: %s", name)
@@ -214,7 +212,7 @@ func runPkgPatch(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	_, err := patch.Run(ctx, mdClient, packageSlugOrID, pkgPatchQueries)
+	_, err := pkg.RunPatch(ctx, mdClient, packageSlugOrID, pkgPatchQueries)
 
 	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Patching: %s", name)

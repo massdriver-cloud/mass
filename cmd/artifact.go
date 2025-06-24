@@ -6,7 +6,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/artifact"
-	"github.com/massdriver-cloud/mass/pkg/commands"
+	artifactcmd "github.com/massdriver-cloud/mass/pkg/commands/artifact"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
@@ -61,6 +61,6 @@ func runArtifactImport(cmd *cobra.Command, args []string) error {
 		return promptErr
 	}
 
-	_, importErr := commands.ArtifactImport(ctx, mdClient, promptData.Name, promptData.Type, promptData.File)
+	_, importErr := artifactcmd.RunImport(ctx, mdClient, promptData.Name, promptData.Type, promptData.File)
 	return importErr
 }
