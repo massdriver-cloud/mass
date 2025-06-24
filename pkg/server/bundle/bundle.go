@@ -9,7 +9,6 @@ import (
 	"path"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/massdriver-cloud/mass/pkg/commands/bundle/build"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
@@ -27,7 +26,6 @@ func NewHandler(dir string, mdClient *client.Client) (*Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	bundle.ApplyAppBlockDefaults(b)
 
 	return &Handler{parsedBundle: *b, bundleDir: dir, mdClient: mdClient}, nil
 }
@@ -211,7 +209,7 @@ func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = build.Run(h.bundleDir, unmarshalledBundle, h.mdClient); err != nil {
+	if err = unmarshalledBundle.Build(h.bundleDir, h.mdClient); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -222,8 +220,6 @@ func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	bundle.ApplyAppBlockDefaults(b)
 
 	h.parsedBundle = *b
 	w.WriteHeader(http.StatusOK)

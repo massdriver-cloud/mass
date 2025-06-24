@@ -8,9 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
-	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/decommission"
-	"github.com/massdriver-cloud/mass/pkg/commands/preview_environment/deploy"
-	peinit "github.com/massdriver-cloud/mass/pkg/commands/preview_environment/initialize"
+	"github.com/massdriver-cloud/mass/pkg/commands/preview"
 	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
@@ -74,7 +72,7 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	initModel, err := peinit.New(ctx, mdClient, projectSlug)
+	initModel, err := preview.RunNew(ctx, mdClient, projectSlug)
 	if err != nil {
 		return err
 	}
@@ -85,7 +83,7 @@ func runPreviewInit(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	updatedModel, _ := (result).(peinit.Model)
+	updatedModel, _ := (result).(preview.Model)
 	cfg := updatedModel.PreviewConfig()
 
 	return files.Write(previewInitParamsPath, cfg)
@@ -110,7 +108,7 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	env, err := deploy.Run(ctx, mdClient, previewCfg.ProjectSlug, &previewCfg, &ciContext)
+	env, err := preview.RunDeploy(ctx, mdClient, previewCfg.ProjectSlug, &previewCfg, &ciContext)
 
 	if err != nil {
 		return err
@@ -134,7 +132,7 @@ func runPreviewDecommission(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	env, err := decommission.Run(ctx, mdClient, projectTargetSlugOrTargetID)
+	env, err := preview.RunDecommission(ctx, mdClient, projectTargetSlugOrTargetID)
 
 	if err != nil {
 		return err

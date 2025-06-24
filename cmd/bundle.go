@@ -13,11 +13,8 @@ import (
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/massdriver-cloud/mass/pkg/commands"
-	"github.com/massdriver-cloud/mass/pkg/commands/bundle/build"
-	"github.com/massdriver-cloud/mass/pkg/commands/bundle/imprt"
-	"github.com/massdriver-cloud/mass/pkg/commands/bundle/publish"
-	"github.com/massdriver-cloud/mass/pkg/commands/bundle/pull"
+	cmdbundle "github.com/massdriver-cloud/mass/pkg/commands/bundle"
+	"github.com/massdriver-cloud/mass/pkg/commands/bundle/templates"
 	"github.com/massdriver-cloud/mass/pkg/params"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
@@ -140,7 +137,7 @@ func NewCmdBundle() *cobra.Command {
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
-	templateList, err := commands.ListTemplates(cache)
+	templateList, err := templates.RunList(cache)
 	if err != nil {
 		return err
 	}
@@ -159,7 +156,7 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
 	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
 
-	return commands.RefreshTemplates(cache)
+	return templates.RunRefresh(cache)
 }
 
 func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, error) {
@@ -215,7 +212,7 @@ func runBundleNew(input *bundleNew) {
 	// If MD_TEMPLATES_PATH is set then it's most likely local dev work on templates so don't fetch
 	// or the refresh will overwrite whatever path this points to
 	if os.Getenv("MD_TEMPLATES_PATH") == "" {
-		err = commands.RefreshTemplates(cache)
+		err = templates.RunRefresh(cache)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -263,7 +260,7 @@ func runBundleNew(input *bundleNew) {
 
 	templateData.ParamsSchema = localParams
 
-	if err = commands.GenerateNewBundle(cache, templateData); err != nil {
+	if err = cmdbundle.RunNew(cache, templateData); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -284,7 +281,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	return build.Run(bundleDirectory, unmarshalledBundle, mdClient)
+	return cmdbundle.RunBuild(bundleDirectory, unmarshalledBundle, mdClient)
 }
 
 func runBundleImport(cmd *cobra.Command, args []string) error {
@@ -297,7 +294,7 @@ func runBundleImport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return imprt.Run(bundleDirectory, skipVerify)
+	return cmdbundle.RunImport(bundleDirectory, skipVerify)
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {
@@ -322,7 +319,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return commands.LintBundle(unmarshalledBundle)
+	return cmdbundle.RunLint(unmarshalledBundle)
 }
 
 func runBundlePublish(cmd *cobra.Command, args []string) error {
@@ -348,12 +345,12 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	err = build.Run(bundleDirectory, unmarshalledBundle, mdClient)
+	err = unmarshalledBundle.Build(bundleDirectory, mdClient)
 	if err != nil {
 		return err
 	}
 
-	return publish.Run(unmarshalledBundle, mdClient, bundleDirectory, tag)
+	return cmdbundle.RunPublish(unmarshalledBundle, mdClient, bundleDirectory, tag)
 }
 
 func runBundlePull(cmd *cobra.Command, args []string) error {
@@ -383,7 +380,7 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 		return mdClientErr
 	}
 
-	pullErr := pull.Run(mdClient, bundleName, tag, directory)
+	pullErr := cmdbundle.RunPull(mdClient, bundleName, tag, directory)
 	if pullErr != nil {
 		return fmt.Errorf("error pulling bundle: %w", pullErr)
 	}

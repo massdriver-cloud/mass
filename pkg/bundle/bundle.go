@@ -76,10 +76,7 @@ func Unmarshal(readDirectory string) (*Bundle, error) {
 		fmt.Println(prettylogs.Orange("Warning: the 'type' field in massdriver.yaml should be either 'infrastructure' or 'application'. This will be enforced in a future release."))
 	}
 
-	if unmarshalledBundle.IsApplication() {
-		ApplyAppBlockDefaults(unmarshalledBundle)
-	}
-
+	applyAppBlockDefaults(unmarshalledBundle)
 	applyStepDefaults(unmarshalledBundle)
 
 	// This looks weird but we have to be careful we don't overwrite things that do exist in the bundle file
@@ -102,7 +99,7 @@ func Unmarshal(readDirectory string) (*Bundle, error) {
 	return unmarshalledBundle, nil
 }
 
-func ApplyAppBlockDefaults(b *Bundle) {
+func applyAppBlockDefaults(b *Bundle) {
 	if b.AppSpec != nil {
 		if b.AppSpec.Envs == nil {
 			b.AppSpec.Envs = map[string]string{}
