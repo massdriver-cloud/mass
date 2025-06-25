@@ -6,15 +6,12 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Khan/genqlient v0.8.0
-	github.com/aws/aws-sdk-go-v2/config v1.28.5
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.2.3
 	github.com/charmbracelet/glamour v0.8.0
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/cli/browser v1.3.0
-	github.com/coder/websocket v1.8.12
 	github.com/docker/docker v27.3.1+incompatible
-	github.com/docker/go-connections v0.5.0
 	github.com/evertras/bubble-table v0.17.1
 	github.com/fatih/color v1.17.0
 	github.com/go-git/go-git/v5 v5.12.0
@@ -55,18 +52,6 @@ require (
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.32.5 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.46 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.20 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.24 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.24 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.24.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.33.1 // indirect
-	github.com/aws/smithy-go v1.22.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
@@ -79,6 +64,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.3.4 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
+	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect

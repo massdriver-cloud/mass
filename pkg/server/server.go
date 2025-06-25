@@ -19,16 +19,18 @@ import (
 
 	"github.com/cli/browser"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/massdriver-cloud/mass/pkg/container"
 	"github.com/massdriver-cloud/mass/pkg/proxy"
 	sb "github.com/massdriver-cloud/mass/pkg/server/bundle"
 	sv "github.com/massdriver-cloud/mass/pkg/server/version"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
-	"github.com/massdriver-cloud/mass/pkg/version"
 
 	mdclient "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	dockerclient "github.com/moby/moby/client"
 	httpSwagger "github.com/swaggo/http-swagger"
+)
+
+const (
+	bundleBuilderUI = "https://github.com/massdriver-cloud/massdriver-devtool-ui/releases/latest/download/devtool-ui.tar.gz"
 )
 
 type BundleServer struct {
@@ -142,22 +144,12 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 		os.Exit(1)
 	}
 
-	containerHandler := container.NewHandler(b.BaseDir, b.DockerCli)
-
 	http.Handle("/bundle/build", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Build)))
 	http.Handle("/bundle/secrets", originHeaderMiddleware(http.HandlerFunc(bundleHandler.GetSecrets)))
 	http.Handle("/bundle/connections", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Connections)))
-	http.Handle("/bundle/deploy", originHeaderMiddleware(http.HandlerFunc(containerHandler.Deploy)))
 	http.Handle("/bundle/envs", originHeaderMiddleware(http.HandlerFunc(bundleHandler.GetEnvironmentVariables)))
 	http.Handle("/bundle/params", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Params)))
 
-	// configHandler, err := config.NewHandler() //nolint:contextcheck
-	// if err != nil {
-	// 	slog.Error(err.Error())
-	// 	os.Exit(1)
-	// }
-
-	// http.Handle("/config", originHeaderMiddleware(configHandler))
 	http.Handle("/config", originHeaderMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		type ConfigResponse struct {
 			OrgID  string `json:"orgID"`
@@ -183,8 +175,6 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 		}
 	})))
 
-	http.Handle("/containers/logs", originHeaderMiddleware(http.HandlerFunc(containerHandler.StreamLogs)))
-	http.Handle("/containers/list", originHeaderMiddleware(http.HandlerFunc(containerHandler.List)))
 	http.Handle("/version", originHeaderMiddleware(http.HandlerFunc(sv.Latest)))
 }
 
@@ -211,7 +201,7 @@ func originHeaderMiddleware(next http.Handler) http.Handler {
 }
 
 func getUIFiles(ctx context.Context, baseDir string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, version.BundleBuilderUI, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, bundleBuilderUI, nil)
 	if err != nil {
 		return err
 	}
