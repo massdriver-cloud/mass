@@ -13,7 +13,7 @@ import (
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/cli"
-	"github.com/massdriver-cloud/mass/pkg/commands/definition"
+	"github.com/massdriver-cloud/mass/pkg/definition"
 	"github.com/spf13/cobra"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
@@ -77,7 +77,7 @@ func runDefinitionGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	ad, getErr := definition.RunGet(ctx, mdClient, definitionName)
+	ad, getErr := definition.Get(ctx, mdClient, definitionName)
 	if getErr != nil {
 		return fmt.Errorf("error getting artifact definition: %w", getErr)
 	}
@@ -125,7 +125,7 @@ func runDefinitionPublish(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	definition.RunPublish(ctx, mdClient, defFile)
+	definition.Publish(ctx, mdClient, defFile)
 
 	fmt.Println("Definition published successfully!")
 
