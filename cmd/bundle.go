@@ -319,7 +319,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return cmdbundle.RunLint(unmarshalledBundle)
+	return cmdbundle.RunLint(unmarshalledBundle, mdClient)
 }
 
 func runBundlePublish(cmd *cobra.Command, args []string) error {

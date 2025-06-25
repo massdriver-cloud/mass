@@ -1,0 +1,300 @@
+{
+    "allOf": [
+        {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "type": "object",
+            "description": "Required fields in artifact defintions.",
+            "required": [
+                "properties"
+            ],
+            "properties": {
+                "properties": {
+                    "type": "object",
+                    "required": [
+                        "data",
+                        "specs"
+                    ],
+                    "properties": {
+                        "data": {
+                            "description": "Secure artifact data. Not presented in UI. Row-level encrypted.",
+                            "type": "object"
+                        },
+                        "specs": {
+                            "description": "Attributes for this artifact type that are presentable and searchable in the Massdriver UI.",
+                            "type": "object",
+                            "examples": [
+                                {
+                                    "aws": {
+                                        "region": "us-west-1"
+                                    },
+                                    "kubernetes": {
+                                        "gpus": true
+                                    }
+                                },
+                                {
+                                    "gcp": {
+                                        "foo": "bar"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "description": "Massdriver artifact definition configuration.",
+            "type": "object",
+            "required": [
+                "$md"
+            ],
+            "properties": {
+                "$md": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                        "name"
+                    ],
+                    "dependentRequired": {
+                        "defaultTargetConnectionGroup": [
+                            "defaultTargetConnectionGroupLabel"
+                        ]
+                    },
+                    "properties": {
+                        "label": {
+                            "type": "string",
+                            "description": "The label in the Massdriver UI."
+                        },
+                        "icon": {
+                            "type": "string",
+                            "description": "Path to an icon file for this artifact type. Must be a valid URL."
+                        },
+                        "ui": {
+                            "type": "object",
+                            "properties": {
+                                "environmentDefaultGroup": {
+                                    "type": "string",
+                                    "description": "Adds this artifact definition type to the 'environment default' overlay under this group in the UI."
+                                },
+                                "connectionOrientation": {
+                                    "type": "string",
+                                    "description": "How to orient the artifact's connection to a bundle in the UI. `link` will be line based, `environmentDefault` will make it the default for a given type in the entire environment.",
+                                    "enum": [
+                                        "link",
+                                        "environmentDefault"
+                                    ],
+                                    "default": "link"
+                                },
+                                "instructions": {
+                                    "type": "array",
+                                    "description": "Onboarding instructions for this artifact type. Only valid for 'credentials' artifact definitions.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "label": {
+                                                "type": "string",
+                                                "description": "The label for the instruction."
+                                            },
+                                            "content": {
+                                                "type": "string",
+                                                "description": "The content of the instruction."
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "cloud": {
+                            "type": "object",
+                            "description": "Properties of the cloud supported by Massdriver. Only valid for 'credential' artifact definitions.",
+                            "required": [],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "title": "ID",
+                                    "description": "Identifier for cloud"
+                                }
+                            }
+                        },
+                        "containerRepositories": {
+                            "additionalProperties": false,
+                            "description": "Enables container repository using this artifact type for authentication.",
+                            "type": "object",
+                            "required": [
+                                "label",
+                                "cloud"
+                            ],
+                            "properties": {
+                                "label": {
+                                    "description": "The label in the Massdriver UI.",
+                                    "type": "string"
+                                },
+                                "cloud": {
+                                    "description": "The cloud this artifact will act upon.",
+                                    "type": "string",
+                                    "enum": [
+                                        "aws",
+                                        "gcp",
+                                        "azure"
+                                    ]
+                                }
+                            }
+                        },
+                        "dnsZones": {
+                            "additionalProperties": false,
+                            "description": "Enables DNS Zones using this artifact type for authentication.",
+                            "type": "object",
+                            "required": [
+                                "label",
+                                "cloud"
+                            ],
+                            "properties": {
+                                "label": {
+                                    "description": "The label in the Massdriver UI.",
+                                    "type": "string"
+                                },
+                                "cloud": {
+                                    "description": "The cloud this artifact will act upon.",
+                                    "type": "string",
+                                    "enum": [
+                                        "aws",
+                                        "gcp",
+                                        "azure"
+                                    ]
+                                }
+                            }
+                        },
+                        "diagram": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "properties": {
+                                "isLinkable": {
+                                    "type": "boolean",
+                                    "default": true,
+                                    "description": "Controls if this artifact type is 'linkable' in the UI. Otherwise it can only be used as a target's default connection."
+                                }
+                            }
+                        },
+                        "export": {
+                            "type": "array",
+                            "minItems": 0,
+                            "items": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                    "templateLang",
+                                    "fileFormat",
+                                    "template",
+                                    "downloadButtonText"
+                                ],
+                                "properties": {
+                                    "downloadButtonText": {
+                                        "type": "string",
+                                        "description": "The text on the download button in the Massdriver UI for this export format."
+                                    },
+                                    "templateLang": {
+                                        "type": "string",
+                                        "enum": [
+                                            "liquid"
+                                        ],
+                                        "description": "The template language used to render the export file."
+                                    },
+                                    "fileFormat": {
+                                        "description": "The file format to add to the export file.",
+                                        "type": "string",
+                                        "enum": [
+                                            "yaml"
+                                        ]
+                                    },
+                                    "template": {
+                                        "type": "string",
+                                        "description": "Base64 encoded version of the template for the export file."
+                                    }
+                                }
+                            }
+                        },
+                        "importing": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                                "group"
+                            ],
+                            "properties": {
+                                "fileUploadType": {
+                                    "type": "string",
+                                    "description": "The file type to accept on the artifact import screen."
+                                },
+                                "fileUploadArtifactDataPath": {
+                                    "type": "array",
+                                    "default": [
+                                        "data"
+                                    ],
+                                    "examples": [
+                                        [
+                                            "data",
+                                            "authentication"
+                                        ]
+                                    ],
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "description": "The key path to store the JSON form of this file under in the artifact"
+                                },
+                                "group": {
+                                    "type": "string",
+                                    "enum": [
+                                        "authentication",
+                                        "data",
+                                        "networking"
+                                    ],
+                                    "description": "The group to put this artifact type under in the artifact import wizard."
+                                }
+                            }
+                        },
+                        "defaultTargetConnectionGroup": {
+                            "description": "Enables the artifact type as defaultable for a Massdriver target connection group.",
+                            "type": "string",
+                            "oneOf": [
+                                {
+                                    "const": "credentials",
+                                    "title": "Credentials"
+                                },
+                                {
+                                    "const": "networking",
+                                    "title": "Networking"
+                                }
+                            ]
+                        },
+                        "defaultTargetConnectionGroupLabel": {
+                            "description": "Label to show in connection group for this artifact type.",
+                            "type": "string"
+                        },
+                        "access": {
+                            "description": "Deprecated, all artifact definitions (besides the `massdriver` core artifact types https://github.com/massdriver-cloud/artifact-definitions) are private only now.",
+                            "type": "string"
+                        },
+                        "name": {
+                            "description": "The type name of the artifact definition. This should be unique to your organization and will be prefixed with your organizations slug",
+                            "type": "string",
+                            "pattern": "^[a-z0-9-]{3,100}$"
+                        },
+                        "extensions": {
+                            "type": "object",
+                            "description": "Entries to this object will unlock capabilities in Massdriver like cost reporting and monitoring",
+                            "properties": {
+                                "costReporting": {
+                                    "type": "boolean",
+                                    "description": "Setting this field to true will enable cost reporting with this artifact"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "$ref": "http://json-schema.org/draft-07/schema#"
+        }
+    ]
+}

@@ -1,29 +1,28 @@
 package bundle
 
 import (
-	"embed"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 
-	"github.com/itchyny/gojq"
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
-	"github.com/massdriver-cloud/schema2json"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+
 	"github.com/xeipuuv/gojsonschema"
 )
 
-//go:embed schemas/bundle-schema.json
-//go:embed schemas/meta-schema.json
-var bundleFS embed.FS
+func (b *Bundle) LintSchema(mdClient *client.Client) error {
+	bundleSchemaURL, err := url.JoinPath(mdClient.Config.URL, "json-schemas", "bundle.json")
+	if err != nil {
+		return fmt.Errorf("failed to construct bundle schema URL: %w", err)
+	}
 
-func (b *Bundle) LintSchema() error {
-	schemaBytes, _ := bundleFS.ReadFile("schemas/bundle-schema.json")
+	schemaLoader := gojsonschema.NewReferenceLoader(bundleSchemaURL)
 	documentLoader := gojsonschema.NewGoLoader(b)
-	schemaLoader := gojsonschema.NewBytesLoader(schemaBytes)
 
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to validate bundle schema: %w", err)
 	}
 
 	if !result.Valid() {
@@ -53,81 +52,6 @@ func (b *Bundle) LintParamsConnectionsNameCollision() error {
 		}
 	}
 	return nil
-}
-
-const jqErrorPrefix = "the jq query for environment variable "
-
-func (b *Bundle) LintEnvs() (map[string]string, error) {
-	result := map[string]string{}
-
-	if b.AppSpec == nil {
-		return result, nil
-	}
-
-	input, err := b.buildEnvsInput()
-	if err != nil {
-		return nil, fmt.Errorf("error building env query: %w", err)
-	}
-
-	for name, query := range b.AppSpec.Envs {
-		jq, parseErr := gojq.Parse(query)
-		if parseErr != nil {
-			return result, errors.New(jqErrorPrefix + name + " is invalid: " + parseErr.Error())
-		}
-
-		iter := jq.Run(input)
-		value, ok := iter.Next()
-		if !ok || value == nil {
-			return result, errors.New(jqErrorPrefix + name + " didn't produce a result")
-		}
-		if castErr, castOk := value.(error); castOk {
-			return result, errors.New(jqErrorPrefix + name + " produced an error: " + castErr.Error())
-		}
-		var valueString string
-		if valueString, ok = value.(string); !ok {
-			resultBytes, marshalErr := json.Marshal(value)
-			if marshalErr != nil {
-				return result, errors.New(jqErrorPrefix + name + " produced an uninterpretable value: " + marshalErr.Error())
-			}
-			valueString = string(resultBytes)
-		}
-		_, multiple := iter.Next()
-		if multiple {
-			return result, errors.New(jqErrorPrefix + name + " produced multiple values, which isn't supported")
-		}
-		result[name] = valueString
-	}
-
-	return result, nil
-}
-
-func (b *Bundle) buildEnvsInput() (map[string]any, error) {
-	result := map[string]any{}
-
-	paramsSchema, err := schema2json.ParseMapStringInterface(b.Params)
-	if err != nil {
-		return nil, err
-	}
-	connectionsSchema, err := schema2json.ParseMapStringInterface(b.Connections)
-	if err != nil {
-		return nil, err
-	}
-	result["params"], err = schema2json.GenerateJSON(paramsSchema)
-	if err != nil {
-		return nil, err
-	}
-	result["connections"], err = schema2json.GenerateJSON(connectionsSchema)
-	if err != nil {
-		return nil, err
-	}
-
-	secrets := map[string]any{}
-	for name := range b.AppSpec.Secrets {
-		secrets[name] = "some-secret-value"
-	}
-	result["secrets"] = secrets
-
-	return result, nil
 }
 
 func (b *Bundle) LintMatchRequired() error {

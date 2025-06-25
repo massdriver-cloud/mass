@@ -2,8 +2,6 @@ module github.com/massdriver-cloud/mass
 
 go 1.24.2
 
-replace github.com/osteele/liquid => github.com/massdriver-cloud/liquid v1.4.0
-
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/BurntSushi/toml v1.4.0
@@ -25,11 +23,10 @@ require (
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/airlock v0.0.6
 	github.com/massdriver-cloud/massdriver-sdk-go v0.0.7
-	github.com/massdriver-cloud/schema2json v0.0.2
 	github.com/moby/moby v27.3.1+incompatible
 	github.com/moby/term v0.5.0
 	github.com/opencontainers/image-spec v1.1.1
-	github.com/osteele/liquid v1.6.0
+	github.com/osteele/liquid v1.7.0
 	github.com/rodaine/table v1.3.0
 	github.com/rs/zerolog v1.33.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
@@ -110,7 +107,6 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
-	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/massdriver-cloud/terraform-config-inspect v0.0.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
