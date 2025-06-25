@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 func TestLintSchema(t *testing.T) {
@@ -48,7 +49,9 @@ func TestLintSchema(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.bun.LintSchema()
+			schemaLoader := gojsonschema.NewReferenceLoader("file://testdata/lint/schema/bundle.json")
+
+			err := tc.bun.LintSchema(schemaLoader)
 			if tc.err != nil {
 				if err == nil {
 					t.Errorf("expected an error, got nil")
@@ -119,143 +122,6 @@ func TestLintParamsConnectionsNameCollision(t *testing.T) {
 	}
 }
 
-func TestLintEnvs(t *testing.T) {
-	type test struct {
-		name string
-		b    *bundle.Bundle
-		want map[string]string
-		err  error
-	}
-	tests := []test{
-		{
-			name: "params, connections, secrets working",
-			b: &bundle.Bundle{
-				AppSpec: &bundle.AppSpec{
-					Envs: map[string]string{
-						"FOO":        ".params.foo",
-						"INTEGER":    ".params.int",
-						"CONNECTION": ".connections.connection1",
-						"SECRET":     ".secrets.shh",
-					},
-					Secrets: map[string]bundle.Secret{
-						"shh": {},
-					},
-				},
-				Params: map[string]any{
-					"properties": map[string]any{
-						"foo": map[string]any{
-							"type":  "string",
-							"const": "bar",
-						},
-						"int": map[string]any{
-							"type":  "integer",
-							"const": 4,
-						},
-					},
-				},
-				Connections: map[string]any{
-					"properties": map[string]any{
-						"connection1": map[string]any{
-							"type":  "string",
-							"const": "whatever",
-						},
-					},
-				},
-			},
-			want: map[string]string{
-				"FOO":        "bar",
-				"INTEGER":    "4",
-				"CONNECTION": "whatever",
-				"SECRET":     "some-secret-value",
-			},
-			err: nil,
-		},
-		{
-			name: "error on missing data",
-			b: &bundle.Bundle{
-				AppSpec: &bundle.AppSpec{
-					Envs: map[string]string{
-						"FOO": ".params.foo",
-					},
-					Secrets: map[string]bundle.Secret{},
-				},
-				Params:      map[string]any{},
-				Connections: map[string]any{},
-			},
-			want: map[string]string{},
-			err:  errors.New("the jq query for environment variable FOO didn't produce a result"),
-		},
-		{
-			name: "error on invalid jq syntax",
-			b: &bundle.Bundle{
-				AppSpec: &bundle.AppSpec{
-					Envs: map[string]string{
-						"FOO": "laksdjf",
-					},
-					Secrets: map[string]bundle.Secret{},
-				},
-				Params:      map[string]any{},
-				Connections: map[string]any{},
-			},
-			want: map[string]string{},
-			err:  errors.New("the jq query for environment variable FOO produced an error: function not defined: laksdjf/0"),
-		},
-		{
-			name: "error on multiple values",
-			b: &bundle.Bundle{
-				AppSpec: &bundle.AppSpec{
-					Envs: map[string]string{
-						"FOO": ".params.array[]",
-					},
-					Secrets: map[string]bundle.Secret{},
-				},
-				Params: map[string]any{
-					"properties": map[string]any{
-						"array": map[string]any{
-							"type":     "array",
-							"minItems": 2,
-							"items": map[string]any{
-								"type": "integer",
-							},
-						},
-					},
-				},
-				Connections: map[string]any{},
-			},
-			want: map[string]string{},
-			err:  errors.New("the jq query for environment variable FOO produced multiple values, which isn't supported"),
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := tc.b.LintEnvs()
-			if tc.err != nil {
-				if err == nil {
-					t.Errorf("expected an error, got nil")
-				} else if tc.err.Error() != err.Error() {
-					t.Errorf("got %v, want %v", err.Error(), tc.err.Error())
-				}
-			} else if err != nil {
-				t.Fatalf("%d, unexpected error", err)
-			}
-
-			if len(got) != len(tc.want) {
-				t.Errorf("got %v, want %v", len(got), len(tc.want))
-			}
-			for key, wantValue := range tc.want {
-				gotValue, ok := got[key]
-				if !ok {
-					t.Errorf("got %v, want %v", got, tc.want)
-				}
-				if gotValue != wantValue {
-					t.Errorf("got %v, want %v", gotValue, wantValue)
-				}
-			}
-		})
-	}
-}
-
 func TestLintInputsMatchProvisioner(t *testing.T) {
 	{
 		type test struct {
@@ -272,7 +138,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					Schema:      "draft-07",
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
-						Path:        "testdata/lintmodule",
+						Path:        "testdata/lint/module",
 						Provisioner: "opentofu",
 					}},
 					Params: map[string]any{

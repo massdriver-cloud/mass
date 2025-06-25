@@ -2,43 +2,39 @@ package definition
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/xeipuuv/gojsonschema"
 )
 
-//go:embed schemas/artifact-definition-schema.json
-//go:embed schemas/meta-schema.json
-var definitionFS embed.FS
-
 func Publish(ctx context.Context, mdClient *client.Client, in io.Reader) error {
 	artdefBytes, err := io.ReadAll(in)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read artifact definition: %w", err)
 	}
 
 	// validate artifact definition against JSON Schema meta-schema
 	// and artifact definition schema
-	artdefSchemaBytes, err := definitionFS.ReadFile("schemas/artifact-definition-schema.json")
+	artdefSchemaURL, err := url.JoinPath(mdClient.Config.URL, "json-schemas", "artifact-definition.json")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to construct artifact definition schema URL: %w", err)
 	}
-	err = validateArtifactDefinition(artdefBytes, artdefSchemaBytes)
+	err = validateArtifactDefinition(artdefBytes, artdefSchemaURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to validate artifact definition schema: %w", err)
 	}
-	metaSchemaBytes, err := definitionFS.ReadFile("schemas/meta-schema.json")
+	metaSchemaURL, err := url.JoinPath(mdClient.Config.URL, "json-schemas", "draft-7.json")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to construct meta schema URL: %w", err)
 	}
-	err = validateArtifactDefinition(artdefBytes, metaSchemaBytes)
+	err = validateArtifactDefinition(artdefBytes, metaSchemaURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to validate artifact definition against meta schema: %w", err)
 	}
 
 	var artdefMap map[string]any
@@ -52,9 +48,9 @@ func Publish(ctx context.Context, mdClient *client.Client, in io.Reader) error {
 	return err
 }
 
-func validateArtifactDefinition(artdefBytes, schemaBytes []byte) error {
+func validateArtifactDefinition(artdefBytes []byte, schemaURL string) error {
 	documentLoader := gojsonschema.NewBytesLoader(artdefBytes)
-	schemaLoader := gojsonschema.NewBytesLoader(schemaBytes)
+	schemaLoader := gojsonschema.NewReferenceLoader(schemaURL)
 
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
 	if err != nil {

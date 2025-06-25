@@ -6,7 +6,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"text/template"
 
@@ -14,9 +13,10 @@ import (
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/cli"
-	"github.com/massdriver-cloud/mass/pkg/definition"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/mass/pkg/commands/definition"
 	"github.com/spf13/cobra"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 //go:embed templates/definition.get.md.tmpl
@@ -77,7 +77,7 @@ func runDefinitionGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	ad, getErr := definition.Get(ctx, mdClient, definitionName)
+	ad, getErr := definition.RunGet(ctx, mdClient, definitionName)
 	if getErr != nil {
 		return fmt.Errorf("error getting artifact definition: %w", getErr)
 	}
@@ -120,31 +120,12 @@ func runDefinitionPublish(cmd *cobra.Command, args []string) error {
 		defer defFile.Close()
 	}
 
-	defBytes, readErr := io.ReadAll(defFile)
-	if readErr != nil {
-		return fmt.Errorf("error reading artifact definition: %w", readErr)
-	}
-
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	def := map[string]any{}
-	jsonErr := json.Unmarshal(defBytes, &def)
-	if jsonErr != nil {
-		return jsonErr
-	}
-
-	_, nameExists := def["name"].(string)
-	if !nameExists {
-		return fmt.Errorf("artifact definition must have a 'name' field")
-	}
-
-	_, publishErr := api.PublishArtifactDefinition(ctx, mdClient, def)
-	if publishErr != nil {
-		return fmt.Errorf("error publishing artifact definition: %w", publishErr)
-	}
+	definition.RunPublish(ctx, mdClient, defFile)
 
 	fmt.Println("Definition published successfully!")
 
