@@ -3,10 +3,15 @@ package bundle_test
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/xeipuuv/gojsonschema"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
 )
 
 func TestLintSchema(t *testing.T) {
@@ -49,9 +54,29 @@ func TestLintSchema(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			schemaLoader := gojsonschema.NewReferenceLoader("file://testdata/lint/schema/bundle.json")
+			bundleSchema, err := ioutil.ReadFile("testdata/lint/schema/bundle.json")
+			if err != nil {
+				t.Fatalf("failed to read artifact definition schema: %v", err)
+			}
 
-			err := tc.bun.LintSchema(schemaLoader)
+			// Start mock HTTP server
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/json-schemas/bundle.json":
+					w.Write([]byte(bundleSchema))
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			defer server.Close()
+
+			mdClient := client.Client{
+				Config: config.Config{
+					URL: server.URL,
+				},
+			}
+
+			err = tc.bun.LintSchema(&mdClient)
 			if tc.err != nil {
 				if err == nil {
 					t.Errorf("expected an error, got nil")
@@ -160,7 +185,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					Schema:      "draft-07",
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
-						Path:        "testdata/lintmodule",
+						Path:        "testdata/lint/module",
 						Provisioner: "opentofu",
 					}},
 					Params: map[string]any{
@@ -184,7 +209,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					Description: "description",
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
-						Path:        "testdata/lintmodule",
+						Path:        "testdata/lint/module",
 						Provisioner: "opentofu",
 					}},
 					Params: map[string]any{
@@ -196,7 +221,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					Artifacts:   map[string]any{},
 					UI:          map[string]any{},
 				},
-				err: errors.New(`missing inputs detected in step testdata/lintmodule:
+				err: errors.New(`missing inputs detected in step testdata/lint/module:
 	- input "bar" declared in IaC but missing massdriver.yaml declaration
 `),
 			}, {
@@ -206,7 +231,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					Description: "description",
 					Type:        "infrastructure",
 					Steps: []bundle.Step{{
-						Path:        "testdata/lintmodule",
+						Path:        "testdata/lint/module",
 						Provisioner: "opentofu",
 					}},
 					Params: map[string]any{
@@ -220,7 +245,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					Artifacts:   map[string]any{},
 					UI:          map[string]any{},
 				},
-				err: errors.New(`missing inputs detected in step testdata/lintmodule:
+				err: errors.New(`missing inputs detected in step testdata/lint/module:
 	- input "baz" declared in massdriver.yaml but missing IaC declaration
 `),
 			},

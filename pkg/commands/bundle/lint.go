@@ -2,11 +2,9 @@ package bundle
 
 import (
 	"fmt"
-	"net/url"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
-	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
@@ -16,12 +14,7 @@ func RunLint(b *bundle.Bundle, mdClient *client.Client) error {
 
 	greenCheckmark := prettylogs.Green(" ✓")
 
-	bundleSchemaURL, err := url.JoinPath(mdClient.Config.URL, "json-schemas", "bundle.json")
-	if err != nil {
-		return fmt.Errorf("failed to construct bundle schema URL: %w", err)
-	}
-	schemaLoader := gojsonschema.NewReferenceLoader(bundleSchemaURL)
-	err = b.LintSchema(schemaLoader)
+	err := b.LintSchema(mdClient)
 	if err != nil {
 		return err
 	}

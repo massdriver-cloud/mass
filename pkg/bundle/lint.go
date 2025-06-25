@@ -3,13 +3,21 @@ package bundle
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 
 	"github.com/xeipuuv/gojsonschema"
 )
 
-func (b *Bundle) LintSchema(schemaLoader gojsonschema.JSONLoader) error {
+func (b *Bundle) LintSchema(mdClient *client.Client) error {
+	bundleSchemaURL, err := url.JoinPath(mdClient.Config.URL, "json-schemas", "bundle.json")
+	if err != nil {
+		return fmt.Errorf("failed to construct bundle schema URL: %w", err)
+	}
+
+	schemaLoader := gojsonschema.NewReferenceLoader(bundleSchemaURL)
 	documentLoader := gojsonschema.NewGoLoader(b)
 
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)

@@ -40,7 +40,7 @@ func Publish(ctx context.Context, mdClient *client.Client, in io.Reader) error {
 	var artdefMap map[string]any
 	err = json.Unmarshal(artdefBytes, &artdefMap)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal artifact definition: %w", err)
 	}
 
 	_, err = api.PublishArtifactDefinition(ctx, mdClient, artdefMap)
