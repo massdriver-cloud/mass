@@ -130,6 +130,7 @@ func getIgnores(ignorePath string) (*ignore.GitIgnore, error) {
 
 		// Allow checkov config file
 		"!**/.checkov.yml",
+		"!**/.checkov.yaml",
 	}
 
 	_, err := os.Stat(ignorePath)
