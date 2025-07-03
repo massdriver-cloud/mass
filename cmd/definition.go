@@ -47,11 +47,10 @@ func NewCmdDefinition() *cobra.Command {
 	}
 
 	definitionPublishCmd := &cobra.Command{
-		Use:          "publish",
-		Short:        "Publish an artifact definition to Massdriver",
-		Long:         helpdocs.MustRender("definition/publish"),
-		RunE:         runDefinitionPublish,
-		SilenceUsage: true,
+		Use:   "publish",
+		Short: "Publish an artifact definition to Massdriver",
+		Long:  helpdocs.MustRender("definition/publish"),
+		RunE:  runDefinitionPublish,
 	}
 	definitionPublishCmd.Flags().StringP("file", "f", "", "File containing artifact definition schema (use - for stdin)")
 	_ = definitionPublishCmd.MarkFlagRequired("file")
@@ -71,6 +70,7 @@ func runDefinitionGet(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	cmd.SilenceUsage = true
 
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {
@@ -108,6 +108,7 @@ func runDefinitionPublish(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	cmd.SilenceUsage = true
 
 	var defFile *os.File
 	if defPath == "-" {
@@ -134,6 +135,7 @@ func runDefinitionPublish(cmd *cobra.Command, args []string) error {
 
 func runDefinitionList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
+	cmd.SilenceUsage = true
 
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {

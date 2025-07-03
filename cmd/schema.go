@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/jsonschema"
+	"github.com/massdriver-cloud/mass/pkg/prettylogs"
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +24,8 @@ func NewCmdSchema() *cobra.Command {
 	}
 	schemaValidateCmd.Flags().StringP("document", "d", "document.json", "Path to JSON document")
 	schemaValidateCmd.Flags().StringP("schema", "s", "./schema.json", "Path to JSON Schema")
+	schemaValidateCmd.MarkFlagRequired("document")
+	schemaValidateCmd.MarkFlagRequired("schema")
 
 	schemaCmd.AddCommand(schemaValidateCmd)
 
@@ -31,23 +33,22 @@ func NewCmdSchema() *cobra.Command {
 }
 
 func runSchemaValidate(cmd *cobra.Command, args []string) error {
-	schema, _ := cmd.Flags().GetString("schema")
-	document, _ := cmd.Flags().GetString("document")
+	schemaPath, _ := cmd.Flags().GetString("schema")
+	documentPath, _ := cmd.Flags().GetString("document")
+	cmd.SilenceUsage = true
 
-	result, err := jsonschema.Validate(schema, document)
-	if err != nil {
-		return err
+	schema, schemaErr := jsonschema.LoadSchemaFromFile(schemaPath)
+	if schemaErr != nil {
+		return fmt.Errorf("failed to load schema from %s: %w", schemaPath, schemaErr)
 	}
 
-	if result.Valid() {
-		fmt.Println("The document is valid!")
-	} else {
-		errMsg := fmt.Sprintf("The document failed validation:\n\tDocument: %s\n\tSchema: %s\nErrors:\n", document, schema)
-		for _, violation := range result.Errors() {
-			errMsg += fmt.Sprintf("\t- %v\n", violation)
-		}
-
-		return errors.New(errMsg)
+	validateErr := jsonschema.ValidateFile(schema, documentPath)
+	if validateErr != nil {
+		fmt.Println(prettylogs.Red(" ✗"), "The document is not valid against the schema!")
+		return validateErr
 	}
+
+	greenCheckmark := prettylogs.Green(" ✓")
+	fmt.Println(greenCheckmark, "The document is valid against the schema!")
 	return nil
 }

@@ -21,25 +21,25 @@ const (
 )
 
 type Step struct {
-	Path         string         `json:"path" yaml:"path"`
-	Provisioner  string         `json:"provisioner" yaml:"provisioner"`
+	Path         string         `json:"path,omitempty" yaml:"path,omitempty"`
+	Provisioner  string         `json:"provisioner,omitempty" yaml:"provisioner,omitempty"`
 	SkipOnDelete bool           `json:"skip_on_delete,omitempty" yaml:"skip_on_delete,omitempty"`
 	Config       map[string]any `json:"config,omitempty" yaml:"config,omitempty"`
 }
 
 type Bundle struct {
-	Schema      string         `json:"schema" yaml:"schema"`
-	Name        string         `json:"name" yaml:"name"`
-	Description string         `json:"description" yaml:"description"`
-	SourceURL   string         `json:"source_url" yaml:"source_url"`
-	Type        string         `json:"type" yaml:"type"`
-	Access      string         `json:"access" yaml:"access"`
-	Steps       []Step         `json:"steps" yaml:"steps"`
-	Artifacts   map[string]any `json:"artifacts" yaml:"artifacts"`
-	Params      map[string]any `json:"params" yaml:"params"`
-	Connections map[string]any `json:"connections" yaml:"connections"`
-	UI          map[string]any `json:"ui" yaml:"ui"`
-	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty"`
+	Schema      string         `json:"schema,omitempty" yaml:"schema,omitempty"`
+	Name        string         `json:"name,omitempty" yaml:"name,omitempty"`
+	Description string         `json:"description,omitempty" yaml:"description,omitempty"`
+	SourceURL   string         `json:"source_url,omitempty" yaml:"source_url,omitempty"`
+	Type        string         `json:"type,omitempty" yaml:"type,omitempty"`
+	Access      string         `json:"access,omitempty" yaml:"access,omitempty"`
+	Steps       []Step         `json:"steps,omitempty" yaml:"steps,omitempty"`
+	Artifacts   map[string]any `json:"artifacts,omitempty" yaml:"artifacts,omitempty"`
+	Params      map[string]any `json:"params,omitempty" yaml:"params,omitempty"`
+	Connections map[string]any `json:"connections,omitempty" yaml:"connections,omitempty"`
+	UI          map[string]any `json:"ui,omitempty" yaml:"ui,omitempty"`
+	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty,omitempty"`
 }
 
 type AppSpec struct {
@@ -49,10 +49,10 @@ type AppSpec struct {
 }
 
 type Secret struct {
-	Required    bool   `json:"required" yaml:"required"`
-	JSON        bool   `json:"json" yaml:"json"`
-	Title       string `json:"title" yaml:"title"`
-	Description string `json:"description" yaml:"description"`
+	Required    bool   `json:"required,omitempty" yaml:"required,omitempty"`
+	JSON        bool   `json:"json,omitempty" yaml:"json,omitempty"`
+	Title       string `json:"title,omitempty" yaml:"title,omitempty"`
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 }
 
 func (b *Bundle) IsInfrastructure() bool {

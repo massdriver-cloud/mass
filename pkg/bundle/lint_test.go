@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
@@ -28,27 +29,25 @@ func TestLintSchema(t *testing.T) {
 				Description: "description",
 				Schema:      "draft-07",
 				Type:        "infrastructure",
-				Params:      map[string]any{},
-				Connections: map[string]any{},
-				Artifacts:   map[string]any{},
-				UI:          map[string]any{},
+				Params:      map[string]any{"properties": map[string]any{}},
+				Connections: map[string]any{"properties": map[string]any{}},
+				Artifacts:   map[string]any{"properties": map[string]any{}},
+				UI:          map[string]any{"properties": map[string]any{}},
 			},
 			err: nil,
 		},
 		{
-			name: "Invalid missing schema",
+			name: "Invalid missing schema field",
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
 				Type:        "infrastructure",
-				Params:      map[string]any{},
-				Connections: map[string]any{},
-				Artifacts:   map[string]any{},
-				UI:          map[string]any{},
+				Params:      map[string]any{"properties": map[string]any{}},
+				Connections: map[string]any{"properties": map[string]any{}},
+				Artifacts:   map[string]any{"properties": map[string]any{}},
+				UI:          map[string]any{"properties": map[string]any{}},
 			},
-			err: errors.New(`massdriver.yaml has schema violations:
-	- schema: schema must be one of the following: "draft-07"
-`),
+			err: errors.New(`missing property 'schema'`),
 		},
 	}
 
@@ -80,7 +79,7 @@ func TestLintSchema(t *testing.T) {
 			if tc.err != nil {
 				if err == nil {
 					t.Errorf("expected an error, got nil")
-				} else if tc.err.Error() != err.Error() {
+				} else if !strings.Contains(err.Error(), tc.err.Error()) {
 					t.Errorf("got %v, want %v", err.Error(), tc.err.Error())
 				}
 			} else if err != nil {

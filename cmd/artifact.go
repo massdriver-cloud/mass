@@ -28,6 +28,9 @@ func NewCmdArtifact() *cobra.Command {
 	artifactImportCmd.Flags().StringP("name", "n", "", "Artifact name")
 	artifactImportCmd.Flags().StringP("type", "t", "", "Artifact type")
 	artifactImportCmd.Flags().StringP("file", "f", "", "Artifact file")
+	artifactImportCmd.MarkFlagRequired("name")
+	artifactImportCmd.MarkFlagRequired("type")
+	artifactImportCmd.MarkFlagRequired("file")
 
 	artifactCmd.AddCommand(artifactImportCmd)
 
@@ -49,6 +52,7 @@ func runArtifactImport(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	cmd.SilenceUsage = true
 
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {

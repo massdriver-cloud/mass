@@ -2,7 +2,6 @@ package templatecache
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"os/user"
 	"path"
@@ -39,7 +38,7 @@ type CloneError struct {
 
 // Refresh available templates from Massdriver official Github repository.
 func (b *BundleTemplateCache) RefreshTemplates() error {
-	slog.Info("Refreshing templates", "path", b.TemplatePath)
+	fmt.Println("Refreshing bundle templates...")
 	return b.Fetch(b.TemplatePath)
 }
 

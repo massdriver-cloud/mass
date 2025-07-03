@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -55,7 +54,7 @@ func doClone(repoName, writePath string) error {
 		}
 
 		// The error is ErrRepositoryNotExists so we need to clone the repo
-		slog.Info("Downloading templates from repo")
+		fmt.Println("Downloading templates from repo")
 		_, cloneErr := git.PlainClone(clonePath, false, &git.CloneOptions{
 			URL:   repoName,
 			Depth: 1,
@@ -78,12 +77,12 @@ func doClone(repoName, writePath string) error {
 	}
 
 	if latestUpstream == latest.Hash.String() {
-		slog.Info("Templates are current, skipping download")
+		fmt.Println("Templates are current, skipping download!")
 		return nil
 	}
 
 	// Pull the latest changes from the origin remote and merge into the current branch
-	slog.Info("Pulling latest changes from repo")
+	fmt.Println("Pulling latest changes from repo")
 
 	if err = os.RemoveAll(clonePath); err != nil {
 		return err

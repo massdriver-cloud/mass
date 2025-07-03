@@ -9,7 +9,8 @@
         "ui",
         "schema",
         "description",
-        "type"
+        "type",
+        "name"
     ],
     "properties": {
         "app": {
