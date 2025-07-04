@@ -17,14 +17,13 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-type DereferenceTarget struct {
-	schema *map[string]any
-	label  string
-}
-
 func (b *Bundle) DereferenceSchemas(path string, mdClient *client.Client) error {
 	cwd := filepath.Dir(path)
-	tasks := []DereferenceTarget{
+
+	tasks := []struct {
+		schema *map[string]any
+		label  string
+	}{
 		{schema: &b.Artifacts, label: "artifacts"},
 		{schema: &b.Params, label: "params"},
 		{schema: &b.Connections, label: "connections"},
