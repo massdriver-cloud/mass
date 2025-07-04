@@ -39,7 +39,7 @@ type Bundle struct {
 	Params      map[string]any `json:"params,omitempty" yaml:"params,omitempty"`
 	Connections map[string]any `json:"connections,omitempty" yaml:"connections,omitempty"`
 	UI          map[string]any `json:"ui,omitempty" yaml:"ui,omitempty"`
-	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty,omitempty"`
+	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty"`
 }
 
 type AppSpec struct {
