@@ -52,20 +52,18 @@ func NewCmdBundle() *cobra.Command {
 	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	bundleImportCmd := &cobra.Command{
-		Use:          "import",
-		Short:        "Import declared variables from IaC into massdriver.yaml params",
-		Long:         helpdocs.MustRender("bundle/import"),
-		RunE:         runBundleImport,
-		SilenceUsage: true,
+		Use:   "import",
+		Short: "Import declared variables from IaC into massdriver.yaml params",
+		Long:  helpdocs.MustRender("bundle/import"),
+		RunE:  runBundleImport,
 	}
 	bundleImportCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleImportCmd.Flags().BoolP("all", "a", false, "Import all variables without prompting")
 
 	bundleLintCmd := &cobra.Command{
-		Use:          "lint",
-		Short:        "Check massdriver.yaml file for common errors",
-		SilenceUsage: true,
-		RunE:         runBundleLint,
+		Use:   "lint",
+		Short: "Check massdriver.yaml file for common errors",
+		RunE:  runBundleLint,
 	}
 	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
@@ -270,6 +268,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	cmd.SilenceUsage = true
 
 	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
 	if err != nil {
@@ -293,16 +292,17 @@ func runBundleImport(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	cmd.SilenceUsage = true
 
 	return cmdbundle.RunImport(bundleDirectory, skipVerify)
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {
-
 	bundleDirectory, err := cmd.Flags().GetString("build-directory")
 	if err != nil {
 		return err
 	}
+	cmd.SilenceUsage = true
 
 	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
 	if err != nil {
@@ -328,12 +328,12 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release.")
 		fmt.Println(prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release."))
 	}
-
 	bundleDirectory, err := cmd.Flags().GetString("build-directory")
 	if err != nil {
 		return err
 	}
 	tag := "latest"
+	cmd.SilenceUsage = true
 
 	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
 	if err != nil {
@@ -361,6 +361,7 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 	}
 	force, _ := cmd.Flags().GetBool("force")
 	tag, _ := cmd.Flags().GetString("tag")
+	cmd.SilenceUsage = true
 
 	// Check if bundle exists in the specified directory and if so prompt the user
 	mdYamlPath := filepath.Join(directory, "massdriver.yaml")

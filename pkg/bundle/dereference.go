@@ -1,4 +1,4 @@
-package jsonschema
+package bundle
 
 import (
 	"context"
@@ -17,6 +17,43 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+func (b *Bundle) DereferenceSchemas(path string, mdClient *client.Client) error {
+	cwd := filepath.Dir(path)
+
+	tasks := []struct {
+		schema *map[string]any
+		label  string
+	}{
+		{schema: &b.Artifacts, label: "artifacts"},
+		{schema: &b.Params, label: "params"},
+		{schema: &b.Connections, label: "connections"},
+		{schema: &b.UI, label: "ui"},
+	}
+
+	for _, task := range tasks {
+		if task.schema == nil {
+			*task.schema = map[string]any{
+				"properties": make(map[string]any),
+			}
+		}
+
+		dereferencedSchema, err := DereferenceSchema(*task.schema, DereferenceOptions{Client: mdClient, Cwd: cwd})
+
+		if err != nil {
+			return err
+		}
+
+		var ok bool
+		*task.schema, ok = dereferencedSchema.(map[string]any)
+
+		if !ok {
+			return fmt.Errorf("hydrated %s is not a map", task.label)
+		}
+	}
+
+	return nil
+}
+
 type DereferenceOptions struct {
 	Client *client.Client
 	Cwd    string
@@ -27,7 +64,7 @@ var relativeFilePathPattern = regexp.MustCompile(`^(\.\/|\.\.\/)`)
 var massdriverDefinitionPattern = regexp.MustCompile(`^[a-zA-Z0-9]`)
 var httpPattern = regexp.MustCompile(`^(http|https)://`)
 
-func Dereference(anyVal any, opts DereferenceOptions) (any, error) {
+func DereferenceSchema(anyVal any, opts DereferenceOptions) (any, error) {
 	val := getValue(anyVal)
 
 	switch val.Kind() { //nolint:exhaustive
@@ -75,7 +112,7 @@ func Dereference(anyVal any, opts DereferenceOptions) (any, error) {
 func dereferenceMap(hydratedSchema map[string]any, schema map[string]any, opts DereferenceOptions) (map[string]any, error) {
 	for key, value := range schema {
 		var valueInterface = value
-		hydratedValue, err := Dereference(valueInterface, opts)
+		hydratedValue, err := DereferenceSchema(valueInterface, opts)
 		if err != nil {
 			return hydratedSchema, err
 		}
@@ -87,7 +124,7 @@ func dereferenceMap(hydratedSchema map[string]any, schema map[string]any, opts D
 func dereferenceList(val reflect.Value, opts DereferenceOptions) ([]any, error) {
 	hydratedList := make([]any, 0)
 	for i := 0; i < val.Len(); i++ {
-		hydratedVal, err := Dereference(val.Index(i).Interface(), opts)
+		hydratedVal, err := DereferenceSchema(val.Index(i).Interface(), opts)
 		if err != nil {
 			return hydratedList, err
 		}
@@ -201,7 +238,7 @@ func replaceRef(base map[string]any, referenced map[string]any, opts Dereference
 	delete(base, "$ref")
 
 	for k, v := range referenced {
-		hydratedValue, err := Dereference(v, opts)
+		hydratedValue, err := DereferenceSchema(v, opts)
 		if err != nil {
 			return hydratedSchema, err
 		}

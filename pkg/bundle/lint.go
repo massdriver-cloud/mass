@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/massdriver-cloud/mass/pkg/jsonschema"
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-
-	"github.com/xeipuuv/gojsonschema"
 )
 
 func (b *Bundle) LintSchema(mdClient *client.Client) error {
@@ -17,21 +16,16 @@ func (b *Bundle) LintSchema(mdClient *client.Client) error {
 		return fmt.Errorf("failed to construct bundle schema URL: %w", err)
 	}
 
-	schemaLoader := gojsonschema.NewReferenceLoader(bundleSchemaURL)
-	documentLoader := gojsonschema.NewGoLoader(b)
-
-	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	sch, err := jsonschema.LoadSchemaFromURL(bundleSchemaURL)
 	if err != nil {
-		return fmt.Errorf("failed to validate bundle schema: %w", err)
+		return fmt.Errorf("failed to compile bundle schema: %w", err)
 	}
 
-	if !result.Valid() {
-		errors := "massdriver.yaml has schema violations:\n"
-		for _, violation := range result.Errors() {
-			errors += fmt.Sprintf("\t- %v\n", violation)
-		}
-		return fmt.Errorf("%s", errors)
+	err = jsonschema.ValidateGo(sch, b)
+	if err != nil {
+		return fmt.Errorf("massdriver.yaml has schema violations: %w", err)
 	}
+
 	return nil
 }
 

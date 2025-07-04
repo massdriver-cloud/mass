@@ -13,3 +13,7 @@ func Green(word string) lipgloss.Style {
 func Orange(word string) lipgloss.Style {
 	return lipgloss.NewStyle().SetString(word).Foreground(lipgloss.Color("#FFA500"))
 }
+
+func Red(word string) lipgloss.Style {
+	return lipgloss.NewStyle().SetString(word).Foreground(lipgloss.Color("#FF0000"))
+}

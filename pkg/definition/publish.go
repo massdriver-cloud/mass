@@ -8,8 +8,8 @@ import (
 	"net/url"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/pkg/jsonschema"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/xeipuuv/gojsonschema"
 )
 
 func Publish(ctx context.Context, mdClient *client.Client, in io.Reader) error {
@@ -49,20 +49,9 @@ func Publish(ctx context.Context, mdClient *client.Client, in io.Reader) error {
 }
 
 func validateArtifactDefinition(artdefBytes []byte, schemaURL string) error {
-	documentLoader := gojsonschema.NewBytesLoader(artdefBytes)
-	schemaLoader := gojsonschema.NewReferenceLoader(schemaURL)
-
-	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
-	if err != nil {
-		return err
+	sch, loadErr := jsonschema.LoadSchemaFromURL(schemaURL)
+	if loadErr != nil {
+		return loadErr
 	}
-
-	if !result.Valid() {
-		errors := "Artifact definition has schema violations:\n"
-		for _, violation := range result.Errors() {
-			errors += fmt.Sprintf("\t- %v\n", violation)
-		}
-		return fmt.Errorf("%s", errors)
-	}
-	return nil
+	return jsonschema.ValidateBytes(sch, artdefBytes)
 }

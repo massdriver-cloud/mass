@@ -8,9 +8,9 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/artifact"
+	"github.com/massdriver-cloud/mass/pkg/jsonschema"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/xeipuuv/gojsonschema"
 )
 
 func RunImport(ctx context.Context, mdClient *client.Client, artifactName string, artifactType string, artifactFile string) (string, error) {
@@ -46,29 +46,20 @@ func validateArtifact(ctx context.Context, mdClient *client.Client, artifactType
 		return adsErr
 	}
 
-	var schema map[string]any
+	var schemaMap map[string]any
 
 	for _, ad := range ads {
 		if ad.Name == artifactType {
-			schema = ad.Schema
+			schemaMap = ad.Schema
 		}
 	}
-	if schema == nil {
-		return fmt.Errorf("invalid artifact type: %s", artifactType)
+	if schemaMap == nil {
+		return fmt.Errorf("unable to find matching artifact definition: %s", artifactType)
 	}
 
-	documentLoader := gojsonschema.NewGoLoader(artifact)
-	schemaLoader := gojsonschema.NewGoLoader(schema)
-	result, validateErr := gojsonschema.Validate(schemaLoader, documentLoader)
-	if validateErr != nil {
-		return validateErr
+	sch, schemaErr := jsonschema.LoadSchemaFromGo(schemaMap)
+	if schemaErr != nil {
+		return fmt.Errorf("failed to compile artifact definition schema: %w", schemaErr)
 	}
-	if !result.Valid() {
-		errorString := "The artifact is not valid. see errors :\n"
-		for _, desc := range result.Errors() {
-			errorString += fmt.Sprintf("- %s\n", desc)
-		}
-		return fmt.Errorf("%s", errorString)
-	}
-	return nil
+	return jsonschema.ValidateGo(sch, artifact)
 }

@@ -1,4 +1,4 @@
-package jsonschema_test
+package bundle_test
 
 import (
 	"encoding/json"
@@ -10,14 +10,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
-	"github.com/massdriver-cloud/mass/pkg/jsonschema"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func TestDereference(t *testing.T) {
+func TestDereferenceSchema(t *testing.T) {
 	wd, _ := os.Getwd()
 
 	type TestCase struct {
@@ -31,14 +31,14 @@ func TestDereference(t *testing.T) {
 	cases := []TestCase{
 		{
 			Name:  "Dereferences a $ref",
-			Input: jsonDecode(`{"$ref": "./testdata/artifacts/aws-example.json"}`),
+			Input: jsonDecode(`{"$ref": "./testdata/dereference/aws-example.json"}`),
 			Expected: map[string]string{
 				"id": "fake-schema-id",
 			},
 		},
 		{
 			Name:  "Dereferences a $ref alongside arbitrary values",
-			Input: jsonDecode(`{"foo": true, "bar": {}, "$ref": "./testdata/artifacts/aws-example.json"}`),
+			Input: jsonDecode(`{"foo": true, "bar": {}, "$ref": "./testdata/dereference/aws-example.json"}`),
 			Expected: map[string]any{
 				"foo": true,
 				"bar": map[string]any{},
@@ -47,7 +47,7 @@ func TestDereference(t *testing.T) {
 		},
 		{
 			Name:  "Dereferences a nested $ref",
-			Input: jsonDecode(`{"key": {"$ref": "./testdata/artifacts/aws-example.json"}}`),
+			Input: jsonDecode(`{"key": {"$ref": "./testdata/dereference/aws-example.json"}}`),
 			Expected: map[string]map[string]string{
 				"key": {
 					"id": "fake-schema-id",
@@ -63,7 +63,7 @@ func TestDereference(t *testing.T) {
 		},
 		{
 			Name:  "Dereferences $refs in a list",
-			Input: jsonDecode(`{"list": ["string", {"$ref": "./testdata/artifacts/aws-example.json"}]}`),
+			Input: jsonDecode(`{"list": ["string", {"$ref": "./testdata/dereference/aws-example.json"}]}`),
 			Expected: map[string]any{
 				"list": []any{
 					"string",
@@ -75,7 +75,7 @@ func TestDereference(t *testing.T) {
 		},
 		{
 			Name:  "Dereferences a $ref deterministically (keys outside of ref always win)",
-			Input: jsonDecode(`{"conflictingKey": "not-from-ref", "$ref": "./testdata/artifacts/conflicting-keys.json"}`),
+			Input: jsonDecode(`{"conflictingKey": "not-from-ref", "$ref": "./testdata/dereference/conflicting-keys.json"}`),
 			Expected: map[string]string{
 				"conflictingKey": "not-from-ref",
 				"nonConflictKey": "from-ref",
@@ -83,7 +83,7 @@ func TestDereference(t *testing.T) {
 		},
 		{
 			Name:  "Dereferences a $ref recursively",
-			Input: jsonDecode(`{"$ref": "./testdata/artifacts/ref-aws-example.json"}`),
+			Input: jsonDecode(`{"$ref": "./testdata/dereference/ref-aws-example.json"}`),
 			Expected: map[string]map[string]string{
 				"properties": {
 					"id": "fake-schema-id",
@@ -92,7 +92,7 @@ func TestDereference(t *testing.T) {
 		},
 		{
 			Name:  "Dereferences a $ref recursively",
-			Input: jsonDecode(`{"$ref": "./testdata/artifacts/ref-lower-dir-aws-example.json"}`),
+			Input: jsonDecode(`{"$ref": "./testdata/dereference/ref-lower-dir-aws-example.json"}`),
 			Expected: map[string]map[string]string{
 				"properties": {
 					"id": "fake-schema-id",
@@ -101,8 +101,8 @@ func TestDereference(t *testing.T) {
 		},
 		{
 			Name:                "Reports not found when $ref is not found",
-			Input:               jsonDecode(`{"$ref": "./testdata/no-type.json"}`),
-			ExpectedErrorSuffix: fmt.Sprintf("open %s: no such file or directory", path.Join(wd, "testdata/no-type.json")),
+			Input:               jsonDecode(`{"$ref": "./testdata/no-exist.json"}`),
+			ExpectedErrorSuffix: fmt.Sprintf("open %s: no such file or directory", path.Join(wd, "testdata/no-exist.json")),
 		},
 		{
 			Name:  "Dereferences remote (massdriver) ref",
@@ -129,14 +129,16 @@ func TestDereference(t *testing.T) {
 				}),
 			}
 
-			opts := jsonschema.DereferenceOptions{
+			opts := bundle.DereferenceOptions{
 				Client: &mdClient,
 				Cwd:    ".",
 			}
 
-			got, gotErr := jsonschema.Dereference(test.Input, opts)
+			got, gotErr := bundle.DereferenceSchema(test.Input, opts)
 
-			if test.ExpectedErrorSuffix != "" {
+			if test.ExpectedErrorSuffix == "" && gotErr != nil {
+				t.Errorf("unexpected error: %v", gotErr)
+			} else if test.ExpectedErrorSuffix != "" {
 				if !strings.HasSuffix(gotErr.Error(), test.ExpectedErrorSuffix) {
 					t.Errorf("got %v, want %v", gotErr.Error(), test.ExpectedErrorSuffix)
 				}
@@ -182,11 +184,11 @@ func TestDereference(t *testing.T) {
 
 		input := jsonDecode(fmt.Sprintf(`{"$ref":"%s/recursive"}`, testServer.URL))
 
-		opts := jsonschema.DereferenceOptions{
+		opts := bundle.DereferenceOptions{
 			Client: mdClient,
 			Cwd:    ".",
 		}
-		got, _ := jsonschema.Dereference(input, opts)
+		got, _ := bundle.DereferenceSchema(input, opts)
 		expected := map[string]any{
 			"baz": map[string]string{
 				"foo": "bar",
@@ -199,11 +201,11 @@ func TestDereference(t *testing.T) {
 
 		input = jsonDecode(fmt.Sprintf(`{"$ref":"%s/not-found"}`, testServer.URL))
 
-		opts = jsonschema.DereferenceOptions{
+		opts = bundle.DereferenceOptions{
 			Client: mdClient,
 			Cwd:    ".",
 		}
-		_, gotErr := jsonschema.Dereference(input, opts)
+		_, gotErr := bundle.DereferenceSchema(input, opts)
 		expectedErrPrefix := "received non-200 response getting ref 404 Not Found"
 
 		if !strings.HasPrefix(gotErr.Error(), expectedErrPrefix) {
