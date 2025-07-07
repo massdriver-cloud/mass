@@ -2,9 +2,9 @@ package definition_test
 
 import (
 	"bytes"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
@@ -31,11 +31,11 @@ func TestPublish(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			artifactDefSchema, err := ioutil.ReadFile("testdata/artdef-schema.json")
+			artifactDefSchema, err := os.ReadFile("testdata/artdef-schema.json")
 			if err != nil {
 				t.Fatalf("failed to read artifact definition schema: %v", err)
 			}
-			metaSchema, err := ioutil.ReadFile("testdata/draft-7.json")
+			metaSchema, err := os.ReadFile("testdata/draft-7.json")
 			if err != nil {
 				t.Fatalf("failed to read meta schema: %v", err)
 			}
@@ -69,7 +69,7 @@ func TestPublish(t *testing.T) {
 
 			_, err = definition.Publish(t.Context(), &mdClient, tc.definition)
 			if err != nil {
-				t.Fatalf("%d, unexpected error", err)
+				t.Fatalf("%v, unexpected error", err)
 			}
 		})
 	}
