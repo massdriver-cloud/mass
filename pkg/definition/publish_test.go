@@ -67,7 +67,7 @@ func TestPublish(t *testing.T) {
 				},
 			}
 
-			err = definition.Publish(t.Context(), &mdClient, tc.definition)
+			_, err = definition.Publish(t.Context(), &mdClient, tc.definition)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

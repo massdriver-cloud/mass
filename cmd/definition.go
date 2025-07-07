@@ -14,6 +14,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/cli"
 	"github.com/massdriver-cloud/mass/pkg/definition"
+	"github.com/massdriver-cloud/mass/pkg/prettylogs"
 	"github.com/spf13/cobra"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
@@ -126,9 +127,12 @@ func runDefinitionPublish(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	definition.Publish(ctx, mdClient, defFile)
+	artDef, publishErr := definition.Publish(ctx, mdClient, defFile)
+	if publishErr != nil {
+		return fmt.Errorf("error publishing artifact definition: %w", publishErr)
+	}
 
-	fmt.Println("Definition published successfully!")
+	fmt.Printf("Artifact definition %s published successfully!\n", prettylogs.Underline(artDef.Name))
 
 	return nil
 }
