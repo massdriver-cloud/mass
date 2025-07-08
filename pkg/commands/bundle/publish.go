@@ -37,7 +37,7 @@ func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, 
 	}
 
 	fmt.Printf("Package %s created with digest: %s\n", printBundleName, manifestDescriptor.Digest)
-	fmt.Printf("Pushing %s to package manager\n", printBundleName)
+	fmt.Printf("Pushing %s to package manager...\n", printBundleName)
 
 	publishErr := publisher.PublishBundle(ctx, tag)
 	if publishErr != nil {
