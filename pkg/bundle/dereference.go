@@ -98,6 +98,8 @@ func DereferenceSchema(anyVal any, opts DereferenceOptions) (any, error) {
 			} else if massdriverDefinitionPattern.MatchString(schemaRefValue) {
 				// this must be a published schema, so fetch from massdriver
 				hydratedSchema, err = dereferenceMassdriverRef(hydratedSchema, schema, schemaRefValue, opts)
+			} else {
+				return nil, fmt.Errorf("unable to resolve ref: %s", schemaRefValue)
 			}
 			if err != nil {
 				return hydratedSchema, err
