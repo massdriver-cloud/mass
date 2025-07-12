@@ -7,5 +7,5 @@ variable "bar" {
 }
 
 variable "md_metadata" {
-    type = any
+    type = object({})
 }
