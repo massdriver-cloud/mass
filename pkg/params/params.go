@@ -1,6 +1,7 @@
 package params
 
 import (
+	"fmt"
 	"path"
 
 	"github.com/massdriver-cloud/airlock/pkg/bicep"
@@ -20,6 +21,7 @@ func GetFromPath(templateName, paramsPath string) (string, error) {
 		err         error
 	)
 
+	fmt.Printf("Importing params from %s...\n", paramsPath)
 	switch templateName {
 	case "terraform-module", "opentofu-module":
 		paramSchema, err = opentofu.TofuToSchema(paramsPath)
@@ -47,6 +49,7 @@ func GetFromPath(templateName, paramsPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	fmt.Println("Params schema imported successfully.")
 
 	return string(out), nil
 }

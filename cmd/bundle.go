@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -73,11 +72,14 @@ func NewCmdBundle() *cobra.Command {
 		Use:   "new",
 		Short: "Create a new bundle from a template",
 		Long:  helpdocs.MustRender("bundle/new"),
-		Run:   func(cmd *cobra.Command, args []string) { runBundleNew(&bundleNewInput) },
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+			return runBundleNew(&bundleNewInput)
+		},
 	}
-	bundleNewCmd.Flags().StringVarP(&bundleNewInput.name, "name", "n", "", "Name of the new bundle")
+	bundleNewCmd.Flags().StringVarP(&bundleNewInput.name, "name", "n", "", "Name of the new bundle. Setting this along with --template-name will disable the interactive prompt.")
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.description, "description", "d", "", "Description of the new bundle")
-	bundleNewCmd.Flags().StringVarP(&bundleNewInput.templateName, "template-name", "t", "", "Name of the bundle template to use")
+	bundleNewCmd.Flags().StringVarP(&bundleNewInput.templateName, "template-name", "t", "", "Name of the bundle template to use. Setting this along with --name will disable the interactive prompt.")
 	bundleNewCmd.Flags().StringSliceVarP(&bundleNewInput.connections, "connections", "c", []string{}, "Connections and names to add to the bundle - example: network=massdriver/vpc")
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.outputDir, "output-directory", "o", ".", "Directory to output the new bundle")
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.paramsDir, "params-directory", "p", "", "Path with existing params to use - opentofu module directory or helm chart values.yaml")
@@ -199,31 +201,31 @@ func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
 	return templateData, nil
 }
 
-func runBundleNew(input *bundleNew) {
+func runBundleNew(input *bundleNew) error {
 	ctx := context.Background()
 
-	cache, err := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
-	if err != nil {
-		log.Fatal(err)
+	cache, cacheErr := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
+	if cacheErr != nil {
+		return fmt.Errorf("error initializing template cache: %w", cacheErr)
 	}
 
 	// If MD_TEMPLATES_PATH is set then it's most likely local dev work on templates so don't fetch
 	// or the refresh will overwrite whatever path this points to
 	if os.Getenv("MD_TEMPLATES_PATH") == "" {
-		err = templates.RunRefresh(cache)
-		if err != nil {
-			log.Fatal(err)
+		refreshErr := templates.RunRefresh(cache)
+		if refreshErr != nil {
+			return fmt.Errorf("error refreshing template cache: %w", refreshErr)
 		}
 	}
 
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {
-		log.Fatal(fmt.Errorf("error initializing massdriver client: %w", mdClientErr))
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	artifactDefs, err := api.ListArtifactDefinitions(ctx, mdClient)
-	if err != nil {
-		log.Fatal(err)
+	artifactDefs, listErr := api.ListArtifactDefinitions(ctx, mdClient)
+	if listErr != nil {
+		return fmt.Errorf("error listing artifact definitions: %w", listErr)
 	}
 
 	artifactDefinitions := map[string]map[string]any{}
@@ -237,30 +239,33 @@ func runBundleNew(input *bundleNew) {
 	bundle.SetMassdriverArtifactDefinitions(artifactDefinitions)
 
 	var templateData *templatecache.TemplateData
+	var runErr error
 	if input.name == "" || input.templateName == "" {
 		// run the interactive prompt
-		templateData, err = runBundleNewInteractive(input.outputDir)
-		if err != nil {
-			log.Fatal(err)
+		templateData, runErr = runBundleNewInteractive(input.outputDir)
+		if runErr != nil {
+			return fmt.Errorf("error running interactive prompt: %w", runErr)
 		}
 	} else {
 		// skip the interactive prompt and use flags
-		templateData, err = runBundleNewFlags(input)
-		if err != nil {
-			log.Fatal(err)
+		templateData, runErr = runBundleNewFlags(input)
+		if runErr != nil {
+			return fmt.Errorf("error running flags: %w", runErr)
 		}
 	}
 
-	localParams, err := params.GetFromPath(templateData.TemplateName, templateData.ExistingParamsPath)
-	if err != nil {
-		log.Fatal(err)
+	localParams, paramsErr := params.GetFromPath(templateData.TemplateName, templateData.ExistingParamsPath)
+	if paramsErr != nil {
+		return fmt.Errorf("error getting params from path: %w", paramsErr)
 	}
-
 	templateData.ParamsSchema = localParams
 
-	if err = cmdbundle.RunNew(cache, templateData); err != nil {
-		log.Fatal(err)
+	if newErr := cmdbundle.RunNew(cache, templateData); newErr != nil {
+		return fmt.Errorf("error running bundle new: %w", newErr)
 	}
+
+	fmt.Printf("Bundle %q created successfully at path %q\n", templateData.Name, templateData.OutputDir)
+	return nil
 }
 
 func runBundleBuild(cmd *cobra.Command, args []string) error {

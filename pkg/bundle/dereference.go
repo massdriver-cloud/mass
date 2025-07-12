@@ -61,8 +61,9 @@ type DereferenceOptions struct {
 
 // relativeFilePathPattern only accepts relative file path prefixes "./" and "../"
 var relativeFilePathPattern = regexp.MustCompile(`^(\.\/|\.\.\/)`)
-var massdriverDefinitionPattern = regexp.MustCompile(`^[a-zA-Z0-9]`)
+var massdriverDefinitionPattern = regexp.MustCompile(`^[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+$`)
 var httpPattern = regexp.MustCompile(`^(http|https)://`)
+var fragmentPattern = regexp.MustCompile(`^#`)
 
 func DereferenceSchema(anyVal any, opts DereferenceOptions) (any, error) {
 	val := getValue(anyVal)
@@ -89,7 +90,7 @@ func DereferenceSchema(anyVal any, opts DereferenceOptions) (any, error) {
 
 			var err error
 			if relativeFilePathPattern.MatchString(schemaRefValue) { //nolint:gocritic
-				// this is a local file ref
+				// this is a relative file ref
 				// build up the path from where the dir current schema was read
 				hydratedSchema, err = dereferenceFilePathRef(hydratedSchema, schema, schemaRefValue, opts)
 			} else if httpPattern.MatchString(schemaRefValue) {
@@ -98,6 +99,11 @@ func DereferenceSchema(anyVal any, opts DereferenceOptions) (any, error) {
 			} else if massdriverDefinitionPattern.MatchString(schemaRefValue) {
 				// this must be a published schema, so fetch from massdriver
 				hydratedSchema, err = dereferenceMassdriverRef(hydratedSchema, schema, schemaRefValue, opts)
+			} else if fragmentPattern.MatchString(schemaRefValue) {
+				// this is a fragment, so we do nothing and leave the schema as is
+				// since fragments are not dereferenced in the same way as full schemas
+			} else {
+				return nil, fmt.Errorf("unable to resolve ref: %s", schemaRefValue)
 			}
 			if err != nil {
 				return hydratedSchema, err

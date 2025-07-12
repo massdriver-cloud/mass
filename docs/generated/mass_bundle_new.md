@@ -44,10 +44,10 @@ mass bundle new [flags]
   -c, --connections strings       Connections and names to add to the bundle - example: network=massdriver/vpc
   -d, --description string        Description of the new bundle
   -h, --help                      help for new
-  -n, --name string               Name of the new bundle
+  -n, --name string               Name of the new bundle. Setting this will disable the interactive prompt.
   -o, --output-directory string   Directory to output the new bundle (default ".")
   -p, --params-directory string   Path with existing params to use - opentofu module directory or helm chart values.yaml
-  -t, --template-name string      Name of the bundle template to use
+  -t, --template-name string      Name of the bundle template to use. Setting this will disable the interactive prompt.
 ```
 
 ### SEE ALSO

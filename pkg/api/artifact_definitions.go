@@ -23,7 +23,10 @@ type ArtifactDefinitionWithSchema struct {
 
 func GetArtifactDefinition(ctx context.Context, mdClient *client.Client, name string) (*ArtifactDefinitionWithSchema, error) {
 	response, err := getArtifactDefinition(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name)
-	return response.toArtifactDefinition(), err
+	if err != nil {
+		return nil, fmt.Errorf("failed to get artifact definition %s: %w", name, err)
+	}
+	return response.toArtifactDefinition(), nil
 }
 
 func (response *getArtifactDefinitionResponse) toArtifactDefinition() *ArtifactDefinitionWithSchema {
@@ -38,7 +41,10 @@ func (response *getArtifactDefinitionResponse) toArtifactDefinition() *ArtifactD
 
 func ListArtifactDefinitions(ctx context.Context, mdClient *client.Client) ([]ArtifactDefinitionWithSchema, error) {
 	response, err := listArtifactDefinitions(ctx, mdClient.GQL, mdClient.Config.OrganizationID)
-	return response.toArtifactDefinitions(), err
+	if err != nil {
+		return nil, fmt.Errorf("failed to list artifact definitions: %w", err)
+	}
+	return response.toArtifactDefinitions(), nil
 }
 
 func (response *listArtifactDefinitionsResponse) toArtifactDefinitions() []ArtifactDefinitionWithSchema {
@@ -59,12 +65,12 @@ func (response *listArtifactDefinitionsResponse) toArtifactDefinitions() []Artif
 func PublishArtifactDefinition(ctx context.Context, mdClient *client.Client, schema map[string]any) (*ArtifactDefinitionWithSchema, error) {
 	response, err := publishArtifactDefinition(ctx, mdClient.GQL, mdClient.Config.OrganizationID, schema)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to publish artifact definition: %w", err)
 	}
 	if !response.PublishArtifactDefinition.Successful {
 		return nil, fmt.Errorf("unable to publish artifact definition: %s", response.PublishArtifactDefinition.GetMessages()[0].Message)
 	}
-	return response.toArtifactDefinition(), err
+	return response.toArtifactDefinition(), nil
 }
 
 func (response *publishArtifactDefinitionResponse) toArtifactDefinition() *ArtifactDefinitionWithSchema {
