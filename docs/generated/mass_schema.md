@@ -26,4 +26,5 @@ mass schema validate --schema=my-json-schema.json --document=my-document.json
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
+* [mass schema dereference](/cli/commands/mass_schema_dereference)	 - Dereferences a JSON Schema
 * [mass schema validate](/cli/commands/mass_schema_validate)	 - Validates a JSON document against a JSON Schema
