@@ -4,7 +4,7 @@ This command will expand all the `$ref` statements in a JSON Schema. This comman
 
 ## Examples
 
-From a existing file
+From an existing file
 
 ```shell
 mass schema dereference --file artdef.json
