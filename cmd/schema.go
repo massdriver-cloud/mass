@@ -27,7 +27,7 @@ func NewCmdSchema() *cobra.Command {
 		Long:  helpdocs.MustRender("schema/dereference"),
 		RunE:  runSchemaDereference,
 	}
-	schemaDereferenceCmd.Flags().StringP("file", "f", "", "Path to JSON document (use - for stdin)")
+	schemaDereferenceCmd.Flags().StringP("file", "f", "", "Path to JSON document")
 	schemaDereferenceCmd.MarkFlagRequired("file")
 
 	schemaValidateCmd := &cobra.Command{
@@ -51,19 +51,12 @@ func runSchemaDereference(cmd *cobra.Command, args []string) error {
 	schemaPath, _ := cmd.Flags().GetString("file")
 	cmd.SilenceUsage = true
 
-	var schemaFile *os.File
-	basePath := "."
-	if schemaPath == "-" {
-		schemaFile = os.Stdin
-	} else {
-		var openErr error
-		schemaFile, openErr = os.Open(schemaPath)
-		basePath = filepath.Dir(schemaPath)
-		if openErr != nil {
-			return fmt.Errorf("failed to open schema file %s: %w", schemaPath, openErr)
-		}
-		defer schemaFile.Close()
+	schemaFile, openErr := os.Open(schemaPath)
+	if openErr != nil {
+		return fmt.Errorf("failed to open schema file %s: %w", schemaPath, openErr)
 	}
+	defer schemaFile.Close()
+	basePath := filepath.Dir(schemaPath)
 
 	var rawSchema map[string]any
 	if err := json.NewDecoder(schemaFile).Decode(&rawSchema); err != nil {

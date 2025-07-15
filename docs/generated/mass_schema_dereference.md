@@ -36,7 +36,7 @@ mass schema dereference [flags]
 ### Options
 
 ```
-  -f, --file string   Path to JSON document (use - for stdin)
+  -f, --file string   Path to JSON document
   -h, --help          help for dereference
 ```
 
