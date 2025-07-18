@@ -1,7 +1,7 @@
 package bundle_test
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
