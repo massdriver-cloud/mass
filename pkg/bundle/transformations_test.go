@@ -53,8 +53,8 @@ func TestEnsureBooleansHaveDefault(t *testing.T) {
 				t.Fatalf("%v, unexpected error", err)
 			}
 
-			if fmt.Sprint(tc.input) != fmt.Sprint(tc.want) {
-				t.Errorf("got %v, want %v", tc.input, tc.want)
+			if !reflect.DeepEqual(tc.input, tc.want) {
+				t.Errorf("got %+v, want %+v", tc.input, tc.want)
 			}
 		})
 	}
