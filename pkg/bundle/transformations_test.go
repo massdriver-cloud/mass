@@ -50,7 +50,7 @@ func TestEnsureBooleansHaveDefault(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := bundle.ApplyTransformations(tc.input, []func(map[string]interface{}) error{bundle.EnsureBooleansHaveDefault})
 			if err != nil {
-				t.Fatalf("%d, unexpected error", err)
+				t.Fatalf("%v, unexpected error", err)
 			}
 
 			if fmt.Sprint(tc.input) != fmt.Sprint(tc.want) {
