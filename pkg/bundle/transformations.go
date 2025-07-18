@@ -11,9 +11,8 @@ func ApplyTransformations(schema map[string]any, transformations []func(map[stri
 	}
 
 	for _, v := range schema {
-		_, isObject := v.(map[string]any)
-		if isObject {
-			err := ApplyTransformations(v.(map[string]any), transformations)
+		if nestedSchema, isObject := v.(map[string]any); isObject {
+			err := ApplyTransformations(nestedSchema, transformations)
 			if err != nil {
 				return err
 			}
