@@ -48,7 +48,7 @@ func TestEnsureBooleansHaveDefault(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := bundle.ApplyTransformations(tc.input, []func(map[string]interface{}) error{bundle.EnsureBooleansHaveDefault})
+			err := bundle.ApplyTransformations(tc.input, []func(map[string]any) error{bundle.EnsureBooleansHaveDefault})
 			if err != nil {
 				t.Fatalf("%v, unexpected error", err)
 			}
