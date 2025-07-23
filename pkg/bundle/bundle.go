@@ -96,6 +96,10 @@ func Unmarshal(readDirectory string) (*Bundle, error) {
 		unmarshalledBundle.Artifacts["properties"] = make(map[string]any)
 	}
 
+	if transformationErr := ApplyTransformations(unmarshalledBundle.Params, paramsTransformations); transformationErr != nil {
+		return nil, fmt.Errorf("failed to apply transformations to params: %w", transformationErr)
+	}
+
 	return unmarshalledBundle, nil
 }
 
