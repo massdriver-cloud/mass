@@ -30,6 +30,12 @@ query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
   }
 }
 
+query downloadArtifact($organizationId: ID!, $artifactId: ID!, $format: DownloadFormat!) {
+  downloadArtifact(organizationId: $organizationId, artifactId: $artifactId, format: $format) {
+    renderedArtifact
+  }
+}
+
 
 # ARTIFACT-DEFINITIONS
 
@@ -99,6 +105,122 @@ query getDeploymentById($organizationId: ID!, $id: ID!) {
 }
 
 
+# ENVIRONMENTS
+
+query getEnvironmentById($organizationId: ID!, $id: ID!) {
+  environment(id: $id, organizationId: $organizationId) {
+    id
+    name
+    slug
+    description
+    cost {
+      monthly {
+        average {
+          amount
+        }
+      }
+      daily {
+        average {
+          amount
+        }
+      }
+    }
+    packages {
+      id
+      params
+      artifacts {
+        id
+        name
+        field
+      }
+      remoteReferences {
+        artifact {
+          id
+          name
+          field
+        }
+      }
+      status
+      manifest {
+        id
+        name
+        slug
+        suffix
+        description
+        bundle {
+          id
+          name
+          version
+          spec
+        }
+      }
+    }
+    project {
+      id
+      slug
+    }
+  }
+}
+
+query getEnvironmentsByProject($organizationId: ID!, $projectId: ID!) {
+  project(id: $projectId, organizationId: $organizationId) {
+    environments {
+      id
+      name
+      slug
+      description
+      cost {
+        monthly {
+          average {
+            amount
+          }
+        }
+        daily {
+          average {
+            amount
+          }
+        }
+      }
+      packages {
+        id
+        namePrefix
+        status
+        params
+        artifacts {
+          id
+          name
+          field
+        }
+        remoteReferences {
+          artifact {
+            id
+            name
+            field
+          }
+        }
+        manifest {
+          id
+          name
+          slug
+          suffix
+          description
+          bundle {
+            id
+            name
+            version
+            spec
+          }
+        }
+      }
+      project {
+        id
+        slug
+      }
+    }
+  }
+}
+
+
 # PACKAGES
 
 mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $message: String!) {
@@ -118,16 +240,32 @@ query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
   getPackageByNamingConvention(organizationId: $organizationId, name: $name) {
     id
     namePrefix
+    status
     params
-    manifest {
+    artifacts {
       id
-      bundle{
+      name
+      field
+    }
+    remoteReferences {
+      artifact {
+        id
         name
+        field
       }
     }
-    activeDeployment {
+    manifest {
       id
-      status
+      name
+      slug
+      suffix
+      description
+      bundle {
+        id
+        name
+        version
+        spec
+      }
     }
     environment {
       id

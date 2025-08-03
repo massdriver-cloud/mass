@@ -38,10 +38,10 @@ func TestGetPackageByName(t *testing.T) {
 
 	want := &api.Package{
 		NamePrefix: "ecomm-prod-cache-0000",
-		Manifest: api.Manifest{
+		Manifest: &api.Manifest{
 			ID: "manifest-id",
 		},
-		Environment: api.Environment{
+		Environment: &api.Environment{
 			ID: "target-id",
 		},
 	}

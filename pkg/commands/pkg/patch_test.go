@@ -16,8 +16,8 @@ func TestRunPatch(t *testing.T) {
 	responses := []gqlmock.ResponseFunc{
 		func(req *http.Request) any {
 			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
-				Manifest:    api.Manifest{ID: "manifest-id"},
-				Environment: api.Environment{ID: "target-id"},
+				Manifest:    &api.Manifest{ID: "manifest-id"},
+				Environment: &api.Environment{ID: "target-id"},
 				Params: map[string]any{
 					"cidr": "10.0.0.0/16",
 				},

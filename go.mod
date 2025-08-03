@@ -20,6 +20,7 @@ require (
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/airlock v0.0.7
 	github.com/massdriver-cloud/massdriver-sdk-go v0.0.8
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/moby v27.3.1+incompatible
 	github.com/moby/term v0.5.0
 	github.com/opencontainers/image-spec v1.1.1

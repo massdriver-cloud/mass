@@ -44,7 +44,6 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgConfigure,
 	}
-
 	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 
 	pkgDeployCmd := &cobra.Command{
@@ -55,8 +54,28 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgDeploy,
 	}
-
 	pkgDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
+
+	pkgExportCmd := &cobra.Command{
+		Use:     `export <project>-<env>-<manifest>`,
+		Short:   "Export packages",
+		Example: `mass package export ecomm-prod-vpc`,
+		Long:    helpdocs.MustRender("package/export"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgExport,
+	}
+
+	// pkg and infra are the same, lets reuse a get command/template here.
+	pkgGetCmd := &cobra.Command{
+		Use:     `get  <project>-<env>-<manifest>`,
+		Short:   "Get a package",
+		Aliases: []string{"g"},
+		Example: `mass package get ecomm-prod-vpc`,
+		Long:    helpdocs.MustRender("package/get"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgGet,
+	}
+	pkgGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	pkgPatchCmd := &cobra.Command{
 		Use:     `patch <project>-<env>-<manifest>`,
@@ -66,25 +85,13 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgPatch,
 	}
-
 	pkgPatchCmd.Flags().StringArrayVarP(&pkgPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 
-	// pkg and infra are the same, lets reuse a get command/template here.
-	pkgGetCmd := &cobra.Command{
-		Use:     `get  <project>-<env>-<manifest>`,
-		Short:   "Get a package",
-		Aliases: []string{"g"},
-		Example: `mass package get ecomm-prod-vpc`,
-		Long:    helpdocs.MustRender("package/get"),
-		Args:    cobra.ExactArgs(1), // Enforce exactly one argument
-		RunE:    runPkgGet,
-	}
-	pkgGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
-
-	pkgCmd.AddCommand(pkgDeployCmd)
 	pkgCmd.AddCommand(pkgConfigureCmd)
-	pkgCmd.AddCommand(pkgPatchCmd)
+	pkgCmd.AddCommand(pkgDeployCmd)
+	pkgCmd.AddCommand(pkgExportCmd)
 	pkgCmd.AddCommand(pkgGetCmd)
+	pkgCmd.AddCommand(pkgPatchCmd)
 
 	return pkgCmd
 }
@@ -207,6 +214,8 @@ func runPkgPatch(cmd *cobra.Command, args []string) error {
 
 	packageSlugOrID := args[0]
 
+	cmd.SilenceUsage = true
+
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
@@ -219,4 +228,24 @@ func runPkgPatch(cmd *cobra.Command, args []string) error {
 	fmt.Println(msg)
 
 	return err
+}
+
+func runPkgExport(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	packageSlugOrID := args[0]
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	exportErr := pkg.RunExport(ctx, mdClient, packageSlugOrID)
+	if exportErr != nil {
+		return fmt.Errorf("failed to export package: %w", exportErr)
+	}
+
+	return nil
 }

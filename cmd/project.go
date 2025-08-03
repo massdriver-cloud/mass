@@ -12,6 +12,7 @@ import (
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/cli"
+	"github.com/massdriver-cloud/mass/pkg/commands/project"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +25,15 @@ func NewCmdProject() *cobra.Command {
 		Use:     "project",
 		Short:   "Project management",
 		Long:    helpdocs.MustRender("project"),
-		Aliases: []string{"prj"},
+		Aliases: []string{"prj", "proj"},
+	}
+
+	projectExportCmd := &cobra.Command{
+		Use:   "export [project]",
+		Short: "Export a project from Massdriver",
+		Long:  helpdocs.MustRender("project/export"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runProjectExport,
 	}
 
 	projectGetCmd := &cobra.Command{
@@ -43,6 +52,7 @@ func NewCmdProject() *cobra.Command {
 		RunE:  runProjectList,
 	}
 
+	projectCmd.AddCommand(projectExportCmd)
 	projectCmd.AddCommand(projectGetCmd)
 	projectCmd.AddCommand(projectListCmd)
 
@@ -99,6 +109,21 @@ func runProjectGet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func runProjectExport(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	projectId := args[0]
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	return project.RunExport(ctx, mdClient, projectId)
+}
+
 func runProjectList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
@@ -115,7 +140,7 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 	tbl := cli.NewTable("ID/Slug", "Name", "Description", "Monthly $", "Daily $")
 
 	for _, project := range projects {
-		tbl.AddRow(project.Slug, project.Name, project.Description, project.MonthlyAverageCost, project.DailyAverageCost)
+		tbl.AddRow(project.Slug, project.Name, project.Description, project.Cost.Monthly.Average.Amount, project.Cost.Daily.Average.Amount)
 	}
 
 	tbl.Print()

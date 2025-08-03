@@ -12,10 +12,13 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api/scalars"
 )
 
+// How connecting this type works on the diagram.
 type ArtifactDefinitionUiConnectionOrientation string
 
 const (
-	ArtifactDefinitionUiConnectionOrientationLink               ArtifactDefinitionUiConnectionOrientation = "LINK"
+	// Artifacts of this type are connected via lines on the graph.
+	ArtifactDefinitionUiConnectionOrientationLink ArtifactDefinitionUiConnectionOrientation = "LINK"
+	// Artifacts of this type are connected by setting environment defaults in the top left corner.
 	ArtifactDefinitionUiConnectionOrientationEnvironmentDefault ArtifactDefinitionUiConnectionOrientation = "ENVIRONMENT_DEFAULT"
 )
 
@@ -41,6 +44,16 @@ func (v *Credential) GetArtifactDefinitionType() string { return v.ArtifactDefin
 
 // GetArtifactId returns Credential.ArtifactId, and is useful for accessing the field via an interface.
 func (v *Credential) GetArtifactId() string { return v.ArtifactId }
+
+// Supported artifact download formats
+type DownloadFormat string
+
+const (
+	DownloadFormatRaw  DownloadFormat = "RAW"
+	DownloadFormatYaml DownloadFormat = "YAML"
+	DownloadFormatPem  DownloadFormat = "PEM"
+	DownloadFormatOvpn DownloadFormat = "OVPN"
+)
 
 // MutationValidationError includes the requested fields of the GraphQL type ValidationMessage.
 // The GraphQL type's documentation follows.
@@ -73,6 +86,22 @@ type MutationValidationError struct {
 
 // GetMessage returns MutationValidationError.Message, and is useful for accessing the field via an interface.
 func (v *MutationValidationError) GetMessage() string { return v.Message }
+
+// Status of a package
+type PackageStatus string
+
+const (
+	// Package has been created but not yet provisioned
+	PackageStatusInitialized PackageStatus = "INITIALIZED"
+	// Package has been successfully provisioned
+	PackageStatusProvisioned PackageStatus = "PROVISIONED"
+	// Package has been decommissioned
+	PackageStatusDecommissioned PackageStatus = "DECOMMISSIONED"
+	// Package provisioning failed
+	PackageStatusFailed PackageStatus = "FAILED"
+	// Package exists externally
+	PackageStatusExternal PackageStatus = "EXTERNAL"
+)
 
 type PreviewEnvironmentInput struct {
 	Credentials           []Credential   `json:"credentials"`
@@ -466,6 +495,22 @@ func (v *__deployPreviewEnvironmentInput) GetProjectId() string { return v.Proje
 // GetInput returns __deployPreviewEnvironmentInput.Input, and is useful for accessing the field via an interface.
 func (v *__deployPreviewEnvironmentInput) GetInput() PreviewEnvironmentInput { return v.Input }
 
+// __downloadArtifactInput is used internally by genqlient
+type __downloadArtifactInput struct {
+	OrganizationId string         `json:"organizationId"`
+	ArtifactId     string         `json:"artifactId"`
+	Format         DownloadFormat `json:"format"`
+}
+
+// GetOrganizationId returns __downloadArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__downloadArtifactInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetArtifactId returns __downloadArtifactInput.ArtifactId, and is useful for accessing the field via an interface.
+func (v *__downloadArtifactInput) GetArtifactId() string { return v.ArtifactId }
+
+// GetFormat returns __downloadArtifactInput.Format, and is useful for accessing the field via an interface.
+func (v *__downloadArtifactInput) GetFormat() DownloadFormat { return v.Format }
+
 // __getArtifactDefinitionInput is used internally by genqlient
 type __getArtifactDefinitionInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -501,6 +546,30 @@ func (v *__getDeploymentByIdInput) GetOrganizationId() string { return v.Organiz
 
 // GetId returns __getDeploymentByIdInput.Id, and is useful for accessing the field via an interface.
 func (v *__getDeploymentByIdInput) GetId() string { return v.Id }
+
+// __getEnvironmentByIdInput is used internally by genqlient
+type __getEnvironmentByIdInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getEnvironmentByIdInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getEnvironmentByIdInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getEnvironmentByIdInput.Id, and is useful for accessing the field via an interface.
+func (v *__getEnvironmentByIdInput) GetId() string { return v.Id }
+
+// __getEnvironmentsByProjectInput is used internally by genqlient
+type __getEnvironmentsByProjectInput struct {
+	OrganizationId string `json:"organizationId"`
+	ProjectId      string `json:"projectId"`
+}
+
+// GetOrganizationId returns __getEnvironmentsByProjectInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getEnvironmentsByProjectInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetProjectId returns __getEnvironmentsByProjectInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__getEnvironmentsByProjectInput) GetProjectId() string { return v.ProjectId }
 
 // __getPackageByNamingConventionInput is used internally by genqlient
 type __getPackageByNamingConventionInput struct {
@@ -1013,6 +1082,27 @@ func (v *deployPreviewEnvironmentResponse) GetDeployPreviewEnvironment() deployP
 	return v.DeployPreviewEnvironment
 }
 
+// downloadArtifactDownloadArtifactRenderedArtifact includes the requested fields of the GraphQL type RenderedArtifact.
+type downloadArtifactDownloadArtifactRenderedArtifact struct {
+	RenderedArtifact string `json:"renderedArtifact"`
+}
+
+// GetRenderedArtifact returns downloadArtifactDownloadArtifactRenderedArtifact.RenderedArtifact, and is useful for accessing the field via an interface.
+func (v *downloadArtifactDownloadArtifactRenderedArtifact) GetRenderedArtifact() string {
+	return v.RenderedArtifact
+}
+
+// downloadArtifactResponse is returned by downloadArtifact on success.
+type downloadArtifactResponse struct {
+	// Connection data for an artifact rendered in requested format
+	DownloadArtifact downloadArtifactDownloadArtifactRenderedArtifact `json:"downloadArtifact"`
+}
+
+// GetDownloadArtifact returns downloadArtifactResponse.DownloadArtifact, and is useful for accessing the field via an interface.
+func (v *downloadArtifactResponse) GetDownloadArtifact() downloadArtifactDownloadArtifactRenderedArtifact {
+	return v.DownloadArtifact
+}
+
 // getArtifactDefinitionArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
 // The GraphQL type's documentation follows.
 //
@@ -1227,6 +1317,948 @@ type getDeploymentByIdResponse struct {
 // GetDeployment returns getDeploymentByIdResponse.Deployment, and is useful for accessing the field via an interface.
 func (v *getDeploymentByIdResponse) GetDeployment() getDeploymentByIdDeployment { return v.Deployment }
 
+// getEnvironmentByIdEnvironment includes the requested fields of the GraphQL type Environment.
+type getEnvironmentByIdEnvironment struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+	// Cloud provider costs for this target
+	Cost     getEnvironmentByIdEnvironmentCost              `json:"cost"`
+	Packages []getEnvironmentByIdEnvironmentPackagesPackage `json:"packages"`
+	Project  getEnvironmentByIdEnvironmentProject           `json:"project"`
+}
+
+// GetId returns getEnvironmentByIdEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironment) GetId() string { return v.Id }
+
+// GetName returns getEnvironmentByIdEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironment) GetName() string { return v.Name }
+
+// GetSlug returns getEnvironmentByIdEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironment) GetSlug() string { return v.Slug }
+
+// GetDescription returns getEnvironmentByIdEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironment) GetDescription() string { return v.Description }
+
+// GetCost returns getEnvironmentByIdEnvironment.Cost, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironment) GetCost() getEnvironmentByIdEnvironmentCost { return v.Cost }
+
+// GetPackages returns getEnvironmentByIdEnvironment.Packages, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironment) GetPackages() []getEnvironmentByIdEnvironmentPackagesPackage {
+	return v.Packages
+}
+
+// GetProject returns getEnvironmentByIdEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironment) GetProject() getEnvironmentByIdEnvironmentProject {
+	return v.Project
+}
+
+// getEnvironmentByIdEnvironmentCost includes the requested fields of the GraphQL type Cost.
+// The GraphQL type's documentation follows.
+//
+// Cost information for a resource
+type getEnvironmentByIdEnvironmentCost struct {
+	// Monthly cost summary
+	Monthly getEnvironmentByIdEnvironmentCostMonthlySummary `json:"monthly"`
+	// Daily cost summary
+	Daily getEnvironmentByIdEnvironmentCostDailySummary `json:"daily"`
+}
+
+// GetMonthly returns getEnvironmentByIdEnvironmentCost.Monthly, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentCost) GetMonthly() getEnvironmentByIdEnvironmentCostMonthlySummary {
+	return v.Monthly
+}
+
+// GetDaily returns getEnvironmentByIdEnvironmentCost.Daily, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentCost) GetDaily() getEnvironmentByIdEnvironmentCostDailySummary {
+	return v.Daily
+}
+
+// getEnvironmentByIdEnvironmentCostDailySummary includes the requested fields of the GraphQL type Summary.
+// The GraphQL type's documentation follows.
+//
+// Summary of costs over a time period
+type getEnvironmentByIdEnvironmentCostDailySummary struct {
+	// Average cost sample for the period
+	Average getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample `json:"average"`
+}
+
+// GetAverage returns getEnvironmentByIdEnvironmentCostDailySummary.Average, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentCostDailySummary) GetAverage() getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample {
+	return v.Average
+}
+
+// getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement
+type getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample struct {
+	// The cost amount
+	Amount float64 `json:"amount"`
+}
+
+// GetAmount returns getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// getEnvironmentByIdEnvironmentCostMonthlySummary includes the requested fields of the GraphQL type Summary.
+// The GraphQL type's documentation follows.
+//
+// Summary of costs over a time period
+type getEnvironmentByIdEnvironmentCostMonthlySummary struct {
+	// Average cost sample for the period
+	Average getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample `json:"average"`
+}
+
+// GetAverage returns getEnvironmentByIdEnvironmentCostMonthlySummary.Average, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentCostMonthlySummary) GetAverage() getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample {
+	return v.Average
+}
+
+// getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement
+type getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample struct {
+	// The cost amount
+	Amount float64 `json:"amount"`
+}
+
+// GetAmount returns getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// getEnvironmentByIdEnvironmentPackagesPackage includes the requested fields of the GraphQL type Package.
+// The GraphQL type's documentation follows.
+//
+// A deployed instance of a bundle in the context of its manifest
+type getEnvironmentByIdEnvironmentPackagesPackage struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Package configuration parameters
+	Params map[string]any `json:"-"`
+	// Artifacts provisioned by this package
+	Artifacts []getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
+	// Artifacts from a remote source like another project or a resource not managed by massdriver
+	RemoteReferences []getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	// Current status of the package
+	Status   PackageStatus                                        `json:"status"`
+	Manifest getEnvironmentByIdEnvironmentPackagesPackageManifest `json:"manifest"`
+}
+
+// GetId returns getEnvironmentByIdEnvironmentPackagesPackage.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetId() string { return v.Id }
+
+// GetParams returns getEnvironmentByIdEnvironmentPackagesPackage.Params, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetParams() map[string]any { return v.Params }
+
+// GetArtifacts returns getEnvironmentByIdEnvironmentPackagesPackage.Artifacts, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetArtifacts() []getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact {
+	return v.Artifacts
+}
+
+// GetRemoteReferences returns getEnvironmentByIdEnvironmentPackagesPackage.RemoteReferences, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetRemoteReferences() []getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference {
+	return v.RemoteReferences
+}
+
+// GetStatus returns getEnvironmentByIdEnvironmentPackagesPackage.Status, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetStatus() PackageStatus { return v.Status }
+
+// GetManifest returns getEnvironmentByIdEnvironmentPackagesPackage.Manifest, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetManifest() getEnvironmentByIdEnvironmentPackagesPackageManifest {
+	return v.Manifest
+}
+
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getEnvironmentByIdEnvironmentPackagesPackage
+		Params json.RawMessage `json:"params"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getEnvironmentByIdEnvironmentPackagesPackage = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Params
+		src := firstPass.Params
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentByIdEnvironmentPackagesPackage.Params: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentByIdEnvironmentPackagesPackage struct {
+	Id string `json:"id"`
+
+	Params json.RawMessage `json:"params"`
+
+	Artifacts []getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
+
+	RemoteReferences []getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+
+	Status PackageStatus `json:"status"`
+
+	Manifest getEnvironmentByIdEnvironmentPackagesPackageManifest `json:"manifest"`
+}
+
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) __premarshalJSON() (*__premarshalgetEnvironmentByIdEnvironmentPackagesPackage, error) {
+	var retval __premarshalgetEnvironmentByIdEnvironmentPackagesPackage
+
+	retval.Id = v.Id
+	{
+
+		dst := &retval.Params
+		src := v.Params
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentByIdEnvironmentPackagesPackage.Params: %w", err)
+		}
+	}
+	retval.Artifacts = v.Artifacts
+	retval.RemoteReferences = v.RemoteReferences
+	retval.Status = v.Status
+	retval.Manifest = v.Manifest
+	return &retval, nil
+}
+
+// getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact includes the requested fields of the GraphQL type Artifact.
+type getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	// The bundle's artifact field (output field) that produced this artifact.
+	Field string `json:"field"`
+}
+
+// GetId returns getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact) GetId() string { return v.Id }
+
+// GetName returns getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact) GetName() string {
+	return v.Name
+}
+
+// GetField returns getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact.Field, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact) GetField() string {
+	return v.Field
+}
+
+// getEnvironmentByIdEnvironmentPackagesPackageManifest includes the requested fields of the GraphQL type Manifest.
+// The GraphQL type's documentation follows.
+//
+// An instance of a bundle in a project's architecture, providing context for how the bundle is used
+type getEnvironmentByIdEnvironmentPackagesPackageManifest struct {
+	Id          string                                                     `json:"id"`
+	Name        string                                                     `json:"name"`
+	Slug        string                                                     `json:"slug"`
+	Suffix      string                                                     `json:"suffix"`
+	Description string                                                     `json:"description"`
+	Bundle      getEnvironmentByIdEnvironmentPackagesPackageManifestBundle `json:"bundle"`
+}
+
+// GetId returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetId() string { return v.Id }
+
+// GetName returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetName() string { return v.Name }
+
+// GetSlug returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Slug, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetSlug() string { return v.Slug }
+
+// GetSuffix returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Suffix, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetSuffix() string { return v.Suffix }
+
+// GetDescription returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetDescription() string {
+	return v.Description
+}
+
+// GetBundle returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Bundle, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetBundle() getEnvironmentByIdEnvironmentPackagesPackageManifestBundle {
+	return v.Bundle
+}
+
+// getEnvironmentByIdEnvironmentPackagesPackageManifestBundle includes the requested fields of the GraphQL type Bundle.
+// The GraphQL type's documentation follows.
+//
+// A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component
+type getEnvironmentByIdEnvironmentPackagesPackageManifestBundle struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Name of the bundle
+	Name string `json:"name"`
+	// Version of the bundle
+	Version string `json:"version"`
+	// Raw massdriver.yaml spec
+	Spec map[string]any `json:"-"`
+}
+
+// GetId returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetId() string { return v.Id }
+
+// GetName returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetName() string { return v.Name }
+
+// GetVersion returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Version, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetVersion() string {
+	return v.Version
+}
+
+// GetSpec returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetSpec() map[string]any {
+	return v.Spec
+}
+
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getEnvironmentByIdEnvironmentPackagesPackageManifestBundle
+		Spec json.RawMessage `json:"spec"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getEnvironmentByIdEnvironmentPackagesPackageManifestBundle = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Spec
+		src := firstPass.Spec
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Spec: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentByIdEnvironmentPackagesPackageManifestBundle struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Version string `json:"version"`
+
+	Spec json.RawMessage `json:"spec"`
+}
+
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) __premarshalJSON() (*__premarshalgetEnvironmentByIdEnvironmentPackagesPackageManifestBundle, error) {
+	var retval __premarshalgetEnvironmentByIdEnvironmentPackagesPackageManifestBundle
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Version = v.Version
+	{
+
+		dst := &retval.Spec
+		src := v.Spec
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Spec: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
+type getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference struct {
+	Artifact getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact `json:"artifact"`
+}
+
+// GetArtifact returns getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference.Artifact, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference) GetArtifact() getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact {
+	return v.Artifact
+}
+
+// getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact includes the requested fields of the GraphQL type Artifact.
+type getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	// The bundle's artifact field (output field) that produced this artifact.
+	Field string `json:"field"`
+}
+
+// GetId returns getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetId() string {
+	return v.Id
+}
+
+// GetName returns getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetName() string {
+	return v.Name
+}
+
+// GetField returns getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Field, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetField() string {
+	return v.Field
+}
+
+// getEnvironmentByIdEnvironmentProject includes the requested fields of the GraphQL type Project.
+type getEnvironmentByIdEnvironmentProject struct {
+	Id   string `json:"id"`
+	Slug string `json:"slug"`
+}
+
+// GetId returns getEnvironmentByIdEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentProject) GetId() string { return v.Id }
+
+// GetSlug returns getEnvironmentByIdEnvironmentProject.Slug, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentProject) GetSlug() string { return v.Slug }
+
+// getEnvironmentByIdResponse is returned by getEnvironmentById on success.
+type getEnvironmentByIdResponse struct {
+	Environment getEnvironmentByIdEnvironment `json:"environment"`
+}
+
+// GetEnvironment returns getEnvironmentByIdResponse.Environment, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdResponse) GetEnvironment() getEnvironmentByIdEnvironment {
+	return v.Environment
+}
+
+// getEnvironmentsByProjectProject includes the requested fields of the GraphQL type Project.
+type getEnvironmentsByProjectProject struct {
+	Environments []getEnvironmentsByProjectProjectEnvironmentsEnvironment `json:"environments"`
+}
+
+// GetEnvironments returns getEnvironmentsByProjectProject.Environments, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProject) GetEnvironments() []getEnvironmentsByProjectProjectEnvironmentsEnvironment {
+	return v.Environments
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironment includes the requested fields of the GraphQL type Environment.
+type getEnvironmentsByProjectProjectEnvironmentsEnvironment struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+	// Cloud provider costs for this target
+	Cost     getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost              `json:"cost"`
+	Packages []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage `json:"packages"`
+	Project  getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject           `json:"project"`
+}
+
+// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetId() string { return v.Id }
+
+// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetName() string { return v.Name }
+
+// GetSlug returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetSlug() string { return v.Slug }
+
+// GetDescription returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetDescription() string {
+	return v.Description
+}
+
+// GetCost returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Cost, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetCost() getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost {
+	return v.Cost
+}
+
+// GetPackages returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Packages, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetPackages() []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage {
+	return v.Packages
+}
+
+// GetProject returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetProject() getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject {
+	return v.Project
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost includes the requested fields of the GraphQL type Cost.
+// The GraphQL type's documentation follows.
+//
+// Cost information for a resource
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost struct {
+	// Monthly cost summary
+	Monthly getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary `json:"monthly"`
+	// Daily cost summary
+	Daily getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary `json:"daily"`
+}
+
+// GetMonthly returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost.Monthly, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost) GetMonthly() getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary {
+	return v.Monthly
+}
+
+// GetDaily returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost.Daily, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost) GetDaily() getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary {
+	return v.Daily
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary includes the requested fields of the GraphQL type Summary.
+// The GraphQL type's documentation follows.
+//
+// Summary of costs over a time period
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary struct {
+	// Average cost sample for the period
+	Average getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample `json:"average"`
+}
+
+// GetAverage returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary.Average, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary) GetAverage() getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample {
+	return v.Average
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample struct {
+	// The cost amount
+	Amount float64 `json:"amount"`
+}
+
+// GetAmount returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary includes the requested fields of the GraphQL type Summary.
+// The GraphQL type's documentation follows.
+//
+// Summary of costs over a time period
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary struct {
+	// Average cost sample for the period
+	Average getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample `json:"average"`
+}
+
+// GetAverage returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary.Average, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary) GetAverage() getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample {
+	return v.Average
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample struct {
+	// The cost amount
+	Amount float64 `json:"amount"`
+}
+
+// GetAmount returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage includes the requested fields of the GraphQL type Package.
+// The GraphQL type's documentation follows.
+//
+// A deployed instance of a bundle in the context of its manifest
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Prefix for resource names
+	NamePrefix string `json:"namePrefix"`
+	// Current status of the package
+	Status PackageStatus `json:"status"`
+	// Package configuration parameters
+	Params map[string]any `json:"-"`
+	// Artifacts provisioned by this package
+	Artifacts []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
+	// Artifacts from a remote source like another project or a resource not managed by massdriver
+	RemoteReferences []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	Manifest         getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest                          `json:"manifest"`
+}
+
+// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetId() string {
+	return v.Id
+}
+
+// GetNamePrefix returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.NamePrefix, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetNamePrefix() string {
+	return v.NamePrefix
+}
+
+// GetStatus returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Status, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetStatus() PackageStatus {
+	return v.Status
+}
+
+// GetParams returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Params, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetParams() map[string]any {
+	return v.Params
+}
+
+// GetArtifacts returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Artifacts, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetArtifacts() []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact {
+	return v.Artifacts
+}
+
+// GetRemoteReferences returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.RemoteReferences, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetRemoteReferences() []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference {
+	return v.RemoteReferences
+}
+
+// GetManifest returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Manifest, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetManifest() getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest {
+	return v.Manifest
+}
+
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage
+		Params json.RawMessage `json:"params"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Params
+		src := firstPass.Params
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Params: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage struct {
+	Id string `json:"id"`
+
+	NamePrefix string `json:"namePrefix"`
+
+	Status PackageStatus `json:"status"`
+
+	Params json.RawMessage `json:"params"`
+
+	Artifacts []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
+
+	RemoteReferences []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+
+	Manifest getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest `json:"manifest"`
+}
+
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) __premarshalJSON() (*__premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage, error) {
+	var retval __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage
+
+	retval.Id = v.Id
+	retval.NamePrefix = v.NamePrefix
+	retval.Status = v.Status
+	{
+
+		dst := &retval.Params
+		src := v.Params
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Params: %w", err)
+		}
+	}
+	retval.Artifacts = v.Artifacts
+	retval.RemoteReferences = v.RemoteReferences
+	retval.Manifest = v.Manifest
+	return &retval, nil
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact includes the requested fields of the GraphQL type Artifact.
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	// The bundle's artifact field (output field) that produced this artifact.
+	Field string `json:"field"`
+}
+
+// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact) GetId() string {
+	return v.Id
+}
+
+// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact) GetName() string {
+	return v.Name
+}
+
+// GetField returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact.Field, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact) GetField() string {
+	return v.Field
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest includes the requested fields of the GraphQL type Manifest.
+// The GraphQL type's documentation follows.
+//
+// An instance of a bundle in a project's architecture, providing context for how the bundle is used
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest struct {
+	Id          string                                                                              `json:"id"`
+	Name        string                                                                              `json:"name"`
+	Slug        string                                                                              `json:"slug"`
+	Suffix      string                                                                              `json:"suffix"`
+	Description string                                                                              `json:"description"`
+	Bundle      getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle `json:"bundle"`
+}
+
+// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetId() string {
+	return v.Id
+}
+
+// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetName() string {
+	return v.Name
+}
+
+// GetSlug returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Slug, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetSlug() string {
+	return v.Slug
+}
+
+// GetSuffix returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Suffix, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetSuffix() string {
+	return v.Suffix
+}
+
+// GetDescription returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetDescription() string {
+	return v.Description
+}
+
+// GetBundle returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Bundle, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetBundle() getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle {
+	return v.Bundle
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle includes the requested fields of the GraphQL type Bundle.
+// The GraphQL type's documentation follows.
+//
+// A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Name of the bundle
+	Name string `json:"name"`
+	// Version of the bundle
+	Version string `json:"version"`
+	// Raw massdriver.yaml spec
+	Spec map[string]any `json:"-"`
+}
+
+// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetId() string {
+	return v.Id
+}
+
+// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetName() string {
+	return v.Name
+}
+
+// GetVersion returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Version, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetVersion() string {
+	return v.Version
+}
+
+// GetSpec returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetSpec() map[string]any {
+	return v.Spec
+}
+
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle
+		Spec json.RawMessage `json:"spec"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Spec
+		src := firstPass.Spec
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Spec: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Version string `json:"version"`
+
+	Spec json.RawMessage `json:"spec"`
+}
+
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) __premarshalJSON() (*__premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle, error) {
+	var retval __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Version = v.Version
+	{
+
+		dst := &retval.Spec
+		src := v.Spec
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Spec: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference struct {
+	Artifact getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact `json:"artifact"`
+}
+
+// GetArtifact returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference.Artifact, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference) GetArtifact() getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact {
+	return v.Artifact
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact includes the requested fields of the GraphQL type Artifact.
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	// The bundle's artifact field (output field) that produced this artifact.
+	Field string `json:"field"`
+}
+
+// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetId() string {
+	return v.Id
+}
+
+// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetName() string {
+	return v.Name
+}
+
+// GetField returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Field, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetField() string {
+	return v.Field
+}
+
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject includes the requested fields of the GraphQL type Project.
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject struct {
+	Id   string `json:"id"`
+	Slug string `json:"slug"`
+}
+
+// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject) GetId() string { return v.Id }
+
+// GetSlug returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject.Slug, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject) GetSlug() string {
+	return v.Slug
+}
+
+// getEnvironmentsByProjectResponse is returned by getEnvironmentsByProject on success.
+type getEnvironmentsByProjectResponse struct {
+	Project getEnvironmentsByProjectProject `json:"project"`
+}
+
+// GetProject returns getEnvironmentsByProjectResponse.Project, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectResponse) GetProject() getEnvironmentsByProjectProject {
+	return v.Project
+}
+
 // getPackageByNamingConventionGetPackageByNamingConventionPackage includes the requested fields of the GraphQL type Package.
 // The GraphQL type's documentation follows.
 //
@@ -1236,11 +2268,15 @@ type getPackageByNamingConventionGetPackageByNamingConventionPackage struct {
 	Id string `json:"id"`
 	// Prefix for resource names
 	NamePrefix string `json:"namePrefix"`
+	// Current status of the package
+	Status PackageStatus `json:"status"`
 	// Package configuration parameters
-	Params   map[string]any                                                          `json:"-"`
-	Manifest getPackageByNamingConventionGetPackageByNamingConventionPackageManifest `json:"manifest"`
-	// Currently active deployment for this package
-	ActiveDeployment getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment `json:"activeDeployment"`
+	Params map[string]any `json:"-"`
+	// Artifacts provisioned by this package
+	Artifacts []getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact `json:"artifacts"`
+	// Artifacts from a remote source like another project or a resource not managed by massdriver
+	RemoteReferences []getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	Manifest         getPackageByNamingConventionGetPackageByNamingConventionPackageManifest                          `json:"manifest"`
 	// The environment this package will be deployed to
 	Environment getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment `json:"environment"`
 }
@@ -1253,19 +2289,29 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetNam
 	return v.NamePrefix
 }
 
+// GetStatus returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Status, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetStatus() PackageStatus {
+	return v.Status
+}
+
 // GetParams returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Params, and is useful for accessing the field via an interface.
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetParams() map[string]any {
 	return v.Params
 }
 
+// GetArtifacts returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Artifacts, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetArtifacts() []getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact {
+	return v.Artifacts
+}
+
+// GetRemoteReferences returns getPackageByNamingConventionGetPackageByNamingConventionPackage.RemoteReferences, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetRemoteReferences() []getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference {
+	return v.RemoteReferences
+}
+
 // GetManifest returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Manifest, and is useful for accessing the field via an interface.
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetManifest() getPackageByNamingConventionGetPackageByNamingConventionPackageManifest {
 	return v.Manifest
-}
-
-// GetActiveDeployment returns getPackageByNamingConventionGetPackageByNamingConventionPackage.ActiveDeployment, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetActiveDeployment() getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment {
-	return v.ActiveDeployment
 }
 
 // GetEnvironment returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Environment, and is useful for accessing the field via an interface.
@@ -1311,11 +2357,15 @@ type __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage
 
 	NamePrefix string `json:"namePrefix"`
 
+	Status PackageStatus `json:"status"`
+
 	Params json.RawMessage `json:"params"`
 
-	Manifest getPackageByNamingConventionGetPackageByNamingConventionPackageManifest `json:"manifest"`
+	Artifacts []getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact `json:"artifacts"`
 
-	ActiveDeployment getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment `json:"activeDeployment"`
+	RemoteReferences []getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+
+	Manifest getPackageByNamingConventionGetPackageByNamingConventionPackageManifest `json:"manifest"`
 
 	Environment getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment `json:"environment"`
 }
@@ -1333,6 +2383,7 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) __prem
 
 	retval.Id = v.Id
 	retval.NamePrefix = v.NamePrefix
+	retval.Status = v.Status
 	{
 
 		dst := &retval.Params
@@ -1345,29 +2396,34 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) __prem
 				"unable to marshal getPackageByNamingConventionGetPackageByNamingConventionPackage.Params: %w", err)
 		}
 	}
+	retval.Artifacts = v.Artifacts
+	retval.RemoteReferences = v.RemoteReferences
 	retval.Manifest = v.Manifest
-	retval.ActiveDeployment = v.ActiveDeployment
 	retval.Environment = v.Environment
 	return &retval, nil
 }
 
-// getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment includes the requested fields of the GraphQL type Deployment.
-// The GraphQL type's documentation follows.
-//
-// A deployment represents an instance of a bundle being deployed to a target environment
-type getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment struct {
-	Id     string `json:"id"`
-	Status string `json:"status"`
+// getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact includes the requested fields of the GraphQL type Artifact.
+type getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	// The bundle's artifact field (output field) that produced this artifact.
+	Field string `json:"field"`
 }
 
-// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment.Id, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment) GetId() string {
+// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact) GetId() string {
 	return v.Id
 }
 
-// GetStatus returns getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment.Status, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageActiveDeployment) GetStatus() string {
-	return v.Status
+// GetName returns getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact) GetName() string {
+	return v.Name
+}
+
+// GetField returns getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact.Field, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact) GetField() string {
+	return v.Field
 }
 
 // getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment includes the requested fields of the GraphQL type Environment.
@@ -1413,13 +2469,37 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironm
 //
 // An instance of a bundle in a project's architecture, providing context for how the bundle is used
 type getPackageByNamingConventionGetPackageByNamingConventionPackageManifest struct {
-	Id     string                                                                        `json:"id"`
-	Bundle getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle `json:"bundle"`
+	Id          string                                                                        `json:"id"`
+	Name        string                                                                        `json:"name"`
+	Slug        string                                                                        `json:"slug"`
+	Suffix      string                                                                        `json:"suffix"`
+	Description string                                                                        `json:"description"`
+	Bundle      getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle `json:"bundle"`
 }
 
 // GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Id, and is useful for accessing the field via an interface.
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetId() string {
 	return v.Id
+}
+
+// GetName returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Name, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetName() string {
+	return v.Name
+}
+
+// GetSlug returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Slug, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetSlug() string {
+	return v.Slug
+}
+
+// GetSuffix returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Suffix, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetSuffix() string {
+	return v.Suffix
+}
+
+// GetDescription returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Description, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetDescription() string {
+	return v.Description
 }
 
 // GetBundle returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Bundle, and is useful for accessing the field via an interface.
@@ -1432,13 +2512,139 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest
 //
 // A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component
 type getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle struct {
+	// Unique identifier
+	Id string `json:"id"`
 	// Name of the bundle
 	Name string `json:"name"`
+	// Version of the bundle
+	Version string `json:"version"`
+	// Raw massdriver.yaml spec
+	Spec map[string]any `json:"-"`
+}
+
+// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Id, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetId() string {
+	return v.Id
 }
 
 // GetName returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Name, and is useful for accessing the field via an interface.
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetName() string {
 	return v.Name
+}
+
+// GetVersion returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Version, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetVersion() string {
+	return v.Version
+}
+
+// GetSpec returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetSpec() map[string]any {
+	return v.Spec
+}
+
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle
+		Spec json.RawMessage `json:"spec"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Spec
+		src := firstPass.Spec
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Spec: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Version string `json:"version"`
+
+	Spec json.RawMessage `json:"spec"`
+}
+
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) __premarshalJSON() (*__premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle, error) {
+	var retval __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Version = v.Version
+	{
+
+		dst := &retval.Spec
+		src := v.Spec
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Spec: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
+type getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference struct {
+	Artifact getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact `json:"artifact"`
+}
+
+// GetArtifact returns getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference.Artifact, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference) GetArtifact() getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact {
+	return v.Artifact
+}
+
+// getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact includes the requested fields of the GraphQL type Artifact.
+type getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	// The bundle's artifact field (output field) that produced this artifact.
+	Field string `json:"field"`
+}
+
+// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact) GetId() string {
+	return v.Id
+}
+
+// GetName returns getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact) GetName() string {
+	return v.Name
+}
+
+// GetField returns getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact.Field, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact) GetField() string {
+	return v.Field
 }
 
 // getPackageByNamingConventionResponse is returned by getPackageByNamingConvention on success.
@@ -2273,6 +3479,45 @@ func deployPreviewEnvironment(
 	return &data, err
 }
 
+// The query or mutation executed by downloadArtifact.
+const downloadArtifact_Operation = `
+query downloadArtifact ($organizationId: ID!, $artifactId: ID!, $format: DownloadFormat!) {
+	downloadArtifact(organizationId: $organizationId, artifactId: $artifactId, format: $format) {
+		renderedArtifact
+	}
+}
+`
+
+func downloadArtifact(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	artifactId string,
+	format DownloadFormat,
+) (*downloadArtifactResponse, error) {
+	req := &graphql.Request{
+		OpName: "downloadArtifact",
+		Query:  downloadArtifact_Operation,
+		Variables: &__downloadArtifactInput{
+			OrganizationId: organizationId,
+			ArtifactId:     artifactId,
+			Format:         format,
+		},
+	}
+	var err error
+
+	var data downloadArtifactResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by getArtifactDefinition.
 const getArtifactDefinition_Operation = `
 query getArtifactDefinition ($organizationId: ID!, $name: String!) {
@@ -2399,22 +3644,213 @@ func getDeploymentById(
 	return &data, err
 }
 
+// The query or mutation executed by getEnvironmentById.
+const getEnvironmentById_Operation = `
+query getEnvironmentById ($organizationId: ID!, $id: ID!) {
+	environment(id: $id, organizationId: $organizationId) {
+		id
+		name
+		slug
+		description
+		cost {
+			monthly {
+				average {
+					amount
+				}
+			}
+			daily {
+				average {
+					amount
+				}
+			}
+		}
+		packages {
+			id
+			params
+			artifacts {
+				id
+				name
+				field
+			}
+			remoteReferences {
+				artifact {
+					id
+					name
+					field
+				}
+			}
+			status
+			manifest {
+				id
+				name
+				slug
+				suffix
+				description
+				bundle {
+					id
+					name
+					version
+					spec
+				}
+			}
+		}
+		project {
+			id
+			slug
+		}
+	}
+}
+`
+
+func getEnvironmentById(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*getEnvironmentByIdResponse, error) {
+	req := &graphql.Request{
+		OpName: "getEnvironmentById",
+		Query:  getEnvironmentById_Operation,
+		Variables: &__getEnvironmentByIdInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data getEnvironmentByIdResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getEnvironmentsByProject.
+const getEnvironmentsByProject_Operation = `
+query getEnvironmentsByProject ($organizationId: ID!, $projectId: ID!) {
+	project(id: $projectId, organizationId: $organizationId) {
+		environments {
+			id
+			name
+			slug
+			description
+			cost {
+				monthly {
+					average {
+						amount
+					}
+				}
+				daily {
+					average {
+						amount
+					}
+				}
+			}
+			packages {
+				id
+				namePrefix
+				status
+				params
+				artifacts {
+					id
+					name
+					field
+				}
+				remoteReferences {
+					artifact {
+						id
+						name
+						field
+					}
+				}
+				manifest {
+					id
+					name
+					slug
+					suffix
+					description
+					bundle {
+						id
+						name
+						version
+						spec
+					}
+				}
+			}
+			project {
+				id
+				slug
+			}
+		}
+	}
+}
+`
+
+func getEnvironmentsByProject(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	projectId string,
+) (*getEnvironmentsByProjectResponse, error) {
+	req := &graphql.Request{
+		OpName: "getEnvironmentsByProject",
+		Query:  getEnvironmentsByProject_Operation,
+		Variables: &__getEnvironmentsByProjectInput{
+			OrganizationId: organizationId,
+			ProjectId:      projectId,
+		},
+	}
+	var err error
+
+	var data getEnvironmentsByProjectResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by getPackageByNamingConvention.
 const getPackageByNamingConvention_Operation = `
 query getPackageByNamingConvention ($organizationId: ID!, $name: String!) {
 	getPackageByNamingConvention(organizationId: $organizationId, name: $name) {
 		id
 		namePrefix
+		status
 		params
-		manifest {
+		artifacts {
 			id
-			bundle {
+			name
+			field
+		}
+		remoteReferences {
+			artifact {
+				id
 				name
+				field
 			}
 		}
-		activeDeployment {
+		manifest {
 			id
-			status
+			name
+			slug
+			suffix
+			description
+			bundle {
+				id
+				name
+				version
+				spec
+			}
 		}
 		environment {
 			id

@@ -1,5 +1,8 @@
 package api
 
 type Bundle struct {
-	Name string `json:"name"`
+	ID      string         `json:"id"`
+	Name    string         `json:"name"`
+	Version string         `json:"version"`
+	Spec    map[string]any `json:"spec,omitempty"`
 }

@@ -12,8 +12,8 @@ import (
 func TestRunDeploy(t *testing.T) {
 	responses := []any{
 		gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
-			Manifest:    api.Manifest{ID: "manifest-id"},
-			Environment: api.Environment{ID: "target-id"},
+			Manifest:    &api.Manifest{ID: "manifest-id"},
+			Environment: &api.Environment{ID: "target-id"},
 		}),
 		gqlmock.MockMutationResponse("deployPackage", api.Deployment{
 			ID:     "deployment-id",

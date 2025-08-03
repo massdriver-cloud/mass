@@ -5,14 +5,6 @@ schema {
   subscription: RootSubscriptionType
 }
 
-type TargetConnection {
-  id: ID
-  artifact: Artifact
-  target: Target
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
 enum AlarmStatus {
   "The metric is within normal operating parameters and below the alarm threshold."
   OK
@@ -76,15 +68,16 @@ type RootSubscriptionType {
   packageAlarms(organizationId: ID!, packageId: ID!): Alarm
 }
 
+"How connecting this type works on the diagram."
 enum ArtifactDefinitionUiConnectionOrientation {
+  "Artifacts of this type are connected via lines on the graph."
   LINK
+
+  "Artifacts of this type are connected by setting environment defaults in the top left corner."
   ENVIRONMENT_DEFAULT
 }
 
-"""
-The `Markdown` scalar type represents base64 encoded string data used to represent markdown files
-which can be retrieved in decoded form.
-"""
+"A markdown document"
 scalar Markdown
 
 "Summary of costs over a time period"
@@ -205,6 +198,21 @@ type SecretField {
   valueMetadata: SecretMetadata
 }
 
+"SSO configuration parameters"
+input ConfigureSsoInput {
+  "The OAuth2 client ID from your identity provider"
+  clientId: String!
+
+  "The OAuth2 client secret from your identity provider"
+  clientSecret: String!
+
+  "The authorization endpoint URL from your identity provider"
+  authorizeUrl: String!
+
+  "The token endpoint URL from your identity provider"
+  tokenUrl: String!
+}
+
 type RecentDeployment {
   id: ID!
   packageSlug: String!
@@ -233,15 +241,6 @@ input ArtifactsInput {
 type ArtifactDefinitionUiInstructions {
   label: String!
   content: Markdown!
-}
-
-"Error information for target deletion"
-type TargetDeletionLifecyclePackageError {
-  "Package causing the deletion error"
-  package: Package!
-
-  "Error message"
-  message: String!
 }
 
 "Metadata associated with a deployment log entry"
@@ -356,8 +355,6 @@ type Project {
 
   organization: Organization
 
-  targets: [Target] @deprecated(reason: "use `environments`")
-
   environments: [Environment]
 
   manifests: [Manifest]
@@ -389,7 +386,6 @@ type PaginatedArtifacts {
 type ProjectDeletionLifecyclePackageError {
   package: Package!
   message: String!
-  target: Target
   environment: Environment
 }
 
@@ -406,51 +402,6 @@ type Permission {
 input Credential {
   artifactDefinitionType: String!
   artifactId: ID!
-}
-
-"A deployment environment where bundles can be deployed"
-type Target {
-  "Unique identifier"
-  id: ID
-
-  "Name of the target"
-  name: String
-
-  "URL-friendly identifier"
-  slug: String
-
-  "Description of the target"
-  description: String
-
-  "Operation mode of the target"
-  mode: TargetMode
-
-  "Information about whether the target can be deleted"
-  deletable: TargetDeletionLifecycle!
-
-  "When the target was created"
-  createdAt: DateTime
-
-  "When the target was last updated"
-  updatedAt: DateTime
-
-  "Target's diagram links and resources"
-  diagram: Diagram
-
-  "Manifests for this target's package"
-  manifests: [Manifest]
-
-  "The project this target belongs to"
-  project: Project
-
-  "Packages deployed to this target"
-  packages: [Package]
-
-  "Connections configured for this target"
-  connections: [TargetConnection]
-
-  "Default connections for this target"
-  defaultConnections: [DefaultTargetConnection]
 }
 
 "A service account represents a non-human account used for automated access"
@@ -473,6 +424,12 @@ type DeploymentStatistic {
   successfulDeployments: Int!
   failedDeployments: Int!
   errorRate: Float!
+}
+
+type Server {
+  version: String!
+  mode: ServerMode!
+  ssoProviders: [PublicSsoProvider]
 }
 
 "Error information for bundle deletion"
@@ -547,17 +504,6 @@ type AuditLogResponse {
   cursor: String
 }
 
-type TargetPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: Target
-}
-
 type ServiceAccountWithSecretPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -567,6 +513,17 @@ type ServiceAccountWithSecretPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: ServiceAccountWithSecret
+}
+
+type SsoConfigPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: SsoConfig
 }
 
 type InvitationPayload {
@@ -602,9 +559,42 @@ type ArtifactPayload {
   result: Artifact
 }
 
+type PublicSsoProvider {
+  name: String!
+
+  "OAuth Login Flow URL"
+  loginUrl: String!
+}
+
 type ContainerRepositoryAuth {
   repoUri: String!
   token: String!
+}
+
+type SsoConfig {
+  "The unique identifier for the SSO configuration"
+  id: ID!
+
+  "The OAuth2 client ID from your identity provider"
+  clientId: String!
+
+  "The callback URL where users will be redirected after authentication"
+  redirectUri: String!
+
+  "OAuth Login Flow URL"
+  loginUrl: String!
+
+  "The authorization endpoint URL from your identity provider"
+  authorizeUrl: String!
+
+  "The token endpoint URL from your identity provider"
+  tokenUrl: String!
+
+  "When the SSO configuration was created"
+  createdAt: DateTime!
+
+  "When the SSO configuration was last updated"
+  updatedAt: DateTime!
 }
 
 "Lifecycle information for package deletion"
@@ -651,9 +641,6 @@ type Package {
   manifest: Manifest!
 
   paramsSchema: JSON!
-
-  "The target this package will be deployed to"
-  target: Target!
 
   "The environment this package will be deployed to"
   environment: Environment!
@@ -704,6 +691,12 @@ type BundleDeletionLifecycle {
   "List of deletion errors if any"
   messages: [BundleDeletionLifecycleError]
 }
+
+"""
+The `Date` scalar type represents a date. The Date appears in a JSON
+response as an ISO8601 formatted string, without a time component.
+"""
+scalar Date
 
 "Context information for a node"
 type NodeContext {
@@ -841,14 +834,14 @@ type RootQueryType {
     id: ID!
   ): Bundle
 
-  "Search for bundles"
-  searchBundles(
+  "Get a specific template"
+  template(
     "Organization ID"
     organizationId: ID!
 
-    "Filter bundle search results"
-    input: BundleSearchFilters
-  ): [Bundle]
+    "Bundle ID"
+    id: ID!
+  ): Bundle
 
   "Get bundle source code"
   bundleSourceCode(
@@ -937,21 +930,6 @@ type RootQueryType {
   "list all groups for an organization"
   groups(organizationId: ID!): [Group]
 
-  "Gets all VM instance types for a given region"
-  instanceTypes(
-    "Organization ID"
-    organizationId: ID!
-
-    "Artifact ID"
-    artifactId: ID!
-
-    "Package ID"
-    packageId: ID!
-
-    "Input parameters for instance type query"
-    input: InstanceTypeInput!
-  ): [InstanceType]
-
   manifest(
     organizationId: ID!
 
@@ -992,14 +970,7 @@ type RootQueryType {
 
   serviceAccounts(organizationId: ID!): [ServiceAccount]
 
-  "Deprecated, use environment instead"
-  target(
-    "Organization ID"
-    organizationId: ID!
-
-    "Target ID or slug"
-    id: ID!
-  ): Target @deprecated(reason: "deprecated, use environment instead")
+  server: Server!
 }
 
 """
@@ -1040,14 +1011,6 @@ type Manifest {
   linkableFields: [LinkableField]
 }
 
-input InstanceTypeInput {
-  "A JQ like query for accessing the region in a package"
-  query: String!
-
-  "Cloud service to get instances for"
-  service: String!
-}
-
 enum OrganizationBillingStatus {
   "The organization is in the trial period."
   TRIAL
@@ -1072,30 +1035,6 @@ enum OrganizationBillingStatus {
 
   "The organization's payment has failed."
   PAYMENT_FAILED
-}
-
-"Bundle search filters"
-input BundleSearchFilters {
-  "Search query"
-  query: String
-}
-
-"Default connection configuration for a target"
-type DefaultTargetConnection {
-  "Unique identifier"
-  id: ID!
-
-  "Group name for the connection"
-  defaultTargetConnectionGroup: String!
-
-  "Display label for the connection group"
-  defaultTargetConnectionGroupLabel: String!
-
-  "Type of the connection"
-  defaultTargetConnectionType: String!
-
-  "The artifact being connected"
-  artifact: Artifact!
 }
 
 "An invitation to join an organization or group"
@@ -1176,15 +1115,6 @@ type Alarm {
 
   "The most recent state of the alarm. If no states exist, returns INSUFFICIENT_DATA. Otherwise, returns the most recent state based on occurred_at timestamp."
   currentState: PackageAlarmState
-}
-
-"Lifecycle information for target deletion"
-type TargetDeletionLifecycle {
-  "Whether deletion is possible"
-  result: Boolean!
-
-  "List of deletion errors if any"
-  messages: [TargetDeletionLifecyclePackageError]
 }
 
 type ProjectDeletionLifecycle {
@@ -1294,6 +1224,9 @@ type OrganizationBilling {
   "The date and time when the trial period ends. Timezone is UTC."
   trialEndsAt: DateTime!
 
+  "Expiration date for annual plans."
+  planExpiresOn: Date
+
   "The URL to manage the organization's subscription."
   portalUrl: String!
 
@@ -1302,18 +1235,6 @@ type OrganizationBilling {
 
   "The URL to pay for the organization's subscription."
   subscriptionManagementUrl: String! @deprecated(reason: "Use `organization_billing_plans` instead.")
-}
-
-"Mode of operation for a target"
-enum TargetMode {
-  "Preview mode for testing"
-  PREVIEW
-
-  "Demo mode for demonstrations"
-  DEMO
-
-  "Standard production mode"
-  STANDARD
 }
 
 type RemoteReferencePayload {
@@ -1391,6 +1312,11 @@ enum AuditLogFilterOption {
   ENVIRONMENT
 }
 
+enum ServerMode {
+  SELF_HOSTED
+  MANAGED
+}
+
 type RemoteReference {
   artifact: Artifact!
   field: String!
@@ -1437,9 +1363,12 @@ type Dimension {
 
 type DefaultEnvironmentConnection {
   id: ID!
-  defaultEnvironmentConnectionGroup: String!
-  defaultEnvironmentConnectionGroupLabel: String!
-  defaultEnvironmentConnectionType: String!
+  defaultEnvironmentConnectionGroup: String! @deprecated(reason: "see group")
+  defaultEnvironmentConnectionGroupLabel: String! @deprecated(reason: "see label")
+  defaultEnvironmentConnectionType: String! @deprecated(reason: "see artifactDefinition.name")
+  label: String!
+  group: String!
+  artifactDefinition: ArtifactDefinition!
   artifact: Artifact!
 }
 
@@ -1455,44 +1384,9 @@ human-readable json string.
 """
 scalar JSON
 
-type OnboardingTask {
-  task: String!
-  complete: Boolean!
-  label: String!
-}
-
 type ManifestDeletionLifecycle {
   result: Boolean!
   messages: [ManifestDeletionLifecyclePackageError]
-}
-
-"A VM type in the cloud"
-type InstanceType {
-  "The name\/identifier of the instance type"
-  name: String!
-
-  "Compute class defined by the cloud"
-  size: String
-
-  "Amount of memory in gigabytes"
-  memoryGb: String!
-
-  "Number of virtual CPUs"
-  vCpus: String!
-
-  "Input\/output operations per second"
-  iops: String
-}
-
-type TargetConnectionPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: TargetConnection
 }
 
 type ServiceAccountMemberPayload {
@@ -1739,6 +1633,8 @@ type Account {
 
   "Organizations you are a member of"
   organizations: [Organization]
+
+  defaultOrganization: Organization
 }
 
 "Artifact filters"
@@ -1783,10 +1679,13 @@ type Handle {
   type: String!
 
   "Whether this handle can be linked"
-  isLinkable: Boolean!
+  isLinkable: Boolean! @deprecated(reason: "see connectionOrientation")
 
   "Whether this handle is required"
   required: Boolean!
+
+  "How to visually connect this artifact definition type on the canvas. link - draw lines, environmentDefault - set on sidebar"
+  connectionOrientation: ArtifactDefinitionUiConnectionOrientation!
 }
 
 "A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component"
@@ -1803,6 +1702,9 @@ type Bundle {
   "Icon SVG"
   icon: String
 
+  "Raw massdriver.yaml spec"
+  spec: JSON!
+
   "Version of the bundle specification"
   specVersion: String
 
@@ -1815,7 +1717,7 @@ type Bundle {
   "Description of the bundle"
   description: String
 
-  ref: String @deprecated(reason: "Replaced with sourceUrl")
+  ref: String @deprecated(reason: "See sourceUrl")
 
   "URL to the source code repository"
   sourceUrl: String
@@ -1845,7 +1747,10 @@ type Bundle {
   deletable: BundleDeletionLifecycle!
 
   "The full name of the bundle"
-  fqn: String!
+  fqn: String! @deprecated(reason: "See ociImageReference")
+
+  "OCI Image Reference URL"
+  ociImageReference: String!
 }
 
 type AccountMembershipPayload {
@@ -1923,9 +1828,6 @@ type Artifact {
 
   "Connections to packages"
   connections: [Connection]
-
-  "Targets this package is a default in"
-  targetConnections: [TargetConnection]
 
   "Environments this package is a default in"
   environmentConnections: [EnvironmentConnection]
@@ -2012,7 +1914,7 @@ type RootMutationType {
     id: ID!
   ): BundlePayload
 
-  "Add a bundle to the catalog"
+  "Add a template to your bundle catalog"
   addBundleToCatalog(
     "Organization ID"
     organizationId: ID!
@@ -2174,6 +2076,15 @@ type RootMutationType {
   "Create an organization"
   createOrganization(name: String!, slug: String!): OrganizationPayload
 
+  "Configure SSO for an organization"
+  configureSso(
+    "The ID of the organization to configure SSO for"
+    organizationId: ID!
+
+    "The SSO configuration parameters"
+    input: ConfigureSsoInput!
+  ): SsoConfigPayload
+
   """
   Reset a package to its initialized state. This is useful for:
   - Forcing a stuck bundle off the canvas
@@ -2272,36 +2183,6 @@ type RootMutationType {
   deactivateServiceAccount(organizationId: ID!, id: ID!): ServiceAccountPayload
 
   reactivateServiceAccount(organizationId: ID!, id: ID!): ServiceAccountPayload
-
-  "deprecated. Use createEnvironmentConnection instead"
-  createTargetConnection(organizationId: ID!, artifactId: ID!, targetId: ID!): TargetConnectionPayload @deprecated(reason: "use createEnvironmentConnection instead")
-
-  "deprecated. Use deleteEnvironmentConnection instead"
-  deleteTargetConnection(organizationId: ID!, id: ID!): TargetConnectionPayload @deprecated(reason: "use deleteEnvironmentConnection instead")
-
-  "Deprecated. use updateEnvironment instead"
-  updateTarget(
-    "Organization ID"
-    organizationId: ID!
-
-    "Target ID"
-    id: ID!
-
-    "New name for the target"
-    name: String!
-
-    "New description for the target"
-    description: String
-  ): TargetPayload @deprecated(reason: "use updateEnvironment instead")
-
-  "Deprecated. use deleteTarget instead"
-  deleteTarget(
-    "Organization ID"
-    organizationId: ID!
-
-    "Target ID"
-    id: ID!
-  ): TargetPayload @deprecated(reason: "use deleteTarget instead")
 }
 
 type EnvironmentConnection {
@@ -2411,8 +2292,6 @@ type Organization {
   isAdmin: Boolean
 
   groups: [Group]
-
-  onboardingTasks: [OnboardingTask]
 }
 
 "A connection between a package and an artifact"

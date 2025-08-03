@@ -3,65 +3,50 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/mitchellh/mapstructure"
 )
 
 type Project struct {
-	ID                 string         `json:"id"`
-	Name               string         `json:"name"`
-	Slug               string         `json:"slug"`
-	Description        string         `json:"description"`
-	DefaultParams      map[string]any `json:"defaultParams"`
-	MonthlyAverageCost float64        `json:"monthlyAverageCost"`
-	DailyAverageCost   float64        `json:"dailyAverageCost"`
-	Environments       []Environment  `json:"environments"`
+	ID            string         `json:"id"`
+	Name          string         `json:"name"`
+	Slug          string         `json:"slug"`
+	Description   string         `json:"description"`
+	DefaultParams map[string]any `json:"defaultParams"`
+	Cost          *Cost          `json:"cost,omitempty"`
+	Environments  []Environment  `json:"environments"`
 }
 
 func GetProject(ctx context.Context, mdClient *client.Client, idOrSlug string) (*Project, error) {
 	response, err := getProjectById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, idOrSlug)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project %s: %w", idOrSlug, err)
+	}
 
-	return response.Project.toProject(), err
+	return toProject(response.Project)
 }
 
-func (p *getProjectByIdProject) toProject() *Project {
-	return &Project{
-		ID:            p.Id,
-		Name:          p.Name,
-		Slug:          p.Slug,
-		Description:   p.Description,
-		DefaultParams: p.DefaultParams,
+func toProject(p any) (*Project, error) {
+	proj := Project{}
+	if err := mapstructure.Decode(p, &proj); err != nil {
+		return nil, fmt.Errorf("failed to decode project: %w", err)
 	}
-}
-
-func (p *getProjectsProjectsProject) toProject() Project {
-	environments := make([]Environment, len(p.Environments))
-	for i, env := range p.Environments {
-		environments[i] = Environment{
-			Name: env.Name,
-			Slug: env.Slug,
-		}
-	}
-
-	return Project{
-		ID:                 p.Id,
-		Slug:               p.Slug,
-		Name:               p.Name,
-		Description:        p.Description,
-		DefaultParams:      p.DefaultParams,
-		MonthlyAverageCost: p.Cost.Monthly.Average.Amount,
-		DailyAverageCost:   p.Cost.Daily.Average.Amount,
-		Environments:       environments,
-	}
+	return &proj, nil
 }
 
 func ListProjects(ctx context.Context, mdClient *client.Client) ([]Project, error) {
 	response, err := getProjects(ctx, mdClient.GQL, mdClient.Config.OrganizationID)
 	records := []Project{}
 
-	for _, prj := range response.Projects {
-		records = append(records, prj.toProject())
+	for _, resp := range response.Projects {
+		proj, err := toProject(resp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert project: %w", err)
+		}
+		records = append(records, *proj)
 	}
 
 	return records, err
