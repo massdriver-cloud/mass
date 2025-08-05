@@ -16,8 +16,8 @@ type Package struct {
 	Artifacts        []Artifact        `json:"artifacts,omitempty"`
 	RemoteReferences []RemoteReference `json:"remoteReferences,omitempty"`
 	Params           map[string]any    `json:"params"`
-	Manifest         *Manifest         `json:"manifest"`
-	Environment      *Environment      `json:"environment,omitempty"`
+	Manifest         *Manifest         `json:"manifest" mapstructure:"manifest,omitempty"`
+	Environment      *Environment      `json:"environment,omitempty" mapstructure:"environment,omitempty"`
 }
 
 func (p *Package) ParamsJSON() (string, error) {

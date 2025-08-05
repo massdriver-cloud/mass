@@ -16,118 +16,44 @@ import (
 	"oras.land/oras-go/v2/content/file"
 )
 
-func RunExport(ctx context.Context, mdClient *client.Client, packageSlugOrID string) error {
-	pkg, err := api.GetPackageByName(ctx, mdClient, packageSlugOrID)
-	if err != nil {
-		return fmt.Errorf("failed to get package %s: %w", packageSlugOrID, err)
-	}
-
-	return ExportPackage(ctx, mdClient, pkg, ".")
+// // Interfaces for dependency injection to enable testing
+type FileSystem interface {
+	MkdirAll(path string, perm os.FileMode) error
+	WriteFile(filename string, data []byte, perm os.FileMode) error
+}
+type BundleFetcher interface {
+	FetchBundle(ctx context.Context, bundleName string, directory string) error
+}
+type ArtifactDownloader interface {
+	DownloadArtifact(ctx context.Context, artifactID string) (string, error)
+}
+type StateFetcher interface {
+	FetchState(ctx context.Context, packageID string, stepPath string) (any, error)
 }
 
-func ExportPackage(ctx context.Context, mdClient *client.Client, pkg *api.Package, baseDirectory string) error {
-	validateErr := validatePackageExport(pkg)
-	if validateErr != nil {
-		return fmt.Errorf("package validation failed: %w", validateErr)
-	}
-
-	directory := filepath.Join(baseDirectory, pkg.Manifest.Slug)
-	if err := os.MkdirAll(directory, 0755); err != nil {
-		return fmt.Errorf("failed to create directory for package %s: %w", pkg.NamePrefix, err)
-	}
-
-	isRemoteReference := pkg.Status == string(api.PackageStatusExternal)
-
-	if pkg.Params != nil {
-		paramsErr := writeParamsFile(pkg.Params, directory)
-		if paramsErr != nil {
-			return fmt.Errorf("failed to write params file for package %s: %w", pkg.NamePrefix, paramsErr)
-		}
-	}
-
-	if !isRemoteReference && pkg.Manifest.Bundle != nil {
-		if err := writeBundle(ctx, mdClient, pkg.Manifest.Bundle, directory); err != nil {
-			return fmt.Errorf("failed to write bundle for package %s: %w", pkg.NamePrefix, err)
-		}
-	}
-
-	if !isRemoteReference && len(pkg.Artifacts) > 0 {
-		for _, artifact := range pkg.Artifacts {
-			artifactErr := writeArtifact(ctx, mdClient, &artifact, directory)
-			if artifactErr != nil {
-				return fmt.Errorf("failed to write artifact %s for package %s: %w", artifact.Name, pkg.NamePrefix, artifactErr)
-			}
-		}
-	}
-
-	if isRemoteReference && len(pkg.RemoteReferences) > 0 {
-		for _, ref := range pkg.RemoteReferences {
-			artifactErr := writeArtifact(ctx, mdClient, &ref.Artifact, directory)
-			if artifactErr != nil {
-				return fmt.Errorf("failed to write artifact %s for package %s: %w", ref.Artifact.Field, pkg.NamePrefix, artifactErr)
-			}
-		}
-	}
-
-	if pkg.Status == string(api.PackageStatusProvisioned) {
-		if err := writeState(ctx, mdClient, pkg, directory); err != nil {
-			return fmt.Errorf("failed to write state for package %s: %w", pkg.NamePrefix, err)
-		}
-	}
-
-	return nil
+type ExportPackageConfig struct {
+	Client             *client.Client
+	FileSystem         FileSystem
+	BundleFetcher      BundleFetcher
+	ArtifactDownloader ArtifactDownloader
+	StateFetcher       StateFetcher
 }
 
-func validatePackageExport(pkg *api.Package) error {
-	if pkg == nil {
-		return fmt.Errorf("package is nil")
-	}
+type DefaultFileSystem struct{}
 
-	if pkg.Manifest == nil {
-		return fmt.Errorf("package manifest is nil")
-	}
-
-	if pkg.Manifest.Slug == "" {
-		return fmt.Errorf("package manifest slug is empty")
-	}
-
-	if pkg.Manifest.Bundle == nil {
-		return fmt.Errorf("package manifest bundle is nil")
-	}
-
-	if pkg.Manifest.Bundle.Spec == nil {
-		return fmt.Errorf("package manifest bundle spec is nil")
-	}
-
-	if pkg.Manifest.Bundle.Name == "" {
-		return fmt.Errorf("package manifest bundle name is empty")
-	}
-
-	return nil
+func (dfs *DefaultFileSystem) MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
+}
+func (dfs *DefaultFileSystem) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return os.WriteFile(filename, data, perm)
 }
 
-func writeParamsFile(params map[string]any, dir string) error {
-	paramsFilePath := filepath.Join(dir, "params.json")
-	file, err := os.Create(paramsFilePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	data, err := json.MarshalIndent(params, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	if _, err := file.Write(data); err != nil {
-		return err
-	}
-
-	return nil
+type DefaultBundleFetcher struct {
+	Client *client.Client
 }
 
-func writeBundle(ctx context.Context, mdClient *client.Client, bun *api.Bundle, directory string) error {
-	repo, repoErr := sdkbundle.GetBundleRepository(mdClient, bun.Name)
+func (dbf *DefaultBundleFetcher) FetchBundle(ctx context.Context, bundleName string, directory string) error {
+	repo, repoErr := sdkbundle.GetBundleRepository(dbf.Client, bundleName)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -144,27 +70,185 @@ func writeBundle(ctx context.Context, mdClient *client.Client, bun *api.Bundle, 
 		Repo:   repo,
 	}
 
-	_, pullErr := puller.PullBundle(ctx, "latest") //bun.Version)
+	_, pullErr := puller.PullBundle(ctx, "latest")
 	return pullErr
 }
 
-func writeArtifact(ctx context.Context, mdClient *client.Client, artifact *api.Artifact, directory string) error {
+type DefaultArtifactDownloader struct {
+	Client *client.Client
+}
+
+func (dad *DefaultArtifactDownloader) DownloadArtifact(ctx context.Context, artifactID string) (string, error) {
+	return api.DownloadArtifact(ctx, dad.Client, artifactID)
+}
+
+type DefaultStateFetcher struct {
+	Client *client.Client
+}
+
+func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, packageID string, stepPath string) (any, error) {
+	var result any
+	resp, requestErr := dsf.Client.HTTP.R().
+		SetContext(ctx).
+		SetResult(&result).
+		Get(fmt.Sprintf("/state/%s/%s", packageID, stepPath))
+
+	if requestErr != nil {
+		return nil, requestErr
+	}
+	if resp.IsError() {
+		return nil, fmt.Errorf("error fetching state: %s", resp.Status())
+	}
+
+	return result, nil
+}
+
+func RunExport(ctx context.Context, mdClient *client.Client, packageSlugOrID string) error {
+	pkg, err := api.GetPackageByName(ctx, mdClient, packageSlugOrID)
+	if err != nil {
+		return fmt.Errorf("failed to get package %s: %w", packageSlugOrID, err)
+	}
+
+	return ExportPackage(ctx, mdClient, pkg, ".")
+}
+
+func ExportPackage(ctx context.Context, mdClient *client.Client, pkg *api.Package, baseDirectory string) error {
+	config := ExportPackageConfig{
+		FileSystem:         &DefaultFileSystem{},
+		BundleFetcher:      &DefaultBundleFetcher{Client: mdClient},
+		ArtifactDownloader: &DefaultArtifactDownloader{Client: mdClient},
+		StateFetcher:       &DefaultStateFetcher{Client: mdClient},
+	}
+
+	return ExportPackageWithConfig(ctx, &config, pkg, baseDirectory)
+}
+
+// ExportPackageWithConfig is the testable version that accepts dependency injection
+func ExportPackageWithConfig(ctx context.Context, config *ExportPackageConfig, pkg *api.Package, baseDirectory string) error {
+	validateErr := validatePackageExport(pkg)
+	if validateErr != nil {
+		return fmt.Errorf("package validation failed: %w", validateErr)
+	}
+
+	isRemoteReference := pkg.Status == string(api.PackageStatusExternal)
+	isRunning := pkg.Status == string(api.PackageStatusProvisioned)
+
+	if !isRunning && !isRemoteReference {
+		fmt.Printf("Package %s is not 'provisioned' or a remote reference, skipping export.\n", pkg.NamePrefix)
+		return nil
+	}
+
+	directory := filepath.Join(baseDirectory, pkg.Manifest.Slug)
+	if err := config.FileSystem.MkdirAll(directory, 0755); err != nil {
+		return fmt.Errorf("failed to create directory for package %s: %w", pkg.NamePrefix, err)
+	}
+
+	if isRunning && pkg.Params != nil {
+		paramsErr := writeParamsFileWithConfig(config, pkg.Params, directory)
+		if paramsErr != nil {
+			return fmt.Errorf("failed to write params file for package %s: %w", pkg.NamePrefix, paramsErr)
+		}
+	}
+
+	if isRunning {
+		if err := writeBundleWithConfig(ctx, config, pkg.Manifest.Bundle, directory); err != nil {
+			return fmt.Errorf("failed to write bundle for package %s: %w", pkg.NamePrefix, err)
+		}
+	}
+
+	if isRunning && len(pkg.Artifacts) > 0 {
+		for _, artifact := range pkg.Artifacts {
+			artifactErr := writeArtifactWithConfig(ctx, config, &artifact, directory)
+			if artifactErr != nil {
+				return fmt.Errorf("failed to write artifact %s for package %s: %w", artifact.Name, pkg.NamePrefix, artifactErr)
+			}
+		}
+	}
+
+	if isRemoteReference && len(pkg.RemoteReferences) > 0 {
+		for _, ref := range pkg.RemoteReferences {
+			artifactErr := writeArtifactWithConfig(ctx, config, &ref.Artifact, directory)
+			if artifactErr != nil {
+				return fmt.Errorf("failed to write artifact %s for package %s: %w", ref.Artifact.Field, pkg.NamePrefix, artifactErr)
+			}
+		}
+	}
+
+	if isRunning {
+		if err := writeStateWithConfig(ctx, config, pkg, directory); err != nil {
+			return fmt.Errorf("failed to write state for package %s: %w", pkg.NamePrefix, err)
+		}
+	}
+
+	return nil
+}
+
+func validatePackageExport(pkg *api.Package) error {
+	if pkg == nil {
+		return fmt.Errorf("package is nil")
+	}
+
+	if pkg.Manifest == nil {
+		return fmt.Errorf("package %s manifest is nil", pkg.NamePrefix)
+	}
+
+	if pkg.Manifest.Slug == "" {
+		return fmt.Errorf("package %s manifest slug is empty", pkg.NamePrefix)
+	}
+
+	if pkg.Status == string(api.PackageStatusProvisioned) {
+		if pkg.Manifest.Bundle == nil {
+			return fmt.Errorf("package %s bundle is nil", pkg.NamePrefix)
+		}
+
+		if pkg.Manifest.Bundle.Spec == nil {
+			return fmt.Errorf("package %s bundle spec is nil", pkg.NamePrefix)
+		}
+
+		if pkg.Manifest.Bundle.Name == "" {
+			return fmt.Errorf("package %s bundle name is empty", pkg.NamePrefix)
+		}
+	}
+
+	if pkg.Status == string(api.PackageStatusExternal) && len(pkg.RemoteReferences) == 0 {
+		return fmt.Errorf("package %s is remote reference but has no artifacts", pkg.NamePrefix)
+	}
+
+	return nil
+}
+
+func writeParamsFileWithConfig(config *ExportPackageConfig, params map[string]any, dir string) error {
+	paramsFilePath := filepath.Join(dir, "params.json")
+
+	data, err := json.MarshalIndent(params, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return config.FileSystem.WriteFile(paramsFilePath, data, 0644)
+}
+
+func writeBundleWithConfig(ctx context.Context, config *ExportPackageConfig, bun *api.Bundle, directory string) error {
+	return config.BundleFetcher.FetchBundle(ctx, bun.Name, directory)
+}
+
+func writeArtifactWithConfig(ctx context.Context, config *ExportPackageConfig, artifact *api.Artifact, directory string) error {
 	fileName := fmt.Sprintf("artifact_%s.json", artifact.Field)
 	filePath := filepath.Join(directory, fileName)
 
-	data, err := api.DownloadArtifact(ctx, mdClient, artifact.ID)
+	data, err := config.ArtifactDownloader.DownloadArtifact(ctx, artifact.ID)
 	if err != nil {
 		return fmt.Errorf("failed to download artifact %s: %w", artifact.Name, err)
 	}
 
-	if err := os.WriteFile(filePath, []byte(data), 0644); err != nil {
+	if err := config.FileSystem.WriteFile(filePath, []byte(data), 0644); err != nil {
 		return fmt.Errorf("failed to write artifact data for %s: %w", artifact.Name, err)
 	}
 
 	return nil
 }
 
-func writeState(ctx context.Context, mdClient *client.Client, pkg *api.Package, directory string) error {
+func writeStateWithConfig(ctx context.Context, config *ExportPackageConfig, pkg *api.Package, directory string) error {
 	var unmarshalledBundle bundle.Bundle
 	mapstructure.Decode(pkg.Manifest.Bundle.Spec, &unmarshalledBundle)
 
@@ -184,32 +268,19 @@ func writeState(ctx context.Context, mdClient *client.Client, pkg *api.Package, 
 		stateFileName := fmt.Sprintf("%s.tfstate.json", step.Path)
 		stateFilePath := filepath.Join(directory, stateFileName)
 
-		var result any
-		resp, err := mdClient.HTTP.R().
-			SetContext(ctx).
-			SetResult(&result).
-			Get(fmt.Sprintf("/state/%s/%s", pkg.ID, step.Path))
-
+		result, err := config.StateFetcher.FetchState(ctx, pkg.ID, step.Path)
 		if err != nil {
 			return fmt.Errorf("failed to fetch state for package %s, step %s: %w", pkg.NamePrefix, step.Path, err)
 		}
-		if resp.IsError() {
-			return fmt.Errorf("error fetching state for package %s, step %s: %s", pkg.NamePrefix, step.Path, resp.Status())
+
+		data, marshalErr := json.MarshalIndent(result, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal terraform state: %w", marshalErr)
 		}
 
-		file, err := os.Create(stateFilePath)
-		if err != nil {
-			return fmt.Errorf("failed to create state file: %w", err)
-		}
-		defer file.Close()
-
-		data, err := json.MarshalIndent(result, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal terraform state: %w", err)
-		}
-
-		if _, err := file.Write(data); err != nil {
-			return fmt.Errorf("failed to write state data: %w", err)
+		writeErr := config.FileSystem.WriteFile(stateFilePath, data, 0644)
+		if writeErr != nil {
+			return fmt.Errorf("failed to write state data: %w", writeErr)
 		}
 	}
 

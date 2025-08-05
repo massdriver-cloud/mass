@@ -6,5 +6,5 @@ type Manifest struct {
 	Name        string  `json:"name"`
 	Suffix      string  `json:"suffix"`
 	Description string  `json:"description"`
-	Bundle      *Bundle `json:"bundle"`
+	Bundle      *Bundle `json:"bundle,omitempty" mapstructure:"bundle,omitempty"`
 }
