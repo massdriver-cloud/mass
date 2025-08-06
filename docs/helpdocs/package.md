@@ -10,7 +10,8 @@ Packages are used to:
 
 ## Commands
 
-- `get`: Retrieve package details and configuration
 - `configure`: Update package configuration
 - `deploy`: Deploy a package to an environment
+- `export`: Export a package to your local filesystem
+- `get`: Retrieve package details and configuration
 - `patch`: Update individual package parameter values

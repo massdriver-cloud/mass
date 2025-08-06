@@ -1,0 +1,17 @@
+# Environment: {{.Name}}
+
+**Slug:** {{.Slug}}
+
+**Description:** {{.Description}}
+
+## Packages
+| Name | Bundle | Status |
+| ---- | ------ | ------ |
+{{- range .Packages}}
+| **{{.Manifest.Name}}** | {{.Manifest.Bundle.Name}} | {{.Status}} |
+{{- end}}
+
+## Cost
+**Monthly Average:** ${{.Cost.Monthly.Average.Amount}}
+
+**Daily Average:** ${{.Cost.Daily.Average.Amount}}

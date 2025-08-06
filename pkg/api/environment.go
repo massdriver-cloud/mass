@@ -4,83 +4,57 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/massdriver-cloud/mass/pkg/debuglog"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/mitchellh/mapstructure"
 )
 
+const envUrlTemplate = "https://app.massdriver.cloud/orgs/%s/projects/%s/environments/%s"
+
 type Environment struct {
-	ID   string `json:"id,omitempty"`
-	Slug string `json:"slug"`
-	URL  string `json:"url,omitempty"`
-	Name string `json:"name,omitempty"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Slug        string    `json:"slug"`
+	Description string    `json:"description,omitempty"`
+	Cost        *Cost     `json:"cost,omitempty" mapstructure:"cost,omitempty"`
+	Packages    []Package `json:"packages,omitempty" mapstructure:"packages,omitempty"`
+	Project     *Project  `json:"project,omitempty" mapstructure:"project,omitempty"`
 }
 
-const urlTemplate = "https://app.massdriver.cloud/orgs/%s/projects/%s/targets/%v"
+func GetEnvironment(ctx context.Context, mdClient *client.Client, environmentId string) (*Environment, error) {
+	response, err := getEnvironmentById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, environmentId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get environment %s: %w", environmentId, err)
+	}
 
-func DeployPreviewEnvironment(ctx context.Context, mdClient *client.Client, projectID string, credentials []Credential, packageParams map[string]PreviewPackage, ciContext map[string]any) (*Environment, error) {
-	// Validate that no package has both params and remote references
-	for packageName, pkg := range packageParams {
-		if pkg.Params != nil && len(pkg.RemoteReferences) > 0 {
-			return nil, fmt.Errorf("package '%s': \"params\" and \"remoteReferences\" are mutually exclusive", packageName)
+	return toEnvironment(response.Environment)
+}
+
+func GetEnvironmentsByProject(ctx context.Context, mdClient *client.Client, projectId string) ([]Environment, error) {
+	response, err := getEnvironmentsByProject(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get environments for project %s: %w", projectId, err)
+	}
+
+	envs := make([]Environment, len(response.Project.Environments))
+	for idx, resp := range response.Project.Environments {
+		env, err := toEnvironment(resp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert environment: %w", err)
 		}
+		envs[idx] = *env
 	}
 
-	packageParamsJSON := make(map[string]any)
-	for k, v := range packageParams {
-		packageParamsJSON[k] = v
-	}
-
-	input := PreviewEnvironmentInput{
-		Credentials:           credentials,
-		PackageConfigurations: packageParamsJSON,
-		CiContext:             ciContext,
-	}
-
-	response, err := deployPreviewEnvironment(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectID, input)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if response.DeployPreviewEnvironment.Successful {
-		return response.DeployPreviewEnvironment.Result.toEnvironment(mdClient.Config.OrganizationID), nil
-	}
-
-	return nil, NewMutationError("failed to deploy environment", response.DeployPreviewEnvironment.Messages)
+	return envs, nil
 }
 
-func (e *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment) toEnvironment(orgID string) *Environment {
-	return &Environment{
-		ID:   e.Id,
-		Slug: e.Slug,
-
-		// NOTE: We use IDs here instead of slugs because there is currently a bug in the UI for rendering targets w/ slugs.
-		URL: fmt.Sprintf(urlTemplate, orgID, e.Project.Id, e.Id),
-	}
+func (e *Environment) URL(orgID string) string {
+	return fmt.Sprintf(envUrlTemplate, orgID, e.Project.Slug, e.Slug)
 }
 
-func DecommissionPreviewEnvironment(ctx context.Context, mdClient *client.Client, projectTargetSlugOrTargetID string) (*Environment, error) {
-	cmdLog := debuglog.Log().With().Str("orgID", mdClient.Config.OrganizationID).Str("projectTargetSlugOrTargetID", projectTargetSlugOrTargetID).Logger()
-	cmdLog.Info().Msg("Decommissioning preview environment.")
-
-	response, err := decommissionPreviewEnvironment(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectTargetSlugOrTargetID)
-
-	if err != nil {
-		return nil, err
+func toEnvironment(v any) (*Environment, error) {
+	env := Environment{}
+	if err := mapstructure.Decode(v, &env); err != nil {
+		return nil, fmt.Errorf("failed to decode environment: %w", err)
 	}
-
-	if response.DecommissionPreviewEnvironment.Successful {
-		return response.DecommissionPreviewEnvironment.Result.toEnvironment(mdClient.Config.OrganizationID), nil
-	}
-
-	return nil, NewMutationError("failed to decommission environment", response.DecommissionPreviewEnvironment.Messages)
-}
-
-func (e *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment) toEnvironment(orgID string) *Environment {
-	return &Environment{
-		ID:   e.Id,
-		Slug: e.Slug,
-		// NOTE: We use IDs here instead of slugs because there is currently a bug in the UI for rendering targets w/ slugs.
-		URL: fmt.Sprintf(urlTemplate, orgID, e.Project.Id, e.Id),
-	}
+	return &env, nil
 }

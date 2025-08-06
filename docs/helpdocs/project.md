@@ -6,5 +6,6 @@ A project can encompass many environments (permanent or ephemeral) and manages t
 
 ## Commands
 
+- `export`: Export a project to your local filesystem
 - `get`: Retrieve project details and configuration
 - `list`: List all projects in your organization

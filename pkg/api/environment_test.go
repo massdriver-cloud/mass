@@ -1,7 +1,7 @@
 package api_test
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
@@ -9,18 +9,127 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func TestDeployPreviewEnvironment(t *testing.T) {
-	prNumber := 69
-	slug := fmt.Sprintf("p%d", prNumber)
-
+func TestGetEnvironment(t *testing.T) {
+	want := api.Environment{
+		ID:          "env-uuid1",
+		Name:        "Test Environment",
+		Slug:        "env",
+		Description: "This is a test environment",
+		Cost: &api.Cost{
+			Daily: &api.CostType{
+				Average: &api.CostSummary{
+					Amount: 10.0,
+				},
+			},
+			Monthly: &api.CostType{
+				Average: &api.CostSummary{
+					Amount: 300.0,
+				},
+			},
+		},
+		Packages: []api.Package{
+			{
+				ID:     "pkg-uuid1",
+				Params: map[string]any{"param1": "value1"},
+				Artifacts: []api.Artifact{
+					{
+						ID:    "artifact-uuid1",
+						Name:  "artifact1",
+						Field: "field1",
+					},
+				},
+				RemoteReferences: []api.RemoteReference{
+					{
+						Artifact: api.Artifact{
+							ID:    "remote-artifact-uuid1",
+							Name:  "remote-artifact1",
+							Field: "remote-field1",
+						},
+					},
+				},
+				Status: string(api.PackageStatusProvisioned),
+				Manifest: &api.Manifest{
+					ID:          "manifest-uuid1",
+					Name:        "Test Manifest",
+					Slug:        "manifest",
+					Suffix:      "0000",
+					Description: "This is a test manifest",
+					Bundle: &api.Bundle{
+						ID:   "bundle-uuid1",
+						Name: "Test Bundle",
+						Spec: map[string]any{
+							"key1": "value1",
+						},
+					},
+				},
+			},
+		},
+		Project: &api.Project{
+			ID:   "proj-uuid1",
+			Slug: "proj",
+		},
+	}
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
-			"deployPreviewEnvironment": map[string]any{
-				"result": map[string]any{
-					"id":   "envuuid1",
-					"slug": slug,
+			"environment": map[string]any{
+				"id":          "env-uuid1",
+				"name":        "Test Environment",
+				"slug":        "env",
+				"description": "This is a test environment",
+				"cost": map[string]any{
+					"daily": map[string]any{
+						"average": map[string]any{
+							"amount": 10.0,
+						},
+					},
+					"monthly": map[string]any{
+						"average": map[string]any{
+							"amount": 300.0,
+						},
+					},
 				},
-				"successful": true,
+				"packages": []map[string]any{
+					{
+						"id":     "pkg-uuid1",
+						"params": map[string]any{"param1": "value1"},
+						"artifacts": []map[string]any{
+							{
+								"id":    "artifact-uuid1",
+								"name":  "artifact1",
+								"field": "field1",
+							},
+						},
+						"remoteReferences": []map[string]any{
+							{
+								"artifact": map[string]any{
+									"id":    "remote-artifact-uuid1",
+									"name":  "remote-artifact1",
+									"field": "remote-field1",
+								},
+							},
+						},
+						"status": "PROVISIONED",
+						"manifest": map[string]any{
+							"id":          "manifest-uuid1",
+							"name":        "Test Manifest",
+							"slug":        "manifest",
+							"suffix":      "0000",
+							"description": "This is a test manifest",
+							"bundle": map[string]any{
+								"id":      "bundle-uuid1",
+								"name":    "Test Bundle",
+								"version": "1.0.0",
+								"spec": map[string]any{
+									"key1": "value1",
+								},
+							},
+						},
+					},
+				},
+				"project": map[string]any{
+					"id":   "proj-uuid1",
+					"slug": "proj",
+				},
 			},
 		},
 	})
@@ -28,131 +137,131 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	credentials := []api.Credential{}
-
-	packageParams := map[string]api.PreviewPackage{
-		"network": {
-			Params: map[string]any{
-				"cidr": "10.0.0.0/16",
-			},
-		},
-
-		"cluster": {
-			Params: map[string]any{
-				"maxNodes": 10,
-			},
-		},
-	}
-
-	ciContext := map[string]any{
-		"pull_request": map[string]any{
-			"title":  "First commit!",
-			"number": prNumber,
-		},
-	}
-
-	environment, err := api.DeployPreviewEnvironment(t.Context(), &mdClient, "faux-project-id", credentials, packageParams, ciContext)
+	got, err := api.GetEnvironment(t.Context(), &mdClient, "proj-env")
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	got := environment.Slug
-	want := "p69"
-
-	if got != want {
-		t.Errorf("got %s , wanted %s", got, want)
+	if !reflect.DeepEqual(got, &want) {
+		t.Errorf("got %+v, wanted %+v", got, &want)
 	}
 }
 
-func TestDecommissionPreviewEnvironment(t *testing.T) {
-	prNumber := 69
-	targetSlug := fmt.Sprintf("p%d", prNumber)
-	projectTargetSlug := "ecomm-" + targetSlug
+func TestGetEnvironmentsByPackage(t *testing.T) {
+	packageId := "pkg-uuid1"
+
+	want := []api.Environment{
+		{
+			ID:          "env-uuid1",
+			Name:        "Test Environment 1",
+			Slug:        "env1",
+			Description: "First test environment",
+			Cost: &api.Cost{
+				Daily: &api.CostType{
+					Average: &api.CostSummary{
+						Amount: 5.0,
+					},
+				},
+				Monthly: &api.CostType{
+					Average: &api.CostSummary{
+						Amount: 150.0,
+					},
+				},
+			},
+			Project: &api.Project{
+				ID:   "proj-uuid1",
+				Slug: "proj1",
+			},
+		},
+		{
+			ID:          "env-uuid2",
+			Name:        "Test Environment 2",
+			Slug:        "env2",
+			Description: "Second test environment",
+			Cost: &api.Cost{
+				Daily: &api.CostType{
+					Average: &api.CostSummary{
+						Amount: 8.0,
+					},
+				},
+				Monthly: &api.CostType{
+					Average: &api.CostSummary{
+						Amount: 240.0,
+					},
+				},
+			},
+			Project: &api.Project{
+				ID:   "proj-uuid2",
+				Slug: "proj2",
+			},
+		},
+	}
+
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
-			"decommissionPreviewEnvironment": map[string]any{
-				"result": map[string]any{
-					"id":   "envuuid1",
-					"slug": targetSlug,
+			"project": map[string]any{
+				"environments": []map[string]any{
+					{
+						"id":          "env-uuid1",
+						"name":        "Test Environment 1",
+						"slug":        "env1",
+						"description": "First test environment",
+						"cost": map[string]any{
+							"daily": map[string]any{
+								"average": map[string]any{
+									"amount": 5.0,
+								},
+							},
+							"monthly": map[string]any{
+								"average": map[string]any{
+									"amount": 150.0,
+								},
+							},
+						},
+						"project": map[string]any{
+							"id":   "proj-uuid1",
+							"slug": "proj1",
+						},
+					},
+					{
+						"id":          "env-uuid2",
+						"name":        "Test Environment 2",
+						"slug":        "env2",
+						"description": "Second test environment",
+						"cost": map[string]any{
+							"daily": map[string]any{
+								"average": map[string]any{
+									"amount": 8.0,
+								},
+							},
+							"monthly": map[string]any{
+								"average": map[string]any{
+									"amount": 240.0,
+								},
+							},
+						},
+						"project": map[string]any{
+							"id":   "proj-uuid2",
+							"slug": "proj2",
+						},
+					},
 				},
-				"successful": true,
 			},
 		},
 	})
+
 	mdClient := client.Client{
 		GQL: gqlClient,
 	}
 
-	environment, err := api.DecommissionPreviewEnvironment(t.Context(), &mdClient, projectTargetSlug)
+	got, err := api.GetEnvironmentsByProject(t.Context(), &mdClient, packageId)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	got := environment.Slug
-	want := "p69"
-
-	if got != want {
-		t.Errorf("got %s , wanted %s", got, want)
-	}
-}
-
-func TestDeployPreviewEnvironmentFailsWithBothParamsAndRemoteRefs(t *testing.T) {
-	prNumber := 69
-	slug := fmt.Sprintf("p%d", prNumber)
-
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
-		"data": map[string]any{
-			"deployPreviewEnvironment": map[string]any{
-				"result": map[string]any{
-					"slug": slug,
-					"id":   "envuuid1",
-				},
-				"successful": true,
-			},
-		},
-	})
-	mdClient := client.Client{
-		GQL: gqlClient,
-	}
-
-	credentials := []api.Credential{}
-
-	packageParams := map[string]api.PreviewPackage{
-		"network": {
-			Params: map[string]any{
-				"cidr": "10.0.0.0/16",
-			},
-			RemoteReferences: []api.RemoteRef{
-				{
-					ArtifactID: "00000000-0000-0000-0000-000000000000",
-					Field:      "some-field",
-				},
-			},
-		},
-		"cluster": {
-			Params: map[string]any{
-				"maxNodes": 9,
-			},
-		},
-	}
-
-	ciContext := map[string]any{
-		"pull_request": map[string]any{
-			"title":  "First commit!",
-			"number": prNumber,
-		},
-	}
-
-	_, err := api.DeployPreviewEnvironment(t.Context(), &mdClient, "faux-project-id", credentials, packageParams, ciContext)
-
-	if err == nil {
-		t.Error("expected error when both params and remote references are set, got nil")
-	}
-
-	expectedError := "package 'network': \"params\" and \"remoteReferences\" are mutually exclusive"
-	if err.Error() != expectedError {
-		t.Errorf("got error %q, wanted %q", err.Error(), expectedError)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %+v, wanted %+v", got, want)
 	}
 }
