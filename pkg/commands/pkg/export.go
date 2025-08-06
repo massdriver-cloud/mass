@@ -96,11 +96,12 @@ func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, packageID string
 	if requestErr != nil {
 		return nil, requestErr
 	}
-	if resp.StatusCode() == 404 {
-		return nil, nil
-	}
 	if resp.IsError() {
 		return nil, fmt.Errorf("error fetching state: %s", resp.Status())
+	}
+
+	if string(resp.Body()) == `{"version":4}` {
+		return nil, nil // No state found, return nil
 	}
 
 	return result, nil
