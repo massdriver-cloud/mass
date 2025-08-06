@@ -1,4 +1,4 @@
-# Export Project Details
+# Export Environment Details
 
 Exports an environment to the local filesystem. This is useful for backups and migrations.
 
