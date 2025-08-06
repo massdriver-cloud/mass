@@ -22,9 +22,10 @@ Packages are used to:
 
 ## Commands
 
-- `get`: Retrieve package details and configuration
 - `configure`: Update package configuration
 - `deploy`: Deploy a package to an environment
+- `export`: Export a package to your local filesystem
+- `get`: Retrieve package details and configuration
 - `patch`: Update individual package parameter values
 
 
@@ -39,5 +40,6 @@ Packages are used to:
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
 * [mass package configure](/cli/commands/mass_package_configure)	 - Configure package
 * [mass package deploy](/cli/commands/mass_package_deploy)	 - Deploy packages
+* [mass package export](/cli/commands/mass_package_export)	 - Export packages
 * [mass package get](/cli/commands/mass_package_get)	 - Get a package
 * [mass package patch](/cli/commands/mass_package_patch)	 - Patch individual package parameter values

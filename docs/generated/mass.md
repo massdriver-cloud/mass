@@ -37,6 +37,7 @@ Configure and deploying infrastructure and applications.
 * [mass completion](/cli/commands/mass_completion)	 - Generate the autocompletion script for the specified shell
 * [mass definition](/cli/commands/mass_definition)	 - Artifact definition management
 * [mass docs](/cli/commands/mass_docs)	 - Gen docs
+* [mass environment](/cli/commands/mass_environment)	 - Environment management
 * [mass image](/cli/commands/mass_image)	 - Container image integration Massdriver
 * [mass package](/cli/commands/mass_package)	 - Manage packages of IaC deployed in environments.
 * [mass preview](/cli/commands/mass_preview)	 - Create & deploy preview environments

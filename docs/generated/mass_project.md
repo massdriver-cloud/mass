@@ -18,6 +18,7 @@ A project can encompass many environments (permanent or ephemeral) and manages t
 
 ## Commands
 
+- `export`: Export a project to your local filesystem
 - `get`: Retrieve project details and configuration
 - `list`: List all projects in your organization
 
@@ -31,5 +32,6 @@ A project can encompass many environments (permanent or ephemeral) and manages t
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
+* [mass project export](/cli/commands/mass_project_export)	 - Export a project from Massdriver
 * [mass project get](/cli/commands/mass_project_get)	 - Get a project from Massdriver
 * [mass project list](/cli/commands/mass_project_list)	 - List projects
