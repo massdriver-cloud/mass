@@ -1620,6 +1620,8 @@ type getEnvironmentByIdEnvironmentPackagesPackageManifestBundle struct {
 	Version string `json:"version"`
 	// Raw massdriver.yaml spec
 	Spec map[string]any `json:"-"`
+	// Version of the bundle specification
+	SpecVersion string `json:"specVersion"`
 }
 
 // GetId returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Id, and is useful for accessing the field via an interface.
@@ -1636,6 +1638,11 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetVersion(
 // GetSpec returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
 func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetSpec() map[string]any {
 	return v.Spec
+}
+
+// GetSpecVersion returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.SpecVersion, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetSpecVersion() string {
+	return v.SpecVersion
 }
 
 func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) UnmarshalJSON(b []byte) error {
@@ -1679,6 +1686,8 @@ type __premarshalgetEnvironmentByIdEnvironmentPackagesPackageManifestBundle stru
 	Version string `json:"version"`
 
 	Spec json.RawMessage `json:"spec"`
+
+	SpecVersion string `json:"specVersion"`
 }
 
 func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) MarshalJSON() ([]byte, error) {
@@ -1707,6 +1716,7 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) __premarsha
 				"unable to marshal getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Spec: %w", err)
 		}
 	}
+	retval.SpecVersion = v.SpecVersion
 	return &retval, nil
 }
 
@@ -2108,6 +2118,8 @@ type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManife
 	Version string `json:"version"`
 	// Raw massdriver.yaml spec
 	Spec map[string]any `json:"-"`
+	// Version of the bundle specification
+	SpecVersion string `json:"specVersion"`
 }
 
 // GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Id, and is useful for accessing the field via an interface.
@@ -2128,6 +2140,11 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageMa
 // GetSpec returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
 func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetSpec() map[string]any {
 	return v.Spec
+}
+
+// GetSpecVersion returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.SpecVersion, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetSpecVersion() string {
+	return v.SpecVersion
 }
 
 func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) UnmarshalJSON(b []byte) error {
@@ -2171,6 +2188,8 @@ type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesP
 	Version string `json:"version"`
 
 	Spec json.RawMessage `json:"spec"`
+
+	SpecVersion string `json:"specVersion"`
 }
 
 func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) MarshalJSON() ([]byte, error) {
@@ -2199,6 +2218,7 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageMa
 				"unable to marshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Spec: %w", err)
 		}
 	}
+	retval.SpecVersion = v.SpecVersion
 	return &retval, nil
 }
 
@@ -2520,6 +2540,8 @@ type getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBund
 	Version string `json:"version"`
 	// Raw massdriver.yaml spec
 	Spec map[string]any `json:"-"`
+	// Version of the bundle specification
+	SpecVersion string `json:"specVersion"`
 }
 
 // GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Id, and is useful for accessing the field via an interface.
@@ -2540,6 +2562,11 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest
 // GetSpec returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetSpec() map[string]any {
 	return v.Spec
+}
+
+// GetSpecVersion returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.SpecVersion, and is useful for accessing the field via an interface.
+func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetSpecVersion() string {
+	return v.SpecVersion
 }
 
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) UnmarshalJSON(b []byte) error {
@@ -2583,6 +2610,8 @@ type __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage
 	Version string `json:"version"`
 
 	Spec json.RawMessage `json:"spec"`
+
+	SpecVersion string `json:"specVersion"`
 }
 
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) MarshalJSON() ([]byte, error) {
@@ -2611,6 +2640,7 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest
 				"unable to marshal getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Spec: %w", err)
 		}
 	}
+	retval.SpecVersion = v.SpecVersion
 	return &retval, nil
 }
 
@@ -3691,6 +3721,7 @@ query getEnvironmentById ($organizationId: ID!, $id: ID!) {
 					name
 					version
 					spec
+					specVersion
 				}
 			}
 		}
@@ -3779,6 +3810,7 @@ query getEnvironmentsByProject ($organizationId: ID!, $projectId: ID!) {
 						name
 						version
 						spec
+						specVersion
 					}
 				}
 			}
@@ -3850,6 +3882,7 @@ query getPackageByNamingConvention ($organizationId: ID!, $name: String!) {
 				name
 				version
 				spec
+				specVersion
 			}
 		}
 		environment {

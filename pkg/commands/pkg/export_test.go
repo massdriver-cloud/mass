@@ -106,6 +106,7 @@ func TestExportPackage(t *testing.T) {
 								},
 							},
 						},
+						SpecVersion: "application/vnd.massdriver.bundle.v1+json",
 					},
 				},
 			},
@@ -125,6 +126,62 @@ func TestExportPackage(t *testing.T) {
 				// State fetcher expectations
 				msf.On("FetchState", mock.Anything, "pkg-123", "src").Return(map[string]any{"version": "1.0"}, nil)
 				mfs.On("WriteFile", "/tmp/export/test-manifest/src.tfstate.json", mock.Anything, os.FileMode(0644)).Return(nil)
+			},
+			expectedDirs: []string{"/tmp/export/test-manifest"},
+			expectedFiles: []string{
+				"/tmp/export/test-manifest/params.json",
+				"/tmp/export/test-manifest/artifact_output.json",
+			},
+			wantErr: false,
+		},
+		{
+			name: "skip bundle export if not OCI compliant and skip state if nil",
+			pkg: &api.Package{
+				ID:         "pkg-123",
+				NamePrefix: "test-package-0001",
+				Status:     string(api.PackageStatusProvisioned),
+				Params: map[string]any{
+					"param1": "value1",
+					"param2": 42,
+				},
+				Artifacts: []api.Artifact{
+					{
+						ID:    "artifact-1",
+						Name:  "test-artifact",
+						Field: "output",
+					},
+				},
+				Manifest: &api.Manifest{
+					Slug: "test-manifest",
+					Bundle: &api.Bundle{
+						Name: "test-bundle",
+						Spec: map[string]any{
+							"steps": []map[string]any{
+								{
+									"path":        "src",
+									"provisioner": "terraform",
+								},
+							},
+						},
+						SpecVersion: "application/vnd.massdriver.bundle.v0+json",
+					},
+				},
+			},
+			baseDir: "/tmp/export",
+			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mad *MockArtifactDownloader, msf *MockStateFetcher) {
+				// FileSystem expectations
+				mfs.On("MkdirAll", "/tmp/export/test-manifest", os.FileMode(0755)).Return(nil)
+				mfs.On("WriteFile", "/tmp/export/test-manifest/params.json", mock.Anything, os.FileMode(0644)).Return(nil)
+
+				// Bundle fetcher expectations
+				mbf.AssertNumberOfCalls(t, "FetchBundle", 0) // Should not be called since bundle is not OCI compliant
+
+				// Artifact downloader expectations
+				mad.On("DownloadArtifact", mock.Anything, "artifact-1").Return(`{"data": "test"}`, nil)
+				mfs.On("WriteFile", "/tmp/export/test-manifest/artifact_output.json", mock.Anything, os.FileMode(0644)).Return(nil)
+
+				// State fetcher expectations
+				msf.On("FetchState", mock.Anything, "pkg-123", "src").Return(nil, nil)
 			},
 			expectedDirs: []string{"/tmp/export/test-manifest"},
 			expectedFiles: []string{

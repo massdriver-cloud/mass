@@ -96,6 +96,9 @@ func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, packageID string
 	if requestErr != nil {
 		return nil, requestErr
 	}
+	if resp.StatusCode() == 404 {
+		return nil, nil
+	}
 	if resp.IsError() {
 		return nil, fmt.Errorf("error fetching state: %s", resp.Status())
 	}
@@ -151,7 +154,7 @@ func ExportPackageWithConfig(ctx context.Context, config *ExportPackageConfig, p
 	}
 
 	if isRunning {
-		if err := writeBundleWithConfig(ctx, config, pkg.Manifest.Bundle, directory); err != nil {
+		if err := writeBundleWithConfig(ctx, config, pkg.Manifest.Bundle, pkg.NamePrefix, directory); err != nil {
 			return fmt.Errorf("failed to write bundle for package %s: %w", pkg.NamePrefix, err)
 		}
 	}
@@ -228,7 +231,12 @@ func writeParamsFileWithConfig(config *ExportPackageConfig, params map[string]an
 	return config.FileSystem.WriteFile(paramsFilePath, data, 0644)
 }
 
-func writeBundleWithConfig(ctx context.Context, config *ExportPackageConfig, bun *api.Bundle, directory string) error {
+func writeBundleWithConfig(ctx context.Context, config *ExportPackageConfig, bun *api.Bundle, pkgNamePrefix string, directory string) error {
+	if bun.SpecVersion != "application/vnd.massdriver.bundle.v1+json" {
+		fmt.Printf("Bundle %s used by package %s not OCI compliant and cannot be downloaded. Please republish the bundle with an updated CLI to enable downloading.\n", bun.Name, pkgNamePrefix)
+		return nil
+	}
+
 	return config.BundleFetcher.FetchBundle(ctx, bun.Name, directory)
 }
 
@@ -271,6 +279,11 @@ func writeStateWithConfig(ctx context.Context, config *ExportPackageConfig, pkg 
 		result, err := config.StateFetcher.FetchState(ctx, pkg.ID, step.Path)
 		if err != nil {
 			return fmt.Errorf("failed to fetch state for package %s, step %s: %w", pkg.NamePrefix, step.Path, err)
+		}
+
+		if result == nil {
+			// no state found, skip writing
+			continue
 		}
 
 		data, marshalErr := json.MarshalIndent(result, "", "  ")
