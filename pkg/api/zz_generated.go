@@ -1616,8 +1616,6 @@ type getEnvironmentByIdEnvironmentPackagesPackageManifestBundle struct {
 	Id string `json:"id"`
 	// Name of the bundle
 	Name string `json:"name"`
-	// Version of the bundle
-	Version string `json:"version"`
 	// Raw massdriver.yaml spec
 	Spec map[string]any `json:"-"`
 	// Version of the bundle specification
@@ -1629,11 +1627,6 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetId() str
 
 // GetName returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Name, and is useful for accessing the field via an interface.
 func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetName() string { return v.Name }
-
-// GetVersion returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Version, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetVersion() string {
-	return v.Version
-}
 
 // GetSpec returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
 func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetSpec() map[string]any {
@@ -1683,8 +1676,6 @@ type __premarshalgetEnvironmentByIdEnvironmentPackagesPackageManifestBundle stru
 
 	Name string `json:"name"`
 
-	Version string `json:"version"`
-
 	Spec json.RawMessage `json:"spec"`
 
 	SpecVersion string `json:"specVersion"`
@@ -1703,7 +1694,6 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) __premarsha
 
 	retval.Id = v.Id
 	retval.Name = v.Name
-	retval.Version = v.Version
 	{
 
 		dst := &retval.Spec
@@ -2114,8 +2104,6 @@ type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManife
 	Id string `json:"id"`
 	// Name of the bundle
 	Name string `json:"name"`
-	// Version of the bundle
-	Version string `json:"version"`
 	// Raw massdriver.yaml spec
 	Spec map[string]any `json:"-"`
 	// Version of the bundle specification
@@ -2130,11 +2118,6 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageMa
 // GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Name, and is useful for accessing the field via an interface.
 func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetName() string {
 	return v.Name
-}
-
-// GetVersion returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Version, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetVersion() string {
-	return v.Version
 }
 
 // GetSpec returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
@@ -2185,8 +2168,6 @@ type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesP
 
 	Name string `json:"name"`
 
-	Version string `json:"version"`
-
 	Spec json.RawMessage `json:"spec"`
 
 	SpecVersion string `json:"specVersion"`
@@ -2205,7 +2186,6 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageMa
 
 	retval.Id = v.Id
 	retval.Name = v.Name
-	retval.Version = v.Version
 	{
 
 		dst := &retval.Spec
@@ -2536,8 +2516,6 @@ type getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBund
 	Id string `json:"id"`
 	// Name of the bundle
 	Name string `json:"name"`
-	// Version of the bundle
-	Version string `json:"version"`
 	// Raw massdriver.yaml spec
 	Spec map[string]any `json:"-"`
 	// Version of the bundle specification
@@ -2552,11 +2530,6 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest
 // GetName returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Name, and is useful for accessing the field via an interface.
 func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetName() string {
 	return v.Name
-}
-
-// GetVersion returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Version, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetVersion() string {
-	return v.Version
 }
 
 // GetSpec returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
@@ -2607,8 +2580,6 @@ type __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage
 
 	Name string `json:"name"`
 
-	Version string `json:"version"`
-
 	Spec json.RawMessage `json:"spec"`
 
 	SpecVersion string `json:"specVersion"`
@@ -2627,7 +2598,6 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest
 
 	retval.Id = v.Id
 	retval.Name = v.Name
-	retval.Version = v.Version
 	{
 
 		dst := &retval.Spec
@@ -3719,7 +3689,6 @@ query getEnvironmentById ($organizationId: ID!, $id: ID!) {
 				bundle {
 					id
 					name
-					version
 					spec
 					specVersion
 				}
@@ -3808,7 +3777,6 @@ query getEnvironmentsByProject ($organizationId: ID!, $projectId: ID!) {
 					bundle {
 						id
 						name
-						version
 						spec
 						specVersion
 					}
@@ -3880,7 +3848,6 @@ query getPackageByNamingConvention ($organizationId: ID!, $name: String!) {
 			bundle {
 				id
 				name
-				version
 				spec
 				specVersion
 			}

@@ -55,9 +55,8 @@ func TestGetEnvironment(t *testing.T) {
 					Suffix:      "0000",
 					Description: "This is a test manifest",
 					Bundle: &api.Bundle{
-						ID:      "bundle-uuid1",
-						Name:    "Test Bundle",
-						Version: "1.0.0",
+						ID:   "bundle-uuid1",
+						Name: "Test Bundle",
 						Spec: map[string]any{
 							"key1": "value1",
 						},

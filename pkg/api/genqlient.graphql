@@ -150,7 +150,6 @@ query getEnvironmentById($organizationId: ID!, $id: ID!) {
         bundle {
           id
           name
-          version
           spec
           specVersion
         }
@@ -208,7 +207,6 @@ query getEnvironmentsByProject($organizationId: ID!, $projectId: ID!) {
           bundle {
             id
             name
-            version
             spec
             specVersion
           }
@@ -265,7 +263,6 @@ query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
       bundle {
         id
         name
-        version
         spec
         specVersion
       }
