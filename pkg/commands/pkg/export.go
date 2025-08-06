@@ -16,7 +16,7 @@ import (
 	"oras.land/oras-go/v2/content/file"
 )
 
-// // Interfaces for dependency injection to enable testing
+// Interfaces for dependency injection to enable testing
 type FileSystem interface {
 	MkdirAll(path string, perm os.FileMode) error
 	WriteFile(filename string, data []byte, perm os.FileMode) error
