@@ -8,7 +8,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const envUrlTemplate = "https://app.massdriver.cloud/orgs/%s/projects/%s/environments/%v"
+const envUrlTemplate = "https://app.massdriver.cloud/orgs/%s/projects/%s/environments/%s"
 
 type Environment struct {
 	ID          string    `json:"id"`

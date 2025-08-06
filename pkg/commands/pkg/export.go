@@ -16,6 +16,9 @@ import (
 	"oras.land/oras-go/v2/content/file"
 )
 
+const emptyStateResponse = `{"version":4}`
+const bundleSpecVersionOCI = "application/vnd.massdriver.bundle.v1+json"
+
 // Interfaces for dependency injection to enable testing
 type FileSystem interface {
 	MkdirAll(path string, perm os.FileMode) error
@@ -100,7 +103,7 @@ func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, packageID string
 		return nil, fmt.Errorf("error fetching state: %s", resp.Status())
 	}
 
-	if string(resp.Body()) == `{"version":4}` {
+	if string(resp.Body()) == emptyStateResponse {
 		return nil, nil // No state found, return nil
 	}
 
@@ -127,7 +130,6 @@ func ExportPackage(ctx context.Context, mdClient *client.Client, pkg *api.Packag
 	return ExportPackageWithConfig(ctx, &config, pkg, baseDirectory)
 }
 
-// ExportPackageWithConfig is the testable version that accepts dependency injection
 func ExportPackageWithConfig(ctx context.Context, config *ExportPackageConfig, pkg *api.Package, baseDirectory string) error {
 	validateErr := validatePackageExport(pkg)
 	if validateErr != nil {
@@ -233,7 +235,7 @@ func writeParamsFileWithConfig(config *ExportPackageConfig, params map[string]an
 }
 
 func writeBundleWithConfig(ctx context.Context, config *ExportPackageConfig, bun *api.Bundle, pkgNamePrefix string, directory string) error {
-	if bun.SpecVersion != "application/vnd.massdriver.bundle.v1+json" {
+	if bun.SpecVersion != bundleSpecVersionOCI {
 		fmt.Printf("Bundle %s used by package %s not OCI compliant and cannot be downloaded. Please republish the bundle with an updated CLI to enable downloading.\n", bun.Name, pkgNamePrefix)
 		return nil
 	}
