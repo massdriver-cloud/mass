@@ -15,6 +15,6 @@ mass environment get <project-slug>-<environment-slug>
 ## Examples
 
 ```bash
-# Get details for the "prod" environment in the "web> project
+# Get details for the "prod" environment in the "web" project
 mass environment get web-prod
 ```
