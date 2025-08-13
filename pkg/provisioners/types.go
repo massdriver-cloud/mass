@@ -1,5 +1,7 @@
 package provisioners
 
+import "strings"
+
 type Provisioner interface {
 	ExportMassdriverInputs(stepPath string, variables map[string]any) error
 	ReadProvisionerInputs(stepPath string) (map[string]any, error)
@@ -7,16 +9,14 @@ type Provisioner interface {
 }
 
 func NewProvisioner(provisionerType string) Provisioner {
-	switch provisionerType {
-	case "opentofu", "terraform":
+	if strings.Contains(provisionerType, "opentofu") || strings.Contains(provisionerType, "terraform") {
 		return new(OpentofuProvisioner)
-	case "helm":
+	} else if strings.Contains(provisionerType, "helm") {
 		return new(HelmProvisioner)
-	case "bicep":
+	} else if strings.Contains(provisionerType, "bicep") {
 		return new(BicepProvisioner)
-	default:
-		return new(NoopProvisioner)
 	}
+	return new(NoopProvisioner)
 }
 
 type NoopProvisioner struct{}
