@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"regexp"
 
 	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
@@ -12,6 +13,8 @@ import (
 
 //go:embed schemas/metadata-schema.json
 var embedFS embed.FS
+
+var validSemverRegex = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 
 var MetadataSchema = parseMetadataSchema()
 
@@ -34,6 +37,7 @@ type Bundle struct {
 	SourceURL   string         `json:"source_url,omitempty" yaml:"source_url,omitempty"`
 	Type        string         `json:"type,omitempty" yaml:"type,omitempty"`
 	Access      string         `json:"access,omitempty" yaml:"access,omitempty"`
+	Version     string         `json:"version,omitempty" yaml:"version,omitempty"`
 	Steps       []Step         `json:"steps,omitempty" yaml:"steps,omitempty"`
 	Artifacts   map[string]any `json:"artifacts,omitempty" yaml:"artifacts,omitempty"`
 	Params      map[string]any `json:"params,omitempty" yaml:"params,omitempty"`
@@ -74,6 +78,12 @@ func Unmarshal(readDirectory string) (*Bundle, error) {
 	}
 	if unmarshalledBundle.Type != "infrastructure" && unmarshalledBundle.Type != "application" {
 		fmt.Println(prettylogs.Orange("Warning: the 'type' field in massdriver.yaml should be either 'infrastructure' or 'application'. This will be enforced in a future release."))
+	}
+	if unmarshalledBundle.Version == "" {
+		fmt.Println(prettylogs.Orange("Warning: the 'version' field in massdriver.yaml is empty. This disables all versioning capabilities."))
+		unmarshalledBundle.Version = "0.0.0"
+	} else if !validSemverRegex.MatchString(unmarshalledBundle.Version) {
+		return nil, fmt.Errorf("invalid version in massdriver.yaml: %s", unmarshalledBundle.Version)
 	}
 
 	applyAppBlockDefaults(unmarshalledBundle)

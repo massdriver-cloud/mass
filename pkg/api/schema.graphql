@@ -1379,8 +1379,8 @@ type BundleRecommendation {
 
 """
 The `JSON` scalar type represents arbitrary json string data, represented as UTF-8
-character sequences. The Json type is most often used to represent a free-form
-human-readable json string.
+character sequences. The JSON type is most often used to represent a free-form
+human-readable JSON string.
 """
 scalar JSON
 
@@ -1742,6 +1742,9 @@ type Bundle {
 
   "When the bundle was last updated"
   updatedAt: DateTime!
+
+  "List of available versions\/tags\/labels for this bundle"
+  versions: [String]
 
   "Information about whether the bundle can be deleted"
   deletable: BundleDeletionLifecycle!

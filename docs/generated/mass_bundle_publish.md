@@ -18,6 +18,7 @@ mass bundle publish [flags]
       --access string            (Deprecated) Only here for backwards compatibility. Will be removed in a future release.
   -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
   -h, --help                     help for publish
+  -r, --release-candidate        Whether to publish the bundle as a release candidate.
 ```
 
 ### SEE ALSO

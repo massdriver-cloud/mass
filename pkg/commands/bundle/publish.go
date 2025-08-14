@@ -3,7 +3,10 @@ package bundle
 import (
 	"context"
 	"fmt"
+	"slices"
+	"time"
 
+	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
@@ -12,8 +15,26 @@ import (
 	"oras.land/oras-go/v2/content/memory"
 )
 
-func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, tag string) error {
+func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, releaseCandidate bool) error {
 	ctx := context.Background()
+
+	existingVersions, err := api.GetBundleVersions(ctx, mdClient, b.Name)
+	if err != nil {
+		return err
+	}
+	if slices.Contains(existingVersions, b.Version) {
+		if !releaseCandidate {
+			return fmt.Errorf("version %s already exists for bundle %s", b.Version, b.Name)
+		} else {
+			return fmt.Errorf("version %s already exists for bundle %s - cannot publish a release candidate for an existing version", b.Version, b.Name)
+		}
+	}
+
+	version := b.Version
+	if releaseCandidate {
+		timestamp := time.Now().UTC().Format("20060102T150405Z")
+		version = fmt.Sprintf("%s-rc.%s", b.Version, timestamp)
+	}
 
 	var printBundleName = prettylogs.Underline(b.Name)
 	var printOrganizationId = prettylogs.Underline(mdClient.Config.OrganizationID)
@@ -31,7 +52,7 @@ func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, 
 
 	fmt.Printf("Packaging bundle %s...\n", printBundleName)
 
-	manifestDescriptor, packageErr := publisher.PackageBundle(ctx, buildFromDir, tag)
+	manifestDescriptor, packageErr := publisher.PackageBundle(ctx, buildFromDir, version)
 	if packageErr != nil {
 		return fmt.Errorf("packaging bundle: %w", packageErr)
 	}
@@ -39,7 +60,7 @@ func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, 
 	fmt.Printf("Package %s created with digest: %s\n", printBundleName, manifestDescriptor.Digest)
 	fmt.Printf("Pushing %s to package manager...\n", printBundleName)
 
-	publishErr := publisher.PublishBundle(ctx, tag)
+	publishErr := publisher.PublishBundle(ctx, version)
 	if publishErr != nil {
 		return fmt.Errorf("publishing bundle: %w", publishErr)
 	}
