@@ -535,6 +535,18 @@ func (v *__getArtifactsByTypeInput) GetOrganizationId() string { return v.Organi
 // GetArtifactType returns __getArtifactsByTypeInput.ArtifactType, and is useful for accessing the field via an interface.
 func (v *__getArtifactsByTypeInput) GetArtifactType() string { return v.ArtifactType }
 
+// __getBundleVersionsInput is used internally by genqlient
+type __getBundleVersionsInput struct {
+	OrgId    string `json:"orgId"`
+	BundleId string `json:"bundleId"`
+}
+
+// GetOrgId returns __getBundleVersionsInput.OrgId, and is useful for accessing the field via an interface.
+func (v *__getBundleVersionsInput) GetOrgId() string { return v.OrgId }
+
+// GetBundleId returns __getBundleVersionsInput.BundleId, and is useful for accessing the field via an interface.
+func (v *__getBundleVersionsInput) GetBundleId() string { return v.BundleId }
+
 // __getDeploymentByIdInput is used internally by genqlient
 type __getDeploymentByIdInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -1293,6 +1305,27 @@ type getArtifactsByTypeResponse struct {
 func (v *getArtifactsByTypeResponse) GetArtifacts() getArtifactsByTypeArtifactsPaginatedArtifacts {
 	return v.Artifacts
 }
+
+// getBundleVersionsBundle includes the requested fields of the GraphQL type Bundle.
+// The GraphQL type's documentation follows.
+//
+// A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component
+type getBundleVersionsBundle struct {
+	// List of available versions/tags/labels for this bundle
+	Versions []string `json:"versions"`
+}
+
+// GetVersions returns getBundleVersionsBundle.Versions, and is useful for accessing the field via an interface.
+func (v *getBundleVersionsBundle) GetVersions() []string { return v.Versions }
+
+// getBundleVersionsResponse is returned by getBundleVersions on success.
+type getBundleVersionsResponse struct {
+	// Get a specific bundle
+	Bundle getBundleVersionsBundle `json:"bundle"`
+}
+
+// GetBundle returns getBundleVersionsResponse.Bundle, and is useful for accessing the field via an interface.
+func (v *getBundleVersionsResponse) GetBundle() getBundleVersionsBundle { return v.Bundle }
 
 // getDeploymentByIdDeployment includes the requested fields of the GraphQL type Deployment.
 // The GraphQL type's documentation follows.
@@ -3595,6 +3628,43 @@ func getArtifactsByType(
 	var err error
 
 	var data getArtifactsByTypeResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getBundleVersions.
+const getBundleVersions_Operation = `
+query getBundleVersions ($orgId: ID!, $bundleId: ID!) {
+	bundle(organizationId: $orgId, id: $bundleId) {
+		versions
+	}
+}
+`
+
+func getBundleVersions(
+	ctx context.Context,
+	client graphql.Client,
+	orgId string,
+	bundleId string,
+) (*getBundleVersionsResponse, error) {
+	req := &graphql.Request{
+		OpName: "getBundleVersions",
+		Query:  getBundleVersions_Operation,
+		Variables: &__getBundleVersionsInput{
+			OrgId:    orgId,
+			BundleId: bundleId,
+		},
+	}
+	var err error
+
+	var data getBundleVersionsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
