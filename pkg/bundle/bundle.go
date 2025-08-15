@@ -83,7 +83,7 @@ func Unmarshal(readDirectory string) (*Bundle, error) {
 		fmt.Println(prettylogs.Orange("Warning: the 'version' field in massdriver.yaml is empty. This disables all versioning capabilities."))
 		unmarshalledBundle.Version = "0.0.0"
 	} else if !validSemverRegex.MatchString(unmarshalledBundle.Version) {
-		return nil, fmt.Errorf("invalid version in massdriver.yaml: %s", unmarshalledBundle.Version)
+		return nil, fmt.Errorf("invalid version in massdriver.yaml: %s. Version must follow semantic versioning (MAJOR.MINOR.PATCH), e.g., 1.2.3", unmarshalledBundle.Version)
 	}
 
 	applyAppBlockDefaults(unmarshalledBundle)
