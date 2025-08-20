@@ -91,6 +91,7 @@ func NewCmdBundle() *cobra.Command {
 		RunE:    runBundlePublish,
 	}
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundlePublishCmd.Flags().BoolP("release-candidate", "r", false, "Whether to publish the bundle as a release candidate.")
 	bundlePublishCmd.Flags().String("access", "", "(Deprecated) Only here for backwards compatibility. Will be removed in a future release.")
 
 	bundlePullCmd := &cobra.Command{
@@ -101,7 +102,7 @@ func NewCmdBundle() *cobra.Command {
 	}
 	bundlePullCmd.Flags().StringP("directory", "d", "", "Directory to output the bundle. Defaults to bundle name.")
 	bundlePullCmd.Flags().BoolP("force", "f", false, "Force pull even if the directory already exists. This will overwrite existing files.")
-	bundlePullCmd.Flags().StringP("tag", "t", "latest", "Bundle tag (defaults to 'latest')")
+	bundlePullCmd.Flags().StringP("version", "v", "latest", "Bundle version (defaults to 'latest')")
 
 	bundleTemplateCmd := &cobra.Command{
 		Use:   "template",
@@ -337,7 +338,10 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	tag := "latest"
+	releaseCandidate, err := cmd.Flags().GetBool("release-candidate")
+	if err != nil {
+		return err
+	}
 	cmd.SilenceUsage = true
 
 	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
@@ -355,7 +359,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return cmdbundle.RunPublish(unmarshalledBundle, mdClient, bundleDirectory, tag)
+	return cmdbundle.RunPublish(unmarshalledBundle, mdClient, bundleDirectory, releaseCandidate)
 }
 
 func runBundlePull(cmd *cobra.Command, args []string) error {
