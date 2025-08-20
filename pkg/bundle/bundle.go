@@ -66,10 +66,10 @@ func Unmarshal(readDirectory string) (*Bundle, error) {
 	}
 
 	if unmarshalledBundle.Access != "" {
-		fmt.Println(prettylogs.Orange("Warning: the 'access' field in massdriver.yaml is no longer supported and should be removed."))
+		fmt.Println(prettylogs.Orange("Warning: the 'access' field in massdriver.yaml is deprecated and should be removed."))
 	}
-	if unmarshalledBundle.Type != "infrastructure" && unmarshalledBundle.Type != "application" {
-		fmt.Println(prettylogs.Orange("Warning: the 'type' field in massdriver.yaml should be either 'infrastructure' or 'application'. This will be enforced in a future release."))
+	if unmarshalledBundle.Type != "" {
+		fmt.Println(prettylogs.Orange("Warning: the 'type' field in massdriver.yaml is deprecated and should be removed."))
 	}
 	if unmarshalledBundle.Version == "" {
 		fmt.Println(prettylogs.Orange("Warning: the 'version' field in massdriver.yaml is empty. This disables all versioning capabilities."))
