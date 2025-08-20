@@ -59,14 +59,6 @@ type Secret struct {
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 }
 
-func (b *Bundle) IsInfrastructure() bool {
-	return b.Type == "bundle" || b.Type == "infrastructure"
-}
-
-func (b *Bundle) IsApplication() bool {
-	return b.Type == "application"
-}
-
 func Unmarshal(readDirectory string) (*Bundle, error) {
 	unmarshalledBundle := &Bundle{}
 	if err := files.Read(path.Join(readDirectory, "massdriver.yaml"), unmarshalledBundle); err != nil {

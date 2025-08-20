@@ -18,27 +18,14 @@ import (
 func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, releaseCandidate bool) error {
 	ctx := context.Background()
 
-	existingVersions, err := api.GetBundleVersions(ctx, mdClient, b.Name)
-	if err != nil {
-		return err
-	}
-	if slices.Contains(existingVersions, b.Version) {
-		if !releaseCandidate {
-			return fmt.Errorf("version %s already exists for bundle %s", b.Version, b.Name)
-		} else {
-			return fmt.Errorf("version %s already exists for bundle %s - cannot publish a release candidate for an existing version", b.Version, b.Name)
-		}
-	}
-
-	version := b.Version
-	if releaseCandidate {
-		timestamp := time.Now().UTC().Format("20060102T150405Z")
-		version = fmt.Sprintf("%s-rc.%s", b.Version, timestamp)
+	version, versionErr := getVersion(ctx, mdClient, b, releaseCandidate)
+	if versionErr != nil {
+		return versionErr
 	}
 
 	var printBundleName = prettylogs.Underline(b.Name)
 	var printOrganizationId = prettylogs.Underline(mdClient.Config.OrganizationID)
-	fmt.Printf("Publishing %s to organization %s...\n", printBundleName, printOrganizationId)
+	fmt.Printf("Publishing %s:%s to organization %s...\n", printBundleName, version, printOrganizationId)
 
 	repo, repoErr := sdkbundle.GetBundleRepository(mdClient, b.Name)
 	if repoErr != nil {
@@ -65,7 +52,29 @@ func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, 
 		return fmt.Errorf("publishing bundle: %w", publishErr)
 	}
 
-	fmt.Printf("Bundle %s successfully published to organization %s!\n", printBundleName, printOrganizationId)
+	fmt.Printf("Bundle %s:%s successfully published to organization %s!\n", printBundleName, version, printOrganizationId)
 
 	return nil
+}
+
+func getVersion(ctx context.Context, mdClient *client.Client, b *bundle.Bundle, releaseCandidate bool) (string, error) {
+	existingVersions, err := api.GetBundleVersions(ctx, mdClient, b.Name)
+	if err != nil {
+		return "", err
+	}
+
+	if slices.Contains(existingVersions, b.Version) {
+		if !releaseCandidate {
+			return "", fmt.Errorf("version %s already exists for bundle %s", b.Version, b.Name)
+		} else {
+			return "", fmt.Errorf("version %s already exists for bundle %s - cannot publish a release candidate for an existing version", b.Version, b.Name)
+		}
+	}
+
+	version := b.Version
+	if releaseCandidate {
+		timestamp := time.Now().UTC().Format("20060102T150405Z")
+		version = fmt.Sprintf("%s-rc.%s", b.Version, timestamp)
+	}
+	return version, nil
 }
