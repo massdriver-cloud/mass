@@ -17,20 +17,17 @@ func (p *HelmProvisioner) ExportMassdriverInputs(_ string, _ map[string]any) err
 }
 
 func (p *HelmProvisioner) ReadProvisionerInputs(stepPath string) (map[string]any, error) {
-	helmParamsSchema, err := helm.HelmToSchema(path.Join(stepPath, "values.yaml"))
-	if err != nil {
-		return nil, err
-	}
+	helmParamsImport := helm.HelmToSchema(path.Join(stepPath, "values.yaml"))
 
-	schemaBytes, marshallErr := json.Marshal(helmParamsSchema)
+	schemaBytes, marshallErr := json.Marshal(helmParamsImport.Schema)
 	if marshallErr != nil {
 		return nil, marshallErr
 	}
 
 	variables := map[string]any{}
-	err = json.Unmarshal(schemaBytes, &variables)
-	if err != nil {
-		return nil, err
+	unmarshalErr := json.Unmarshal(schemaBytes, &variables)
+	if unmarshalErr != nil {
+		return nil, unmarshalErr
 	}
 
 	return variables, nil

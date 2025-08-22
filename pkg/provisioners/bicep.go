@@ -14,12 +14,9 @@ type BicepProvisioner struct{}
 
 func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]any) error {
 	// read existing bicep params for this step
-	bicepParamsSchema, err := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
-	if err != nil {
-		return err
-	}
+	bicepParamsImport := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
 
-	newParams := FindMissingFromAirlock(variables, bicepParamsSchema)
+	newParams := FindMissingFromAirlock(variables, bicepParamsImport.Schema)
 	if len(newParams["properties"].(map[string]any)) == 0 {
 		return nil
 	}
@@ -51,20 +48,17 @@ func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map
 }
 
 func (p *BicepProvisioner) ReadProvisionerInputs(stepPath string) (map[string]any, error) {
-	bicepParamsSchema, err := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
-	if err != nil {
-		return nil, err
-	}
+	bicepParamsImport := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
 
-	schemaBytes, marshallErr := json.Marshal(bicepParamsSchema)
+	schemaBytes, marshallErr := json.Marshal(bicepParamsImport.Schema)
 	if marshallErr != nil {
 		return nil, marshallErr
 	}
 
 	variables := map[string]any{}
-	err = json.Unmarshal(schemaBytes, &variables)
-	if err != nil {
-		return nil, err
+	marshalErr := json.Unmarshal(schemaBytes, &variables)
+	if marshalErr != nil {
+		return nil, marshalErr
 	}
 
 	return variables, nil
