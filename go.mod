@@ -18,7 +18,7 @@ require (
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/itchyny/gojq v0.12.16
 	github.com/manifoldco/promptui v0.9.0
-	github.com/massdriver-cloud/airlock v0.0.7
+	github.com/massdriver-cloud/airlock v0.0.8
 	github.com/massdriver-cloud/massdriver-sdk-go v0.0.8
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/moby v27.3.1+incompatible

@@ -7,7 +7,7 @@ import (
 	"github.com/massdriver-cloud/airlock/pkg/bicep"
 	"github.com/massdriver-cloud/airlock/pkg/helm"
 	"github.com/massdriver-cloud/airlock/pkg/opentofu"
-	"github.com/massdriver-cloud/airlock/pkg/schema"
+	"github.com/massdriver-cloud/airlock/pkg/result"
 	"sigs.k8s.io/yaml"
 )
 
@@ -16,40 +16,29 @@ func GetFromPath(templateName, paramsPath string) (string, error) {
 		return "", nil
 	}
 
-	var (
-		paramSchema *schema.Schema
-		err         error
-	)
-
 	fmt.Printf("Importing params from %s...\n", paramsPath)
+	var importResult result.SchemaResult
 	switch templateName {
 	case "terraform-module", "opentofu-module":
-		paramSchema, err = opentofu.TofuToSchema(paramsPath)
-		if err != nil {
-			return "", err
-		}
+		importResult = opentofu.TofuToSchema(paramsPath)
 	case "helm-chart":
-		paramSchema, err = helm.HelmToSchema(path.Join(paramsPath, "values.yaml"))
-		if err != nil {
-			return "", err
-		}
+		importResult = helm.HelmToSchema(path.Join(paramsPath, "values.yaml"))
 	case "bicep-template":
-		paramSchema, err = bicep.BicepToSchema(paramsPath)
-		if err != nil {
-			return "", err
-		}
+		importResult = bicep.BicepToSchema(paramsPath)
 	default:
 		return "", nil
 	}
 
+	fmt.Print(importResult.PrettyDiags())
+
 	props := map[string]any{
-		"params": paramSchema,
+		"params": importResult.Schema,
 	}
-	out, err := yaml.Marshal(props)
+	content, err := yaml.Marshal(props)
 	if err != nil {
 		return "", err
 	}
 	fmt.Println("Params schema imported successfully.")
 
-	return string(out), nil
+	return string(content), nil
 }
