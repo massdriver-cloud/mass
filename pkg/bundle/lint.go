@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 
@@ -10,26 +9,33 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func (b *Bundle) LintSchema(mdClient *client.Client) error {
+func (b *Bundle) LintSchema(mdClient *client.Client) LintResult {
+	var result LintResult
+
 	bundleSchemaURL, err := url.JoinPath(mdClient.Config.URL, "json-schemas", "bundle.json")
 	if err != nil {
-		return fmt.Errorf("failed to construct bundle schema URL: %w", err)
+		result.AddError("schema-validation", fmt.Sprintf("failed to construct bundle schema URL: %v", err))
+		return result
 	}
 
 	sch, err := jsonschema.LoadSchemaFromURL(bundleSchemaURL)
 	if err != nil {
-		return fmt.Errorf("failed to compile bundle schema: %w", err)
+		result.AddError("schema-validation", fmt.Sprintf("failed to compile bundle schema: %v", err))
+		return result
 	}
 
 	err = jsonschema.ValidateGo(sch, b)
 	if err != nil {
-		return fmt.Errorf("massdriver.yaml has schema violations: %w", err)
+		result.AddError("schema-validation", err.Error())
+		return result
 	}
 
-	return nil
+	return result
 }
 
-func (b *Bundle) LintParamsConnectionsNameCollision() error {
+func (b *Bundle) LintParamsConnectionsNameCollision() LintResult {
+	var result LintResult
+
 	if b.Params != nil {
 		if params, ok := b.Params["properties"]; ok {
 			if b.Connections != nil {
@@ -37,7 +43,7 @@ func (b *Bundle) LintParamsConnectionsNameCollision() error {
 					for param := range params.(map[string]any) {
 						for connection := range connections.(map[string]any) {
 							if param == connection {
-								return fmt.Errorf("a parameter and connection have the same name: %s", param)
+								result.AddError("name-collision", fmt.Sprintf("a parameter and connection have the same name: %s", param))
 							}
 						}
 					}
@@ -45,11 +51,18 @@ func (b *Bundle) LintParamsConnectionsNameCollision() error {
 			}
 		}
 	}
-	return nil
+	return result
 }
 
-func (b *Bundle) LintMatchRequired() error {
-	return matchRequired(b.Params)
+func (b *Bundle) LintMatchRequired() LintResult {
+	var result LintResult
+
+	err := matchRequired(b.Params)
+	if err != nil {
+		result.AddError("required-match", err.Error())
+	}
+
+	return result
 }
 
 //nolint:gocognit
@@ -113,21 +126,26 @@ func matchRequired(input map[string]any) error {
 }
 
 //nolint:gocognit
-func (b *Bundle) LintInputsMatchProvisioner() error {
+func (b *Bundle) LintInputsMatchProvisioner() LintResult {
+	var result LintResult
+
 	massdriverInputs := b.CombineParamsConnsMetadata()
 	massdriverInputsProperties, ok := massdriverInputs["properties"].(map[string]any)
 	if !ok {
-		return errors.New("enabled to convert to map[string]interface")
+		result.AddError("param-mismatch", "enabled to convert to map[string]interface")
+		return result
 	}
+
 	for _, step := range b.Steps {
 		prov := provisioners.NewProvisioner(step.Provisioner)
 		provisionerInputs, err := prov.ReadProvisionerInputs(step.Path)
 		if err != nil {
-			return err
+			result.AddError("param-mismatch", err.Error())
+			continue
 		}
 		// If this provisioner doesn't have "ReadProvisionerVariables" implemented, it returns nil
 		if provisionerInputs == nil {
-			return nil
+			continue
 		}
 		var provisionerInputsProperties map[string]any
 		var exists bool
@@ -150,18 +168,18 @@ func (b *Bundle) LintInputsMatchProvisioner() error {
 		}
 
 		if len(missingMassdriverInputs) > 0 || len(missingProvisionerInputs) > 0 {
-			err := fmt.Sprintf("missing inputs detected in step %s:\n", step.Path)
+			errMsg := fmt.Sprintf("missing inputs detected in step %s:\n", step.Path)
 
 			for _, p := range missingMassdriverInputs {
-				err += fmt.Sprintf("\t- input \"%s\" declared in IaC but missing massdriver.yaml declaration\n", p)
+				errMsg += fmt.Sprintf("\t- input \"%s\" declared in IaC but missing massdriver.yaml declaration\n", p)
 			}
 			for _, v := range missingProvisionerInputs {
-				err += fmt.Sprintf("\t- input \"%s\" declared in massdriver.yaml but missing IaC declaration\n", v)
+				errMsg += fmt.Sprintf("\t- input \"%s\" declared in massdriver.yaml but missing IaC declaration\n", v)
 			}
 
-			return errors.New(err)
+			result.AddWarning("param-mismatch", errMsg)
 		}
 	}
 
-	return nil
+	return result
 }

@@ -324,7 +324,17 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return cmdbundle.RunLint(unmarshalledBundle, mdClient)
+	results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
+
+	if results.HasErrors() {
+		return fmt.Errorf("linting failed with %d error(s)", len(results.Errors()))
+	} else if results.HasWarnings() {
+		fmt.Printf("Linting completed with %d warning(s)\n", len(results.Warnings()))
+	} else {
+		fmt.Println("Linting completed, massdriver.yaml is valid!")
+	}
+
+	return nil
 }
 
 func runBundlePublish(cmd *cobra.Command, args []string) error {
