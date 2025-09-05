@@ -1,15 +1,13 @@
 package bundle_test
 
 import (
-	"errors"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"os"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
@@ -19,7 +17,7 @@ func TestLintSchema(t *testing.T) {
 	type test struct {
 		name string
 		bun  *bundle.Bundle
-		err  error
+		want bundle.LintResult
 	}
 	tests := []test{
 		{
@@ -34,7 +32,7 @@ func TestLintSchema(t *testing.T) {
 				Artifacts:   map[string]any{"properties": map[string]any{}},
 				UI:          map[string]any{"properties": map[string]any{}},
 			},
-			err: nil,
+			want: bundle.LintResult{},
 		},
 		{
 			name: "Invalid missing schema field",
@@ -47,13 +45,21 @@ func TestLintSchema(t *testing.T) {
 				Artifacts:   map[string]any{"properties": map[string]any{}},
 				UI:          map[string]any{"properties": map[string]any{}},
 			},
-			err: errors.New(`missing property 'schema'`),
+			want: bundle.LintResult{
+				Issues: []bundle.LintIssue{
+					{
+						Rule:     "schema-validation",
+						Severity: bundle.LintError,
+						Message:  "missing property 'schema'",
+					},
+				},
+			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			bundleSchema, err := ioutil.ReadFile("testdata/lint/schema/bundle.json")
+			bundleSchema, err := os.ReadFile("testdata/lint/schema/bundle.json")
 			if err != nil {
 				t.Fatalf("failed to read artifact definition schema: %v", err)
 			}
@@ -75,15 +81,13 @@ func TestLintSchema(t *testing.T) {
 				},
 			}
 
-			err = tc.bun.LintSchema(&mdClient)
-			if tc.err != nil {
-				if err == nil {
-					t.Errorf("expected an error, got nil")
-				} else if !strings.Contains(err.Error(), tc.err.Error()) {
-					t.Errorf("got %v, want %v", err.Error(), tc.err.Error())
-				}
-			} else if err != nil {
-				t.Fatalf("%d, unexpected error", err)
+			got := tc.bun.LintSchema(&mdClient)
+
+			assert.Equal(t, len(tc.want.Issues), len(got.Issues))
+			for i := range tc.want.Issues {
+				assert.Equal(t, tc.want.Issues[i].Rule, got.Issues[i].Rule)
+				assert.Equal(t, tc.want.Issues[i].Severity, got.Issues[i].Severity)
+				assert.Contains(t, got.Issues[i].Message, tc.want.Issues[i].Message)
 			}
 		})
 	}
@@ -93,7 +97,7 @@ func TestLintParamsConnectionsNameCollision(t *testing.T) {
 	type test struct {
 		name string
 		bun  *bundle.Bundle
-		err  error
+		want bundle.LintResult
 	}
 	tests := []test{
 		{
@@ -110,7 +114,7 @@ func TestLintParamsConnectionsNameCollision(t *testing.T) {
 					},
 				},
 			},
-			err: nil,
+			want: bundle.LintResult{},
 		},
 		{
 			name: "Invalid Error",
@@ -126,22 +130,23 @@ func TestLintParamsConnectionsNameCollision(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("a parameter and connection have the same name: database"),
+			want: bundle.LintResult{
+				Issues: []bundle.LintIssue{
+					{
+						Rule:     "name-collision",
+						Severity: bundle.LintError,
+						Message:  "a parameter and connection have the same name: database",
+					},
+				},
+			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.bun.LintParamsConnectionsNameCollision()
-			if tc.err != nil {
-				if err == nil {
-					t.Errorf("expected an error, got nil")
-				} else if tc.err.Error() != err.Error() {
-					t.Errorf("got %v, want %v", err.Error(), tc.err.Error())
-				}
-			} else if err != nil {
-				t.Fatalf("%d, unexpected error", err)
-			}
+			got := tc.bun.LintParamsConnectionsNameCollision()
+
+			assert.ElementsMatch(t, tc.want.Issues, got.Issues)
 		})
 	}
 }
@@ -151,7 +156,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 		type test struct {
 			name string
 			bun  *bundle.Bundle
-			err  error
+			want bundle.LintResult
 		}
 		tests := []test{
 			{
@@ -175,7 +180,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					Artifacts:   map[string]any{},
 					UI:          map[string]any{},
 				},
-				err: nil,
+				want: bundle.LintResult{},
 			}, {
 				name: "Valid param and connection",
 				bun: &bundle.Bundle{
@@ -200,7 +205,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					Artifacts: map[string]any{},
 					UI:        map[string]any{},
 				},
-				err: nil,
+				want: bundle.LintResult{},
 			}, {
 				name: "Invalid missing massdriver input",
 				bun: &bundle.Bundle{
@@ -220,9 +225,17 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					Artifacts:   map[string]any{},
 					UI:          map[string]any{},
 				},
-				err: errors.New(`missing inputs detected in step testdata/lint/module:
+				want: bundle.LintResult{
+					Issues: []bundle.LintIssue{
+						{
+							Rule:     "param-mismatch",
+							Severity: bundle.LintWarning,
+							Message: `missing inputs detected in step testdata/lint/module:
 	- input "bar" declared in IaC but missing massdriver.yaml declaration
-`),
+`,
+						},
+					},
+				},
 			}, {
 				name: "Invalid missing IaC input",
 				bun: &bundle.Bundle{
@@ -244,24 +257,25 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 					Artifacts:   map[string]any{},
 					UI:          map[string]any{},
 				},
-				err: errors.New(`missing inputs detected in step testdata/lint/module:
+				want: bundle.LintResult{
+					Issues: []bundle.LintIssue{
+						{
+							Rule:     "param-mismatch",
+							Severity: bundle.LintWarning,
+							Message: `missing inputs detected in step testdata/lint/module:
 	- input "baz" declared in massdriver.yaml but missing IaC declaration
-`),
+`,
+						},
+					},
+				},
 			},
 		}
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				err := tc.bun.LintInputsMatchProvisioner()
-				if tc.err != nil {
-					if err == nil {
-						t.Errorf("expected an error, got nil")
-					} else if tc.err.Error() != err.Error() {
-						t.Errorf("got %v, want %v", err.Error(), tc.err.Error())
-					}
-				} else if err != nil {
-					t.Fatalf("%d, unexpected error", err)
-				}
+				got := tc.bun.LintInputsMatchProvisioner()
+
+				assert.ElementsMatch(t, tc.want.Issues, got.Issues)
 			})
 		}
 	}
@@ -271,7 +285,7 @@ func TestLintMatchRequired(t *testing.T) {
 	type test struct {
 		name string
 		bun  *bundle.Bundle
-		err  error
+		want bundle.LintResult
 	}
 	tests := []test{
 		{
@@ -293,7 +307,7 @@ func TestLintMatchRequired(t *testing.T) {
 				Artifacts:   map[string]any{},
 				UI:          map[string]any{},
 			},
-			err: nil,
+			want: bundle.LintResult{},
 		},
 		{
 			name: "Invalid missing param",
@@ -314,7 +328,15 @@ func TestLintMatchRequired(t *testing.T) {
 				Artifacts:   map[string]any{},
 				UI:          map[string]any{},
 			},
-			err: errors.New("required parameter bar is not defined in properties"),
+			want: bundle.LintResult{
+				Issues: []bundle.LintIssue{
+					{
+						Rule:     "required-match",
+						Severity: bundle.LintError,
+						Message:  "required parameter bar is not defined in properties",
+					},
+				},
+			},
 		},
 		{
 			name: "Nested valid test",
@@ -341,7 +363,7 @@ func TestLintMatchRequired(t *testing.T) {
 				Artifacts:   map[string]any{},
 				UI:          map[string]any{},
 			},
-			err: nil,
+			want: bundle.LintResult{},
 		},
 		{
 			name: "Nested invalid test",
@@ -368,21 +390,22 @@ func TestLintMatchRequired(t *testing.T) {
 				Artifacts:   map[string]any{},
 				UI:          map[string]any{},
 			},
-			err: errors.New("required parameter baz is not defined in properties"),
+			want: bundle.LintResult{
+				Issues: []bundle.LintIssue{
+					{
+						Rule:     "required-match",
+						Severity: bundle.LintError,
+						Message:  "required parameter baz is not defined in properties",
+					},
+				},
+			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.bun.LintMatchRequired()
-			if tc.err != nil {
-				if err == nil {
-					t.Errorf("expected an error, got nil")
-				} else if tc.err.Error() != err.Error() {
-					t.Errorf("got %v, want %v", err.Error(), tc.err.Error())
-				}
-			} else if err != nil {
-				t.Fatalf("%d, unexpected error", err)
-			}
+			got := tc.bun.LintMatchRequired()
+
+			assert.ElementsMatch(t, tc.want.Issues, got.Issues)
 		})
 	}
 }

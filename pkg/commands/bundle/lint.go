@@ -9,36 +9,50 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func RunLint(b *bundle.Bundle, mdClient *client.Client) error {
+func RunLint(b *bundle.Bundle, mdClient *client.Client) bundle.LintResult {
 	fmt.Println("Checking massdriver.yaml for errors...")
 
+	var allResults bundle.LintResult
+
+	// Schema validation
+	schemaResult := b.LintSchema(mdClient)
+	allResults.Merge(schemaResult)
+	printLintResult("Schema validation", schemaResult)
+
+	// Parameter and connection collision check
+	collisionResult := b.LintParamsConnectionsNameCollision()
+	allResults.Merge(collisionResult)
+	printLintResult("Parameter and connection collision", collisionResult)
+
+	// Required parameters check
+	requiredResult := b.LintMatchRequired()
+	allResults.Merge(requiredResult)
+	printLintResult("Required parameters", requiredResult)
+
+	// Inputs match provisioner check
+	inputsResult := b.LintInputsMatchProvisioner()
+	allResults.Merge(inputsResult)
+	printLintResult("Inputs match provisioner", inputsResult)
+
+	return allResults
+}
+
+func printLintResult(ruleName string, result bundle.LintResult) {
 	greenCheckmark := prettylogs.Green(" ✓")
+	orangeWarning := prettylogs.Orange(" !")
+	redError := prettylogs.Red(" ✗")
 
-	err := b.LintSchema(mdClient)
-	if err != nil {
-		return err
+	if result.HasErrors() {
+		fmt.Printf("%s %s check failed with errors: \n", redError, ruleName)
+		for _, issue := range result.Issues {
+			fmt.Println(issue)
+		}
+	} else if result.HasWarnings() {
+		fmt.Printf("%s %s check completed with warnings: \n", orangeWarning, ruleName)
+		for _, warning := range result.Warnings() {
+			fmt.Println(warning)
+		}
+	} else {
+		fmt.Printf("%s %s check passed.\n", greenCheckmark, ruleName)
 	}
-	fmt.Println(greenCheckmark, "Schema validation passed.")
-
-	err = b.LintParamsConnectionsNameCollision()
-	if err != nil {
-		return err
-	}
-	fmt.Println(greenCheckmark, "Parameter and connection collision check passed.")
-
-	err = b.LintMatchRequired()
-	if err != nil {
-		return err
-	}
-	fmt.Println(greenCheckmark, "Required parameters check passed.")
-
-	err = b.LintInputsMatchProvisioner()
-	if err != nil {
-		return err
-	}
-	fmt.Println(greenCheckmark, "Inputs match provisioner check passed.")
-
-	fmt.Println("Linting complete, massdriver.yaml is valid!")
-
-	return nil
 }

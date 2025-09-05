@@ -17,7 +17,9 @@ mass bundle publish [flags]
 ```
       --access string            (Deprecated) Only here for backwards compatibility. Will be removed in a future release.
   -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
+  -f, --fail-warnings            Fail on warnings from the linter
   -h, --help                     help for publish
+  -s, --skip-lint                Skip linting
 ```
 
 ### SEE ALSO
