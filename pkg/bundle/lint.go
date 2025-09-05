@@ -1,9 +1,12 @@
 package bundle
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
+	"slices"
 
+	"github.com/massdriver-cloud/airlock/pkg/schema"
 	"github.com/massdriver-cloud/mass/pkg/jsonschema"
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
@@ -57,7 +60,20 @@ func (b *Bundle) LintParamsConnectionsNameCollision() LintResult {
 func (b *Bundle) LintMatchRequired() LintResult {
 	var result LintResult
 
-	err := matchRequired(b.Params)
+	jsonBytes, marshalErr := json.Marshal(b.Params)
+	if marshalErr != nil {
+		result.AddError("required-match", fmt.Sprintf("failed to marshal parameters: %v", marshalErr))
+		return result
+	}
+
+	paramsSchema := schema.Schema{}
+	unmarshalErr := paramsSchema.UnmarshalJSON(jsonBytes)
+	if unmarshalErr != nil {
+		result.AddError("required-match", fmt.Sprintf("failed to unmarshal parameters: %v", unmarshalErr))
+		return result
+	}
+
+	err := matchRequired(&paramsSchema)
 	if err != nil {
 		result.AddError("required-match", err.Error())
 	}
@@ -66,58 +82,24 @@ func (b *Bundle) LintMatchRequired() LintResult {
 }
 
 //nolint:gocognit
-func matchRequired(input map[string]any) error {
-	var properties map[string]any
+func matchRequired(sch *schema.Schema) error {
+	expandedProperties := schema.ExpandProperties(sch)
 
-	if val, propOk := input["properties"]; propOk {
-		if properties, propOk = val.(map[string]any); !propOk {
-			return fmt.Errorf("properties is not a map[string]any")
-		}
-	}
+	propertyNames := []string{}
 
-	for _, prop := range properties {
-		var propType string
-
-		propMap, mapOk := prop.(map[string]any)
-		if !mapOk {
-			return fmt.Errorf("property is not a map[string]any")
-		}
-
-		if val, typeOk := propMap["type"]; typeOk {
-			if propType, typeOk = val.(string); !typeOk {
-				return fmt.Errorf("type is not a string")
-			}
-		} else {
-			propType = "object"
-		}
-		if propType == "object" {
-			if _, objectOk := propMap["properties"]; objectOk {
-				err := matchRequired(propMap)
-				if err != nil {
-					return err
-				}
+	for pair := expandedProperties.Oldest(); pair != nil; pair = pair.Next() {
+		propertyNames = append(propertyNames, pair.Key)
+		prop := pair.Value
+		if prop.Type == "object" || prop.Type == "" {
+			err := matchRequired(prop)
+			if err != nil {
+				return err
 			}
 		}
 	}
 
-	var required []string
-
-	if val, reqOk := input["required"]; reqOk {
-		requiredInterface, reqIntOk := val.([]any)
-		if !reqIntOk {
-			return fmt.Errorf("required is not a []any")
-		}
-
-		required = make([]string, len(requiredInterface))
-		for i, req := range requiredInterface {
-			if required[i], reqOk = req.(string); !reqOk {
-				return fmt.Errorf("required is not a []string")
-			}
-		}
-	}
-
-	for _, req := range required {
-		if _, propReqOk := properties[req]; !propReqOk {
+	for _, req := range sch.Required {
+		if !slices.Contains(propertyNames, req) {
 			return fmt.Errorf("required parameter %s is not defined in properties", req)
 		}
 	}

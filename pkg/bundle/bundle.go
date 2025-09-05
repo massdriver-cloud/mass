@@ -55,14 +55,6 @@ type Secret struct {
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 }
 
-func (b *Bundle) IsInfrastructure() bool {
-	return b.Type == "bundle" || b.Type == "infrastructure"
-}
-
-func (b *Bundle) IsApplication() bool {
-	return b.Type == "application"
-}
-
 func Unmarshal(readDirectory string) (*Bundle, error) {
 	unmarshalledBundle := &Bundle{}
 	if err := files.Read(path.Join(readDirectory, "massdriver.yaml"), unmarshalledBundle); err != nil {
@@ -70,10 +62,10 @@ func Unmarshal(readDirectory string) (*Bundle, error) {
 	}
 
 	if unmarshalledBundle.Access != "" {
-		fmt.Println(prettylogs.Orange("Warning: the 'access' field in massdriver.yaml is no longer supported and should be removed."))
+		fmt.Println(prettylogs.Orange("Warning: the 'access' field in massdriver.yaml is deprecated and should be removed."))
 	}
-	if unmarshalledBundle.Type != "infrastructure" && unmarshalledBundle.Type != "application" {
-		fmt.Println(prettylogs.Orange("Warning: the 'type' field in massdriver.yaml should be either 'infrastructure' or 'application'. This will be enforced in a future release."))
+	if unmarshalledBundle.Type != "" {
+		fmt.Println(prettylogs.Orange("Warning: the 'type' field in massdriver.yaml is deprecated and should be removed."))
 	}
 
 	applyAppBlockDefaults(unmarshalledBundle)

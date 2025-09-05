@@ -39,12 +39,18 @@ func RunLint(b *bundle.Bundle, mdClient *client.Client) bundle.LintResult {
 
 func printLintResult(ruleName string, result bundle.LintResult) {
 	greenCheckmark := prettylogs.Green(" ✓")
+	orangeWarning := prettylogs.Orange(" !")
 	redError := prettylogs.Red(" ✗")
 
-	if result.HasIssues() {
-		fmt.Printf("%s %s check failed: \n", redError, ruleName)
+	if result.HasErrors() {
+		fmt.Printf("%s %s check failed with errors: \n", redError, ruleName)
 		for _, issue := range result.Issues {
 			fmt.Println(issue)
+		}
+	} else if result.HasWarnings() {
+		fmt.Printf("%s %s check completed with warnings: \n", orangeWarning, ruleName)
+		for _, warning := range result.Warnings() {
+			fmt.Println(warning)
 		}
 	} else {
 		fmt.Printf("%s %s check passed.\n", greenCheckmark, ruleName)
