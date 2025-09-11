@@ -114,7 +114,7 @@ func runPreviewDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var url = lipgloss.NewStyle().SetString(env.URL(mdClient.Config.OrganizationID)).Underline(true).Foreground(lipgloss.Color("#7D56F4"))
+	var url = lipgloss.NewStyle().SetString(env.URL(mdClient)).Underline(true).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Deploying preview environment: %s", url)
 
 	fmt.Println(msg)
@@ -138,7 +138,7 @@ func runPreviewDecommission(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var url = lipgloss.NewStyle().SetString(env.URL(mdClient.Config.OrganizationID)).Underline(true).Foreground(lipgloss.Color("#7D56F4"))
+	var url = lipgloss.NewStyle().SetString(env.URL(mdClient)).Underline(true).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("Decommissioning preview environment: %s", url)
 	fmt.Println(msg)
 

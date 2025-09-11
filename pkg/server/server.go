@@ -130,7 +130,7 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 		httpSwagger.URL("http://127.0.0.1:8080/swagger/doc.json"), // The url pointing to API definition
 	))
 
-	proxy, err := proxy.New("https://api.massdriver.cloud")
+	proxy, err := proxy.New(b.MassdriverClient.Config.URL)
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
