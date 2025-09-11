@@ -31,7 +31,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 	mdClient := client.Client{
 		GQL: gqlmock.NewClientWithJSONResponseArray(responses),
 		Config: config.Config{
-			URL:            "https://custom.massdriver.cloud",
+			URL:            "https://api.massdriver.custom",
 			OrganizationID: "faux-org-id",
 		},
 	}
@@ -51,7 +51,7 @@ func TestDeployPreviewEnvironment(t *testing.T) {
 	}
 
 	got := env.URL(&mdClient)
-	want := "https://custom.massdriver.cloud/orgs/faux-org-id/projects/ecomm/environments/p9000"
+	want := "https://app.massdriver.custom/orgs/faux-org-id/projects/ecomm/environments/p9000"
 
 	if got != want {
 		t.Errorf("got %s , wanted %s", got, want)
