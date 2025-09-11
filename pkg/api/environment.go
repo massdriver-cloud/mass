@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/mitchellh/mapstructure"
@@ -48,7 +49,8 @@ func GetEnvironmentsByProject(ctx context.Context, mdClient *client.Client, proj
 }
 
 func (e *Environment) URL(mdClient *client.Client) string {
-	return fmt.Sprintf(envUrlTemplate, mdClient.Config.URL, mdClient.Config.OrganizationID, e.Project.Slug, e.Slug)
+	appURL := strings.Replace(mdClient.Config.URL, "://api.", "://app.", 1)
+	return fmt.Sprintf(envUrlTemplate, appURL, mdClient.Config.OrganizationID, e.Project.Slug, e.Slug)
 }
 
 func toEnvironment(v any) (*Environment, error) {
