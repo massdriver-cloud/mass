@@ -8,7 +8,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const envUrlTemplate = "https://app.massdriver.cloud/orgs/%s/projects/%s/environments/%s"
+const envUrlTemplate = "%s/orgs/%s/projects/%s/environments/%s"
 
 type Environment struct {
 	ID          string    `json:"id"`
@@ -47,8 +47,8 @@ func GetEnvironmentsByProject(ctx context.Context, mdClient *client.Client, proj
 	return envs, nil
 }
 
-func (e *Environment) URL(orgID string) string {
-	return fmt.Sprintf(envUrlTemplate, orgID, e.Project.Slug, e.Slug)
+func (e *Environment) URL(mdClient *client.Client) string {
+	return fmt.Sprintf(envUrlTemplate, mdClient.Config.URL, mdClient.Config.OrganizationID, e.Project.Slug, e.Slug)
 }
 
 func toEnvironment(v any) (*Environment, error) {
