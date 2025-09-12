@@ -48,9 +48,9 @@ func GetEnvironmentsByProject(ctx context.Context, mdClient *client.Client, proj
 	return envs, nil
 }
 
-func (e *Environment) URL(mdClient *client.Client) string {
+func (e *Environment) URL(ctx context.Context, mdClient *client.Client) string {
 	var appUrl string
-	server, serverErr := GetServer(context.Background(), mdClient)
+	server, serverErr := GetServer(ctx, mdClient)
 	if serverErr != nil {
 		// this is greedy (and potentially wrong) but it's VERY unlikely that this query will fail AND the search/replace will be inaccurate
 		appUrl = strings.Replace(mdClient.Config.URL, "api.", "app.", 1)
