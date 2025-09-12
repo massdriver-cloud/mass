@@ -215,6 +215,13 @@ func (v *PreviewEnvironmentInput) __premarshalJSON() (*__premarshalPreviewEnviro
 	return &retval, nil
 }
 
+type ServerMode string
+
+const (
+	ServerModeSelfHosted ServerMode = "SELF_HOSTED"
+	ServerModeManaged    ServerMode = "MANAGED"
+)
+
 // __configurePackageInput is used internally by genqlient
 type __configurePackageInput struct {
 	OrganizationId string         `json:"organizationId"`
@@ -2978,6 +2985,30 @@ type getProjectsResponse struct {
 // GetProjects returns getProjectsResponse.Projects, and is useful for accessing the field via an interface.
 func (v *getProjectsResponse) GetProjects() []getProjectsProjectsProject { return v.Projects }
 
+// getServerResponse is returned by getServer on success.
+type getServerResponse struct {
+	Server getServerServer `json:"server"`
+}
+
+// GetServer returns getServerResponse.Server, and is useful for accessing the field via an interface.
+func (v *getServerResponse) GetServer() getServerServer { return v.Server }
+
+// getServerServer includes the requested fields of the GraphQL type Server.
+type getServerServer struct {
+	AppUrl  string     `json:"appUrl"`
+	Mode    ServerMode `json:"mode"`
+	Version string     `json:"version"`
+}
+
+// GetAppUrl returns getServerServer.AppUrl, and is useful for accessing the field via an interface.
+func (v *getServerServer) GetAppUrl() string { return v.AppUrl }
+
+// GetMode returns getServerServer.Mode, and is useful for accessing the field via an interface.
+func (v *getServerServer) GetMode() ServerMode { return v.Mode }
+
+// GetVersion returns getServerServer.Version, and is useful for accessing the field via an interface.
+func (v *getServerServer) GetVersion() string { return v.Version }
+
 // listArtifactDefinitionsArtifactDefinitionsArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
 // The GraphQL type's documentation follows.
 //
@@ -3977,6 +4008,39 @@ func getProjects(
 	var err error
 
 	var data getProjectsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getServer.
+const getServer_Operation = `
+query getServer {
+	server {
+		appUrl
+		mode
+		version
+	}
+}
+`
+
+func getServer(
+	ctx context.Context,
+	client graphql.Client,
+) (*getServerResponse, error) {
+	req := &graphql.Request{
+		OpName: "getServer",
+		Query:  getServer_Operation,
+	}
+	var err error
+
+	var data getServerResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

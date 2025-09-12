@@ -429,6 +429,7 @@ type DeploymentStatistic {
 type Server {
   version: String!
   mode: ServerMode!
+  appUrl: String!
   ssoProviders: [PublicSsoProvider]
 }
 
@@ -625,6 +626,14 @@ type Package {
 
   "When the package was last updated"
   updatedAt: DateTime!
+
+  "The version constraint for this package. Can be an exact version (1.2.3), release channel (~1.2), or automation rule (latest, release candidate)."
+  version: String!
+
+  currentDeployedVersion: String!
+
+  "The resolved semantic version that would be deployed right now based on the version constraint. Always a specific x.y.z version."
+  nextDeployableVersion: String!
 
   "Cloud alarms configured through IaC for this package"
   alarms: [Alarm]
@@ -984,30 +993,16 @@ scalar DateTime
 "An instance of a bundle in a project's architecture, providing context for how the bundle is used"
 type Manifest {
   id: ID!
-
   name: String!
-
   slug: String!
-
   suffix: String!
-
   description: String
-
   position: GraphPosition
-
-  "Fields & values for managing default secret values in preview environments."
-  secretFields: [SecretField]
-
   deletable: ManifestDeletionLifecycle!
-
   createdAt: DateTime!
-
   updatedAt: DateTime!
-
   bundle: Bundle!
-
   packages: [Package]
-
   linkableFields: [LinkableField]
 }
 
@@ -1379,8 +1374,8 @@ type BundleRecommendation {
 
 """
 The `JSON` scalar type represents arbitrary json string data, represented as UTF-8
-character sequences. The Json type is most often used to represent a free-form
-human-readable json string.
+character sequences. The JSON type is most often used to represent a free-form
+human-readable JSON string.
 """
 scalar JSON
 
@@ -1696,9 +1691,6 @@ type Bundle {
   "Name of the bundle"
   name: String!
 
-  "Version of the bundle"
-  version: String
-
   "Icon SVG"
   icon: String
 
@@ -1742,6 +1734,9 @@ type Bundle {
 
   "When the bundle was last updated"
   updatedAt: DateTime!
+
+  "List of available versions for this bundle"
+  versions: [String]
 
   "Information about whether the bundle can be deleted"
   deletable: BundleDeletionLifecycle!
@@ -1814,7 +1809,7 @@ type Artifact {
   type: String!
 
   "The bundle's artifact field (output field) that produced this artifact."
-  field: String!
+  field: String
 
   specs: JSON
 
@@ -2032,26 +2027,6 @@ type RootMutationType {
     params: GraphPositionParams!
   ): ManifestPayload
 
-  "Sets a default secret value for this manifest. This value can be overridden by setting a secret value on a package."
-  setManifestDefaultSecret(
-    organizationId: ID!
-
-    "Manifest ID or {project.slug}-{manifest.slug} i.e.: ecomm-database"
-    id: ID!
-
-    input: SetSecretValueInput!
-  ): SecretMetadataPayload
-
-  "Removes a default secret value for this manifest in all preview environments."
-  unsetManifestDefaultSecret(
-    organizationId: ID!
-
-    "Manifest ID or {project.slug}-{manifest.slug} i.e.: ecomm-database"
-    id: ID!
-
-    input: UnsetSecretValueInput!
-  ): SecretMetadataPayload
-
   "Adds a Service Account to a group"
   addServiceAccountToGroup(groupId: ID!, organizationId: ID!, serviceAccountId: ID!): ServiceAccountMemberPayload
 
@@ -2127,16 +2102,26 @@ type RootMutationType {
     deleteDeployments: Boolean!
   ): PackagePayload
 
+  setPackageVersion(
+    organizationId: ID!
+
+    "Package ID, slug, or name prefix."
+    id: ID!
+
+    "The version or release channel to use."
+    version: String!
+  ): PackagePayload
+
   "Update a Package's parameters"
   configurePackage(
     organizationId: ID!
 
+    "Package ID, slug, or name prefix."
+    id: ID
+
     manifestId: ID @deprecated(reason: "Use id instead")
 
     targetId: ID @deprecated(reason: "Use id instead")
-
-    "Package ID, slug, or name prefix."
-    id: ID
 
     params: JSON!
   ): PackagePayload
@@ -2349,9 +2334,6 @@ type DashboardStatistics {
   "Displays the 10 most recent infrastructure alarm status changes, ordered by when they occurred. This gives immediate visibility into potential issues across your infrastructure."
   recentAlarms: [RecentAlarm]
 
-  "Shows the 10 most recent infrastructure changes, ordered by when the deployment was created. This panel provides visibility into the latest infrastructure modifications across your environments."
+  "Shows the 20 most recent infrastructure changes, ordered by when the deployment was created. This panel provides visibility into the latest infrastructure modifications across your environments."
   recentInfrastructureDeployments: [RecentDeployment]
-
-  "Shows the 10 most recent application changes, ordered by when the deployment was created. This panel provides visibility into the latest application modifications across your environments."
-  recentApplicationDeployments: [RecentDeployment]
 }

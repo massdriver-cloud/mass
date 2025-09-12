@@ -366,3 +366,14 @@ mutation deployPreviewEnvironment($organizationId: ID!, $projectId: ID!, $input:
     }
   }
 }
+
+
+# SERVER
+
+query getServer() {
+  server {
+    appUrl
+    mode
+    version
+  }
+}
