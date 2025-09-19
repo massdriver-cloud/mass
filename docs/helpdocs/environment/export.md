@@ -7,9 +7,9 @@ Data will be exported in a teired file structure, with directory names as the en
 ```bash
 env
 ├── package1
-│   ├── <data...>
+│   ├── \<data...\>
 ├── package2
-│   ├── <data...>
+│   ├── \<data...\>
 ```
 
 For information about what will be exported for each package, refer to the `mass package export` command.
@@ -17,7 +17,7 @@ For information about what will be exported for each package, refer to the `mass
 ## Usage
 
 ```bash
-mass environment export <project-slug>
+mass environment export \<project-slug\>
 ```
 
 ## Examples

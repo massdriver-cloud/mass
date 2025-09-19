@@ -21,7 +21,7 @@ Retrieves detailed information about a specific artifact definition, including:
 ## Usage
 
 ```bash
-mass definition get <definition-name>
+mass definition get \<definition-name\>
 ```
 
 ## Examples

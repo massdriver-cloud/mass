@@ -17,7 +17,7 @@ Lists all Massdriver environments in a project.
 ## Usage
 
 ```bash
-mass environment list <project slug>
+mass environment list \<project slug\>
 ```
 
 ## Examples

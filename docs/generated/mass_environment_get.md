@@ -21,7 +21,7 @@ Retrieves detailed information about a specific environment, including:
 ## Usage
 
 ```bash
-mass environment get <project-slug>-<environment-slug>
+mass environment get \<project-slug\>-\<environment-slug\>
 ```
 
 ## Examples

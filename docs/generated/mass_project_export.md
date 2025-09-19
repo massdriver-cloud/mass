@@ -20,14 +20,14 @@ Data will be exported in a teired file structure, with directory names as the pr
 project
 ├── env1
 │   ├── package1
-│   │   ├── <data...>
+│   │   ├── \<data...\>
 │   ├── package2
-│   │   ├── <data...>
+│   │   ├── \<data...\>
 ├── env2
 │   ├── package1
-│   │   ├── <data...>
+│   │   ├── \<data...\>
 │   ├── package2
-│   │   ├── <data...>
+│   │   ├── \<data...\>
 ```
 
 For information about what will be exported for each environment, refer to the `mass environment export` command.
@@ -36,7 +36,7 @@ For information about what will be exported for each package, refer to the `mass
 ## Usage
 
 ```bash
-mass project export <project-slug>
+mass project export \<project-slug\>
 ```
 
 ## Examples

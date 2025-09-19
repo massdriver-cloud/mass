@@ -19,7 +19,7 @@ Your infrastructure must be published as a [bundle](https://docs.massdriver.clou
 ## Usage
 
 ```bash
-mass package get <package-slug>
+mass package get \<package-slug\>
 ```
 
 ## Examples
@@ -29,7 +29,7 @@ mass package get <package-slug>
 mass package get ecomm-prod-vpc
 ```
 
-The package slug can be found by hovering over the bundle in the Massdriver diagram. It follows the format: `<project-slug>-<env-slug>-<manifest-slug>`.
+The package slug can be found by hovering over the bundle in the Massdriver diagram. It follows the format: `\<project-slug\>-\<env-slug\>-\<manifest-slug\>`.
 
 
 ```
