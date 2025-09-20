@@ -29,7 +29,7 @@ The data which will be exported for each package includes:
 - **`artifact_<name>.json`**: Each artifact for the deploy package (if applicable)
 - **`bundle`**: Directory containing deployed bundle version
 - **`params.json`**: Current package configuration
-- **`\<path\>.tfstate.json`**: Terraform/OpenTofu state file for each step (if applicable)
+- **`<path>.tfstate.json`**: Terraform/OpenTofu state file for each step (if applicable)
 
 Data will only be exported for packages in the **`RUNNING`** state. Data will NOT be exported for packages in the **`INITIALIZED`**, **`DECOMMISSIONED`** or **`FAILED`** state. Packages which are remote references will only download the artifacts files.
 
