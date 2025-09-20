@@ -18,15 +18,15 @@ Data will be exported into a directory, named via the package slug:
 
 ```bash
 package
-├── artifact_\<name\>.json
+├── artifact_<name>.json
 ├── bundle
-│   ├── \<data...\>
+│   ├── <data...>
 ├── params.json
-├── \<path\>.tfstate.json
+├── <path>.tfstate.json
 ```
 
 The data which will be exported for each package includes:
-- **`artifact_\<name\>.json`**: Each artifact for the deploy package (if applicable)
+- **`artifact_<name>.json`**: Each artifact for the deploy package (if applicable)
 - **`bundle`**: Directory containing deployed bundle version
 - **`params.json`**: Current package configuration
 - **`\<path\>.tfstate.json`**: Terraform/OpenTofu state file for each step (if applicable)
@@ -36,7 +36,7 @@ Data will only be exported for packages in the **`RUNNING`** state. Data will NO
 ## Usage
 
 ```bash
-mass package export \<project-slug\>-\<environment-slug\>-\<package-slug\>
+mass package export <project-slug>-<environment-slug>-<package-slug>
 ```
 
 ## Examples

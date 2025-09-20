@@ -21,7 +21,7 @@ Retrieves detailed information about a specific project, including:
 ## Usage
 
 ```bash
-mass project get \<project-slug\>
+mass project get <project-slug>
 ```
 
 ## Examples

@@ -17,7 +17,7 @@ Publishes a new or updated artifact definition to Massdriver.
 ## Usage
 
 ```bash
-mass definition publish --file \<definition-file\>
+mass definition publish --file <definition-file>
 ```
 
 ## Examples
