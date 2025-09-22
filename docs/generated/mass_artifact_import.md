@@ -17,7 +17,7 @@ Create a custom artifact to represent infrastructure not deployed through Massdr
 ## Examples
 
 ```shell
-mass artifact import -n \<name\> -t \<type\> -f \<file\>
+mass artifact import -n <name> -t <type> -f <file>
 ```
 
 

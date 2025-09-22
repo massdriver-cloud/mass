@@ -6,7 +6,7 @@ Data will be exported into a directory, named via the package slug:
 
 ```bash
 package
-├── artifact_<name>>.json
+├── artifact_<name>.json
 ├── bundle
 │   ├── <data...>
 ├── params.json
