@@ -236,8 +236,8 @@ mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $
   }
 }
 
-query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
-  getPackageByNamingConvention(organizationId: $organizationId, name: $name) {
+query getPackage($organizationId: ID!, $id: ID!) {
+  package(organizationId: $organizationId, id: $id) {
     id
     namePrefix
     status
@@ -278,8 +278,8 @@ query getPackageByNamingConvention($organizationId: ID!, $name: String!) {
   }
 }
 
-mutation configurePackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $params: JSON!) {
-  configurePackage(organizationId: $organizationId, targetId: $targetId, manifestId: $manifestId, params: $params) {
+mutation configurePackage($organizationId: ID!, $id: ID!, $params: JSON!) {
+  configurePackage(organizationId: $organizationId, id: $id, params: $params) {
     result {
       id
       params

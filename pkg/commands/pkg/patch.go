@@ -44,5 +44,5 @@ func RunPatch(ctx context.Context, mdClient *client.Client, name string, setValu
 		}
 	}
 
-	return api.ConfigurePackage(ctx, mdClient, pkg.Environment.ID, pkg.Manifest.ID, updatedParams)
+	return api.ConfigurePackage(ctx, mdClient, pkg.ID, updatedParams)
 }

@@ -225,19 +225,15 @@ const (
 // __configurePackageInput is used internally by genqlient
 type __configurePackageInput struct {
 	OrganizationId string         `json:"organizationId"`
-	TargetId       string         `json:"targetId"`
-	ManifestId     string         `json:"manifestId"`
+	Id             string         `json:"id"`
 	Params         map[string]any `json:"-"`
 }
 
 // GetOrganizationId returns __configurePackageInput.OrganizationId, and is useful for accessing the field via an interface.
 func (v *__configurePackageInput) GetOrganizationId() string { return v.OrganizationId }
 
-// GetTargetId returns __configurePackageInput.TargetId, and is useful for accessing the field via an interface.
-func (v *__configurePackageInput) GetTargetId() string { return v.TargetId }
-
-// GetManifestId returns __configurePackageInput.ManifestId, and is useful for accessing the field via an interface.
-func (v *__configurePackageInput) GetManifestId() string { return v.ManifestId }
+// GetId returns __configurePackageInput.Id, and is useful for accessing the field via an interface.
+func (v *__configurePackageInput) GetId() string { return v.Id }
 
 // GetParams returns __configurePackageInput.Params, and is useful for accessing the field via an interface.
 func (v *__configurePackageInput) GetParams() map[string]any { return v.Params }
@@ -278,9 +274,7 @@ func (v *__configurePackageInput) UnmarshalJSON(b []byte) error {
 type __premarshal__configurePackageInput struct {
 	OrganizationId string `json:"organizationId"`
 
-	TargetId string `json:"targetId"`
-
-	ManifestId string `json:"manifestId"`
+	Id string `json:"id"`
 
 	Params json.RawMessage `json:"params"`
 }
@@ -297,8 +291,7 @@ func (v *__configurePackageInput) __premarshalJSON() (*__premarshal__configurePa
 	var retval __premarshal__configurePackageInput
 
 	retval.OrganizationId = v.OrganizationId
-	retval.TargetId = v.TargetId
-	retval.ManifestId = v.ManifestId
+	retval.Id = v.Id
 	{
 
 		dst := &retval.Params
@@ -578,17 +571,17 @@ func (v *__getEnvironmentsByProjectInput) GetOrganizationId() string { return v.
 // GetProjectId returns __getEnvironmentsByProjectInput.ProjectId, and is useful for accessing the field via an interface.
 func (v *__getEnvironmentsByProjectInput) GetProjectId() string { return v.ProjectId }
 
-// __getPackageByNamingConventionInput is used internally by genqlient
-type __getPackageByNamingConventionInput struct {
+// __getPackageInput is used internally by genqlient
+type __getPackageInput struct {
 	OrganizationId string `json:"organizationId"`
-	Name           string `json:"name"`
+	Id             string `json:"id"`
 }
 
-// GetOrganizationId returns __getPackageByNamingConventionInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getPackageByNamingConventionInput) GetOrganizationId() string { return v.OrganizationId }
+// GetOrganizationId returns __getPackageInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getPackageInput) GetOrganizationId() string { return v.OrganizationId }
 
-// GetName returns __getPackageByNamingConventionInput.Name, and is useful for accessing the field via an interface.
-func (v *__getPackageByNamingConventionInput) GetName() string { return v.Name }
+// GetId returns __getPackageInput.Id, and is useful for accessing the field via an interface.
+func (v *__getPackageInput) GetId() string { return v.Id }
 
 // __getProjectByIdInput is used internally by genqlient
 type __getProjectByIdInput struct {
@@ -2266,11 +2259,11 @@ func (v *getEnvironmentsByProjectResponse) GetProject() getEnvironmentsByProject
 	return v.Project
 }
 
-// getPackageByNamingConventionGetPackageByNamingConventionPackage includes the requested fields of the GraphQL type Package.
+// getPackagePackage includes the requested fields of the GraphQL type Package.
 // The GraphQL type's documentation follows.
 //
 // A deployed instance of a bundle in the context of its manifest
-type getPackageByNamingConventionGetPackageByNamingConventionPackage struct {
+type getPackagePackage struct {
 	// Unique identifier
 	Id string `json:"id"`
 	// Prefix for resource names
@@ -2280,64 +2273,52 @@ type getPackageByNamingConventionGetPackageByNamingConventionPackage struct {
 	// Package configuration parameters
 	Params map[string]any `json:"-"`
 	// Artifacts provisioned by this package
-	Artifacts []getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact `json:"artifacts"`
+	Artifacts []getPackagePackageArtifactsArtifact `json:"artifacts"`
 	// Artifacts from a remote source like another project or a resource not managed by massdriver
-	RemoteReferences []getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
-	Manifest         getPackageByNamingConventionGetPackageByNamingConventionPackageManifest                          `json:"manifest"`
+	RemoteReferences []getPackagePackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	Manifest         getPackagePackageManifest                          `json:"manifest"`
 	// The environment this package will be deployed to
-	Environment getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment `json:"environment"`
+	Environment getPackagePackageEnvironment `json:"environment"`
 }
 
-// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Id, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetId() string { return v.Id }
+// GetId returns getPackagePackage.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetId() string { return v.Id }
 
-// GetNamePrefix returns getPackageByNamingConventionGetPackageByNamingConventionPackage.NamePrefix, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetNamePrefix() string {
-	return v.NamePrefix
-}
+// GetNamePrefix returns getPackagePackage.NamePrefix, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetNamePrefix() string { return v.NamePrefix }
 
-// GetStatus returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Status, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetStatus() PackageStatus {
-	return v.Status
-}
+// GetStatus returns getPackagePackage.Status, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetStatus() PackageStatus { return v.Status }
 
-// GetParams returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Params, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetParams() map[string]any {
-	return v.Params
-}
+// GetParams returns getPackagePackage.Params, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetParams() map[string]any { return v.Params }
 
-// GetArtifacts returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Artifacts, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetArtifacts() []getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact {
-	return v.Artifacts
-}
+// GetArtifacts returns getPackagePackage.Artifacts, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetArtifacts() []getPackagePackageArtifactsArtifact { return v.Artifacts }
 
-// GetRemoteReferences returns getPackageByNamingConventionGetPackageByNamingConventionPackage.RemoteReferences, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetRemoteReferences() []getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference {
+// GetRemoteReferences returns getPackagePackage.RemoteReferences, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetRemoteReferences() []getPackagePackageRemoteReferencesRemoteReference {
 	return v.RemoteReferences
 }
 
-// GetManifest returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Manifest, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetManifest() getPackageByNamingConventionGetPackageByNamingConventionPackageManifest {
-	return v.Manifest
-}
+// GetManifest returns getPackagePackage.Manifest, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetManifest() getPackagePackageManifest { return v.Manifest }
 
-// GetEnvironment returns getPackageByNamingConventionGetPackageByNamingConventionPackage.Environment, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) GetEnvironment() getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment {
-	return v.Environment
-}
+// GetEnvironment returns getPackagePackage.Environment, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetEnvironment() getPackagePackageEnvironment { return v.Environment }
 
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) UnmarshalJSON(b []byte) error {
+func (v *getPackagePackage) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*getPackageByNamingConventionGetPackageByNamingConventionPackage
+		*getPackagePackage
 		Params json.RawMessage `json:"params"`
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.getPackageByNamingConventionGetPackageByNamingConventionPackage = v
+	firstPass.getPackagePackage = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -2352,14 +2333,14 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) Unmars
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getPackageByNamingConventionGetPackageByNamingConventionPackage.Params: %w", err)
+					"unable to unmarshal getPackagePackage.Params: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-type __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage struct {
+type __premarshalgetPackagePackage struct {
 	Id string `json:"id"`
 
 	NamePrefix string `json:"namePrefix"`
@@ -2368,16 +2349,16 @@ type __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage
 
 	Params json.RawMessage `json:"params"`
 
-	Artifacts []getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact `json:"artifacts"`
+	Artifacts []getPackagePackageArtifactsArtifact `json:"artifacts"`
 
-	RemoteReferences []getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	RemoteReferences []getPackagePackageRemoteReferencesRemoteReference `json:"remoteReferences"`
 
-	Manifest getPackageByNamingConventionGetPackageByNamingConventionPackageManifest `json:"manifest"`
+	Manifest getPackagePackageManifest `json:"manifest"`
 
-	Environment getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment `json:"environment"`
+	Environment getPackagePackageEnvironment `json:"environment"`
 }
 
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) MarshalJSON() ([]byte, error) {
+func (v *getPackagePackage) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -2385,8 +2366,8 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) Marsha
 	return json.Marshal(premarshaled)
 }
 
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) __premarshalJSON() (*__premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage, error) {
-	var retval __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage
+func (v *getPackagePackage) __premarshalJSON() (*__premarshalgetPackagePackage, error) {
+	var retval __premarshalgetPackagePackage
 
 	retval.Id = v.Id
 	retval.NamePrefix = v.NamePrefix
@@ -2400,7 +2381,7 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) __prem
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getPackageByNamingConventionGetPackageByNamingConventionPackage.Params: %w", err)
+				"unable to marshal getPackagePackage.Params: %w", err)
 		}
 	}
 	retval.Artifacts = v.Artifacts
@@ -2410,115 +2391,89 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackage) __prem
 	return &retval, nil
 }
 
-// getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact includes the requested fields of the GraphQL type Artifact.
-type getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact struct {
+// getPackagePackageArtifactsArtifact includes the requested fields of the GraphQL type Artifact.
+type getPackagePackageArtifactsArtifact struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
 	// The bundle's artifact field (output field) that produced this artifact.
 	Field string `json:"field"`
 }
 
-// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact.Id, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact) GetId() string {
-	return v.Id
+// GetId returns getPackagePackageArtifactsArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageArtifactsArtifact) GetId() string { return v.Id }
+
+// GetName returns getPackagePackageArtifactsArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageArtifactsArtifact) GetName() string { return v.Name }
+
+// GetField returns getPackagePackageArtifactsArtifact.Field, and is useful for accessing the field via an interface.
+func (v *getPackagePackageArtifactsArtifact) GetField() string { return v.Field }
+
+// getPackagePackageEnvironment includes the requested fields of the GraphQL type Environment.
+type getPackagePackageEnvironment struct {
+	Id      string                              `json:"id"`
+	Slug    string                              `json:"slug"`
+	Project getPackagePackageEnvironmentProject `json:"project"`
 }
 
-// GetName returns getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact) GetName() string {
-	return v.Name
-}
+// GetId returns getPackagePackageEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageEnvironment) GetId() string { return v.Id }
 
-// GetField returns getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact.Field, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageArtifactsArtifact) GetField() string {
-	return v.Field
-}
+// GetSlug returns getPackagePackageEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *getPackagePackageEnvironment) GetSlug() string { return v.Slug }
 
-// getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment includes the requested fields of the GraphQL type Environment.
-type getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment struct {
-	Id      string                                                                            `json:"id"`
-	Slug    string                                                                            `json:"slug"`
-	Project getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject `json:"project"`
-}
-
-// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment) GetId() string {
-	return v.Id
-}
-
-// GetSlug returns getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment.Slug, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment) GetSlug() string {
-	return v.Slug
-}
-
-// GetProject returns getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment.Project, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironment) GetProject() getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject {
+// GetProject returns getPackagePackageEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *getPackagePackageEnvironment) GetProject() getPackagePackageEnvironmentProject {
 	return v.Project
 }
 
-// getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject includes the requested fields of the GraphQL type Project.
-type getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject struct {
+// getPackagePackageEnvironmentProject includes the requested fields of the GraphQL type Project.
+type getPackagePackageEnvironmentProject struct {
 	Id   string `json:"id"`
 	Slug string `json:"slug"`
 }
 
-// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject.Id, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject) GetId() string {
-	return v.Id
-}
+// GetId returns getPackagePackageEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageEnvironmentProject) GetId() string { return v.Id }
 
-// GetSlug returns getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject.Slug, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageEnvironmentProject) GetSlug() string {
-	return v.Slug
-}
+// GetSlug returns getPackagePackageEnvironmentProject.Slug, and is useful for accessing the field via an interface.
+func (v *getPackagePackageEnvironmentProject) GetSlug() string { return v.Slug }
 
-// getPackageByNamingConventionGetPackageByNamingConventionPackageManifest includes the requested fields of the GraphQL type Manifest.
+// getPackagePackageManifest includes the requested fields of the GraphQL type Manifest.
 // The GraphQL type's documentation follows.
 //
 // An instance of a bundle in a project's architecture, providing context for how the bundle is used
-type getPackageByNamingConventionGetPackageByNamingConventionPackageManifest struct {
-	Id          string                                                                        `json:"id"`
-	Name        string                                                                        `json:"name"`
-	Slug        string                                                                        `json:"slug"`
-	Suffix      string                                                                        `json:"suffix"`
-	Description string                                                                        `json:"description"`
-	Bundle      getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle `json:"bundle"`
+type getPackagePackageManifest struct {
+	Id          string                          `json:"id"`
+	Name        string                          `json:"name"`
+	Slug        string                          `json:"slug"`
+	Suffix      string                          `json:"suffix"`
+	Description string                          `json:"description"`
+	Bundle      getPackagePackageManifestBundle `json:"bundle"`
 }
 
-// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Id, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetId() string {
-	return v.Id
-}
+// GetId returns getPackagePackageManifest.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageManifest) GetId() string { return v.Id }
 
-// GetName returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Name, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetName() string {
-	return v.Name
-}
+// GetName returns getPackagePackageManifest.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageManifest) GetName() string { return v.Name }
 
-// GetSlug returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Slug, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetSlug() string {
-	return v.Slug
-}
+// GetSlug returns getPackagePackageManifest.Slug, and is useful for accessing the field via an interface.
+func (v *getPackagePackageManifest) GetSlug() string { return v.Slug }
 
-// GetSuffix returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Suffix, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetSuffix() string {
-	return v.Suffix
-}
+// GetSuffix returns getPackagePackageManifest.Suffix, and is useful for accessing the field via an interface.
+func (v *getPackagePackageManifest) GetSuffix() string { return v.Suffix }
 
-// GetDescription returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Description, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetDescription() string {
-	return v.Description
-}
+// GetDescription returns getPackagePackageManifest.Description, and is useful for accessing the field via an interface.
+func (v *getPackagePackageManifest) GetDescription() string { return v.Description }
 
-// GetBundle returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifest.Bundle, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest) GetBundle() getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle {
-	return v.Bundle
-}
+// GetBundle returns getPackagePackageManifest.Bundle, and is useful for accessing the field via an interface.
+func (v *getPackagePackageManifest) GetBundle() getPackagePackageManifestBundle { return v.Bundle }
 
-// getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle includes the requested fields of the GraphQL type Bundle.
+// getPackagePackageManifestBundle includes the requested fields of the GraphQL type Bundle.
 // The GraphQL type's documentation follows.
 //
 // A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component
-type getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle struct {
+type getPackagePackageManifestBundle struct {
 	// Unique identifier
 	Id string `json:"id"`
 	// Name of the bundle
@@ -2529,38 +2484,30 @@ type getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBund
 	SpecVersion string `json:"specVersion"`
 }
 
-// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Id, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetId() string {
-	return v.Id
-}
+// GetId returns getPackagePackageManifestBundle.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageManifestBundle) GetId() string { return v.Id }
 
-// GetName returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Name, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetName() string {
-	return v.Name
-}
+// GetName returns getPackagePackageManifestBundle.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageManifestBundle) GetName() string { return v.Name }
 
-// GetSpec returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetSpec() map[string]any {
-	return v.Spec
-}
+// GetSpec returns getPackagePackageManifestBundle.Spec, and is useful for accessing the field via an interface.
+func (v *getPackagePackageManifestBundle) GetSpec() map[string]any { return v.Spec }
 
-// GetSpecVersion returns getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.SpecVersion, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) GetSpecVersion() string {
-	return v.SpecVersion
-}
+// GetSpecVersion returns getPackagePackageManifestBundle.SpecVersion, and is useful for accessing the field via an interface.
+func (v *getPackagePackageManifestBundle) GetSpecVersion() string { return v.SpecVersion }
 
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) UnmarshalJSON(b []byte) error {
+func (v *getPackagePackageManifestBundle) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle
+		*getPackagePackageManifestBundle
 		Spec json.RawMessage `json:"spec"`
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle = v
+	firstPass.getPackagePackageManifestBundle = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -2575,14 +2522,14 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Spec: %w", err)
+					"unable to unmarshal getPackagePackageManifestBundle.Spec: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-type __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle struct {
+type __premarshalgetPackagePackageManifestBundle struct {
 	Id string `json:"id"`
 
 	Name string `json:"name"`
@@ -2592,7 +2539,7 @@ type __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackage
 	SpecVersion string `json:"specVersion"`
 }
 
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) MarshalJSON() ([]byte, error) {
+func (v *getPackagePackageManifestBundle) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -2600,8 +2547,8 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest
 	return json.Marshal(premarshaled)
 }
 
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle) __premarshalJSON() (*__premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle, error) {
-	var retval __premarshalgetPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle
+func (v *getPackagePackageManifestBundle) __premarshalJSON() (*__premarshalgetPackagePackageManifestBundle, error) {
+	var retval __premarshalgetPackagePackageManifestBundle
 
 	retval.Id = v.Id
 	retval.Name = v.Name
@@ -2614,56 +2561,47 @@ func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageManifest
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getPackageByNamingConventionGetPackageByNamingConventionPackageManifestBundle.Spec: %w", err)
+				"unable to marshal getPackagePackageManifestBundle.Spec: %w", err)
 		}
 	}
 	retval.SpecVersion = v.SpecVersion
 	return &retval, nil
 }
 
-// getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
-type getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference struct {
-	Artifact getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact `json:"artifact"`
+// getPackagePackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
+type getPackagePackageRemoteReferencesRemoteReference struct {
+	Artifact getPackagePackageRemoteReferencesRemoteReferenceArtifact `json:"artifact"`
 }
 
-// GetArtifact returns getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference.Artifact, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReference) GetArtifact() getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact {
+// GetArtifact returns getPackagePackageRemoteReferencesRemoteReference.Artifact, and is useful for accessing the field via an interface.
+func (v *getPackagePackageRemoteReferencesRemoteReference) GetArtifact() getPackagePackageRemoteReferencesRemoteReferenceArtifact {
 	return v.Artifact
 }
 
-// getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact includes the requested fields of the GraphQL type Artifact.
-type getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact struct {
+// getPackagePackageRemoteReferencesRemoteReferenceArtifact includes the requested fields of the GraphQL type Artifact.
+type getPackagePackageRemoteReferencesRemoteReferenceArtifact struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
 	// The bundle's artifact field (output field) that produced this artifact.
 	Field string `json:"field"`
 }
 
-// GetId returns getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact.Id, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact) GetId() string {
-	return v.Id
+// GetId returns getPackagePackageRemoteReferencesRemoteReferenceArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageRemoteReferencesRemoteReferenceArtifact) GetId() string { return v.Id }
+
+// GetName returns getPackagePackageRemoteReferencesRemoteReferenceArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageRemoteReferencesRemoteReferenceArtifact) GetName() string { return v.Name }
+
+// GetField returns getPackagePackageRemoteReferencesRemoteReferenceArtifact.Field, and is useful for accessing the field via an interface.
+func (v *getPackagePackageRemoteReferencesRemoteReferenceArtifact) GetField() string { return v.Field }
+
+// getPackageResponse is returned by getPackage on success.
+type getPackageResponse struct {
+	Package getPackagePackage `json:"package"`
 }
 
-// GetName returns getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact) GetName() string {
-	return v.Name
-}
-
-// GetField returns getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact.Field, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionGetPackageByNamingConventionPackageRemoteReferencesRemoteReferenceArtifact) GetField() string {
-	return v.Field
-}
-
-// getPackageByNamingConventionResponse is returned by getPackageByNamingConvention on success.
-type getPackageByNamingConventionResponse struct {
-	// Finds a package by its naming convention, the name prefix (project-target-manifest) without the random unique suffix.
-	GetPackageByNamingConvention getPackageByNamingConventionGetPackageByNamingConventionPackage `json:"getPackageByNamingConvention"`
-}
-
-// GetGetPackageByNamingConvention returns getPackageByNamingConventionResponse.GetPackageByNamingConvention, and is useful for accessing the field via an interface.
-func (v *getPackageByNamingConventionResponse) GetGetPackageByNamingConvention() getPackageByNamingConventionGetPackageByNamingConventionPackage {
-	return v.GetPackageByNamingConvention
-}
+// GetPackage returns getPackageResponse.Package, and is useful for accessing the field via an interface.
+func (v *getPackageResponse) GetPackage() getPackagePackage { return v.Package }
 
 // getProjectByIdProject includes the requested fields of the GraphQL type Project.
 type getProjectByIdProject struct {
@@ -3228,8 +3166,8 @@ func (v *publishArtifactDefinitionResponse) GetPublishArtifactDefinition() publi
 
 // The query or mutation executed by configurePackage.
 const configurePackage_Operation = `
-mutation configurePackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $params: JSON!) {
-	configurePackage(organizationId: $organizationId, targetId: $targetId, manifestId: $manifestId, params: $params) {
+mutation configurePackage ($organizationId: ID!, $id: ID!, $params: JSON!) {
+	configurePackage(organizationId: $organizationId, id: $id, params: $params) {
 		result {
 			id
 			params
@@ -3247,8 +3185,7 @@ func configurePackage(
 	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
-	targetId string,
-	manifestId string,
+	id string,
 	params map[string]any,
 ) (*configurePackageResponse, error) {
 	req := &graphql.Request{
@@ -3256,8 +3193,7 @@ func configurePackage(
 		Query:  configurePackage_Operation,
 		Variables: &__configurePackageInput{
 			OrganizationId: organizationId,
-			TargetId:       targetId,
-			ManifestId:     manifestId,
+			Id:             id,
 			Params:         params,
 		},
 	}
@@ -3850,10 +3786,10 @@ func getEnvironmentsByProject(
 	return &data, err
 }
 
-// The query or mutation executed by getPackageByNamingConvention.
-const getPackageByNamingConvention_Operation = `
-query getPackageByNamingConvention ($organizationId: ID!, $name: String!) {
-	getPackageByNamingConvention(organizationId: $organizationId, name: $name) {
+// The query or mutation executed by getPackage.
+const getPackage_Operation = `
+query getPackage ($organizationId: ID!, $id: ID!) {
+	package(organizationId: $organizationId, id: $id) {
 		id
 		namePrefix
 		status
@@ -3895,23 +3831,23 @@ query getPackageByNamingConvention ($organizationId: ID!, $name: String!) {
 }
 `
 
-func getPackageByNamingConvention(
+func getPackage(
 	ctx context.Context,
 	client graphql.Client,
 	organizationId string,
-	name string,
-) (*getPackageByNamingConventionResponse, error) {
+	id string,
+) (*getPackageResponse, error) {
 	req := &graphql.Request{
-		OpName: "getPackageByNamingConvention",
-		Query:  getPackageByNamingConvention_Operation,
-		Variables: &__getPackageByNamingConventionInput{
+		OpName: "getPackage",
+		Query:  getPackage_Operation,
+		Variables: &__getPackageInput{
 			OrganizationId: organizationId,
-			Name:           name,
+			Id:             id,
 		},
 	}
 	var err error
 
-	var data getPackageByNamingConventionResponse
+	var data getPackageResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

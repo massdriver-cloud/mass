@@ -29,12 +29,12 @@ func (p *Package) ParamsJSON() (string, error) {
 }
 
 func GetPackageByName(ctx context.Context, mdClient *client.Client, name string) (*Package, error) {
-	response, err := getPackageByNamingConvention(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name)
+	response, err := getPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name)
 	if err != nil {
 		return nil, fmt.Errorf("error when querying for package %s - ensure your project, target and package abbreviations are correct:\n\t%w", name, err)
 	}
 
-	return toPackage(response.GetPackageByNamingConvention)
+	return toPackage(response.Package)
 }
 
 func toPackage(p any) (*Package, error) {
@@ -45,8 +45,8 @@ func toPackage(p any) (*Package, error) {
 	return &pkg, nil
 }
 
-func ConfigurePackage(ctx context.Context, mdClient *client.Client, targetID string, manifestID string, params map[string]any) (*Package, error) {
-	response, err := configurePackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, targetID, manifestID, params)
+func ConfigurePackage(ctx context.Context, mdClient *client.Client, name string, params map[string]any) (*Package, error) {
+	response, err := configurePackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name, params)
 
 	if err != nil {
 		return nil, err

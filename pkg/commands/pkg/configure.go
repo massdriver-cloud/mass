@@ -24,7 +24,7 @@ func RunConfigure(ctx context.Context, mdClient *client.Client, name string, par
 		return nil, err
 	}
 
-	return api.ConfigurePackage(ctx, mdClient, pkg.Environment.ID, pkg.Manifest.ID, interpolatedParams)
+	return api.ConfigurePackage(ctx, mdClient, pkg.ID, interpolatedParams)
 }
 
 func interpolateParams(params map[string]any, interpolatedParams *map[string]any) error {
