@@ -15,7 +15,7 @@ func TestGetPackageByName(t *testing.T) {
 
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
-			"getPackageByNamingConvention": map[string]any{
+			"package": map[string]any{
 				"namePrefix": fmt.Sprintf("%s-0000", pkgName),
 				"manifest": map[string]any{
 					"id": "manifest-id",
@@ -73,7 +73,7 @@ func TestConfigurePackage(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	pkg, err := api.ConfigurePackage(t.Context(), &mdClient, "faux-target-id", "faux-manifest-id", params)
+	pkg, err := api.ConfigurePackage(t.Context(), &mdClient, "faux-pkg-id", params)
 	if err != nil {
 		t.Fatal(err)
 	}
