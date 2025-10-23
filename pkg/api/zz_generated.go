@@ -1444,6 +1444,7 @@ type getEnvironmentByIdEnvironmentPackagesPackage struct {
 	Artifacts []getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
 	// Artifacts from a remote source like another project or a resource not managed by massdriver
 	RemoteReferences []getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	Bundle           getEnvironmentByIdEnvironmentPackagesPackageBundle                            `json:"bundle"`
 	// Current status of the package
 	Status   PackageStatus                                        `json:"status"`
 	Manifest getEnvironmentByIdEnvironmentPackagesPackageManifest `json:"manifest"`
@@ -1463,6 +1464,11 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetArtifacts() []getEnvir
 // GetRemoteReferences returns getEnvironmentByIdEnvironmentPackagesPackage.RemoteReferences, and is useful for accessing the field via an interface.
 func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetRemoteReferences() []getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference {
 	return v.RemoteReferences
+}
+
+// GetBundle returns getEnvironmentByIdEnvironmentPackagesPackage.Bundle, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetBundle() getEnvironmentByIdEnvironmentPackagesPackageBundle {
+	return v.Bundle
 }
 
 // GetStatus returns getEnvironmentByIdEnvironmentPackagesPackage.Status, and is useful for accessing the field via an interface.
@@ -1515,6 +1521,8 @@ type __premarshalgetEnvironmentByIdEnvironmentPackagesPackage struct {
 
 	RemoteReferences []getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
 
+	Bundle getEnvironmentByIdEnvironmentPackagesPackageBundle `json:"bundle"`
+
 	Status PackageStatus `json:"status"`
 
 	Manifest getEnvironmentByIdEnvironmentPackagesPackageManifest `json:"manifest"`
@@ -1546,6 +1554,7 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackage) __premarshalJSON() (*__pr
 	}
 	retval.Artifacts = v.Artifacts
 	retval.RemoteReferences = v.RemoteReferences
+	retval.Bundle = v.Bundle
 	retval.Status = v.Status
 	retval.Manifest = v.Manifest
 	return &retval, nil
@@ -1572,17 +1581,117 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact) GetField
 	return v.Field
 }
 
+// getEnvironmentByIdEnvironmentPackagesPackageBundle includes the requested fields of the GraphQL type Bundle.
+// The GraphQL type's documentation follows.
+//
+// A specific version of a bundle
+type getEnvironmentByIdEnvironmentPackagesPackageBundle struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Name of the bundle
+	Name string `json:"name"`
+	// Raw massdriver.yaml spec
+	Spec map[string]any `json:"-"`
+	// Version of the bundle specification
+	SpecVersion string `json:"specVersion"`
+}
+
+// GetId returns getEnvironmentByIdEnvironmentPackagesPackageBundle.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) GetId() string { return v.Id }
+
+// GetName returns getEnvironmentByIdEnvironmentPackagesPackageBundle.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) GetName() string { return v.Name }
+
+// GetSpec returns getEnvironmentByIdEnvironmentPackagesPackageBundle.Spec, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) GetSpec() map[string]any { return v.Spec }
+
+// GetSpecVersion returns getEnvironmentByIdEnvironmentPackagesPackageBundle.SpecVersion, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) GetSpecVersion() string {
+	return v.SpecVersion
+}
+
+func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getEnvironmentByIdEnvironmentPackagesPackageBundle
+		Spec json.RawMessage `json:"spec"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getEnvironmentByIdEnvironmentPackagesPackageBundle = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Spec
+		src := firstPass.Spec
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentByIdEnvironmentPackagesPackageBundle.Spec: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentByIdEnvironmentPackagesPackageBundle struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Spec json.RawMessage `json:"spec"`
+
+	SpecVersion string `json:"specVersion"`
+}
+
+func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) __premarshalJSON() (*__premarshalgetEnvironmentByIdEnvironmentPackagesPackageBundle, error) {
+	var retval __premarshalgetEnvironmentByIdEnvironmentPackagesPackageBundle
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Spec
+		src := v.Spec
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentByIdEnvironmentPackagesPackageBundle.Spec: %w", err)
+		}
+	}
+	retval.SpecVersion = v.SpecVersion
+	return &retval, nil
+}
+
 // getEnvironmentByIdEnvironmentPackagesPackageManifest includes the requested fields of the GraphQL type Manifest.
 // The GraphQL type's documentation follows.
 //
 // An instance of a bundle in a project's architecture, providing context for how the bundle is used
 type getEnvironmentByIdEnvironmentPackagesPackageManifest struct {
-	Id          string                                                     `json:"id"`
-	Name        string                                                     `json:"name"`
-	Slug        string                                                     `json:"slug"`
-	Suffix      string                                                     `json:"suffix"`
-	Description string                                                     `json:"description"`
-	Bundle      getEnvironmentByIdEnvironmentPackagesPackageManifestBundle `json:"bundle"`
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Suffix      string `json:"suffix"`
+	Description string `json:"description"`
 }
 
 // GetId returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Id, and is useful for accessing the field via an interface.
@@ -1600,114 +1709,6 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetSuffix() strin
 // GetDescription returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Description, and is useful for accessing the field via an interface.
 func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetDescription() string {
 	return v.Description
-}
-
-// GetBundle returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Bundle, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetBundle() getEnvironmentByIdEnvironmentPackagesPackageManifestBundle {
-	return v.Bundle
-}
-
-// getEnvironmentByIdEnvironmentPackagesPackageManifestBundle includes the requested fields of the GraphQL type Bundle.
-// The GraphQL type's documentation follows.
-//
-// A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component
-type getEnvironmentByIdEnvironmentPackagesPackageManifestBundle struct {
-	// Unique identifier
-	Id string `json:"id"`
-	// Name of the bundle
-	Name string `json:"name"`
-	// Raw massdriver.yaml spec
-	Spec map[string]any `json:"-"`
-	// Version of the bundle specification
-	SpecVersion string `json:"specVersion"`
-}
-
-// GetId returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetId() string { return v.Id }
-
-// GetName returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetName() string { return v.Name }
-
-// GetSpec returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetSpec() map[string]any {
-	return v.Spec
-}
-
-// GetSpecVersion returns getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.SpecVersion, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) GetSpecVersion() string {
-	return v.SpecVersion
-}
-
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getEnvironmentByIdEnvironmentPackagesPackageManifestBundle
-		Spec json.RawMessage `json:"spec"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getEnvironmentByIdEnvironmentPackagesPackageManifestBundle = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Spec
-		src := firstPass.Spec
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Spec: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalgetEnvironmentByIdEnvironmentPackagesPackageManifestBundle struct {
-	Id string `json:"id"`
-
-	Name string `json:"name"`
-
-	Spec json.RawMessage `json:"spec"`
-
-	SpecVersion string `json:"specVersion"`
-}
-
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifestBundle) __premarshalJSON() (*__premarshalgetEnvironmentByIdEnvironmentPackagesPackageManifestBundle, error) {
-	var retval __premarshalgetEnvironmentByIdEnvironmentPackagesPackageManifestBundle
-
-	retval.Id = v.Id
-	retval.Name = v.Name
-	{
-
-		dst := &retval.Spec
-		src := v.Spec
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getEnvironmentByIdEnvironmentPackagesPackageManifestBundle.Spec: %w", err)
-		}
-	}
-	retval.SpecVersion = v.SpecVersion
-	return &retval, nil
 }
 
 // getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
@@ -1910,6 +1911,7 @@ type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage struc
 	Artifacts []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
 	// Artifacts from a remote source like another project or a resource not managed by massdriver
 	RemoteReferences []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	Bundle           getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle                            `json:"bundle"`
 	Manifest         getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest                          `json:"manifest"`
 }
 
@@ -1941,6 +1943,11 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 // GetRemoteReferences returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.RemoteReferences, and is useful for accessing the field via an interface.
 func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetRemoteReferences() []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference {
 	return v.RemoteReferences
+}
+
+// GetBundle returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Bundle, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetBundle() getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle {
+	return v.Bundle
 }
 
 // GetManifest returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Manifest, and is useful for accessing the field via an interface.
@@ -1994,6 +2001,8 @@ type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesP
 
 	RemoteReferences []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
 
+	Bundle getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle `json:"bundle"`
+
 	Manifest getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest `json:"manifest"`
 }
 
@@ -2025,6 +2034,7 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 	}
 	retval.Artifacts = v.Artifacts
 	retval.RemoteReferences = v.RemoteReferences
+	retval.Bundle = v.Bundle
 	retval.Manifest = v.Manifest
 	return &retval, nil
 }
@@ -2052,17 +2062,123 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageAr
 	return v.Field
 }
 
+// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle includes the requested fields of the GraphQL type Bundle.
+// The GraphQL type's documentation follows.
+//
+// A specific version of a bundle
+type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Name of the bundle
+	Name string `json:"name"`
+	// Raw massdriver.yaml spec
+	Spec map[string]any `json:"-"`
+	// Version of the bundle specification
+	SpecVersion string `json:"specVersion"`
+}
+
+// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) GetId() string {
+	return v.Id
+}
+
+// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) GetName() string {
+	return v.Name
+}
+
+// GetSpec returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.Spec, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) GetSpec() map[string]any {
+	return v.Spec
+}
+
+// GetSpecVersion returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.SpecVersion, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) GetSpecVersion() string {
+	return v.SpecVersion
+}
+
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle
+		Spec json.RawMessage `json:"spec"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Spec
+		src := firstPass.Spec
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.Spec: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Spec json.RawMessage `json:"spec"`
+
+	SpecVersion string `json:"specVersion"`
+}
+
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) __premarshalJSON() (*__premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle, error) {
+	var retval __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Spec
+		src := v.Spec
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.Spec: %w", err)
+		}
+	}
+	retval.SpecVersion = v.SpecVersion
+	return &retval, nil
+}
+
 // getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest includes the requested fields of the GraphQL type Manifest.
 // The GraphQL type's documentation follows.
 //
 // An instance of a bundle in a project's architecture, providing context for how the bundle is used
 type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest struct {
-	Id          string                                                                              `json:"id"`
-	Name        string                                                                              `json:"name"`
-	Slug        string                                                                              `json:"slug"`
-	Suffix      string                                                                              `json:"suffix"`
-	Description string                                                                              `json:"description"`
-	Bundle      getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle `json:"bundle"`
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Suffix      string `json:"suffix"`
+	Description string `json:"description"`
 }
 
 // GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Id, and is useful for accessing the field via an interface.
@@ -2088,118 +2204,6 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageMa
 // GetDescription returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Description, and is useful for accessing the field via an interface.
 func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetDescription() string {
 	return v.Description
-}
-
-// GetBundle returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Bundle, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetBundle() getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle {
-	return v.Bundle
-}
-
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle includes the requested fields of the GraphQL type Bundle.
-// The GraphQL type's documentation follows.
-//
-// A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle struct {
-	// Unique identifier
-	Id string `json:"id"`
-	// Name of the bundle
-	Name string `json:"name"`
-	// Raw massdriver.yaml spec
-	Spec map[string]any `json:"-"`
-	// Version of the bundle specification
-	SpecVersion string `json:"specVersion"`
-}
-
-// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetId() string {
-	return v.Id
-}
-
-// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetName() string {
-	return v.Name
-}
-
-// GetSpec returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Spec, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetSpec() map[string]any {
-	return v.Spec
-}
-
-// GetSpecVersion returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.SpecVersion, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) GetSpecVersion() string {
-	return v.SpecVersion
-}
-
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle
-		Spec json.RawMessage `json:"spec"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Spec
-		src := firstPass.Spec
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Spec: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle struct {
-	Id string `json:"id"`
-
-	Name string `json:"name"`
-
-	Spec json.RawMessage `json:"spec"`
-
-	SpecVersion string `json:"specVersion"`
-}
-
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle) __premarshalJSON() (*__premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle, error) {
-	var retval __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle
-
-	retval.Id = v.Id
-	retval.Name = v.Name
-	{
-
-		dst := &retval.Spec
-		src := v.Spec
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifestBundle.Spec: %w", err)
-		}
-	}
-	retval.SpecVersion = v.SpecVersion
-	return &retval, nil
 }
 
 // getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
@@ -2276,6 +2280,7 @@ type getPackagePackage struct {
 	Artifacts []getPackagePackageArtifactsArtifact `json:"artifacts"`
 	// Artifacts from a remote source like another project or a resource not managed by massdriver
 	RemoteReferences []getPackagePackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	Bundle           getPackagePackageBundle                            `json:"bundle"`
 	Manifest         getPackagePackageManifest                          `json:"manifest"`
 	// The environment this package will be deployed to
 	Environment getPackagePackageEnvironment `json:"environment"`
@@ -2300,6 +2305,9 @@ func (v *getPackagePackage) GetArtifacts() []getPackagePackageArtifactsArtifact 
 func (v *getPackagePackage) GetRemoteReferences() []getPackagePackageRemoteReferencesRemoteReference {
 	return v.RemoteReferences
 }
+
+// GetBundle returns getPackagePackage.Bundle, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetBundle() getPackagePackageBundle { return v.Bundle }
 
 // GetManifest returns getPackagePackage.Manifest, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetManifest() getPackagePackageManifest { return v.Manifest }
@@ -2353,6 +2361,8 @@ type __premarshalgetPackagePackage struct {
 
 	RemoteReferences []getPackagePackageRemoteReferencesRemoteReference `json:"remoteReferences"`
 
+	Bundle getPackagePackageBundle `json:"bundle"`
+
 	Manifest getPackagePackageManifest `json:"manifest"`
 
 	Environment getPackagePackageEnvironment `json:"environment"`
@@ -2386,6 +2396,7 @@ func (v *getPackagePackage) __premarshalJSON() (*__premarshalgetPackagePackage, 
 	}
 	retval.Artifacts = v.Artifacts
 	retval.RemoteReferences = v.RemoteReferences
+	retval.Bundle = v.Bundle
 	retval.Manifest = v.Manifest
 	retval.Environment = v.Environment
 	return &retval, nil
@@ -2407,6 +2418,105 @@ func (v *getPackagePackageArtifactsArtifact) GetName() string { return v.Name }
 
 // GetField returns getPackagePackageArtifactsArtifact.Field, and is useful for accessing the field via an interface.
 func (v *getPackagePackageArtifactsArtifact) GetField() string { return v.Field }
+
+// getPackagePackageBundle includes the requested fields of the GraphQL type Bundle.
+// The GraphQL type's documentation follows.
+//
+// A specific version of a bundle
+type getPackagePackageBundle struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Name of the bundle
+	Name string `json:"name"`
+	// Raw massdriver.yaml spec
+	Spec map[string]any `json:"-"`
+	// Version of the bundle specification
+	SpecVersion string `json:"specVersion"`
+}
+
+// GetId returns getPackagePackageBundle.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageBundle) GetId() string { return v.Id }
+
+// GetName returns getPackagePackageBundle.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageBundle) GetName() string { return v.Name }
+
+// GetSpec returns getPackagePackageBundle.Spec, and is useful for accessing the field via an interface.
+func (v *getPackagePackageBundle) GetSpec() map[string]any { return v.Spec }
+
+// GetSpecVersion returns getPackagePackageBundle.SpecVersion, and is useful for accessing the field via an interface.
+func (v *getPackagePackageBundle) GetSpecVersion() string { return v.SpecVersion }
+
+func (v *getPackagePackageBundle) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPackagePackageBundle
+		Spec json.RawMessage `json:"spec"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPackagePackageBundle = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Spec
+		src := firstPass.Spec
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getPackagePackageBundle.Spec: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetPackagePackageBundle struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Spec json.RawMessage `json:"spec"`
+
+	SpecVersion string `json:"specVersion"`
+}
+
+func (v *getPackagePackageBundle) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPackagePackageBundle) __premarshalJSON() (*__premarshalgetPackagePackageBundle, error) {
+	var retval __premarshalgetPackagePackageBundle
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Spec
+		src := v.Spec
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getPackagePackageBundle.Spec: %w", err)
+		}
+	}
+	retval.SpecVersion = v.SpecVersion
+	return &retval, nil
+}
 
 // getPackagePackageEnvironment includes the requested fields of the GraphQL type Environment.
 type getPackagePackageEnvironment struct {
@@ -2443,12 +2553,11 @@ func (v *getPackagePackageEnvironmentProject) GetSlug() string { return v.Slug }
 //
 // An instance of a bundle in a project's architecture, providing context for how the bundle is used
 type getPackagePackageManifest struct {
-	Id          string                          `json:"id"`
-	Name        string                          `json:"name"`
-	Slug        string                          `json:"slug"`
-	Suffix      string                          `json:"suffix"`
-	Description string                          `json:"description"`
-	Bundle      getPackagePackageManifestBundle `json:"bundle"`
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Suffix      string `json:"suffix"`
+	Description string `json:"description"`
 }
 
 // GetId returns getPackagePackageManifest.Id, and is useful for accessing the field via an interface.
@@ -2465,108 +2574,6 @@ func (v *getPackagePackageManifest) GetSuffix() string { return v.Suffix }
 
 // GetDescription returns getPackagePackageManifest.Description, and is useful for accessing the field via an interface.
 func (v *getPackagePackageManifest) GetDescription() string { return v.Description }
-
-// GetBundle returns getPackagePackageManifest.Bundle, and is useful for accessing the field via an interface.
-func (v *getPackagePackageManifest) GetBundle() getPackagePackageManifestBundle { return v.Bundle }
-
-// getPackagePackageManifestBundle includes the requested fields of the GraphQL type Bundle.
-// The GraphQL type's documentation follows.
-//
-// A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component
-type getPackagePackageManifestBundle struct {
-	// Unique identifier
-	Id string `json:"id"`
-	// Name of the bundle
-	Name string `json:"name"`
-	// Raw massdriver.yaml spec
-	Spec map[string]any `json:"-"`
-	// Version of the bundle specification
-	SpecVersion string `json:"specVersion"`
-}
-
-// GetId returns getPackagePackageManifestBundle.Id, and is useful for accessing the field via an interface.
-func (v *getPackagePackageManifestBundle) GetId() string { return v.Id }
-
-// GetName returns getPackagePackageManifestBundle.Name, and is useful for accessing the field via an interface.
-func (v *getPackagePackageManifestBundle) GetName() string { return v.Name }
-
-// GetSpec returns getPackagePackageManifestBundle.Spec, and is useful for accessing the field via an interface.
-func (v *getPackagePackageManifestBundle) GetSpec() map[string]any { return v.Spec }
-
-// GetSpecVersion returns getPackagePackageManifestBundle.SpecVersion, and is useful for accessing the field via an interface.
-func (v *getPackagePackageManifestBundle) GetSpecVersion() string { return v.SpecVersion }
-
-func (v *getPackagePackageManifestBundle) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getPackagePackageManifestBundle
-		Spec json.RawMessage `json:"spec"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getPackagePackageManifestBundle = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Spec
-		src := firstPass.Spec
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getPackagePackageManifestBundle.Spec: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalgetPackagePackageManifestBundle struct {
-	Id string `json:"id"`
-
-	Name string `json:"name"`
-
-	Spec json.RawMessage `json:"spec"`
-
-	SpecVersion string `json:"specVersion"`
-}
-
-func (v *getPackagePackageManifestBundle) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getPackagePackageManifestBundle) __premarshalJSON() (*__premarshalgetPackagePackageManifestBundle, error) {
-	var retval __premarshalgetPackagePackageManifestBundle
-
-	retval.Id = v.Id
-	retval.Name = v.Name
-	{
-
-		dst := &retval.Spec
-		src := v.Spec
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getPackagePackageManifestBundle.Spec: %w", err)
-		}
-	}
-	retval.SpecVersion = v.SpecVersion
-	return &retval, nil
-}
 
 // getPackagePackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
 type getPackagePackageRemoteReferencesRemoteReference struct {
@@ -3646,6 +3653,12 @@ query getEnvironmentById ($organizationId: ID!, $id: ID!) {
 					field
 				}
 			}
+			bundle {
+				id
+				name
+				spec
+				specVersion
+			}
 			status
 			manifest {
 				id
@@ -3653,12 +3666,6 @@ query getEnvironmentById ($organizationId: ID!, $id: ID!) {
 				slug
 				suffix
 				description
-				bundle {
-					id
-					name
-					spec
-					specVersion
-				}
 			}
 		}
 		project {
@@ -3735,18 +3742,18 @@ query getEnvironmentsByProject ($organizationId: ID!, $projectId: ID!) {
 						field
 					}
 				}
+				bundle {
+					id
+					name
+					spec
+					specVersion
+				}
 				manifest {
 					id
 					name
 					slug
 					suffix
 					description
-					bundle {
-						id
-						name
-						spec
-						specVersion
-					}
 				}
 			}
 			project {
@@ -3806,18 +3813,18 @@ query getPackage ($organizationId: ID!, $id: ID!) {
 				field
 			}
 		}
+		bundle {
+			id
+			name
+			spec
+			specVersion
+		}
 		manifest {
 			id
 			name
 			slug
 			suffix
 			description
-			bundle {
-				id
-				name
-				spec
-				specVersion
-			}
 		}
 		environment {
 			id

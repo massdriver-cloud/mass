@@ -47,6 +47,10 @@ func TestGetEnvironment(t *testing.T) {
 						},
 					},
 				},
+				Bundle: &api.Bundle{
+					ID:   "bundle-uuid1",
+					Name: "test-bundle",
+				},
 				Status: string(api.PackageStatusProvisioned),
 				Manifest: &api.Manifest{
 					ID:          "manifest-uuid1",
@@ -54,13 +58,6 @@ func TestGetEnvironment(t *testing.T) {
 					Slug:        "manifest",
 					Suffix:      "0000",
 					Description: "This is a test manifest",
-					Bundle: &api.Bundle{
-						ID:   "bundle-uuid1",
-						Name: "Test Bundle",
-						Spec: map[string]any{
-							"key1": "value1",
-						},
-					},
 				},
 			},
 		},
@@ -108,6 +105,10 @@ func TestGetEnvironment(t *testing.T) {
 								},
 							},
 						},
+						"bundle": map[string]any{
+							"id":   "bundle-uuid1",
+							"name": "test-bundle",
+						},
 						"status": "PROVISIONED",
 						"manifest": map[string]any{
 							"id":          "manifest-uuid1",
@@ -115,14 +116,6 @@ func TestGetEnvironment(t *testing.T) {
 							"slug":        "manifest",
 							"suffix":      "0000",
 							"description": "This is a test manifest",
-							"bundle": map[string]any{
-								"id":      "bundle-uuid1",
-								"name":    "Test Bundle",
-								"version": "1.0.0",
-								"spec": map[string]any{
-									"key1": "value1",
-								},
-							},
 						},
 					},
 				},

@@ -109,6 +109,8 @@ func getIgnores(ignorePath string) (*ignore.GitIgnore, error) {
 		"!/icon.svg",
 		"!/operator.md",
 		"!/operator.mdx",
+		"!/readme.md",
+		"!/README.md",
 		"!/schema-artifacts.json",
 		"!/schema-connections.json",
 		"!/schema-params.json",
