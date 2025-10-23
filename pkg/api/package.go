@@ -15,6 +15,7 @@ type Package struct {
 	Status           string            `json:"status"`
 	Artifacts        []Artifact        `json:"artifacts,omitempty"`
 	RemoteReferences []RemoteReference `json:"remoteReferences,omitempty"`
+	Bundle           *Bundle           `json:"bundle,omitempty" mapstructure:"bundle,omitempty"`
 	Params           map[string]any    `json:"params"`
 	Manifest         *Manifest         `json:"manifest" mapstructure:"manifest,omitempty"`
 	Environment      *Environment      `json:"environment,omitempty" mapstructure:"environment,omitempty"`

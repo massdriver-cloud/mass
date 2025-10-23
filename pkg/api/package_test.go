@@ -17,6 +17,9 @@ func TestGetPackageByName(t *testing.T) {
 		"data": map[string]any{
 			"package": map[string]any{
 				"namePrefix": fmt.Sprintf("%s-0000", pkgName),
+				"bundle": map[string]any{
+					"id": "bundle-id",
+				},
 				"manifest": map[string]any{
 					"id": "manifest-id",
 				},
@@ -38,9 +41,11 @@ func TestGetPackageByName(t *testing.T) {
 
 	want := &api.Package{
 		NamePrefix: "ecomm-prod-cache-0000",
+		Bundle: &api.Bundle{
+			ID: "bundle-id",
+		},
 		Manifest: &api.Manifest{
-			ID:     "manifest-id",
-			Bundle: &api.Bundle{},
+			ID: "manifest-id",
 		},
 		Environment: &api.Environment{
 			ID:      "target-id",
