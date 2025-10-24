@@ -22,7 +22,6 @@ mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactS
 
 query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
   artifacts(organizationId: $organizationId, input: {filter: {type: $artifactType}}) {
-    next
     items {
       id
       name
@@ -68,6 +67,12 @@ query listArtifactDefinitions($organizationId: ID!) {
       connectionOrientation
       environmentDefaultGroup
     }
+  }
+}
+
+query listCredentialArtifactDefinitions($organizationId: ID!) {
+  artifactDefinitions(organizationId: $organizationId, input: {filter: {isCredential: true}}) {
+    name
   }
 }
 

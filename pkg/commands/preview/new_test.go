@@ -24,6 +24,12 @@ func TestRunNew(t *testing.T) {
 			},
 		}),
 
+		gqlmock.MockQueryResponse("artifactDefinitions", []map[string]any{
+			{
+				"name": "massdriver/aws-iam-role",
+			},
+		}),
+
 		gqlmock.MockQueryResponse("artifacts", map[string]any{
 			"next": "",
 			"items": []map[string]any{
