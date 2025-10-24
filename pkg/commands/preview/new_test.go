@@ -24,6 +24,21 @@ func TestRunNew(t *testing.T) {
 			},
 		}),
 
+		gqlmock.MockQueryResponse("artifactDefinitions", []map[string]any{
+			{
+				"id":    "def-1",
+				"name":  "massdriver/aws-iam-role",
+				"label": "AWS IAM Role",
+				"icon":  "aws",
+				"schema": map[string]any{},
+				"url":   "https://example.com",
+				"ui": map[string]any{
+					"connectionOrientation": "VERTICAL",
+					"environmentDefaultGroup": "aws",
+				},
+			},
+		}),
+
 		gqlmock.MockQueryResponse("artifacts", map[string]any{
 			"next": "",
 			"items": []map[string]any{
