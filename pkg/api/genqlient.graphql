@@ -72,17 +72,7 @@ query listArtifactDefinitions($organizationId: ID!) {
 
 query listCredentialArtifactDefinitions($organizationId: ID!) {
   artifactDefinitions(organizationId: $organizationId, input: {filter: {isCredential: true}}) {
-    id
-    schema
     name
-    icon
-    label
-    updatedAt
-    url
-    ui {
-      connectionOrientation
-      environmentDefaultGroup
-    }
   }
 }
 
