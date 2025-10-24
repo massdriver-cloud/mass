@@ -3,20 +3,28 @@ package api
 
 import (
 	"context"
+	"log/slog"
+	"os"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-var credentialArtifactDefinitions = []*ArtifactDefinition{
-	{"massdriver/aws-iam-role"},
-	{"massdriver/azure-service-principal"},
-	{"massdriver/gcp-service-account"},
-	{"massdriver/kubernetes-cluster"},
-}
-
 // List supported credential types
-func ListCredentialTypes() []*ArtifactDefinition {
-	return credentialArtifactDefinitions
+func ListCredentialTypes(ctx context.Context, mdClient *client.Client) []*ArtifactDefinition {
+	response, err := listCredentialArtifactDefinitions(ctx, mdClient.GQL, mdClient.Config.OrganizationID)
+	if err != nil {
+		slog.Error("Failed to fetch credential artifact definitions", "error", err)
+		os.Exit(1)
+	}
+
+	artifactDefinitions := make([]*ArtifactDefinition, len(response.ArtifactDefinitions))
+	for i, def := range response.ArtifactDefinitions {
+		artifactDefinitions[i] = &ArtifactDefinition{
+			Name: def.Name,
+		}
+	}
+
+	return artifactDefinitions
 }
 
 // Get the first page of credentials for an artifact type
