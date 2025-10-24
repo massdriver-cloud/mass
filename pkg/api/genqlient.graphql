@@ -22,7 +22,6 @@ mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactS
 
 query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
   artifacts(organizationId: $organizationId, input: {filter: {type: $artifactType}}) {
-    next
     items {
       id
       name
