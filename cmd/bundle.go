@@ -91,7 +91,7 @@ func NewCmdBundle() *cobra.Command {
 		RunE:    runBundlePublish,
 	}
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
-	bundlePublishCmd.Flags().BoolP("release-candidate", "r", false, "Whether to publish the bundle as a release candidate.")
+	bundlePublishCmd.Flags().BoolP("development", "d", false, "Whether to publish the bundle as a development release.")
 	bundlePublishCmd.Flags().String("access", "", "(Deprecated) Only here for backwards compatibility. Will be removed in a future release.")
 
 	bundlePullCmd := &cobra.Command{
@@ -338,7 +338,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	releaseCandidate, err := cmd.Flags().GetBool("release-candidate")
+	developmentRelease, err := cmd.Flags().GetBool("development")
 	if err != nil {
 		return err
 	}
@@ -359,7 +359,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return cmdbundle.RunPublish(unmarshalledBundle, mdClient, bundleDirectory, releaseCandidate)
+	return cmdbundle.RunPublish(unmarshalledBundle, mdClient, bundleDirectory, developmentRelease)
 }
 
 func runBundlePull(cmd *cobra.Command, args []string) error {

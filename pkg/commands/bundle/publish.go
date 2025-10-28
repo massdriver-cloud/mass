@@ -15,10 +15,10 @@ import (
 	"oras.land/oras-go/v2/content/memory"
 )
 
-func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, releaseCandidate bool) error {
+func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, developmentRelease bool) error {
 	ctx := context.Background()
 
-	version, versionErr := getVersion(ctx, mdClient, b, releaseCandidate)
+	version, versionErr := getVersion(ctx, mdClient, b, developmentRelease)
 	if versionErr != nil {
 		return versionErr
 	}
@@ -57,24 +57,24 @@ func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, 
 	return nil
 }
 
-func getVersion(ctx context.Context, mdClient *client.Client, b *bundle.Bundle, releaseCandidate bool) (string, error) {
+func getVersion(ctx context.Context, mdClient *client.Client, b *bundle.Bundle, developmentRelease bool) (string, error) {
 	existingVersions, err := api.GetBundleVersions(ctx, mdClient, b.Name)
 	if err != nil {
 		return "", err
 	}
 
 	if slices.Contains(existingVersions, b.Version) {
-		if !releaseCandidate {
+		if !developmentRelease {
 			return "", fmt.Errorf("version %s already exists for bundle %s", b.Version, b.Name)
 		} else {
-			return "", fmt.Errorf("version %s already exists for bundle %s - cannot publish a release candidate for an existing version", b.Version, b.Name)
+			return "", fmt.Errorf("version %s already exists for bundle %s - cannot publish a development release for an existing version", b.Version, b.Name)
 		}
 	}
 
 	version := b.Version
-	if releaseCandidate {
+	if developmentRelease {
 		timestamp := time.Now().UTC().Format("20060102T150405Z")
-		version = fmt.Sprintf("%s-rc.%s", b.Version, timestamp)
+		version = fmt.Sprintf("%s-dev.%s", b.Version, timestamp)
 	}
 	return version, nil
 }
