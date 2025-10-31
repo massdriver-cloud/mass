@@ -8,13 +8,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/massdriver-cloud/airlock/pkg/prettylogs"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	cmdbundle "github.com/massdriver-cloud/mass/pkg/commands/bundle"
 	"github.com/massdriver-cloud/mass/pkg/commands/bundle/templates"
 	"github.com/massdriver-cloud/mass/pkg/params"
+	"github.com/massdriver-cloud/mass/pkg/prettylogs"
 	"github.com/massdriver-cloud/mass/pkg/templatecache"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
@@ -93,6 +93,8 @@ func NewCmdBundle() *cobra.Command {
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundlePublishCmd.Flags().BoolP("development", "d", false, "Whether to publish the bundle as a development release.")
 	bundlePublishCmd.Flags().String("access", "", "(Deprecated) Only here for backwards compatibility. Will be removed in a future release.")
+	bundlePublishCmd.Flags().BoolP("fail-warnings", "f", false, "Fail on warnings from the linter")
+	bundlePublishCmd.Flags().BoolP("skip-lint", "s", false, "Skip linting")
 
 	bundlePullCmd := &cobra.Command{
 		Use:   "pull <bundle-name>",
@@ -325,19 +327,37 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return cmdbundle.RunLint(unmarshalledBundle, mdClient)
+	results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
+
+	if results.HasErrors() {
+		return fmt.Errorf("linting failed with %d error(s)", len(results.Errors()))
+	} else if results.HasWarnings() {
+		fmt.Printf("Linting completed with %d warning(s)\n", len(results.Warnings()))
+	} else {
+		fmt.Println("Linting completed, massdriver.yaml is valid!")
+	}
+
+	return nil
 }
 
 func runBundlePublish(cmd *cobra.Command, args []string) error {
 	access, _ := cmd.Flags().GetString("access")
 	if access != "" {
-		prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release.")
 		fmt.Println(prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release."))
 	}
 	bundleDirectory, err := cmd.Flags().GetString("build-directory")
 	if err != nil {
 		return err
 	}
+	failWarnings, err := cmd.Flags().GetBool("fail-warnings")
+	if err != nil {
+		return err
+	}
+	skipLint, err := cmd.Flags().GetBool("skip-lint")
+	if err != nil {
+		return err
+	}
+
 	developmentRelease, err := cmd.Flags().GetBool("development")
 	if err != nil {
 		return err
@@ -357,6 +377,40 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	err = unmarshalledBundle.Build(bundleDirectory, mdClient)
 	if err != nil {
 		return err
+	}
+
+	if !skipLint {
+		results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
+
+		if results.HasErrors() {
+			fmt.Printf("Halting publish:Linting failed with %d error(s)\n", len(results.Errors()))
+			os.Exit(1)
+		} else if results.HasWarnings() {
+			if failWarnings {
+				fmt.Printf("Halting publish: linting failed with %d warning(s)\n", len(results.Warnings()))
+				os.Exit(1)
+			}
+			fmt.Printf("Linting completed with %d warning(s)\n", len(results.Warnings()))
+		} else {
+			fmt.Println("Linting completed, massdriver.yaml is valid!")
+		}
+	}
+
+	if !skipLint {
+		results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
+
+		if results.HasErrors() {
+			fmt.Printf("Halting publish:Linting failed with %d error(s)\n", len(results.Errors()))
+			os.Exit(1)
+		} else if results.HasWarnings() {
+			if failWarnings {
+				fmt.Printf("Halting publish: linting failed with %d warning(s)\n", len(results.Warnings()))
+				os.Exit(1)
+			}
+			fmt.Printf("Linting completed with %d warning(s)\n", len(results.Warnings()))
+		} else {
+			fmt.Println("Linting completed, massdriver.yaml is valid!")
+		}
 	}
 
 	return cmdbundle.RunPublish(unmarshalledBundle, mdClient, bundleDirectory, developmentRelease)

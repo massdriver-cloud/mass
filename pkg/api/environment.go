@@ -3,12 +3,13 @@ package api
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/mitchellh/mapstructure"
 )
 
-const envUrlTemplate = "https://app.massdriver.cloud/orgs/%s/projects/%s/environments/%s"
+const envUrlTemplate = "%s/orgs/%s/projects/%s/environments/%s"
 
 type Environment struct {
 	ID          string    `json:"id"`
@@ -47,8 +48,16 @@ func GetEnvironmentsByProject(ctx context.Context, mdClient *client.Client, proj
 	return envs, nil
 }
 
-func (e *Environment) URL(orgID string) string {
-	return fmt.Sprintf(envUrlTemplate, orgID, e.Project.Slug, e.Slug)
+func (e *Environment) URL(ctx context.Context, mdClient *client.Client) string {
+	var appUrl string
+	server, serverErr := GetServer(ctx, mdClient)
+	if serverErr != nil {
+		// this is greedy (and potentially wrong) but it's VERY unlikely that this query will fail AND the search/replace will be inaccurate
+		appUrl = strings.Replace(mdClient.Config.URL, "api.", "app.", 1)
+	} else {
+		appUrl = server.AppURL
+	}
+	return fmt.Sprintf(envUrlTemplate, appUrl, mdClient.Config.OrganizationID, e.Project.Slug, e.Slug)
 }
 
 func toEnvironment(v any) (*Environment, error) {

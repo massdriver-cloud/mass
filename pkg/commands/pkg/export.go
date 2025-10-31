@@ -157,7 +157,7 @@ func ExportPackageWithConfig(ctx context.Context, config *ExportPackageConfig, p
 	}
 
 	if isRunning {
-		if err := writeBundleWithConfig(ctx, config, pkg.Manifest.Bundle, pkg.NamePrefix, directory); err != nil {
+		if err := writeBundleWithConfig(ctx, config, pkg.Bundle, pkg.NamePrefix, directory); err != nil {
 			return fmt.Errorf("failed to write bundle for package %s: %w", pkg.NamePrefix, err)
 		}
 	}
@@ -203,15 +203,15 @@ func validatePackageExport(pkg *api.Package) error {
 	}
 
 	if pkg.Status == string(api.PackageStatusProvisioned) {
-		if pkg.Manifest.Bundle == nil {
+		if pkg.Bundle == nil {
 			return fmt.Errorf("package %s bundle is nil", pkg.NamePrefix)
 		}
 
-		if pkg.Manifest.Bundle.Spec == nil {
+		if pkg.Bundle.Spec == nil {
 			return fmt.Errorf("package %s bundle spec is nil", pkg.NamePrefix)
 		}
 
-		if pkg.Manifest.Bundle.Name == "" {
+		if pkg.Bundle.Name == "" {
 			return fmt.Errorf("package %s bundle name is empty", pkg.NamePrefix)
 		}
 	}
@@ -261,7 +261,7 @@ func writeArtifactWithConfig(ctx context.Context, config *ExportPackageConfig, a
 
 func writeStateWithConfig(ctx context.Context, config *ExportPackageConfig, pkg *api.Package, directory string) error {
 	var unmarshalledBundle bundle.Bundle
-	mapstructure.Decode(pkg.Manifest.Bundle.Spec, &unmarshalledBundle)
+	mapstructure.Decode(pkg.Bundle.Spec, &unmarshalledBundle)
 
 	var steps []bundle.Step
 	if unmarshalledBundle.Steps != nil {

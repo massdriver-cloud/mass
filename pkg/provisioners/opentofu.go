@@ -14,12 +14,9 @@ type OpentofuProvisioner struct{}
 
 func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]any) error {
 	// read existing OpenTofu variables for this step
-	existingTfvarsSchema, err := opentofu.TofuToSchema(stepPath)
-	if err != nil {
-		return err
-	}
+	tofuVarsImport := opentofu.TofuToSchema(stepPath)
 
-	newVariables := FindMissingFromAirlock(variables, existingTfvarsSchema)
+	newVariables := FindMissingFromAirlock(variables, tofuVarsImport.Schema)
 	if len(newVariables["properties"].(map[string]any)) == 0 {
 		return nil
 	}
@@ -52,20 +49,17 @@ func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables 
 }
 
 func (p *OpentofuProvisioner) ReadProvisionerInputs(stepPath string) (map[string]any, error) {
-	opentofuVariablesSchema, err := opentofu.TofuToSchema(stepPath)
-	if err != nil {
-		return nil, err
-	}
+	tofuVarsImport := opentofu.TofuToSchema(stepPath)
 
-	schemaBytes, marshallErr := json.Marshal(opentofuVariablesSchema)
+	schemaBytes, marshallErr := json.Marshal(tofuVarsImport.Schema)
 	if marshallErr != nil {
 		return nil, marshallErr
 	}
 
 	variables := map[string]any{}
-	err = json.Unmarshal(schemaBytes, &variables)
-	if err != nil {
-		return nil, err
+	unmarshalErr := json.Unmarshal(schemaBytes, &variables)
+	if unmarshalErr != nil {
+		return nil, unmarshalErr
 	}
 
 	return variables, nil

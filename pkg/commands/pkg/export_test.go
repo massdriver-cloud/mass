@@ -94,20 +94,20 @@ func TestExportPackage(t *testing.T) {
 						Field: "output",
 					},
 				},
-				Manifest: &api.Manifest{
-					Slug: "test-manifest",
-					Bundle: &api.Bundle{
-						Name: "test-bundle",
-						Spec: map[string]any{
-							"steps": []map[string]any{
-								{
-									"path":        "src",
-									"provisioner": "terraform",
-								},
+				Bundle: &api.Bundle{
+					Name: "test-bundle",
+					Spec: map[string]any{
+						"steps": []map[string]any{
+							{
+								"path":        "src",
+								"provisioner": "terraform",
 							},
 						},
-						SpecVersion: "application/vnd.massdriver.bundle.v1+json",
 					},
+					SpecVersion: "application/vnd.massdriver.bundle.v1+json",
+				},
+				Manifest: &api.Manifest{
+					Slug: "test-manifest",
 				},
 			},
 			baseDir: "/tmp/export",
@@ -151,20 +151,20 @@ func TestExportPackage(t *testing.T) {
 						Field: "output",
 					},
 				},
-				Manifest: &api.Manifest{
-					Slug: "test-manifest",
-					Bundle: &api.Bundle{
-						Name: "test-bundle",
-						Spec: map[string]any{
-							"steps": []map[string]any{
-								{
-									"path":        "src",
-									"provisioner": "terraform",
-								},
+				Bundle: &api.Bundle{
+					Name: "test-bundle",
+					Spec: map[string]any{
+						"steps": []map[string]any{
+							{
+								"path":        "src",
+								"provisioner": "terraform",
 							},
 						},
-						SpecVersion: "application/vnd.massdriver.bundle.v0+json",
 					},
+					SpecVersion: "application/vnd.massdriver.bundle.v0+json",
+				},
+				Manifest: &api.Manifest{
+					Slug: "test-manifest",
 				},
 			},
 			baseDir: "/tmp/export",
@@ -204,11 +204,11 @@ func TestExportPackage(t *testing.T) {
 						},
 					},
 				},
+				Bundle: &api.Bundle{
+					Name: "external-bundle",
+				},
 				Manifest: &api.Manifest{
 					Slug: "external-manifest",
-					Bundle: &api.Bundle{
-						Name: "external-bundle",
-					},
 				},
 			},
 			baseDir: "/tmp/export",
@@ -229,11 +229,11 @@ func TestExportPackage(t *testing.T) {
 				ID:         "pkg-789",
 				NamePrefix: "pending-package-0001",
 				Status:     "PENDING",
+				Bundle: &api.Bundle{
+					Name: "pending-bundle",
+				},
 				Manifest: &api.Manifest{
 					Slug: "pending-manifest",
-					Bundle: &api.Bundle{
-						Name: "pending-bundle",
-					},
 				},
 			},
 			baseDir: "/tmp/export",
@@ -314,12 +314,12 @@ func TestExportPackage_FileSystemError(t *testing.T) {
 		ID:         "pkg-123",
 		NamePrefix: "test-package-0001",
 		Status:     string(api.PackageStatusProvisioned),
+		Bundle: &api.Bundle{
+			Name: "test-bundle",
+			Spec: map[string]any{},
+		},
 		Manifest: &api.Manifest{
 			Slug: "test-manifest",
-			Bundle: &api.Bundle{
-				Name: "test-bundle",
-				Spec: map[string]any{},
-			},
 		},
 	}
 

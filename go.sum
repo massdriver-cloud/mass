@@ -198,8 +198,8 @@ github.com/mailru/easyjson v0.7.7 h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0
 github.com/mailru/easyjson v0.7.7/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
 github.com/manifoldco/promptui v0.9.0 h1:3V4HzJk1TtXW1MTZMP7mdlwbBpIinw3HztaIlYthEiA=
 github.com/manifoldco/promptui v0.9.0/go.mod h1:ka04sppxSGFAtxX0qhlYQjISsg9mR4GWtQEhdbn6Pgg=
-github.com/massdriver-cloud/airlock v0.0.7 h1:mKCTaD53Eqz2vXt6ShXyI/QtNztgaldBW59mGWR4sEU=
-github.com/massdriver-cloud/airlock v0.0.7/go.mod h1:VULNe2TXFGexs2YtEPOtp2PNFq9eq1LOK5UoXjJ/mOw=
+github.com/massdriver-cloud/airlock v0.0.9 h1:t+jTY6nZEiPZNTKx0wEgQTPztIxL4u0RFvVWXn2/RMc=
+github.com/massdriver-cloud/airlock v0.0.9/go.mod h1:igJm33JvINiUtbyEspUeKUWyWewG+jYyxO1UDHqLp9Q=
 github.com/massdriver-cloud/massdriver-sdk-go v0.0.8 h1:YMrUjVmJrl8dy5jpV3r/cm2MVSPCi9vpescKsHNrcxc=
 github.com/massdriver-cloud/massdriver-sdk-go v0.0.8/go.mod h1:6bXMPQmfeKHD3Tm/cwnrkqiZaDEgRUUq0+uZckKRsbM=
 github.com/massdriver-cloud/terraform-config-inspect v0.0.1 h1:eLtKFRaklHIxcPvUtZmNacl28n4QIHr29pJzw/u/FKU=

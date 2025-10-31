@@ -15,8 +15,11 @@ func TestGetPackageByName(t *testing.T) {
 
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
-			"getPackageByNamingConvention": map[string]any{
+			"package": map[string]any{
 				"namePrefix": fmt.Sprintf("%s-0000", pkgName),
+				"bundle": map[string]any{
+					"id": "bundle-id",
+				},
 				"manifest": map[string]any{
 					"id": "manifest-id",
 				},
@@ -38,9 +41,11 @@ func TestGetPackageByName(t *testing.T) {
 
 	want := &api.Package{
 		NamePrefix: "ecomm-prod-cache-0000",
+		Bundle: &api.Bundle{
+			ID: "bundle-id",
+		},
 		Manifest: &api.Manifest{
-			ID:     "manifest-id",
-			Bundle: &api.Bundle{},
+			ID: "manifest-id",
 		},
 		Environment: &api.Environment{
 			ID:      "target-id",
@@ -73,7 +78,7 @@ func TestConfigurePackage(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	pkg, err := api.ConfigurePackage(t.Context(), &mdClient, "faux-target-id", "faux-manifest-id", params)
+	pkg, err := api.ConfigurePackage(t.Context(), &mdClient, "faux-pkg-id", params)
 	if err != nil {
 		t.Fatal(err)
 	}

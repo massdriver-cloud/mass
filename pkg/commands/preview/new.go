@@ -46,7 +46,7 @@ func RunNew(ctx context.Context, mdClient *client.Client, projectSlug string) (*
 
 	cmdLog.Info().Str("id", project.ID).Msg("Found project.")
 
-	artDefTable := artdeftable.New(api.ListCredentialTypes())
+	artDefTable := artdeftable.New(api.ListCredentialTypes(ctx, mdClient))
 
 	keys := KeyMap{
 		Next: key.NewBinding(
