@@ -91,6 +91,15 @@ mutation publishArtifactDefinition($organizationId: ID!, $schema: JSON!) {
 }
 
 
+# BUNDLES
+
+query getBundleVersions($orgId: ID!, $bundleId: ID!) {
+  bundle(organizationId: $orgId, id: $bundleId) {
+    versions
+  }
+}
+
+
 # CONTAINER REPOSITORIES
 
 query containerRepository($orgId: ID!, $artifactId: ID!, $input: ContainerRepositoryInput!) {

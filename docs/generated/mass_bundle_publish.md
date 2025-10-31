@@ -19,6 +19,7 @@ mass bundle publish [flags]
   -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
   -f, --fail-warnings            Fail on warnings from the linter
   -h, --help                     help for publish
+  -r, --release-candidate        Whether to publish the bundle as a release candidate.
   -s, --skip-lint                Skip linting
 ```
 
