@@ -45,6 +45,22 @@ func (v *Credential) GetArtifactDefinitionType() string { return v.ArtifactDefin
 // GetArtifactId returns Credential.ArtifactId, and is useful for accessing the field via an interface.
 func (v *Credential) GetArtifactId() string { return v.ArtifactId }
 
+// Status of a deployment
+type DeploymentStatus string
+
+const (
+	// Deployment is pending execution
+	DeploymentStatusPending DeploymentStatus = "PENDING"
+	// Deployment is currently running
+	DeploymentStatusRunning DeploymentStatus = "RUNNING"
+	// Deployment completed successfully
+	DeploymentStatusCompleted DeploymentStatus = "COMPLETED"
+	// Deployment failed
+	DeploymentStatusFailed DeploymentStatus = "FAILED"
+	// Deployment was aborted
+	DeploymentStatusAborted DeploymentStatus = "ABORTED"
+)
+
 // Supported artifact download formats
 type DownloadFormat string
 
@@ -535,18 +551,6 @@ func (v *__getArtifactsByTypeInput) GetOrganizationId() string { return v.Organi
 // GetArtifactType returns __getArtifactsByTypeInput.ArtifactType, and is useful for accessing the field via an interface.
 func (v *__getArtifactsByTypeInput) GetArtifactType() string { return v.ArtifactType }
 
-// __getBundleVersionsInput is used internally by genqlient
-type __getBundleVersionsInput struct {
-	OrgId    string `json:"orgId"`
-	BundleId string `json:"bundleId"`
-}
-
-// GetOrgId returns __getBundleVersionsInput.OrgId, and is useful for accessing the field via an interface.
-func (v *__getBundleVersionsInput) GetOrgId() string { return v.OrgId }
-
-// GetBundleId returns __getBundleVersionsInput.BundleId, and is useful for accessing the field via an interface.
-func (v *__getBundleVersionsInput) GetBundleId() string { return v.BundleId }
-
 // __getDeploymentByIdInput is used internally by genqlient
 type __getDeploymentByIdInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -582,6 +586,18 @@ func (v *__getEnvironmentsByProjectInput) GetOrganizationId() string { return v.
 
 // GetProjectId returns __getEnvironmentsByProjectInput.ProjectId, and is useful for accessing the field via an interface.
 func (v *__getEnvironmentsByProjectInput) GetProjectId() string { return v.ProjectId }
+
+// __getOciRepoInput is used internally by genqlient
+type __getOciRepoInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getOciRepoInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getOciRepoInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getOciRepoInput.Id, and is useful for accessing the field via an interface.
+func (v *__getOciRepoInput) GetId() string { return v.Id }
 
 // __getPackageInput is used internally by genqlient
 type __getPackageInput struct {
@@ -1311,41 +1327,20 @@ func (v *getArtifactsByTypeResponse) GetArtifacts() getArtifactsByTypeArtifactsP
 	return v.Artifacts
 }
 
-// getBundleVersionsBundle includes the requested fields of the GraphQL type Bundle.
-// The GraphQL type's documentation follows.
-//
-// A reusable infrastructure component that packages IaC modules, policies, runbooks, and cloud dependencies into a deliverable software component
-type getBundleVersionsBundle struct {
-	// List of available versions/tags/labels for this bundle
-	Versions []string `json:"versions"`
-}
-
-// GetVersions returns getBundleVersionsBundle.Versions, and is useful for accessing the field via an interface.
-func (v *getBundleVersionsBundle) GetVersions() []string { return v.Versions }
-
-// getBundleVersionsResponse is returned by getBundleVersions on success.
-type getBundleVersionsResponse struct {
-	// Get a specific bundle
-	Bundle getBundleVersionsBundle `json:"bundle"`
-}
-
-// GetBundle returns getBundleVersionsResponse.Bundle, and is useful for accessing the field via an interface.
-func (v *getBundleVersionsResponse) GetBundle() getBundleVersionsBundle { return v.Bundle }
-
 // getDeploymentByIdDeployment includes the requested fields of the GraphQL type Deployment.
 // The GraphQL type's documentation follows.
 //
 // A deployment represents an instance of a bundle being deployed to a target environment
 type getDeploymentByIdDeployment struct {
-	Id     string `json:"id"`
-	Status string `json:"status"`
+	Id     string           `json:"id"`
+	Status DeploymentStatus `json:"status"`
 }
 
 // GetId returns getDeploymentByIdDeployment.Id, and is useful for accessing the field via an interface.
 func (v *getDeploymentByIdDeployment) GetId() string { return v.Id }
 
 // GetStatus returns getDeploymentByIdDeployment.Status, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetStatus() string { return v.Status }
+func (v *getDeploymentByIdDeployment) GetStatus() DeploymentStatus { return v.Status }
 
 // getDeploymentByIdResponse is returned by getDeploymentById on success.
 type getDeploymentByIdResponse struct {
@@ -1723,7 +1718,7 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) __premarshalJSON() 
 // getEnvironmentByIdEnvironmentPackagesPackageManifest includes the requested fields of the GraphQL type Manifest.
 // The GraphQL type's documentation follows.
 //
-// An instance of a bundle in a project's architecture, providing context for how the bundle is used
+// A bundle used in a project with a specific context (e.g. redis 'cache' vs 'sessions' instance)
 type getEnvironmentByIdEnvironmentPackagesPackageManifest struct {
 	Id          string `json:"id"`
 	Name        string `json:"name"`
@@ -2210,7 +2205,7 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBu
 // getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest includes the requested fields of the GraphQL type Manifest.
 // The GraphQL type's documentation follows.
 //
-// An instance of a bundle in a project's architecture, providing context for how the bundle is used
+// A bundle used in a project with a specific context (e.g. redis 'cache' vs 'sessions' instance)
 type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest struct {
 	Id          string `json:"id"`
 	Name        string `json:"name"`
@@ -2300,6 +2295,68 @@ type getEnvironmentsByProjectResponse struct {
 func (v *getEnvironmentsByProjectResponse) GetProject() getEnvironmentsByProjectProject {
 	return v.Project
 }
+
+// getOciRepoOciRepo includes the requested fields of the GraphQL type OciRepo.
+// The GraphQL type's documentation follows.
+//
+// A namespace for storing related container images and artifacts
+type getOciRepoOciRepo struct {
+	// The repository name within the registry
+	Name string `json:"name"`
+	// Distribution channels for artifact releases
+	ReleaseChannels []getOciRepoOciRepoReleaseChannelsOciReleaseChannel `json:"releaseChannels"`
+	// Human-readable references to manifests in this repository
+	Tags []getOciRepoOciRepoTagsOciTag `json:"tags"`
+}
+
+// GetName returns getOciRepoOciRepo.Name, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepo) GetName() string { return v.Name }
+
+// GetReleaseChannels returns getOciRepoOciRepo.ReleaseChannels, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepo) GetReleaseChannels() []getOciRepoOciRepoReleaseChannelsOciReleaseChannel {
+	return v.ReleaseChannels
+}
+
+// GetTags returns getOciRepoOciRepo.Tags, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepo) GetTags() []getOciRepoOciRepoTagsOciTag { return v.Tags }
+
+// getOciRepoOciRepoReleaseChannelsOciReleaseChannel includes the requested fields of the GraphQL type OciReleaseChannel.
+// The GraphQL type's documentation follows.
+//
+// A release channel that resolves to a specific tag
+type getOciRepoOciRepoReleaseChannelsOciReleaseChannel struct {
+	// The channel name (e.g., 'latest', '1.x', '0.x')
+	Name string `json:"name"`
+	// The tag this channel resolves to (e.g., '1.0.0')
+	Tag string `json:"tag"`
+}
+
+// GetName returns getOciRepoOciRepoReleaseChannelsOciReleaseChannel.Name, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepoReleaseChannelsOciReleaseChannel) GetName() string { return v.Name }
+
+// GetTag returns getOciRepoOciRepoReleaseChannelsOciReleaseChannel.Tag, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepoReleaseChannelsOciReleaseChannel) GetTag() string { return v.Tag }
+
+// getOciRepoOciRepoTagsOciTag includes the requested fields of the GraphQL type OciTag.
+// The GraphQL type's documentation follows.
+//
+// A human-readable reference name that points to a specific OCI manifest
+type getOciRepoOciRepoTagsOciTag struct {
+	// The tag name/label (e.g., 'latest', 'v1.0.0')
+	Tag string `json:"tag"`
+}
+
+// GetTag returns getOciRepoOciRepoTagsOciTag.Tag, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepoTagsOciTag) GetTag() string { return v.Tag }
+
+// getOciRepoResponse is returned by getOciRepo on success.
+type getOciRepoResponse struct {
+	// Get an OCI repository
+	OciRepo getOciRepoOciRepo `json:"ociRepo"`
+}
+
+// GetOciRepo returns getOciRepoResponse.OciRepo, and is useful for accessing the field via an interface.
+func (v *getOciRepoResponse) GetOciRepo() getOciRepoOciRepo { return v.OciRepo }
 
 // getPackagePackage includes the requested fields of the GraphQL type Package.
 // The GraphQL type's documentation follows.
@@ -2589,7 +2646,7 @@ func (v *getPackagePackageEnvironmentProject) GetSlug() string { return v.Slug }
 // getPackagePackageManifest includes the requested fields of the GraphQL type Manifest.
 // The GraphQL type's documentation follows.
 //
-// An instance of a bundle in a project's architecture, providing context for how the bundle is used
+// A bundle used in a project with a specific context (e.g. redis 'cache' vs 'sessions' instance)
 type getPackagePackageManifest struct {
 	Id          string `json:"id"`
 	Name        string `json:"name"`
@@ -3641,43 +3698,6 @@ func getArtifactsByType(
 	return &data, err
 }
 
-// The query or mutation executed by getBundleVersions.
-const getBundleVersions_Operation = `
-query getBundleVersions ($orgId: ID!, $bundleId: ID!) {
-	bundle(organizationId: $orgId, id: $bundleId) {
-		versions
-	}
-}
-`
-
-func getBundleVersions(
-	ctx context.Context,
-	client graphql.Client,
-	orgId string,
-	bundleId string,
-) (*getBundleVersionsResponse, error) {
-	req := &graphql.Request{
-		OpName: "getBundleVersions",
-		Query:  getBundleVersions_Operation,
-		Variables: &__getBundleVersionsInput{
-			OrgId:    orgId,
-			BundleId: bundleId,
-		},
-	}
-	var err error
-
-	var data getBundleVersionsResponse
-	resp := &graphql.Response{Data: &data}
-
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
-	)
-
-	return &data, err
-}
-
 // The query or mutation executed by getDeploymentById.
 const getDeploymentById_Operation = `
 query getDeploymentById ($organizationId: ID!, $id: ID!) {
@@ -3880,6 +3900,50 @@ func getEnvironmentsByProject(
 	var err error
 
 	var data getEnvironmentsByProjectResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getOciRepo.
+const getOciRepo_Operation = `
+query getOciRepo ($organizationId: ID!, $id: ID!) {
+	ociRepo(organizationId: $organizationId, id: $id) {
+		name
+		releaseChannels {
+			name
+			tag
+		}
+		tags {
+			tag
+		}
+	}
+}
+`
+
+func getOciRepo(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*getOciRepoResponse, error) {
+	req := &graphql.Request{
+		OpName: "getOciRepo",
+		Query:  getOciRepo_Operation,
+		Variables: &__getOciRepoInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data getOciRepoResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

@@ -15,36 +15,36 @@ func TestGetVersion(t *testing.T) {
 	b := &bundlepkg.Bundle{Name: "test-bundle", Version: "1.0.0"}
 
 	tests := []struct {
-		name             string
-		existingVersions []string
-		releaseCandidate bool
-		wantErr          string
-		wantRegexp       string
-		wantVersion      string
+		name               string
+		existingVersions   []map[string]string
+		developmentRelease bool
+		wantErr            string
+		wantRegexp         string
+		wantVersion        string
 	}{
 		{
-			name:             "existing version non-rc",
-			existingVersions: []string{"1.0.0"},
-			releaseCandidate: false,
-			wantErr:          "version 1.0.0 already exists for bundle test-bundle",
+			name:               "existing version non-dev",
+			existingVersions:   []map[string]string{{"tag": "1.0.0"}},
+			developmentRelease: false,
+			wantErr:            "version 1.0.0 already exists for bundle test-bundle",
 		},
 		{
-			name:             "existing version rc",
-			existingVersions: []string{"1.0.0"},
-			releaseCandidate: true,
-			wantErr:          "version 1.0.0 already exists for bundle test-bundle - cannot publish a release candidate for an existing version",
+			name:               "existing version development release",
+			existingVersions:   []map[string]string{{"tag": "1.0.0"}},
+			developmentRelease: true,
+			wantErr:            "version 1.0.0 already exists for bundle test-bundle - cannot publish a development release for an existing version",
 		},
 		{
-			name:             "valid version",
-			existingVersions: []string{},
-			releaseCandidate: false,
-			wantVersion:      "1.0.0",
+			name:               "valid version",
+			existingVersions:   []map[string]string{},
+			developmentRelease: false,
+			wantVersion:        "1.0.0",
 		},
 		{
-			name:             "valid rc",
-			existingVersions: []string{},
-			releaseCandidate: true,
-			wantRegexp:       `^1\.0\.0-rc\.\d{8}T\d{6}Z$`,
+			name:               "valid development release version",
+			existingVersions:   []map[string]string{},
+			developmentRelease: true,
+			wantRegexp:         `^1\.0\.0-dev\.\d{8}T\d{6}Z$`,
 		},
 	}
 
@@ -53,8 +53,8 @@ func TestGetVersion(t *testing.T) {
 			// Prepare a mock GraphQL client that returns the expected bundle versions
 			gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 				"data": map[string]any{
-					"bundle": map[string]any{
-						"versions": tc.existingVersions,
+					"ociRepo": map[string]any{
+						"tags": tc.existingVersions,
 					},
 				},
 			})
@@ -62,7 +62,7 @@ func TestGetVersion(t *testing.T) {
 				GQL: gqlClient,
 			}
 
-			ver, err := getVersion(context.Background(), &mdClient, b, tc.releaseCandidate)
+			ver, err := getVersion(context.Background(), &mdClient, b, tc.developmentRelease)
 			if tc.wantErr != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tc.wantErr)

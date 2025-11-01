@@ -15,8 +15,7 @@ import (
 	"oras.land/oras-go/v2/content/memory"
 )
 
-func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, developmentRelease bool) error {
-	ctx := context.Background()
+func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *client.Client, buildFromDir string, developmentRelease bool) error {
 
 	version, versionErr := getVersion(ctx, mdClient, b, developmentRelease)
 	if versionErr != nil {
@@ -58,12 +57,12 @@ func RunPublish(b *bundle.Bundle, mdClient *client.Client, buildFromDir string, 
 }
 
 func getVersion(ctx context.Context, mdClient *client.Client, b *bundle.Bundle, developmentRelease bool) (string, error) {
-	existingVersions, err := api.GetBundleVersions(ctx, mdClient, b.Name)
+	existingVersions, err := api.GetOciRepoTags(ctx, mdClient, b.Name)
 	if err != nil {
 		return "", err
 	}
 
-	if slices.Contains(existingVersions, b.Version) {
+	if b.Version != "0.0.0" && slices.Contains(existingVersions, b.Version) {
 		if !developmentRelease {
 			return "", fmt.Errorf("version %s already exists for bundle %s", b.Version, b.Name)
 		} else {

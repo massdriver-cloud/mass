@@ -91,15 +91,6 @@ mutation publishArtifactDefinition($organizationId: ID!, $schema: JSON!) {
 }
 
 
-# BUNDLES
-
-query getBundleVersions($orgId: ID!, $bundleId: ID!) {
-  bundle(organizationId: $orgId, id: $bundleId) {
-    versions
-  }
-}
-
-
 # CONTAINER REPOSITORIES
 
 query containerRepository($orgId: ID!, $artifactId: ID!, $input: ContainerRepositoryInput!) {
@@ -230,6 +221,22 @@ query getEnvironmentsByProject($organizationId: ID!, $projectId: ID!) {
         id
         slug
       }
+    }
+  }
+}
+
+
+# OCI
+
+query getOciRepo($organizationId: ID!, $id: ID!) {
+  ociRepo(organizationId: $organizationId, id: $id) {
+    name
+    releaseChannels {
+      name
+      tag
+    }
+    tags {
+      tag
     }
   }
 }
