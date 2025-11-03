@@ -32,6 +32,8 @@ A project can encompass many environments (permanent or ephemeral) and manages t
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
+* [mass project create](/cli/commands/mass_project_create)	 - Create a project
+* [mass project delete](/cli/commands/mass_project_delete)	 - Delete a project
 * [mass project export](/cli/commands/mass_project_export)	 - Export a project from Massdriver
 * [mass project get](/cli/commands/mass_project_get)	 - Get a project from Massdriver
 * [mass project list](/cli/commands/mass_project_list)	 - List projects

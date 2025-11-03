@@ -39,6 +39,7 @@ Packages are used to:
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
 * [mass package configure](/cli/commands/mass_package_configure)	 - Configure package
+* [mass package create](/cli/commands/mass_package_create)	 - Create a manifest (add bundle to project)
 * [mass package deploy](/cli/commands/mass_package_deploy)	 - Deploy packages
 * [mass package export](/cli/commands/mass_package_export)	 - Export packages
 * [mass package get](/cli/commands/mass_package_get)	 - Get a package
