@@ -278,12 +278,13 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Parse project-env-manifest format: extract project (first) and manifest (last), ignoring middle
+	// Parse project-env-manifest format: extract project (first), env (middle), and manifest (last)
 	parts := strings.Split(fullSlug, "-")
-	if len(parts) < 2 {
-		return fmt.Errorf("unable to determine project and manifest from slug %s (expected format: project-env-manifest)", fullSlug)
+	if len(parts) < 3 {
+		return fmt.Errorf("unable to determine project, environment, and manifest from slug %s (expected format: project-env-manifest)", fullSlug)
 	}
 	projectIdOrSlug := parts[0]
+	environmentSlug := parts[1]
 	// Manifest slug is the last segment (ignoring middle/env parts)
 	// For test1-qa-table, parts = ["test1", "qa", "table"], so manifest = "table"
 	// For test1-qa-table-db, parts = ["test1", "qa", "table", "db"], so manifest = "db"
@@ -306,7 +307,7 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
 		fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
-		fmt.Printf("URL: %s\n", urlHelper.ProjectURL(projectIdOrSlug))
+		fmt.Printf("URL: %s\n", urlHelper.PackageURL(projectIdOrSlug, environmentSlug, manifestSlug))
 	} else {
 		fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
 	}

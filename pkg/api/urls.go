@@ -56,16 +56,3 @@ func (u *URLHelper) EnvironmentURL(projectSlug, environmentSlug string) string {
 func (u *URLHelper) PackageURL(projectSlug, environmentSlug, packageSlug string) string {
 	return fmt.Sprintf("%s/orgs/%s/projects/%s/environments/%s?package=%s", u.baseURL, u.orgID, projectSlug, environmentSlug, packageSlug)
 }
-
-// ManifestURL returns the URL for a manifest (package in project context)
-func (u *URLHelper) ManifestURL(projectSlug, manifestSlug string) string {
-	// Parse package slug to get environment and manifest
-	// Format: project-env-manifest
-	parts := strings.Split(manifestSlug, "-")
-	if len(parts) >= 3 {
-		envSlug := parts[1]
-		return u.PackageURL(projectSlug, envSlug, manifestSlug)
-	}
-	// Fallback to project URL if we can't parse
-	return u.ProjectURL(projectSlug)
-}
