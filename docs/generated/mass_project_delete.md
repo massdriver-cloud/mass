@@ -44,7 +44,6 @@ mass project delete myproject --force
 ```
 
 
-
 ```
 mass project delete [project] [flags]
 ```
