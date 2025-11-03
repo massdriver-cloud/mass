@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
@@ -54,9 +55,19 @@ func NewCmdEnvironment() *cobra.Command {
 		RunE:  runEnvironmentList,
 	}
 
+	environmentCreateCmd := &cobra.Command{
+		Use:   "create [slug]",
+		Short: "Create an environment",
+		Long:  helpdocs.MustRender("environment/create"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runEnvironmentCreate,
+	}
+	environmentCreateCmd.Flags().StringP("name", "n", "", "Environment name (defaults to slug if not provided)")
+
 	environmentCmd.AddCommand(environmentExportCmd)
 	environmentCmd.AddCommand(environmentGetCmd)
 	environmentCmd.AddCommand(environmentListCmd)
+	environmentCmd.AddCommand(environmentCreateCmd)
 
 	return environmentCmd
 }
@@ -171,5 +182,46 @@ func renderEnvironment(environment *api.Environment) error {
 	}
 
 	fmt.Print(out)
+	return nil
+}
+
+func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	fullSlug := args[0]
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+
+	// Parse project-env format: extract project and env slugs separately
+	parts := strings.Split(fullSlug, "-")
+	if len(parts) < 2 {
+		return fmt.Errorf("unable to determine project from slug %s (expected format: project-env)", fullSlug)
+	}
+	projectIdOrSlug := parts[0]
+	envSlug := strings.Join(parts[1:], "-")
+
+	if name == "" {
+		name = envSlug
+	}
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	env, err := api.CreateEnvironment(ctx, mdClient, projectIdOrSlug, name, envSlug, "")
+	if err != nil {
+		return err
+	}
+
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	if urlErr == nil {
+		fmt.Printf("Environment %s created successfully (ID: %s)\n", env.Slug, env.ID)
+		fmt.Printf("URL: %s\n", urlHelper.EnvironmentURL(projectIdOrSlug, env.Slug))
+	} else {
+		fmt.Printf("Environment %s created successfully (ID: %s)\n", env.Slug, env.ID)
+	}
 	return nil
 }

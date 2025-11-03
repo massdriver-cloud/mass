@@ -6,6 +6,7 @@ MASSDRIVER_PATH?=../massdriver
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(dir $(MKFILE_PATH))
 API_DIR := pkg/api
+SCHEMA_URL ?= https://api.massdriver.cloud/graphql/schema.graphql
 
 all.macos: clean generate install.macos
 all.linux: clean generate install.linux
@@ -18,10 +19,11 @@ check: clean generate test ## Run tests and linter locally
 clean:
 	rm -rf ${API_DIR}/schema.graphql
 	rm -rf ${API_DIR}/zz_generated.go
+	rm -f ./mass
 
 .PHONY: generate
 generate:
-	./scripts/graphql-gen.sh
+	curl -s ${SCHEMA_URL} -o ${API_DIR}/schema.graphql
 	cd ${API_DIR} && go generate
 
 .PHONY:

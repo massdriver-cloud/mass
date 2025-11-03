@@ -72,3 +72,41 @@ func (p *Project) GetDefaultParams() map[string]PreviewPackage {
 	}
 	return packages
 }
+
+func CreateProject(ctx context.Context, mdClient *client.Client, name string, slug string, description string) (*Project, error) {
+	response, err := createProject(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name, slug, description)
+	if err != nil {
+		return nil, err
+	}
+	if !response.CreateProject.Successful {
+		messages := response.CreateProject.GetMessages()
+		if len(messages) > 0 {
+			errMsg := "unable to create project:"
+			for _, msg := range messages {
+				errMsg += "\n  - " + msg.Message
+			}
+			return nil, fmt.Errorf("%s", errMsg)
+		}
+		return nil, fmt.Errorf("unable to create project")
+	}
+	return toProject(response.CreateProject.Result)
+}
+
+func DeleteProject(ctx context.Context, mdClient *client.Client, idOrSlug string) (*Project, error) {
+	response, err := deleteProject(ctx, mdClient.GQL, mdClient.Config.OrganizationID, idOrSlug)
+	if err != nil {
+		return nil, err
+	}
+	if !response.DeleteProject.Successful {
+		messages := response.DeleteProject.GetMessages()
+		if len(messages) > 0 {
+			errMsg := "unable to delete project:"
+			for _, msg := range messages {
+				errMsg += "\n  - " + msg.Message
+			}
+			return nil, fmt.Errorf("%s", errMsg)
+		}
+		return nil, fmt.Errorf("unable to delete project")
+	}
+	return toProject(response.DeleteProject.Result)
+}

@@ -67,3 +67,22 @@ func toEnvironment(v any) (*Environment, error) {
 	}
 	return &env, nil
 }
+
+func CreateEnvironment(ctx context.Context, mdClient *client.Client, projectId string, name string, slug string, description string) (*Environment, error) {
+	response, err := createEnvironment(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectId, name, slug, description)
+	if err != nil {
+		return nil, err
+	}
+	if !response.CreateEnvironment.Successful {
+		messages := response.CreateEnvironment.GetMessages()
+		if len(messages) > 0 {
+			errMsg := "unable to create environment:"
+			for _, msg := range messages {
+				errMsg += "\n  - " + msg.Message
+			}
+			return nil, fmt.Errorf("%s", errMsg)
+		}
+		return nil, fmt.Errorf("unable to create environment")
+	}
+	return toEnvironment(response.CreateEnvironment.Result)
+}

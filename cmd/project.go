@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
@@ -52,9 +55,29 @@ func NewCmdProject() *cobra.Command {
 		RunE:  runProjectList,
 	}
 
+	projectCreateCmd := &cobra.Command{
+		Use:   "create [slug]",
+		Short: "Create a project",
+		Long:  helpdocs.MustRender("project/create"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runProjectCreate,
+	}
+	projectCreateCmd.Flags().StringP("name", "n", "", "Project name (defaults to slug if not provided)")
+
+	projectDeleteCmd := &cobra.Command{
+		Use:   "delete [project]",
+		Short: "Delete a project",
+		Long:  helpdocs.MustRender("project/delete"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runProjectDelete,
+	}
+	projectDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+
 	projectCmd.AddCommand(projectExportCmd)
 	projectCmd.AddCommand(projectGetCmd)
 	projectCmd.AddCommand(projectListCmd)
+	projectCmd.AddCommand(projectCreateCmd)
+	projectCmd.AddCommand(projectDeleteCmd)
 
 	return projectCmd
 }
@@ -175,5 +198,74 @@ func renderProject(project *api.Project) error {
 	}
 
 	fmt.Print(out)
+	return nil
+}
+
+func runProjectCreate(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	slug := args[0]
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+	if name == "" {
+		name = slug
+	}
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	project, err := api.CreateProject(ctx, mdClient, name, slug, "")
+	if err != nil {
+		return err
+	}
+
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	if urlErr == nil {
+		fmt.Printf("Project %s created successfully (ID: %s)\n", project.Slug, project.ID)
+		fmt.Printf("URL: %s\n", urlHelper.ProjectURL(project.Slug))
+	} else {
+		fmt.Printf("Project %s created successfully (ID: %s)\n", project.Slug, project.ID)
+	}
+	return nil
+}
+
+func runProjectDelete(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	projectIdOrSlug := args[0]
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+
+	// Prompt for confirmation - requires typing "yes" unless --force is used
+	if !force {
+		fmt.Printf("WARNING: This will permanently delete project %s and all its resources.\n", projectIdOrSlug)
+		fmt.Print("Type 'yes' to confirm deletion: ")
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(answer)
+
+		if answer != "yes" {
+			fmt.Println("Deletion cancelled.")
+			return nil
+		}
+	}
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	project, err := api.DeleteProject(ctx, mdClient, projectIdOrSlug)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Project %s deleted successfully (ID: %s)\n", project.Slug, project.ID)
 	return nil
 }
