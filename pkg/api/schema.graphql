@@ -6,11 +6,11 @@ schema {
 }
 
 type BundlePackagesPage {
-  "List of package summaries"
-  items: [BundlePackageSummary]!
+  "Pagination cursors"
+  cursor: PaginationCursor!
 
-  "Cursor for the next page of results"
-  cursor: String
+  "A list of type bundle_package_summary."
+  items: [BundlePackageSummary]
 }
 
 "OCI blob content"
@@ -108,6 +108,18 @@ type RootSubscriptionType {
   nodeContextCreated(organizationId: ID!, environmentId: ID!): NodeContext
   nodeContextDeleted(organizationId: ID!, environmentId: ID!): NodeContext
   packageAlarms(organizationId: ID!, packageId: ID!): Alarm
+}
+
+"Action type of a deployment"
+enum DeploymentAction {
+  "Provision new infrastructure"
+  PROVISION
+
+  "Decommission existing infrastructure"
+  DECOMMISSION
+
+  "Plan deployment without executing"
+  PLAN
 }
 
 "How connecting this type works on the diagram."
@@ -234,12 +246,6 @@ enum BundlePackagesSortField {
 }
 
 input ArtifactsInput {
-  "The number of items to return."
-  limit: Int
-
-  "A cursor pointing to an item. Instructs the API to return items after the cursor."
-  after: String
-
   filter: ArtifactsFilters
 }
 
@@ -376,11 +382,14 @@ type Project {
 union ProvisioningLifecycleEvents = DeploymentLifecycleEvent
 
 type PaginatedArtifacts {
-  "A cursor to the next page of items in the list."
-  next: String
+  "Cursor to the next page"
+  next: String @deprecated(reason: "Use cursor.next instead")
 
-  "A cursor to the next page of items in the list."
-  before: String
+  "Cursor to the previous page"
+  before: String @deprecated(reason: "Use cursor.previous instead")
+
+  "Pagination cursors"
+  cursor: PaginationCursor!
 
   "A list of type artifact."
   items: [Artifact]
@@ -421,10 +430,10 @@ type BundlePackageSummary {
   "Package status"
   status: PackageStatus!
 
-  "Project name (denormalized)"
+  "Project name"
   projectName: String!
 
-  "Environment name (denormalized)"
+  "Environment name"
   environmentName: String!
 
   "Package cost for the last month"
@@ -620,16 +629,25 @@ type Package {
   """
   The actual semantic version of the bundle release currently configured for this package.
   This is the resolved version based on the `version` constraint and will be used for the next deployment.
-  Example: if `version` is "~1.2", `currentVersion` might be "1.2.5".
+  Example: if `version` is "~1.2", `resolvedVersion` might be "1.2.5".
   """
-  currentVersion: String!
+  resolvedVersion: String!
+
+  """
+  The release strategy for this package. Determines whether the package should receive
+  stable releases only or also development releases.
+  """
+  releaseStrategy: ReleaseStrategy!
 
   """
   The semantic version that was last executed.
-  This reflects what has been provisioned to infrastructure, which may differ from `currentVersion`
+  This reflects what has been provisioned to infrastructure, which may differ from `resolvedVersion`
   if the package hasn't been deployed since the version was changed. Returns nil if never deployed.
   """
   deployedVersion: String
+
+  "The latest deployment for this package"
+  latestDeployment: Deployment
 
   """
   The newest version available for upgrade based on the package's `version` constraint.
@@ -716,6 +734,9 @@ type NodeContext {
   "Slug of the package"
   packageSlug: String
 
+  "Version constraint of the package"
+  packageVersion: VersionConstraint!
+
   "Manifest Name"
   name: String!
 
@@ -786,9 +807,6 @@ type RootQueryType {
     organizationId: ID!
   ): [DefaultableEnvironmentConnectionGroup]
 
-  "Filter artifacts by an artifact definition type."
-  filterArtifactsByType(organizationId: ID!, type: String!): [Artifact] @deprecated(reason: "Use artifacts query w\/ artifacts filters instead.")
-
   "Get an artifact by ID"
   artifact(organizationId: ID!, id: ID!): Artifact
 
@@ -796,8 +814,13 @@ type RootQueryType {
   artifacts(
     organizationId: ID!
 
-    "Search, filter, and sort inputs"
-    input: ArtifactsInput
+    input: ArtifactsInput @deprecated(reason: "Use filter instead")
+
+    "Filter criteria."
+    filter: ArtifactsFilters
+
+    "Pagination cursor"
+    cursor: Cursor
   ): PaginatedArtifacts
 
   "Connection data for an artifact rendered in requested format"
@@ -840,7 +863,11 @@ type RootQueryType {
     "Bundle UUID or Name"
     id: ID!
 
-    "Specifies which bundle release to return. Can be an exact version (e.g., '1.2.3'), a tilde constraint for semantic versioning ranges (e.g., '~1.2' for 1.2.x, '~1' for 1.x.x), or 'latest' for the newest stable release."
+    """
+    Specifies which bundle release to return. Can be an exact version (e.g., '1.2.3'),
+    a tilde constraint for semantic versioning ranges (e.g., '~1.2' for 1.2.x, '~1' for 1.x.x),
+    or 'latest' for the newest stable release. `+dev` can be appended to include development releases.
+    """
     version: VersionConstraint
   ): Bundle
 
@@ -867,12 +894,45 @@ type RootQueryType {
     "Sort criteria"
     sort: BundlePackagesSort
 
-    "Maximum number of items to return (default: 10, max: 100)"
-    limit: Int
-
     "Pagination cursor"
-    cursor: String
+    cursor: Cursor
   ): BundlePackagesPage
+
+  "Get deployments for packages from this bundle with filtering and pagination"
+  bundleDeployments(
+    "Organization ID"
+    organizationId: ID!
+
+    "Bundle ID or Name"
+    id: ID!
+
+    "Filter criteria"
+    filter: BundleDeploymentsFilter
+
+    "Sort criteria"
+    sort: BundleDeploymentsSort
+
+    "Pagination cursor with limit and after"
+    cursor: Cursor
+  ): BundleDeploymentsPage
+
+  "Get alerts for packages from this bundle with filtering and pagination"
+  bundleAlerts(
+    "Organization ID"
+    organizationId: ID!
+
+    "Bundle ID or Name"
+    id: ID!
+
+    "Filter criteria"
+    filter: BundleAlertsFilter
+
+    "Sort criteria"
+    sort: BundleAlertsSort
+
+    "Pagination cursor with limit and after"
+    cursor: Cursor
+  ): BundleAlertsPage
 
   containerRepository(organizationId: ID!, artifactId: ID!, input: ContainerRepositoryInput!): ContainerRepositoryAuth @deprecated(reason: "This function will be removed in the near future.")
 
@@ -1012,6 +1072,15 @@ type RootQueryType {
     name: String!
   ): Package @deprecated(reason: "Use package(id: $id){}")
 
+  "Get a specific repository"
+  repo(
+    "Organization ID"
+    organizationId: ID!
+
+    "Repository UUID or Name"
+    id: ID!
+  ): Repo
+
   projects(organizationId: ID!): [Project]
 
   project(
@@ -1046,7 +1115,7 @@ type OciManifest {
   blobs: [OciBlob]
 }
 
-"An instance of a bundle in a project's architecture, providing context for how the bundle is used"
+"A bundle used in a project with a specific context (e.g. redis 'cache' vs 'sessions' instance)"
 type Manifest {
   id: ID!
   name: String!
@@ -1057,7 +1126,7 @@ type Manifest {
   deletable: ManifestDeletionLifecycle!
   createdAt: DateTime!
   updatedAt: DateTime!
-  bundle: Bundle!
+  repo: OciRepo!
   packages: [Package]
 }
 
@@ -1085,6 +1154,11 @@ enum OrganizationBillingStatus {
 
   "The organization's payment has failed."
   PAYMENT_FAILED
+}
+
+input BundleAlertsFilter {
+  "Filter by bundle version (exact match or release channel like 'latest', '~1', '1.0.0')"
+  version: String
 }
 
 "An invitation to join an organization or group"
@@ -1240,6 +1314,11 @@ type DependencyRecommendations {
   manifests: [ManifestRecommendation]
 }
 
+input BundleDeploymentsFilter {
+  "Filter by bundle version (exact match or release channel like 'latest', '~1', '1.0.0')"
+  version: String
+}
+
 enum AuditLogActor {
   "System actions and legacy events"
   SYSTEM
@@ -1349,6 +1428,24 @@ type ArtifactDefinitionPayload {
   result: ArtifactDefinition
 }
 
+"Status of a deployment"
+enum DeploymentStatus {
+  "Deployment is pending execution"
+  PENDING
+
+  "Deployment is currently running"
+  RUNNING
+
+  "Deployment completed successfully"
+  COMPLETED
+
+  "Deployment failed"
+  FAILED
+
+  "Deployment was aborted"
+  ABORTED
+}
+
 "Error information for package deletion"
 type PackageDeletionLifecycleArtifactError {
   "Artifact causing the deletion error"
@@ -1363,10 +1460,37 @@ type ManifestDeletionLifecyclePackageError {
   message: String!
 }
 
+"An IaC bundle repository"
+type Repo {
+  "Unique identifier"
+  id: ID!
+
+  "Name of the repository"
+  name: String!
+
+  "When the repository was created"
+  createdAt: DateTime!
+
+  "Count of active packages deployed from this repository"
+  activePackages: Int
+
+  "Total cost for the last month across all packages"
+  lastMonthsCost: Float
+}
+
 enum AuditLogFilterOption {
   PROJECT
   TARGET @deprecated(reason: "Use environment instead")
   ENVIRONMENT
+}
+
+"Release strategy for a package"
+enum ReleaseStrategy {
+  "Package receives only stable releases"
+  STABLE
+
+  "Package receives both stable and development releases"
+  DEVELOPMENT
 }
 
 enum ServerMode {
@@ -1387,6 +1511,22 @@ type EnvironmentDeletionLifecycle {
   messages: [EnvironmentDeletionLifecyclePackageError]
 }
 
+type BundleDeploymentsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type bundle_deployment_summary."
+  items: [BundleDeploymentSummary]
+}
+
+type BundleAlertsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type bundle_alert_summary."
+  items: [BundleAlertSummary]
+}
+
 type ArtifactDeletionLifecycle {
   result: Boolean!
   messages: [ArtifactDeletionLifecycleArtifactError]
@@ -1401,6 +1541,17 @@ type PackagePayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: Package
+}
+
+input Cursor {
+  "Maximum number of items to return"
+  limit: Int
+
+  "Cursor after which to return items"
+  next: String
+
+  "Cursor before which to return items"
+  previous: String
 }
 
 type Actor {
@@ -1570,6 +1721,45 @@ type Link {
   destManifest: Manifest!
 }
 
+"Optimized summary view of a deployment for list displays"
+type BundleDeploymentSummary {
+  "Deployment ID"
+  id: ID!
+
+  "Deployment creation timestamp"
+  createdAt: DateTime!
+
+  "Email of user or service account that deployed"
+  deployedBy: String
+
+  "Elapsed time in seconds"
+  elapsedTime: Int
+
+  "Deployment action (PROVISION, DECOMMISSION, PLAN)"
+  action: DeploymentAction!
+
+  "Deployment status (PENDING, RUNNING, COMPLETED, FAILED, ABORTED)"
+  status: DeploymentStatus!
+
+  "Deployment message"
+  message: String
+
+  "Package slug"
+  packageSlug: String!
+
+  "Package name"
+  packageName: String!
+
+  "Environment name"
+  environmentName: String!
+
+  "Project name"
+  projectName: String!
+
+  "Bundle version deployed"
+  version: String!
+}
+
 type ArtifactDefinitionUi {
   connectionOrientation: ArtifactDefinitionUiConnectionOrientation!
   environmentDefaultGroup: String
@@ -1671,6 +1861,36 @@ type OciReleaseChannel {
 
   "The tag this channel resolves to (e.g., '1.0.0')"
   tag: String!
+}
+
+"Optimized summary view of an alert for list displays"
+type BundleAlertSummary {
+  "Alarm ID"
+  id: ID!
+
+  "Alert status (OK, ALARM)"
+  status: AlarmStatus!
+
+  "Alert display name"
+  displayName: String!
+
+  "When the alert occurred"
+  occurredAt: DateTime
+
+  "Project name"
+  projectName: String!
+
+  "Environment name"
+  environmentName: String!
+
+  "Package name"
+  packageName: String!
+
+  "Package slug"
+  packageSlug: String!
+
+  "Bundle version"
+  bundleVersion: String!
 }
 
 type SecretMetadataPayload {
@@ -1841,9 +2061,9 @@ input PreviewEnvironmentInput {
 type Deployment {
   id: ID!
 
-  status: String!
+  status: DeploymentStatus!
 
-  action: String!
+  action: DeploymentAction!
 
   version: String!
 
@@ -1868,6 +2088,22 @@ type Deployment {
 
   "Elapsed time in seconds"
   elapsedTime: Int!
+}
+
+input BundleDeploymentsSort {
+  "Field to sort by"
+  field: BundleDeploymentsSortField!
+
+  "Sort order"
+  order: SortOrder!
+}
+
+input BundleAlertsSort {
+  "Field to sort by"
+  field: BundleAlertsSortField!
+
+  "Sort order"
+  order: SortOrder!
 }
 
 type Changeset {
@@ -1925,6 +2161,14 @@ type EnvironmentStatistic {
   growthRate: Float!
   projectSlug: String!
   projectId: ID!
+}
+
+type PaginationCursor {
+  "Cursor to the next page"
+  next: String
+
+  "Cursor to the previous page"
+  previous: String
 }
 
 type ArtifactDeletionLifecycleArtifactError {
@@ -2174,6 +2418,9 @@ type RootMutationType {
 
     "The version or release channel to use."
     version: String!
+
+    "The release strategy for this package."
+    releaseStrategy: ReleaseStrategy
   ): PackagePayload
 
   "Update a Package's parameters"
@@ -2271,6 +2518,29 @@ type DeploymentLifecycleEvent {
   id: ID!
   status: String!
   deployment: Deployment!
+}
+
+enum BundleAlertsSortField {
+  "Sort by when the alert occurred"
+  OCCURRED_AT
+
+  "Sort by alert status"
+  STATUS
+
+  "Sort by alert display name"
+  DISPLAY_NAME
+
+  "Sort by package name"
+  PACKAGE_NAME
+
+  "Sort by environment name"
+  ENVIRONMENT_NAME
+
+  "Sort by project name"
+  PROJECT_NAME
+
+  "Sort by bundle version"
+  VERSION
 }
 
 "Status of a package"
@@ -2406,6 +2676,29 @@ input SetSecretValueInput {
 input GroupInput {
   name: String!
   description: String
+}
+
+enum BundleDeploymentsSortField {
+  "Sort by deployment creation timestamp"
+  CREATED_AT
+
+  "Sort by deployment action"
+  ACTION
+
+  "Sort by deployment status"
+  STATUS
+
+  "Sort by package name"
+  PACKAGE_NAME
+
+  "Sort by environment name"
+  ENVIRONMENT_NAME
+
+  "Sort by project name"
+  PROJECT_NAME
+
+  "Sort by bundle version"
+  VERSION
 }
 
 "Version constraint for bundle releases. Supports exact versions (1.2.3), tilde constraints (~1.2, ~1), automation rules (latest, release-candidate), and release channels. Examples: '1.2.3' (exact), '~1.2' (latest patch in 1.2.x), '~1' (latest minor in 1.x.x), 'latest' (newest stable), 'release-candidate' (newest RC)"

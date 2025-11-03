@@ -226,6 +226,22 @@ query getEnvironmentsByProject($organizationId: ID!, $projectId: ID!) {
 }
 
 
+# OCI
+
+query getOciRepo($organizationId: ID!, $id: ID!) {
+  ociRepo(organizationId: $organizationId, id: $id) {
+    name
+    releaseChannels {
+      name
+      tag
+    }
+    tags {
+      tag
+    }
+  }
+}
+
+
 # PACKAGES
 
 mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $message: String!) {

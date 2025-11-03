@@ -18,7 +18,7 @@ mass bundle pull <bundle-name> [flags]
   -d, --directory string   Directory to output the bundle. Defaults to bundle name.
   -f, --force              Force pull even if the directory already exists. This will overwrite existing files.
   -h, --help               help for pull
-  -t, --tag string         Bundle tag (defaults to 'latest') (default "latest")
+  -v, --version string     Bundle version or release channel (default "latest")
 ```
 
 ### SEE ALSO

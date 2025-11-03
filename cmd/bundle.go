@@ -91,6 +91,7 @@ func NewCmdBundle() *cobra.Command {
 		RunE:    runBundlePublish,
 	}
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundlePublishCmd.Flags().BoolP("development", "d", false, "Publish the bundle as a development release.")
 	bundlePublishCmd.Flags().String("access", "", "(Deprecated) Only here for backwards compatibility. Will be removed in a future release.")
 	bundlePublishCmd.Flags().BoolP("fail-warnings", "f", false, "Fail on warnings from the linter")
 	bundlePublishCmd.Flags().BoolP("skip-lint", "s", false, "Skip linting")
@@ -103,7 +104,7 @@ func NewCmdBundle() *cobra.Command {
 	}
 	bundlePullCmd.Flags().StringP("directory", "d", "", "Directory to output the bundle. Defaults to bundle name.")
 	bundlePullCmd.Flags().BoolP("force", "f", false, "Force pull even if the directory already exists. This will overwrite existing files.")
-	bundlePullCmd.Flags().StringP("tag", "t", "latest", "Bundle tag (defaults to 'latest')")
+	bundlePullCmd.Flags().StringP("version", "v", "latest", "Bundle version or release channel")
 
 	bundleTemplateCmd := &cobra.Command{
 		Use:   "template",
@@ -340,6 +341,8 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 }
 
 func runBundlePublish(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
 	access, _ := cmd.Flags().GetString("access")
 	if access != "" {
 		fmt.Println(prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release."))
@@ -357,7 +360,10 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	tag := "latest"
+	developmentRelease, err := cmd.Flags().GetBool("development")
+	if err != nil {
+		return err
+	}
 	cmd.SilenceUsage = true
 
 	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
@@ -379,7 +385,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
 
 		if results.HasErrors() {
-			fmt.Printf("Halting publish:Linting failed with %d error(s)\n", len(results.Errors()))
+			fmt.Printf("Halting publish: Linting failed with %d error(s)\n", len(results.Errors()))
 			os.Exit(1)
 		} else if results.HasWarnings() {
 			if failWarnings {
@@ -392,17 +398,19 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	return cmdbundle.RunPublish(unmarshalledBundle, mdClient, bundleDirectory, tag)
+	return cmdbundle.RunPublish(ctx, unmarshalledBundle, mdClient, bundleDirectory, developmentRelease)
 }
 
 func runBundlePull(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
 	bundleName := args[0]
 	directory, _ := cmd.Flags().GetString("directory")
 	if directory == "" {
 		directory = bundleName
 	}
 	force, _ := cmd.Flags().GetBool("force")
-	tag, _ := cmd.Flags().GetString("tag")
+	version, _ := cmd.Flags().GetString("version")
 	cmd.SilenceUsage = true
 
 	// Check if bundle exists in the specified directory and if so prompt the user
@@ -423,7 +431,7 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 		return mdClientErr
 	}
 
-	pullErr := cmdbundle.RunPull(mdClient, bundleName, tag, directory)
+	pullErr := cmdbundle.RunPull(ctx, mdClient, bundleName, version, directory)
 	if pullErr != nil {
 		return fmt.Errorf("error pulling bundle: %w", pullErr)
 	}

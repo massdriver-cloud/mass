@@ -20,7 +20,7 @@ func GetDeployment(ctx context.Context, mdClient *client.Client, id string) (*De
 func (d *getDeploymentByIdDeployment) toDeployment() *Deployment {
 	return &Deployment{
 		ID:     d.Id,
-		Status: d.Status,
+		Status: string(d.Status),
 	}
 }
 

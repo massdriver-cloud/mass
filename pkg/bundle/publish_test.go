@@ -24,6 +24,7 @@ func TestPackageBundle(t *testing.T) {
 			expectedLayers: map[string]packageLayer{
 				"massdriver.yaml":         {MimeType: "application/yaml"},
 				"operator.md":             {MimeType: "text/markdown"},
+				"README.md":               {MimeType: "text/markdown"},
 				"schema-artifacts.json":   {MimeType: "application/json"},
 				"schema-connections.json": {MimeType: "application/json"},
 				"schema-params.json":      {MimeType: "application/json"},
