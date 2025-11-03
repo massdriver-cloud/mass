@@ -385,24 +385,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
 
 		if results.HasErrors() {
-			fmt.Printf("Halting publish:Linting failed with %d error(s)\n", len(results.Errors()))
-			os.Exit(1)
-		} else if results.HasWarnings() {
-			if failWarnings {
-				fmt.Printf("Halting publish: linting failed with %d warning(s)\n", len(results.Warnings()))
-				os.Exit(1)
-			}
-			fmt.Printf("Linting completed with %d warning(s)\n", len(results.Warnings()))
-		} else {
-			fmt.Println("Linting completed, massdriver.yaml is valid!")
-		}
-	}
-
-	if !skipLint {
-		results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
-
-		if results.HasErrors() {
-			fmt.Printf("Halting publish:Linting failed with %d error(s)\n", len(results.Errors()))
+			fmt.Printf("Halting publish: Linting failed with %d error(s)\n", len(results.Errors()))
 			os.Exit(1)
 		} else if results.HasWarnings() {
 			if failWarnings {
