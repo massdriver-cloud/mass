@@ -23,6 +23,7 @@ Generate and publish bundles
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
 * [mass bundle build](/cli/commands/mass_bundle_build)	 - Build schemas and generate IaC files from massdriver.yaml file
+* [mass bundle get](/cli/commands/mass_bundle_get)	 - Get bundle information from Massdriver
 * [mass bundle import](/cli/commands/mass_bundle_import)	 - Import declared variables from IaC into massdriver.yaml params
 * [mass bundle lint](/cli/commands/mass_bundle_lint)	 - Check massdriver.yaml file for common errors
 * [mass bundle new](/cli/commands/mass_bundle_new)	 - Create a new bundle from a template
