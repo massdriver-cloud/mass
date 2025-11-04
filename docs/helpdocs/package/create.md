@@ -11,9 +11,9 @@ mass package create <slug> [flags]
 ```
 
 The slug format is `project-env-manifest`, where:
-- `project`: The project slug (first segment)
-- `env`: The environment slug (middle segment, ignored but required for format)
-- `manifest`: The manifest slug (last segment)
+- `project`: The project slug (first segment, no hyphens)
+- `env`: The environment slug (second segment, no hyphens)
+- `manifest`: The manifest slug (third segment, no hyphens)
 
 ## Flags
 
@@ -24,7 +24,7 @@ The slug format is `project-env-manifest`, where:
 
 ```bash
 # Create a manifest "table" in project "test1" using bundle "aws-collab-dynamodb"
-# The slug format is "test1-qa-table" where "test1" is the project, "qa" is the env (required for format), and "table" is the manifest
+# The slug format is "test1-qa-table" where "test1" is the project, "qa" is the env, and "table" is the manifest
 mass package create test1-qa-table --bundle aws-collab-dynamodb
 
 # Create a manifest with a custom name

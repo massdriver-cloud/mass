@@ -278,17 +278,15 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Parse project-env-manifest format: extract project (first), env (middle), and manifest (last)
+	// Parse project-env-manifest format: extract project (first), env (second), and manifest (third)
+	// Format is $proj-$env-$manifest where each part has no hyphens
 	parts := strings.Split(fullSlug, "-")
-	if len(parts) < 3 {
+	if len(parts) != 3 {
 		return fmt.Errorf("unable to determine project, environment, and manifest from slug %s (expected format: project-env-manifest)", fullSlug)
 	}
 	projectIdOrSlug := parts[0]
 	environmentSlug := parts[1]
-	// Manifest slug is the last segment (ignoring middle/env parts)
-	// For test1-qa-table, parts = ["test1", "qa", "table"], so manifest = "table"
-	// For test1-qa-table-db, parts = ["test1", "qa", "table", "db"], so manifest = "db"
-	manifestSlug := parts[len(parts)-1]
+	manifestSlug := parts[2]
 
 	if name == "" {
 		name = manifestSlug
