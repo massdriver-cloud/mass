@@ -17,12 +17,10 @@ Retrieve detailed information about a bundle, including its version, description
 ## Usage
 
 ```bash
-mass bundle get <bundle-id>[@<version>] [flags]
+mass bundle get <bundle-name>[@<version>] [flags]
 ```
 
-The bundle identifier can be just the bundle ID/name, or include a version constraint:
-- `<bundle-id>` - Get the latest version of the bundle
-- `<bundle-id>@<version>` - Get a specific version (e.g., `1.0.0`, `~1.2`, `latest`)
+If version is not specified, defaults to `latest`.
 
 ## Flags
 
@@ -45,9 +43,8 @@ mass bundle get aws-vpc@1.0.0 -o text
 ```
 
 
-
 ```
-mass bundle get <bundle-id>[@<version>] [flags]
+mass bundle get <bundle-name>[@<version>] [flags]
 ```
 
 ### Options
