@@ -61,3 +61,8 @@ func (u *URLHelper) PackageURL(projectSlug, environmentSlug, packageSlug string)
 func (u *URLHelper) BundleURL(bundleName, version string) string {
 	return fmt.Sprintf("%s/orgs/%s/repos/%s/%s", u.baseURL, u.orgID, bundleName, version)
 }
+
+// RepoInstancesURL returns the URL for bundle instances
+func (u *URLHelper) RepoInstancesURL(bundleName, version string) string {
+	return fmt.Sprintf("%s/orgs/%s/repos/%s/%s/instances", u.baseURL, u.orgID, bundleName, version)
+}

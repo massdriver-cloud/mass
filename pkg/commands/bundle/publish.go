@@ -53,6 +53,13 @@ func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *client.Client, 
 
 	fmt.Printf("Bundle %s:%s successfully published to organization %s!\n", printBundleName, version, printOrganizationId)
 
+	// Output repo instances URL
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	if urlErr == nil {
+		instancesURL := urlHelper.RepoInstancesURL(b.Name, version)
+		fmt.Printf("Repo: %s\n", instancesURL)
+	}
+
 	return nil
 }
 
