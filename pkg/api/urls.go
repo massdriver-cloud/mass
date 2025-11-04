@@ -56,3 +56,8 @@ func (u *URLHelper) EnvironmentURL(projectSlug, environmentSlug string) string {
 func (u *URLHelper) PackageURL(projectSlug, environmentSlug, packageSlug string) string {
 	return fmt.Sprintf("%s/orgs/%s/projects/%s/environments/%s?package=%s", u.baseURL, u.orgID, projectSlug, environmentSlug, packageSlug)
 }
+
+// BundleURL returns the URL for a specific bundle version
+func (u *URLHelper) BundleURL(bundleName, version string) string {
+	return fmt.Sprintf("%s/orgs/%s/repos/%s/%s", u.baseURL, u.orgID, bundleName, version)
+}

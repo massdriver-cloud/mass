@@ -639,6 +639,7 @@ func (v *__getArtifactsByTypeInput) GetArtifactType() string { return v.Artifact
 type __getBundleInput struct {
 	OrganizationId string `json:"organizationId"`
 	Id             string `json:"id"`
+	Version        string `json:"version"`
 }
 
 // GetOrganizationId returns __getBundleInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -646,6 +647,9 @@ func (v *__getBundleInput) GetOrganizationId() string { return v.OrganizationId 
 
 // GetId returns __getBundleInput.Id, and is useful for accessing the field via an interface.
 func (v *__getBundleInput) GetId() string { return v.Id }
+
+// GetVersion returns __getBundleInput.Version, and is useful for accessing the field via an interface.
+func (v *__getBundleInput) GetVersion() string { return v.Version }
 
 // __getDeploymentByIdInput is used internally by genqlient
 type __getDeploymentByIdInput struct {
@@ -1666,6 +1670,32 @@ type getBundleBundle struct {
 	Id string `json:"id"`
 	// Name of the bundle
 	Name string `json:"name"`
+	// Semantic version of this bundle release
+	Version string `json:"version"`
+	// Description of the bundle
+	Description string `json:"description"`
+	// Raw massdriver.yaml spec
+	Spec map[string]any `json:"-"`
+	// Version of the bundle specification
+	SpecVersion string `json:"specVersion"`
+	// Icon SVG
+	Icon string `json:"icon"`
+	// URL to the source code repository
+	SourceUrl string `json:"sourceUrl"`
+	// JSON schema for bundle parameters
+	ParamsSchema map[string]any `json:"-"`
+	// JSON schema for bundle connections
+	ConnectionsSchema map[string]any `json:"-"`
+	// JSON schema for bundle artifacts
+	ArtifactsSchema map[string]any `json:"-"`
+	// JSON schema for bundle UI configuration
+	UiSchema map[string]any `json:"-"`
+	// The operator guide for the bundle in markdown.
+	OperatorGuide string `json:"operatorGuide"`
+	// When the bundle was created
+	CreatedAt time.Time `json:"createdAt"`
+	// When the bundle was last updated
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns getBundleBundle.Id, and is useful for accessing the field via an interface.
@@ -1673,6 +1703,250 @@ func (v *getBundleBundle) GetId() string { return v.Id }
 
 // GetName returns getBundleBundle.Name, and is useful for accessing the field via an interface.
 func (v *getBundleBundle) GetName() string { return v.Name }
+
+// GetVersion returns getBundleBundle.Version, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetVersion() string { return v.Version }
+
+// GetDescription returns getBundleBundle.Description, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetDescription() string { return v.Description }
+
+// GetSpec returns getBundleBundle.Spec, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetSpec() map[string]any { return v.Spec }
+
+// GetSpecVersion returns getBundleBundle.SpecVersion, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetSpecVersion() string { return v.SpecVersion }
+
+// GetIcon returns getBundleBundle.Icon, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetIcon() string { return v.Icon }
+
+// GetSourceUrl returns getBundleBundle.SourceUrl, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetSourceUrl() string { return v.SourceUrl }
+
+// GetParamsSchema returns getBundleBundle.ParamsSchema, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetParamsSchema() map[string]any { return v.ParamsSchema }
+
+// GetConnectionsSchema returns getBundleBundle.ConnectionsSchema, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetConnectionsSchema() map[string]any { return v.ConnectionsSchema }
+
+// GetArtifactsSchema returns getBundleBundle.ArtifactsSchema, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetArtifactsSchema() map[string]any { return v.ArtifactsSchema }
+
+// GetUiSchema returns getBundleBundle.UiSchema, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetUiSchema() map[string]any { return v.UiSchema }
+
+// GetOperatorGuide returns getBundleBundle.OperatorGuide, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetOperatorGuide() string { return v.OperatorGuide }
+
+// GetCreatedAt returns getBundleBundle.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getBundleBundle.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+func (v *getBundleBundle) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getBundleBundle
+		Spec              json.RawMessage `json:"spec"`
+		ParamsSchema      json.RawMessage `json:"paramsSchema"`
+		ConnectionsSchema json.RawMessage `json:"connectionsSchema"`
+		ArtifactsSchema   json.RawMessage `json:"artifactsSchema"`
+		UiSchema          json.RawMessage `json:"uiSchema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getBundleBundle = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Spec
+		src := firstPass.Spec
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getBundleBundle.Spec: %w", err)
+			}
+		}
+	}
+
+	{
+		dst := &v.ParamsSchema
+		src := firstPass.ParamsSchema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getBundleBundle.ParamsSchema: %w", err)
+			}
+		}
+	}
+
+	{
+		dst := &v.ConnectionsSchema
+		src := firstPass.ConnectionsSchema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getBundleBundle.ConnectionsSchema: %w", err)
+			}
+		}
+	}
+
+	{
+		dst := &v.ArtifactsSchema
+		src := firstPass.ArtifactsSchema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getBundleBundle.ArtifactsSchema: %w", err)
+			}
+		}
+	}
+
+	{
+		dst := &v.UiSchema
+		src := firstPass.UiSchema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getBundleBundle.UiSchema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetBundleBundle struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Version string `json:"version"`
+
+	Description string `json:"description"`
+
+	Spec json.RawMessage `json:"spec"`
+
+	SpecVersion string `json:"specVersion"`
+
+	Icon string `json:"icon"`
+
+	SourceUrl string `json:"sourceUrl"`
+
+	ParamsSchema json.RawMessage `json:"paramsSchema"`
+
+	ConnectionsSchema json.RawMessage `json:"connectionsSchema"`
+
+	ArtifactsSchema json.RawMessage `json:"artifactsSchema"`
+
+	UiSchema json.RawMessage `json:"uiSchema"`
+
+	OperatorGuide string `json:"operatorGuide"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *getBundleBundle) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getBundleBundle) __premarshalJSON() (*__premarshalgetBundleBundle, error) {
+	var retval __premarshalgetBundleBundle
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Version = v.Version
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Spec
+		src := v.Spec
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getBundleBundle.Spec: %w", err)
+		}
+	}
+	retval.SpecVersion = v.SpecVersion
+	retval.Icon = v.Icon
+	retval.SourceUrl = v.SourceUrl
+	{
+
+		dst := &retval.ParamsSchema
+		src := v.ParamsSchema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getBundleBundle.ParamsSchema: %w", err)
+		}
+	}
+	{
+
+		dst := &retval.ConnectionsSchema
+		src := v.ConnectionsSchema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getBundleBundle.ConnectionsSchema: %w", err)
+		}
+	}
+	{
+
+		dst := &retval.ArtifactsSchema
+		src := v.ArtifactsSchema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getBundleBundle.ArtifactsSchema: %w", err)
+		}
+	}
+	{
+
+		dst := &retval.UiSchema
+		src := v.UiSchema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getBundleBundle.UiSchema: %w", err)
+		}
+	}
+	retval.OperatorGuide = v.OperatorGuide
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
 
 // getBundleResponse is returned by getBundle on success.
 type getBundleResponse struct {
@@ -4258,10 +4532,23 @@ func getArtifactsByType(
 
 // The query or mutation executed by getBundle.
 const getBundle_Operation = `
-query getBundle ($organizationId: ID!, $id: ID!) {
-	bundle(organizationId: $organizationId, id: $id) {
+query getBundle ($organizationId: ID!, $id: ID!, $version: VersionConstraint) {
+	bundle(organizationId: $organizationId, id: $id, version: $version) {
 		id
 		name
+		version
+		description
+		spec
+		specVersion
+		icon
+		sourceUrl
+		paramsSchema
+		connectionsSchema
+		artifactsSchema
+		uiSchema
+		operatorGuide
+		createdAt
+		updatedAt
 	}
 }
 `
@@ -4271,6 +4558,7 @@ func getBundle(
 	client graphql.Client,
 	organizationId string,
 	id string,
+	version string,
 ) (*getBundleResponse, error) {
 	req := &graphql.Request{
 		OpName: "getBundle",
@@ -4278,6 +4566,7 @@ func getBundle(
 		Variables: &__getBundleInput{
 			OrganizationId: organizationId,
 			Id:             id,
+			Version:        version,
 		},
 	}
 	var err error

@@ -13,3 +13,7 @@ bindings:
     unmarshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.UnmarshalJSON
   DateTime:
     type: time.Time
+  VersionConstraint:
+    type: string
+  Markdown:
+    type: string

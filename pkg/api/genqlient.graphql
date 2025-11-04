@@ -450,10 +450,23 @@ query getServer() {
 
 # BUNDLES
 
-query getBundle($organizationId: ID!, $id: ID!) {
-  bundle(organizationId: $organizationId, id: $id) {
+query getBundle($organizationId: ID!, $id: ID!, $version: VersionConstraint) {
+  bundle(organizationId: $organizationId, id: $id, version: $version) {
     id
     name
+    version
+    description
+    spec
+    specVersion
+    icon
+    sourceUrl
+    paramsSchema
+    connectionsSchema
+    artifactsSchema
+    uiSchema
+    operatorGuide
+    createdAt
+    updatedAt
   }
 }
 

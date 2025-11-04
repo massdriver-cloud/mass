@@ -2,12 +2,17 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"embed"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
@@ -19,6 +24,9 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
+
+//go:embed templates/bundle.get.md.tmpl
+var bundleTemplates embed.FS
 
 // hiddenArtifacts are artifact definitions that the API returns that
 // should not be added to bundles
@@ -96,6 +104,15 @@ func NewCmdBundle() *cobra.Command {
 	bundlePublishCmd.Flags().BoolP("fail-warnings", "f", false, "Fail on warnings from the linter")
 	bundlePublishCmd.Flags().BoolP("skip-lint", "s", false, "Skip linting")
 
+	bundleGetCmd := &cobra.Command{
+		Use:   "get <bundle-name>[@<version>]",
+		Short: "Get bundle information from Massdriver",
+		Long:  helpdocs.MustRender("bundle/get"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runBundleGet,
+	}
+	bundleGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
+
 	bundlePullCmd := &cobra.Command{
 		Use:   "pull <bundle-name>",
 		Short: "Pull bundle from Massdriver to local directory",
@@ -131,6 +148,7 @@ func NewCmdBundle() *cobra.Command {
 	bundleCmd.AddCommand(bundleLintCmd)
 	bundleCmd.AddCommand(bundleNewCmd)
 	bundleCmd.AddCommand(bundlePublishCmd)
+	bundleCmd.AddCommand(bundleGetCmd)
 	bundleCmd.AddCommand(bundlePullCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
@@ -436,5 +454,97 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error pulling bundle: %w", pullErr)
 	}
 
+	return nil
+}
+
+func runBundleGet(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	arg := args[0]
+	parts := strings.Split(arg, "@")
+	bundleId := parts[0]
+	version := "latest"
+	if len(parts) == 2 {
+		version = parts[1]
+	}
+
+	outputFormat, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	bundle, err := api.GetBundle(ctx, mdClient, bundleId, &version)
+	if err != nil {
+		return err
+	}
+
+	switch outputFormat {
+	case "json":
+		jsonBytes, err := json.MarshalIndent(bundle, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal bundle to JSON: %w", err)
+		}
+		fmt.Println(string(jsonBytes))
+	case "text":
+		err = renderBundle(bundle, mdClient)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
+
+	return nil
+}
+
+func renderBundle(b *api.Bundle, mdClient *client.Client) error {
+	tmplBytes, err := bundleTemplates.ReadFile("templates/bundle.get.md.tmpl")
+	if err != nil {
+		return fmt.Errorf("failed to read template: %w", err)
+	}
+
+	tmpl, err := template.New("bundle").Parse(string(tmplBytes))
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	// Get app URL for constructing bundle URL
+	ctx := context.Background()
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	bundleURL := ""
+	if urlErr == nil {
+		bundleURL = urlHelper.BundleURL(b.Name, b.Version)
+	}
+
+	data := struct {
+		*api.Bundle
+		URL string
+	}{
+		Bundle: b,
+		URL:    bundleURL,
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
+	if err != nil {
+		return err
+	}
+
+	out, err := r.Render(buf.String())
+	if err != nil {
+		return err
+	}
+
+	fmt.Print(out)
 	return nil
 }
