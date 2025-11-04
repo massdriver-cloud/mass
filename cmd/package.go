@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
@@ -87,11 +88,24 @@ func NewCmdPkg() *cobra.Command {
 	}
 	pkgPatchCmd.Flags().StringArrayVarP(&pkgPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 
+	pkgCreateCmd := &cobra.Command{
+		Use:     `create [slug]`,
+		Short:   "Create a manifest (add bundle to project)",
+		Example: `mass package create dbbundle-test-serverless --bundle aws-rds-cluster`,
+		Long:    helpdocs.MustRender("package/create"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgCreate,
+	}
+	pkgCreateCmd.Flags().StringP("name", "n", "", "Manifest name (defaults to slug if not provided)")
+	pkgCreateCmd.Flags().StringP("bundle", "b", "", "Bundle ID or name (required)")
+	_ = pkgCreateCmd.MarkFlagRequired("bundle")
+
 	pkgCmd.AddCommand(pkgConfigureCmd)
 	pkgCmd.AddCommand(pkgDeployCmd)
 	pkgCmd.AddCommand(pkgExportCmd)
 	pkgCmd.AddCommand(pkgGetCmd)
 	pkgCmd.AddCommand(pkgPatchCmd)
+	pkgCmd.AddCommand(pkgCreateCmd)
 
 	return pkgCmd
 }
@@ -247,5 +261,53 @@ func runPkgExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to export package: %w", exportErr)
 	}
 
+	return nil
+}
+
+func runPkgCreate(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	fullSlug := args[0]
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+
+	bundleIdOrName, err := cmd.Flags().GetString("bundle")
+	if err != nil {
+		return err
+	}
+
+	// Parse project-env-manifest format: extract project (first), env (second), and manifest (third)
+	// Format is $proj-$env-$manifest where each part has no hyphens
+	parts := strings.Split(fullSlug, "-")
+	if len(parts) != 3 {
+		return fmt.Errorf("unable to determine project, environment, and manifest from slug %s (expected format: project-env-manifest)", fullSlug)
+	}
+	projectIdOrSlug := parts[0]
+	environmentSlug := parts[1]
+	manifestSlug := parts[2]
+
+	if name == "" {
+		name = manifestSlug
+	}
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	manifest, err := api.CreateManifest(ctx, mdClient, bundleIdOrName, projectIdOrSlug, name, manifestSlug, "")
+	if err != nil {
+		return err
+	}
+
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	if urlErr == nil {
+		fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
+		fmt.Printf("URL: %s\n", urlHelper.PackageURL(projectIdOrSlug, environmentSlug, manifestSlug))
+	} else {
+		fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
+	}
 	return nil
 }

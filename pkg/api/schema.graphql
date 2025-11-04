@@ -1471,6 +1471,9 @@ type Repo {
   "When the repository was created"
   createdAt: DateTime!
 
+  "Distribution channels for artifact releases"
+  releaseChannels: [ReleaseChannel]
+
   "Count of active packages deployed from this repository"
   activePackages: Int
 
@@ -1828,7 +1831,7 @@ type OciRepo {
   createdAt: DateTime!
 
   "Distribution channels for artifact releases"
-  releaseChannels: [OciReleaseChannel]
+  releaseChannels: [OciReleaseChannel] @deprecated(reason: "Use Repo.releaseChannels instead")
 
   "Human-readable references to manifests in this repository"
   tags: [OciTag]
@@ -1969,6 +1972,15 @@ type AccountMember {
 type DeploymentLogStream {
   id: ID!
   logs: [DeploymentLogStreamLog]
+}
+
+"A release channel that resolves to a specific tag"
+type ReleaseChannel {
+  "The channel name (e.g., 'latest', '1.x', '0.x')"
+  name: String!
+
+  "The tag this channel resolves to (e.g., '1.0.0')"
+  tag: String!
 }
 
 "A connection handle in the diagram"

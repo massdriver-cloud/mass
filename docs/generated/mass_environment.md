@@ -32,6 +32,7 @@ Environments can be modeled by application stage (production, staging, developme
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
+* [mass environment create](/cli/commands/mass_environment_create)	 - Create an environment
 * [mass environment export](/cli/commands/mass_environment_export)	 - Export an environment from Massdriver
 * [mass environment get](/cli/commands/mass_environment_get)	 - Get an environment from Massdriver
 * [mass environment list](/cli/commands/mass_environment_list)	 - List environments

@@ -463,6 +463,78 @@ func (v *__createArtifactInput) __premarshalJSON() (*__premarshal__createArtifac
 	return &retval, nil
 }
 
+// __createEnvironmentInput is used internally by genqlient
+type __createEnvironmentInput struct {
+	OrganizationId string `json:"organizationId"`
+	ProjectId      string `json:"projectId"`
+	Name           string `json:"name"`
+	Slug           string `json:"slug"`
+	Description    string `json:"description"`
+}
+
+// GetOrganizationId returns __createEnvironmentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetProjectId returns __createEnvironmentInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentInput) GetProjectId() string { return v.ProjectId }
+
+// GetName returns __createEnvironmentInput.Name, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentInput) GetName() string { return v.Name }
+
+// GetSlug returns __createEnvironmentInput.Slug, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentInput) GetSlug() string { return v.Slug }
+
+// GetDescription returns __createEnvironmentInput.Description, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentInput) GetDescription() string { return v.Description }
+
+// __createManifestInput is used internally by genqlient
+type __createManifestInput struct {
+	OrganizationId string `json:"organizationId"`
+	BundleId       string `json:"bundleId"`
+	ProjectId      string `json:"projectId"`
+	Name           string `json:"name"`
+	Slug           string `json:"slug"`
+	Description    string `json:"description"`
+}
+
+// GetOrganizationId returns __createManifestInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createManifestInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetBundleId returns __createManifestInput.BundleId, and is useful for accessing the field via an interface.
+func (v *__createManifestInput) GetBundleId() string { return v.BundleId }
+
+// GetProjectId returns __createManifestInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__createManifestInput) GetProjectId() string { return v.ProjectId }
+
+// GetName returns __createManifestInput.Name, and is useful for accessing the field via an interface.
+func (v *__createManifestInput) GetName() string { return v.Name }
+
+// GetSlug returns __createManifestInput.Slug, and is useful for accessing the field via an interface.
+func (v *__createManifestInput) GetSlug() string { return v.Slug }
+
+// GetDescription returns __createManifestInput.Description, and is useful for accessing the field via an interface.
+func (v *__createManifestInput) GetDescription() string { return v.Description }
+
+// __createProjectInput is used internally by genqlient
+type __createProjectInput struct {
+	OrganizationId string `json:"organizationId"`
+	Name           string `json:"name"`
+	Slug           string `json:"slug"`
+	Description    string `json:"description"`
+}
+
+// GetOrganizationId returns __createProjectInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createProjectInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetName returns __createProjectInput.Name, and is useful for accessing the field via an interface.
+func (v *__createProjectInput) GetName() string { return v.Name }
+
+// GetSlug returns __createProjectInput.Slug, and is useful for accessing the field via an interface.
+func (v *__createProjectInput) GetSlug() string { return v.Slug }
+
+// GetDescription returns __createProjectInput.Description, and is useful for accessing the field via an interface.
+func (v *__createProjectInput) GetDescription() string { return v.Description }
+
 // __decommissionPreviewEnvironmentInput is used internally by genqlient
 type __decommissionPreviewEnvironmentInput struct {
 	OrgId    string `json:"orgId"`
@@ -474,6 +546,18 @@ func (v *__decommissionPreviewEnvironmentInput) GetOrgId() string { return v.Org
 
 // GetTargetId returns __decommissionPreviewEnvironmentInput.TargetId, and is useful for accessing the field via an interface.
 func (v *__decommissionPreviewEnvironmentInput) GetTargetId() string { return v.TargetId }
+
+// __deleteProjectInput is used internally by genqlient
+type __deleteProjectInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteProjectInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteProjectInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteProjectInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteProjectInput) GetId() string { return v.Id }
 
 // __deployPackageInput is used internally by genqlient
 type __deployPackageInput struct {
@@ -550,6 +634,18 @@ func (v *__getArtifactsByTypeInput) GetOrganizationId() string { return v.Organi
 
 // GetArtifactType returns __getArtifactsByTypeInput.ArtifactType, and is useful for accessing the field via an interface.
 func (v *__getArtifactsByTypeInput) GetArtifactType() string { return v.ArtifactType }
+
+// __getBundleInput is used internally by genqlient
+type __getBundleInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getBundleInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getBundleInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getBundleInput.Id, and is useful for accessing the field via an interface.
+func (v *__getBundleInput) GetId() string { return v.Id }
 
 // __getDeploymentByIdInput is used internally by genqlient
 type __getDeploymentByIdInput struct {
@@ -928,6 +1024,185 @@ func (v *createArtifactResponse) GetCreateArtifact() createArtifactCreateArtifac
 	return v.CreateArtifact
 }
 
+// createEnvironmentCreateEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
+type createEnvironmentCreateEnvironmentEnvironmentPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetResult returns createEnvironmentCreateEnvironmentEnvironmentPayload.Result, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayload) GetResult() createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment {
+	return v.Result
+}
+
+// GetSuccessful returns createEnvironmentCreateEnvironmentEnvironmentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns createEnvironmentCreateEnvironmentEnvironmentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
+type createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+}
+
+// GetId returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetId() string {
+	return v.Id
+}
+
+// GetName returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetName() string {
+	return v.Name
+}
+
+// GetSlug returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetSlug() string {
+	return v.Slug
+}
+
+// GetDescription returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetDescription() string {
+	return v.Description
+}
+
+// createEnvironmentResponse is returned by createEnvironment on success.
+type createEnvironmentResponse struct {
+	// Create an environment
+	CreateEnvironment createEnvironmentCreateEnvironmentEnvironmentPayload `json:"createEnvironment"`
+}
+
+// GetCreateEnvironment returns createEnvironmentResponse.CreateEnvironment, and is useful for accessing the field via an interface.
+func (v *createEnvironmentResponse) GetCreateEnvironment() createEnvironmentCreateEnvironmentEnvironmentPayload {
+	return v.CreateEnvironment
+}
+
+// createManifestCreateManifestManifestPayload includes the requested fields of the GraphQL type ManifestPayload.
+type createManifestCreateManifestManifestPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result createManifestCreateManifestManifestPayloadResultManifest `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetResult returns createManifestCreateManifestManifestPayload.Result, and is useful for accessing the field via an interface.
+func (v *createManifestCreateManifestManifestPayload) GetResult() createManifestCreateManifestManifestPayloadResultManifest {
+	return v.Result
+}
+
+// GetSuccessful returns createManifestCreateManifestManifestPayload.Successful, and is useful for accessing the field via an interface.
+func (v *createManifestCreateManifestManifestPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns createManifestCreateManifestManifestPayload.Messages, and is useful for accessing the field via an interface.
+func (v *createManifestCreateManifestManifestPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// createManifestCreateManifestManifestPayloadResultManifest includes the requested fields of the GraphQL type Manifest.
+// The GraphQL type's documentation follows.
+//
+// A bundle used in a project with a specific context (e.g. redis 'cache' vs 'sessions' instance)
+type createManifestCreateManifestManifestPayloadResultManifest struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+}
+
+// GetId returns createManifestCreateManifestManifestPayloadResultManifest.Id, and is useful for accessing the field via an interface.
+func (v *createManifestCreateManifestManifestPayloadResultManifest) GetId() string { return v.Id }
+
+// GetName returns createManifestCreateManifestManifestPayloadResultManifest.Name, and is useful for accessing the field via an interface.
+func (v *createManifestCreateManifestManifestPayloadResultManifest) GetName() string { return v.Name }
+
+// GetSlug returns createManifestCreateManifestManifestPayloadResultManifest.Slug, and is useful for accessing the field via an interface.
+func (v *createManifestCreateManifestManifestPayloadResultManifest) GetSlug() string { return v.Slug }
+
+// GetDescription returns createManifestCreateManifestManifestPayloadResultManifest.Description, and is useful for accessing the field via an interface.
+func (v *createManifestCreateManifestManifestPayloadResultManifest) GetDescription() string {
+	return v.Description
+}
+
+// createManifestResponse is returned by createManifest on success.
+type createManifestResponse struct {
+	// Adds a bundle to a project
+	CreateManifest createManifestCreateManifestManifestPayload `json:"createManifest"`
+}
+
+// GetCreateManifest returns createManifestResponse.CreateManifest, and is useful for accessing the field via an interface.
+func (v *createManifestResponse) GetCreateManifest() createManifestCreateManifestManifestPayload {
+	return v.CreateManifest
+}
+
+// createProjectCreateProjectProjectPayload includes the requested fields of the GraphQL type ProjectPayload.
+type createProjectCreateProjectProjectPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result createProjectCreateProjectProjectPayloadResultProject `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetResult returns createProjectCreateProjectProjectPayload.Result, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayload) GetResult() createProjectCreateProjectProjectPayloadResultProject {
+	return v.Result
+}
+
+// GetSuccessful returns createProjectCreateProjectProjectPayload.Successful, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns createProjectCreateProjectProjectPayload.Messages, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// createProjectCreateProjectProjectPayloadResultProject includes the requested fields of the GraphQL type Project.
+type createProjectCreateProjectProjectPayloadResultProject struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+}
+
+// GetId returns createProjectCreateProjectProjectPayloadResultProject.Id, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayloadResultProject) GetId() string { return v.Id }
+
+// GetName returns createProjectCreateProjectProjectPayloadResultProject.Name, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayloadResultProject) GetName() string { return v.Name }
+
+// GetSlug returns createProjectCreateProjectProjectPayloadResultProject.Slug, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayloadResultProject) GetSlug() string { return v.Slug }
+
+// GetDescription returns createProjectCreateProjectProjectPayloadResultProject.Description, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayloadResultProject) GetDescription() string {
+	return v.Description
+}
+
+// createProjectResponse is returned by createProject on success.
+type createProjectResponse struct {
+	// Create a project
+	CreateProject createProjectCreateProjectProjectPayload `json:"createProject"`
+}
+
+// GetCreateProject returns createProjectResponse.CreateProject, and is useful for accessing the field via an interface.
+func (v *createProjectResponse) GetCreateProject() createProjectCreateProjectProjectPayload {
+	return v.CreateProject
+}
+
 // decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
 type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -999,6 +1274,61 @@ type decommissionPreviewEnvironmentResponse struct {
 // GetDecommissionPreviewEnvironment returns decommissionPreviewEnvironmentResponse.DecommissionPreviewEnvironment, and is useful for accessing the field via an interface.
 func (v *decommissionPreviewEnvironmentResponse) GetDecommissionPreviewEnvironment() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload {
 	return v.DecommissionPreviewEnvironment
+}
+
+// deleteProjectDeleteProjectProjectPayload includes the requested fields of the GraphQL type ProjectPayload.
+type deleteProjectDeleteProjectProjectPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result deleteProjectDeleteProjectProjectPayloadResultProject `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetResult returns deleteProjectDeleteProjectProjectPayload.Result, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayload) GetResult() deleteProjectDeleteProjectProjectPayloadResultProject {
+	return v.Result
+}
+
+// GetSuccessful returns deleteProjectDeleteProjectProjectPayload.Successful, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns deleteProjectDeleteProjectProjectPayload.Messages, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// deleteProjectDeleteProjectProjectPayloadResultProject includes the requested fields of the GraphQL type Project.
+type deleteProjectDeleteProjectProjectPayloadResultProject struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+}
+
+// GetId returns deleteProjectDeleteProjectProjectPayloadResultProject.Id, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetId() string { return v.Id }
+
+// GetName returns deleteProjectDeleteProjectProjectPayloadResultProject.Name, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetName() string { return v.Name }
+
+// GetSlug returns deleteProjectDeleteProjectProjectPayloadResultProject.Slug, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetSlug() string { return v.Slug }
+
+// GetDescription returns deleteProjectDeleteProjectProjectPayloadResultProject.Description, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetDescription() string {
+	return v.Description
+}
+
+// deleteProjectResponse is returned by deleteProject on success.
+type deleteProjectResponse struct {
+	DeleteProject deleteProjectDeleteProjectProjectPayload `json:"deleteProject"`
+}
+
+// GetDeleteProject returns deleteProjectResponse.DeleteProject, and is useful for accessing the field via an interface.
+func (v *deleteProjectResponse) GetDeleteProject() deleteProjectDeleteProjectProjectPayload {
+	return v.DeleteProject
 }
 
 // deployPackageDeployPackageDeploymentPayload includes the requested fields of the GraphQL type DeploymentPayload.
@@ -1326,6 +1656,32 @@ type getArtifactsByTypeResponse struct {
 func (v *getArtifactsByTypeResponse) GetArtifacts() getArtifactsByTypeArtifactsPaginatedArtifacts {
 	return v.Artifacts
 }
+
+// getBundleBundle includes the requested fields of the GraphQL type Bundle.
+// The GraphQL type's documentation follows.
+//
+// A specific version of a bundle
+type getBundleBundle struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Name of the bundle
+	Name string `json:"name"`
+}
+
+// GetId returns getBundleBundle.Id, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetId() string { return v.Id }
+
+// GetName returns getBundleBundle.Name, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetName() string { return v.Name }
+
+// getBundleResponse is returned by getBundle on success.
+type getBundleResponse struct {
+	// Get a specific bundle
+	Bundle getBundleBundle `json:"bundle"`
+}
+
+// GetBundle returns getBundleResponse.Bundle, and is useful for accessing the field via an interface.
+func (v *getBundleResponse) GetBundle() getBundleBundle { return v.Bundle }
 
 // getDeploymentByIdDeployment includes the requested fields of the GraphQL type Deployment.
 // The GraphQL type's documentation follows.
@@ -3427,6 +3783,162 @@ func createArtifact(
 	return &data, err
 }
 
+// The query or mutation executed by createEnvironment.
+const createEnvironment_Operation = `
+mutation createEnvironment ($organizationId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
+	createEnvironment(organizationId: $organizationId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
+		result {
+			id
+			name
+			slug
+			description
+		}
+		successful
+		messages {
+			message
+		}
+	}
+}
+`
+
+func createEnvironment(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	projectId string,
+	name string,
+	slug string,
+	description string,
+) (*createEnvironmentResponse, error) {
+	req := &graphql.Request{
+		OpName: "createEnvironment",
+		Query:  createEnvironment_Operation,
+		Variables: &__createEnvironmentInput{
+			OrganizationId: organizationId,
+			ProjectId:      projectId,
+			Name:           name,
+			Slug:           slug,
+			Description:    description,
+		},
+	}
+	var err error
+
+	var data createEnvironmentResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by createManifest.
+const createManifest_Operation = `
+mutation createManifest ($organizationId: ID!, $bundleId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
+	createManifest(organizationId: $organizationId, bundleId: $bundleId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
+		result {
+			id
+			name
+			slug
+			description
+		}
+		successful
+		messages {
+			message
+		}
+	}
+}
+`
+
+func createManifest(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	bundleId string,
+	projectId string,
+	name string,
+	slug string,
+	description string,
+) (*createManifestResponse, error) {
+	req := &graphql.Request{
+		OpName: "createManifest",
+		Query:  createManifest_Operation,
+		Variables: &__createManifestInput{
+			OrganizationId: organizationId,
+			BundleId:       bundleId,
+			ProjectId:      projectId,
+			Name:           name,
+			Slug:           slug,
+			Description:    description,
+		},
+	}
+	var err error
+
+	var data createManifestResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by createProject.
+const createProject_Operation = `
+mutation createProject ($organizationId: ID!, $name: String!, $slug: String!, $description: String) {
+	createProject(organizationId: $organizationId, name: $name, slug: $slug, description: $description) {
+		result {
+			id
+			name
+			slug
+			description
+		}
+		successful
+		messages {
+			message
+		}
+	}
+}
+`
+
+func createProject(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	name string,
+	slug string,
+	description string,
+) (*createProjectResponse, error) {
+	req := &graphql.Request{
+		OpName: "createProject",
+		Query:  createProject_Operation,
+		Variables: &__createProjectInput{
+			OrganizationId: organizationId,
+			Name:           name,
+			Slug:           slug,
+			Description:    description,
+		},
+	}
+	var err error
+
+	var data createProjectResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by decommissionPreviewEnvironment.
 const decommissionPreviewEnvironment_Operation = `
 mutation decommissionPreviewEnvironment ($orgId: ID!, $targetId: ID!) {
@@ -3464,6 +3976,52 @@ func decommissionPreviewEnvironment(
 	var err error
 
 	var data decommissionPreviewEnvironmentResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by deleteProject.
+const deleteProject_Operation = `
+mutation deleteProject ($organizationId: ID!, $id: ID!) {
+	deleteProject(organizationId: $organizationId, id: $id) {
+		result {
+			id
+			name
+			slug
+			description
+		}
+		successful
+		messages {
+			message
+		}
+	}
+}
+`
+
+func deleteProject(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*deleteProjectResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteProject",
+		Query:  deleteProject_Operation,
+		Variables: &__deleteProjectInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data deleteProjectResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -3687,6 +4245,44 @@ func getArtifactsByType(
 	var err error
 
 	var data getArtifactsByTypeResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getBundle.
+const getBundle_Operation = `
+query getBundle ($organizationId: ID!, $id: ID!) {
+	bundle(organizationId: $organizationId, id: $id) {
+		id
+		name
+	}
+}
+`
+
+func getBundle(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*getBundleResponse, error) {
+	req := &graphql.Request{
+		OpName: "getBundle",
+		Query:  getBundle_Operation,
+		Variables: &__getBundleInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data getBundleResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

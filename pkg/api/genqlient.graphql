@@ -225,6 +225,22 @@ query getEnvironmentsByProject($organizationId: ID!, $projectId: ID!) {
   }
 }
 
+mutation createEnvironment($organizationId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
+  createEnvironment(organizationId: $organizationId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
+    result {
+      id
+      name
+      slug
+      description
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
 
 # OCI
 
@@ -349,6 +365,38 @@ query getProjectById($organizationId: ID!, $id: ID!) {
   }
 }
 
+mutation createProject($organizationId: ID!, $name: String!, $slug: String!, $description: String) {
+  createProject(organizationId: $organizationId, name: $name, slug: $slug, description: $description) {
+    result {
+      id
+      name
+      slug
+      description
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
+mutation deleteProject($organizationId: ID!, $id: ID!) {
+  deleteProject(organizationId: $organizationId, id: $id) {
+    result {
+      id
+      name
+      slug
+      description
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
 
 # PREVIEW ENVIRONMENTS
 
@@ -396,5 +444,34 @@ query getServer() {
     appUrl
     mode
     version
+  }
+}
+
+
+# BUNDLES
+
+query getBundle($organizationId: ID!, $id: ID!) {
+  bundle(organizationId: $organizationId, id: $id) {
+    id
+    name
+  }
+}
+
+
+# MANIFESTS
+
+mutation createManifest($organizationId: ID!, $bundleId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
+  createManifest(organizationId: $organizationId, bundleId: $bundleId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
+    result {
+      id
+      name
+      slug
+      description
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
   }
 }
