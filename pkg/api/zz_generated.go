@@ -473,6 +473,22 @@ func (v *__createArtifactInput) __premarshalJSON() (*__premarshal__createArtifac
 	return &retval, nil
 }
 
+// __createEnvironmentConnectionInput is used internally by genqlient
+type __createEnvironmentConnectionInput struct {
+	OrganizationId string `json:"organizationId"`
+	ArtifactId     string `json:"artifactId"`
+	EnvironmentId  string `json:"environmentId"`
+}
+
+// GetOrganizationId returns __createEnvironmentConnectionInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentConnectionInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetArtifactId returns __createEnvironmentConnectionInput.ArtifactId, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentConnectionInput) GetArtifactId() string { return v.ArtifactId }
+
+// GetEnvironmentId returns __createEnvironmentConnectionInput.EnvironmentId, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentConnectionInput) GetEnvironmentId() string { return v.EnvironmentId }
+
 // __createEnvironmentInput is used internally by genqlient
 type __createEnvironmentInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -1062,6 +1078,130 @@ type createArtifactResponse struct {
 // GetCreateArtifact returns createArtifactResponse.CreateArtifact, and is useful for accessing the field via an interface.
 func (v *createArtifactResponse) GetCreateArtifact() createArtifactCreateArtifactArtifactPayload {
 	return v.CreateArtifact
+}
+
+// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload includes the requested fields of the GraphQL type EnvironmentConnectionPayload.
+type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload struct {
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage `json:"messages"`
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection `json:"result"`
+}
+
+// GetSuccessful returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload.Successful, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload.Messages, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload) GetMessages() []createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// GetResult returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload.Result, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload) GetResult() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection {
+	return v.Result
+}
+
+// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage struct {
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetMessage returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection includes the requested fields of the GraphQL type EnvironmentConnection.
+type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection struct {
+	Id          string                                                                                                                   `json:"id"`
+	Artifact    createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact    `json:"artifact"`
+	Environment createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment `json:"environment"`
+}
+
+// GetId returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection.Id, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection) GetId() string {
+	return v.Id
+}
+
+// GetArtifact returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection.Artifact, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection) GetArtifact() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact {
+	return v.Artifact
+}
+
+// GetEnvironment returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection.Environment, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection) GetEnvironment() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment {
+	return v.Environment
+}
+
+// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact includes the requested fields of the GraphQL type Artifact.
+type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// GetId returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact.Id, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact) GetId() string {
+	return v.Id
+}
+
+// GetName returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact.Name, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact) GetName() string {
+	return v.Name
+}
+
+// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment includes the requested fields of the GraphQL type Environment.
+type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment struct {
+	Id   string `json:"id"`
+	Slug string `json:"slug"`
+}
+
+// GetId returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment) GetId() string {
+	return v.Id
+}
+
+// GetSlug returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment) GetSlug() string {
+	return v.Slug
+}
+
+// createEnvironmentConnectionResponse is returned by createEnvironmentConnection on success.
+type createEnvironmentConnectionResponse struct {
+	// Connect an environment as the default environment type for a given environment
+	CreateEnvironmentConnection createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload `json:"createEnvironmentConnection"`
+}
+
+// GetCreateEnvironmentConnection returns createEnvironmentConnectionResponse.CreateEnvironmentConnection, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionResponse) GetCreateEnvironmentConnection() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload {
+	return v.CreateEnvironmentConnection
 }
 
 // createEnvironmentCreateEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
@@ -4240,6 +4380,59 @@ func createEnvironment(
 	var err error
 
 	var data createEnvironmentResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by createEnvironmentConnection.
+const createEnvironmentConnection_Operation = `
+mutation createEnvironmentConnection ($organizationId: ID!, $artifactId: ID!, $environmentId: ID!) {
+	createEnvironmentConnection(organizationId: $organizationId, artifactId: $artifactId, environmentId: $environmentId) {
+		successful
+		messages {
+			message
+		}
+		result {
+			id
+			artifact {
+				id
+				name
+			}
+			environment {
+				id
+				slug
+			}
+		}
+	}
+}
+`
+
+func createEnvironmentConnection(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	artifactId string,
+	environmentId string,
+) (*createEnvironmentConnectionResponse, error) {
+	req := &graphql.Request{
+		OpName: "createEnvironmentConnection",
+		Query:  createEnvironmentConnection_Operation,
+		Variables: &__createEnvironmentConnectionInput{
+			OrganizationId: organizationId,
+			ArtifactId:     artifactId,
+			EnvironmentId:  environmentId,
+		},
+	}
+	var err error
+
+	var data createEnvironmentConnectionResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

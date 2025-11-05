@@ -238,6 +238,26 @@ query getEnvironmentsByProject($organizationId: ID!, $projectId: ID!) {
   }
 }
 
+mutation createEnvironmentConnection($organizationId: ID!, $artifactId: ID!, $environmentId: ID!) {
+  createEnvironmentConnection(organizationId: $organizationId, artifactId: $artifactId, environmentId: $environmentId) {
+    successful
+    messages {
+      message
+    }
+    result {
+      id
+      artifact {
+        id
+        name
+      }
+      environment {
+        id
+        slug
+      }
+    }
+  }
+}
+
 mutation createEnvironment($organizationId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
   createEnvironment(organizationId: $organizationId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
     result {

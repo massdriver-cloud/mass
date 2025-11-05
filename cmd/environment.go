@@ -64,10 +64,19 @@ func NewCmdEnvironment() *cobra.Command {
 	}
 	environmentCreateCmd.Flags().StringP("name", "n", "", "Environment name (defaults to slug if not provided)")
 
+	environmentDefaultCmd := &cobra.Command{
+		Use:   "default [environment] [artifact-id]",
+		Short: "Set an environment default connection",
+		Long:  helpdocs.MustRender("environment/default"),
+		Args:  cobra.ExactArgs(2),
+		RunE:  runEnvironmentDefault,
+	}
+
 	environmentCmd.AddCommand(environmentExportCmd)
 	environmentCmd.AddCommand(environmentGetCmd)
 	environmentCmd.AddCommand(environmentListCmd)
 	environmentCmd.AddCommand(environmentCreateCmd)
+	environmentCmd.AddCommand(environmentDefaultCmd)
 
 	return environmentCmd
 }
@@ -223,5 +232,27 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 	} else {
 		fmt.Printf("Environment %s created successfully (ID: %s)\n", env.Slug, env.ID)
 	}
+	return nil
+}
+
+func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	environmentId := args[0]
+	artifactId := args[1]
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	err := api.SetEnvironmentDefault(ctx, mdClient, environmentId, artifactId)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Environment default connection set successfully\n")
 	return nil
 }
