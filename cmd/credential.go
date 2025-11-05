@@ -11,27 +11,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCmdCredentials() *cobra.Command {
-	credentialsCmd := &cobra.Command{
-		Use:     "credentials",
+func NewCmdCredential() *cobra.Command {
+	credentialCmd := &cobra.Command{
+		Use:     "credential",
 		Short:   "Credential management",
-		Long:    helpdocs.MustRender("credentials"),
+		Long:    helpdocs.MustRender("credential"),
 		Aliases: []string{"cred"},
 	}
 
-	credentialsListCmd := &cobra.Command{
+	credentialListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List credentials",
-		Long:  helpdocs.MustRender("credentials/list"),
-		RunE:  runCredentialsList,
+		Long:  helpdocs.MustRender("credential/list"),
+		RunE:  runCredentialList,
 	}
 
-	credentialsCmd.AddCommand(credentialsListCmd)
+	credentialCmd.AddCommand(credentialListCmd)
 
-	return credentialsCmd
+	return credentialCmd
 }
 
-func runCredentialsList(cmd *cobra.Command, args []string) error {
+func runCredentialList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	cmd.SilenceUsage = true
 

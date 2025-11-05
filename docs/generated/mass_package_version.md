@@ -43,7 +43,6 @@ The version can be:
 - A release channel (e.g., `latest`)
 
 
-
 ```
 mass package version <package-id>@<version> [flags]
 ```
