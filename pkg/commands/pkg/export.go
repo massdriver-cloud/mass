@@ -140,25 +140,25 @@ func ExportPackageWithConfig(ctx context.Context, config *ExportPackageConfig, p
 	isRunning := pkg.Status == string(api.PackageStatusProvisioned)
 
 	if !isRunning && !isRemoteReference {
-		fmt.Printf("Package %s is not 'provisioned' or a remote reference, skipping export.\n", pkg.NamePrefix)
+		fmt.Printf("Package %s is not 'provisioned' or a remote reference, skipping export.\n", pkg.Slug)
 		return nil
 	}
 
 	directory := filepath.Join(baseDirectory, pkg.Manifest.Slug)
 	if err := config.FileSystem.MkdirAll(directory, 0755); err != nil {
-		return fmt.Errorf("failed to create directory for package %s: %w", pkg.NamePrefix, err)
+		return fmt.Errorf("failed to create directory for package %s: %w", pkg.Slug, err)
 	}
 
 	if isRunning && pkg.Params != nil {
 		paramsErr := writeParamsFileWithConfig(config, pkg.Params, directory)
 		if paramsErr != nil {
-			return fmt.Errorf("failed to write params file for package %s: %w", pkg.NamePrefix, paramsErr)
+			return fmt.Errorf("failed to write params file for package %s: %w", pkg.Slug, paramsErr)
 		}
 	}
 
 	if isRunning {
-		if err := writeBundleWithConfig(ctx, config, pkg.Bundle, pkg.NamePrefix, directory); err != nil {
-			return fmt.Errorf("failed to write bundle for package %s: %w", pkg.NamePrefix, err)
+		if err := writeBundleWithConfig(ctx, config, pkg.Bundle, pkg.Slug, directory); err != nil {
+			return fmt.Errorf("failed to write bundle for package %s: %w", pkg.Slug, err)
 		}
 	}
 
@@ -166,7 +166,7 @@ func ExportPackageWithConfig(ctx context.Context, config *ExportPackageConfig, p
 		for _, artifact := range pkg.Artifacts {
 			artifactErr := writeArtifactWithConfig(ctx, config, &artifact, directory)
 			if artifactErr != nil {
-				return fmt.Errorf("failed to write artifact %s for package %s: %w", artifact.Name, pkg.NamePrefix, artifactErr)
+				return fmt.Errorf("failed to write artifact %s for package %s: %w", artifact.Name, pkg.Slug, artifactErr)
 			}
 		}
 	}
@@ -175,14 +175,14 @@ func ExportPackageWithConfig(ctx context.Context, config *ExportPackageConfig, p
 		for _, ref := range pkg.RemoteReferences {
 			artifactErr := writeArtifactWithConfig(ctx, config, &ref.Artifact, directory)
 			if artifactErr != nil {
-				return fmt.Errorf("failed to write artifact %s for package %s: %w", ref.Artifact.Field, pkg.NamePrefix, artifactErr)
+				return fmt.Errorf("failed to write artifact %s for package %s: %w", ref.Artifact.Field, pkg.Slug, artifactErr)
 			}
 		}
 	}
 
 	if isRunning {
 		if err := writeStateWithConfig(ctx, config, pkg, directory); err != nil {
-			return fmt.Errorf("failed to write state for package %s: %w", pkg.NamePrefix, err)
+			return fmt.Errorf("failed to write state for package %s: %w", pkg.Slug, err)
 		}
 	}
 
@@ -195,29 +195,29 @@ func validatePackageExport(pkg *api.Package) error {
 	}
 
 	if pkg.Manifest == nil {
-		return fmt.Errorf("package %s manifest is nil", pkg.NamePrefix)
+		return fmt.Errorf("package %s manifest is nil", pkg.Slug)
 	}
 
 	if pkg.Manifest.Slug == "" {
-		return fmt.Errorf("package %s manifest slug is empty", pkg.NamePrefix)
+		return fmt.Errorf("package %s manifest slug is empty", pkg.Slug)
 	}
 
 	if pkg.Status == string(api.PackageStatusProvisioned) {
 		if pkg.Bundle == nil {
-			return fmt.Errorf("package %s bundle is nil", pkg.NamePrefix)
+			return fmt.Errorf("package %s bundle is nil", pkg.Slug)
 		}
 
 		if pkg.Bundle.Spec == nil {
-			return fmt.Errorf("package %s bundle spec is nil", pkg.NamePrefix)
+			return fmt.Errorf("package %s bundle spec is nil", pkg.Slug)
 		}
 
 		if pkg.Bundle.Name == "" {
-			return fmt.Errorf("package %s bundle name is empty", pkg.NamePrefix)
+			return fmt.Errorf("package %s bundle name is empty", pkg.Slug)
 		}
 	}
 
 	if pkg.Status == string(api.PackageStatusExternal) && len(pkg.RemoteReferences) == 0 {
-		return fmt.Errorf("package %s is remote reference but has no artifacts", pkg.NamePrefix)
+		return fmt.Errorf("package %s is remote reference but has no artifacts", pkg.Slug)
 	}
 
 	return nil
@@ -234,9 +234,9 @@ func writeParamsFileWithConfig(config *ExportPackageConfig, params map[string]an
 	return config.FileSystem.WriteFile(paramsFilePath, data, 0644)
 }
 
-func writeBundleWithConfig(ctx context.Context, config *ExportPackageConfig, bun *api.Bundle, pkgNamePrefix string, directory string) error {
+func writeBundleWithConfig(ctx context.Context, config *ExportPackageConfig, bun *api.Bundle, pkgSlug string, directory string) error {
 	if bun.SpecVersion != bundleSpecVersionOCI {
-		fmt.Printf("Bundle %s used by package %s not OCI compliant and cannot be downloaded. Please republish the bundle with an updated CLI to enable downloading.\n", bun.Name, pkgNamePrefix)
+		fmt.Printf("Bundle %s used by package %s not OCI compliant and cannot be downloaded. Please republish the bundle with an updated CLI to enable downloading.\n", bun.Name, pkgSlug)
 		return nil
 	}
 
@@ -281,7 +281,7 @@ func writeStateWithConfig(ctx context.Context, config *ExportPackageConfig, pkg 
 
 		result, err := config.StateFetcher.FetchState(ctx, pkg.ID, step.Path)
 		if err != nil {
-			return fmt.Errorf("failed to fetch state for package %s, step %s: %w", pkg.NamePrefix, step.Path, err)
+			return fmt.Errorf("failed to fetch state for package %s, step %s: %w", pkg.Slug, step.Path, err)
 		}
 
 		if result == nil {

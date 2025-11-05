@@ -44,3 +44,4 @@ Packages are used to:
 * [mass package export](/cli/commands/mass_package_export)	 - Export packages
 * [mass package get](/cli/commands/mass_package_get)	 - Get a package
 * [mass package patch](/cli/commands/mass_package_patch)	 - Patch individual package parameter values
+* [mass package version](/cli/commands/mass_package_version)	 - Set package version

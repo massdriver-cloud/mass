@@ -80,9 +80,9 @@ func TestExportPackage(t *testing.T) {
 		{
 			name: "export provisioned package with all components",
 			pkg: &api.Package{
-				ID:         "pkg-123",
-				NamePrefix: "test-package-0001",
-				Status:     string(api.PackageStatusProvisioned),
+				ID:     "pkg-123",
+				Slug:   "test-package-0001",
+				Status: string(api.PackageStatusProvisioned),
 				Params: map[string]any{
 					"param1": "value1",
 					"param2": 42,
@@ -137,9 +137,9 @@ func TestExportPackage(t *testing.T) {
 		{
 			name: "skip bundle export if not OCI compliant and skip state if nil",
 			pkg: &api.Package{
-				ID:         "pkg-123",
-				NamePrefix: "test-package-0001",
-				Status:     string(api.PackageStatusProvisioned),
+				ID:     "pkg-123",
+				Slug:   "test-package-0001",
+				Status: string(api.PackageStatusProvisioned),
 				Params: map[string]any{
 					"param1": "value1",
 					"param2": 42,
@@ -193,9 +193,9 @@ func TestExportPackage(t *testing.T) {
 		{
 			name: "export external package with remote references only",
 			pkg: &api.Package{
-				ID:         "pkg-456",
-				NamePrefix: "external-package-0001",
-				Status:     string(api.PackageStatusExternal),
+				ID:     "pkg-456",
+				Slug:   "external-package-0001",
+				Status: string(api.PackageStatusExternal),
 				RemoteReferences: []api.RemoteReference{
 					{
 						Artifact: api.Artifact{
@@ -226,9 +226,9 @@ func TestExportPackage(t *testing.T) {
 		{
 			name: "skip export for non-provisioned non-external package",
 			pkg: &api.Package{
-				ID:         "pkg-789",
-				NamePrefix: "pending-package-0001",
-				Status:     "PENDING",
+				ID:     "pkg-789",
+				Slug:   "pending-package-0001",
+				Status: "PENDING",
 				Bundle: &api.Bundle{
 					Name: "pending-bundle",
 				},
@@ -311,9 +311,9 @@ func TestExportPackage(t *testing.T) {
 
 func TestExportPackage_FileSystemError(t *testing.T) {
 	pack := &api.Package{
-		ID:         "pkg-123",
-		NamePrefix: "test-package-0001",
-		Status:     string(api.PackageStatusProvisioned),
+		ID:     "pkg-123",
+		Slug:   "test-package-0001",
+		Status: string(api.PackageStatusProvisioned),
 		Bundle: &api.Bundle{
 			Name: "test-bundle",
 			Spec: map[string]any{},

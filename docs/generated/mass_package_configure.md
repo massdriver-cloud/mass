@@ -43,7 +43,7 @@ mass package configure ecomm-prod-vpc --params=params.json
 
 ```
   -h, --help            help for configure
-  -p, --params string   Path to params JSON file. This file supports bash interpolation. (default "./params.json")
+  -p, --params string   Path to params json, tfvars or yaml file. This file supports bash interpolation. (default "./params.json")
 ```
 
 ### SEE ALSO

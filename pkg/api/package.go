@@ -11,7 +11,7 @@ import (
 
 type Package struct {
 	ID               string            `json:"id"`
-	NamePrefix       string            `json:"namePrefix"`
+	Slug             string            `json:"slug"`
 	Status           string            `json:"status"`
 	Artifacts        []Artifact        `json:"artifacts,omitempty"`
 	RemoteReferences []RemoteReference `json:"remoteReferences,omitempty"`
@@ -58,4 +58,18 @@ func ConfigurePackage(ctx context.Context, mdClient *client.Client, name string,
 	}
 
 	return nil, NewMutationError("failed to configure package", response.ConfigurePackage.Messages)
+}
+
+func SetPackageVersion(ctx context.Context, mdClient *client.Client, id string, version string, releaseStrategy ReleaseStrategy) (*Package, error) {
+	response, err := setPackageVersion(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id, version, releaseStrategy)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.SetPackageVersion.Successful {
+		return toPackage(response.SetPackageVersion.Result)
+	}
+
+	return nil, NewMutationError("failed to set package version", response.SetPackageVersion.Messages)
 }

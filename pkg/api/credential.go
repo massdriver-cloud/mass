@@ -42,7 +42,8 @@ func ListCredentials(ctx context.Context, mdClient *client.Client, artifactType 
 // Convert the API response to an Artifact
 func (a *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) toArtifact() *Artifact {
 	return &Artifact{
-		ID:   a.Id,
-		Name: a.Name,
+		ID:        a.Id,
+		Name:      a.Name,
+		UpdatedAt: a.UpdatedAt,
 	}
 }

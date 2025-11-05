@@ -231,6 +231,16 @@ func (v *PreviewEnvironmentInput) __premarshalJSON() (*__premarshalPreviewEnviro
 	return &retval, nil
 }
 
+// Release strategy for a package
+type ReleaseStrategy string
+
+const (
+	// Package receives only stable releases
+	ReleaseStrategyStable ReleaseStrategy = "STABLE"
+	// Package receives both stable and development releases
+	ReleaseStrategyDevelopment ReleaseStrategy = "DEVELOPMENT"
+)
+
 type ServerMode string
 
 const (
@@ -827,6 +837,26 @@ func (v *__publishArtifactDefinitionInput) __premarshalJSON() (*__premarshal__pu
 	return &retval, nil
 }
 
+// __setPackageVersionInput is used internally by genqlient
+type __setPackageVersionInput struct {
+	OrganizationId  string          `json:"organizationId"`
+	Id              string          `json:"id"`
+	Version         string          `json:"version"`
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+}
+
+// GetOrganizationId returns __setPackageVersionInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__setPackageVersionInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __setPackageVersionInput.Id, and is useful for accessing the field via an interface.
+func (v *__setPackageVersionInput) GetId() string { return v.Id }
+
+// GetVersion returns __setPackageVersionInput.Version, and is useful for accessing the field via an interface.
+func (v *__setPackageVersionInput) GetVersion() string { return v.Version }
+
+// GetReleaseStrategy returns __setPackageVersionInput.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *__setPackageVersionInput) GetReleaseStrategy() ReleaseStrategy { return v.ReleaseStrategy }
+
 // configurePackageConfigurePackagePackagePayload includes the requested fields of the GraphQL type PackagePayload.
 type configurePackageConfigurePackagePackagePayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -859,8 +889,8 @@ type configurePackageConfigurePackagePackagePayloadResultPackage struct {
 	Id string `json:"id"`
 	// Package configuration parameters
 	Params map[string]any `json:"-"`
-	// Prefix for resource names
-	NamePrefix string `json:"namePrefix"`
+	// Unique identifier for the package
+	Slug string `json:"slug"`
 }
 
 // GetId returns configurePackageConfigurePackagePackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
@@ -871,10 +901,8 @@ func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetParams(
 	return v.Params
 }
 
-// GetNamePrefix returns configurePackageConfigurePackagePackagePayloadResultPackage.NamePrefix, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetNamePrefix() string {
-	return v.NamePrefix
-}
+// GetSlug returns configurePackageConfigurePackagePackagePayloadResultPackage.Slug, and is useful for accessing the field via an interface.
+func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetSlug() string { return v.Slug }
 
 func (v *configurePackageConfigurePackagePackagePayloadResultPackage) UnmarshalJSON(b []byte) error {
 
@@ -914,7 +942,7 @@ type __premarshalconfigurePackageConfigurePackagePackagePayloadResultPackage str
 
 	Params json.RawMessage `json:"params"`
 
-	NamePrefix string `json:"namePrefix"`
+	Slug string `json:"slug"`
 }
 
 func (v *configurePackageConfigurePackagePackagePayloadResultPackage) MarshalJSON() ([]byte, error) {
@@ -941,7 +969,7 @@ func (v *configurePackageConfigurePackagePackagePayloadResultPackage) __premarsh
 				"unable to marshal configurePackageConfigurePackagePackagePayloadResultPackage.Params: %w", err)
 		}
 	}
-	retval.NamePrefix = v.NamePrefix
+	retval.Slug = v.Slug
 	return &retval, nil
 }
 
@@ -1640,8 +1668,9 @@ func (v *getArtifactsByTypeArtifactsPaginatedArtifacts) GetItems() []getArtifact
 
 // getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact includes the requested fields of the GraphQL type Artifact.
 type getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Id, and is useful for accessing the field via an interface.
@@ -1649,6 +1678,11 @@ func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetId() str
 
 // GetName returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
 func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
+
+// GetUpdatedAt returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
 
 // getArtifactsByTypeResponse is returned by getArtifactsByType on success.
 type getArtifactsByTypeResponse struct {
@@ -2564,8 +2598,8 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummar
 type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage struct {
 	// Unique identifier
 	Id string `json:"id"`
-	// Prefix for resource names
-	NamePrefix string `json:"namePrefix"`
+	// Unique identifier for the package
+	Slug string `json:"slug"`
 	// Current status of the package
 	Status PackageStatus `json:"status"`
 	// Package configuration parameters
@@ -2583,9 +2617,9 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 	return v.Id
 }
 
-// GetNamePrefix returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.NamePrefix, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetNamePrefix() string {
-	return v.NamePrefix
+// GetSlug returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Slug, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetSlug() string {
+	return v.Slug
 }
 
 // GetStatus returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Status, and is useful for accessing the field via an interface.
@@ -2654,7 +2688,7 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage struct {
 	Id string `json:"id"`
 
-	NamePrefix string `json:"namePrefix"`
+	Slug string `json:"slug"`
 
 	Status PackageStatus `json:"status"`
 
@@ -2681,7 +2715,7 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 	var retval __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage
 
 	retval.Id = v.Id
-	retval.NamePrefix = v.NamePrefix
+	retval.Slug = v.Slug
 	retval.Status = v.Status
 	{
 
@@ -2995,8 +3029,8 @@ func (v *getOciRepoResponse) GetOciRepo() getOciRepoOciRepo { return v.OciRepo }
 type getPackagePackage struct {
 	// Unique identifier
 	Id string `json:"id"`
-	// Prefix for resource names
-	NamePrefix string `json:"namePrefix"`
+	// Unique identifier for the package
+	Slug string `json:"slug"`
 	// Current status of the package
 	Status PackageStatus `json:"status"`
 	// Package configuration parameters
@@ -3014,8 +3048,8 @@ type getPackagePackage struct {
 // GetId returns getPackagePackage.Id, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetId() string { return v.Id }
 
-// GetNamePrefix returns getPackagePackage.NamePrefix, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetNamePrefix() string { return v.NamePrefix }
+// GetSlug returns getPackagePackage.Slug, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetSlug() string { return v.Slug }
 
 // GetStatus returns getPackagePackage.Status, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetStatus() PackageStatus { return v.Status }
@@ -3076,7 +3110,7 @@ func (v *getPackagePackage) UnmarshalJSON(b []byte) error {
 type __premarshalgetPackagePackage struct {
 	Id string `json:"id"`
 
-	NamePrefix string `json:"namePrefix"`
+	Slug string `json:"slug"`
 
 	Status PackageStatus `json:"status"`
 
@@ -3105,7 +3139,7 @@ func (v *getPackagePackage) __premarshalJSON() (*__premarshalgetPackagePackage, 
 	var retval __premarshalgetPackagePackage
 
 	retval.Id = v.Id
-	retval.NamePrefix = v.NamePrefix
+	retval.Slug = v.Slug
 	retval.Status = v.Status
 	{
 
@@ -3920,6 +3954,58 @@ func (v *publishArtifactDefinitionResponse) GetPublishArtifactDefinition() publi
 	return v.PublishArtifactDefinition
 }
 
+// setPackageVersionResponse is returned by setPackageVersion on success.
+type setPackageVersionResponse struct {
+	SetPackageVersion setPackageVersionSetPackageVersionPackagePayload `json:"setPackageVersion"`
+}
+
+// GetSetPackageVersion returns setPackageVersionResponse.SetPackageVersion, and is useful for accessing the field via an interface.
+func (v *setPackageVersionResponse) GetSetPackageVersion() setPackageVersionSetPackageVersionPackagePayload {
+	return v.SetPackageVersion
+}
+
+// setPackageVersionSetPackageVersionPackagePayload includes the requested fields of the GraphQL type PackagePayload.
+type setPackageVersionSetPackageVersionPackagePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result setPackageVersionSetPackageVersionPackagePayloadResultPackage `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetResult returns setPackageVersionSetPackageVersionPackagePayload.Result, and is useful for accessing the field via an interface.
+func (v *setPackageVersionSetPackageVersionPackagePayload) GetResult() setPackageVersionSetPackageVersionPackagePayloadResultPackage {
+	return v.Result
+}
+
+// GetSuccessful returns setPackageVersionSetPackageVersionPackagePayload.Successful, and is useful for accessing the field via an interface.
+func (v *setPackageVersionSetPackageVersionPackagePayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns setPackageVersionSetPackageVersionPackagePayload.Messages, and is useful for accessing the field via an interface.
+func (v *setPackageVersionSetPackageVersionPackagePayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// setPackageVersionSetPackageVersionPackagePayloadResultPackage includes the requested fields of the GraphQL type Package.
+// The GraphQL type's documentation follows.
+//
+// A deployed instance of a bundle in the context of its manifest
+type setPackageVersionSetPackageVersionPackagePayloadResultPackage struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Unique identifier for the package
+	Slug string `json:"slug"`
+}
+
+// GetId returns setPackageVersionSetPackageVersionPackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
+func (v *setPackageVersionSetPackageVersionPackagePayloadResultPackage) GetId() string { return v.Id }
+
+// GetSlug returns setPackageVersionSetPackageVersionPackagePayloadResultPackage.Slug, and is useful for accessing the field via an interface.
+func (v *setPackageVersionSetPackageVersionPackagePayloadResultPackage) GetSlug() string {
+	return v.Slug
+}
+
 // The query or mutation executed by configurePackage.
 const configurePackage_Operation = `
 mutation configurePackage ($organizationId: ID!, $id: ID!, $params: JSON!) {
@@ -3927,7 +4013,7 @@ mutation configurePackage ($organizationId: ID!, $id: ID!, $params: JSON!) {
 		result {
 			id
 			params
-			namePrefix
+			slug
 		}
 		successful
 		messages {
@@ -4497,6 +4583,7 @@ query getArtifactsByType ($organizationId: ID!, $artifactType: String!) {
 		items {
 			id
 			name
+			updatedAt
 		}
 	}
 }
@@ -4730,7 +4817,7 @@ query getEnvironmentsByProject ($organizationId: ID!, $projectId: ID!) {
 			}
 			packages {
 				id
-				namePrefix
+				slug
 				status
 				params
 				artifacts {
@@ -4845,7 +4932,7 @@ const getPackage_Operation = `
 query getPackage ($organizationId: ID!, $id: ID!) {
 	package(organizationId: $organizationId, id: $id) {
 		id
-		namePrefix
+		slug
 		status
 		params
 		artifacts {
@@ -5155,6 +5242,54 @@ func publishArtifactDefinition(
 	var err error
 
 	var data publishArtifactDefinitionResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by setPackageVersion.
+const setPackageVersion_Operation = `
+mutation setPackageVersion ($organizationId: ID!, $id: ID!, $version: String!, $releaseStrategy: ReleaseStrategy) {
+	setPackageVersion(organizationId: $organizationId, id: $id, version: $version, releaseStrategy: $releaseStrategy) {
+		result {
+			id
+			slug
+		}
+		successful
+		messages {
+			message
+		}
+	}
+}
+`
+
+func setPackageVersion(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+	version string,
+	releaseStrategy ReleaseStrategy,
+) (*setPackageVersionResponse, error) {
+	req := &graphql.Request{
+		OpName: "setPackageVersion",
+		Query:  setPackageVersion_Operation,
+		Variables: &__setPackageVersionInput{
+			OrganizationId:  organizationId,
+			Id:              id,
+			Version:         version,
+			ReleaseStrategy: releaseStrategy,
+		},
+	}
+	var err error
+
+	var data setPackageVersionResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

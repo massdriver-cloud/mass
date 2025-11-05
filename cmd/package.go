@@ -45,7 +45,7 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgConfigure,
 	}
-	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params JSON file. This file supports bash interpolation.")
+	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params json, tfvars or yaml file. This file supports bash interpolation.")
 
 	pkgDeployCmd := &cobra.Command{
 		Use:     `deploy <project>-<env>-<manifest>`,
@@ -100,12 +100,23 @@ func NewCmdPkg() *cobra.Command {
 	pkgCreateCmd.Flags().StringP("bundle", "b", "", "Bundle ID or name (required)")
 	_ = pkgCreateCmd.MarkFlagRequired("bundle")
 
+	pkgVersionCmd := &cobra.Command{
+		Use:     `version <package-id>@<version>`,
+		Short:   "Set package version",
+		Example: `mass package version api-prod-db@latest --release-channel development`,
+		Long:    helpdocs.MustRender("package/version"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgVersion,
+	}
+	pkgVersionCmd.Flags().String("release-channel", "stable", "Release strategy (stable or development)")
+
 	pkgCmd.AddCommand(pkgConfigureCmd)
 	pkgCmd.AddCommand(pkgDeployCmd)
 	pkgCmd.AddCommand(pkgExportCmd)
 	pkgCmd.AddCommand(pkgGetCmd)
 	pkgCmd.AddCommand(pkgPatchCmd)
 	pkgCmd.AddCommand(pkgCreateCmd)
+	pkgCmd.AddCommand(pkgVersionCmd)
 
 	return pkgCmd
 }
@@ -297,17 +308,62 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	manifest, err := api.CreateManifest(ctx, mdClient, bundleIdOrName, projectIdOrSlug, name, manifestSlug, "")
+		manifest, err := api.CreateManifest(ctx, mdClient, bundleIdOrName, projectIdOrSlug, name, manifestSlug, "")
+		if err != nil {
+			return err
+		}
+
+		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+		if urlErr == nil {
+			fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
+			fmt.Printf("URL: %s\n", urlHelper.PackageURL(projectIdOrSlug, environmentSlug, manifestSlug))
+		} else {
+			fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
+		}
+		return nil
+	}
+
+func runPkgVersion(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	packageIDAndVersion := args[0]
+
+	// Parse package-id@version format
+	parts := strings.Split(packageIDAndVersion, "@")
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid format: expected <package-id>@<version>, got %s", packageIDAndVersion)
+	}
+	packageID := parts[0]
+	version := parts[1]
+
+	releaseChannel, err := cmd.Flags().GetString("release-channel")
 	if err != nil {
 		return err
 	}
 
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-	if urlErr == nil {
-		fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
-		fmt.Printf("URL: %s\n", urlHelper.PackageURL(projectIdOrSlug, environmentSlug, manifestSlug))
+	// Convert release channel to ReleaseStrategy enum value
+	var releaseStrategy api.ReleaseStrategy
+	if releaseChannel == "development" {
+		releaseStrategy = api.ReleaseStrategyDevelopment
+	} else if releaseChannel == "stable" {
+		releaseStrategy = api.ReleaseStrategyStable
 	} else {
-		fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
+		return fmt.Errorf("invalid release-channel: must be 'stable' or 'development', got '%s'", releaseChannel)
 	}
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	_, err = api.SetPackageVersion(ctx, mdClient, packageID, version, releaseStrategy)
+	if err != nil {
+		return err
+	}
+
+	var name = lipgloss.NewStyle().SetString(packageIDAndVersion).Foreground(lipgloss.Color("#7D56F4"))
+	msg := fmt.Sprintf("Set version for package: %s", name)
+	fmt.Println(msg)
+
 	return nil
 }

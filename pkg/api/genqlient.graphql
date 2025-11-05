@@ -25,6 +25,7 @@ query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
     items {
       id
       name
+      updatedAt
     }
   }
 }
@@ -188,7 +189,7 @@ query getEnvironmentsByProject($organizationId: ID!, $projectId: ID!) {
       }
       packages {
         id
-        namePrefix
+        slug
         status
         params
         artifacts {
@@ -276,7 +277,7 @@ mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $
 query getPackage($organizationId: ID!, $id: ID!) {
   package(organizationId: $organizationId, id: $id) {
     id
-    namePrefix
+    slug
     status
     params
     artifacts {
@@ -320,7 +321,21 @@ mutation configurePackage($organizationId: ID!, $id: ID!, $params: JSON!) {
     result {
       id
       params
-      namePrefix
+      slug
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
+mutation setPackageVersion($organizationId: ID!, $id: ID!, $version: String!, $releaseStrategy: ReleaseStrategy) {
+  setPackageVersion(organizationId: $organizationId, id: $id, version: $version, releaseStrategy: $releaseStrategy) {
+    result {
+      id
+      slug
     }
     successful
     # @genqlient(typename: "MutationValidationError")

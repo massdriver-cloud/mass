@@ -36,6 +36,7 @@ func Execute() {
 	rootCmd.AddCommand(NewCmdApp())
 	rootCmd.AddCommand(NewCmdArtifact())
 	rootCmd.AddCommand(NewCmdBundle())
+	rootCmd.AddCommand(NewCmdCredentials())
 	rootCmd.AddCommand(NewCmdDefinition())
 	rootCmd.AddCommand(NewCmdDocs())
 	rootCmd.AddCommand(NewCmdEnvironment())
