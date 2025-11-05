@@ -25,6 +25,18 @@ query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
     items {
       id
       name
+      type
+      updatedAt
+    }
+  }
+}
+
+query listCredentials($organizationId: ID!) {
+  artifacts(organizationId: $organizationId, input: {filter: {credential: true}}) {
+    items {
+      id
+      name
+      type
       updatedAt
     }
   }

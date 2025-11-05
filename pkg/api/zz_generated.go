@@ -759,6 +759,14 @@ func (v *__listCredentialArtifactDefinitionsInput) GetOrganizationId() string {
 	return v.OrganizationId
 }
 
+// __listCredentialsInput is used internally by genqlient
+type __listCredentialsInput struct {
+	OrganizationId string `json:"organizationId"`
+}
+
+// GetOrganizationId returns __listCredentialsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listCredentialsInput) GetOrganizationId() string { return v.OrganizationId }
+
 // __publishArtifactDefinitionInput is used internally by genqlient
 type __publishArtifactDefinitionInput struct {
 	OrganizationId string         `json:"organizationId"`
@@ -1670,6 +1678,7 @@ func (v *getArtifactsByTypeArtifactsPaginatedArtifacts) GetItems() []getArtifact
 type getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact struct {
 	Id        string    `json:"id"`
 	Name      string    `json:"name"`
+	Type      string    `json:"type"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
@@ -1678,6 +1687,9 @@ func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetId() str
 
 // GetName returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
 func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
+
+// GetType returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Type, and is useful for accessing the field via an interface.
+func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetType() string { return v.Type }
 
 // GetUpdatedAt returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.UpdatedAt, and is useful for accessing the field via an interface.
 func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetUpdatedAt() time.Time {
@@ -3899,6 +3911,50 @@ func (v *listCredentialArtifactDefinitionsResponse) GetArtifactDefinitions() []l
 	return v.ArtifactDefinitions
 }
 
+// listCredentialsArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
+type listCredentialsArtifactsPaginatedArtifacts struct {
+	// A list of type artifact.
+	Items []listCredentialsArtifactsPaginatedArtifactsItemsArtifact `json:"items"`
+}
+
+// GetItems returns listCredentialsArtifactsPaginatedArtifacts.Items, and is useful for accessing the field via an interface.
+func (v *listCredentialsArtifactsPaginatedArtifacts) GetItems() []listCredentialsArtifactsPaginatedArtifactsItemsArtifact {
+	return v.Items
+}
+
+// listCredentialsArtifactsPaginatedArtifactsItemsArtifact includes the requested fields of the GraphQL type Artifact.
+type listCredentialsArtifactsPaginatedArtifactsItemsArtifact struct {
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+	Type      string    `json:"type"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.Id, and is useful for accessing the field via an interface.
+func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetId() string { return v.Id }
+
+// GetName returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
+func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
+
+// GetType returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.Type, and is useful for accessing the field via an interface.
+func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetType() string { return v.Type }
+
+// GetUpdatedAt returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// listCredentialsResponse is returned by listCredentials on success.
+type listCredentialsResponse struct {
+	// List all artifacts
+	Artifacts listCredentialsArtifactsPaginatedArtifacts `json:"artifacts"`
+}
+
+// GetArtifacts returns listCredentialsResponse.Artifacts, and is useful for accessing the field via an interface.
+func (v *listCredentialsResponse) GetArtifacts() listCredentialsArtifactsPaginatedArtifacts {
+	return v.Artifacts
+}
+
 // publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload includes the requested fields of the GraphQL type ArtifactDefinitionPayload.
 type publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -4583,6 +4639,7 @@ query getArtifactsByType ($organizationId: ID!, $artifactType: String!) {
 		items {
 			id
 			name
+			type
 			updatedAt
 		}
 	}
@@ -5198,6 +5255,46 @@ func listCredentialArtifactDefinitions(
 	var err error
 
 	var data listCredentialArtifactDefinitionsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by listCredentials.
+const listCredentials_Operation = `
+query listCredentials ($organizationId: ID!) {
+	artifacts(organizationId: $organizationId, input: {filter:{credential:true}}) {
+		items {
+			id
+			name
+			type
+			updatedAt
+		}
+	}
+}
+`
+
+func listCredentials(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+) (*listCredentialsResponse, error) {
+	req := &graphql.Request{
+		OpName: "listCredentials",
+		Query:  listCredentials_Operation,
+		Variables: &__listCredentialsInput{
+			OrganizationId: organizationId,
+		},
+	}
+	var err error
+
+	var data listCredentialsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

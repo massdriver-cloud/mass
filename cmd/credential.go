@@ -40,20 +40,14 @@ func runCredentialList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	credentialTypes := api.ListCredentialTypes(ctx, mdClient)
-	allCredentials := []*api.Artifact{}
-
-	for _, credType := range credentialTypes {
-		credentials, err := api.ListCredentials(ctx, mdClient, credType.Name)
-		if err != nil {
-			return err
-		}
-		allCredentials = append(allCredentials, credentials...)
+	credentials, err := api.ListCredentials(ctx, mdClient)
+	if err != nil {
+		return fmt.Errorf("failed to list credentials: %w", err)
 	}
 
 	tbl := cli.NewTable("ID", "Type", "Name", "Updated At")
 
-	for _, credential := range allCredentials {
+	for _, credential := range credentials {
 		name := credential.Name
 		if len(name) > 60 {
 			name = name[:60] + "..."
