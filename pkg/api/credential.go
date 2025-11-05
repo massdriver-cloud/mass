@@ -33,17 +33,18 @@ func ListCredentials(ctx context.Context, mdClient *client.Client, artifactType 
 	response, err := getArtifactsByType(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactType)
 
 	for _, artifactRecord := range response.Artifacts.Items {
-		artifactList = append(artifactList, artifactRecord.toArtifact())
+		artifactList = append(artifactList, artifactRecord.toArtifact(artifactType))
 	}
 
 	return artifactList, err
 }
 
 // Convert the API response to an Artifact
-func (a *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) toArtifact() *Artifact {
+func (a *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) toArtifact(artifactType string) *Artifact {
 	return &Artifact{
 		ID:        a.Id,
 		Name:      a.Name,
+		Type:      artifactType,
 		UpdatedAt: a.UpdatedAt,
 	}
 }

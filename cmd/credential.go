@@ -51,10 +51,15 @@ func runCredentialList(cmd *cobra.Command, args []string) error {
 		allCredentials = append(allCredentials, credentials...)
 	}
 
-	tbl := cli.NewTable("ID", "Name", "Updated At")
+	tbl := cli.NewTable("ID", "Type", "Name", "Updated At")
 
 	for _, credential := range allCredentials {
-		tbl.AddRow(credential.ID, credential.Name, credential.UpdatedAt)
+		name := credential.Name
+		if len(name) > 60 {
+			name = name[:60] + "..."
+		}
+		updatedAt := credential.UpdatedAt.Format("2006-01-02 15:04:05")
+		tbl.AddRow(credential.ID, credential.Type, name, updatedAt)
 	}
 
 	tbl.Print()

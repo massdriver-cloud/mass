@@ -33,7 +33,6 @@ The output displays a table with:
 - **Updated At**: Last update timestamp
 
 
-
 ```
 mass credential list [flags]
 ```
