@@ -225,13 +225,14 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	_, err := pkg.RunConfigure(ctx, mdClient, packageSlugOrID, params)
+	configuredPkg, err := pkg.RunConfigure(ctx, mdClient, packageSlugOrID, params)
+	if err != nil {
+		return err
+	}
 
-	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
-	msg := fmt.Sprintf("Configuring: %s", name)
-	fmt.Println(msg)
+	fmt.Printf("✅ Package %s configured successfully\n", configuredPkg.Slug)
 
-	return err
+	return nil
 }
 
 func runPkgPatch(cmd *cobra.Command, args []string) error {
@@ -308,20 +309,18 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-		manifest, err := api.CreateManifest(ctx, mdClient, bundleIdOrName, projectIdOrSlug, name, manifestSlug, "")
-		if err != nil {
-			return err
-		}
-
-		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-		if urlErr == nil {
-			fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
-			fmt.Printf("URL: %s\n", urlHelper.PackageURL(projectIdOrSlug, environmentSlug, manifestSlug))
-		} else {
-			fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
-		}
-		return nil
+	_, err = api.CreateManifest(ctx, mdClient, bundleIdOrName, projectIdOrSlug, name, manifestSlug, "")
+	if err != nil {
+		return err
 	}
+
+	fmt.Printf("✅ Package %s created successfully\n", manifestSlug)
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	if urlErr == nil {
+		fmt.Printf("🔗 %s\n", urlHelper.PackageURL(projectIdOrSlug, environmentSlug, manifestSlug))
+	}
+	return nil
+}
 
 func runPkgVersion(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
@@ -356,14 +355,12 @@ func runPkgVersion(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	_, err = api.SetPackageVersion(ctx, mdClient, packageID, version, releaseStrategy)
+	updatedPkg, err := api.SetPackageVersion(ctx, mdClient, packageID, version, releaseStrategy)
 	if err != nil {
 		return err
 	}
 
-	var name = lipgloss.NewStyle().SetString(packageIDAndVersion).Foreground(lipgloss.Color("#7D56F4"))
-	msg := fmt.Sprintf("Set version for package: %s", name)
-	fmt.Println(msg)
+	fmt.Printf("✅ Package %s version set successfully\n", updatedPkg.Slug)
 
 	return nil
 }

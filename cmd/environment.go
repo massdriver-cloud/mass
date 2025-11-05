@@ -225,12 +225,10 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	fmt.Printf("✅ Environment %s created successfully\n", env.Slug)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("Environment %s created successfully (ID: %s)\n", env.Slug, env.ID)
-		fmt.Printf("URL: %s\n", urlHelper.EnvironmentURL(projectIdOrSlug, env.Slug))
-	} else {
-		fmt.Printf("Environment %s created successfully (ID: %s)\n", env.Slug, env.ID)
+		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(projectIdOrSlug, env.Slug))
 	}
 	return nil
 }
@@ -258,12 +256,10 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get environment: %w", err)
 	}
 
+	fmt.Printf("✅ Environment %s default connection set successfully\n", environment.Slug)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("Environment default connection set successfully\n")
-		fmt.Printf("URL: %s\n", urlHelper.EnvironmentURL(environment.Project.Slug, environment.Slug))
-	} else {
-		fmt.Printf("Environment default connection set successfully\n")
+		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(environment.Project.Slug, environment.Slug))
 	}
 
 	return nil

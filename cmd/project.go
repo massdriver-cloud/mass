@@ -223,12 +223,10 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	fmt.Printf("✅ Project %s created successfully\n", project.Slug)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("Project %s created successfully (ID: %s)\n", project.Slug, project.ID)
-		fmt.Printf("URL: %s\n", urlHelper.ProjectURL(project.Slug))
-	} else {
-		fmt.Printf("Project %s created successfully (ID: %s)\n", project.Slug, project.ID)
+		fmt.Printf("🔗 %s\n", urlHelper.ProjectURL(project.Slug))
 	}
 	return nil
 }
