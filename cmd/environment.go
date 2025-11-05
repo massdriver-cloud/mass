@@ -225,7 +225,7 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("✅ Environment %s created successfully\n", env.Slug)
+	fmt.Printf("✅ Environment `%s` created successfully\n", fullSlug)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
 		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(projectIdOrSlug, env.Slug))
@@ -256,7 +256,8 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get environment: %w", err)
 	}
 
-	fmt.Printf("✅ Environment %s default connection set successfully\n", environment.Slug)
+	fullEnvSlug := fmt.Sprintf("%s-%s", environment.Project.Slug, environment.Slug)
+	fmt.Printf("✅ Environment `%s` default connection set successfully\n", fullEnvSlug)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
 		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(environment.Project.Slug, environment.Slug))

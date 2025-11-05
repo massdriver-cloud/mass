@@ -230,7 +230,16 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("✅ Package %s configured successfully\n", configuredPkg.Slug)
+	fmt.Printf("✅ Package `%s` configured successfully\n", configuredPkg.Slug)
+
+	// Get package details to build URL
+	pkgDetails, err := api.GetPackageByName(ctx, mdClient, configuredPkg.Slug)
+	if err == nil && pkgDetails.Environment != nil && pkgDetails.Environment.Project != nil && pkgDetails.Manifest != nil {
+		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+		if urlErr == nil {
+			fmt.Printf("🔗 %s\n", urlHelper.PackageURL(pkgDetails.Environment.Project.Slug, pkgDetails.Environment.Slug, pkgDetails.Manifest.Slug))
+		}
+	}
 
 	return nil
 }
@@ -314,7 +323,7 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("✅ Package %s created successfully\n", manifestSlug)
+	fmt.Printf("✅ Package `%s` created successfully\n", fullSlug)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
 		fmt.Printf("🔗 %s\n", urlHelper.PackageURL(projectIdOrSlug, environmentSlug, manifestSlug))
@@ -360,7 +369,16 @@ func runPkgVersion(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("✅ Package %s version set successfully\n", updatedPkg.Slug)
+	fmt.Printf("✅ Package `%s` version set successfully\n", updatedPkg.Slug)
+
+	// Get package details to build URL
+	pkgDetails, err := api.GetPackageByName(ctx, mdClient, updatedPkg.Slug)
+	if err == nil && pkgDetails.Environment != nil && pkgDetails.Environment.Project != nil && pkgDetails.Manifest != nil {
+		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+		if urlErr == nil {
+			fmt.Printf("🔗 %s\n", urlHelper.PackageURL(pkgDetails.Environment.Project.Slug, pkgDetails.Environment.Slug, pkgDetails.Manifest.Slug))
+		}
+	}
 
 	return nil
 }
