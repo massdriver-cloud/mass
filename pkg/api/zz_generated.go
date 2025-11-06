@@ -561,6 +561,22 @@ func (v *__createProjectInput) GetSlug() string { return v.Slug }
 // GetDescription returns __createProjectInput.Description, and is useful for accessing the field via an interface.
 func (v *__createProjectInput) GetDescription() string { return v.Description }
 
+// __decommissionPackageInput is used internally by genqlient
+type __decommissionPackageInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+	Message        string `json:"message"`
+}
+
+// GetOrganizationId returns __decommissionPackageInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__decommissionPackageInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __decommissionPackageInput.Id, and is useful for accessing the field via an interface.
+func (v *__decommissionPackageInput) GetId() string { return v.Id }
+
+// GetMessage returns __decommissionPackageInput.Message, and is useful for accessing the field via an interface.
+func (v *__decommissionPackageInput) GetMessage() string { return v.Message }
+
 // __decommissionPreviewEnvironmentInput is used internally by genqlient
 type __decommissionPreviewEnvironmentInput struct {
 	OrgId    string `json:"orgId"`
@@ -1381,6 +1397,55 @@ type createProjectResponse struct {
 // GetCreateProject returns createProjectResponse.CreateProject, and is useful for accessing the field via an interface.
 func (v *createProjectResponse) GetCreateProject() createProjectCreateProjectProjectPayload {
 	return v.CreateProject
+}
+
+// decommissionPackageDecommissionPackageDeploymentPayload includes the requested fields of the GraphQL type DeploymentPayload.
+type decommissionPackageDecommissionPackageDeploymentPayload struct {
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment `json:"result"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetSuccessful returns decommissionPackageDecommissionPackageDeploymentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *decommissionPackageDecommissionPackageDeploymentPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetResult returns decommissionPackageDecommissionPackageDeploymentPayload.Result, and is useful for accessing the field via an interface.
+func (v *decommissionPackageDecommissionPackageDeploymentPayload) GetResult() decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment {
+	return v.Result
+}
+
+// GetMessages returns decommissionPackageDecommissionPackageDeploymentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *decommissionPackageDecommissionPackageDeploymentPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A deployment represents an instance of a bundle being deployed to a target environment
+type decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment struct {
+	Id string `json:"id"`
+}
+
+// GetId returns decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment.Id, and is useful for accessing the field via an interface.
+func (v *decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment) GetId() string {
+	return v.Id
+}
+
+// decommissionPackageResponse is returned by decommissionPackage on success.
+type decommissionPackageResponse struct {
+	// Enqueues a package for decommissioning
+	DecommissionPackage decommissionPackageDecommissionPackageDeploymentPayload `json:"decommissionPackage"`
+}
+
+// GetDecommissionPackage returns decommissionPackageResponse.DecommissionPackage, and is useful for accessing the field via an interface.
+func (v *decommissionPackageResponse) GetDecommissionPackage() decommissionPackageDecommissionPackageDeploymentPayload {
+	return v.DecommissionPackage
 }
 
 // decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
@@ -4537,6 +4602,51 @@ func createProject(
 	var err error
 
 	var data createProjectResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by decommissionPackage.
+const decommissionPackage_Operation = `
+mutation decommissionPackage ($organizationId: ID!, $id: ID!, $message: String) {
+	decommissionPackage(organizationId: $organizationId, id: $id, message: $message) {
+		successful
+		result {
+			id
+		}
+		messages {
+			message
+		}
+	}
+}
+`
+
+func decommissionPackage(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+	message string,
+) (*decommissionPackageResponse, error) {
+	req := &graphql.Request{
+		OpName: "decommissionPackage",
+		Query:  decommissionPackage_Operation,
+		Variables: &__decommissionPackageInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Message:        message,
+		},
+	}
+	var err error
+
+	var data decommissionPackageResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

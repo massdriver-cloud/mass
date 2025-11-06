@@ -43,3 +43,9 @@ func (d *deployPackageDeployPackageDeploymentPayloadResultDeployment) toDeployme
 		ID: d.Id,
 	}
 }
+
+func (d *decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment) toDeployment() *Deployment {
+	return &Deployment{
+		ID: d.Id,
+	}
+}

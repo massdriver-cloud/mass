@@ -377,6 +377,19 @@ mutation setPackageVersion($organizationId: ID!, $id: ID!, $version: String!, $r
   }
 }
 
+mutation decommissionPackage($organizationId: ID!, $id: ID!, $message: String) {
+  decommissionPackage(organizationId: $organizationId, id: $id, message: $message) {
+    successful
+    result {
+      id
+    }
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
 
 # PROJECTS
 

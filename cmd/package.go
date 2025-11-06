@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"text/template"
 
@@ -110,6 +112,16 @@ func NewCmdPkg() *cobra.Command {
 	}
 	pkgVersionCmd.Flags().String("release-channel", "stable", "Release strategy (stable or development)")
 
+	pkgDestroyCmd := &cobra.Command{
+		Use:     `destroy <project>-<env>-<manifest>`,
+		Short:   "Destroy (decommission) a package",
+		Example: `mass package destroy api-prod-db --force`,
+		Long:    "Destroy (decommission) a package. This will permanently delete the package and all its resources.",
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgDestroy,
+	}
+	pkgDestroyCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+
 	pkgCmd.AddCommand(pkgConfigureCmd)
 	pkgCmd.AddCommand(pkgDeployCmd)
 	pkgCmd.AddCommand(pkgExportCmd)
@@ -117,6 +129,7 @@ func NewCmdPkg() *cobra.Command {
 	pkgCmd.AddCommand(pkgPatchCmd)
 	pkgCmd.AddCommand(pkgCreateCmd)
 	pkgCmd.AddCommand(pkgVersionCmd)
+	pkgCmd.AddCommand(pkgDestroyCmd)
 
 	return pkgCmd
 }
@@ -377,6 +390,60 @@ func runPkgVersion(cmd *cobra.Command, args []string) error {
 		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 		if urlErr == nil {
 			fmt.Printf("🔗 %s\n", urlHelper.PackageURL(pkgDetails.Environment.Project.Slug, pkgDetails.Environment.Slug, pkgDetails.Manifest.Slug))
+		}
+	}
+
+	return nil
+}
+
+func runPkgDestroy(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	packageSlugOrID := args[0]
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	// Get package details for confirmation and URL
+	pkg, err := api.GetPackageByName(ctx, mdClient, packageSlugOrID)
+	if err != nil {
+		return err
+	}
+
+	// Prompt for confirmation - requires typing the package slug unless --force is used
+	if !force {
+		fmt.Printf("WARNING: This will permanently decommission package `%s` and all its resources.\n", pkg.Slug)
+		fmt.Printf("Type `%s` to confirm decommission: ", pkg.Slug)
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(answer)
+
+		if answer != pkg.Slug {
+			fmt.Println("Decommission cancelled.")
+			return nil
+		}
+	}
+
+	_, err = api.DecommissionPackage(ctx, mdClient, pkg.ID, "")
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Package `%s` decommission started\n", pkg.Slug)
+
+	// Get package details to build URL
+	if pkg.Environment != nil && pkg.Environment.Project != nil && pkg.Manifest != nil {
+		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+		if urlErr == nil {
+			fmt.Printf("🔗 %s\n", urlHelper.PackageURL(pkg.Environment.Project.Slug, pkg.Environment.Slug, pkg.Manifest.Slug))
 		}
 	}
 

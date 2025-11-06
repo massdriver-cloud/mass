@@ -73,3 +73,17 @@ func SetPackageVersion(ctx context.Context, mdClient *client.Client, id string, 
 
 	return nil, NewMutationError("failed to set package version", response.SetPackageVersion.Messages)
 }
+
+func DecommissionPackage(ctx context.Context, mdClient *client.Client, id string, message string) (*Deployment, error) {
+	response, err := decommissionPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id, message)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.DecommissionPackage.Successful {
+		return response.DecommissionPackage.Result.toDeployment(), nil
+	}
+
+	return nil, NewMutationError("failed to decommission package", response.DecommissionPackage.Messages)
+}
