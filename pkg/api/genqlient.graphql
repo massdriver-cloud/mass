@@ -25,6 +25,19 @@ query getArtifactsByType($organizationId: ID!, $artifactType: String!) {
     items {
       id
       name
+      type
+      updatedAt
+    }
+  }
+}
+
+query listCredentials($organizationId: ID!) {
+  artifacts(organizationId: $organizationId, input: {filter: {credential: true}}) {
+    items {
+      id
+      name
+      type
+      updatedAt
     }
   }
 }
@@ -188,7 +201,7 @@ query getEnvironmentsByProject($organizationId: ID!, $projectId: ID!) {
       }
       packages {
         id
-        namePrefix
+        slug
         status
         params
         artifacts {
@@ -218,6 +231,26 @@ query getEnvironmentsByProject($organizationId: ID!, $projectId: ID!) {
         }
       }
       project {
+        id
+        slug
+      }
+    }
+  }
+}
+
+mutation createEnvironmentConnection($organizationId: ID!, $artifactId: ID!, $environmentId: ID!) {
+  createEnvironmentConnection(organizationId: $organizationId, artifactId: $artifactId, environmentId: $environmentId) {
+    successful
+    messages {
+      message
+    }
+    result {
+      id
+      artifact {
+        id
+        name
+      }
+      environment {
         id
         slug
       }
@@ -276,7 +309,7 @@ mutation deployPackage($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $
 query getPackage($organizationId: ID!, $id: ID!) {
   package(organizationId: $organizationId, id: $id) {
     id
-    namePrefix
+    slug
     status
     params
     artifacts {
@@ -320,9 +353,36 @@ mutation configurePackage($organizationId: ID!, $id: ID!, $params: JSON!) {
     result {
       id
       params
-      namePrefix
+      slug
     }
     successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
+mutation setPackageVersion($organizationId: ID!, $id: ID!, $version: String!, $releaseStrategy: ReleaseStrategy) {
+  setPackageVersion(organizationId: $organizationId, id: $id, version: $version, releaseStrategy: $releaseStrategy) {
+    result {
+      id
+      slug
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
+mutation decommissionPackage($organizationId: ID!, $id: ID!, $message: String) {
+  decommissionPackage(organizationId: $organizationId, id: $id, message: $message) {
+    successful
+    result {
+      id
+    }
     # @genqlient(typename: "MutationValidationError")
     messages {
       message

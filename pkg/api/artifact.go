@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
@@ -12,10 +13,11 @@ type RemoteReference struct {
 }
 
 type Artifact struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Type  string `json:"type"`
-	Field string `json:"field,omitempty"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Type      string    `json:"type"`
+	Field     string    `json:"field,omitempty"`
+	UpdatedAt time.Time `json:"updatedAt,omitempty"`
 }
 
 func CreateArtifact(ctx context.Context, mdClient *client.Client, artifactName string, artifactType string, artifactData map[string]any, artifactSpecs map[string]any) (*Artifact, error) {

@@ -231,6 +231,16 @@ func (v *PreviewEnvironmentInput) __premarshalJSON() (*__premarshalPreviewEnviro
 	return &retval, nil
 }
 
+// Release strategy for a package
+type ReleaseStrategy string
+
+const (
+	// Package receives only stable releases
+	ReleaseStrategyStable ReleaseStrategy = "STABLE"
+	// Package receives both stable and development releases
+	ReleaseStrategyDevelopment ReleaseStrategy = "DEVELOPMENT"
+)
+
 type ServerMode string
 
 const (
@@ -463,6 +473,22 @@ func (v *__createArtifactInput) __premarshalJSON() (*__premarshal__createArtifac
 	return &retval, nil
 }
 
+// __createEnvironmentConnectionInput is used internally by genqlient
+type __createEnvironmentConnectionInput struct {
+	OrganizationId string `json:"organizationId"`
+	ArtifactId     string `json:"artifactId"`
+	EnvironmentId  string `json:"environmentId"`
+}
+
+// GetOrganizationId returns __createEnvironmentConnectionInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentConnectionInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetArtifactId returns __createEnvironmentConnectionInput.ArtifactId, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentConnectionInput) GetArtifactId() string { return v.ArtifactId }
+
+// GetEnvironmentId returns __createEnvironmentConnectionInput.EnvironmentId, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentConnectionInput) GetEnvironmentId() string { return v.EnvironmentId }
+
 // __createEnvironmentInput is used internally by genqlient
 type __createEnvironmentInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -534,6 +560,22 @@ func (v *__createProjectInput) GetSlug() string { return v.Slug }
 
 // GetDescription returns __createProjectInput.Description, and is useful for accessing the field via an interface.
 func (v *__createProjectInput) GetDescription() string { return v.Description }
+
+// __decommissionPackageInput is used internally by genqlient
+type __decommissionPackageInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+	Message        string `json:"message"`
+}
+
+// GetOrganizationId returns __decommissionPackageInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__decommissionPackageInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __decommissionPackageInput.Id, and is useful for accessing the field via an interface.
+func (v *__decommissionPackageInput) GetId() string { return v.Id }
+
+// GetMessage returns __decommissionPackageInput.Message, and is useful for accessing the field via an interface.
+func (v *__decommissionPackageInput) GetMessage() string { return v.Message }
 
 // __decommissionPreviewEnvironmentInput is used internally by genqlient
 type __decommissionPreviewEnvironmentInput struct {
@@ -749,6 +791,14 @@ func (v *__listCredentialArtifactDefinitionsInput) GetOrganizationId() string {
 	return v.OrganizationId
 }
 
+// __listCredentialsInput is used internally by genqlient
+type __listCredentialsInput struct {
+	OrganizationId string `json:"organizationId"`
+}
+
+// GetOrganizationId returns __listCredentialsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listCredentialsInput) GetOrganizationId() string { return v.OrganizationId }
+
 // __publishArtifactDefinitionInput is used internally by genqlient
 type __publishArtifactDefinitionInput struct {
 	OrganizationId string         `json:"organizationId"`
@@ -827,6 +877,26 @@ func (v *__publishArtifactDefinitionInput) __premarshalJSON() (*__premarshal__pu
 	return &retval, nil
 }
 
+// __setPackageVersionInput is used internally by genqlient
+type __setPackageVersionInput struct {
+	OrganizationId  string          `json:"organizationId"`
+	Id              string          `json:"id"`
+	Version         string          `json:"version"`
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+}
+
+// GetOrganizationId returns __setPackageVersionInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__setPackageVersionInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __setPackageVersionInput.Id, and is useful for accessing the field via an interface.
+func (v *__setPackageVersionInput) GetId() string { return v.Id }
+
+// GetVersion returns __setPackageVersionInput.Version, and is useful for accessing the field via an interface.
+func (v *__setPackageVersionInput) GetVersion() string { return v.Version }
+
+// GetReleaseStrategy returns __setPackageVersionInput.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *__setPackageVersionInput) GetReleaseStrategy() ReleaseStrategy { return v.ReleaseStrategy }
+
 // configurePackageConfigurePackagePackagePayload includes the requested fields of the GraphQL type PackagePayload.
 type configurePackageConfigurePackagePackagePayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -859,8 +929,8 @@ type configurePackageConfigurePackagePackagePayloadResultPackage struct {
 	Id string `json:"id"`
 	// Package configuration parameters
 	Params map[string]any `json:"-"`
-	// Prefix for resource names
-	NamePrefix string `json:"namePrefix"`
+	// Unique identifier for the package
+	Slug string `json:"slug"`
 }
 
 // GetId returns configurePackageConfigurePackagePackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
@@ -871,10 +941,8 @@ func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetParams(
 	return v.Params
 }
 
-// GetNamePrefix returns configurePackageConfigurePackagePackagePayloadResultPackage.NamePrefix, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetNamePrefix() string {
-	return v.NamePrefix
-}
+// GetSlug returns configurePackageConfigurePackagePackagePayloadResultPackage.Slug, and is useful for accessing the field via an interface.
+func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetSlug() string { return v.Slug }
 
 func (v *configurePackageConfigurePackagePackagePayloadResultPackage) UnmarshalJSON(b []byte) error {
 
@@ -914,7 +982,7 @@ type __premarshalconfigurePackageConfigurePackagePackagePayloadResultPackage str
 
 	Params json.RawMessage `json:"params"`
 
-	NamePrefix string `json:"namePrefix"`
+	Slug string `json:"slug"`
 }
 
 func (v *configurePackageConfigurePackagePackagePayloadResultPackage) MarshalJSON() ([]byte, error) {
@@ -941,7 +1009,7 @@ func (v *configurePackageConfigurePackagePackagePayloadResultPackage) __premarsh
 				"unable to marshal configurePackageConfigurePackagePackagePayloadResultPackage.Params: %w", err)
 		}
 	}
-	retval.NamePrefix = v.NamePrefix
+	retval.Slug = v.Slug
 	return &retval, nil
 }
 
@@ -1026,6 +1094,130 @@ type createArtifactResponse struct {
 // GetCreateArtifact returns createArtifactResponse.CreateArtifact, and is useful for accessing the field via an interface.
 func (v *createArtifactResponse) GetCreateArtifact() createArtifactCreateArtifactArtifactPayload {
 	return v.CreateArtifact
+}
+
+// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload includes the requested fields of the GraphQL type EnvironmentConnectionPayload.
+type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload struct {
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage `json:"messages"`
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection `json:"result"`
+}
+
+// GetSuccessful returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload.Successful, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload.Messages, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload) GetMessages() []createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// GetResult returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload.Result, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload) GetResult() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection {
+	return v.Result
+}
+
+// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage struct {
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetMessage returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection includes the requested fields of the GraphQL type EnvironmentConnection.
+type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection struct {
+	Id          string                                                                                                                   `json:"id"`
+	Artifact    createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact    `json:"artifact"`
+	Environment createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment `json:"environment"`
+}
+
+// GetId returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection.Id, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection) GetId() string {
+	return v.Id
+}
+
+// GetArtifact returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection.Artifact, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection) GetArtifact() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact {
+	return v.Artifact
+}
+
+// GetEnvironment returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection.Environment, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection) GetEnvironment() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment {
+	return v.Environment
+}
+
+// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact includes the requested fields of the GraphQL type Artifact.
+type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// GetId returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact.Id, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact) GetId() string {
+	return v.Id
+}
+
+// GetName returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact.Name, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact) GetName() string {
+	return v.Name
+}
+
+// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment includes the requested fields of the GraphQL type Environment.
+type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment struct {
+	Id   string `json:"id"`
+	Slug string `json:"slug"`
+}
+
+// GetId returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment) GetId() string {
+	return v.Id
+}
+
+// GetSlug returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment.Slug, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment) GetSlug() string {
+	return v.Slug
+}
+
+// createEnvironmentConnectionResponse is returned by createEnvironmentConnection on success.
+type createEnvironmentConnectionResponse struct {
+	// Connect an environment as the default environment type for a given environment
+	CreateEnvironmentConnection createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload `json:"createEnvironmentConnection"`
+}
+
+// GetCreateEnvironmentConnection returns createEnvironmentConnectionResponse.CreateEnvironmentConnection, and is useful for accessing the field via an interface.
+func (v *createEnvironmentConnectionResponse) GetCreateEnvironmentConnection() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload {
+	return v.CreateEnvironmentConnection
 }
 
 // createEnvironmentCreateEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
@@ -1205,6 +1397,55 @@ type createProjectResponse struct {
 // GetCreateProject returns createProjectResponse.CreateProject, and is useful for accessing the field via an interface.
 func (v *createProjectResponse) GetCreateProject() createProjectCreateProjectProjectPayload {
 	return v.CreateProject
+}
+
+// decommissionPackageDecommissionPackageDeploymentPayload includes the requested fields of the GraphQL type DeploymentPayload.
+type decommissionPackageDecommissionPackageDeploymentPayload struct {
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment `json:"result"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetSuccessful returns decommissionPackageDecommissionPackageDeploymentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *decommissionPackageDecommissionPackageDeploymentPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetResult returns decommissionPackageDecommissionPackageDeploymentPayload.Result, and is useful for accessing the field via an interface.
+func (v *decommissionPackageDecommissionPackageDeploymentPayload) GetResult() decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment {
+	return v.Result
+}
+
+// GetMessages returns decommissionPackageDecommissionPackageDeploymentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *decommissionPackageDecommissionPackageDeploymentPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A deployment represents an instance of a bundle being deployed to a target environment
+type decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment struct {
+	Id string `json:"id"`
+}
+
+// GetId returns decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment.Id, and is useful for accessing the field via an interface.
+func (v *decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment) GetId() string {
+	return v.Id
+}
+
+// decommissionPackageResponse is returned by decommissionPackage on success.
+type decommissionPackageResponse struct {
+	// Enqueues a package for decommissioning
+	DecommissionPackage decommissionPackageDecommissionPackageDeploymentPayload `json:"decommissionPackage"`
+}
+
+// GetDecommissionPackage returns decommissionPackageResponse.DecommissionPackage, and is useful for accessing the field via an interface.
+func (v *decommissionPackageResponse) GetDecommissionPackage() decommissionPackageDecommissionPackageDeploymentPayload {
+	return v.DecommissionPackage
 }
 
 // decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
@@ -1640,8 +1881,10 @@ func (v *getArtifactsByTypeArtifactsPaginatedArtifacts) GetItems() []getArtifact
 
 // getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact includes the requested fields of the GraphQL type Artifact.
 type getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+	Type      string    `json:"type"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Id, and is useful for accessing the field via an interface.
@@ -1649,6 +1892,14 @@ func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetId() str
 
 // GetName returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
 func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
+
+// GetType returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Type, and is useful for accessing the field via an interface.
+func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetType() string { return v.Type }
+
+// GetUpdatedAt returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
 
 // getArtifactsByTypeResponse is returned by getArtifactsByType on success.
 type getArtifactsByTypeResponse struct {
@@ -2564,8 +2815,8 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummar
 type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage struct {
 	// Unique identifier
 	Id string `json:"id"`
-	// Prefix for resource names
-	NamePrefix string `json:"namePrefix"`
+	// Unique identifier for the package
+	Slug string `json:"slug"`
 	// Current status of the package
 	Status PackageStatus `json:"status"`
 	// Package configuration parameters
@@ -2583,9 +2834,9 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 	return v.Id
 }
 
-// GetNamePrefix returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.NamePrefix, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetNamePrefix() string {
-	return v.NamePrefix
+// GetSlug returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Slug, and is useful for accessing the field via an interface.
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetSlug() string {
+	return v.Slug
 }
 
 // GetStatus returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Status, and is useful for accessing the field via an interface.
@@ -2654,7 +2905,7 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage struct {
 	Id string `json:"id"`
 
-	NamePrefix string `json:"namePrefix"`
+	Slug string `json:"slug"`
 
 	Status PackageStatus `json:"status"`
 
@@ -2681,7 +2932,7 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 	var retval __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage
 
 	retval.Id = v.Id
-	retval.NamePrefix = v.NamePrefix
+	retval.Slug = v.Slug
 	retval.Status = v.Status
 	{
 
@@ -2995,8 +3246,8 @@ func (v *getOciRepoResponse) GetOciRepo() getOciRepoOciRepo { return v.OciRepo }
 type getPackagePackage struct {
 	// Unique identifier
 	Id string `json:"id"`
-	// Prefix for resource names
-	NamePrefix string `json:"namePrefix"`
+	// Unique identifier for the package
+	Slug string `json:"slug"`
 	// Current status of the package
 	Status PackageStatus `json:"status"`
 	// Package configuration parameters
@@ -3014,8 +3265,8 @@ type getPackagePackage struct {
 // GetId returns getPackagePackage.Id, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetId() string { return v.Id }
 
-// GetNamePrefix returns getPackagePackage.NamePrefix, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetNamePrefix() string { return v.NamePrefix }
+// GetSlug returns getPackagePackage.Slug, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetSlug() string { return v.Slug }
 
 // GetStatus returns getPackagePackage.Status, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetStatus() PackageStatus { return v.Status }
@@ -3076,7 +3327,7 @@ func (v *getPackagePackage) UnmarshalJSON(b []byte) error {
 type __premarshalgetPackagePackage struct {
 	Id string `json:"id"`
 
-	NamePrefix string `json:"namePrefix"`
+	Slug string `json:"slug"`
 
 	Status PackageStatus `json:"status"`
 
@@ -3105,7 +3356,7 @@ func (v *getPackagePackage) __premarshalJSON() (*__premarshalgetPackagePackage, 
 	var retval __premarshalgetPackagePackage
 
 	retval.Id = v.Id
-	retval.NamePrefix = v.NamePrefix
+	retval.Slug = v.Slug
 	retval.Status = v.Status
 	{
 
@@ -3865,6 +4116,50 @@ func (v *listCredentialArtifactDefinitionsResponse) GetArtifactDefinitions() []l
 	return v.ArtifactDefinitions
 }
 
+// listCredentialsArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
+type listCredentialsArtifactsPaginatedArtifacts struct {
+	// A list of type artifact.
+	Items []listCredentialsArtifactsPaginatedArtifactsItemsArtifact `json:"items"`
+}
+
+// GetItems returns listCredentialsArtifactsPaginatedArtifacts.Items, and is useful for accessing the field via an interface.
+func (v *listCredentialsArtifactsPaginatedArtifacts) GetItems() []listCredentialsArtifactsPaginatedArtifactsItemsArtifact {
+	return v.Items
+}
+
+// listCredentialsArtifactsPaginatedArtifactsItemsArtifact includes the requested fields of the GraphQL type Artifact.
+type listCredentialsArtifactsPaginatedArtifactsItemsArtifact struct {
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+	Type      string    `json:"type"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.Id, and is useful for accessing the field via an interface.
+func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetId() string { return v.Id }
+
+// GetName returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
+func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
+
+// GetType returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.Type, and is useful for accessing the field via an interface.
+func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetType() string { return v.Type }
+
+// GetUpdatedAt returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// listCredentialsResponse is returned by listCredentials on success.
+type listCredentialsResponse struct {
+	// List all artifacts
+	Artifacts listCredentialsArtifactsPaginatedArtifacts `json:"artifacts"`
+}
+
+// GetArtifacts returns listCredentialsResponse.Artifacts, and is useful for accessing the field via an interface.
+func (v *listCredentialsResponse) GetArtifacts() listCredentialsArtifactsPaginatedArtifacts {
+	return v.Artifacts
+}
+
 // publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload includes the requested fields of the GraphQL type ArtifactDefinitionPayload.
 type publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -3920,6 +4215,58 @@ func (v *publishArtifactDefinitionResponse) GetPublishArtifactDefinition() publi
 	return v.PublishArtifactDefinition
 }
 
+// setPackageVersionResponse is returned by setPackageVersion on success.
+type setPackageVersionResponse struct {
+	SetPackageVersion setPackageVersionSetPackageVersionPackagePayload `json:"setPackageVersion"`
+}
+
+// GetSetPackageVersion returns setPackageVersionResponse.SetPackageVersion, and is useful for accessing the field via an interface.
+func (v *setPackageVersionResponse) GetSetPackageVersion() setPackageVersionSetPackageVersionPackagePayload {
+	return v.SetPackageVersion
+}
+
+// setPackageVersionSetPackageVersionPackagePayload includes the requested fields of the GraphQL type PackagePayload.
+type setPackageVersionSetPackageVersionPackagePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result setPackageVersionSetPackageVersionPackagePayloadResultPackage `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetResult returns setPackageVersionSetPackageVersionPackagePayload.Result, and is useful for accessing the field via an interface.
+func (v *setPackageVersionSetPackageVersionPackagePayload) GetResult() setPackageVersionSetPackageVersionPackagePayloadResultPackage {
+	return v.Result
+}
+
+// GetSuccessful returns setPackageVersionSetPackageVersionPackagePayload.Successful, and is useful for accessing the field via an interface.
+func (v *setPackageVersionSetPackageVersionPackagePayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns setPackageVersionSetPackageVersionPackagePayload.Messages, and is useful for accessing the field via an interface.
+func (v *setPackageVersionSetPackageVersionPackagePayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// setPackageVersionSetPackageVersionPackagePayloadResultPackage includes the requested fields of the GraphQL type Package.
+// The GraphQL type's documentation follows.
+//
+// A deployed instance of a bundle in the context of its manifest
+type setPackageVersionSetPackageVersionPackagePayloadResultPackage struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Unique identifier for the package
+	Slug string `json:"slug"`
+}
+
+// GetId returns setPackageVersionSetPackageVersionPackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
+func (v *setPackageVersionSetPackageVersionPackagePayloadResultPackage) GetId() string { return v.Id }
+
+// GetSlug returns setPackageVersionSetPackageVersionPackagePayloadResultPackage.Slug, and is useful for accessing the field via an interface.
+func (v *setPackageVersionSetPackageVersionPackagePayloadResultPackage) GetSlug() string {
+	return v.Slug
+}
+
 // The query or mutation executed by configurePackage.
 const configurePackage_Operation = `
 mutation configurePackage ($organizationId: ID!, $id: ID!, $params: JSON!) {
@@ -3927,7 +4274,7 @@ mutation configurePackage ($organizationId: ID!, $id: ID!, $params: JSON!) {
 		result {
 			id
 			params
-			namePrefix
+			slug
 		}
 		successful
 		messages {
@@ -4109,6 +4456,59 @@ func createEnvironment(
 	return &data, err
 }
 
+// The query or mutation executed by createEnvironmentConnection.
+const createEnvironmentConnection_Operation = `
+mutation createEnvironmentConnection ($organizationId: ID!, $artifactId: ID!, $environmentId: ID!) {
+	createEnvironmentConnection(organizationId: $organizationId, artifactId: $artifactId, environmentId: $environmentId) {
+		successful
+		messages {
+			message
+		}
+		result {
+			id
+			artifact {
+				id
+				name
+			}
+			environment {
+				id
+				slug
+			}
+		}
+	}
+}
+`
+
+func createEnvironmentConnection(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	artifactId string,
+	environmentId string,
+) (*createEnvironmentConnectionResponse, error) {
+	req := &graphql.Request{
+		OpName: "createEnvironmentConnection",
+		Query:  createEnvironmentConnection_Operation,
+		Variables: &__createEnvironmentConnectionInput{
+			OrganizationId: organizationId,
+			ArtifactId:     artifactId,
+			EnvironmentId:  environmentId,
+		},
+	}
+	var err error
+
+	var data createEnvironmentConnectionResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by createManifest.
 const createManifest_Operation = `
 mutation createManifest ($organizationId: ID!, $bundleId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
@@ -4202,6 +4602,51 @@ func createProject(
 	var err error
 
 	var data createProjectResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by decommissionPackage.
+const decommissionPackage_Operation = `
+mutation decommissionPackage ($organizationId: ID!, $id: ID!, $message: String) {
+	decommissionPackage(organizationId: $organizationId, id: $id, message: $message) {
+		successful
+		result {
+			id
+		}
+		messages {
+			message
+		}
+	}
+}
+`
+
+func decommissionPackage(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+	message string,
+) (*decommissionPackageResponse, error) {
+	req := &graphql.Request{
+		OpName: "decommissionPackage",
+		Query:  decommissionPackage_Operation,
+		Variables: &__decommissionPackageInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Message:        message,
+		},
+	}
+	var err error
+
+	var data decommissionPackageResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
@@ -4497,6 +4942,8 @@ query getArtifactsByType ($organizationId: ID!, $artifactType: String!) {
 		items {
 			id
 			name
+			type
+			updatedAt
 		}
 	}
 }
@@ -4730,7 +5177,7 @@ query getEnvironmentsByProject ($organizationId: ID!, $projectId: ID!) {
 			}
 			packages {
 				id
-				namePrefix
+				slug
 				status
 				params
 				artifacts {
@@ -4845,7 +5292,7 @@ const getPackage_Operation = `
 query getPackage ($organizationId: ID!, $id: ID!) {
 	package(organizationId: $organizationId, id: $id) {
 		id
-		namePrefix
+		slug
 		status
 		params
 		artifacts {
@@ -5122,6 +5569,46 @@ func listCredentialArtifactDefinitions(
 	return &data, err
 }
 
+// The query or mutation executed by listCredentials.
+const listCredentials_Operation = `
+query listCredentials ($organizationId: ID!) {
+	artifacts(organizationId: $organizationId, input: {filter:{credential:true}}) {
+		items {
+			id
+			name
+			type
+			updatedAt
+		}
+	}
+}
+`
+
+func listCredentials(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+) (*listCredentialsResponse, error) {
+	req := &graphql.Request{
+		OpName: "listCredentials",
+		Query:  listCredentials_Operation,
+		Variables: &__listCredentialsInput{
+			OrganizationId: organizationId,
+		},
+	}
+	var err error
+
+	var data listCredentialsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by publishArtifactDefinition.
 const publishArtifactDefinition_Operation = `
 mutation publishArtifactDefinition ($organizationId: ID!, $schema: JSON!) {
@@ -5155,6 +5642,54 @@ func publishArtifactDefinition(
 	var err error
 
 	var data publishArtifactDefinitionResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by setPackageVersion.
+const setPackageVersion_Operation = `
+mutation setPackageVersion ($organizationId: ID!, $id: ID!, $version: String!, $releaseStrategy: ReleaseStrategy) {
+	setPackageVersion(organizationId: $organizationId, id: $id, version: $version, releaseStrategy: $releaseStrategy) {
+		result {
+			id
+			slug
+		}
+		successful
+		messages {
+			message
+		}
+	}
+}
+`
+
+func setPackageVersion(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+	version string,
+	releaseStrategy ReleaseStrategy,
+) (*setPackageVersionResponse, error) {
+	req := &graphql.Request{
+		OpName: "setPackageVersion",
+		Query:  setPackageVersion_Operation,
+		Variables: &__setPackageVersionInput{
+			OrganizationId:  organizationId,
+			Id:              id,
+			Version:         version,
+			ReleaseStrategy: releaseStrategy,
+		},
+	}
+	var err error
+
+	var data setPackageVersionResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

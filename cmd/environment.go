@@ -64,10 +64,19 @@ func NewCmdEnvironment() *cobra.Command {
 	}
 	environmentCreateCmd.Flags().StringP("name", "n", "", "Environment name (defaults to slug if not provided)")
 
+	environmentDefaultCmd := &cobra.Command{
+		Use:   "default [environment] [artifact-id]",
+		Short: "Set an environment default connection",
+		Long:  helpdocs.MustRender("environment/default"),
+		Args:  cobra.ExactArgs(2),
+		RunE:  runEnvironmentDefault,
+	}
+
 	environmentCmd.AddCommand(environmentExportCmd)
 	environmentCmd.AddCommand(environmentGetCmd)
 	environmentCmd.AddCommand(environmentListCmd)
 	environmentCmd.AddCommand(environmentCreateCmd)
+	environmentCmd.AddCommand(environmentDefaultCmd)
 
 	return environmentCmd
 }
@@ -216,12 +225,43 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	fmt.Printf("✅ Environment `%s` created successfully\n", fullSlug)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("Environment %s created successfully (ID: %s)\n", env.Slug, env.ID)
-		fmt.Printf("URL: %s\n", urlHelper.EnvironmentURL(projectIdOrSlug, env.Slug))
-	} else {
-		fmt.Printf("Environment %s created successfully (ID: %s)\n", env.Slug, env.ID)
+		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(projectIdOrSlug, env.Slug))
 	}
+	return nil
+}
+
+func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	environmentId := args[0]
+	artifactId := args[1]
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	err := api.SetEnvironmentDefault(ctx, mdClient, environmentId, artifactId)
+	if err != nil {
+		return err
+	}
+
+	environment, err := api.GetEnvironment(ctx, mdClient, environmentId)
+	if err != nil {
+		return fmt.Errorf("failed to get environment: %w", err)
+	}
+
+	fullEnvSlug := fmt.Sprintf("%s-%s", environment.Project.Slug, environment.Slug)
+	fmt.Printf("✅ Environment `%s` default connection set successfully\n", fullEnvSlug)
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	if urlErr == nil {
+		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(environment.Project.Slug, environment.Slug))
+	}
+
 	return nil
 }

@@ -74,7 +74,7 @@ func RunNew(ctx context.Context, mdClient *client.Client, projectSlug string) (*
 		promptCursor: -1,
 		artDefTable:  artDefTable,
 		listCredentials: func(artDefType string) ([]*api.Artifact, error) {
-			return api.ListCredentials(ctx, mdClient, artDefType)
+			return api.ListArtifactsByType(ctx, mdClient, artDefType)
 		},
 	}
 

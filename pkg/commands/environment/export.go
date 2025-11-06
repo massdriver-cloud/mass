@@ -30,7 +30,7 @@ func ExportEnvironment(ctx context.Context, mdClient *client.Client, environment
 	for _, pack := range environment.Packages {
 		exportErr := pkg.ExportPackage(ctx, mdClient, &pack, directory)
 		if exportErr != nil {
-			return fmt.Errorf("failed to export package %s: %w", pack.NamePrefix, exportErr)
+			return fmt.Errorf("failed to export package %s: %w", pack.Slug, exportErr)
 		}
 	}
 

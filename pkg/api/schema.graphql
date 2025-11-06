@@ -602,8 +602,10 @@ type Package {
   "Unique identifier"
   id: ID!
 
-  "Prefix for resource names"
-  namePrefix: String!
+  namePrefix: String! @deprecated(reason: "Use slug instead.")
+
+  "Unique identifier for the package"
+  slug: String!
 
   "Package configuration parameters"
   params: JSON!

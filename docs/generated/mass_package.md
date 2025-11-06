@@ -41,6 +41,8 @@ Packages are used to:
 * [mass package configure](/cli/commands/mass_package_configure)	 - Configure package
 * [mass package create](/cli/commands/mass_package_create)	 - Create a manifest (add bundle to project)
 * [mass package deploy](/cli/commands/mass_package_deploy)	 - Deploy packages
+* [mass package destroy](/cli/commands/mass_package_destroy)	 - Destroy (decommission) a package
 * [mass package export](/cli/commands/mass_package_export)	 - Export packages
 * [mass package get](/cli/commands/mass_package_get)	 - Get a package
 * [mass package patch](/cli/commands/mass_package_patch)	 - Patch individual package parameter values
+* [mass package version](/cli/commands/mass_package_version)	 - Set package version

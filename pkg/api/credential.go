@@ -27,10 +27,25 @@ func ListCredentialTypes(ctx context.Context, mdClient *client.Client) []*Artifa
 	return artifactDefinitions
 }
 
-// Get the first page of credentials for an artifact type
-func ListCredentials(ctx context.Context, mdClient *client.Client, artifactType string) ([]*Artifact, error) {
+// Get the first page of artifacts for an artifact type
+func ListArtifactsByType(ctx context.Context, mdClient *client.Client, artifactType string) ([]*Artifact, error) {
 	artifactList := []*Artifact{}
 	response, err := getArtifactsByType(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactType)
+
+	for _, artifactRecord := range response.Artifacts.Items {
+		artifactList = append(artifactList, artifactRecord.toArtifact())
+	}
+
+	return artifactList, err
+}
+
+// List all credential artifacts
+func ListCredentials(ctx context.Context, mdClient *client.Client) ([]*Artifact, error) {
+	artifactList := []*Artifact{}
+	response, err := listCredentials(ctx, mdClient.GQL, mdClient.Config.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, artifactRecord := range response.Artifacts.Items {
 		artifactList = append(artifactList, artifactRecord.toArtifact())
@@ -42,7 +57,19 @@ func ListCredentials(ctx context.Context, mdClient *client.Client, artifactType 
 // Convert the API response to an Artifact
 func (a *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) toArtifact() *Artifact {
 	return &Artifact{
-		ID:   a.Id,
-		Name: a.Name,
+		ID:        a.Id,
+		Name:      a.Name,
+		Type:      a.Type,
+		UpdatedAt: a.UpdatedAt,
+	}
+}
+
+// Convert the API response to an Artifact
+func (a *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) toArtifact() *Artifact {
+	return &Artifact{
+		ID:        a.Id,
+		Name:      a.Name,
+		Type:      a.Type,
+		UpdatedAt: a.UpdatedAt,
 	}
 }

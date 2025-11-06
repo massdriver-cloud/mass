@@ -57,7 +57,7 @@ func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *client.Client, 
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
 		instancesURL := urlHelper.RepoInstancesURL(b.Name, version)
-		fmt.Printf("Repo: %s\n", instancesURL)
+		fmt.Printf("🔗 %s\n", instancesURL)
 	}
 
 	return nil

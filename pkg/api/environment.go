@@ -86,3 +86,22 @@ func CreateEnvironment(ctx context.Context, mdClient *client.Client, projectId s
 	}
 	return toEnvironment(response.CreateEnvironment.Result)
 }
+
+func SetEnvironmentDefault(ctx context.Context, mdClient *client.Client, environmentId string, artifactId string) error {
+	response, err := createEnvironmentConnection(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactId, environmentId)
+	if err != nil {
+		return fmt.Errorf("failed to set environment default: %w", err)
+	}
+	if !response.CreateEnvironmentConnection.Successful {
+		messages := response.CreateEnvironmentConnection.GetMessages()
+		if len(messages) > 0 {
+			errMsg := "unable to set environment default:"
+			for _, msg := range messages {
+				errMsg += "\n  - " + msg.Message
+			}
+			return fmt.Errorf("%s", errMsg)
+		}
+		return fmt.Errorf("unable to set environment default")
+	}
+	return nil
+}

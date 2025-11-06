@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"text/template"
 
@@ -45,7 +47,7 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgConfigure,
 	}
-	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params JSON file. This file supports bash interpolation.")
+	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params json, tfvars or yaml file. This file supports bash interpolation.")
 
 	pkgDeployCmd := &cobra.Command{
 		Use:     `deploy <project>-<env>-<manifest>`,
@@ -100,12 +102,34 @@ func NewCmdPkg() *cobra.Command {
 	pkgCreateCmd.Flags().StringP("bundle", "b", "", "Bundle ID or name (required)")
 	_ = pkgCreateCmd.MarkFlagRequired("bundle")
 
+	pkgVersionCmd := &cobra.Command{
+		Use:     `version <package-id>@<version>`,
+		Short:   "Set package version",
+		Example: `mass package version api-prod-db@latest --release-channel development`,
+		Long:    helpdocs.MustRender("package/version"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgVersion,
+	}
+	pkgVersionCmd.Flags().String("release-channel", "stable", "Release strategy (stable or development)")
+
+	pkgDestroyCmd := &cobra.Command{
+		Use:     `destroy <project>-<env>-<manifest>`,
+		Short:   "Destroy (decommission) a package",
+		Example: `mass package destroy api-prod-db --force`,
+		Long:    "Destroy (decommission) a package. This will permanently delete the package and all its resources.",
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgDestroy,
+	}
+	pkgDestroyCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+
 	pkgCmd.AddCommand(pkgConfigureCmd)
 	pkgCmd.AddCommand(pkgDeployCmd)
 	pkgCmd.AddCommand(pkgExportCmd)
 	pkgCmd.AddCommand(pkgGetCmd)
 	pkgCmd.AddCommand(pkgPatchCmd)
 	pkgCmd.AddCommand(pkgCreateCmd)
+	pkgCmd.AddCommand(pkgVersionCmd)
+	pkgCmd.AddCommand(pkgDestroyCmd)
 
 	return pkgCmd
 }
@@ -214,13 +238,23 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	_, err := pkg.RunConfigure(ctx, mdClient, packageSlugOrID, params)
+	configuredPkg, err := pkg.RunConfigure(ctx, mdClient, packageSlugOrID, params)
+	if err != nil {
+		return err
+	}
 
-	var name = lipgloss.NewStyle().SetString(packageSlugOrID).Foreground(lipgloss.Color("#7D56F4"))
-	msg := fmt.Sprintf("Configuring: %s", name)
-	fmt.Println(msg)
+	fmt.Printf("✅ Package `%s` configured successfully\n", configuredPkg.Slug)
 
-	return err
+	// Get package details to build URL
+	pkgDetails, err := api.GetPackageByName(ctx, mdClient, configuredPkg.Slug)
+	if err == nil && pkgDetails.Environment != nil && pkgDetails.Environment.Project != nil && pkgDetails.Manifest != nil {
+		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+		if urlErr == nil {
+			fmt.Printf("🔗 %s\n", urlHelper.PackageURL(pkgDetails.Environment.Project.Slug, pkgDetails.Environment.Slug, pkgDetails.Manifest.Slug))
+		}
+	}
+
+	return nil
 }
 
 func runPkgPatch(cmd *cobra.Command, args []string) error {
@@ -297,17 +331,121 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	manifest, err := api.CreateManifest(ctx, mdClient, bundleIdOrName, projectIdOrSlug, name, manifestSlug, "")
+	_, err = api.CreateManifest(ctx, mdClient, bundleIdOrName, projectIdOrSlug, name, manifestSlug, "")
 	if err != nil {
 		return err
 	}
 
+	fmt.Printf("✅ Package `%s` created successfully\n", fullSlug)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
-		fmt.Printf("URL: %s\n", urlHelper.PackageURL(projectIdOrSlug, environmentSlug, manifestSlug))
-	} else {
-		fmt.Printf("Manifest %s created successfully (ID: %s)\n", manifest.Slug, manifest.ID)
+		fmt.Printf("🔗 %s\n", urlHelper.PackageURL(projectIdOrSlug, environmentSlug, manifestSlug))
 	}
+	return nil
+}
+
+func runPkgVersion(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	packageIDAndVersion := args[0]
+
+	// Parse package-id@version format
+	parts := strings.Split(packageIDAndVersion, "@")
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid format: expected <package-id>@<version>, got %s", packageIDAndVersion)
+	}
+	packageID := parts[0]
+	version := parts[1]
+
+	releaseChannel, err := cmd.Flags().GetString("release-channel")
+	if err != nil {
+		return err
+	}
+
+	// Convert release channel to ReleaseStrategy enum value
+	var releaseStrategy api.ReleaseStrategy
+	if releaseChannel == "development" {
+		releaseStrategy = api.ReleaseStrategyDevelopment
+	} else if releaseChannel == "stable" {
+		releaseStrategy = api.ReleaseStrategyStable
+	} else {
+		return fmt.Errorf("invalid release-channel: must be 'stable' or 'development', got '%s'", releaseChannel)
+	}
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	updatedPkg, err := api.SetPackageVersion(ctx, mdClient, packageID, version, releaseStrategy)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Package `%s` version set successfully\n", updatedPkg.Slug)
+
+	// Get package details to build URL
+	pkgDetails, err := api.GetPackageByName(ctx, mdClient, updatedPkg.Slug)
+	if err == nil && pkgDetails.Environment != nil && pkgDetails.Environment.Project != nil && pkgDetails.Manifest != nil {
+		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+		if urlErr == nil {
+			fmt.Printf("🔗 %s\n", urlHelper.PackageURL(pkgDetails.Environment.Project.Slug, pkgDetails.Environment.Slug, pkgDetails.Manifest.Slug))
+		}
+	}
+
+	return nil
+}
+
+func runPkgDestroy(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	packageSlugOrID := args[0]
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	// Get package details for confirmation and URL
+	pkg, err := api.GetPackageByName(ctx, mdClient, packageSlugOrID)
+	if err != nil {
+		return err
+	}
+
+	// Prompt for confirmation - requires typing the package slug unless --force is used
+	if !force {
+		fmt.Printf("WARNING: This will permanently decommission package `%s` and all its resources.\n", pkg.Slug)
+		fmt.Printf("Type `%s` to confirm decommission: ", pkg.Slug)
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(answer)
+
+		if answer != pkg.Slug {
+			fmt.Println("Decommission cancelled.")
+			return nil
+		}
+	}
+
+	_, err = api.DecommissionPackage(ctx, mdClient, pkg.ID, "")
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Package `%s` decommission started\n", pkg.Slug)
+
+	// Get package details to build URL
+	if pkg.Environment != nil && pkg.Environment.Project != nil && pkg.Manifest != nil {
+		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+		if urlErr == nil {
+			fmt.Printf("🔗 %s\n", urlHelper.PackageURL(pkg.Environment.Project.Slug, pkg.Environment.Slug, pkg.Manifest.Slug))
+		}
+	}
+
 	return nil
 }

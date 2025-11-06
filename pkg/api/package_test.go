@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -16,7 +15,7 @@ func TestGetPackageByName(t *testing.T) {
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
 			"package": map[string]any{
-				"namePrefix": fmt.Sprintf("%s-0000", pkgName),
+				"slug": pkgName,
 				"bundle": map[string]any{
 					"id": "bundle-id",
 				},
@@ -40,7 +39,7 @@ func TestGetPackageByName(t *testing.T) {
 	}
 
 	want := &api.Package{
-		NamePrefix: "ecomm-prod-cache-0000",
+		Slug: "ecomm-prod-cache",
 		Bundle: &api.Bundle{
 			ID: "bundle-id",
 		},

@@ -9,3 +9,4 @@ Environments can be modeled by application stage (production, staging, developme
 - `export`: Export an environment to local filesystem
 - `get`: Retrieve environment details and configuration
 - `list`: List all environments in a project
+- `default`: Set an artifact as the default connection for an environment
