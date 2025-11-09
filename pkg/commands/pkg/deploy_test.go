@@ -13,15 +13,13 @@ func TestRunDeploy(t *testing.T) {
 	responses := []any{
 		gqlmock.QueryResponse{
 			Data: map[string]any{
-				"getPackage": map[string]any{
-					"package": map[string]any{
-						"slug": "ecomm-prod-cache",
-						"manifest": map[string]any{
-							"id": "manifest-id",
-						},
-						"environment": map[string]any{
-							"id": "target-id",
-						},
+				"package": map[string]any{
+					"slug": "ecomm-prod-cache",
+					"manifest": map[string]any{
+						"id": "manifest-id",
+					},
+					"environment": map[string]any{
+						"id": "target-id",
 					},
 				},
 			},
