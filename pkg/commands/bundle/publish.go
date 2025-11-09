@@ -66,7 +66,8 @@ func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *client.Client, 
 func getVersion(ctx context.Context, mdClient *client.Client, b *bundle.Bundle, developmentRelease bool) (string, error) {
 	existingVersions, err := api.GetOciRepoTags(ctx, mdClient, b.Name)
 	if err != nil {
-		return "", err
+		// TODO need actual error handling here. Need to distinguish between "repo not found" and other errors
+		existingVersions = []string{}
 	}
 
 	if b.Version != "0.0.0" && slices.Contains(existingVersions, b.Version) {
