@@ -12,6 +12,17 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api/scalars"
 )
 
+type AlarmStatus string
+
+const (
+	// The metric is within normal operating parameters and below the alarm threshold.
+	AlarmStatusOk AlarmStatus = "OK"
+	// The metric has exceeded the configured threshold and triggered the alarm condition.
+	AlarmStatusAlarm AlarmStatus = "ALARM"
+	// There is not enough data collected yet to determine the alarm state. This typically occurs when an alarm is first created or after a period of no data.
+	AlarmStatusInsufficientData AlarmStatus = "INSUFFICIENT_DATA"
+)
+
 // How connecting this type works on the diagram.
 type ArtifactDefinitionUiConnectionOrientation string
 
@@ -44,6 +55,18 @@ func (v *Credential) GetArtifactDefinitionType() string { return v.ArtifactDefin
 
 // GetArtifactId returns Credential.ArtifactId, and is useful for accessing the field via an interface.
 func (v *Credential) GetArtifactId() string { return v.ArtifactId }
+
+// Action type of a deployment
+type DeploymentAction string
+
+const (
+	// Provision new infrastructure
+	DeploymentActionProvision DeploymentAction = "PROVISION"
+	// Decommission existing infrastructure
+	DeploymentActionDecommission DeploymentAction = "DECOMMISSION"
+	// Plan deployment without executing
+	DeploymentActionPlan DeploymentAction = "PLAN"
+)
 
 // Status of a deployment
 type DeploymentStatus string
@@ -3251,15 +3274,54 @@ type getPackagePackage struct {
 	// Current status of the package
 	Status PackageStatus `json:"status"`
 	// Package configuration parameters
-	Params map[string]any `json:"-"`
+	Params       map[string]any `json:"-"`
+	ParamsSchema map[string]any `json:"-"`
+	// When the package was created
+	CreatedAt time.Time `json:"createdAt"`
+	// When the package was last updated
+	UpdatedAt time.Time `json:"updatedAt"`
+	// The version constraint for this package. This determines which bundle release version the package should use.
+	// Supports semver constraints (~1.2, ~1), exact versions (1.2.3), and release channels (latest).
+	// See `VersionConstraint` type documentation for supported formats and examples.
+	Version string `json:"version"`
+	// The actual semantic version of the bundle release currently configured for this package.
+	// This is the resolved version based on the `version` constraint and will be used for the next deployment.
+	// Example: if `version` is "~1.2", `resolvedVersion` might be "1.2.5".
+	ResolvedVersion string `json:"resolvedVersion"`
+	// The release strategy for this package. Determines whether the package should receive
+	// stable releases only or also development releases.
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// The semantic version that was last executed.
+	// This reflects what has been provisioned to infrastructure, which may differ from `resolvedVersion`
+	// if the package hasn't been deployed since the version was changed. Returns nil if never deployed.
+	DeployedVersion string `json:"deployedVersion"`
+	// The newest version available for upgrade based on the package's `version` constraint.
+	// Returns nil if no upgrade is available or if already on the latest matching version.
+	// For strict semver constraints (1.2.3), checks for patch-level upgrades (~1.2).
+	// For release channels (~1.2, ~1, latest), checks for the newest matching version.
+	AvailableUpgrade string                    `json:"availableUpgrade"`
+	Bundle           getPackagePackageBundle   `json:"bundle"`
+	Manifest         getPackagePackageManifest `json:"manifest"`
+	// The environment this package will be deployed to
+	Environment getPackagePackageEnvironment `json:"environment"`
 	// Artifacts provisioned by this package
 	Artifacts []getPackagePackageArtifactsArtifact `json:"artifacts"`
 	// Artifacts from a remote source like another project or a resource not managed by massdriver
 	RemoteReferences []getPackagePackageRemoteReferencesRemoteReference `json:"remoteReferences"`
-	Bundle           getPackagePackageBundle                            `json:"bundle"`
-	Manifest         getPackagePackageManifest                          `json:"manifest"`
-	// The environment this package will be deployed to
-	Environment getPackagePackageEnvironment `json:"environment"`
+	Connections      []getPackagePackageConnectionsConnection           `json:"connections"`
+	// The latest deployment for this package
+	LatestDeployment getPackagePackageLatestDeployment `json:"latestDeployment"`
+	// Currently active deployment for this package
+	ActiveDeployment getPackagePackageActiveDeployment        `json:"activeDeployment"`
+	Deployments      []getPackagePackageDeploymentsDeployment `json:"deployments"`
+	// Cloud alarms configured through IaC for this package
+	Alarms []getPackagePackageAlarmsAlarm `json:"alarms"`
+	// Secret configuration for application packages
+	SecretFields []getPackagePackageSecretFieldsSecretField `json:"secretFields"`
+	// Checks if this package can be decommissioned.
+	Decommissionable getPackagePackageDecommissionablePackageDeletionLifecycle `json:"decommissionable"`
+	// Cloud provider costs for this package
+	Cost getPackagePackageCost `json:"cost"`
 }
 
 // GetId returns getPackagePackage.Id, and is useful for accessing the field via an interface.
@@ -3274,13 +3336,29 @@ func (v *getPackagePackage) GetStatus() PackageStatus { return v.Status }
 // GetParams returns getPackagePackage.Params, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetParams() map[string]any { return v.Params }
 
-// GetArtifacts returns getPackagePackage.Artifacts, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetArtifacts() []getPackagePackageArtifactsArtifact { return v.Artifacts }
+// GetParamsSchema returns getPackagePackage.ParamsSchema, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetParamsSchema() map[string]any { return v.ParamsSchema }
 
-// GetRemoteReferences returns getPackagePackage.RemoteReferences, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetRemoteReferences() []getPackagePackageRemoteReferencesRemoteReference {
-	return v.RemoteReferences
-}
+// GetCreatedAt returns getPackagePackage.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getPackagePackage.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetVersion returns getPackagePackage.Version, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetVersion() string { return v.Version }
+
+// GetResolvedVersion returns getPackagePackage.ResolvedVersion, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetResolvedVersion() string { return v.ResolvedVersion }
+
+// GetReleaseStrategy returns getPackagePackage.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetReleaseStrategy() ReleaseStrategy { return v.ReleaseStrategy }
+
+// GetDeployedVersion returns getPackagePackage.DeployedVersion, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetDeployedVersion() string { return v.DeployedVersion }
+
+// GetAvailableUpgrade returns getPackagePackage.AvailableUpgrade, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetAvailableUpgrade() string { return v.AvailableUpgrade }
 
 // GetBundle returns getPackagePackage.Bundle, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetBundle() getPackagePackageBundle { return v.Bundle }
@@ -3291,6 +3369,50 @@ func (v *getPackagePackage) GetManifest() getPackagePackageManifest { return v.M
 // GetEnvironment returns getPackagePackage.Environment, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetEnvironment() getPackagePackageEnvironment { return v.Environment }
 
+// GetArtifacts returns getPackagePackage.Artifacts, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetArtifacts() []getPackagePackageArtifactsArtifact { return v.Artifacts }
+
+// GetRemoteReferences returns getPackagePackage.RemoteReferences, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetRemoteReferences() []getPackagePackageRemoteReferencesRemoteReference {
+	return v.RemoteReferences
+}
+
+// GetConnections returns getPackagePackage.Connections, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetConnections() []getPackagePackageConnectionsConnection {
+	return v.Connections
+}
+
+// GetLatestDeployment returns getPackagePackage.LatestDeployment, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetLatestDeployment() getPackagePackageLatestDeployment {
+	return v.LatestDeployment
+}
+
+// GetActiveDeployment returns getPackagePackage.ActiveDeployment, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetActiveDeployment() getPackagePackageActiveDeployment {
+	return v.ActiveDeployment
+}
+
+// GetDeployments returns getPackagePackage.Deployments, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetDeployments() []getPackagePackageDeploymentsDeployment {
+	return v.Deployments
+}
+
+// GetAlarms returns getPackagePackage.Alarms, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetAlarms() []getPackagePackageAlarmsAlarm { return v.Alarms }
+
+// GetSecretFields returns getPackagePackage.SecretFields, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetSecretFields() []getPackagePackageSecretFieldsSecretField {
+	return v.SecretFields
+}
+
+// GetDecommissionable returns getPackagePackage.Decommissionable, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetDecommissionable() getPackagePackageDecommissionablePackageDeletionLifecycle {
+	return v.Decommissionable
+}
+
+// GetCost returns getPackagePackage.Cost, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetCost() getPackagePackageCost { return v.Cost }
+
 func (v *getPackagePackage) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -3299,7 +3421,8 @@ func (v *getPackagePackage) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*getPackagePackage
-		Params json.RawMessage `json:"params"`
+		Params       json.RawMessage `json:"params"`
+		ParamsSchema json.RawMessage `json:"paramsSchema"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.getPackagePackage = v
@@ -3321,6 +3444,19 @@ func (v *getPackagePackage) UnmarshalJSON(b []byte) error {
 			}
 		}
 	}
+
+	{
+		dst := &v.ParamsSchema
+		src := firstPass.ParamsSchema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getPackagePackage.ParamsSchema: %w", err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -3333,15 +3469,47 @@ type __premarshalgetPackagePackage struct {
 
 	Params json.RawMessage `json:"params"`
 
-	Artifacts []getPackagePackageArtifactsArtifact `json:"artifacts"`
+	ParamsSchema json.RawMessage `json:"paramsSchema"`
 
-	RemoteReferences []getPackagePackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Version string `json:"version"`
+
+	ResolvedVersion string `json:"resolvedVersion"`
+
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+
+	DeployedVersion string `json:"deployedVersion"`
+
+	AvailableUpgrade string `json:"availableUpgrade"`
 
 	Bundle getPackagePackageBundle `json:"bundle"`
 
 	Manifest getPackagePackageManifest `json:"manifest"`
 
 	Environment getPackagePackageEnvironment `json:"environment"`
+
+	Artifacts []getPackagePackageArtifactsArtifact `json:"artifacts"`
+
+	RemoteReferences []getPackagePackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+
+	Connections []getPackagePackageConnectionsConnection `json:"connections"`
+
+	LatestDeployment getPackagePackageLatestDeployment `json:"latestDeployment"`
+
+	ActiveDeployment getPackagePackageActiveDeployment `json:"activeDeployment"`
+
+	Deployments []getPackagePackageDeploymentsDeployment `json:"deployments"`
+
+	Alarms []getPackagePackageAlarmsAlarm `json:"alarms"`
+
+	SecretFields []getPackagePackageSecretFieldsSecretField `json:"secretFields"`
+
+	Decommissionable getPackagePackageDecommissionablePackageDeletionLifecycle `json:"decommissionable"`
+
+	Cost getPackagePackageCost `json:"cost"`
 }
 
 func (v *getPackagePackage) MarshalJSON() ([]byte, error) {
@@ -3370,20 +3538,297 @@ func (v *getPackagePackage) __premarshalJSON() (*__premarshalgetPackagePackage, 
 				"unable to marshal getPackagePackage.Params: %w", err)
 		}
 	}
-	retval.Artifacts = v.Artifacts
-	retval.RemoteReferences = v.RemoteReferences
+	{
+
+		dst := &retval.ParamsSchema
+		src := v.ParamsSchema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getPackagePackage.ParamsSchema: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Version = v.Version
+	retval.ResolvedVersion = v.ResolvedVersion
+	retval.ReleaseStrategy = v.ReleaseStrategy
+	retval.DeployedVersion = v.DeployedVersion
+	retval.AvailableUpgrade = v.AvailableUpgrade
 	retval.Bundle = v.Bundle
 	retval.Manifest = v.Manifest
 	retval.Environment = v.Environment
+	retval.Artifacts = v.Artifacts
+	retval.RemoteReferences = v.RemoteReferences
+	retval.Connections = v.Connections
+	retval.LatestDeployment = v.LatestDeployment
+	retval.ActiveDeployment = v.ActiveDeployment
+	retval.Deployments = v.Deployments
+	retval.Alarms = v.Alarms
+	retval.SecretFields = v.SecretFields
+	retval.Decommissionable = v.Decommissionable
+	retval.Cost = v.Cost
 	return &retval, nil
 }
+
+// getPackagePackageActiveDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A deployment represents an instance of a bundle being deployed to a target environment
+type getPackagePackageActiveDeployment struct {
+	Id                 string           `json:"id"`
+	Status             DeploymentStatus `json:"status"`
+	Action             DeploymentAction `json:"action"`
+	Version            string           `json:"version"`
+	Message            string           `json:"message"`
+	DeployedBy         string           `json:"deployedBy"`
+	CreatedAt          time.Time        `json:"createdAt"`
+	UpdatedAt          time.Time        `json:"updatedAt"`
+	LastTransitionedAt time.Time        `json:"lastTransitionedAt"`
+	// Elapsed time in seconds
+	ElapsedTime int `json:"elapsedTime"`
+}
+
+// GetId returns getPackagePackageActiveDeployment.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetId() string { return v.Id }
+
+// GetStatus returns getPackagePackageActiveDeployment.Status, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetStatus() DeploymentStatus { return v.Status }
+
+// GetAction returns getPackagePackageActiveDeployment.Action, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetAction() DeploymentAction { return v.Action }
+
+// GetVersion returns getPackagePackageActiveDeployment.Version, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetVersion() string { return v.Version }
+
+// GetMessage returns getPackagePackageActiveDeployment.Message, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetMessage() string { return v.Message }
+
+// GetDeployedBy returns getPackagePackageActiveDeployment.DeployedBy, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetDeployedBy() string { return v.DeployedBy }
+
+// GetCreatedAt returns getPackagePackageActiveDeployment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getPackagePackageActiveDeployment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetLastTransitionedAt returns getPackagePackageActiveDeployment.LastTransitionedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetLastTransitionedAt() time.Time {
+	return v.LastTransitionedAt
+}
+
+// GetElapsedTime returns getPackagePackageActiveDeployment.ElapsedTime, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetElapsedTime() int { return v.ElapsedTime }
+
+// getPackagePackageAlarmsAlarm includes the requested fields of the GraphQL type Alarm.
+// The GraphQL type's documentation follows.
+//
+// An alarm is a condition that triggers a notification. It is defined by a metric, a comparison operator, a threshold, and a period.
+type getPackagePackageAlarmsAlarm struct {
+	// Unique identifier for the alarm.
+	Id string `json:"id"`
+	// The cloud provider's unique identifier for this alarm. Examples: AWS: 'arn:aws:cloudwatch:us-west-2:123456789012:alarm:test-alarm', Azure: '/subscriptions/.../alerts/12345678-1234-1234-1234-1234567890ab'
+	CloudResourceId string `json:"cloudResourceId"`
+	// Human-readable name for the alarm.
+	DisplayName string `json:"displayName"`
+	// The cloud provider's metric namespace that categorizes the metric. Examples: AWS: 'AWS/EC2', 'AWS/RDS', Azure: 'Microsoft.Storage/storageAccounts', GCP: 'cloudsql_database'
+	Namespace string `json:"namespace"`
+	// The specific metric being monitored. Examples: AWS: 'CPUUtilization', 'ApproximateNumberOfMessagesVisible', Azure: 'Transactions', 'allpercentprocessortime', GCP: 'cloudsql.googleapis.com/database/cpu/utilization'
+	Name string `json:"name"`
+	// The statistical function applied to the metric data. Examples: AWS: 'Average', 'Sum', 'Maximum', Azure: 'Average', 'Total', 'Maximum', GCP: (typically not used)
+	Statistic string `json:"statistic"`
+	// Key-value pairs that identify the specific resource being monitored. Examples: AWS: [{'name': 'InstanceId', 'value': 'i-1234567890abcdef0'}], Azure: [{'name': 'ApiName', 'value': 'GetBlob'}]
+	Dimensions []getPackagePackageAlarmsAlarmDimensionsDimension `json:"dimensions"`
+	// The operator used to compare the metric value against the threshold. Examples: GREATER_THAN, LESS_THAN
+	ComparisonOperator string `json:"comparisonOperator"`
+	// The value that triggers the alarm when crossed by the metric value. The comparison is made using the comparison_operator.
+	Threshold float64 `json:"threshold"`
+	// The time window in seconds over which the metric is evaluated.
+	Period int `json:"period"`
+	// The most recent state of the alarm. If no states exist, returns INSUFFICIENT_DATA. Otherwise, returns the most recent state based on occurred_at timestamp.
+	CurrentState getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState `json:"currentState"`
+}
+
+// GetId returns getPackagePackageAlarmsAlarm.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetId() string { return v.Id }
+
+// GetCloudResourceId returns getPackagePackageAlarmsAlarm.CloudResourceId, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetCloudResourceId() string { return v.CloudResourceId }
+
+// GetDisplayName returns getPackagePackageAlarmsAlarm.DisplayName, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetDisplayName() string { return v.DisplayName }
+
+// GetNamespace returns getPackagePackageAlarmsAlarm.Namespace, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetNamespace() string { return v.Namespace }
+
+// GetName returns getPackagePackageAlarmsAlarm.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetName() string { return v.Name }
+
+// GetStatistic returns getPackagePackageAlarmsAlarm.Statistic, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetStatistic() string { return v.Statistic }
+
+// GetDimensions returns getPackagePackageAlarmsAlarm.Dimensions, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetDimensions() []getPackagePackageAlarmsAlarmDimensionsDimension {
+	return v.Dimensions
+}
+
+// GetComparisonOperator returns getPackagePackageAlarmsAlarm.ComparisonOperator, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetComparisonOperator() string { return v.ComparisonOperator }
+
+// GetThreshold returns getPackagePackageAlarmsAlarm.Threshold, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetThreshold() float64 { return v.Threshold }
+
+// GetPeriod returns getPackagePackageAlarmsAlarm.Period, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetPeriod() int { return v.Period }
+
+// GetCurrentState returns getPackagePackageAlarmsAlarm.CurrentState, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarm) GetCurrentState() getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState {
+	return v.CurrentState
+}
+
+// getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState includes the requested fields of the GraphQL type PackageAlarmState.
+// The GraphQL type's documentation follows.
+//
+// A state record for a package alarm
+type getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState struct {
+	// Unique identifier for this alarm state record.
+	Id string `json:"id"`
+	// The current status of the alarm (OK, ALARM, or INSUFFICIENT_DATA).
+	Status AlarmStatus `json:"status"`
+	// Message describing the current state or reason for the alarm.
+	Message string `json:"message"`
+	// Raw notification data from the cloud provider that triggered this state change.
+	Notification map[string]any `json:"-"`
+	// ISO 8601 timestamp when this state change occurred.
+	OccurredAt time.Time `json:"occurredAt"`
+}
+
+// GetId returns getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState) GetId() string { return v.Id }
+
+// GetStatus returns getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState.Status, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState) GetStatus() AlarmStatus {
+	return v.Status
+}
+
+// GetMessage returns getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState.Message, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState) GetMessage() string {
+	return v.Message
+}
+
+// GetNotification returns getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState.Notification, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState) GetNotification() map[string]any {
+	return v.Notification
+}
+
+// GetOccurredAt returns getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState.OccurredAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState) GetOccurredAt() time.Time {
+	return v.OccurredAt
+}
+
+func (v *getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState
+		Notification json.RawMessage `json:"notification"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Notification
+		src := firstPass.Notification
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState.Notification: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetPackagePackageAlarmsAlarmCurrentStatePackageAlarmState struct {
+	Id string `json:"id"`
+
+	Status AlarmStatus `json:"status"`
+
+	Message string `json:"message"`
+
+	Notification json.RawMessage `json:"notification"`
+
+	OccurredAt time.Time `json:"occurredAt"`
+}
+
+func (v *getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState) __premarshalJSON() (*__premarshalgetPackagePackageAlarmsAlarmCurrentStatePackageAlarmState, error) {
+	var retval __premarshalgetPackagePackageAlarmsAlarmCurrentStatePackageAlarmState
+
+	retval.Id = v.Id
+	retval.Status = v.Status
+	retval.Message = v.Message
+	{
+
+		dst := &retval.Notification
+		src := v.Notification
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getPackagePackageAlarmsAlarmCurrentStatePackageAlarmState.Notification: %w", err)
+		}
+	}
+	retval.OccurredAt = v.OccurredAt
+	return &retval, nil
+}
+
+// getPackagePackageAlarmsAlarmDimensionsDimension includes the requested fields of the GraphQL type Dimension.
+// The GraphQL type's documentation follows.
+//
+// A dimension for cloud metrics
+type getPackagePackageAlarmsAlarmDimensionsDimension struct {
+	// Name of the dimension
+	Name string `json:"name"`
+	// Value of the dimension
+	Value string `json:"value"`
+}
+
+// GetName returns getPackagePackageAlarmsAlarmDimensionsDimension.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarmDimensionsDimension) GetName() string { return v.Name }
+
+// GetValue returns getPackagePackageAlarmsAlarmDimensionsDimension.Value, and is useful for accessing the field via an interface.
+func (v *getPackagePackageAlarmsAlarmDimensionsDimension) GetValue() string { return v.Value }
 
 // getPackagePackageArtifactsArtifact includes the requested fields of the GraphQL type Artifact.
 type getPackagePackageArtifactsArtifact struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
 	// The bundle's artifact field (output field) that produced this artifact.
-	Field string `json:"field"`
+	Field string         `json:"field"`
+	Type  string         `json:"type"`
+	Specs map[string]any `json:"-"`
 }
 
 // GetId returns getPackagePackageArtifactsArtifact.Id, and is useful for accessing the field via an interface.
@@ -3394,6 +3839,87 @@ func (v *getPackagePackageArtifactsArtifact) GetName() string { return v.Name }
 
 // GetField returns getPackagePackageArtifactsArtifact.Field, and is useful for accessing the field via an interface.
 func (v *getPackagePackageArtifactsArtifact) GetField() string { return v.Field }
+
+// GetType returns getPackagePackageArtifactsArtifact.Type, and is useful for accessing the field via an interface.
+func (v *getPackagePackageArtifactsArtifact) GetType() string { return v.Type }
+
+// GetSpecs returns getPackagePackageArtifactsArtifact.Specs, and is useful for accessing the field via an interface.
+func (v *getPackagePackageArtifactsArtifact) GetSpecs() map[string]any { return v.Specs }
+
+func (v *getPackagePackageArtifactsArtifact) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPackagePackageArtifactsArtifact
+		Specs json.RawMessage `json:"specs"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPackagePackageArtifactsArtifact = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Specs
+		src := firstPass.Specs
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getPackagePackageArtifactsArtifact.Specs: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetPackagePackageArtifactsArtifact struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Field string `json:"field"`
+
+	Type string `json:"type"`
+
+	Specs json.RawMessage `json:"specs"`
+}
+
+func (v *getPackagePackageArtifactsArtifact) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPackagePackageArtifactsArtifact) __premarshalJSON() (*__premarshalgetPackagePackageArtifactsArtifact, error) {
+	var retval __premarshalgetPackagePackageArtifactsArtifact
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Field = v.Field
+	retval.Type = v.Type
+	{
+
+		dst := &retval.Specs
+		src := v.Specs
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getPackagePackageArtifactsArtifact.Specs: %w", err)
+		}
+	}
+	return &retval, nil
+}
 
 // getPackagePackageBundle includes the requested fields of the GraphQL type Bundle.
 // The GraphQL type's documentation follows.
@@ -3408,6 +3934,14 @@ type getPackagePackageBundle struct {
 	Spec map[string]any `json:"-"`
 	// Version of the bundle specification
 	SpecVersion string `json:"specVersion"`
+	// Semantic version of this bundle release
+	Version string `json:"version"`
+	// Description of the bundle
+	Description string `json:"description"`
+	// Icon SVG
+	Icon string `json:"icon"`
+	// URL to the source code repository
+	SourceUrl string `json:"sourceUrl"`
 }
 
 // GetId returns getPackagePackageBundle.Id, and is useful for accessing the field via an interface.
@@ -3421,6 +3955,18 @@ func (v *getPackagePackageBundle) GetSpec() map[string]any { return v.Spec }
 
 // GetSpecVersion returns getPackagePackageBundle.SpecVersion, and is useful for accessing the field via an interface.
 func (v *getPackagePackageBundle) GetSpecVersion() string { return v.SpecVersion }
+
+// GetVersion returns getPackagePackageBundle.Version, and is useful for accessing the field via an interface.
+func (v *getPackagePackageBundle) GetVersion() string { return v.Version }
+
+// GetDescription returns getPackagePackageBundle.Description, and is useful for accessing the field via an interface.
+func (v *getPackagePackageBundle) GetDescription() string { return v.Description }
+
+// GetIcon returns getPackagePackageBundle.Icon, and is useful for accessing the field via an interface.
+func (v *getPackagePackageBundle) GetIcon() string { return v.Icon }
+
+// GetSourceUrl returns getPackagePackageBundle.SourceUrl, and is useful for accessing the field via an interface.
+func (v *getPackagePackageBundle) GetSourceUrl() string { return v.SourceUrl }
 
 func (v *getPackagePackageBundle) UnmarshalJSON(b []byte) error {
 
@@ -3463,6 +4009,14 @@ type __premarshalgetPackagePackageBundle struct {
 	Spec json.RawMessage `json:"spec"`
 
 	SpecVersion string `json:"specVersion"`
+
+	Version string `json:"version"`
+
+	Description string `json:"description"`
+
+	Icon string `json:"icon"`
+
+	SourceUrl string `json:"sourceUrl"`
 }
 
 func (v *getPackagePackageBundle) MarshalJSON() ([]byte, error) {
@@ -3491,13 +4045,237 @@ func (v *getPackagePackageBundle) __premarshalJSON() (*__premarshalgetPackagePac
 		}
 	}
 	retval.SpecVersion = v.SpecVersion
+	retval.Version = v.Version
+	retval.Description = v.Description
+	retval.Icon = v.Icon
+	retval.SourceUrl = v.SourceUrl
 	return &retval, nil
 }
+
+// getPackagePackageConnectionsConnection includes the requested fields of the GraphQL type Connection.
+// The GraphQL type's documentation follows.
+//
+// A connection between a package and an artifact
+type getPackagePackageConnectionsConnection struct {
+	// Unique identifier for the connection
+	Id string `json:"id"`
+	// The field in the package that this connection is bound to
+	PackageField string `json:"packageField"`
+	// The artifact being connected
+	Artifact getPackagePackageConnectionsConnectionArtifact `json:"artifact"`
+	// When the connection was created
+	CreatedAt time.Time `json:"createdAt"`
+	// When the connection was last updated
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns getPackagePackageConnectionsConnection.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageConnectionsConnection) GetId() string { return v.Id }
+
+// GetPackageField returns getPackagePackageConnectionsConnection.PackageField, and is useful for accessing the field via an interface.
+func (v *getPackagePackageConnectionsConnection) GetPackageField() string { return v.PackageField }
+
+// GetArtifact returns getPackagePackageConnectionsConnection.Artifact, and is useful for accessing the field via an interface.
+func (v *getPackagePackageConnectionsConnection) GetArtifact() getPackagePackageConnectionsConnectionArtifact {
+	return v.Artifact
+}
+
+// GetCreatedAt returns getPackagePackageConnectionsConnection.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageConnectionsConnection) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getPackagePackageConnectionsConnection.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageConnectionsConnection) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// getPackagePackageConnectionsConnectionArtifact includes the requested fields of the GraphQL type Artifact.
+type getPackagePackageConnectionsConnectionArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+	// The bundle's artifact field (output field) that produced this artifact.
+	Field string `json:"field"`
+}
+
+// GetId returns getPackagePackageConnectionsConnectionArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageConnectionsConnectionArtifact) GetId() string { return v.Id }
+
+// GetName returns getPackagePackageConnectionsConnectionArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageConnectionsConnectionArtifact) GetName() string { return v.Name }
+
+// GetType returns getPackagePackageConnectionsConnectionArtifact.Type, and is useful for accessing the field via an interface.
+func (v *getPackagePackageConnectionsConnectionArtifact) GetType() string { return v.Type }
+
+// GetField returns getPackagePackageConnectionsConnectionArtifact.Field, and is useful for accessing the field via an interface.
+func (v *getPackagePackageConnectionsConnectionArtifact) GetField() string { return v.Field }
+
+// getPackagePackageCost includes the requested fields of the GraphQL type Cost.
+// The GraphQL type's documentation follows.
+//
+// Cost information for a resource
+type getPackagePackageCost struct {
+	// Monthly cost summary
+	Monthly getPackagePackageCostMonthlySummary `json:"monthly"`
+	// Daily cost summary
+	Daily getPackagePackageCostDailySummary `json:"daily"`
+}
+
+// GetMonthly returns getPackagePackageCost.Monthly, and is useful for accessing the field via an interface.
+func (v *getPackagePackageCost) GetMonthly() getPackagePackageCostMonthlySummary { return v.Monthly }
+
+// GetDaily returns getPackagePackageCost.Daily, and is useful for accessing the field via an interface.
+func (v *getPackagePackageCost) GetDaily() getPackagePackageCostDailySummary { return v.Daily }
+
+// getPackagePackageCostDailySummary includes the requested fields of the GraphQL type Summary.
+// The GraphQL type's documentation follows.
+//
+// Summary of costs over a time period
+type getPackagePackageCostDailySummary struct {
+	// Average cost sample for the period
+	Average getPackagePackageCostDailySummaryAverageCostSample `json:"average"`
+}
+
+// GetAverage returns getPackagePackageCostDailySummary.Average, and is useful for accessing the field via an interface.
+func (v *getPackagePackageCostDailySummary) GetAverage() getPackagePackageCostDailySummaryAverageCostSample {
+	return v.Average
+}
+
+// getPackagePackageCostDailySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement
+type getPackagePackageCostDailySummaryAverageCostSample struct {
+	// The cost amount
+	Amount float64 `json:"amount"`
+	// The currency code (e.g. USD)
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getPackagePackageCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getPackagePackageCostDailySummaryAverageCostSample) GetAmount() float64 { return v.Amount }
+
+// GetCurrency returns getPackagePackageCostDailySummaryAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getPackagePackageCostDailySummaryAverageCostSample) GetCurrency() string { return v.Currency }
+
+// getPackagePackageCostMonthlySummary includes the requested fields of the GraphQL type Summary.
+// The GraphQL type's documentation follows.
+//
+// Summary of costs over a time period
+type getPackagePackageCostMonthlySummary struct {
+	// Average cost sample for the period
+	Average getPackagePackageCostMonthlySummaryAverageCostSample `json:"average"`
+}
+
+// GetAverage returns getPackagePackageCostMonthlySummary.Average, and is useful for accessing the field via an interface.
+func (v *getPackagePackageCostMonthlySummary) GetAverage() getPackagePackageCostMonthlySummaryAverageCostSample {
+	return v.Average
+}
+
+// getPackagePackageCostMonthlySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement
+type getPackagePackageCostMonthlySummaryAverageCostSample struct {
+	// The cost amount
+	Amount float64 `json:"amount"`
+	// The currency code (e.g. USD)
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getPackagePackageCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getPackagePackageCostMonthlySummaryAverageCostSample) GetAmount() float64 { return v.Amount }
+
+// GetCurrency returns getPackagePackageCostMonthlySummaryAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getPackagePackageCostMonthlySummaryAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getPackagePackageDecommissionablePackageDeletionLifecycle includes the requested fields of the GraphQL type PackageDeletionLifecycle.
+// The GraphQL type's documentation follows.
+//
+// Lifecycle information for package deletion
+type getPackagePackageDecommissionablePackageDeletionLifecycle struct {
+	// Whether deletion is possible
+	Result bool `json:"result"`
+	// List of deletion errors if any
+	Messages []getPackagePackageDecommissionablePackageDeletionLifecycleMessagesPackageDeletionLifecycleArtifactError `json:"messages"`
+}
+
+// GetResult returns getPackagePackageDecommissionablePackageDeletionLifecycle.Result, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDecommissionablePackageDeletionLifecycle) GetResult() bool { return v.Result }
+
+// GetMessages returns getPackagePackageDecommissionablePackageDeletionLifecycle.Messages, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDecommissionablePackageDeletionLifecycle) GetMessages() []getPackagePackageDecommissionablePackageDeletionLifecycleMessagesPackageDeletionLifecycleArtifactError {
+	return v.Messages
+}
+
+// getPackagePackageDecommissionablePackageDeletionLifecycleMessagesPackageDeletionLifecycleArtifactError includes the requested fields of the GraphQL type PackageDeletionLifecycleArtifactError.
+// The GraphQL type's documentation follows.
+//
+// Error information for package deletion
+type getPackagePackageDecommissionablePackageDeletionLifecycleMessagesPackageDeletionLifecycleArtifactError struct {
+	// Error message
+	Message string `json:"message"`
+}
+
+// GetMessage returns getPackagePackageDecommissionablePackageDeletionLifecycleMessagesPackageDeletionLifecycleArtifactError.Message, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDecommissionablePackageDeletionLifecycleMessagesPackageDeletionLifecycleArtifactError) GetMessage() string {
+	return v.Message
+}
+
+// getPackagePackageDeploymentsDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A deployment represents an instance of a bundle being deployed to a target environment
+type getPackagePackageDeploymentsDeployment struct {
+	Id                 string           `json:"id"`
+	Status             DeploymentStatus `json:"status"`
+	Action             DeploymentAction `json:"action"`
+	Version            string           `json:"version"`
+	Message            string           `json:"message"`
+	DeployedBy         string           `json:"deployedBy"`
+	CreatedAt          time.Time        `json:"createdAt"`
+	UpdatedAt          time.Time        `json:"updatedAt"`
+	LastTransitionedAt time.Time        `json:"lastTransitionedAt"`
+	// Elapsed time in seconds
+	ElapsedTime int `json:"elapsedTime"`
+}
+
+// GetId returns getPackagePackageDeploymentsDeployment.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDeploymentsDeployment) GetId() string { return v.Id }
+
+// GetStatus returns getPackagePackageDeploymentsDeployment.Status, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDeploymentsDeployment) GetStatus() DeploymentStatus { return v.Status }
+
+// GetAction returns getPackagePackageDeploymentsDeployment.Action, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDeploymentsDeployment) GetAction() DeploymentAction { return v.Action }
+
+// GetVersion returns getPackagePackageDeploymentsDeployment.Version, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDeploymentsDeployment) GetVersion() string { return v.Version }
+
+// GetMessage returns getPackagePackageDeploymentsDeployment.Message, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDeploymentsDeployment) GetMessage() string { return v.Message }
+
+// GetDeployedBy returns getPackagePackageDeploymentsDeployment.DeployedBy, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDeploymentsDeployment) GetDeployedBy() string { return v.DeployedBy }
+
+// GetCreatedAt returns getPackagePackageDeploymentsDeployment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDeploymentsDeployment) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getPackagePackageDeploymentsDeployment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDeploymentsDeployment) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetLastTransitionedAt returns getPackagePackageDeploymentsDeployment.LastTransitionedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDeploymentsDeployment) GetLastTransitionedAt() time.Time {
+	return v.LastTransitionedAt
+}
+
+// GetElapsedTime returns getPackagePackageDeploymentsDeployment.ElapsedTime, and is useful for accessing the field via an interface.
+func (v *getPackagePackageDeploymentsDeployment) GetElapsedTime() int { return v.ElapsedTime }
 
 // getPackagePackageEnvironment includes the requested fields of the GraphQL type Environment.
 type getPackagePackageEnvironment struct {
 	Id      string                              `json:"id"`
 	Slug    string                              `json:"slug"`
+	Name    string                              `json:"name"`
 	Project getPackagePackageEnvironmentProject `json:"project"`
 }
 
@@ -3506,6 +4284,9 @@ func (v *getPackagePackageEnvironment) GetId() string { return v.Id }
 
 // GetSlug returns getPackagePackageEnvironment.Slug, and is useful for accessing the field via an interface.
 func (v *getPackagePackageEnvironment) GetSlug() string { return v.Slug }
+
+// GetName returns getPackagePackageEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageEnvironment) GetName() string { return v.Name }
 
 // GetProject returns getPackagePackageEnvironment.Project, and is useful for accessing the field via an interface.
 func (v *getPackagePackageEnvironment) GetProject() getPackagePackageEnvironmentProject {
@@ -3516,6 +4297,7 @@ func (v *getPackagePackageEnvironment) GetProject() getPackagePackageEnvironment
 type getPackagePackageEnvironmentProject struct {
 	Id   string `json:"id"`
 	Slug string `json:"slug"`
+	Name string `json:"name"`
 }
 
 // GetId returns getPackagePackageEnvironmentProject.Id, and is useful for accessing the field via an interface.
@@ -3523,6 +4305,59 @@ func (v *getPackagePackageEnvironmentProject) GetId() string { return v.Id }
 
 // GetSlug returns getPackagePackageEnvironmentProject.Slug, and is useful for accessing the field via an interface.
 func (v *getPackagePackageEnvironmentProject) GetSlug() string { return v.Slug }
+
+// GetName returns getPackagePackageEnvironmentProject.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageEnvironmentProject) GetName() string { return v.Name }
+
+// getPackagePackageLatestDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A deployment represents an instance of a bundle being deployed to a target environment
+type getPackagePackageLatestDeployment struct {
+	Id                 string           `json:"id"`
+	Status             DeploymentStatus `json:"status"`
+	Action             DeploymentAction `json:"action"`
+	Version            string           `json:"version"`
+	Message            string           `json:"message"`
+	DeployedBy         string           `json:"deployedBy"`
+	CreatedAt          time.Time        `json:"createdAt"`
+	UpdatedAt          time.Time        `json:"updatedAt"`
+	LastTransitionedAt time.Time        `json:"lastTransitionedAt"`
+	// Elapsed time in seconds
+	ElapsedTime int `json:"elapsedTime"`
+}
+
+// GetId returns getPackagePackageLatestDeployment.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetId() string { return v.Id }
+
+// GetStatus returns getPackagePackageLatestDeployment.Status, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetStatus() DeploymentStatus { return v.Status }
+
+// GetAction returns getPackagePackageLatestDeployment.Action, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetAction() DeploymentAction { return v.Action }
+
+// GetVersion returns getPackagePackageLatestDeployment.Version, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetVersion() string { return v.Version }
+
+// GetMessage returns getPackagePackageLatestDeployment.Message, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetMessage() string { return v.Message }
+
+// GetDeployedBy returns getPackagePackageLatestDeployment.DeployedBy, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetDeployedBy() string { return v.DeployedBy }
+
+// GetCreatedAt returns getPackagePackageLatestDeployment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getPackagePackageLatestDeployment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetLastTransitionedAt returns getPackagePackageLatestDeployment.LastTransitionedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetLastTransitionedAt() time.Time {
+	return v.LastTransitionedAt
+}
+
+// GetElapsedTime returns getPackagePackageLatestDeployment.ElapsedTime, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetElapsedTime() int { return v.ElapsedTime }
 
 // getPackagePackageManifest includes the requested fields of the GraphQL type Manifest.
 // The GraphQL type's documentation follows.
@@ -3567,6 +4402,7 @@ type getPackagePackageRemoteReferencesRemoteReferenceArtifact struct {
 	Name string `json:"name"`
 	// The bundle's artifact field (output field) that produced this artifact.
 	Field string `json:"field"`
+	Type  string `json:"type"`
 }
 
 // GetId returns getPackagePackageRemoteReferencesRemoteReferenceArtifact.Id, and is useful for accessing the field via an interface.
@@ -3577,6 +4413,85 @@ func (v *getPackagePackageRemoteReferencesRemoteReferenceArtifact) GetName() str
 
 // GetField returns getPackagePackageRemoteReferencesRemoteReferenceArtifact.Field, and is useful for accessing the field via an interface.
 func (v *getPackagePackageRemoteReferencesRemoteReferenceArtifact) GetField() string { return v.Field }
+
+// GetType returns getPackagePackageRemoteReferencesRemoteReferenceArtifact.Type, and is useful for accessing the field via an interface.
+func (v *getPackagePackageRemoteReferencesRemoteReferenceArtifact) GetType() string { return v.Type }
+
+// getPackagePackageSecretFieldsSecretField includes the requested fields of the GraphQL type SecretField.
+// The GraphQL type's documentation follows.
+//
+// Application secret definitions. These fields are defined in your applications massdriver.yaml file.
+//
+// Secrets are only applied to `application` type bundles.
+type getPackagePackageSecretFieldsSecretField struct {
+	// The name of the secret. Generally in the form of an environment variable.
+	Name string `json:"name"`
+	// Is the secret required?
+	Required bool `json:"required"`
+	// Is the secret a JSON object?
+	Json bool `json:"json"`
+	// Secret field definition friendly display name.
+	Title string `json:"title"`
+	// Secret field definition description.
+	Description string `json:"description"`
+	// Metadata for the secret value set on this field.
+	ValueMetadata getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata `json:"valueMetadata"`
+}
+
+// GetName returns getPackagePackageSecretFieldsSecretField.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageSecretFieldsSecretField) GetName() string { return v.Name }
+
+// GetRequired returns getPackagePackageSecretFieldsSecretField.Required, and is useful for accessing the field via an interface.
+func (v *getPackagePackageSecretFieldsSecretField) GetRequired() bool { return v.Required }
+
+// GetJson returns getPackagePackageSecretFieldsSecretField.Json, and is useful for accessing the field via an interface.
+func (v *getPackagePackageSecretFieldsSecretField) GetJson() bool { return v.Json }
+
+// GetTitle returns getPackagePackageSecretFieldsSecretField.Title, and is useful for accessing the field via an interface.
+func (v *getPackagePackageSecretFieldsSecretField) GetTitle() string { return v.Title }
+
+// GetDescription returns getPackagePackageSecretFieldsSecretField.Description, and is useful for accessing the field via an interface.
+func (v *getPackagePackageSecretFieldsSecretField) GetDescription() string { return v.Description }
+
+// GetValueMetadata returns getPackagePackageSecretFieldsSecretField.ValueMetadata, and is useful for accessing the field via an interface.
+func (v *getPackagePackageSecretFieldsSecretField) GetValueMetadata() getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata {
+	return v.ValueMetadata
+}
+
+// getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata includes the requested fields of the GraphQL type SecretMetadata.
+// The GraphQL type's documentation follows.
+//
+// Metadata for a secret. Values are not viewable/retrievable once set.
+type getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata struct {
+	// A unique identifier for the secret value.
+	Id string `json:"id"`
+	// The secret name from the massdriver.yaml file.
+	Name string `json:"name"`
+	// SHA-256 of the secret value.
+	Sha256 string `json:"sha256"`
+	// When the secret was set.
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// GetId returns getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata) GetId() string {
+	return v.Id
+}
+
+// GetName returns getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata.Name, and is useful for accessing the field via an interface.
+func (v *getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata) GetName() string {
+	return v.Name
+}
+
+// GetSha256 returns getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata.Sha256, and is useful for accessing the field via an interface.
+func (v *getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata) GetSha256() string {
+	return v.Sha256
+}
+
+// GetCreatedAt returns getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageSecretFieldsSecretFieldValueMetadataSecretMetadata) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
 
 // getPackageResponse is returned by getPackage on success.
 type getPackageResponse struct {
@@ -5295,23 +6210,23 @@ query getPackage ($organizationId: ID!, $id: ID!) {
 		slug
 		status
 		params
-		artifacts {
-			id
-			name
-			field
-		}
-		remoteReferences {
-			artifact {
-				id
-				name
-				field
-			}
-		}
+		paramsSchema
+		createdAt
+		updatedAt
+		version
+		resolvedVersion
+		releaseStrategy
+		deployedVersion
+		availableUpgrade
 		bundle {
 			id
 			name
 			spec
 			specVersion
+			version
+			description
+			icon
+			sourceUrl
 		}
 		manifest {
 			id
@@ -5323,9 +6238,129 @@ query getPackage ($organizationId: ID!, $id: ID!) {
 		environment {
 			id
 			slug
+			name
 			project {
 				id
 				slug
+				name
+			}
+		}
+		artifacts {
+			id
+			name
+			field
+			type
+			specs
+		}
+		remoteReferences {
+			artifact {
+				id
+				name
+				field
+				type
+			}
+		}
+		connections {
+			id
+			packageField
+			artifact {
+				id
+				name
+				type
+				field
+			}
+			createdAt
+			updatedAt
+		}
+		latestDeployment {
+			id
+			status
+			action
+			version
+			message
+			deployedBy
+			createdAt
+			updatedAt
+			lastTransitionedAt
+			elapsedTime
+		}
+		activeDeployment {
+			id
+			status
+			action
+			version
+			message
+			deployedBy
+			createdAt
+			updatedAt
+			lastTransitionedAt
+			elapsedTime
+		}
+		deployments {
+			id
+			status
+			action
+			version
+			message
+			deployedBy
+			createdAt
+			updatedAt
+			lastTransitionedAt
+			elapsedTime
+		}
+		alarms {
+			id
+			cloudResourceId
+			displayName
+			namespace
+			name
+			statistic
+			dimensions {
+				name
+				value
+			}
+			comparisonOperator
+			threshold
+			period
+			currentState {
+				id
+				status
+				message
+				notification
+				occurredAt
+			}
+		}
+		secretFields {
+			name
+			required
+			json
+			title
+			description
+			valueMetadata {
+				id
+				name
+				sha256
+				createdAt
+			}
+		}
+		decommissionable {
+			result
+			messages {
+				message
+			}
+		}
+		cost {
+			monthly {
+				average {
+					amount
+					currency
+				}
+			}
+			daily {
+				average {
+					amount
+					currency
+				}
 			}
 		}
 	}

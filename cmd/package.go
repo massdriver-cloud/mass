@@ -47,7 +47,7 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgConfigure,
 	}
-	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params json, tfvars or yaml file. This file supports bash interpolation.")
+	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params json, tfvars or yaml file. Use '-' to read from stdin. This file supports bash interpolation.")
 
 	pkgDeployCmd := &cobra.Command{
 		Use:     `deploy <project>-<env>-<manifest>`,
@@ -78,7 +78,7 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgGet,
 	}
-	pkgGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
+	pkgGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json). Defaults to text (markdown).")
 
 	pkgPatchCmd := &cobra.Command{
 		Use:     `patch <project>-<env>-<manifest>`,
@@ -229,8 +229,15 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 	packageSlugOrID := args[0]
 
 	params := map[string]any{}
-	if err := files.Read(pkgParamsPath, &params); err != nil {
-		return err
+	if pkgParamsPath == "-" {
+		// Read from stdin
+		if err := json.NewDecoder(os.Stdin).Decode(&params); err != nil {
+			return fmt.Errorf("failed to decode JSON from stdin: %w", err)
+		}
+	} else {
+		if err := files.Read(pkgParamsPath, &params); err != nil {
+			return err
+		}
 	}
 
 	mdClient, mdClientErr := client.New()

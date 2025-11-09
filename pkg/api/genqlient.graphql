@@ -312,23 +312,23 @@ query getPackage($organizationId: ID!, $id: ID!) {
     slug
     status
     params
-    artifacts {
-      id
-      name
-      field
-    }
-    remoteReferences {
-      artifact {
-        id
-        name
-        field
-      }
-    }
+    paramsSchema
+    createdAt
+    updatedAt
+    version
+    resolvedVersion
+    releaseStrategy
+    deployedVersion
+    availableUpgrade
     bundle {
       id
       name
       spec
       specVersion
+      version
+      description
+      icon
+      sourceUrl
     }
     manifest {
       id
@@ -340,9 +340,129 @@ query getPackage($organizationId: ID!, $id: ID!) {
     environment {
       id
       slug
+      name
       project {
         id
         slug
+        name
+      }
+    }
+    artifacts {
+      id
+      name
+      field
+      type
+      specs
+    }
+    remoteReferences {
+      artifact {
+        id
+        name
+        field
+        type
+      }
+    }
+    connections {
+      id
+      packageField
+      artifact {
+        id
+        name
+        type
+        field
+      }
+      createdAt
+      updatedAt
+    }
+    latestDeployment {
+      id
+      status
+      action
+      version
+      message
+      deployedBy
+      createdAt
+      updatedAt
+      lastTransitionedAt
+      elapsedTime
+    }
+    activeDeployment {
+      id
+      status
+      action
+      version
+      message
+      deployedBy
+      createdAt
+      updatedAt
+      lastTransitionedAt
+      elapsedTime
+    }
+    deployments {
+      id
+      status
+      action
+      version
+      message
+      deployedBy
+      createdAt
+      updatedAt
+      lastTransitionedAt
+      elapsedTime
+    }
+    alarms {
+      id
+      cloudResourceId
+      displayName
+      namespace
+      name
+      statistic
+      dimensions {
+        name
+        value
+      }
+      comparisonOperator
+      threshold
+      period
+      currentState {
+        id
+        status
+        message
+        notification
+        occurredAt
+      }
+    }
+    secretFields {
+      name
+      required
+      json
+      title
+      description
+      valueMetadata {
+        id
+        name
+        sha256
+        createdAt
+      }
+    }
+    decommissionable {
+      result
+      messages {
+        message
+      }
+    }
+    cost {
+      monthly {
+        average {
+          amount
+          currency
+        }
+      }
+      daily {
+        average {
+          amount
+          currency
+        }
       }
     }
   }

@@ -18,9 +18,26 @@ func TestMarshalJSON(t *testing.T) {
 	}
 }
 
-func TestUnmarshalJSON(t *testing.T) {
+func TestUnmarshalJSONString(t *testing.T) {
 	want := map[string]any{"foo": "bar"}
 
+	// Test JSON scalar returned as string
+	data := []byte(`"{\"foo\":\"bar\"}"`)
+	got := map[string]any{}
+
+	if err := scalars.UnmarshalJSON(data, &got); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, wanted %v", got, want)
+	}
+}
+
+func TestUnmarshalJSONObject(t *testing.T) {
+	want := map[string]any{"foo": "bar"}
+
+	// Test JSON scalar returned as object
 	data := []byte(`{"foo": "bar"}`)
 	got := map[string]any{}
 

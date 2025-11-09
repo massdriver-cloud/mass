@@ -1,10 +1,218 @@
 # Package: {{.Slug}}
 
-**Bundle:** {{.Bundle.Name}}
+**Status:** {{.Status}}
 
-**Environment:** {{.Environment.Slug}}
+{{if .Bundle}}
+**Bundle:** {{.Bundle.Name}}{{if .Bundle.Version}} ({{.Bundle.Version}}){{end}}
+{{end}}
+
+{{if .Manifest}}
+**Manifest:** {{.Manifest.Name}} ({{.Manifest.Slug}})
+{{if .Manifest.Description}}
+{{.Manifest.Description}}
+{{end}}
+{{end}}
+
+{{if .Environment}}
+**Environment:** {{.Environment.Slug}}{{if .Environment.Name}} ({{.Environment.Name}}){{end}}
+{{if .Environment.Project}}
+**Project:** {{.Environment.Project.Slug}}{{if .Environment.Project.Name}} ({{.Environment.Project.Name}}){{end}}
+{{end}}
+{{end}}
+
+## Version Information
+
+{{if .Version}}
+**Version Constraint:** {{.Version}}
+{{end}}
+{{if .ResolvedVersion}}
+**Resolved Version:** {{.ResolvedVersion}}
+{{end}}
+{{if .DeployedVersion}}
+**Deployed Version:** {{.DeployedVersion}}
+{{end}}
+{{if .ReleaseStrategy}}
+**Release Strategy:** {{.ReleaseStrategy}}
+{{end}}
+{{if .AvailableUpgrade}}
+**Available Upgrade:** {{.AvailableUpgrade}}
+{{end}}
+
+## Timestamps
+
+{{if .CreatedAt}}
+**Created:** {{.CreatedAt.Format "2006-01-02 15:04:05 MST"}}
+{{end}}
+{{if .UpdatedAt}}
+**Last Updated:** {{.UpdatedAt.Format "2006-01-02 15:04:05 MST"}}
+{{end}}
+
+## Deployments
+
+{{if .ActiveDeployment}}
+### Active Deployment
+
+- **ID:** {{.ActiveDeployment.ID}}
+- **Status:** {{.ActiveDeployment.Status}}
+- **Action:** {{.ActiveDeployment.Action}}
+- **Version:** {{.ActiveDeployment.Version}}
+{{if .ActiveDeployment.Message}}
+- **Message:** {{.ActiveDeployment.Message}}
+{{end}}
+{{if .ActiveDeployment.DeployedBy}}
+- **Deployed By:** {{.ActiveDeployment.DeployedBy}}
+{{end}}
+- **Created:** {{.ActiveDeployment.CreatedAt.Format "2006-01-02 15:04:05 MST"}}
+{{if .ActiveDeployment.ElapsedTime}}
+- **Elapsed Time:** {{.ActiveDeployment.ElapsedTime}}s
+{{end}}
+{{end}}
+
+{{if .LatestDeployment}}
+### Latest Deployment
+
+- **ID:** {{.LatestDeployment.ID}}
+- **Status:** {{.LatestDeployment.Status}}
+- **Action:** {{.LatestDeployment.Action}}
+- **Version:** {{.LatestDeployment.Version}}
+{{if .LatestDeployment.Message}}
+- **Message:** {{.LatestDeployment.Message}}
+{{end}}
+{{if .LatestDeployment.DeployedBy}}
+- **Deployed By:** {{.LatestDeployment.DeployedBy}}
+{{end}}
+- **Created:** {{.LatestDeployment.CreatedAt.Format "2006-01-02 15:04:05 MST"}}
+{{if .LatestDeployment.ElapsedTime}}
+- **Elapsed Time:** {{.LatestDeployment.ElapsedTime}}s
+{{end}}
+{{end}}
+
+{{if .Deployments}}
+### Recent Deployments
+
+{{range .Deployments}}
+- **{{.Status}}** - {{.Action}} ({{.Version}}) - {{.CreatedAt.Format "2006-01-02 15:04:05 MST"}}
+{{end}}
+{{end}}
+
+## Artifacts
+
+{{if .Artifacts}}
+{{range .Artifacts}}
+- **{{.Name}}** ({{.Type}}){{if .Field}} - Field: {{.Field}}{{end}}
+{{end}}
+{{else}}
+No artifacts
+{{end}}
+
+## Connections
+
+{{if .Connections}}
+{{range .Connections}}
+- **{{.PackageField}}**{{if .Artifact}} → {{.Artifact.Name}} ({{.Artifact.Type}}){{end}}
+{{end}}
+{{else}}
+No connections
+{{end}}
+
+## Remote References
+
+{{if .RemoteReferences}}
+{{range .RemoteReferences}}
+- **{{.Artifact.Name}}** ({{.Artifact.Type}}){{if .Artifact.Field}} - Field: {{.Artifact.Field}}{{end}}
+{{end}}
+{{else}}
+No remote references
+{{end}}
+
+## Alarms
+
+{{if .Alarms}}
+{{range .Alarms}}
+### {{.DisplayName}}
+
+- **Status:** {{if .CurrentState}}{{.CurrentState.Status}}{{else}}Unknown{{end}}
+- **Cloud Resource ID:** {{.CloudResourceID}}
+{{if .Namespace}}
+- **Namespace:** {{.Namespace}}
+{{end}}
+{{if .Name}}
+- **Metric:** {{.Name}}
+{{end}}
+{{if .Statistic}}
+- **Statistic:** {{.Statistic}}
+{{end}}
+{{if .Threshold}}
+- **Threshold:** {{.Threshold}}
+{{end}}
+{{if .ComparisonOperator}}
+- **Operator:** {{.ComparisonOperator}}
+{{end}}
+{{if .Dimensions}}
+- **Dimensions:**
+{{range .Dimensions}}
+  - {{.Name}}: {{.Value}}
+{{end}}
+{{end}}
+{{if .CurrentState}}
+- **Last State Change:** {{.CurrentState.OccurredAt.Format "2006-01-02 15:04:05 MST"}}
+{{if .CurrentState.Message}}
+- **Message:** {{.CurrentState.Message}}
+{{end}}
+{{end}}
+{{end}}
+{{else}}
+No alarms configured
+{{end}}
+
+## Secret Fields
+
+{{if .SecretFields}}
+{{range .SecretFields}}
+- **{{.Name}}**{{if .Title}} ({{.Title}}){{end}}
+  - Required: {{.Required}}
+  - JSON: {{.JSON}}
+{{if .Description}}
+  - Description: {{.Description}}
+{{end}}
+{{if .ValueMetadata}}
+  - Set: Yes (SHA256: {{.ValueMetadata.SHA256}})
+  - Set At: {{.ValueMetadata.CreatedAt.Format "2006-01-02 15:04:05 MST"}}
+{{else}}
+  - Set: No
+{{end}}
+{{end}}
+{{else}}
+No secret fields
+{{end}}
+
+## Cost
+
+{{if .Cost}}
+{{if .Cost.Monthly}}
+**Monthly Average:** ${{printf "%.2f" .Cost.Monthly.Average.Amount}}
+{{end}}
+{{if .Cost.Daily}}
+**Daily Average:** ${{printf "%.2f" .Cost.Daily.Average.Amount}}
+{{end}}
+{{else}}
+No cost data available
+{{end}}
+
+## Decommission Status
+
+{{if .Decommissionable}}
+**Can be decommissioned:** {{.Decommissionable.Result}}
+{{if .Decommissionable.Messages}}
+**Messages:**
+{{range .Decommissionable.Messages}}
+- {{.}}
+{{end}}
+{{end}}
+{{end}}
 
 ## Parameters
+
 ```json
 {{.ParamsJSON}}
 ```
