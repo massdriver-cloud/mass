@@ -38,7 +38,6 @@ func TestGetPackageByName(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Compare values, not pointers
 	if got.Slug != "ecomm-prod-cache" {
 		t.Errorf("got Slug %s, wanted ecomm-prod-cache", got.Slug)
 	}
