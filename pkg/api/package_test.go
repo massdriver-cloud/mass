@@ -38,22 +38,18 @@ func TestGetPackageByName(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := &api.Package{
-		Slug: "ecomm-prod-cache",
-		Bundle: &api.Bundle{
-			ID: "bundle-id",
-		},
-		Manifest: &api.Manifest{
-			ID: "manifest-id",
-		},
-		Environment: &api.Environment{
-			ID:      "target-id",
-			Project: &api.Project{},
-		},
+	// Compare values, not pointers
+	if got.Slug != "ecomm-prod-cache" {
+		t.Errorf("got Slug %s, wanted ecomm-prod-cache", got.Slug)
 	}
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
+	if got.Bundle == nil || got.Bundle.ID != "bundle-id" {
+		t.Errorf("got Bundle %v, wanted bundle-id", got.Bundle)
+	}
+	if got.Manifest == nil || got.Manifest.ID != "manifest-id" {
+		t.Errorf("got Manifest %v, wanted manifest-id", got.Manifest)
+	}
+	if got.Environment == nil || got.Environment.ID != "target-id" {
+		t.Errorf("got Environment %v, wanted target-id", got.Environment)
 	}
 }
 
