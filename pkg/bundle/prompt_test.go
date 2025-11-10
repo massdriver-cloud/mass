@@ -32,13 +32,13 @@ func TestNameValidate(t *testing.T) {
 	}
 }
 
-func TestConnNameValidate(t *testing.T) {
+func TestLinkNameValidate(t *testing.T) {
 	goodValues := []string{
 		"ab", "abc", "a1", "a_1", "a__1__2__b",
 		strings.Repeat("a", 53),
 	}
 	for _, val := range goodValues {
-		if err := connNameValidate(val); err != nil {
+		if err := linkNameValidate(val); err != nil {
 			t.Errorf("expected no error for '%s': %v", val, err)
 		}
 	}
@@ -52,7 +52,7 @@ func TestConnNameValidate(t *testing.T) {
 		"1111", "1-1-1", "----", strings.Repeat("a", 54),
 	}
 	for _, val := range badValues {
-		if err := connNameValidate(val); err == nil {
+		if err := linkNameValidate(val); err == nil {
 			t.Errorf("expected error for '%s'", val)
 		}
 	}
