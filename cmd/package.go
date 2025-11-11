@@ -47,7 +47,6 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgConfigure,
 	}
-	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params json, tfvars or yaml file. This file supports bash interpolation.")
 
 	pkgDeployCmd := &cobra.Command{
 		Use:     `deploy <project>-<env>-<manifest>`,
@@ -78,7 +77,7 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgGet,
 	}
-	pkgGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
+	pkgGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json). Defaults to text (markdown).")
 
 	pkgPatchCmd := &cobra.Command{
 		Use:     `patch <project>-<env>-<manifest>`,
@@ -149,7 +148,7 @@ func runPkgGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	pkg, err := api.GetPackageByName(ctx, mdClient, pkgID)
+	pkg, err := api.GetPackage(ctx, mdClient, pkgID)
 	if err != nil {
 		return err
 	}
@@ -229,8 +228,15 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 	packageSlugOrID := args[0]
 
 	params := map[string]any{}
-	if err := files.Read(pkgParamsPath, &params); err != nil {
-		return err
+	if pkgParamsPath == "-" {
+		// Read from stdin
+		if err := json.NewDecoder(os.Stdin).Decode(&params); err != nil {
+			return fmt.Errorf("failed to decode JSON from stdin: %w", err)
+		}
+	} else {
+		if err := files.Read(pkgParamsPath, &params); err != nil {
+			return err
+		}
 	}
 
 	mdClient, mdClientErr := client.New()
@@ -246,7 +252,7 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✅ Package `%s` configured successfully\n", configuredPkg.Slug)
 
 	// Get package details to build URL
-	pkgDetails, err := api.GetPackageByName(ctx, mdClient, configuredPkg.Slug)
+	pkgDetails, err := api.GetPackage(ctx, mdClient, configuredPkg.Slug)
 	if err == nil && pkgDetails.Environment != nil && pkgDetails.Environment.Project != nil && pkgDetails.Manifest != nil {
 		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 		if urlErr == nil {
@@ -385,7 +391,7 @@ func runPkgVersion(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✅ Package `%s` version set successfully\n", updatedPkg.Slug)
 
 	// Get package details to build URL
-	pkgDetails, err := api.GetPackageByName(ctx, mdClient, updatedPkg.Slug)
+	pkgDetails, err := api.GetPackage(ctx, mdClient, updatedPkg.Slug)
 	if err == nil && pkgDetails.Environment != nil && pkgDetails.Environment.Project != nil && pkgDetails.Manifest != nil {
 		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 		if urlErr == nil {
@@ -413,7 +419,7 @@ func runPkgDestroy(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get package details for confirmation and URL
-	pkg, err := api.GetPackageByName(ctx, mdClient, packageSlugOrID)
+	pkg, err := api.GetPackage(ctx, mdClient, packageSlugOrID)
 	if err != nil {
 		return err
 	}

@@ -18,9 +18,10 @@ func TestMarshalJSON(t *testing.T) {
 	}
 }
 
-func TestUnmarshalJSON(t *testing.T) {
+func TestUnmarshalJSONObject(t *testing.T) {
 	want := map[string]any{"foo": "bar"}
 
+	// Test JSON scalar returned as object
 	data := []byte(`{"foo": "bar"}`)
 	got := map[string]any{}
 

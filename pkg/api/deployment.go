@@ -2,13 +2,23 @@ package api
 
 import (
 	"context"
+	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 type Deployment struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	ID                string         `json:"id"`
+	Status            string         `json:"status"`
+	Action            string         `json:"action,omitempty"`
+	Version           string         `json:"version,omitempty"`
+	Message           string         `json:"message,omitempty"`
+	Params            map[string]any `json:"params,omitempty"`
+	DeployedBy        string         `json:"deployedBy,omitempty"`
+	CreatedAt         time.Time      `json:"createdAt,omitempty"`
+	UpdatedAt         time.Time      `json:"updatedAt,omitempty"`
+	LastTransitionedAt *time.Time    `json:"lastTransitionedAt,omitempty"`
+	ElapsedTime       int            `json:"elapsedTime,omitempty"`
 }
 
 func GetDeployment(ctx context.Context, mdClient *client.Client, id string) (*Deployment, error) {
