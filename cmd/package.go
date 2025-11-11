@@ -47,7 +47,6 @@ func NewCmdPkg() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgConfigure,
 	}
-	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params json, tfvars or yaml file. Use '-' to read from stdin. This file supports bash interpolation.")
 
 	pkgDeployCmd := &cobra.Command{
 		Use:     `deploy <project>-<env>-<manifest>`,
