@@ -11,53 +11,53 @@ import (
 )
 
 type Package struct {
-	ID                string                    `json:"id"`
-	Slug              string                    `json:"slug"`
-	Status            string                    `json:"status"`
-	Params            map[string]any            `json:"params"`
-	ParamsSchema      map[string]any            `json:"paramsSchema,omitempty"`
-	CreatedAt         time.Time                 `json:"createdAt,omitempty"`
-	UpdatedAt         time.Time                 `json:"updatedAt,omitempty"`
-	Version           string                    `json:"version,omitempty"`
-	ResolvedVersion   string                    `json:"resolvedVersion,omitempty"`
-	ReleaseStrategy   string                    `json:"releaseStrategy,omitempty"`
-	DeployedVersion   string                    `json:"deployedVersion,omitempty"`
-	AvailableUpgrade  string                    `json:"availableUpgrade,omitempty"`
-	Artifacts         []Artifact                `json:"artifacts,omitempty"`
-	RemoteReferences  []RemoteReference         `json:"remoteReferences,omitempty"`
-	Connections       []Connection               `json:"connections,omitempty"`
-	Bundle            *Bundle                   `json:"bundle,omitempty" mapstructure:"bundle,omitempty"`
-	Manifest          *Manifest                 `json:"manifest" mapstructure:"manifest,omitempty"`
-	Environment       *Environment               `json:"environment,omitempty" mapstructure:"environment,omitempty"`
-	LatestDeployment  *Deployment                `json:"latestDeployment,omitempty"`
-	ActiveDeployment  *Deployment                `json:"activeDeployment,omitempty"`
-	Deployments       []Deployment               `json:"deployments,omitempty"`
-	Alarms            []Alarm                    `json:"alarms,omitempty"`
-	SecretFields      []SecretField              `json:"secretFields,omitempty"`
-	Decommissionable  *PackageDeletionLifecycle  `json:"decommissionable,omitempty"`
-	Cost              *Cost                      `json:"cost,omitempty"`
+	ID               string                    `json:"id"`
+	Slug             string                    `json:"slug"`
+	Status           string                    `json:"status"`
+	Params           map[string]any            `json:"params"`
+	ParamsSchema     map[string]any            `json:"paramsSchema,omitempty"`
+	CreatedAt        time.Time                 `json:"createdAt,omitempty"`
+	UpdatedAt        time.Time                 `json:"updatedAt,omitempty"`
+	Version          string                    `json:"version,omitempty"`
+	ResolvedVersion  string                    `json:"resolvedVersion,omitempty"`
+	ReleaseStrategy  string                    `json:"releaseStrategy,omitempty"`
+	DeployedVersion  string                    `json:"deployedVersion,omitempty"`
+	AvailableUpgrade string                    `json:"availableUpgrade,omitempty"`
+	Artifacts        []Artifact                `json:"artifacts,omitempty"`
+	RemoteReferences []RemoteReference         `json:"remoteReferences,omitempty"`
+	Connections      []Connection              `json:"connections,omitempty"`
+	Bundle           *Bundle                   `json:"bundle,omitempty" mapstructure:"bundle,omitempty"`
+	Manifest         *Manifest                 `json:"manifest" mapstructure:"manifest,omitempty"`
+	Environment      *Environment              `json:"environment,omitempty" mapstructure:"environment,omitempty"`
+	LatestDeployment *Deployment               `json:"latestDeployment,omitempty"`
+	ActiveDeployment *Deployment               `json:"activeDeployment,omitempty"`
+	Deployments      []Deployment              `json:"deployments,omitempty"`
+	Alarms           []Alarm                   `json:"alarms,omitempty"`
+	SecretFields     []SecretField             `json:"secretFields,omitempty"`
+	Decommissionable *PackageDeletionLifecycle `json:"decommissionable,omitempty"`
+	Cost             *Cost                     `json:"cost,omitempty"`
 }
 
 type Connection struct {
-	ID          string    `json:"id,omitempty"`
-	PackageField string   `json:"packageField,omitempty"`
-	Artifact    *Artifact `json:"artifact,omitempty"`
-	CreatedAt   time.Time `json:"createdAt,omitempty"`
-	UpdatedAt   time.Time `json:"updatedAt,omitempty"`
+	ID           string    `json:"id,omitempty"`
+	PackageField string    `json:"packageField,omitempty"`
+	Artifact     *Artifact `json:"artifact,omitempty"`
+	CreatedAt    time.Time `json:"createdAt,omitempty"`
+	UpdatedAt    time.Time `json:"updatedAt,omitempty"`
 }
 
 type Alarm struct {
-	ID                 string          `json:"id"`
-	CloudResourceID    string          `json:"cloudResourceId"`
-	DisplayName        string          `json:"displayName"`
-	Namespace          string          `json:"namespace,omitempty"`
-	Name               string          `json:"name,omitempty"`
-	Statistic          string          `json:"statistic,omitempty"`
-	Dimensions         []Dimension     `json:"dimensions,omitempty"`
-	ComparisonOperator string          `json:"comparisonOperator,omitempty"`
-	Threshold          float64         `json:"threshold,omitempty"`
-	Period             int             `json:"period,omitempty"`
-	CurrentState       *AlarmState     `json:"currentState,omitempty"`
+	ID                 string      `json:"id"`
+	CloudResourceID    string      `json:"cloudResourceId"`
+	DisplayName        string      `json:"displayName"`
+	Namespace          string      `json:"namespace,omitempty"`
+	Name               string      `json:"name,omitempty"`
+	Statistic          string      `json:"statistic,omitempty"`
+	Dimensions         []Dimension `json:"dimensions,omitempty"`
+	ComparisonOperator string      `json:"comparisonOperator,omitempty"`
+	Threshold          float64     `json:"threshold,omitempty"`
+	Period             int         `json:"period,omitempty"`
+	CurrentState       *AlarmState `json:"currentState,omitempty"`
 }
 
 type Dimension struct {
@@ -66,19 +66,19 @@ type Dimension struct {
 }
 
 type AlarmState struct {
-	ID         string    `json:"id"`
-	Status     string    `json:"status"`
-	Message    string    `json:"message"`
+	ID           string         `json:"id"`
+	Status       string         `json:"status"`
+	Message      string         `json:"message"`
 	Notification map[string]any `json:"notification"`
-	OccurredAt time.Time `json:"occurredAt"`
+	OccurredAt   time.Time      `json:"occurredAt"`
 }
 
 type SecretField struct {
-	Name          string         `json:"name"`
-	Required      bool           `json:"required"`
-	JSON          bool           `json:"json"`
-	Title         string         `json:"title,omitempty"`
-	Description   string         `json:"description,omitempty"`
+	Name          string          `json:"name"`
+	Required      bool            `json:"required"`
+	JSON          bool            `json:"json"`
+	Title         string          `json:"title,omitempty"`
+	Description   string          `json:"description,omitempty"`
 	ValueMetadata *SecretMetadata `json:"valueMetadata,omitempty"`
 }
 
@@ -111,15 +111,6 @@ func (p *Package) ParamsSchemaJSON() (string, error) {
 		return "", fmt.Errorf("failed to marshal params schema to JSON: %w", err)
 	}
 	return string(paramsSchemaJSON), nil
-}
-
-func GetPackageByName(ctx context.Context, mdClient *client.Client, name string) (*Package, error) {
-	response, err := getPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name)
-	if err != nil {
-		return nil, fmt.Errorf("error when querying for package %s - ensure your project, target and package abbreviations are correct:\n\t%w", name, err)
-	}
-
-	return toPackage(response.Package)
 }
 
 func toPackage(p any) (*Package, error) {
@@ -196,10 +187,10 @@ func toPackage(p any) (*Package, error) {
 	connections := make([]Connection, len(genPkg.Connections))
 	for i, c := range genPkg.Connections {
 		conn := Connection{
-			ID:          c.Id,
+			ID:           c.Id,
 			PackageField: c.PackageField,
-			CreatedAt:   c.CreatedAt,
-			UpdatedAt:   c.UpdatedAt,
+			CreatedAt:    c.CreatedAt,
+			UpdatedAt:    c.UpdatedAt,
 		}
 		if c.Artifact.Id != "" {
 			conn.Artifact = &Artifact{
@@ -235,7 +226,7 @@ func toPackage(p any) (*Package, error) {
 			ID:                 a.Id,
 			CloudResourceID:    a.CloudResourceId,
 			DisplayName:        a.DisplayName,
-			Namespace:           a.Namespace,
+			Namespace:          a.Namespace,
 			Name:               a.Name,
 			Statistic:          a.Statistic,
 			ComparisonOperator: a.ComparisonOperator,
@@ -254,11 +245,11 @@ func toPackage(p any) (*Package, error) {
 		// Convert current state
 		if a.CurrentState.Id != "" {
 			alarm.CurrentState = &AlarmState{
-				ID:          a.CurrentState.Id,
-				Status:      string(a.CurrentState.Status),
-				Message:     a.CurrentState.Message,
+				ID:           a.CurrentState.Id,
+				Status:       string(a.CurrentState.Status),
+				Message:      a.CurrentState.Message,
 				Notification: a.CurrentState.Notification,
-				OccurredAt:  a.CurrentState.OccurredAt,
+				OccurredAt:   a.CurrentState.OccurredAt,
 			}
 		}
 		alarms[i] = alarm
@@ -268,10 +259,10 @@ func toPackage(p any) (*Package, error) {
 	secretFields := make([]SecretField, len(genPkg.SecretFields))
 	for i, sf := range genPkg.SecretFields {
 		secretField := SecretField{
-			Name:     sf.Name,
-			Required: sf.Required,
-			JSON:     sf.Json,
-			Title:    sf.Title,
+			Name:        sf.Name,
+			Required:    sf.Required,
+			JSON:        sf.Json,
+			Title:       sf.Title,
 			Description: sf.Description,
 		}
 		if sf.ValueMetadata.Id != "" {
@@ -333,7 +324,7 @@ func toPackage(p any) (*Package, error) {
 		Connections:      connections,
 		Bundle:           bundle,
 		Manifest:         manifest,
-		Environment:     environment,
+		Environment:      environment,
 		LatestDeployment: latestDeployment,
 		ActiveDeployment: activeDeployment,
 		Deployments:      deployments,
@@ -352,16 +343,16 @@ func toDeploymentFromLatest(d getPackagePackageLatestDeployment) *Deployment {
 		lastTransitionedAt = &d.LastTransitionedAt
 	}
 	return &Deployment{
-		ID:                d.Id,
-		Status:            string(d.Status),
-		Action:            string(d.Action),
-		Version:           d.Version,
-		Message:           d.Message,
-		DeployedBy:        d.DeployedBy,
-		CreatedAt:         d.CreatedAt,
-		UpdatedAt:         d.UpdatedAt,
+		ID:                 d.Id,
+		Status:             string(d.Status),
+		Action:             string(d.Action),
+		Version:            d.Version,
+		Message:            d.Message,
+		DeployedBy:         d.DeployedBy,
+		CreatedAt:          d.CreatedAt,
+		UpdatedAt:          d.UpdatedAt,
 		LastTransitionedAt: lastTransitionedAt,
-		ElapsedTime:       d.ElapsedTime,
+		ElapsedTime:        d.ElapsedTime,
 	}
 }
 
@@ -371,16 +362,16 @@ func toDeploymentFromActive(d getPackagePackageActiveDeployment) *Deployment {
 		lastTransitionedAt = &d.LastTransitionedAt
 	}
 	return &Deployment{
-		ID:                d.Id,
-		Status:            string(d.Status),
-		Action:            string(d.Action),
-		Version:           d.Version,
-		Message:           d.Message,
-		DeployedBy:        d.DeployedBy,
-		CreatedAt:         d.CreatedAt,
-		UpdatedAt:         d.UpdatedAt,
+		ID:                 d.Id,
+		Status:             string(d.Status),
+		Action:             string(d.Action),
+		Version:            d.Version,
+		Message:            d.Message,
+		DeployedBy:         d.DeployedBy,
+		CreatedAt:          d.CreatedAt,
+		UpdatedAt:          d.UpdatedAt,
 		LastTransitionedAt: lastTransitionedAt,
-		ElapsedTime:       d.ElapsedTime,
+		ElapsedTime:        d.ElapsedTime,
 	}
 }
 
@@ -390,17 +381,26 @@ func toDeploymentFromList(d getPackagePackageDeploymentsDeployment) *Deployment 
 		lastTransitionedAt = &d.LastTransitionedAt
 	}
 	return &Deployment{
-		ID:                d.Id,
-		Status:            string(d.Status),
-		Action:            string(d.Action),
-		Version:           d.Version,
-		Message:           d.Message,
-		DeployedBy:        d.DeployedBy,
-		CreatedAt:         d.CreatedAt,
-		UpdatedAt:         d.UpdatedAt,
+		ID:                 d.Id,
+		Status:             string(d.Status),
+		Action:             string(d.Action),
+		Version:            d.Version,
+		Message:            d.Message,
+		DeployedBy:         d.DeployedBy,
+		CreatedAt:          d.CreatedAt,
+		UpdatedAt:          d.UpdatedAt,
 		LastTransitionedAt: lastTransitionedAt,
-		ElapsedTime:       d.ElapsedTime,
+		ElapsedTime:        d.ElapsedTime,
 	}
+}
+
+func GetPackage(ctx context.Context, mdClient *client.Client, name string) (*Package, error) {
+	response, err := getPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name)
+	if err != nil {
+		return nil, fmt.Errorf("error when querying for package %s - ensure your project, target and package abbreviations are correct:\n\t%w", name, err)
+	}
+
+	return toPackage(response.Package)
 }
 
 func ConfigurePackage(ctx context.Context, mdClient *client.Client, name string, params map[string]any) (*Package, error) {

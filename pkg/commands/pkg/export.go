@@ -111,7 +111,7 @@ func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, packageID string
 }
 
 func RunExport(ctx context.Context, mdClient *client.Client, packageSlugOrID string) error {
-	pkg, err := api.GetPackageByName(ctx, mdClient, packageSlugOrID)
+	pkg, err := api.GetPackage(ctx, mdClient, packageSlugOrID)
 	if err != nil {
 		return fmt.Errorf("failed to get package %s: %w", packageSlugOrID, err)
 	}

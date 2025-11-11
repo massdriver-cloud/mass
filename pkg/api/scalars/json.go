@@ -14,6 +14,5 @@ func MarshalJSON(v any) ([]byte, error) {
 }
 
 func UnmarshalJSON(data []byte, v *map[string]any) error {
-	// Not a string, try unmarshaling directly as JSON object
 	return json.Unmarshal(data, v)
 }
