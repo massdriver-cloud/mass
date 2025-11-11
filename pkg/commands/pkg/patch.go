@@ -11,7 +11,7 @@ import (
 
 // Updates a packages configuration parameters.
 func RunPatch(ctx context.Context, mdClient *client.Client, name string, setValues []string) (*api.Package, error) {
-	pkg, err := api.GetPackageByName(ctx, mdClient, name)
+	pkg, err := api.GetPackage(ctx, mdClient, name)
 
 	if err != nil {
 		return nil, err

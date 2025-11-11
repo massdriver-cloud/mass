@@ -149,7 +149,7 @@ func runPkgGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	pkg, err := api.GetPackageByName(ctx, mdClient, pkgID)
+	pkg, err := api.GetPackage(ctx, mdClient, pkgID)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func runPkgConfigure(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✅ Package `%s` configured successfully\n", configuredPkg.Slug)
 
 	// Get package details to build URL
-	pkgDetails, err := api.GetPackageByName(ctx, mdClient, configuredPkg.Slug)
+	pkgDetails, err := api.GetPackage(ctx, mdClient, configuredPkg.Slug)
 	if err == nil && pkgDetails.Environment != nil && pkgDetails.Environment.Project != nil && pkgDetails.Manifest != nil {
 		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 		if urlErr == nil {
@@ -385,7 +385,7 @@ func runPkgVersion(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✅ Package `%s` version set successfully\n", updatedPkg.Slug)
 
 	// Get package details to build URL
-	pkgDetails, err := api.GetPackageByName(ctx, mdClient, updatedPkg.Slug)
+	pkgDetails, err := api.GetPackage(ctx, mdClient, updatedPkg.Slug)
 	if err == nil && pkgDetails.Environment != nil && pkgDetails.Environment.Project != nil && pkgDetails.Manifest != nil {
 		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 		if urlErr == nil {
@@ -413,7 +413,7 @@ func runPkgDestroy(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get package details for confirmation and URL
-	pkg, err := api.GetPackageByName(ctx, mdClient, packageSlugOrID)
+	pkg, err := api.GetPackage(ctx, mdClient, packageSlugOrID)
 	if err != nil {
 		return err
 	}

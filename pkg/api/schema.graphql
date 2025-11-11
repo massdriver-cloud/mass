@@ -742,6 +742,9 @@ type NodeContext {
   "Manifest Name"
   name: String!
 
+  "Icon of the package"
+  icon: String
+
   "Type of the node (organization\/bundle)"
   type: String!
 
