@@ -24,8 +24,33 @@ The `slug` can be found by hovering over the bundle in the Massdriver diagram. T
 
 _Note:_ Parameter files support bash interpolation.
 
+Configure from file:
+
 ```shell
 mass package configure ecomm-prod-vpc --params=params.json
+mass package configure ecomm-prod-vpc --params=params.tfvars
+mass package configure ecomm-prod-vpc --params=params.yaml
+mass package configure ecomm-prod-vpc --params=params.toml
+```
+
+Configure from STDIN:
+
+```shell
+echo '{"hello": "world"}' | mass package configure ecomm-prod-vpc --params=-
+```
+
+Copy configuration between environments:
+
+```shell
+mass pkg get api-prod-web -o json | jq .params | mass pkg cfg api-staging-web --params -
+```
+
+Copy configuration and change some values:
+```shell
+mass pkg get api-prod-web -o json \
+  | jq '.params.domain = "staging.example.com"' \
+  | jq '.params.image.tag = "latest"' \
+  | mass pkg cfg api-staging-web --params -
 ```
 
 
@@ -43,7 +68,7 @@ mass package configure ecomm-prod-vpc --params=params.json
 
 ```
   -h, --help            help for configure
-  -p, --params string   Path to params json, tfvars or yaml file. This file supports bash interpolation. (default "./params.json")
+  -p, --params string   Path to params json, tfvars or yaml file. Use '-' to read from stdin. This file supports bash interpolation. (default "./params.json")
 ```
 
 ### SEE ALSO
