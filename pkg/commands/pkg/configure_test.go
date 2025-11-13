@@ -14,7 +14,7 @@ import (
 func TestRunConfigure(t *testing.T) {
 	responses := []gqlmock.ResponseFunc{
 		func(req *http.Request) any {
-			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
+			return gqlmock.MockQueryResponse("getPackage", api.Package{
 				Manifest:    &api.Manifest{ID: "manifest-id"},
 				Environment: &api.Environment{ID: "target-id"},
 			})
@@ -57,7 +57,7 @@ func TestRunConfigure(t *testing.T) {
 func TestConfigurePackageInterpolation(t *testing.T) {
 	responses := []gqlmock.ResponseFunc{
 		func(req *http.Request) any {
-			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
+			return gqlmock.MockQueryResponse("getPackage", api.Package{
 				Manifest:    &api.Manifest{ID: "manifest-id"},
 				Environment: &api.Environment{ID: "target-id"},
 			})

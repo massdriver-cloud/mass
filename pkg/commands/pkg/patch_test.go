@@ -15,7 +15,7 @@ func TestRunPatch(t *testing.T) {
 	// Client-side patch gets params, patches, and reconfigures
 	responses := []gqlmock.ResponseFunc{
 		func(req *http.Request) any {
-			return gqlmock.MockQueryResponse("getPackageByNamingConvention", api.Package{
+			return gqlmock.MockQueryResponse("getPackage", api.Package{
 				Manifest:    &api.Manifest{ID: "manifest-id"},
 				Environment: &api.Environment{ID: "target-id"},
 				Params: map[string]any{

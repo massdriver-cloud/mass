@@ -29,7 +29,7 @@ func (p *Package) ParamsJSON() (string, error) {
 	return string(paramsJSON), nil
 }
 
-func GetPackageByName(ctx context.Context, mdClient *client.Client, name string) (*Package, error) {
+func GetPackage(ctx context.Context, mdClient *client.Client, name string) (*Package, error) {
 	response, err := getPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name)
 	if err != nil {
 		return nil, fmt.Errorf("error when querying for package %s - ensure your project, target and package abbreviations are correct:\n\t%w", name, err)

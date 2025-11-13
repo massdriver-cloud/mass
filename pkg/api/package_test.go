@@ -9,7 +9,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func TestGetPackageByName(t *testing.T) {
+func TestGetPackage(t *testing.T) {
 	pkgName := "ecomm-prod-cache"
 
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
@@ -32,7 +32,7 @@ func TestGetPackageByName(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	got, err := api.GetPackageByName(t.Context(), &mdClient, pkgName)
+	got, err := api.GetPackage(t.Context(), &mdClient, pkgName)
 
 	if err != nil {
 		t.Fatal(err)

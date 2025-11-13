@@ -14,7 +14,7 @@ var DeploymentStatusSleep = time.Duration(10) * time.Second
 var DeploymentTimeout = time.Duration(5) * time.Minute
 
 func RunDeploy(ctx context.Context, mdClient *client.Client, name, message string) (*api.Deployment, error) {
-	pkg, err := api.GetPackageByName(ctx, mdClient, name)
+	pkg, err := api.GetPackage(ctx, mdClient, name)
 	if err != nil {
 		return nil, err
 	}
