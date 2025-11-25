@@ -46,6 +46,10 @@ func TestGetArtifactDefinitions(t *testing.T) {
 		},
 	}
 
+	gqlClient.AssertQueryCalled(t, "artifactDefinition", map[string]any{
+		"name": "massdriver/aws-ecs-cluster",
+	})
+
 	if !reflect.DeepEqual(*got, want) {
 		t.Errorf("got %v expected %v", *got, want)
 	}
