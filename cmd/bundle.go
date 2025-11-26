@@ -212,10 +212,10 @@ func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
 	}
 
 	artifactData := make([]templatecache.Artifact, len(input.artifacts))
-	for i, conn := range input.artifacts {
-		parts := strings.Split(conn, "=")
+	for i, art := range input.artifacts {
+		parts := strings.Split(art, "=")
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid connection argument: %s", conn)
+			return nil, fmt.Errorf("invalid connection argument: %s", art)
 		}
 		artifactData[i] = templatecache.Artifact{
 			ArtifactDefinition: parts[1],
