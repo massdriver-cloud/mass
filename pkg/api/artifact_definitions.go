@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
@@ -22,6 +23,10 @@ type ArtifactDefinitionWithSchema struct {
 }
 
 func GetArtifactDefinition(ctx context.Context, mdClient *client.Client, name string) (*ArtifactDefinitionWithSchema, error) {
+	split := strings.Split(name, "/")
+	if len(split) != 2 {
+		name = strings.Join([]string{mdClient.Config.OrganizationID, name}, "/")
+	}
 	response, err := getArtifactDefinition(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get artifact definition %s: %w", name, err)

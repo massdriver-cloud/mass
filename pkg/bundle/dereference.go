@@ -61,7 +61,7 @@ type DereferenceOptions struct {
 
 // relativeFilePathPattern only accepts relative file path prefixes "./" and "../"
 var relativeFilePathPattern = regexp.MustCompile(`^(\.\/|\.\.\/)`)
-var massdriverDefinitionPattern = regexp.MustCompile(`^[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+$`)
+var massdriverDefinitionPattern = regexp.MustCompile(`^[a-zA-Z0-9-]+(\/[a-zA-Z0-9-]+)?$`)
 var httpPattern = regexp.MustCompile(`^(http|https)://`)
 var fragmentPattern = regexp.MustCompile(`^#`)
 

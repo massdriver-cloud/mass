@@ -111,6 +111,13 @@ func TestDereferenceSchema(t *testing.T) {
 				"foo": "bar",
 			},
 		},
+		{
+			Name:  "Dereferences remote (massdriver) ref without org prefix",
+			Input: jsonDecode(`{"$ref": "test-schema"}`),
+			Expected: map[string]any{
+				"foo": "bar",
+			},
+		},
 	}
 
 	for _, test := range cases {
