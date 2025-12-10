@@ -15,6 +15,9 @@ type OpentofuProvisioner struct{}
 func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]any) error {
 	// read existing OpenTofu variables for this step
 	tofuVarsImport := opentofu.TofuToSchema(stepPath)
+	if tofuVarsImport.Schema == nil {
+		return errors.New("failed to read existing OpenTofu variable declarations: " + tofuVarsImport.PrettyDiags())
+	}
 
 	newVariables := FindMissingFromAirlock(variables, tofuVarsImport.Schema)
 	if len(newVariables["properties"].(map[string]any)) == 0 {

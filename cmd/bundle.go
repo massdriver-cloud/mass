@@ -276,10 +276,9 @@ func runBundleNew(input *bundleNew) error {
 	}
 
 	localParams, paramsErr := params.GetFromPath(templateData.TemplateName, templateData.ExistingParamsPath)
-	if paramsErr != nil {
-		return fmt.Errorf("error getting params from path: %w", paramsErr)
+	if paramsErr == nil {
+		templateData.ParamsSchema = localParams
 	}
-	templateData.ParamsSchema = localParams
 
 	if newErr := cmdbundle.RunNew(cache, templateData); newErr != nil {
 		return fmt.Errorf("error running bundle new: %w", newErr)
