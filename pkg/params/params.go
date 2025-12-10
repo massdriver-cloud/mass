@@ -31,6 +31,11 @@ func GetFromPath(templateName, paramsPath string) (string, error) {
 
 	fmt.Print(importResult.PrettyDiags())
 
+	if importResult.Schema == nil {
+		fmt.Println("Params schema unable to be imported.")
+		return "", fmt.Errorf("failed to import params schema")
+	}
+
 	props := map[string]any{
 		"params": importResult.Schema,
 	}

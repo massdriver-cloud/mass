@@ -7,6 +7,7 @@ import (
 	"path"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
@@ -17,6 +18,7 @@ func TestOpentofuExportMassdriverInputs(t *testing.T) {
 		name      string
 		variables map[string]any
 		want      string
+		errString string
 	}
 	tests := []test{
 		{
@@ -65,6 +67,10 @@ variable "bar" {
 			},
 			want: ``,
 		},
+		{
+			name:      "invalid",
+			errString: "failed to read existing OpenTofu variable declarations",
+		},
 	}
 
 	for _, tc := range tests {
@@ -83,8 +89,16 @@ variable "bar" {
 
 			prov := provisioners.OpentofuProvisioner{}
 			err = prov.ExportMassdriverInputs(testDir, tc.variables)
-			if err != nil {
-				t.Errorf("Error during validation: %s", err)
+			if tc.errString == "" && err != nil {
+				t.Errorf("Unexpected error during validation: %s", err)
+			}
+			if tc.errString != "" {
+				if err == nil {
+					t.Fatalf("Expected error but got none")
+				}
+				if !errors.Is(err, errors.New(tc.errString)) && !strings.Contains(err.Error(), tc.errString) {
+					t.Fatalf("got error %s want %s", err.Error(), tc.errString)
+				}
 			}
 
 			expectedFilepath := path.Join(testDir, "_massdriver_variables.tf")
