@@ -96,7 +96,7 @@ variable "bar" {
 				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
-				if !errors.Is(err, errors.New(tc.errString)) && !strings.Contains(err.Error(), tc.errString) {
+				if !strings.Contains(err.Error(), tc.errString) {
 					t.Fatalf("got error %s want %s", err.Error(), tc.errString)
 				}
 			}
