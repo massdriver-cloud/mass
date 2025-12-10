@@ -52,7 +52,6 @@ mass definition delete aws-s3 --force
 - The definition name can be specified as a short name (e.g., `aws-s3`) or a full name (e.g., `my-org/aws-s3`)
 
 
-
 ```
 mass definition delete [definition] [flags]
 ```
