@@ -13,3 +13,4 @@ Artifact definitions are used to:
 - `get`: Retrieve an artifact definition's schema and metadata
 - `list`: List all available artifact definitions
 - `publish`: Publish a new or updated artifact definition
+- `delete`: Delete an artifact definition (requires administrator permissions)

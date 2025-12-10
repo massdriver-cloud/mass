@@ -12,6 +12,14 @@ Manage artifacts
 
 # Manage Massdriver artifacts
 
+Artifacts represent infrastructure resources and connections in Massdriver. They can be provisioned by bundles or manually imported.
+
+## Commands
+
+- `get`: Retrieve an artifact's details and metadata
+- `download`: Download an artifact in the specified format
+- `import`: Import a custom artifact
+
 
 ### Options
 
@@ -22,4 +30,6 @@ Manage artifacts
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
+* [mass artifact download](/cli/commands/mass_artifact_download)	 - Download an artifact in the specified format
+* [mass artifact get](/cli/commands/mass_artifact_get)	 - Get an artifact from Massdriver
 * [mass artifact import](/cli/commands/mass_artifact_import)	 - Import a custom artifact

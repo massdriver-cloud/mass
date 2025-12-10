@@ -22,6 +22,13 @@ const (
 	ArtifactDefinitionUiConnectionOrientationEnvironmentDefault ArtifactDefinitionUiConnectionOrientation = "ENVIRONMENT_DEFAULT"
 )
 
+type ArtifactOrigin string
+
+const (
+	ArtifactOriginImported    ArtifactOrigin = "IMPORTED"
+	ArtifactOriginProvisioned ArtifactOrigin = "PROVISIONED"
+)
+
 // Arguments required to get container repositories
 type ContainerRepositoryInput struct {
 	Location  string `json:"location"`
@@ -59,16 +66,6 @@ const (
 	DeploymentStatusFailed DeploymentStatus = "FAILED"
 	// Deployment was aborted
 	DeploymentStatusAborted DeploymentStatus = "ABORTED"
-)
-
-// Supported artifact download formats
-type DownloadFormat string
-
-const (
-	DownloadFormatRaw  DownloadFormat = "RAW"
-	DownloadFormatYaml DownloadFormat = "YAML"
-	DownloadFormatPem  DownloadFormat = "PEM"
-	DownloadFormatOvpn DownloadFormat = "OVPN"
 )
 
 // MutationValidationError includes the requested fields of the GraphQL type ValidationMessage.
@@ -589,6 +586,30 @@ func (v *__decommissionPreviewEnvironmentInput) GetOrgId() string { return v.Org
 // GetTargetId returns __decommissionPreviewEnvironmentInput.TargetId, and is useful for accessing the field via an interface.
 func (v *__decommissionPreviewEnvironmentInput) GetTargetId() string { return v.TargetId }
 
+// __deleteArtifactDefinitionInput is used internally by genqlient
+type __deleteArtifactDefinitionInput struct {
+	OrganizationId string `json:"organizationId"`
+	Name           string `json:"name"`
+}
+
+// GetOrganizationId returns __deleteArtifactDefinitionInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteArtifactDefinitionInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetName returns __deleteArtifactDefinitionInput.Name, and is useful for accessing the field via an interface.
+func (v *__deleteArtifactDefinitionInput) GetName() string { return v.Name }
+
+// __deleteArtifactInput is used internally by genqlient
+type __deleteArtifactInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteArtifactInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteArtifactInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteArtifactInput) GetId() string { return v.Id }
+
 // __deleteProjectInput is used internally by genqlient
 type __deleteProjectInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -639,9 +660,9 @@ func (v *__deployPreviewEnvironmentInput) GetInput() PreviewEnvironmentInput { r
 
 // __downloadArtifactInput is used internally by genqlient
 type __downloadArtifactInput struct {
-	OrganizationId string         `json:"organizationId"`
-	ArtifactId     string         `json:"artifactId"`
-	Format         DownloadFormat `json:"format"`
+	OrganizationId string `json:"organizationId"`
+	ArtifactId     string `json:"artifactId"`
+	Format         string `json:"format"`
 }
 
 // GetOrganizationId returns __downloadArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -651,7 +672,7 @@ func (v *__downloadArtifactInput) GetOrganizationId() string { return v.Organiza
 func (v *__downloadArtifactInput) GetArtifactId() string { return v.ArtifactId }
 
 // GetFormat returns __downloadArtifactInput.Format, and is useful for accessing the field via an interface.
-func (v *__downloadArtifactInput) GetFormat() DownloadFormat { return v.Format }
+func (v *__downloadArtifactInput) GetFormat() string { return v.Format }
 
 // __getArtifactDefinitionInput is used internally by genqlient
 type __getArtifactDefinitionInput struct {
@@ -664,6 +685,18 @@ func (v *__getArtifactDefinitionInput) GetOrganizationId() string { return v.Org
 
 // GetName returns __getArtifactDefinitionInput.Name, and is useful for accessing the field via an interface.
 func (v *__getArtifactDefinitionInput) GetName() string { return v.Name }
+
+// __getArtifactInput is used internally by genqlient
+type __getArtifactInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getArtifactInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getArtifactInput.Id, and is useful for accessing the field via an interface.
+func (v *__getArtifactInput) GetId() string { return v.Id }
 
 // __getArtifactsByTypeInput is used internally by genqlient
 type __getArtifactsByTypeInput struct {
@@ -1521,6 +1554,110 @@ func (v *decommissionPreviewEnvironmentResponse) GetDecommissionPreviewEnvironme
 	return v.DecommissionPreviewEnvironment
 }
 
+// deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload includes the requested fields of the GraphQL type ArtifactDefinitionPayload.
+type deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload struct {
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition `json:"result"`
+}
+
+// GetSuccessful returns deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload.Successful, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload.Messages, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// GetResult returns deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload.Result, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload) GetResult() deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition {
+	return v.Result
+}
+
+// deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+// The GraphQL type's documentation follows.
+//
+// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
+type deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition struct {
+	// The name of this type. Organization scoped: my-org/aws-iam-role
+	Name string `json:"name"`
+	Id   string `json:"id"`
+}
+
+// GetName returns deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition.Name, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition) GetName() string {
+	return v.Name
+}
+
+// GetId returns deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition.Id, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition) GetId() string {
+	return v.Id
+}
+
+// deleteArtifactDefinitionResponse is returned by deleteArtifactDefinition on success.
+type deleteArtifactDefinitionResponse struct {
+	// Delete an artifact definition. Requires administrator permissions and ensures the definition is not in use by any bundles or provisioned artifacts
+	DeleteArtifactDefinition deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload `json:"deleteArtifactDefinition"`
+}
+
+// GetDeleteArtifactDefinition returns deleteArtifactDefinitionResponse.DeleteArtifactDefinition, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDefinitionResponse) GetDeleteArtifactDefinition() deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload {
+	return v.DeleteArtifactDefinition
+}
+
+// deleteArtifactDeleteArtifactArtifactPayload includes the requested fields of the GraphQL type ArtifactPayload.
+type deleteArtifactDeleteArtifactArtifactPayload struct {
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result deleteArtifactDeleteArtifactArtifactPayloadResultArtifact `json:"result"`
+}
+
+// GetSuccessful returns deleteArtifactDeleteArtifactArtifactPayload.Successful, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDeleteArtifactArtifactPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns deleteArtifactDeleteArtifactArtifactPayload.Messages, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDeleteArtifactArtifactPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// GetResult returns deleteArtifactDeleteArtifactArtifactPayload.Result, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDeleteArtifactArtifactPayload) GetResult() deleteArtifactDeleteArtifactArtifactPayloadResultArtifact {
+	return v.Result
+}
+
+// deleteArtifactDeleteArtifactArtifactPayloadResultArtifact includes the requested fields of the GraphQL type Artifact.
+type deleteArtifactDeleteArtifactArtifactPayloadResultArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// GetId returns deleteArtifactDeleteArtifactArtifactPayloadResultArtifact.Id, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDeleteArtifactArtifactPayloadResultArtifact) GetId() string { return v.Id }
+
+// GetName returns deleteArtifactDeleteArtifactArtifactPayloadResultArtifact.Name, and is useful for accessing the field via an interface.
+func (v *deleteArtifactDeleteArtifactArtifactPayloadResultArtifact) GetName() string { return v.Name }
+
+// deleteArtifactResponse is returned by deleteArtifact on success.
+type deleteArtifactResponse struct {
+	// Delete an artifact.
+	//
+	// Artifacts cannot be deleted if provisioned by Massdriver.
+	DeleteArtifact deleteArtifactDeleteArtifactArtifactPayload `json:"deleteArtifact"`
+}
+
+// GetDeleteArtifact returns deleteArtifactResponse.DeleteArtifact, and is useful for accessing the field via an interface.
+func (v *deleteArtifactResponse) GetDeleteArtifact() deleteArtifactDeleteArtifactArtifactPayload {
+	return v.DeleteArtifact
+}
+
 // deleteProjectDeleteProjectProjectPayload includes the requested fields of the GraphQL type ProjectPayload.
 type deleteProjectDeleteProjectProjectPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -1716,6 +1853,191 @@ func (v *downloadArtifactResponse) GetDownloadArtifact() downloadArtifactDownloa
 	return v.DownloadArtifact
 }
 
+// getArtifactArtifact includes the requested fields of the GraphQL type Artifact.
+type getArtifactArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+	// The bundle's artifact field (output field) that produced this artifact.
+	Field string         `json:"field"`
+	Specs map[string]any `json:"-"`
+	// Download formats supported for this artifact
+	Formats   []string  `json:"formats"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	// The type of artifact
+	ArtifactDefinition getArtifactArtifactArtifactDefinition `json:"artifactDefinition"`
+	// The package that provisioned this artifact
+	Package getArtifactArtifactPackage `json:"package"`
+	// How the artifact was created, manually imported or provisioned by Massdriver
+	Origin ArtifactOrigin `json:"origin"`
+}
+
+// GetId returns getArtifactArtifact.Id, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetId() string { return v.Id }
+
+// GetName returns getArtifactArtifact.Name, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetName() string { return v.Name }
+
+// GetType returns getArtifactArtifact.Type, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetType() string { return v.Type }
+
+// GetField returns getArtifactArtifact.Field, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetField() string { return v.Field }
+
+// GetSpecs returns getArtifactArtifact.Specs, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetSpecs() map[string]any { return v.Specs }
+
+// GetFormats returns getArtifactArtifact.Formats, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetFormats() []string { return v.Formats }
+
+// GetCreatedAt returns getArtifactArtifact.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getArtifactArtifact.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetArtifactDefinition returns getArtifactArtifact.ArtifactDefinition, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetArtifactDefinition() getArtifactArtifactArtifactDefinition {
+	return v.ArtifactDefinition
+}
+
+// GetPackage returns getArtifactArtifact.Package, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetPackage() getArtifactArtifactPackage { return v.Package }
+
+// GetOrigin returns getArtifactArtifact.Origin, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetOrigin() ArtifactOrigin { return v.Origin }
+
+func (v *getArtifactArtifact) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getArtifactArtifact
+		Specs json.RawMessage `json:"specs"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getArtifactArtifact = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Specs
+		src := firstPass.Specs
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getArtifactArtifact.Specs: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetArtifactArtifact struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Type string `json:"type"`
+
+	Field string `json:"field"`
+
+	Specs json.RawMessage `json:"specs"`
+
+	Formats []string `json:"formats"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	ArtifactDefinition getArtifactArtifactArtifactDefinition `json:"artifactDefinition"`
+
+	Package getArtifactArtifactPackage `json:"package"`
+
+	Origin ArtifactOrigin `json:"origin"`
+}
+
+func (v *getArtifactArtifact) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getArtifactArtifact) __premarshalJSON() (*__premarshalgetArtifactArtifact, error) {
+	var retval __premarshalgetArtifactArtifact
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Type = v.Type
+	retval.Field = v.Field
+	{
+
+		dst := &retval.Specs
+		src := v.Specs
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getArtifactArtifact.Specs: %w", err)
+		}
+	}
+	retval.Formats = v.Formats
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.ArtifactDefinition = v.ArtifactDefinition
+	retval.Package = v.Package
+	retval.Origin = v.Origin
+	return &retval, nil
+}
+
+// getArtifactArtifactArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+// The GraphQL type's documentation follows.
+//
+// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
+type getArtifactArtifactArtifactDefinition struct {
+	Id string `json:"id"`
+	// The name of this type. Organization scoped: my-org/aws-iam-role
+	Name  string `json:"name"`
+	Label string `json:"label"`
+}
+
+// GetId returns getArtifactArtifactArtifactDefinition.Id, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifactArtifactDefinition) GetId() string { return v.Id }
+
+// GetName returns getArtifactArtifactArtifactDefinition.Name, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifactArtifactDefinition) GetName() string { return v.Name }
+
+// GetLabel returns getArtifactArtifactArtifactDefinition.Label, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifactArtifactDefinition) GetLabel() string { return v.Label }
+
+// getArtifactArtifactPackage includes the requested fields of the GraphQL type Package.
+// The GraphQL type's documentation follows.
+//
+// A deployed instance of a bundle in the context of its manifest
+type getArtifactArtifactPackage struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Unique identifier for the package
+	Slug string `json:"slug"`
+}
+
+// GetId returns getArtifactArtifactPackage.Id, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifactPackage) GetId() string { return v.Id }
+
+// GetSlug returns getArtifactArtifactPackage.Slug, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifactPackage) GetSlug() string { return v.Slug }
+
 // getArtifactDefinitionArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
 // The GraphQL type's documentation follows.
 //
@@ -1867,6 +2189,15 @@ type getArtifactDefinitionResponse struct {
 func (v *getArtifactDefinitionResponse) GetArtifactDefinition() getArtifactDefinitionArtifactDefinition {
 	return v.ArtifactDefinition
 }
+
+// getArtifactResponse is returned by getArtifact on success.
+type getArtifactResponse struct {
+	// Get an artifact by ID
+	Artifact getArtifactArtifact `json:"artifact"`
+}
+
+// GetArtifact returns getArtifactResponse.Artifact, and is useful for accessing the field via an interface.
+func (v *getArtifactResponse) GetArtifact() getArtifactArtifact { return v.Artifact }
 
 // getArtifactsByTypeArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
 type getArtifactsByTypeArtifactsPaginatedArtifacts struct {
@@ -4207,6 +4538,7 @@ func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPay
 
 // publishArtifactDefinitionResponse is returned by publishArtifactDefinition on success.
 type publishArtifactDefinitionResponse struct {
+	// Publish a new artifact definition or update an existing one
 	PublishArtifactDefinition publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload `json:"publishArtifactDefinition"`
 }
 
@@ -4706,6 +5038,94 @@ func decommissionPreviewEnvironment(
 	return &data, err
 }
 
+// The query or mutation executed by deleteArtifact.
+const deleteArtifact_Operation = `
+mutation deleteArtifact ($organizationId: ID!, $id: ID!) {
+	deleteArtifact(organizationId: $organizationId, id: $id) {
+		successful
+		messages {
+			message
+		}
+		result {
+			id
+			name
+		}
+	}
+}
+`
+
+func deleteArtifact(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*deleteArtifactResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteArtifact",
+		Query:  deleteArtifact_Operation,
+		Variables: &__deleteArtifactInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data deleteArtifactResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by deleteArtifactDefinition.
+const deleteArtifactDefinition_Operation = `
+mutation deleteArtifactDefinition ($organizationId: ID!, $name: String!) {
+	deleteArtifactDefinition(organizationId: $organizationId, name: $name) {
+		successful
+		messages {
+			message
+		}
+		result {
+			name
+			id
+		}
+	}
+}
+`
+
+func deleteArtifactDefinition(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	name string,
+) (*deleteArtifactDefinitionResponse, error) {
+	req := &graphql.Request{
+		OpName: "deleteArtifactDefinition",
+		Query:  deleteArtifactDefinition_Operation,
+		Variables: &__deleteArtifactDefinitionInput{
+			OrganizationId: organizationId,
+			Name:           name,
+		},
+	}
+	var err error
+
+	var data deleteArtifactDefinitionResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
 // The query or mutation executed by deleteProject.
 const deleteProject_Operation = `
 mutation deleteProject ($organizationId: ID!, $id: ID!) {
@@ -4851,7 +5271,7 @@ func deployPreviewEnvironment(
 
 // The query or mutation executed by downloadArtifact.
 const downloadArtifact_Operation = `
-query downloadArtifact ($organizationId: ID!, $artifactId: ID!, $format: DownloadFormat!) {
+query downloadArtifact ($organizationId: ID!, $artifactId: ID!, $format: String!) {
 	downloadArtifact(organizationId: $organizationId, artifactId: $artifactId, format: $format) {
 		renderedArtifact
 	}
@@ -4863,7 +5283,7 @@ func downloadArtifact(
 	client graphql.Client,
 	organizationId string,
 	artifactId string,
-	format DownloadFormat,
+	format string,
 ) (*downloadArtifactResponse, error) {
 	req := &graphql.Request{
 		OpName: "downloadArtifact",
@@ -4877,6 +5297,60 @@ func downloadArtifact(
 	var err error
 
 	var data downloadArtifactResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getArtifact.
+const getArtifact_Operation = `
+query getArtifact ($organizationId: ID!, $id: ID!) {
+	artifact(organizationId: $organizationId, id: $id) {
+		id
+		name
+		type
+		field
+		specs
+		formats
+		createdAt
+		updatedAt
+		artifactDefinition {
+			id
+			name
+			label
+		}
+		package {
+			id
+			slug
+		}
+		origin
+	}
+}
+`
+
+func getArtifact(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*getArtifactResponse, error) {
+	req := &graphql.Request{
+		OpName: "getArtifact",
+		Query:  getArtifact_Operation,
+		Variables: &__getArtifactInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data getArtifactResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

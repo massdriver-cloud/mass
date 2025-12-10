@@ -53,18 +53,47 @@ func ListArtifactDefinitions(ctx context.Context, mdClient *client.Client) ([]Ar
 }
 
 func (response *listArtifactDefinitionsResponse) toArtifactDefinitions() []ArtifactDefinitionWithSchema {
-	var ads []ArtifactDefinitionWithSchema
-	for _, artifactDefinition := range response.ArtifactDefinitions {
-		ads = append(ads, ArtifactDefinitionWithSchema{
-			ID:        artifactDefinition.Id,
-			Name:      artifactDefinition.Name,
-			Schema:    artifactDefinition.Schema,
-			Label:     artifactDefinition.Label,
-			UpdatedAt: artifactDefinition.UpdatedAt,
-		})
+	definitions := make([]ArtifactDefinitionWithSchema, len(response.ArtifactDefinitions))
+	for i, def := range response.ArtifactDefinitions {
+		definitions[i] = ArtifactDefinitionWithSchema{
+			ID:        def.Id,
+			Name:      def.Name,
+			Schema:    def.Schema,
+			Label:     def.Label,
+			UpdatedAt: def.UpdatedAt,
+		}
 	}
+	return definitions
+}
 
-	return ads
+func DeleteArtifactDefinition(ctx context.Context, mdClient *client.Client, name string) (*ArtifactDefinitionWithSchema, error) {
+	split := strings.Split(name, "/")
+	if len(split) != 2 {
+		name = strings.Join([]string{mdClient.Config.OrganizationID, name}, "/")
+	}
+	response, err := deleteArtifactDefinition(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete artifact definition %s: %w", name, err)
+	}
+	if !response.DeleteArtifactDefinition.Successful {
+		messages := response.DeleteArtifactDefinition.GetMessages()
+		if len(messages) > 0 {
+			errMsg := "unable to delete artifact definition:"
+			for _, msg := range messages {
+				errMsg += "\n  - " + msg.Message
+			}
+			return nil, fmt.Errorf("%s", errMsg)
+		}
+		return nil, fmt.Errorf("unable to delete artifact definition")
+	}
+	// Check if result is empty (genqlient generates value types, not pointers)
+	if response.DeleteArtifactDefinition.Result.Id == "" {
+		return nil, fmt.Errorf("delete artifact definition returned no result")
+	}
+	return &ArtifactDefinitionWithSchema{
+		ID:   response.DeleteArtifactDefinition.Result.Id,
+		Name: response.DeleteArtifactDefinition.Result.Name,
+	}, nil
 }
 
 func PublishArtifactDefinition(ctx context.Context, mdClient *client.Client, schema map[string]any) (*ArtifactDefinitionWithSchema, error) {

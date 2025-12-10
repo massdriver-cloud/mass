@@ -82,7 +82,7 @@ type DefaultArtifactDownloader struct {
 }
 
 func (dad *DefaultArtifactDownloader) DownloadArtifact(ctx context.Context, artifactID string) (string, error) {
-	return api.DownloadArtifact(ctx, dad.Client, artifactID)
+	return api.DownloadArtifact(ctx, dad.Client, artifactID, "json")
 }
 
 type DefaultStateFetcher struct {
