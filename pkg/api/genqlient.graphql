@@ -173,6 +173,20 @@ query getDeploymentById($organizationId: ID!, $id: ID!) {
   }
 }
 
+query getDeploymentLogStream($organizationId: ID!, $id: ID!) {
+  deploymentLogStream(organizationId: $organizationId, id: $id) {
+    id
+    logs {
+      content
+      metadata {
+        step
+        timestamp
+        index
+      }
+    }
+  }
+}
+
 
 # ENVIRONMENTS
 

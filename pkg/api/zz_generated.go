@@ -738,6 +738,18 @@ func (v *__getDeploymentByIdInput) GetOrganizationId() string { return v.Organiz
 // GetId returns __getDeploymentByIdInput.Id, and is useful for accessing the field via an interface.
 func (v *__getDeploymentByIdInput) GetId() string { return v.Id }
 
+// __getDeploymentLogStreamInput is used internally by genqlient
+type __getDeploymentLogStreamInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getDeploymentLogStreamInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getDeploymentLogStreamInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getDeploymentLogStreamInput.Id, and is useful for accessing the field via an interface.
+func (v *__getDeploymentLogStreamInput) GetId() string { return v.Id }
+
 // __getEnvironmentByIdInput is used internally by genqlient
 type __getEnvironmentByIdInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -2561,6 +2573,77 @@ type getDeploymentByIdResponse struct {
 
 // GetDeployment returns getDeploymentByIdResponse.Deployment, and is useful for accessing the field via an interface.
 func (v *getDeploymentByIdResponse) GetDeployment() getDeploymentByIdDeployment { return v.Deployment }
+
+// getDeploymentLogStreamDeploymentLogStream includes the requested fields of the GraphQL type DeploymentLogStream.
+// The GraphQL type's documentation follows.
+//
+// A stream of logs associated with a deployment
+type getDeploymentLogStreamDeploymentLogStream struct {
+	Id   string                                                                `json:"id"`
+	Logs []getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog `json:"logs"`
+}
+
+// GetId returns getDeploymentLogStreamDeploymentLogStream.Id, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogStreamDeploymentLogStream) GetId() string { return v.Id }
+
+// GetLogs returns getDeploymentLogStreamDeploymentLogStream.Logs, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogStreamDeploymentLogStream) GetLogs() []getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog {
+	return v.Logs
+}
+
+// getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog includes the requested fields of the GraphQL type DeploymentLogStreamLog.
+// The GraphQL type's documentation follows.
+//
+// A single log entry in a deployment log stream
+type getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog struct {
+	Content  string                                                                      `json:"content"`
+	Metadata getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata `json:"metadata"`
+}
+
+// GetContent returns getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog.Content, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog) GetContent() string {
+	return v.Content
+}
+
+// GetMetadata returns getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog.Metadata, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog) GetMetadata() getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata {
+	return v.Metadata
+}
+
+// getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata includes the requested fields of the GraphQL type DeploymentLogStreamLogMetadata.
+// The GraphQL type's documentation follows.
+//
+// Metadata associated with a deployment log entry
+type getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata struct {
+	Step      string    `json:"step"`
+	Timestamp time.Time `json:"timestamp"`
+	Index     int       `json:"index"`
+}
+
+// GetStep returns getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata.Step, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata) GetStep() string {
+	return v.Step
+}
+
+// GetTimestamp returns getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata.Timestamp, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata) GetTimestamp() time.Time {
+	return v.Timestamp
+}
+
+// GetIndex returns getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata.Index, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata) GetIndex() int {
+	return v.Index
+}
+
+// getDeploymentLogStreamResponse is returned by getDeploymentLogStream on success.
+type getDeploymentLogStreamResponse struct {
+	DeploymentLogStream getDeploymentLogStreamDeploymentLogStream `json:"deploymentLogStream"`
+}
+
+// GetDeploymentLogStream returns getDeploymentLogStreamResponse.DeploymentLogStream, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogStreamResponse) GetDeploymentLogStream() getDeploymentLogStreamDeploymentLogStream {
+	return v.DeploymentLogStream
+}
 
 // getEnvironmentByIdEnvironment includes the requested fields of the GraphQL type Environment.
 type getEnvironmentByIdEnvironment struct {
@@ -5531,6 +5614,51 @@ func getDeploymentById(
 	var err error
 
 	var data getDeploymentByIdResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getDeploymentLogStream.
+const getDeploymentLogStream_Operation = `
+query getDeploymentLogStream ($organizationId: ID!, $id: ID!) {
+	deploymentLogStream(organizationId: $organizationId, id: $id) {
+		id
+		logs {
+			content
+			metadata {
+				step
+				timestamp
+				index
+			}
+		}
+	}
+}
+`
+
+func getDeploymentLogStream(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+) (*getDeploymentLogStreamResponse, error) {
+	req := &graphql.Request{
+		OpName: "getDeploymentLogStream",
+		Query:  getDeploymentLogStream_Operation,
+		Variables: &__getDeploymentLogStreamInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+	var err error
+
+	var data getDeploymentLogStreamResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
