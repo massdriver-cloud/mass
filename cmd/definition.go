@@ -47,7 +47,7 @@ func NewCmdDefinition() *cobra.Command {
 	}
 
 	definitionPublishCmd := &cobra.Command{
-		Use:   "publish",
+		Use:   "publish [definition file]",
 		Short: "Publish an artifact definition to Massdriver",
 		Long:  helpdocs.MustRender("definition/publish"),
 		Args:  cobra.ExactArgs(1),

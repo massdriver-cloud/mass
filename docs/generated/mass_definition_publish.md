@@ -32,7 +32,7 @@ mass definition publish my-definition.yaml
 
 
 ```
-mass definition publish [flags]
+mass definition publish [definition file] [flags]
 ```
 
 ### Options

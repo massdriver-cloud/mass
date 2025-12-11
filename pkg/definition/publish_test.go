@@ -24,7 +24,7 @@ func TestPublish(t *testing.T) {
 		{
 			name:     "simple",
 			path:     "testdata/simple-artifact.json",
-			wantBody: `{"$schema":"http://json-schema.org/draft-07/schema","type":"object","title":"Test Artifact","properties":{"data":"type":"object"},"specs":"type":"object"}}}`,
+			wantBody: `{"$schema":"http://json-schema.org/draft-07/schema","type":"object","title":"Test Artifact","properties":{"data":{"type":"object"}},"specs":{"type":"object"}}}`,
 		},
 	}
 
