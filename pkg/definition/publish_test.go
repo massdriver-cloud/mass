@@ -1,7 +1,6 @@
 package definition_test
 
 import (
-	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -17,15 +16,15 @@ import (
 
 func TestPublish(t *testing.T) {
 	type test struct {
-		name       string
-		definition *bytes.Buffer
-		wantBody   string
+		name     string
+		path     string
+		wantBody string
 	}
 	tests := []test{
 		{
-			name:       "simple",
-			definition: bytes.NewBuffer([]byte(`{"$md":{"access":"public","name":"foo"},"required":["data","specs"],"properties":{"data":{},"specs":{}}}`)),
-			wantBody:   `{"$md":{"access":"public","name":"foo"},"required":["data","specs"],"properties":{"data":{},"specs":{}}}`,
+			name:     "simple",
+			path:     "testdata/simple-artifact.json",
+			wantBody: `{"$schema":"http://json-schema.org/draft-07/schema","type":"object","title":"Test Artifact","properties":{"data":"type":"object"},"specs":"type":"object"}}}`,
 		},
 	}
 
@@ -67,7 +66,7 @@ func TestPublish(t *testing.T) {
 				},
 			}
 
-			_, err = definition.Publish(t.Context(), &mdClient, tc.definition)
+			_, err = definition.Publish(t.Context(), &mdClient, tc.path)
 			if err != nil {
 				t.Fatalf("%v, unexpected error", err)
 			}

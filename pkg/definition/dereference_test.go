@@ -1,4 +1,4 @@
-package bundle_test
+package definition_test
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/pkg/bundle"
+	"github.com/massdriver-cloud/mass/pkg/definition"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
 
 	"github.com/go-resty/resty/v2"
@@ -136,12 +136,12 @@ func TestDereferenceSchema(t *testing.T) {
 				}),
 			}
 
-			opts := bundle.DereferenceOptions{
+			opts := definition.DereferenceOptions{
 				Client: &mdClient,
 				Cwd:    ".",
 			}
 
-			got, gotErr := bundle.DereferenceSchema(test.Input, opts)
+			got, gotErr := definition.DereferenceSchema(test.Input, opts)
 
 			if test.ExpectedErrorSuffix == "" && gotErr != nil {
 				t.Errorf("unexpected error: %v", gotErr)
@@ -191,11 +191,11 @@ func TestDereferenceSchema(t *testing.T) {
 
 		input := jsonDecode(fmt.Sprintf(`{"$ref":"%s/recursive"}`, testServer.URL))
 
-		opts := bundle.DereferenceOptions{
+		opts := definition.DereferenceOptions{
 			Client: mdClient,
 			Cwd:    ".",
 		}
-		got, _ := bundle.DereferenceSchema(input, opts)
+		got, _ := definition.DereferenceSchema(input, opts)
 		expected := map[string]any{
 			"baz": map[string]string{
 				"foo": "bar",
@@ -208,11 +208,11 @@ func TestDereferenceSchema(t *testing.T) {
 
 		input = jsonDecode(fmt.Sprintf(`{"$ref":"%s/not-found"}`, testServer.URL))
 
-		opts = bundle.DereferenceOptions{
+		opts = definition.DereferenceOptions{
 			Client: mdClient,
 			Cwd:    ".",
 		}
-		_, gotErr := bundle.DereferenceSchema(input, opts)
+		_, gotErr := definition.DereferenceSchema(input, opts)
 		expectedErrPrefix := "received non-200 response getting ref 404 Not Found"
 
 		if !strings.HasPrefix(gotErr.Error(), expectedErrPrefix) {

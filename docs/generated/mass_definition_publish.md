@@ -12,27 +12,23 @@ Publish an artifact definition to Massdriver
 
 # Publish Artifact Definition
 
-Publishes a new or updated artifact definition to Massdriver.
+Publishes a new or updated artifact definition to Massdriver. Supports JSON or YAML formats.
 
 ## Usage
 
 ```bash
-mass definition publish --file <definition-file>
+mass definition publish <definition-file>
 ```
 
 ## Examples
 
 ```bash
-# Publish a definition from a file
-mass definition publish --file my-definition.json
+# Publish a definition from a JSON file
+mass definition publish my-definition.json
 
-# Publish a definition from stdin
-cat my-definition.json | mass definition publish --file -
+# Publish a definition from a YAML file
+mass definition publish my-definition.yaml
 ```
-
-## Options
-
-- `--file`: Path to the definition file (use - for stdin)
 
 
 ```
@@ -42,8 +38,7 @@ mass definition publish [flags]
 ### Options
 
 ```
-  -f, --file string   File containing artifact definition schema (use - for stdin)
-  -h, --help          help for publish
+  -h, --help   help for publish
 ```
 
 ### SEE ALSO

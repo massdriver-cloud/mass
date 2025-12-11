@@ -6,7 +6,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"os"
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
@@ -51,10 +50,9 @@ func NewCmdDefinition() *cobra.Command {
 		Use:   "publish",
 		Short: "Publish an artifact definition to Massdriver",
 		Long:  helpdocs.MustRender("definition/publish"),
+		Args:  cobra.ExactArgs(1),
 		RunE:  runDefinitionPublish,
 	}
-	definitionPublishCmd.Flags().StringP("file", "f", "", "File containing artifact definition schema (use - for stdin)")
-	_ = definitionPublishCmd.MarkFlagRequired("file")
 
 	definitionCmd.AddCommand(definitionGetCmd)
 	definitionCmd.AddCommand(definitionPublishCmd)
@@ -105,22 +103,8 @@ func runDefinitionGet(cmd *cobra.Command, args []string) error {
 func runDefinitionPublish(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	defPath, err := cmd.Flags().GetString("file")
-	if err != nil {
-		return err
-	}
+	defFile := args[0]
 	cmd.SilenceUsage = true
-
-	var defFile *os.File
-	if defPath == "-" {
-		defFile = os.Stdin
-	} else {
-		defFile, err = os.Open(defPath)
-		if err != nil {
-			fmt.Println(err)
-		}
-		defer defFile.Close()
-	}
 
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {

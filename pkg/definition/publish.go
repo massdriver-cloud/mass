@@ -2,9 +2,7 @@ package definition
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/url"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
@@ -12,10 +10,10 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func Publish(ctx context.Context, mdClient *client.Client, in io.Reader) (*api.ArtifactDefinitionWithSchema, error) {
-	artdefBytes, err := io.ReadAll(in)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read artifact definition: %w", err)
+func Publish(ctx context.Context, mdClient *client.Client, path string) (*api.ArtifactDefinitionWithSchema, error) {
+	artDef, readErr := Read(ctx, mdClient, path)
+	if readErr != nil {
+		return nil, fmt.Errorf("failed to read artifact definition: %w", readErr)
 	}
 
 	// validate artifact definition against JSON Schema meta-schema
@@ -24,7 +22,7 @@ func Publish(ctx context.Context, mdClient *client.Client, in io.Reader) (*api.A
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct artifact definition schema URL: %w", err)
 	}
-	err = validateArtifactDefinition(artdefBytes, artdefSchemaURL)
+	err = validateArtifactDefinition(artDef, artdefSchemaURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate artifact definition schema: %w", err)
 	}
@@ -32,24 +30,18 @@ func Publish(ctx context.Context, mdClient *client.Client, in io.Reader) (*api.A
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct meta schema URL: %w", err)
 	}
-	err = validateArtifactDefinition(artdefBytes, metaSchemaURL)
+	err = validateArtifactDefinition(artDef, metaSchemaURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate artifact definition against meta schema: %w", err)
 	}
 
-	var artdefMap map[string]any
-	err = json.Unmarshal(artdefBytes, &artdefMap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal artifact definition: %w", err)
-	}
-
-	return api.PublishArtifactDefinition(ctx, mdClient, artdefMap)
+	return api.PublishArtifactDefinition(ctx, mdClient, artDef)
 }
 
-func validateArtifactDefinition(artdefBytes []byte, schemaURL string) error {
+func validateArtifactDefinition(artDef map[string]any, schemaURL string) error {
 	sch, loadErr := jsonschema.LoadSchemaFromURL(schemaURL)
 	if loadErr != nil {
 		return loadErr
 	}
-	return jsonschema.ValidateBytes(sch, artdefBytes)
+	return jsonschema.ValidateGo(sch, artDef)
 }
