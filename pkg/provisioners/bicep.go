@@ -15,6 +15,9 @@ type BicepProvisioner struct{}
 func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]any) error {
 	// read existing bicep params for this step
 	bicepParamsImport := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
+	if bicepParamsImport.Schema == nil {
+		return errors.New("failed to read existing Bicep param declarations: " + bicepParamsImport.PrettyDiags())
+	}
 
 	newParams := FindMissingFromAirlock(variables, bicepParamsImport.Schema)
 	if len(newParams["properties"].(map[string]any)) == 0 {

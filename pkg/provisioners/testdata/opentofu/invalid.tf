@@ -1,0 +1,3 @@
+variable "invalid" {
+    default = timestamp()
+}
