@@ -42,9 +42,46 @@ query listCredentials($organizationId: ID!) {
   }
 }
 
-query downloadArtifact($organizationId: ID!, $artifactId: ID!, $format: DownloadFormat!) {
+query downloadArtifact($organizationId: ID!, $artifactId: ID!, $format: String!) {
   downloadArtifact(organizationId: $organizationId, artifactId: $artifactId, format: $format) {
     renderedArtifact
+  }
+}
+
+query getArtifact($organizationId: ID!, $id: ID!) {
+  artifact(organizationId: $organizationId, id: $id) {
+    id
+    name
+    type
+    field
+    specs
+    formats
+    createdAt
+    updatedAt
+    artifactDefinition {
+      id
+      name
+      label
+    }
+    package {
+      id
+      slug
+    }
+    origin
+  }
+}
+
+mutation deleteArtifact($organizationId: ID!, $id: ID!) {
+  deleteArtifact(organizationId: $organizationId, id: $id) {
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+    result {
+      id
+      name
+    }
   }
 }
 
@@ -103,6 +140,20 @@ mutation publishArtifactDefinition($organizationId: ID!, $schema: JSON!) {
   }
 }
 
+mutation deleteArtifactDefinition($organizationId: ID!, $name: String!) {
+  deleteArtifactDefinition(organizationId: $organizationId, name: $name) {
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+    result {
+      name
+      id
+    }
+  }
+}
+
 
 # CONTAINER REPOSITORIES
 
@@ -119,6 +170,20 @@ query getDeploymentById($organizationId: ID!, $id: ID!) {
   deployment(organizationId: $organizationId, id: $id) {
     id
     status
+  }
+}
+
+query getDeploymentLogStream($organizationId: ID!, $id: ID!) {
+  deploymentLogStream(organizationId: $organizationId, id: $id) {
+    id
+    logs {
+      content
+      metadata {
+        step
+        timestamp
+        index
+      }
+    }
   }
 }
 

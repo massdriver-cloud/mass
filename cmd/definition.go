@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
@@ -56,9 +58,19 @@ func NewCmdDefinition() *cobra.Command {
 	definitionPublishCmd.Flags().StringP("file", "f", "", "File containing artifact definition schema (use - for stdin)")
 	_ = definitionPublishCmd.MarkFlagRequired("file")
 
+	definitionDeleteCmd := &cobra.Command{
+		Use:   "delete [definition]",
+		Short: "Delete an artifact definition from Massdriver",
+		Long:  helpdocs.MustRender("definition/delete"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runDefinitionDelete,
+	}
+	definitionDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+
 	definitionCmd.AddCommand(definitionGetCmd)
 	definitionCmd.AddCommand(definitionPublishCmd)
 	definitionCmd.AddCommand(definitionListCmd)
+	definitionCmd.AddCommand(definitionDeleteCmd)
 
 	return definitionCmd
 }
@@ -201,5 +213,49 @@ func renderDefinition(ad *api.ArtifactDefinitionWithSchema) error {
 	}
 
 	fmt.Print(out)
+	return nil
+}
+
+func runDefinitionDelete(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	definitionName := args[0]
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	// Get definition details for confirmation
+	ad, getErr := definition.Get(ctx, mdClient, definitionName)
+	if getErr != nil {
+		return fmt.Errorf("error getting artifact definition: %w", getErr)
+	}
+
+	// Prompt for confirmation - requires typing the definition name unless --force is used
+	if !force {
+		fmt.Printf("WARNING: This will permanently delete artifact definition `%s`.\n", ad.Name)
+		fmt.Printf("Type `%s` to confirm deletion: ", ad.Name)
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(answer)
+
+		if answer != ad.Name {
+			fmt.Println("Deletion cancelled.")
+			return nil
+		}
+	}
+
+	deletedDef, deleteErr := api.DeleteArtifactDefinition(ctx, mdClient, definitionName)
+	if deleteErr != nil {
+		return fmt.Errorf("error deleting artifact definition: %w", deleteErr)
+	}
+
+	fmt.Printf("Artifact definition %s deleted successfully!\n", prettylogs.Underline(deletedDef.Name))
 	return nil
 }

@@ -1,12 +1,15 @@
 package api
 
 type PreviewConfig struct {
-	ProjectSlug string                    `json:"projectSlug"`
-	Credentials []Credential              `json:"credentials"`
-	Packages    map[string]PreviewPackage `json:"packages"`
+	ProjectSlug     string                    `json:"projectSlug"`
+	BaseEnvironment string                    `json:"baseEnvironment,omitempty"`
+	Credentials     []Credential              `json:"credentials"`
+	Packages        map[string]PreviewPackage `json:"packages"`
 }
 
 type PreviewPackage struct {
+	Version          string         `json:"version,omitempty"`
+	ReleaseStrategy  string         `json:"releaseStrategy,omitempty"`
 	Params           map[string]any `json:"params,omitempty"`
 	Secrets          []Secret       `json:"secrets,omitempty"`
 	RemoteReferences []RemoteRef    `json:"remoteReferences,omitempty"`

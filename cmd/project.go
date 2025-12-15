@@ -240,30 +240,38 @@ func runProjectDelete(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Prompt for confirmation - requires typing "yes" unless --force is used
-	if !force {
-		fmt.Printf("WARNING: This will permanently delete project %s and all its resources.\n", projectIdOrSlug)
-		fmt.Print("Type 'yes' to confirm deletion: ")
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(answer)
-
-		if answer != "yes" {
-			fmt.Println("Deletion cancelled.")
-			return nil
-		}
-	}
+	cmd.SilenceUsage = true
 
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	project, err := api.DeleteProject(ctx, mdClient, projectIdOrSlug)
+	// Get project details for confirmation
+	project, getErr := api.GetProject(ctx, mdClient, projectIdOrSlug)
+	if getErr != nil {
+		return fmt.Errorf("error getting project: %w", getErr)
+	}
+
+	// Prompt for confirmation - requires typing the project slug unless --force is used
+	if !force {
+		fmt.Printf("WARNING: This will permanently delete project `%s` and all its resources.\n", project.Slug)
+		fmt.Printf("Type `%s` to confirm deletion: ", project.Slug)
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(answer)
+
+		if answer != project.Slug {
+			fmt.Println("Deletion cancelled.")
+			return nil
+		}
+	}
+
+	deletedProject, err := api.DeleteProject(ctx, mdClient, projectIdOrSlug)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Project %s deleted successfully (ID: %s)\n", project.Slug, project.ID)
+	fmt.Printf("Project %s deleted successfully (ID: %s)\n", deletedProject.Slug, deletedProject.ID)
 	return nil
 }

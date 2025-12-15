@@ -1,130 +1,61 @@
 package api_test
 
 import (
-	"net/http"
-	"reflect"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/gqlmock"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
 )
 
-func TestGetArtifactDefinitions(t *testing.T) {
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
-		"data": map[string]any{
-			"artifactDefinition": map[string]any{
-				"name": "massdriver/aws-ecs-cluster",
-				"schema": map[string]any{
-					"properties": map[string]any{
-						"aws_authentication": map[string]string{
-							"type": "object",
-						},
-					},
-				},
-			},
-		},
-	})
-	mdClient := client.Client{
-		GQL: gqlClient,
+func TestDeleteArtifactDefinition(t *testing.T) {
+	type test struct {
+		name     string
+		defName  string
+		response map[string]any
+		want     api.ArtifactDefinitionWithSchema
 	}
-
-	got, err := api.GetArtifactDefinition(t.Context(), &mdClient, "massdriver/aws-ecs-cluster")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	want := api.ArtifactDefinitionWithSchema{
-		Name: "massdriver/aws-ecs-cluster",
-		Schema: map[string]any{
-			"properties": map[string]any{
-				"aws_authentication": map[string]any{
-					"type": "object",
-				},
-			},
-		},
-	}
-
-	if !reflect.DeepEqual(*got, want) {
-		t.Errorf("got %v expected %v", *got, want)
-	}
-}
-
-func TestListArtifactDefinitions(t *testing.T) {
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
-		"data": map[string]any{
-			"artifactDefinitions": []map[string]any{
-				{
-					"name": "massdriver/aws-ecs-cluster",
-					"schema": map[string]any{
-						"properties": map[string]any{
-							"aws_authentication": map[string]string{
-								"type": "object",
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-	mdClient := client.Client{
-		GQL: gqlClient,
-	}
-
-	got, err := api.ListArtifactDefinitions(t.Context(), &mdClient)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	want := []api.ArtifactDefinitionWithSchema{
+	tests := []test{
 		{
-			Name: "massdriver/aws-ecs-cluster",
-			Schema: map[string]any{
-				"properties": map[string]any{
-					"aws_authentication": map[string]any{
-						"type": "object",
-					},
-				},
+			name:    "simple",
+			defName: "aws-s3",
+			response: map[string]any{
+				"id":   "def-123",
+				"name": "org-123/aws-s3",
+			},
+			want: api.ArtifactDefinitionWithSchema{
+				ID:   "def-123",
+				Name: "org-123/aws-s3",
 			},
 		},
 	}
 
-	if !reflect.DeepEqual(got[0].Schema, want[0].Schema) {
-		t.Errorf("got %v expected %v", got[0].Schema, want[0].Schema)
-	}
-}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			responses := []any{
+				gqlmock.MockMutationResponse("deleteArtifactDefinition", tc.response),
+			}
 
-func TestPublishArtifactDefinition(t *testing.T) {
-	responses := []gqlmock.ResponseFunc{
-		func(req *http.Request) any {
-			return gqlmock.MockMutationResponse("publishArtifactDefinition", map[string]any{
-				"name": "massdriver/test-schema",
-				"id":   "123-456",
-			})
-		},
-	}
+			mdClient := client.Client{
+				GQL: gqlmock.NewClientWithJSONResponseArray(responses),
+				Config: config.Config{
+					OrganizationID: "org-123",
+				},
+			}
 
-	artDef := map[string]any{
-		"$id":  "123-456",
-		"name": "massdriver/test-schema",
-	}
+			got, err := api.DeleteArtifactDefinition(t.Context(), &mdClient, tc.defName)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	mdClient := client.Client{
-		GQL: gqlmock.NewClientWithFuncResponseArray(responses),
-	}
-
-	got, err := api.PublishArtifactDefinition(t.Context(), &mdClient, artDef)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	want := api.ArtifactDefinitionWithSchema{
-		ID:   "123-456",
-		Name: "massdriver/test-schema",
-	}
-
-	if !reflect.DeepEqual(*got, want) {
-		t.Errorf("got %v, wanted %v", *got, want)
+			if got.ID != tc.want.ID {
+				t.Errorf("got ID %v, want %v", got.ID, tc.want.ID)
+			}
+			if got.Name != tc.want.Name {
+				t.Errorf("got Name %v, want %v", got.Name, tc.want.Name)
+			}
+		})
 	}
 }

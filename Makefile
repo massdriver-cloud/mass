@@ -23,6 +23,10 @@ clean:
 	rm -rf ${API_DIR}/zz_generated.go
 	rm -f ./mass
 
+.PHONY: docs
+docs: build
+	./mass docs
+
 .PHONY: generate
 generate:
 	curl -s ${SCHEMA_URL} -o ${API_DIR}/schema.graphql
@@ -43,6 +47,17 @@ bin:
 .PHONY: lint
 lint:
 	golangci-lint run
+
+.PHONY: build
+build:
+	@if [ "$$(uname -s)" = "Darwin" ]; then \
+		$(MAKE) build.macos; \
+	elif [ "$$(uname -s)" = "Linux" ]; then \
+		$(MAKE) build.linux; \
+	else \
+		echo "Error: Unsupported operating system. Please use 'make build.macos' or 'make build.linux' directly."; \
+		exit 1; \
+	fi
 
 .PHONY: build.macos
 build.macos: bin
