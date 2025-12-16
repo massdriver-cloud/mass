@@ -8,6 +8,8 @@ MKFILE_DIR := $(dir $(MKFILE_PATH))
 API_DIR := pkg/api
 SCHEMA_URL ?= https://api.massdriver.cloud/graphql/schema.graphql
 
+.DEFAULT_GOAL := install
+
 all.macos: clean generate install.macos
 all.linux: clean generate install.linux
 
@@ -20,6 +22,10 @@ clean:
 	rm -rf ${API_DIR}/schema.graphql
 	rm -rf ${API_DIR}/zz_generated.go
 	rm -f ./mass
+
+.PHONY: docs
+docs: build
+	./mass docs
 
 .PHONY: generate
 generate:
@@ -42,6 +48,17 @@ bin:
 lint:
 	golangci-lint run
 
+.PHONY: build
+build:
+	@if [ "$$(uname -s)" = "Darwin" ]; then \
+		$(MAKE) build.macos; \
+	elif [ "$$(uname -s)" = "Linux" ]; then \
+		$(MAKE) build.linux; \
+	else \
+		echo "Error: Unsupported operating system. Please use 'make build.macos' or 'make build.linux' directly."; \
+		exit 1; \
+	fi
+
 .PHONY: build.macos
 build.macos: bin
 	GOOS=darwin GOARCH=arm64 go build -o bin/mass-darwin-arm64 -ldflags=${LD_FLAGS}
@@ -58,3 +75,15 @@ install.macos: build.macos
 .PHONY: install.linux
 install.linux: build.linux
 	cp -f bin/mass-linux-amd64 ${INSTALL_PATH}/mass
+
+.PHONY: install
+install: ## Install mass CLI (auto-detects macOS or Linux)
+	@OS="$$(uname -s)"; \
+	if [ "$$OS" = "Darwin" ]; then \
+		$(MAKE) install.macos; \
+	elif [ "$$OS" = "Linux" ]; then \
+		$(MAKE) install.linux; \
+	else \
+		echo "Unsupported OS: $$OS"; \
+		exit 1; \
+	fi

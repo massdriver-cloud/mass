@@ -1,0 +1,25 @@
+# Artifact: {{.Name}}
+
+**ID:** {{.ID}}
+
+**Type:** {{.Type}}
+
+{{if .Field}}**Field:** {{.Field}}{{end}}
+
+{{if .ArtifactDefinition}}**Definition:** {{.ArtifactDefinition.Label}} ({{.ArtifactDefinition.Name}}){{end}}
+
+{{if .Package}}**Package:** {{.Package.Slug}}{{end}}
+
+{{if .Origin}}**Origin:** {{.Origin}}{{end}}
+
+**Created:** {{.CreatedAt}}
+
+**Updated:** {{.UpdatedAt}}
+
+{{if .Formats}}**Available Formats:** {{range $i, $f := .Formats}}{{if $i}}, {{end}}{{$f}}{{end}}{{end}}
+
+{{if ne .SpecsJSON "{}"}}## Specs
+```json
+{{.SpecsJSON}}
+```
+{{end}}
