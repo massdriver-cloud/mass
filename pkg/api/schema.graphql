@@ -213,6 +213,12 @@ type RootQueryType {
 
   nodeContexts(organizationId: ID!, environmentId: ID!): [NodeContext]
 
+  "List all available integration types"
+  integrationTypes: [IntegrationType]
+
+  "List all integrations enabled for an organization"
+  integrations(organizationId: ID!): [Integration]
+
   environment(
     organizationId: ID!
 
@@ -467,6 +473,12 @@ type RootMutationType {
   ): LinkPayload
 
   unlinkManifests(organizationId: ID!, linkId: ID!): LinkPayload
+
+  "Enable an integration for an organization"
+  enableIntegration(organizationId: ID!, integrationTypeId: String!, config: JSON!, auth: JSON!): IntegrationPayload
+
+  "Disable an integration for an organization"
+  disableIntegration(organizationId: ID!, integrationTypeId: String!): Boolean
 
   "Create an environment"
   createEnvironment(organizationId: ID!, projectId: ID!, name: String!, slug: String!, description: String): EnvironmentPayload
@@ -805,18 +817,41 @@ enum ServerMode {
   MANAGED
 }
 
+enum EmailAuthMethodType {
+  PASSWORDLESS
+  PASSKEY
+}
+
 type SsoProvider {
   name: String!
 
   "OAuth Login Flow URL"
   loginUrl: String!
+
+  "Optional icon URL for UI display"
+  uiIconUrl: String
+
+  "Optional label for UI display"
+  uiLabel: String
+}
+
+type EmailAuthMethod {
+  "Type of email-based authentication method"
+  name: EmailAuthMethodType!
 }
 
 type Server {
   appUrl: String!
+
   version: String!
+
   mode: ServerMode!
+
   ssoProviders: [SsoProvider]
+
+  "List of enabled email-based authentication methods"
+  emailAuthMethods: [EmailAuthMethod]
+
   features: ServerFeatures! @deprecated(reason: "")
 }
 
@@ -1162,6 +1197,9 @@ type Package {
   manifest: Manifest!
 
   paramsSchema: JSON!
+
+  "The operator guide for the bundle with params rendered via templating if enabled"
+  operatorGuide: Markdown
 
   "The environment this package will be deployed to"
   environment: Environment!
@@ -1650,6 +1688,34 @@ type EnvironmentPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: Environment
+}
+
+type IntegrationType {
+  name: String!
+  id: String!
+  configSchema: JSON!
+  authSchema: JSON!
+}
+
+type Integration {
+  id: ID!
+  organizationId: ID!
+  integrationType: String!
+  config: JSON!
+  auth: JSON!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type IntegrationPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Integration
 }
 
 "A connection between two nodes in the diagram"

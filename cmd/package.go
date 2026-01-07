@@ -122,6 +122,15 @@ func NewCmdPkg() *cobra.Command {
 	}
 	pkgDestroyCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 
+	pkgResetCmd := &cobra.Command{
+		Use:     `reset <project>-<env>-<manifest>`,
+		Short:   "Reset package status to 'Initialized'",
+		Example: `mass package reset api-prod-db`,
+		Long:    helpdocs.MustRender("package/reset"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgReset,
+	}
+
 	pkgCmd.AddCommand(pkgConfigureCmd)
 	pkgCmd.AddCommand(pkgDeployCmd)
 	pkgCmd.AddCommand(pkgExportCmd)
@@ -130,6 +139,7 @@ func NewCmdPkg() *cobra.Command {
 	pkgCmd.AddCommand(pkgCreateCmd)
 	pkgCmd.AddCommand(pkgVersionCmd)
 	pkgCmd.AddCommand(pkgDestroyCmd)
+	pkgCmd.AddCommand(pkgResetCmd)
 
 	return pkgCmd
 }
@@ -453,6 +463,30 @@ func runPkgDestroy(cmd *cobra.Command, args []string) error {
 			fmt.Printf("🔗 %s\n", urlHelper.PackageURL(pkg.Environment.Project.Slug, pkg.Environment.Slug, pkg.Manifest.Slug))
 		}
 	}
+
+	return nil
+}
+
+func runPkgReset(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	packageSlugOrID := args[0]
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	pkg, err := pkg.RunReset(ctx, mdClient, packageSlugOrID)
+	if err != nil {
+		return err
+	}
+
+	var name = lipgloss.NewStyle().SetString(pkg.Slug).Foreground(lipgloss.Color("#7D56F4"))
+	msg := fmt.Sprintf("✅ Package %s reset successfully", name)
+	fmt.Println(msg)
 
 	return nil
 }

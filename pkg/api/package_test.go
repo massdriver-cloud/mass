@@ -89,3 +89,36 @@ func TestConfigurePackage(t *testing.T) {
 		t.Errorf("got %v, wanted %v", got, want)
 	}
 }
+
+func TestResetPackage(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"resetPackage": map[string]any{
+				"result": map[string]any{
+					"id":     "pkg-uuid1",
+					"slug":   "ecomm-prod-cache",
+					"status": "ready",
+				},
+				"successful": true,
+			},
+		},
+	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
+
+	pkg, err := api.ResetPackage(t.Context(), &mdClient, "pkg-uuid1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if pkg.ID != "pkg-uuid1" {
+		t.Errorf("got %v, wanted %v", pkg.ID, "pkg-uuid1")
+	}
+	if pkg.Slug != "ecomm-prod-cache" {
+		t.Errorf("got %v, wanted %v", pkg.Slug, "ecomm-prod-cache")
+	}
+	if pkg.Status != "ready" {
+		t.Errorf("got %v, wanted %v", pkg.Status, "ready")
+	}
+}

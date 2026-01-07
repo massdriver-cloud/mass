@@ -922,6 +922,30 @@ func (v *__publishArtifactDefinitionInput) __premarshalJSON() (*__premarshal__pu
 	return &retval, nil
 }
 
+// __resetPackageInput is used internally by genqlient
+type __resetPackageInput struct {
+	OrganizationId    string `json:"organizationId"`
+	Id                string `json:"id"`
+	DeleteState       bool   `json:"deleteState"`
+	DeleteParams      bool   `json:"deleteParams"`
+	DeleteDeployments bool   `json:"deleteDeployments"`
+}
+
+// GetOrganizationId returns __resetPackageInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__resetPackageInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __resetPackageInput.Id, and is useful for accessing the field via an interface.
+func (v *__resetPackageInput) GetId() string { return v.Id }
+
+// GetDeleteState returns __resetPackageInput.DeleteState, and is useful for accessing the field via an interface.
+func (v *__resetPackageInput) GetDeleteState() bool { return v.DeleteState }
+
+// GetDeleteParams returns __resetPackageInput.DeleteParams, and is useful for accessing the field via an interface.
+func (v *__resetPackageInput) GetDeleteParams() bool { return v.DeleteParams }
+
+// GetDeleteDeployments returns __resetPackageInput.DeleteDeployments, and is useful for accessing the field via an interface.
+func (v *__resetPackageInput) GetDeleteDeployments() bool { return v.DeleteDeployments }
+
 // __setPackageVersionInput is used internally by genqlient
 type __setPackageVersionInput struct {
 	OrganizationId  string          `json:"organizationId"`
@@ -4630,6 +4654,87 @@ func (v *publishArtifactDefinitionResponse) GetPublishArtifactDefinition() publi
 	return v.PublishArtifactDefinition
 }
 
+// resetPackageResetPackagePackagePayload includes the requested fields of the GraphQL type PackagePayload.
+type resetPackageResetPackagePackagePayload struct {
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result resetPackageResetPackagePackagePayloadResultPackage `json:"result"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetSuccessful returns resetPackageResetPackagePackagePayload.Successful, and is useful for accessing the field via an interface.
+func (v *resetPackageResetPackagePackagePayload) GetSuccessful() bool { return v.Successful }
+
+// GetResult returns resetPackageResetPackagePackagePayload.Result, and is useful for accessing the field via an interface.
+func (v *resetPackageResetPackagePackagePayload) GetResult() resetPackageResetPackagePackagePayloadResultPackage {
+	return v.Result
+}
+
+// GetMessages returns resetPackageResetPackagePackagePayload.Messages, and is useful for accessing the field via an interface.
+func (v *resetPackageResetPackagePackagePayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// resetPackageResetPackagePackagePayloadResultPackage includes the requested fields of the GraphQL type Package.
+// The GraphQL type's documentation follows.
+//
+// A deployed instance of a bundle in the context of its manifest
+type resetPackageResetPackagePackagePayloadResultPackage struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Unique identifier for the package
+	Slug string `json:"slug"`
+	// Current status of the package
+	Status PackageStatus `json:"status"`
+}
+
+// GetId returns resetPackageResetPackagePackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
+func (v *resetPackageResetPackagePackagePayloadResultPackage) GetId() string { return v.Id }
+
+// GetSlug returns resetPackageResetPackagePackagePayloadResultPackage.Slug, and is useful for accessing the field via an interface.
+func (v *resetPackageResetPackagePackagePayloadResultPackage) GetSlug() string { return v.Slug }
+
+// GetStatus returns resetPackageResetPackagePackagePayloadResultPackage.Status, and is useful for accessing the field via an interface.
+func (v *resetPackageResetPackagePackagePayloadResultPackage) GetStatus() PackageStatus {
+	return v.Status
+}
+
+// resetPackageResponse is returned by resetPackage on success.
+type resetPackageResponse struct {
+	// Reset a package to its initialized state. This is useful for:
+	// - Forcing a stuck bundle off the canvas
+	// - Redeploying a package from scratch
+	// - Clearing state when delete_state is true
+	//
+	// The package's status _will_ be set to INITIALIZED.
+	//
+	// By default, the state will not be destroyed. If you want to destroy the state, set delete_state to true.
+	// By default, the params will not be cleared. If you want to clear the params, set delete_params to true.
+	// By default, the deployments will not be deleted. If you want to delete the deployments, set delete_deployments to true.
+	//
+	// This mutation is an escape hatch and can lose data.
+	//
+	// Please make sure to pull any state first.
+	//
+	// [Read our manage state guide](https://docs.massdriver.cloud/guides/managing-state#3-pull-existing-state) on setting up your state backend.
+	//
+	// ## OpenTofu
+	//
+	// > tofu state pull > /somewhere/safe.tfstate
+	//
+	// ## Terraform
+	//
+	// > terraform state pull > /somewhere/safe.tfstate
+	ResetPackage resetPackageResetPackagePackagePayload `json:"resetPackage"`
+}
+
+// GetResetPackage returns resetPackageResponse.ResetPackage, and is useful for accessing the field via an interface.
+func (v *resetPackageResponse) GetResetPackage() resetPackageResetPackagePackagePayload {
+	return v.ResetPackage
+}
+
 // setPackageVersionResponse is returned by setPackageVersion on success.
 type setPackageVersionResponse struct {
 	SetPackageVersion setPackageVersionSetPackageVersionPackagePayload `json:"setPackageVersion"`
@@ -6244,6 +6349,57 @@ func publishArtifactDefinition(
 	var err error
 
 	var data publishArtifactDefinitionResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by resetPackage.
+const resetPackage_Operation = `
+mutation resetPackage ($organizationId: ID!, $id: ID!, $deleteState: Boolean!, $deleteParams: Boolean!, $deleteDeployments: Boolean!) {
+	resetPackage(organizationId: $organizationId, id: $id, deleteState: $deleteState, deleteParams: $deleteParams, deleteDeployments: $deleteDeployments) {
+		successful
+		result {
+			id
+			slug
+			status
+		}
+		messages {
+			message
+		}
+	}
+}
+`
+
+func resetPackage(
+	ctx context.Context,
+	client graphql.Client,
+	organizationId string,
+	id string,
+	deleteState bool,
+	deleteParams bool,
+	deleteDeployments bool,
+) (*resetPackageResponse, error) {
+	req := &graphql.Request{
+		OpName: "resetPackage",
+		Query:  resetPackage_Operation,
+		Variables: &__resetPackageInput{
+			OrganizationId:    organizationId,
+			Id:                id,
+			DeleteState:       deleteState,
+			DeleteParams:      deleteParams,
+			DeleteDeployments: deleteDeployments,
+		},
+	}
+	var err error
+
+	var data resetPackageResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

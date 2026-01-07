@@ -20,13 +20,6 @@ Artifact definitions are used to:
 - Control how artifacts are displayed in the UI
 - Define connections between artifacts
 
-## Commands
-
-- `get`: Retrieve an artifact definition's schema and metadata
-- `list`: List all available artifact definitions
-- `publish`: Publish a new or updated artifact definition
-- `delete`: Delete an artifact definition (requires administrator permissions)
-
 
 ### Options
 

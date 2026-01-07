@@ -14,10 +14,6 @@ Credential management
 
 Manage credential artifacts in your organization.
 
-## Commands
-
-- `list`: List all credential artifacts
-
 
 ### Options
 

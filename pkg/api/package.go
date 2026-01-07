@@ -87,3 +87,21 @@ func DecommissionPackage(ctx context.Context, mdClient *client.Client, id string
 
 	return nil, NewMutationError("failed to decommission package", response.DecommissionPackage.Messages)
 }
+
+func ResetPackage(ctx context.Context, mdClient *client.Client, id string) (*Package, error) {
+	deleteState := false
+	deleteParams := false
+	deleteDeployments := true
+
+	response, err := resetPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id, deleteState, deleteParams, deleteDeployments)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.ResetPackage.Successful {
+		return toPackage(response.ResetPackage.Result)
+	}
+
+	return nil, NewMutationError("failed to reset package", response.ResetPackage.Messages)
+}
