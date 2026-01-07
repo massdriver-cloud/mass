@@ -15,6 +15,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/commands/pkg"
 	"github.com/massdriver-cloud/mass/pkg/files"
+	"github.com/massdriver-cloud/mass/pkg/prettylogs"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
@@ -122,6 +123,16 @@ func NewCmdPkg() *cobra.Command {
 	}
 	pkgDestroyCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 
+	pkgResetCmd := &cobra.Command{
+		Use:     `reset <project>-<env>-<manifest>`,
+		Short:   "Reset package status to 'Initialized'",
+		Example: `mass package reset api-prod-db`,
+		Long:    helpdocs.MustRender("package/reset"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgReset,
+	}
+	pkgResetCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+
 	pkgCmd.AddCommand(pkgConfigureCmd)
 	pkgCmd.AddCommand(pkgDeployCmd)
 	pkgCmd.AddCommand(pkgExportCmd)
@@ -130,6 +141,7 @@ func NewCmdPkg() *cobra.Command {
 	pkgCmd.AddCommand(pkgCreateCmd)
 	pkgCmd.AddCommand(pkgVersionCmd)
 	pkgCmd.AddCommand(pkgDestroyCmd)
+	pkgCmd.AddCommand(pkgResetCmd)
 
 	return pkgCmd
 }
@@ -453,6 +465,55 @@ func runPkgDestroy(cmd *cobra.Command, args []string) error {
 			fmt.Printf("🔗 %s\n", urlHelper.PackageURL(pkg.Environment.Project.Slug, pkg.Environment.Slug, pkg.Manifest.Slug))
 		}
 	}
+
+	return nil
+}
+
+func runPkgReset(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	packageSlugOrID := args[0]
+
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	// Get package details for confirmation
+	pkgDetails, err := api.GetPackage(ctx, mdClient, packageSlugOrID)
+	if err != nil {
+		return err
+	}
+
+	// Prompt for confirmation unless --force is used
+	if !force {
+		fmt.Printf("%s: This will reset package `%s` to 'Initialized' state and delete deployment history.\n", prettylogs.Orange("WARNING"), pkgDetails.Slug)
+		fmt.Printf("Type `%s` to confirm reset: ", pkgDetails.Slug)
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(answer)
+
+		if answer != pkgDetails.Slug {
+			fmt.Println("Reset cancelled.")
+			return nil
+		}
+	}
+
+	pkg, err := pkg.RunReset(ctx, mdClient, packageSlugOrID)
+	if err != nil {
+		return err
+	}
+
+	var name = lipgloss.NewStyle().SetString(pkg.Slug).Foreground(lipgloss.Color("#7D56F4"))
+	msg := fmt.Sprintf("✅ Package %s reset successfully", name)
+	fmt.Println(msg)
 
 	return nil
 }

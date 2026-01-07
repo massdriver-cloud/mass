@@ -20,14 +20,6 @@ Packages are used to:
 - Manage environment-specific settings
 - Connect different components together
 
-## Commands
-
-- `configure`: Update package configuration
-- `deploy`: Deploy a package to an environment
-- `export`: Export a package to your local filesystem
-- `get`: Retrieve package details and configuration
-- `patch`: Update individual package parameter values
-
 
 ### Options
 
@@ -45,4 +37,5 @@ Packages are used to:
 * [mass package export](/cli/commands/mass_package_export)	 - Export packages
 * [mass package get](/cli/commands/mass_package_get)	 - Get a package
 * [mass package patch](/cli/commands/mass_package_patch)	 - Patch individual package parameter values
+* [mass package reset](/cli/commands/mass_package_reset)	 - Reset package status to 'Initialized'
 * [mass package version](/cli/commands/mass_package_version)	 - Set package version

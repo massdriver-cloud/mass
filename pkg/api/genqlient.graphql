@@ -155,6 +155,29 @@ mutation deleteArtifactDefinition($organizationId: ID!, $name: String!) {
 }
 
 
+# BUNDLES
+
+query getBundle($organizationId: ID!, $id: ID!, $version: VersionConstraint) {
+  bundle(organizationId: $organizationId, id: $id, version: $version) {
+    id
+    name
+    version
+    description
+    spec
+    specVersion
+    icon
+    sourceUrl
+    paramsSchema
+    connectionsSchema
+    artifactsSchema
+    uiSchema
+    operatorGuide
+    createdAt
+    updatedAt
+  }
+}
+
+
 # CONTAINER REPOSITORIES
 
 query containerRepository($orgId: ID!, $artifactId: ID!, $input: ContainerRepositoryInput!) {
@@ -340,6 +363,25 @@ mutation createEnvironment($organizationId: ID!, $projectId: ID!, $name: String!
 }
 
 
+# MANIFESTS
+
+mutation createManifest($organizationId: ID!, $bundleId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
+  createManifest(organizationId: $organizationId, bundleId: $bundleId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
+    result {
+      id
+      name
+      slug
+      description
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
+
 # OCI
 
 query getOciRepo($organizationId: ID!, $id: ID!) {
@@ -447,6 +489,21 @@ mutation decommissionPackage($organizationId: ID!, $id: ID!, $message: String) {
     successful
     result {
       id
+    }
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
+mutation resetPackage($organizationId: ID!, $id: ID!, $deleteState: Boolean!, $deleteParams: Boolean!, $deleteDeployments: Boolean!) {
+  resetPackage(organizationId: $organizationId, id: $id, deleteState: $deleteState, deleteParams: $deleteParams, deleteDeployments: $deleteDeployments) {
+    successful
+    result {
+      id
+      slug
+      status
     }
     # @genqlient(typename: "MutationValidationError")
     messages {
@@ -569,47 +626,5 @@ query getServer() {
     appUrl
     mode
     version
-  }
-}
-
-
-# BUNDLES
-
-query getBundle($organizationId: ID!, $id: ID!, $version: VersionConstraint) {
-  bundle(organizationId: $organizationId, id: $id, version: $version) {
-    id
-    name
-    version
-    description
-    spec
-    specVersion
-    icon
-    sourceUrl
-    paramsSchema
-    connectionsSchema
-    artifactsSchema
-    uiSchema
-    operatorGuide
-    createdAt
-    updatedAt
-  }
-}
-
-
-# MANIFESTS
-
-mutation createManifest($organizationId: ID!, $bundleId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
-  createManifest(organizationId: $organizationId, bundleId: $bundleId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
-    result {
-      id
-      name
-      slug
-      description
-    }
-    successful
-    # @genqlient(typename: "MutationValidationError")
-    messages {
-      message
-    }
   }
 }
