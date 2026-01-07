@@ -26,6 +26,7 @@ Reset and delete the deployment history:
 mass package reset ecomm-prod-vpc
 ```
 
+
 ```
 mass package reset <project>-<env>-<manifest> [flags]
 ```
@@ -39,7 +40,8 @@ mass package reset api-prod-db
 ### Options
 
 ```
-  -h, --help   help for reset
+  -f, --force   Skip confirmation prompt
+  -h, --help    help for reset
 ```
 
 ### SEE ALSO
