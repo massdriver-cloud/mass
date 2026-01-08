@@ -47,30 +47,39 @@ type bundleNew struct {
 func NewCmdBundle() *cobra.Command {
 	bundleCmd := &cobra.Command{
 		Use:   "bundle",
-		Short: "Generate and publish bundles",
+		Short: "Manage and publish bundles",
 		Long:  helpdocs.MustRender("bundle"),
 	}
 
 	bundleBuildCmd := &cobra.Command{
-		Use:   "build",
-		Short: "Build schemas and generate IaC files from massdriver.yaml file",
-		RunE:  runBundleBuild,
+		Use:     "build",
+		Short:   "Build schemas and generate IaC files",
+		RunE:    runBundleBuild,
+		Example: `  # Build bundle in current directory
+  mass bundle build
+
+  # Build bundle in specific directory
+  mass bundle build --build-directory ./my-bundle`,
 	}
 	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	bundleImportCmd := &cobra.Command{
-		Use:   "import",
-		Short: "Import declared variables from IaC into massdriver.yaml params",
-		Long:  helpdocs.MustRender("bundle/import"),
-		RunE:  runBundleImport,
+		Use:     "import",
+		Short:   "Import declared variables from IaC into params",
+		Long:    helpdocs.MustRender("bundle/import"),
+		RunE:    runBundleImport,
+		Example: `  # Import all variables without prompting
+  mass bundle import --all`,
 	}
 	bundleImportCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleImportCmd.Flags().BoolP("all", "a", false, "Import all variables without prompting")
 
 	bundleLintCmd := &cobra.Command{
-		Use:   "lint",
-		Short: "Check massdriver.yaml file for common errors",
-		RunE:  runBundleLint,
+		Use:     "lint",
+		Short:   "Check bundle for errors and best practices",
+		RunE:    runBundleLint,
+		Example: `  # Lint bundle in current directory
+  mass bundle lint`,
 	}
 	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
@@ -95,8 +104,13 @@ func NewCmdBundle() *cobra.Command {
 	bundlePublishCmd := &cobra.Command{
 		Use:     "publish",
 		Aliases: []string{"push"},
-		Short:   "Publish bundle to Massdriver's package manager",
+		Short:   "Publish bundle to Massdriver",
 		RunE:    runBundlePublish,
+		Example: `  # Publish bundle as stable release
+  mass bundle publish
+
+  # Publish as development release
+  mass bundle publish --development`,
 	}
 	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundlePublishCmd.Flags().BoolP("development", "d", false, "Publish the bundle as a development release.")
@@ -106,18 +120,28 @@ func NewCmdBundle() *cobra.Command {
 
 	bundleGetCmd := &cobra.Command{
 		Use:   "get <bundle-name>[@<version>]",
-		Short: "Get bundle information from Massdriver",
+		Short: "Get bundle details",
 		Long:  helpdocs.MustRender("bundle/get"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runBundleGet,
+		Example: `  # Get latest version of bundle
+  mass bundle get aws-s3-bucket
+
+  # Get specific version
+  mass bundle get aws-s3-bucket@1.2.3`,
 	}
 	bundleGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	bundlePullCmd := &cobra.Command{
 		Use:   "pull <bundle-name>",
-		Short: "Pull bundle from Massdriver to local directory",
+		Short: "Download bundle to local directory",
 		Args:  cobra.ExactArgs(1),
 		RunE:  runBundlePull,
+		Example: `  # Pull latest version to directory named after bundle
+  mass bundle pull aws-s3-bucket
+
+  # Pull specific version to custom directory
+  mass bundle pull aws-s3-bucket --version 1.2.3 --directory my-bundle`,
 	}
 	bundlePullCmd.Flags().StringP("directory", "d", "", "Directory to output the bundle. Defaults to bundle name.")
 	bundlePullCmd.Flags().BoolP("force", "f", false, "Force pull even if the directory already exists. This will overwrite existing files.")
@@ -125,22 +149,26 @@ func NewCmdBundle() *cobra.Command {
 
 	bundleTemplateCmd := &cobra.Command{
 		Use:   "template",
-		Short: "Application template development tools",
+		Short: "Manage bundle templates",
 		Long:  helpdocs.MustRender("bundle/template"),
 	}
 
 	bundleTemplateListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List bundle templates",
-		Long:  helpdocs.MustRender("bundle/template-list"),
-		RunE:  runBundleTemplateList,
+		Use:     "list",
+		Short:   "List available bundle templates",
+		Long:    helpdocs.MustRender("bundle/template-list"),
+		RunE:    runBundleTemplateList,
+		Example: `  # List all available templates
+  mass bundle template list`,
 	}
 
 	bundleTemplateRefreshCmd := &cobra.Command{
-		Use:   "refresh",
-		Short: "Update template list from the official Massdriver Github",
-		Long:  helpdocs.MustRender("bundle/template-refresh"),
-		RunE:  runBundleTemplateRefresh,
+		Use:     "refresh",
+		Short:   "Update template cache from repository",
+		Long:    helpdocs.MustRender("bundle/template-refresh"),
+		RunE:    runBundleTemplateRefresh,
+		Example: `  # Refresh templates from official repository
+  mass bundle template refresh`,
 	}
 
 	bundleCmd.AddCommand(bundleBuildCmd)

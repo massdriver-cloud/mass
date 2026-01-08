@@ -34,15 +34,19 @@ func NewCmdPkg() *cobra.Command {
 	pkgCmd := &cobra.Command{
 		Use:     "package",
 		Aliases: []string{"pkg"},
-		Short:   "Manage packages of IaC deployed in environments.",
+		Short:   "Manage packages deployed in environments",
 		Long:    helpdocs.MustRender("package"),
 	}
 
 	pkgConfigureCmd := &cobra.Command{
 		Use:     `configure <project>-<env>-<manifest>`,
-		Short:   "Configure package",
+		Short:   "Configure package parameters",
 		Aliases: []string{"cfg"},
-		Example: `mass package configure ecomm-prod-vpc --params=params.json`,
+		Example: `  # Configure from params file
+  mass package configure ecomm-prod-vpc --params params.json
+
+  # Configure from stdin
+  cat params.json | mass package configure ecomm-prod-vpc --params -`,
 		Long:    helpdocs.MustRender("package/configure"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgConfigure,
@@ -50,9 +54,13 @@ func NewCmdPkg() *cobra.Command {
 	pkgConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params json, tfvars or yaml file. Use '-' to read from stdin. This file supports bash interpolation.")
 
 	pkgDeployCmd := &cobra.Command{
-		Use:     `deploy <project>-<env>-<manifest>`,
-		Short:   "Deploy packages",
-		Example: `mass package deploy ecomm-prod-vpc`,
+		Use:   `deploy <project>-<env>-<manifest>`,
+		Short: "Deploy package",
+		Example: `  # Deploy package
+  mass package deploy ecomm-prod-vpc
+
+  # Deploy with message
+  mass package deploy ecomm-prod-vpc --message "Update configuration"`,
 		Long:    helpdocs.MustRender("package/deploy"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgDeploy,
@@ -60,9 +68,10 @@ func NewCmdPkg() *cobra.Command {
 	pkgDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
 
 	pkgExportCmd := &cobra.Command{
-		Use:     `export <project>-<env>-<manifest>`,
-		Short:   "Export packages",
-		Example: `mass package export ecomm-prod-vpc`,
+		Use:   `export <project>-<env>-<manifest>`,
+		Short: "Export package configuration",
+		Example: `  # Export package configuration
+  mass package export ecomm-prod-vpc`,
 		Long:    helpdocs.MustRender("package/export"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgExport,
@@ -70,10 +79,14 @@ func NewCmdPkg() *cobra.Command {
 
 	// pkg and infra are the same, lets reuse a get command/template here.
 	pkgGetCmd := &cobra.Command{
-		Use:     `get  <project>-<env>-<manifest>`,
-		Short:   "Get a package",
+		Use:   `get  <project>-<env>-<manifest>`,
+		Short: "Get package details",
 		Aliases: []string{"g"},
-		Example: `mass package get ecomm-prod-vpc`,
+		Example: `  # Get package details
+  mass package get ecomm-prod-vpc
+
+  # Get as JSON
+  mass package get ecomm-prod-vpc --output json`,
 		Long:    helpdocs.MustRender("package/get"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgGet,
@@ -81,9 +94,13 @@ func NewCmdPkg() *cobra.Command {
 	pkgGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	pkgPatchCmd := &cobra.Command{
-		Use:     `patch <project>-<env>-<manifest>`,
-		Short:   "Patch individual package parameter values",
-		Example: `mass package patch ecomm-prod-db --set='.version = "13.4"'`,
+		Use:   `patch <project>-<env>-<manifest>`,
+		Short: "Update specific parameter values",
+		Example: `  # Update a single parameter
+  mass package patch ecomm-prod-db --set '.version = "13.4"'
+
+  # Update multiple parameters
+  mass package patch ecomm-prod-db --set '.version = "13.4"' --set '.size = "large"'`,
 		Long:    helpdocs.MustRender("package/patch"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgPatch,
@@ -91,9 +108,13 @@ func NewCmdPkg() *cobra.Command {
 	pkgPatchCmd.Flags().StringArrayVarP(&pkgPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 
 	pkgCreateCmd := &cobra.Command{
-		Use:     `create [slug]`,
-		Short:   "Create a manifest (add bundle to project)",
-		Example: `mass package create dbbundle-test-serverless --bundle aws-rds-cluster`,
+		Use:   `create [slug]`,
+		Short: "Create a new package",
+		Example: `  # Create package with auto-generated name
+  mass package create myproject-prod-database --bundle aws-rds-cluster
+
+  # Create with custom name
+  mass package create myproject-prod-database --bundle aws-rds-cluster --name "Production DB"`,
 		Long:    helpdocs.MustRender("package/create"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgCreate,
@@ -103,9 +124,13 @@ func NewCmdPkg() *cobra.Command {
 	_ = pkgCreateCmd.MarkFlagRequired("bundle")
 
 	pkgVersionCmd := &cobra.Command{
-		Use:     `version <package-id>@<version>`,
-		Short:   "Set package version",
-		Example: `mass package version api-prod-db@latest --release-channel development`,
+		Use:   `version <package-id>@<version>`,
+		Short: "Set package version and release channel",
+		Example: `  # Set to latest stable version
+  mass package version api-prod-db@latest
+
+  # Set to specific development version
+  mass package version api-prod-db@1.2.3 --release-channel development`,
 		Long:    helpdocs.MustRender("package/version"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgVersion,
@@ -113,9 +138,13 @@ func NewCmdPkg() *cobra.Command {
 	pkgVersionCmd.Flags().String("release-channel", "stable", "Release strategy (stable or development)")
 
 	pkgDestroyCmd := &cobra.Command{
-		Use:     `destroy <project>-<env>-<manifest>`,
-		Short:   "Destroy (decommission) a package",
-		Example: `mass package destroy api-prod-db --force`,
+		Use:   `destroy <project>-<env>-<manifest>`,
+		Short: "Decommission package and delete resources",
+		Example: `  # Destroy with confirmation prompt
+  mass package destroy api-prod-db
+
+  # Destroy without confirmation
+  mass package destroy api-prod-db --force`,
 		Long:    "Destroy (decommission) a package. This will permanently delete the package and all its resources.",
 		Args:    cobra.ExactArgs(1),
 		RunE:    runPkgDestroy,

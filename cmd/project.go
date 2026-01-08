@@ -26,50 +26,69 @@ var projectTemplates embed.FS
 func NewCmdProject() *cobra.Command {
 	projectCmd := &cobra.Command{
 		Use:     "project",
-		Short:   "Project management",
+		Short:   "Manage projects",
 		Long:    helpdocs.MustRender("project"),
 		Aliases: []string{"prj", "proj"},
 	}
 
 	projectExportCmd := &cobra.Command{
 		Use:   "export [project]",
-		Short: "Export a project from Massdriver",
+		Short: "Export project configuration",
 		Long:  helpdocs.MustRender("project/export"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runProjectExport,
+		Example: `  # Export project configuration
+  mass project export myproject`,
 	}
 
 	projectGetCmd := &cobra.Command{
 		Use:   "get [project]",
-		Short: "Get a project from Massdriver",
+		Short: "Get project details",
 		Long:  helpdocs.MustRender("project/get"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runProjectGet,
+		Example: `  # Get project details
+  mass project get myproject
+
+  # Get as JSON
+  mass project get myproject --output json`,
 	}
 	projectGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	projectListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List projects",
-		Long:  helpdocs.MustRender("project/list"),
-		RunE:  runProjectList,
+		Use:     "list",
+		Short:   "List all projects",
+		Long:    helpdocs.MustRender("project/list"),
+		RunE:    runProjectList,
+		Example: `  # List all projects in your organization
+  mass project list`,
 	}
 
 	projectCreateCmd := &cobra.Command{
 		Use:   "create [slug]",
-		Short: "Create a project",
+		Short: "Create a new project",
 		Long:  helpdocs.MustRender("project/create"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runProjectCreate,
+		Example: `  # Create project with auto-generated name
+  mass project create myproject
+
+  # Create with custom name
+  mass project create myproject --name "My Project"`,
 	}
 	projectCreateCmd.Flags().StringP("name", "n", "", "Project name (defaults to slug if not provided)")
 
 	projectDeleteCmd := &cobra.Command{
 		Use:   "delete [project]",
-		Short: "Delete a project",
+		Short: "Delete project and all resources",
 		Long:  helpdocs.MustRender("project/delete"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runProjectDelete,
+		Example: `  # Delete with confirmation prompt
+  mass project delete myproject
+
+  # Delete without confirmation
+  mass project delete myproject --force`,
 	}
 	projectDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 

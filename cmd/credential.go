@@ -14,16 +14,18 @@ import (
 func NewCmdCredential() *cobra.Command {
 	credentialCmd := &cobra.Command{
 		Use:     "credential",
-		Short:   "Credential management",
+		Short:   "Manage cloud credentials",
 		Long:    helpdocs.MustRender("credential"),
 		Aliases: []string{"cred"},
 	}
 
 	credentialListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List credentials",
-		Long:  helpdocs.MustRender("credential/list"),
-		RunE:  runCredentialList,
+		Use:     "list",
+		Short:   "List all credentials",
+		Long:    helpdocs.MustRender("credential/list"),
+		RunE:    runCredentialList,
+		Example: `  # List all credentials in your organization
+  mass credential list`,
 	}
 
 	credentialCmd.AddCommand(credentialListCmd)

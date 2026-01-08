@@ -25,51 +25,67 @@ var environmentTemplates embed.FS
 func NewCmdEnvironment() *cobra.Command {
 	environmentCmd := &cobra.Command{
 		Use:     "environment",
-		Short:   "Environment management",
+		Short:   "Manage environments",
 		Long:    helpdocs.MustRender("environment"),
 		Aliases: []string{"env"},
 	}
 
 	environmentExportCmd := &cobra.Command{
 		Use:   "export [environment]",
-		Short: "Export an environment from Massdriver",
+		Short: "Export environment configuration",
 		Long:  helpdocs.MustRender("environment/export"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEnvironmentExport,
+		Example: `  # Export environment configuration
+  mass environment export myproject-production`,
 	}
 
 	environmentGetCmd := &cobra.Command{
 		Use:   "get [environment]",
-		Short: "Get an environment from Massdriver",
+		Short: "Get environment details",
 		Long:  helpdocs.MustRender("environment/get"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEnvironmentGet,
+		Example: `  # Get environment details
+  mass environment get myproject-production
+
+  # Get as JSON
+  mass environment get myproject-production --output json`,
 	}
 	environmentGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	environmentListCmd := &cobra.Command{
 		Use:   "list",
-		Short: "List environments",
+		Short: "List environments in a project",
 		Long:  helpdocs.MustRender("environment/list"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEnvironmentList,
+		Example: `  # List all environments in a project
+  mass environment list myproject`,
 	}
 
 	environmentCreateCmd := &cobra.Command{
 		Use:   "create [slug]",
-		Short: "Create an environment",
+		Short: "Create a new environment",
 		Long:  helpdocs.MustRender("environment/create"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEnvironmentCreate,
+		Example: `  # Create environment with auto-generated name
+  mass environment create myproject-staging
+
+  # Create with custom name
+  mass environment create myproject-staging --name "Staging Environment"`,
 	}
 	environmentCreateCmd.Flags().StringP("name", "n", "", "Environment name (defaults to slug if not provided)")
 
 	environmentDefaultCmd := &cobra.Command{
 		Use:   "default [environment] [artifact-id]",
-		Short: "Set an environment default connection",
+		Short: "Set default connection for environment",
 		Long:  helpdocs.MustRender("environment/default"),
 		Args:  cobra.ExactArgs(2),
 		RunE:  runEnvironmentDefault,
+		Example: `  # Set default VPC connection
+  mass environment default myproject-production abc123-vpc-artifact-id`,
 	}
 
 	environmentCmd.AddCommand(environmentExportCmd)

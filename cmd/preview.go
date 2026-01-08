@@ -23,25 +23,35 @@ func NewCmdPreview() *cobra.Command {
 	previewCmd := &cobra.Command{
 		Use:     "preview",
 		Aliases: []string{"pv"},
-		Short:   "Create & deploy preview environments",
+		Short:   "Create and deploy preview environments",
 		Long:    helpdocs.MustRender("preview"),
 	}
 
 	previewInitCmd := &cobra.Command{
 		Use:   `init $projectSlug`,
-		Short: "Generate a preview enviroment configuration file",
+		Short: "Generate preview environment configuration",
 		Long:  helpdocs.MustRender("preview/init"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runPreviewInit,
+		Example: `  # Initialize preview configuration
+  mass preview init myproject
+
+  # Specify custom output path
+  mass preview init myproject --output ./preview-config.json`,
 	}
 	previewInitCmd.Flags().StringVarP(&previewInitParamsPath, "output", "o", "./preview.json", "Output path for preview environment params file. This file supports bash interpolation and can be manually edited or programatically modified during CI.")
 
 	previewDeployCmd := &cobra.Command{
 		Use:     "deploy",
 		Aliases: []string{"apply"},
-		Short:   "Deploys a preview environment in your project",
+		Short:   "Deploy preview environment",
 		Long:    helpdocs.MustRender("preview/deploy"),
 		RunE:    runPreviewDeploy,
+		Example: `  # Deploy using default preview.json
+  mass preview deploy
+
+  # Deploy with custom params file
+  mass preview deploy --params ./custom-preview.json`,
 	}
 	previewDeployCmd.Flags().StringVarP(&previewInitParamsPath, "params", "p", previewInitParamsPath, "Path to preview environment configuration file. This file supports bash interpolation.")
 	previewDeployCmd.Flags().StringVarP(&previewDeployCiContextPath, "ci-context", "c", previewDeployCiContextPath, "Path to GitHub Actions event.json")
@@ -49,10 +59,12 @@ func NewCmdPreview() *cobra.Command {
 	previewDecommissionCmd := &cobra.Command{
 		Use:     "decommission $projectTargetSlug",
 		Aliases: []string{"destroy"},
-		Short:   "Decommissions a preview environment in your project",
+		Short:   "Decommission preview environment",
 		Long:    helpdocs.MustRender("preview/decommission"),
 		RunE:    runPreviewDecommission,
 		Args:    cobra.ExactArgs(1),
+		Example: `  # Decommission a preview environment
+  mass preview decommission myproject-pr-123`,
 	}
 
 	previewCmd.AddCommand(previewInitCmd)

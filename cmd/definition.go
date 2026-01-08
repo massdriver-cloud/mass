@@ -28,41 +28,55 @@ var definitionTemplates embed.FS
 func NewCmdDefinition() *cobra.Command {
 	definitionCmd := &cobra.Command{
 		Use:     "definition",
-		Short:   "Artifact definition management",
+		Short:   "Manage artifact definitions",
 		Long:    helpdocs.MustRender("definition"),
 		Aliases: []string{"artifact-definition", "artdef", "def"},
 	}
 
 	definitionGetCmd := &cobra.Command{
 		Use:   "get [definition]",
-		Short: "Get an artifact definition from Massdriver",
+		Short: "Get artifact definition details",
 		Long:  helpdocs.MustRender("definition/get"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runDefinitionGet,
+		Example: `  # Get definition details
+  mass definition get massdriver/aws-iam-role
+
+  # Get definition as JSON
+  mass definition get massdriver/aws-vpc --output json`,
 	}
 	definitionGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	definitionListCmd := &cobra.Command{
-		Use:   "list [definition]",
-		Short: "List artifact definitions",
-		Long:  helpdocs.MustRender("definition/list"),
-		RunE:  runDefinitionList,
+		Use:     "list [definition]",
+		Short:   "List all artifact definitions",
+		Long:    helpdocs.MustRender("definition/list"),
+		RunE:    runDefinitionList,
+		Example: `  # List all artifact definitions
+  mass definition list`,
 	}
 
 	definitionPublishCmd := &cobra.Command{
 		Use:   "publish [definition file]",
-		Short: "Publish an artifact definition to Massdriver",
+		Short: "Publish artifact definition",
 		Long:  helpdocs.MustRender("definition/publish"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runDefinitionPublish,
+		Example: `  # Publish a new artifact definition
+  mass definition publish ./my-definition.json`,
 	}
 
 	definitionDeleteCmd := &cobra.Command{
 		Use:   "delete [definition]",
-		Short: "Delete an artifact definition from Massdriver",
+		Short: "Delete artifact definition",
 		Long:  helpdocs.MustRender("definition/delete"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runDefinitionDelete,
+		Example: `  # Delete with confirmation prompt
+  mass definition delete my-custom-definition
+
+  # Delete without confirmation
+  mass definition delete my-custom-definition --force`,
 	}
 	definitionDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 

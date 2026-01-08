@@ -13,9 +13,11 @@ func NewCmdVersion() *cobra.Command {
 	versionCmd := &cobra.Command{
 		Use:     "version",
 		Aliases: []string{"v"},
-		Short:   "Version of Mass CLI",
+		Short:   "Display CLI version information",
 		Long:    ``,
 		Run:     runVersion,
+		Example: `  # Show version information
+  mass version`,
 	}
 	return versionCmd
 }

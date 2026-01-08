@@ -23,18 +23,22 @@ func NewCmdSchema() *cobra.Command {
 
 	schemaDereferenceCmd := &cobra.Command{
 		Use:   "dereference",
-		Short: "Dereferences a JSON Schema",
+		Short: "Dereference JSON Schema references",
 		Long:  helpdocs.MustRender("schema/dereference"),
 		RunE:  runSchemaDereference,
+		Example: `  # Dereference a schema file
+  mass schema dereference --file schema.json`,
 	}
 	schemaDereferenceCmd.Flags().StringP("file", "f", "", "Path to JSON document")
 	schemaDereferenceCmd.MarkFlagRequired("file")
 
 	schemaValidateCmd := &cobra.Command{
 		Use:   "validate",
-		Short: "Validates a JSON document against a JSON Schema",
+		Short: "Validate JSON document against schema",
 		Long:  helpdocs.MustRender("schema/validate"),
 		RunE:  runSchemaValidate,
+		Example: `  # Validate a document against a schema
+  mass schema validate --document params.json --schema schema.json`,
 	}
 	schemaValidateCmd.Flags().StringP("document", "d", "document.json", "Path to JSON document")
 	schemaValidateCmd.Flags().StringP("schema", "s", "./schema.json", "Path to JSON Schema")

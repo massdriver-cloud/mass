@@ -29,10 +29,12 @@ func NewCmdArtifact() *cobra.Command {
 
 	// Import
 	artifactImportCmd := &cobra.Command{
-		Use:   `import`,
-		Short: "Import a custom artifact",
-		Long:  helpdocs.MustRender("artifact/import"),
-		RunE:  runArtifactImport,
+		Use:     `import`,
+		Short:   "Import a custom artifact into Massdriver",
+		Long:    helpdocs.MustRender("artifact/import"),
+		RunE:    runArtifactImport,
+		Example: `  # Import an artifact
+  mass artifact import --name my-artifact --type massdriver/aws-iam-role --file artifact.json`,
 	}
 	artifactImportCmd.Flags().StringP("name", "n", "", "Artifact name")
 	artifactImportCmd.Flags().StringP("type", "t", "", "Artifact type")

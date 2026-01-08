@@ -30,8 +30,8 @@ sidebar_label: %s
 func NewCmdDocs() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "docs",
-		Short: "Gen docs",
-		Long:  "Gen docs",
+		Short: "Generate CLI documentation",
+		Long:  "Generate markdown documentation for all CLI commands",
 		Run: func(cmd *cobra.Command, args []string) {
 			dir, err := cmd.Flags().GetString("directory")
 			if err != nil {
@@ -48,6 +48,11 @@ func NewCmdDocs() *cobra.Command {
 		},
 		Args:   cobra.NoArgs,
 		Hidden: false,
+		Example: `  # Generate docs to default directory
+  mass docs
+
+  # Generate to custom directory
+  mass docs --directory ./documentation`,
 	}
 
 	cmd.Flags().StringP("directory", "d", "docs/generated", "directory to generate docs into")

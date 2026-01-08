@@ -20,15 +20,20 @@ var pushInput = image.PushImageInput{}
 func NewCmdImage() *cobra.Command {
 	imageCmd := &cobra.Command{
 		Use:   "image",
-		Short: "Container image integration Massdriver",
+		Short: "Push container images to cloud registries",
 	}
 
 	imagePushCmd := &cobra.Command{
 		Use:   "push <namespace>/<image-name>",
-		Short: "Push an image to ECR, ACR or GAR",
+		Short: "Build and push image to cloud registry",
 		Long:  helpdocs.MustRender("image/push"),
 		RunE:  runImagePush,
 		Args:  cobra.ExactArgs(1),
+		Example: `  # Build and push image
+  mass image push myapp/api --artifact artifact-id --region us-east-1
+
+  # Push without building
+  mass image push myapp/api --artifact artifact-id --region us-east-1 --skip-build`,
 	}
 	imagePushCmd.Flags().StringVarP(&pushInput.DockerBuildContext, "build-context", "b", ".", "Path to the directory to build the image from")
 	imagePushCmd.Flags().StringVarP(&pushInput.Dockerfile, "dockerfile", "f", "Dockerfile", "Name of the dockerfile to build from if you have named it anything other than Dockerfile")

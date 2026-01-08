@@ -22,12 +22,20 @@ var programLevel = new(slog.LevelVar) // Info by default
 func NewCmdServer() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "server",
-		Short: "Start the bundle development server",
+		Short: "Start bundle development server",
 		Long:  "Start the bundle development server. If no port is supplied an ephemeral port will be used",
 		Run: func(cmd *cobra.Command, args []string) {
 			runServer(cmd)
 		},
 		Args: cobra.NoArgs,
+		Example: `  # Start server on default port 8080
+  mass server
+
+  # Start on custom port
+  mass server --port 3000
+
+  # Start and open browser
+  mass server --browser`,
 	}
 
 	cmd.Flags().StringP("port", "p", "8080", "port for the server to listen on")
