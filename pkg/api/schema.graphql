@@ -217,7 +217,7 @@ type RootQueryType {
   integrationTypes: [IntegrationType]
 
   "List all integrations enabled for an organization"
-  integrations(organizationId: ID!): [Integration]
+  integrations(organizationId: ID!): [IntegrationConfig]
 
   environment(
     organizationId: ID!
@@ -375,7 +375,22 @@ type RootMutationType {
   revokeGroupAccess(organizationId: ID!, groupId: ID!, permission: PermissionRevokeInput!): ProjectPayload
 
   "Create an artifact"
-  createArtifact(organizationId: ID!, name: String!, type: String!, specs: JSON!, data: JSON!): ArtifactPayload
+  createArtifact(
+    organizationId: ID!
+
+    name: String!
+
+    type: String!
+
+    "[Deprecated] Use payload instead. Required when payload is not provided."
+    specs: JSON
+
+    "[Deprecated] Use payload instead. Required when payload is not provided."
+    data: JSON
+
+    "Artifact payload containing all artifact data. Provide this OR both data and specs."
+    payload: JSON
+  ): ArtifactPayload
 
   "Update an artifact"
   updateArtifact(organizationId: ID!, id: ID!, params: ArtifactUpdateParams!): ArtifactPayload
@@ -478,7 +493,7 @@ type RootMutationType {
   enableIntegration(organizationId: ID!, integrationTypeId: String!, config: JSON!, auth: JSON!): IntegrationPayload
 
   "Disable an integration for an organization"
-  disableIntegration(organizationId: ID!, integrationTypeId: String!): Boolean
+  disableIntegration(organizationId: ID!, integrationConfigId: ID!): IntegrationConfig
 
   "Create an environment"
   createEnvironment(organizationId: ID!, projectId: ID!, name: String!, slug: String!, description: String): EnvironmentPayload
@@ -1690,6 +1705,11 @@ type EnvironmentPayload {
   result: Environment
 }
 
+enum IntegrationStatus {
+  DISABLED
+  ENABLED
+}
+
 type IntegrationType {
   name: String!
   id: String!
@@ -1697,12 +1717,13 @@ type IntegrationType {
   authSchema: JSON!
 }
 
-type Integration {
+type IntegrationConfig {
   id: ID!
   organizationId: ID!
   integrationType: String!
   config: JSON!
-  auth: JSON!
+  status: IntegrationStatus!
+  resources: [String!]!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -1715,7 +1736,7 @@ type IntegrationPayload {
   messages: [ValidationMessage]
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: Integration
+  result: IntegrationConfig
 }
 
 "A connection between two nodes in the diagram"
@@ -2795,14 +2816,19 @@ input ArtifactsInput {
   filter: ArtifactsFilters
 }
 
-"Allowed params used in updated artifacts. Provisioned artifacts can only have their name updated. Imported artifacts can update specs, data, or name"
+"Allowed params used in updated artifacts. Provisioned artifacts can only have their name updated. Imported artifacts can update specs, data, payload, or name. Use payload for new integrations; data\/specs are deprecated."
 input ArtifactUpdateParams {
   "The new name of the artifact"
   name: String
 
+  "[Deprecated] Use payload instead. Artifact specs for backward compatibility."
   specs: JSON
 
+  "[Deprecated] Use payload instead. Artifact data for backward compatibility."
   data: JSON
+
+  "Artifact payload containing all artifact data."
+  payload: JSON
 }
 
 type Artifact {
@@ -2818,7 +2844,11 @@ type Artifact {
   "The bundle's artifact field (output field) that produced this artifact."
   field: String
 
-  specs: JSON
+  "Artifact specs for backward compatibility."
+  specs: JSON @deprecated(reason: "Use payload instead")
+
+  "Complete artifact payload containing all artifact data. Fields marked with $md.sensitive in the artifact definition will be masked as [SENSITIVE]. Use downloadArtifact to retrieve unmasked values. See https:\/\/docs.massdriver.cloud\/json-schema-cheat-sheet\/massdriver-annotations for more details."
+  payload: JSON
 
   packageId: ID @deprecated(reason: "Use package{id} instead")
 

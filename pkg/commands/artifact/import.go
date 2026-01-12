@@ -31,7 +31,7 @@ func RunImport(ctx context.Context, mdClient *client.Client, artifactName string
 	}
 
 	fmt.Printf("Creating artifact %s of type %s...\n", artifactName, artifactType)
-	resp, createErr := api.CreateArtifact(ctx, mdClient, artifactName, artifactType, artifact.Data, artifact.Specs)
+	resp, createErr := api.CreateArtifact(ctx, mdClient, artifactName, artifactType, artifact)
 	if createErr != nil {
 		return "", createErr
 	}

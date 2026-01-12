@@ -12,6 +12,37 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
 )
 
+func TestCreateArtifact(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"createArtifact": map[string]any{
+				"result": map[string]any{
+					"id":   "artifact-id",
+					"name": "artifact-name",
+				},
+				"successful": true,
+			},
+		},
+	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
+
+	got, err := api.CreateArtifact(t.Context(), &mdClient, "artifact-name", "artifact-type", map[string]any{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := &api.Artifact{
+		Name: "artifact-name",
+		ID:   "artifact-id",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Wanted %v but got %v", want, got)
+	}
+}
+
 func TestGetArtifact(t *testing.T) {
 	type test struct {
 		name     string
@@ -26,7 +57,7 @@ func TestGetArtifact(t *testing.T) {
 				"name":  "my-artifact",
 				"type":  "aws-s3",
 				"field": "bucket",
-				"specs": map[string]any{
+				"payload": map[string]any{
 					"bucket": "my-bucket",
 				},
 				"formats":   []string{"json", "yaml"},
@@ -48,7 +79,7 @@ func TestGetArtifact(t *testing.T) {
 				Name:  "my-artifact",
 				Type:  "aws-s3",
 				Field: "bucket",
-				Specs: map[string]any{
+				Payload: map[string]any{
 					"bucket": "my-bucket",
 				},
 				Formats: []string{"json", "yaml"},
@@ -100,8 +131,8 @@ func TestGetArtifact(t *testing.T) {
 			if got.Origin != tc.want.Origin {
 				t.Errorf("got Origin %v, want %v", got.Origin, tc.want.Origin)
 			}
-			if !reflect.DeepEqual(got.Specs, tc.want.Specs) {
-				t.Errorf("got Specs %v, want %v", got.Specs, tc.want.Specs)
+			if !reflect.DeepEqual(got.Payload, tc.want.Payload) {
+				t.Errorf("got Payload %v, want %v", got.Payload, tc.want.Payload)
 			}
 			if !reflect.DeepEqual(got.Formats, tc.want.Formats) {
 				t.Errorf("got Formats %v, want %v", got.Formats, tc.want.Formats)
