@@ -493,7 +493,7 @@ type RootMutationType {
   enableIntegration(organizationId: ID!, integrationTypeId: String!, config: JSON!, auth: JSON!): IntegrationPayload
 
   "Disable an integration for an organization"
-  disableIntegration(organizationId: ID!, integrationConfigId: ID!): IntegrationConfig
+  disableIntegration(organizationId: ID!, integrationConfigId: ID!): IntegrationPayload
 
   "Create an environment"
   createEnvironment(organizationId: ID!, projectId: ID!, name: String!, slug: String!, description: String): EnvironmentPayload

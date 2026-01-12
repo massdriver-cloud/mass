@@ -1,6 +1,6 @@
 # ARTIFACTS
 
-mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactType: String! $artifactPayload: JSON!) {
+mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactType: String!, $artifactPayload: JSON!) {
   createArtifact(
     organizationId: $organizationId,
     name: $artifactName,
