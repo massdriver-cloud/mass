@@ -18,13 +18,13 @@ import (
 
 var (
 	// These look eerily similar, the difference being - vs _
-	baseRegex            = "^[a-z]+[a-z0-9%s]*[a-z0-9]+$"
-	bundleNameFormat     = regexp.MustCompile(fmt.Sprintf(baseRegex, "-"))
-	connectionNameFormat = regexp.MustCompile(fmt.Sprintf(baseRegex, "_"))
+	baseRegex        = "^[a-z]+[a-z0-9%s]*[a-z0-9]+$"
+	bundleNameFormat = regexp.MustCompile(fmt.Sprintf(baseRegex, "-"))
+	linkNameFormat   = regexp.MustCompile(fmt.Sprintf(baseRegex, "_"))
 
 	baseNameError   = "name must be 2 to 53 characters, can only include lowercase letters, numbers and %s, must start with a letter and end with an alphanumeric character [abc%s123, my%scool%sthing]"
 	bundleNameError = fmt.Sprintf(baseNameError, "dashes", "-", "-", "-")
-	connNameError   = fmt.Sprintf(baseNameError, "underscores", "_", "_", "_")
+	linkNameError   = fmt.Sprintf(baseNameError, "underscores", "_", "_", "_")
 )
 
 var massdriverArtifactDefinitions map[string]map[string]any
@@ -33,7 +33,8 @@ var promptsNew = []func(t *templatecache.TemplateData) error{
 	getName,
 	getDescription,
 	getTemplate,
-	GetConnections,
+	getConnections,
+	getArtifacts,
 	getOutputDir,
 }
 
@@ -138,17 +139,17 @@ func getTemplate(t *templatecache.TemplateData) error {
 	return nil
 }
 
-func connNameValidate(name string) error {
+func linkNameValidate(name string) error {
 	if len(name) < 2 || len(name) > 53 {
-		return errors.New(connNameError)
+		return errors.New(linkNameError)
 	}
-	if !connectionNameFormat.MatchString(name) {
-		return errors.New(connNameError)
+	if !linkNameFormat.MatchString(name) {
+		return errors.New(linkNameError)
 	}
 	return nil
 }
 
-func GetConnections(t *templatecache.TemplateData) error {
+func getConnections(t *templatecache.TemplateData) error {
 	none := "(None)"
 
 	artifactDefinitionsTypes := []string{}
@@ -175,7 +176,7 @@ func GetConnections(t *templatecache.TemplateData) error {
 	for _, currentDep := range selectedDeps {
 		if currentDep == none {
 			if len(selectedDeps) > 1 {
-				return fmt.Errorf("if selecting %v, you cannot select other dependecies. selected %#v", none, selectedDeps)
+				return fmt.Errorf("if selecting %v, you cannot select other connections. selected %#v", none, selectedDeps)
 			}
 			return nil
 		}
@@ -184,7 +185,7 @@ func GetConnections(t *templatecache.TemplateData) error {
 
 		prompt := promptui.Prompt{
 			Label:    `Name`,
-			Validate: connNameValidate,
+			Validate: linkNameValidate,
 		}
 
 		result, errName := prompt.Run()
@@ -199,6 +200,56 @@ func GetConnections(t *templatecache.TemplateData) error {
 
 	t.Connections = depMap
 	t.Envs = envs
+	return nil
+}
+
+func getArtifacts(t *templatecache.TemplateData) error {
+	none := "(None)"
+
+	artifactDefinitionsTypes := []string{}
+	// in 1.23 we can use maps.Keys(), but until then we'll extract the keys manually
+	for adt := range massdriverArtifactDefinitions {
+		artifactDefinitionsTypes = append(artifactDefinitionsTypes, adt)
+	}
+	sort.StringSlice(artifactDefinitionsTypes).Sort()
+
+	var selectedArts []string
+	multiselect := &survey.MultiSelect{
+		Message: "What artifacts do you need?\n  If you don't need any, just hit enter or select (None)\n",
+		Options: artifactDefinitionsTypes,
+	}
+
+	err := survey.AskOne(multiselect, &selectedArts)
+	if err != nil {
+		return err
+	}
+
+	var artMap []templatecache.Artifact
+
+	for _, currentArt := range selectedArts {
+		if currentArt == none {
+			if len(selectedArts) > 1 {
+				return fmt.Errorf("if selecting %v, you cannot select other artifacts. selected %#v", none, selectedArts)
+			}
+			return nil
+		}
+
+		fmt.Printf("Please enter a name for the artifact: \"%v\"\nThis will be the variable name used to reference it in your app|bundle IaC\n", currentArt)
+
+		prompt := promptui.Prompt{
+			Label:    `Name`,
+			Validate: linkNameValidate,
+		}
+
+		result, errName := prompt.Run()
+		if errName != nil {
+			return errName
+		}
+
+		artMap = append(artMap, templatecache.Artifact{Name: result, ArtifactDefinition: currentArt})
+	}
+
+	t.Artifacts = artMap
 	return nil
 }
 
