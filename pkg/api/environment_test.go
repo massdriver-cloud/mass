@@ -9,21 +9,23 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+func floatPtr(v float64) *float64 { return &v }
+
 func TestGetEnvironment(t *testing.T) {
 	want := api.Environment{
 		ID:          "env-uuid1",
 		Name:        "Test Environment",
 		Slug:        "env",
 		Description: "This is a test environment",
-		Cost: &api.Cost{
-			Daily: &api.CostType{
-				Average: &api.CostSummary{
-					Amount: 10.0,
+		Cost: api.Cost{
+			Daily: api.Summary{
+				Average: api.CostSample{
+					Amount: floatPtr(10.0),
 				},
 			},
-			Monthly: &api.CostType{
-				Average: &api.CostSummary{
-					Amount: 300.0,
+			Monthly: api.Summary{
+				Average: api.CostSample{
+					Amount: floatPtr(300.0),
 				},
 			},
 		},
@@ -150,15 +152,15 @@ func TestGetEnvironmentsByPackage(t *testing.T) {
 			Name:        "Test Environment 1",
 			Slug:        "env1",
 			Description: "First test environment",
-			Cost: &api.Cost{
-				Daily: &api.CostType{
-					Average: &api.CostSummary{
-						Amount: 5.0,
+			Cost: api.Cost{
+				Daily: api.Summary{
+					Average: api.CostSample{
+						Amount: floatPtr(5.0),
 					},
 				},
-				Monthly: &api.CostType{
-					Average: &api.CostSummary{
-						Amount: 150.0,
+				Monthly: api.Summary{
+					Average: api.CostSample{
+						Amount: floatPtr(150.0),
 					},
 				},
 			},
@@ -172,15 +174,15 @@ func TestGetEnvironmentsByPackage(t *testing.T) {
 			Name:        "Test Environment 2",
 			Slug:        "env2",
 			Description: "Second test environment",
-			Cost: &api.Cost{
-				Daily: &api.CostType{
-					Average: &api.CostSummary{
-						Amount: 8.0,
+			Cost: api.Cost{
+				Daily: api.Summary{
+					Average: api.CostSample{
+						Amount: floatPtr(8.0),
 					},
 				},
-				Monthly: &api.CostType{
-					Average: &api.CostSummary{
-						Amount: 240.0,
+				Monthly: api.Summary{
+					Average: api.CostSample{
+						Amount: floatPtr(240.0),
 					},
 				},
 			},

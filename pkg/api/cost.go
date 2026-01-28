@@ -1,14 +1,18 @@
 package api
 
 type Cost struct {
-	Monthly *CostType `json:"monthly"`
-	Daily   *CostType `json:"daily"`
+	Monthly Summary `json:"monthly"`
+	Daily   Summary `json:"daily"`
 }
 
-type CostType struct {
-	Average *CostSummary `json:"average"`
+// Summary of costs over a time period.
+type Summary struct {
+	Previous CostSample `json:"previous"`
+	Average  CostSample `json:"average"`
 }
 
-type CostSummary struct {
-	Amount float64 `json:"amount"`
+// A single cost measurement. Fields may be null when no cost data exists.
+type CostSample struct {
+	Amount   *float64 `json:"amount"`
+	Currency *string  `json:"currency"`
 }

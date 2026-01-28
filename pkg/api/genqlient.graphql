@@ -221,11 +221,13 @@ query getEnvironmentById($organizationId: ID!, $id: ID!) {
     cost {
       monthly {
         average {
+          # @genqlient(pointer: true)
           amount
         }
       }
       daily {
         average {
+          # @genqlient(pointer: true)
           amount
         }
       }
@@ -277,11 +279,13 @@ query getEnvironmentsByProject($organizationId: ID!, $projectId: ID!) {
       cost {
         monthly {
           average {
+            # @genqlient(pointer: true)
             amount
           }
         }
         daily {
           average {
+            # @genqlient(pointer: true)
             amount
           }
         }
@@ -528,11 +532,13 @@ query getProjects($organizationId: ID!){
     cost{
       monthly{
         average{
+          # @genqlient(pointer: true)
           amount
         }
       }
       daily{
         average{
+          # @genqlient(pointer: true)
           amount
         }
       }

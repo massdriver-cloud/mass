@@ -2644,7 +2644,7 @@ type getEnvironmentByIdEnvironment struct {
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Description string `json:"description"`
-	// Cloud provider costs for this target
+	// Cloud provider costs for this environment
 	Cost     getEnvironmentByIdEnvironmentCost              `json:"cost"`
 	Packages []getEnvironmentByIdEnvironmentPackagesPackage `json:"packages"`
 	Project  getEnvironmentByIdEnvironmentProject           `json:"project"`
@@ -2701,7 +2701,7 @@ func (v *getEnvironmentByIdEnvironmentCost) GetDaily() getEnvironmentByIdEnviron
 //
 // Summary of costs over a time period
 type getEnvironmentByIdEnvironmentCostDailySummary struct {
-	// Average cost sample for the period
+	// Average cost sample for the period (amount/currency may be null)
 	Average getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample `json:"average"`
 }
 
@@ -2715,12 +2715,12 @@ func (v *getEnvironmentByIdEnvironmentCostDailySummary) GetAverage() getEnvironm
 //
 // A single cost measurement
 type getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample struct {
-	// The cost amount
-	Amount float64 `json:"amount"`
+	// The cost amount (null if no data available)
+	Amount *float64 `json:"amount"`
 }
 
 // GetAmount returns getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample) GetAmount() float64 {
+func (v *getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample) GetAmount() *float64 {
 	return v.Amount
 }
 
@@ -2729,7 +2729,7 @@ func (v *getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample) GetAmou
 //
 // Summary of costs over a time period
 type getEnvironmentByIdEnvironmentCostMonthlySummary struct {
-	// Average cost sample for the period
+	// Average cost sample for the period (amount/currency may be null)
 	Average getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample `json:"average"`
 }
 
@@ -2743,12 +2743,12 @@ func (v *getEnvironmentByIdEnvironmentCostMonthlySummary) GetAverage() getEnviro
 //
 // A single cost measurement
 type getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample struct {
-	// The cost amount
-	Amount float64 `json:"amount"`
+	// The cost amount (null if no data available)
+	Amount *float64 `json:"amount"`
 }
 
 // GetAmount returns getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample) GetAmount() float64 {
+func (v *getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample) GetAmount() *float64 {
 	return v.Amount
 }
 
@@ -3103,7 +3103,7 @@ type getEnvironmentsByProjectProjectEnvironmentsEnvironment struct {
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Description string `json:"description"`
-	// Cloud provider costs for this target
+	// Cloud provider costs for this environment
 	Cost     getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost              `json:"cost"`
 	Packages []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage `json:"packages"`
 	Project  getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject           `json:"project"`
@@ -3164,7 +3164,7 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost) GetDaily() 
 //
 // Summary of costs over a time period
 type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary struct {
-	// Average cost sample for the period
+	// Average cost sample for the period (amount/currency may be null)
 	Average getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample `json:"average"`
 }
 
@@ -3178,12 +3178,12 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary)
 //
 // A single cost measurement
 type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample struct {
-	// The cost amount
-	Amount float64 `json:"amount"`
+	// The cost amount (null if no data available)
+	Amount *float64 `json:"amount"`
 }
 
 // GetAmount returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample) GetAmount() float64 {
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample) GetAmount() *float64 {
 	return v.Amount
 }
 
@@ -3192,7 +3192,7 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryA
 //
 // Summary of costs over a time period
 type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary struct {
-	// Average cost sample for the period
+	// Average cost sample for the period (amount/currency may be null)
 	Average getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample `json:"average"`
 }
 
@@ -3206,12 +3206,12 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummar
 //
 // A single cost measurement
 type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample struct {
-	// The cost amount
-	Amount float64 `json:"amount"`
+	// The cost amount (null if no data available)
+	Amount *float64 `json:"amount"`
 }
 
 // GetAmount returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample) GetAmount() float64 {
+func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample) GetAmount() *float64 {
 	return v.Amount
 }
 
@@ -4242,7 +4242,7 @@ func (v *getProjectsProjectsProjectCost) GetDaily() getProjectsProjectsProjectCo
 //
 // Summary of costs over a time period
 type getProjectsProjectsProjectCostDailySummary struct {
-	// Average cost sample for the period
+	// Average cost sample for the period (amount/currency may be null)
 	Average getProjectsProjectsProjectCostDailySummaryAverageCostSample `json:"average"`
 }
 
@@ -4256,12 +4256,12 @@ func (v *getProjectsProjectsProjectCostDailySummary) GetAverage() getProjectsPro
 //
 // A single cost measurement
 type getProjectsProjectsProjectCostDailySummaryAverageCostSample struct {
-	// The cost amount
-	Amount float64 `json:"amount"`
+	// The cost amount (null if no data available)
+	Amount *float64 `json:"amount"`
 }
 
 // GetAmount returns getProjectsProjectsProjectCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectCostDailySummaryAverageCostSample) GetAmount() float64 {
+func (v *getProjectsProjectsProjectCostDailySummaryAverageCostSample) GetAmount() *float64 {
 	return v.Amount
 }
 
@@ -4270,7 +4270,7 @@ func (v *getProjectsProjectsProjectCostDailySummaryAverageCostSample) GetAmount(
 //
 // Summary of costs over a time period
 type getProjectsProjectsProjectCostMonthlySummary struct {
-	// Average cost sample for the period
+	// Average cost sample for the period (amount/currency may be null)
 	Average getProjectsProjectsProjectCostMonthlySummaryAverageCostSample `json:"average"`
 }
 
@@ -4284,12 +4284,12 @@ func (v *getProjectsProjectsProjectCostMonthlySummary) GetAverage() getProjectsP
 //
 // A single cost measurement
 type getProjectsProjectsProjectCostMonthlySummaryAverageCostSample struct {
-	// The cost amount
-	Amount float64 `json:"amount"`
+	// The cost amount (null if no data available)
+	Amount *float64 `json:"amount"`
 }
 
 // GetAmount returns getProjectsProjectsProjectCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectCostMonthlySummaryAverageCostSample) GetAmount() float64 {
+func (v *getProjectsProjectsProjectCostMonthlySummaryAverageCostSample) GetAmount() *float64 {
 	return v.Amount
 }
 

@@ -16,7 +16,7 @@ type Project struct {
 	Slug          string         `json:"slug"`
 	Description   string         `json:"description"`
 	DefaultParams map[string]any `json:"defaultParams"`
-	Cost          *Cost          `json:"cost,omitempty"`
+	Cost          Cost           `json:"cost"`
 	Environments  []Environment  `json:"environments"`
 }
 

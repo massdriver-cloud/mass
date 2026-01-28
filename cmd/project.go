@@ -163,7 +163,15 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 	tbl := cli.NewTable("ID/Slug", "Name", "Description", "Monthly $", "Daily $")
 
 	for _, project := range projects {
-		tbl.AddRow(project.Slug, project.Name, project.Description, project.Cost.Monthly.Average.Amount, project.Cost.Daily.Average.Amount)
+		monthly := ""
+		daily := ""
+		if project.Cost.Monthly.Average.Amount != nil {
+			monthly = fmt.Sprintf("%v", *project.Cost.Monthly.Average.Amount)
+		}
+		if project.Cost.Daily.Average.Amount != nil {
+			daily = fmt.Sprintf("%v", *project.Cost.Daily.Average.Amount)
+		}
+		tbl.AddRow(project.Slug, project.Name, project.Description, monthly, daily)
 	}
 
 	tbl.Print()

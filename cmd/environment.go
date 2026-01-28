@@ -156,7 +156,15 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 	tbl := cli.NewTable("ID/Slug", "Name", "Description", "Monthly $", "Daily $")
 
 	for _, env := range environments {
-		tbl.AddRow(env.Slug, env.Name, env.Description, env.Cost.Monthly.Average.Amount, env.Cost.Daily.Average.Amount)
+		monthly := ""
+		daily := ""
+		if env.Cost.Monthly.Average.Amount != nil {
+			monthly = fmt.Sprintf("%v", *env.Cost.Monthly.Average.Amount)
+		}
+		if env.Cost.Daily.Average.Amount != nil {
+			daily = fmt.Sprintf("%v", *env.Cost.Daily.Average.Amount)
+		}
+		tbl.AddRow(env.Slug, env.Name, env.Description, monthly, daily)
 	}
 
 	tbl.Print()

@@ -438,12 +438,6 @@ type RootMutationType {
     id: ID!
   ): BundlePayload
 
-  "Assign a credential to be used to retrieve cloud costs"
-  assignCloudCostCredential(organizationId: ID!, artifactId: ID!): CloudCostCredentialPayload
-
-  "Dismisses a credential to be used to retrieve cloud costs"
-  dismissCloudCostCredential(organizationId: ID!, artifactId: ID!): CloudCostCredentialPayload
-
   "Enqueues a package for deployment"
   deployPackage(
     organizationId: ID!
@@ -489,11 +483,17 @@ type RootMutationType {
 
   unlinkManifests(organizationId: ID!, linkId: ID!): LinkPayload
 
-  "Enable an integration for an organization"
-  enableIntegration(organizationId: ID!, integrationTypeId: String!, config: JSON!, auth: JSON!): IntegrationPayload
+  "Create an integration for an organization"
+  createIntegration(organizationId: ID!, input: CreateIntegrationInput!): IntegrationPayload
 
-  "Disable an integration for an organization"
-  disableIntegration(organizationId: ID!, integrationConfigId: ID!): IntegrationPayload
+  "Enable an integration"
+  enableIntegration(organizationId: ID!, id: ID!): IntegrationPayload
+
+  "Disable an integration"
+  disableIntegration(organizationId: ID!, id: ID!): IntegrationPayload
+
+  "Delete an integration"
+  deleteIntegration(organizationId: ID!, id: ID!): IntegrationPayload
 
   "Create an environment"
   createEnvironment(organizationId: ID!, projectId: ID!, name: String!, slug: String!, description: String): EnvironmentPayload
@@ -512,7 +512,29 @@ type RootMutationType {
   updateEnvironment(organizationId: ID!, id: ID!, name: String!, description: String): EnvironmentPayload
 
   "Removes an environment from a project. This will fail if infrastructure is still provisioned in the environment."
-  deleteEnvironment(organizationId: ID!, id: ID!): EnvironmentPayload
+  deleteEnvironment(organizationId: ID!, id: ID!, orphanForks: Boolean): EnvironmentPayload
+
+  "Forks an environment, creating a new environment with optional copying of secrets, env defaults, and remote references."
+  forkEnvironment(
+    organizationId: ID!
+
+    "The ID of the environment to fork from"
+    parentId: ID!
+
+    "Input containing the new environment details and options for what to copy from the parent"
+    input: ForkEnvironmentInput!
+  ): EnvironmentPayload
+
+  "Merges a forked environment back into its parent. By default copies params, with options for secrets, remote references, and env defaults."
+  mergeEnvironment(
+    organizationId: ID!
+
+    "The ID of the forked environment to merge"
+    id: ID!
+
+    "Input containing options for what to copy from the fork back to the parent environment"
+    input: MergeEnvironmentInput
+  ): EnvironmentPayload
 
   "Connect an environment as the default environment type for a given environment"
   createEnvironmentConnection(organizationId: ID!, artifactId: ID!, environmentId: ID!): EnvironmentConnectionPayload
@@ -1002,7 +1024,7 @@ type Project {
   defaultParams: JSON @deprecated(reason: "Default params are being deprecated for preview environments in favor of inherit\/override PEs from specific environments. This field will be removed in a future release.")
 
   "Cloud provider costs for this project"
-  cost: Cost
+  cost: Cost!
 }
 
 type ProjectPayload {
@@ -1079,6 +1101,18 @@ type Dimension {
 
   "Value of the dimension"
   value: String!
+}
+
+"A flattened artifact payload property summary with display name, path, and value. Sensitive fields are masked as [SENSITIVE]."
+type ArtifactPropertySummary {
+  "Display name for the property summary (e.g., 'Database: Hostname', 'Database: Port')"
+  name: String!
+
+  "Full path to the value in the artifact payload (e.g., '.database.hostname', '.database.port')"
+  path: String!
+
+  "The scalar value. Sensitive fields (marked with $md.sensitive: true) are masked as '[SENSITIVE]'"
+  value: JSON
 }
 
 "An alarm is a condition that triggers a notification. It is defined by a metric, a comparison operator, a threshold, and a period."
@@ -1226,11 +1260,14 @@ type Package {
   "Artifacts provisioned by this package"
   artifacts: [Artifact]
 
+  "Flattened list of artifact payload property summaries suitable for display in a table. Sensitive fields are automatically masked."
+  propertySummaries: [ArtifactPropertySummary]
+
   "Artifacts from a remote source like another project or a resource not managed by massdriver"
   remoteReferences: [RemoteReference]
 
   "Cloud provider costs for this package"
-  cost: Cost
+  cost: Cost!
 }
 
 type PackagePayload {
@@ -1664,6 +1701,37 @@ input PreviewEnvironmentInput {
   ciContext: JSON!
 }
 
+input ForkEnvironmentInput {
+  "Name for the new forked environment"
+  name: String!
+
+  "Slug for the new forked environment"
+  slug: String!
+
+  "Optional description for the new forked environment"
+  description: String
+
+  "Whether to copy secrets from the parent environment to the fork"
+  copySecrets: Boolean
+
+  "Whether to copy environment defaults (target connections) from the parent environment to the fork"
+  copyEnvDefaults: Boolean
+
+  "Whether to copy remote references from the parent environment to the fork"
+  copyRemoteReferences: Boolean
+}
+
+input MergeEnvironmentInput {
+  "Whether to copy secrets from the fork back to the parent environment"
+  copySecrets: Boolean
+
+  "Whether to copy environment defaults (target connections) from the fork back to the parent environment"
+  copyEnvDefaults: Boolean
+
+  "Whether to copy remote references from the fork back to the parent environment"
+  copyRemoteReferences: Boolean
+}
+
 type Environment {
   id: ID
 
@@ -1672,6 +1740,8 @@ type Environment {
   slug: String
 
   description: String
+
+  parent: Environment
 
   deletable: EnvironmentDeletionLifecycle!
 
@@ -1690,8 +1760,8 @@ type Environment {
 
   defaultConnections: [DefaultEnvironmentConnection]
 
-  "Cloud provider costs for this target"
-  cost: Cost
+  "Cloud provider costs for this environment"
+  cost: Cost!
 }
 
 type EnvironmentPayload {
@@ -1708,13 +1778,17 @@ type EnvironmentPayload {
 enum IntegrationStatus {
   DISABLED
   ENABLED
+  ENABLING
+  DISABLING
 }
 
 type IntegrationType {
   name: String!
   id: String!
+  description: String
   configSchema: JSON!
   authSchema: JSON!
+  docs: String!
 }
 
 type IntegrationConfig {
@@ -1723,9 +1797,9 @@ type IntegrationConfig {
   integrationType: String!
   config: JSON!
   status: IntegrationStatus!
-  resources: [String!]!
   createdAt: DateTime!
   updatedAt: DateTime!
+  nextRunAt: DateTime
 }
 
 type IntegrationPayload {
@@ -1737,6 +1811,18 @@ type IntegrationPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: IntegrationConfig
+}
+
+"Input for creating an integration configuration"
+input CreateIntegrationInput {
+  "The integration type identifier (e.g., 'aws-cost-and-usage-reports')"
+  integrationTypeId: String!
+
+  "Integration-specific configuration. Must conform to the integration type's config_schema."
+  config: JSON!
+
+  "Authentication credentials. Must conform to the integration type's auth_schema."
+  auth: JSON!
 }
 
 "A connection between two nodes in the diagram"
@@ -2049,28 +2135,28 @@ type RecentDeployment {
 "Cost information for a resource"
 type Cost {
   "Monthly cost summary"
-  monthly: Summary
+  monthly: Summary!
 
   "Daily cost summary"
-  daily: Summary
+  daily: Summary!
 }
 
 "Summary of costs over a time period"
 type Summary {
-  "Previous period's cost sample"
+  "Previous period's cost sample (amount\/currency may be null)"
   previous: CostSample!
 
-  "Average cost sample for the period"
+  "Average cost sample for the period (amount\/currency may be null)"
   average: CostSample!
 }
 
 "A single cost measurement"
 type CostSample {
-  "The cost amount"
-  amount: Float!
+  "The cost amount (null if no data available)"
+  amount: Float
 
-  "The currency code (e.g. USD)"
-  currency: String!
+  "The currency code, e.g. USD (null if no data available)"
+  currency: String
 }
 
 type ContainerRepositoryAuth {
@@ -2103,39 +2189,6 @@ type Connection {
 
   "When the connection was last updated"
   updatedAt: DateTime
-}
-
-"Indicates whether the artifact is used to fetch cloud cost data"
-enum CloudCostStatus {
-  "Currently used to fetch cloud cost data"
-  ACTIVE
-
-  "Currently using the credential to build dependencies for fetching cloud costs"
-  PENDING
-
-  "Attempted to create cloud cost dependencies but failed to do so"
-  FAILED
-
-  "Artifact does not support fetching cloud cost data"
-  UNSUPPORTED
-
-  "Eligable to be used for fetching cloud costs but is not in use"
-  INACTIVE
-}
-
-type CloudCostCredential {
-  status: CloudCostStatus!
-}
-
-type CloudCostCredentialPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: CloudCostCredential
 }
 
 input Cursor {
@@ -2845,7 +2898,7 @@ type Artifact {
   field: String
 
   "Artifact specs for backward compatibility."
-  specs: JSON @deprecated(reason: "Use payload instead")
+  specs: JSON @deprecated(reason: "Use payload['specs'] instead if applicable")
 
   "Complete artifact payload containing all artifact data. Fields marked with $md.sensitive in the artifact definition will be masked as [SENSITIVE]. Use downloadArtifact to retrieve unmasked values. See https:\/\/docs.massdriver.cloud\/json-schema-cheat-sheet\/massdriver-annotations for more details."
   payload: JSON
@@ -2876,8 +2929,6 @@ type Artifact {
 
   "Packages that remotely reference this artifact"
   referencedBy: [Package]!
-
-  cloudCostStatus: CloudCostStatus!
 }
 
 type ArtifactPayload {
