@@ -18,8 +18,8 @@
 
 {{if .Formats}}**Available Formats:** {{range $i, $f := .Formats}}{{if $i}}, {{end}}{{$f}}{{end}}{{end}}
 
-{{if ne .SpecsJSON "{}"}}## Specs
+{{if ne .Payload "{}"}}## Payload
 ```json
-{{.SpecsJSON}}
+{{.Payload}}
 ```
 {{end}}

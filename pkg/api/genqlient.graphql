@@ -1,12 +1,11 @@
 # ARTIFACTS
 
-mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactSpecs: JSON!, $artifactType: String! $artifactData: JSON!) {
+mutation createArtifact($organizationId: ID!, $artifactName: String!, $artifactType: String!, $artifactPayload: JSON!) {
   createArtifact(
     organizationId: $organizationId,
     name: $artifactName,
-    specs: $artifactSpecs,
     type: $artifactType,
-    data: $artifactData
+    payload: $artifactPayload
   ) {
     result {
       name
@@ -54,7 +53,7 @@ query getArtifact($organizationId: ID!, $id: ID!) {
     name
     type
     field
-    specs
+    payload
     formats
     createdAt
     updatedAt

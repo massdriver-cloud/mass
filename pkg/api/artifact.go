@@ -17,7 +17,7 @@ type Artifact struct {
 	Name               string                        `json:"name"`
 	Type               string                        `json:"type"`
 	Field              string                        `json:"field,omitempty"`
-	Specs              map[string]any                `json:"specs,omitempty"`
+	Payload            map[string]any                `json:"payload,omitempty"`
 	Formats            []string                      `json:"formats,omitempty"`
 	CreatedAt          time.Time                     `json:"createdAt,omitempty"`
 	UpdatedAt          time.Time                     `json:"updatedAt,omitempty"`
@@ -34,8 +34,8 @@ type ArtifactPackage struct {
 	Slug string `json:"slug"`
 }
 
-func CreateArtifact(ctx context.Context, mdClient *client.Client, artifactName string, artifactType string, artifactData map[string]any, artifactSpecs map[string]any) (*Artifact, error) {
-	response, err := createArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactName, artifactSpecs, artifactType, artifactData)
+func CreateArtifact(ctx context.Context, mdClient *client.Client, artifactName string, artifactType string, artifactPayload map[string]any) (*Artifact, error) {
+	response, err := createArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactName, artifactType, artifactPayload)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (response *getArtifactResponse) toArtifact() *Artifact {
 		Name:      response.Artifact.Name,
 		Type:      response.Artifact.Type,
 		Field:     response.Artifact.Field,
-		Specs:     response.Artifact.Specs,
+		Payload:   response.Artifact.Payload,
 		Formats:   response.Artifact.Formats,
 		CreatedAt: response.Artifact.CreatedAt,
 		UpdatedAt: response.Artifact.UpdatedAt,

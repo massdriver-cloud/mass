@@ -348,11 +348,10 @@ func (v *__containerRepositoryInput) GetInput() ContainerRepositoryInput { retur
 
 // __createArtifactInput is used internally by genqlient
 type __createArtifactInput struct {
-	OrganizationId string         `json:"organizationId"`
-	ArtifactName   string         `json:"artifactName"`
-	ArtifactSpecs  map[string]any `json:"-"`
-	ArtifactType   string         `json:"artifactType"`
-	ArtifactData   map[string]any `json:"-"`
+	OrganizationId  string         `json:"organizationId"`
+	ArtifactName    string         `json:"artifactName"`
+	ArtifactType    string         `json:"artifactType"`
+	ArtifactPayload map[string]any `json:"-"`
 }
 
 // GetOrganizationId returns __createArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -361,14 +360,11 @@ func (v *__createArtifactInput) GetOrganizationId() string { return v.Organizati
 // GetArtifactName returns __createArtifactInput.ArtifactName, and is useful for accessing the field via an interface.
 func (v *__createArtifactInput) GetArtifactName() string { return v.ArtifactName }
 
-// GetArtifactSpecs returns __createArtifactInput.ArtifactSpecs, and is useful for accessing the field via an interface.
-func (v *__createArtifactInput) GetArtifactSpecs() map[string]any { return v.ArtifactSpecs }
-
 // GetArtifactType returns __createArtifactInput.ArtifactType, and is useful for accessing the field via an interface.
 func (v *__createArtifactInput) GetArtifactType() string { return v.ArtifactType }
 
-// GetArtifactData returns __createArtifactInput.ArtifactData, and is useful for accessing the field via an interface.
-func (v *__createArtifactInput) GetArtifactData() map[string]any { return v.ArtifactData }
+// GetArtifactPayload returns __createArtifactInput.ArtifactPayload, and is useful for accessing the field via an interface.
+func (v *__createArtifactInput) GetArtifactPayload() map[string]any { return v.ArtifactPayload }
 
 func (v *__createArtifactInput) UnmarshalJSON(b []byte) error {
 
@@ -378,8 +374,7 @@ func (v *__createArtifactInput) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*__createArtifactInput
-		ArtifactSpecs json.RawMessage `json:"artifactSpecs"`
-		ArtifactData  json.RawMessage `json:"artifactData"`
+		ArtifactPayload json.RawMessage `json:"artifactPayload"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.__createArtifactInput = v
@@ -390,27 +385,14 @@ func (v *__createArtifactInput) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.ArtifactSpecs
-		src := firstPass.ArtifactSpecs
+		dst := &v.ArtifactPayload
+		src := firstPass.ArtifactPayload
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal __createArtifactInput.ArtifactSpecs: %w", err)
-			}
-		}
-	}
-
-	{
-		dst := &v.ArtifactData
-		src := firstPass.ArtifactData
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal __createArtifactInput.ArtifactData: %w", err)
+					"unable to unmarshal __createArtifactInput.ArtifactPayload: %w", err)
 			}
 		}
 	}
@@ -422,11 +404,9 @@ type __premarshal__createArtifactInput struct {
 
 	ArtifactName string `json:"artifactName"`
 
-	ArtifactSpecs json.RawMessage `json:"artifactSpecs"`
-
 	ArtifactType string `json:"artifactType"`
 
-	ArtifactData json.RawMessage `json:"artifactData"`
+	ArtifactPayload json.RawMessage `json:"artifactPayload"`
 }
 
 func (v *__createArtifactInput) MarshalJSON() ([]byte, error) {
@@ -442,29 +422,17 @@ func (v *__createArtifactInput) __premarshalJSON() (*__premarshal__createArtifac
 
 	retval.OrganizationId = v.OrganizationId
 	retval.ArtifactName = v.ArtifactName
-	{
-
-		dst := &retval.ArtifactSpecs
-		src := v.ArtifactSpecs
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal __createArtifactInput.ArtifactSpecs: %w", err)
-		}
-	}
 	retval.ArtifactType = v.ArtifactType
 	{
 
-		dst := &retval.ArtifactData
-		src := v.ArtifactData
+		dst := &retval.ArtifactPayload
+		src := v.ArtifactPayload
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal __createArtifactInput.ArtifactData: %w", err)
+				"unable to marshal __createArtifactInput.ArtifactPayload: %w", err)
 		}
 	}
 	return &retval, nil
@@ -1895,8 +1863,9 @@ type getArtifactArtifact struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 	// The bundle's artifact field (output field) that produced this artifact.
-	Field string         `json:"field"`
-	Specs map[string]any `json:"-"`
+	Field string `json:"field"`
+	// Complete artifact payload containing all artifact data. Fields marked with $md.sensitive in the artifact definition will be masked as [SENSITIVE]. Use downloadArtifact to retrieve unmasked values. See https://docs.massdriver.cloud/json-schema-cheat-sheet/massdriver-annotations for more details.
+	Payload map[string]any `json:"-"`
 	// Download formats supported for this artifact
 	Formats   []string  `json:"formats"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -1921,8 +1890,8 @@ func (v *getArtifactArtifact) GetType() string { return v.Type }
 // GetField returns getArtifactArtifact.Field, and is useful for accessing the field via an interface.
 func (v *getArtifactArtifact) GetField() string { return v.Field }
 
-// GetSpecs returns getArtifactArtifact.Specs, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetSpecs() map[string]any { return v.Specs }
+// GetPayload returns getArtifactArtifact.Payload, and is useful for accessing the field via an interface.
+func (v *getArtifactArtifact) GetPayload() map[string]any { return v.Payload }
 
 // GetFormats returns getArtifactArtifact.Formats, and is useful for accessing the field via an interface.
 func (v *getArtifactArtifact) GetFormats() []string { return v.Formats }
@@ -1952,7 +1921,7 @@ func (v *getArtifactArtifact) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*getArtifactArtifact
-		Specs json.RawMessage `json:"specs"`
+		Payload json.RawMessage `json:"payload"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.getArtifactArtifact = v
@@ -1963,14 +1932,14 @@ func (v *getArtifactArtifact) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.Specs
-		src := firstPass.Specs
+		dst := &v.Payload
+		src := firstPass.Payload
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getArtifactArtifact.Specs: %w", err)
+					"unable to unmarshal getArtifactArtifact.Payload: %w", err)
 			}
 		}
 	}
@@ -1986,7 +1955,7 @@ type __premarshalgetArtifactArtifact struct {
 
 	Field string `json:"field"`
 
-	Specs json.RawMessage `json:"specs"`
+	Payload json.RawMessage `json:"payload"`
 
 	Formats []string `json:"formats"`
 
@@ -2018,14 +1987,14 @@ func (v *getArtifactArtifact) __premarshalJSON() (*__premarshalgetArtifactArtifa
 	retval.Field = v.Field
 	{
 
-		dst := &retval.Specs
-		src := v.Specs
+		dst := &retval.Payload
+		src := v.Payload
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getArtifactArtifact.Specs: %w", err)
+				"unable to marshal getArtifactArtifact.Payload: %w", err)
 		}
 	}
 	retval.Formats = v.Formats
@@ -4876,8 +4845,8 @@ func containerRepository(
 
 // The query or mutation executed by createArtifact.
 const createArtifact_Operation = `
-mutation createArtifact ($organizationId: ID!, $artifactName: String!, $artifactSpecs: JSON!, $artifactType: String!, $artifactData: JSON!) {
-	createArtifact(organizationId: $organizationId, name: $artifactName, specs: $artifactSpecs, type: $artifactType, data: $artifactData) {
+mutation createArtifact ($organizationId: ID!, $artifactName: String!, $artifactType: String!, $artifactPayload: JSON!) {
+	createArtifact(organizationId: $organizationId, name: $artifactName, type: $artifactType, payload: $artifactPayload) {
 		result {
 			name
 			id
@@ -4895,19 +4864,17 @@ func createArtifact(
 	client graphql.Client,
 	organizationId string,
 	artifactName string,
-	artifactSpecs map[string]any,
 	artifactType string,
-	artifactData map[string]any,
+	artifactPayload map[string]any,
 ) (*createArtifactResponse, error) {
 	req := &graphql.Request{
 		OpName: "createArtifact",
 		Query:  createArtifact_Operation,
 		Variables: &__createArtifactInput{
-			OrganizationId: organizationId,
-			ArtifactName:   artifactName,
-			ArtifactSpecs:  artifactSpecs,
-			ArtifactType:   artifactType,
-			ArtifactData:   artifactData,
+			OrganizationId:  organizationId,
+			ArtifactName:    artifactName,
+			ArtifactType:    artifactType,
+			ArtifactPayload: artifactPayload,
 		},
 	}
 	var err error
@@ -5504,7 +5471,7 @@ query getArtifact ($organizationId: ID!, $id: ID!) {
 		name
 		type
 		field
-		specs
+		payload
 		formats
 		createdAt
 		updatedAt
