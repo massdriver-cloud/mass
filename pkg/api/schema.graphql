@@ -2028,28 +2028,28 @@ type RecentDeployment {
 "Cost information for a resource"
 type Cost {
   "Monthly cost summary"
-  monthly: Summary
+  monthly: Summary!
 
   "Daily cost summary"
-  daily: Summary
+  daily: Summary!
 }
 
 "Summary of costs over a time period"
 type Summary {
-  "Previous period's cost sample"
+  "Previous period's cost sample (amount/currency may be null)"
   previous: CostSample!
 
-  "Average cost sample for the period"
+  "Average cost sample for the period (amount/currency may be null)"
   average: CostSample!
 }
 
 "A single cost measurement"
 type CostSample {
-  "The cost amount"
-  amount: Float!
+  "The cost amount (null if no data available)"
+  amount: Float
 
-  "The currency code (e.g. USD)"
-  currency: String!
+  "The currency code, e.g. USD (null if no data available)"
+  currency: String
 }
 
 type ContainerRepositoryAuth {
