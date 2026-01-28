@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
 	"github.com/massdriver-cloud/mass/pkg/version"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
 
@@ -21,15 +24,24 @@ func NewCmdVersion() *cobra.Command {
 }
 
 func runVersion(cmd *cobra.Command, args []string) {
-	latestVersion, err := version.GetLatestVersion()
+	massVersionColor := prettylogs.Green(version.MassVersion())
+	fmt.Printf("🧰 CLI: %v (git SHA: %v)\n", massVersionColor, version.MassGitSHA())
+
+	// Best-effort: check whether a newer CLI is available (does not affect exit code).
+	if latestVersion, err := version.GetLatestVersion(); err == nil {
+		if isOld, _ := version.CheckForNewerVersionAvailable(latestVersion); isOld {
+			fmt.Printf("⬆️ Update: %v\n", version.LatestReleaseURL)
+		}
+	}
+
+	// Best-effort: if we can authenticate, show the Massdriver server version too.
+	ctx := context.Background()
+	mdClient, err := client.New()
 	if err != nil {
-		fmt.Printf("Could not check for newer version, skipping. url:%s error:%s", version.LatestReleaseURL, err.Error())
 		return
 	}
-	isOld, _ := version.CheckForNewerVersionAvailable(latestVersion)
-	if isOld {
-		fmt.Printf("A newer version of the CLI is available, you can download it here: %v\n", version.LatestReleaseURL)
+
+	if server, err := api.GetServer(ctx, mdClient); err == nil && server != nil && server.Version != "" {
+		fmt.Printf("🌐 Server: %v\n", prettylogs.Green(server.Version))
 	}
-	massVersionColor := prettylogs.Green(version.MassVersion())
-	fmt.Printf("Mass CLI version: %v (git SHA: %v) \n", massVersionColor, version.MassGitSHA())
 }

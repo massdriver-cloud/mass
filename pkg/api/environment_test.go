@@ -17,7 +17,7 @@ func TestGetEnvironment(t *testing.T) {
 		Name:        "Test Environment",
 		Slug:        "env",
 		Description: "This is a test environment",
-		Cost: &api.Cost{
+		Cost: api.Cost{
 			Daily: api.Summary{
 				Average: api.CostSample{
 					Amount: floatPtr(10.0),
@@ -152,7 +152,7 @@ func TestGetEnvironmentsByPackage(t *testing.T) {
 			Name:        "Test Environment 1",
 			Slug:        "env1",
 			Description: "First test environment",
-			Cost: &api.Cost{
+			Cost: api.Cost{
 				Daily: api.Summary{
 					Average: api.CostSample{
 						Amount: floatPtr(5.0),
@@ -174,7 +174,7 @@ func TestGetEnvironmentsByPackage(t *testing.T) {
 			Name:        "Test Environment 2",
 			Slug:        "env2",
 			Description: "Second test environment",
-			Cost: &api.Cost{
+			Cost: api.Cost{
 				Daily: api.Summary{
 					Average: api.CostSample{
 						Amount: floatPtr(8.0),

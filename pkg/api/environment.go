@@ -16,7 +16,7 @@ type Environment struct {
 	Name        string    `json:"name"`
 	Slug        string    `json:"slug"`
 	Description string    `json:"description,omitempty"`
-	Cost        *Cost     `json:"cost,omitempty" mapstructure:"cost,omitempty"`
+	Cost        Cost      `json:"cost" mapstructure:"cost"`
 	Packages    []Package `json:"packages,omitempty" mapstructure:"packages,omitempty"`
 	Project     *Project  `json:"project,omitempty" mapstructure:"project,omitempty"`
 }

@@ -1895,7 +1895,8 @@ type getArtifactArtifact struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 	// The bundle's artifact field (output field) that produced this artifact.
-	Field string         `json:"field"`
+	Field string `json:"field"`
+	// Artifact specs for backward compatibility.
 	Specs map[string]any `json:"-"`
 	// Download formats supported for this artifact
 	Formats   []string  `json:"formats"`
@@ -2675,7 +2676,7 @@ type getEnvironmentByIdEnvironment struct {
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Description string `json:"description"`
-	// Cloud provider costs for this target
+	// Cloud provider costs for this environment
 	Cost     getEnvironmentByIdEnvironmentCost              `json:"cost"`
 	Packages []getEnvironmentByIdEnvironmentPackagesPackage `json:"packages"`
 	Project  getEnvironmentByIdEnvironmentProject           `json:"project"`
@@ -3134,7 +3135,7 @@ type getEnvironmentsByProjectProjectEnvironmentsEnvironment struct {
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Description string `json:"description"`
-	// Cloud provider costs for this target
+	// Cloud provider costs for this environment
 	Cost     getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost              `json:"cost"`
 	Packages []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage `json:"packages"`
 	Project  getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject           `json:"project"`

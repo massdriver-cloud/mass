@@ -10,12 +10,6 @@
 {{end}}
 
 ## Cost
-{{- if .Cost}}
-**Monthly Average:** {{.Cost.Monthly.Average.DisplayAmountUSD}}
+**Monthly Average:** {{with .Monthly.Average.Amount}}${{.}}{{end}}
 
-**Daily Average:** {{.Cost.Daily.Average.DisplayAmountUSD}}
-{{- else}}
-**Monthly Average:** -
-
-**Daily Average:** -
-{{- end}}
+**Daily Average:** {{with .Daily.Average.Amount}}${{.}}{{end}}
