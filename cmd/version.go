@@ -25,12 +25,12 @@ func NewCmdVersion() *cobra.Command {
 
 func runVersion(cmd *cobra.Command, args []string) {
 	massVersionColor := prettylogs.Green(version.MassVersion())
-	fmt.Printf("🧰 CLI: %v (git SHA: %v)\n", massVersionColor, version.MassGitSHA())
+	fmt.Printf("🧰 CLI version: %v (git SHA: %v)\n", massVersionColor, version.MassGitSHA())
 
 	// Best-effort: check whether a newer CLI is available (does not affect exit code).
 	if latestVersion, err := version.GetLatestVersion(); err == nil {
 		if isOld, _ := version.CheckForNewerVersionAvailable(latestVersion); isOld {
-			fmt.Printf("⬆️ Update: %v\n", version.LatestReleaseURL)
+			fmt.Printf("⬆️ A newer version of the CLI is available, you can download it here: %v\n", version.LatestReleaseURL)
 		}
 	}
 
@@ -42,6 +42,6 @@ func runVersion(cmd *cobra.Command, args []string) {
 	}
 
 	if server, err := api.GetServer(ctx, mdClient); err == nil && server != nil && server.Version != "" {
-		fmt.Printf("🌐 Server: %v\n", prettylogs.Green(server.Version))
+		fmt.Printf("🌐 Server version: %v\n", prettylogs.Green(server.Version))
 	}
 }
