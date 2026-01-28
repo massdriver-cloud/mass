@@ -176,11 +176,11 @@ func runArtifactDownload(cmd *cobra.Command, args []string) error {
 }
 
 func renderArtifact(artifact *api.Artifact) error {
-	specsJSON := "{}"
-	if artifact.Specs != nil {
-		specsBytes, err := json.MarshalIndent(artifact.Specs, "", "  ")
+	prettyPayload := "{}"
+	if artifact.Payload != nil {
+		payloadBytes, err := json.MarshalIndent(artifact.Payload, "", "  ")
 		if err == nil {
-			specsJSON = string(specsBytes)
+			prettyPayload = string(payloadBytes)
 		}
 	}
 
@@ -200,7 +200,7 @@ func renderArtifact(artifact *api.Artifact) error {
 		Type               string
 		Field              string
 		Origin             string
-		SpecsJSON          string
+		Payload            string
 		Formats            []string
 		CreatedAt          string
 		UpdatedAt          string
@@ -212,7 +212,7 @@ func renderArtifact(artifact *api.Artifact) error {
 		Type:               artifact.Type,
 		Field:              artifact.Field,
 		Origin:             artifact.Origin,
-		SpecsJSON:          specsJSON,
+		Payload:            prettyPayload,
 		Formats:            artifact.Formats,
 		CreatedAt:          artifact.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:          artifact.UpdatedAt.Format("2006-01-02 15:04:05"),
