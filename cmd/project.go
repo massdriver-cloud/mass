@@ -171,7 +171,8 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 		if project.Cost.Daily.Average.Amount != nil {
 			daily = fmt.Sprintf("%v", *project.Cost.Daily.Average.Amount)
 		}
-		tbl.AddRow(project.Slug, project.Name, project.Description, monthly, daily)
+		description := cli.TruncateString(project.Description, 60)
+		tbl.AddRow(project.Slug, project.Name, description, monthly, daily)
 	}
 
 	tbl.Print()

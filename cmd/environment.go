@@ -164,7 +164,8 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 		if env.Cost.Daily.Average.Amount != nil {
 			daily = fmt.Sprintf("%v", *env.Cost.Daily.Average.Amount)
 		}
-		tbl.AddRow(env.Slug, env.Name, env.Description, monthly, daily)
+		description := cli.TruncateString(env.Description, 60)
+		tbl.AddRow(env.Slug, env.Name, description, monthly, daily)
 	}
 
 	tbl.Print()
