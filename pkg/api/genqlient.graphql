@@ -234,6 +234,7 @@ query getEnvironmentById($organizationId: ID!, $id: ID!) {
     }
     packages {
       id
+      slug
       params
       artifacts {
         id

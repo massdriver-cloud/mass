@@ -36,6 +36,7 @@ Packages are used to:
 * [mass package destroy](/cli/commands/mass_package_destroy)	 - Destroy (decommission) a package
 * [mass package export](/cli/commands/mass_package_export)	 - Export packages
 * [mass package get](/cli/commands/mass_package_get)	 - Get a package
+* [mass package list](/cli/commands/mass_package_list)	 - List packages in an environment
 * [mass package patch](/cli/commands/mass_package_patch)	 - Patch individual package parameter values
 * [mass package reset](/cli/commands/mass_package_reset)	 - Reset package status to 'Initialized'
 * [mass package version](/cli/commands/mass_package_version)	 - Set package version
