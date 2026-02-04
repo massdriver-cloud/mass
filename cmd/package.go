@@ -13,6 +13,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
+	"github.com/massdriver-cloud/mass/pkg/cli"
 	"github.com/massdriver-cloud/mass/pkg/commands/pkg"
 	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
@@ -133,10 +134,21 @@ func NewCmdPkg() *cobra.Command {
 	}
 	pkgResetCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 
+	pkgListCmd := &cobra.Command{
+		Use:     `list <project>-<env>`,
+		Short:   "List packages in an environment",
+		Aliases: []string{"ls"},
+		Example: `mass package list ecomm-prod`,
+		Long:    helpdocs.MustRender("package/list"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runPkgList,
+	}
+
 	pkgCmd.AddCommand(pkgConfigureCmd)
 	pkgCmd.AddCommand(pkgDeployCmd)
 	pkgCmd.AddCommand(pkgExportCmd)
 	pkgCmd.AddCommand(pkgGetCmd)
+	pkgCmd.AddCommand(pkgListCmd)
 	pkgCmd.AddCommand(pkgPatchCmd)
 	pkgCmd.AddCommand(pkgCreateCmd)
 	pkgCmd.AddCommand(pkgVersionCmd)
@@ -514,6 +526,42 @@ func runPkgReset(cmd *cobra.Command, args []string) error {
 	var name = lipgloss.NewStyle().SetString(pkg.Slug).Foreground(lipgloss.Color("#7D56F4"))
 	msg := fmt.Sprintf("✅ Package %s reset successfully", name)
 	fmt.Println(msg)
+
+	return nil
+}
+
+func runPkgList(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	environmentSlug := args[0]
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	env, err := api.GetEnvironment(ctx, mdClient, environmentSlug)
+	if err != nil {
+		return err
+	}
+
+	tbl := cli.NewTable("ID", "Name", "Bundle", "Status")
+
+	for _, p := range env.Packages {
+		name := ""
+		if p.Manifest != nil {
+			name = p.Manifest.Name
+		}
+		bundleName := ""
+		if p.Bundle != nil {
+			bundleName = p.Bundle.Name
+		}
+		tbl.AddRow(p.Slug, name, bundleName, p.Status)
+	}
+
+	tbl.Print()
 
 	return nil
 }
