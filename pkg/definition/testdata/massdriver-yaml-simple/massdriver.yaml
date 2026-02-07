@@ -1,0 +1,19 @@
+name: simple-yaml-artifact
+label: Simple YAML Artifact
+icon: https://example.com/icon.png
+
+ui:
+  environmentDefaultGroup: credentials
+  instructions: []
+
+exports: []
+
+schema:
+  $schema: http://json-schema.org/draft-07/schema
+  title: Test Artifact
+  type: object
+  properties:
+    data:
+      type: object
+    specs:
+      type: object

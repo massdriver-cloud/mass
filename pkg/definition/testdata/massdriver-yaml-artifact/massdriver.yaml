@@ -1,0 +1,41 @@
+name: test-artifact
+label: Test Artifact Definition
+icon: https://example.com/icon.png
+
+ui:
+  connectionOrientation: environmentDefault
+  environmentDefaultGroup: credentials
+  instructions:
+    - label: CLI Setup
+      path: ./instructions/cli.md
+    - label: Console Guide
+      path: ./instructions/console.md
+
+exports:
+  - downloadButtonText: Download Config
+    fileFormat: yaml
+    templatePath: ./exports/config.yaml.liquid
+    templateLang: liquid
+
+schema:
+  $schema: http://json-schema.org/draft-07/schema
+  title: Test Artifact
+  description: A test artifact for unit testing
+  type: object
+  required:
+    - id
+    - token
+  properties:
+    id:
+      title: ID
+      description: Unique identifier
+      type: string
+    token:
+      $md.sensitive: true
+      title: Token
+      description: Authentication token
+      type: string
+    data:
+      type: object
+    specs:
+      type: object

@@ -22,9 +22,19 @@ func TestPublish(t *testing.T) {
 	}
 	tests := []test{
 		{
-			name:     "simple",
+			name:     "simple json",
 			path:     "testdata/simple-artifact.json",
 			wantBody: `{"$schema":"http://json-schema.org/draft-07/schema","type":"object","title":"Test Artifact","properties":{"data":{"type":"object"}},"specs":{"type":"object"}}}`,
+		},
+		{
+			name:     "massdriver.yaml format",
+			path:     "testdata/massdriver-yaml-simple/massdriver.yaml",
+			wantBody: `{"$schema":"http://json-schema.org/draft-07/schema","type":"object","title":"Test Artifact"}`,
+		},
+		{
+			name:     "massdriver.yaml with instructions and exports",
+			path:     "testdata/massdriver-yaml-artifact/massdriver.yaml",
+			wantBody: `{"$schema":"http://json-schema.org/draft-07/schema","type":"object","title":"Test Artifact"}`,
 		},
 	}
 
