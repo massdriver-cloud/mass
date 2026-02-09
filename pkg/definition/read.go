@@ -12,6 +12,29 @@ import (
 )
 
 func Read(ctx context.Context, mdClient *client.Client, path string) (map[string]any, error) {
+	// Check if this is a massdriver.yaml file (experimental artifact definition format)
+	if IsMassdriverYAMLArtifactDefinition(path) {
+		built, buildErr := Build(path)
+		if buildErr != nil {
+			return nil, fmt.Errorf("failed to build massdriver.yaml artifact definition: %w", buildErr)
+		}
+
+		// Dereference the built schema
+		opts := DereferenceOptions{
+			Client: mdClient,
+			Cwd:    filepath.Dir(path),
+		}
+		dereferencedAny, derefErr := DereferenceSchema(built, opts)
+		if derefErr != nil {
+			return nil, fmt.Errorf("failed to dereference artifact definition: %w", derefErr)
+		}
+		dereferenced, ok := dereferencedAny.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("dereferenced artifact definition is not a map")
+		}
+		return dereferenced, nil
+	}
+
 	artdefBytes, readErr := os.ReadFile(path)
 	if readErr != nil {
 		return nil, fmt.Errorf("failed to read artifact definition: %w", readErr)
