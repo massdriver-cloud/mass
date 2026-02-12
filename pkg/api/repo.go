@@ -10,23 +10,23 @@ import (
 
 // Repo represents a bundle repository
 type Repo struct {
-	ID              string
-	Name            string
-	CreatedAt       time.Time
-	ReleaseChannels []ReleaseChannel
+	ID              string           `json:"id"`
+	Name            string           `json:"name"`
+	CreatedAt       time.Time        `json:"createdAt"`
+	ReleaseChannels []ReleaseChannel `json:"releaseChannels"`
 }
 
 // ReleaseChannel represents a release channel
 type ReleaseChannel struct {
-	Name string
-	Tag  string
+	Name string `json:"name"`
+	Tag  string `json:"tag"`
 }
 
 // ReposPage represents a page of repos with pagination info
 type ReposPage struct {
-	Items      []Repo
-	NextCursor string
-	PrevCursor string
+	Items      []Repo `json:"items"`
+	NextCursor string `json:"nextCursor,omitempty"`
+	PrevCursor string `json:"prevCursor,omitempty"`
 }
 
 // ReposListOptions contains options for listing repos
