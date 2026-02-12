@@ -2856,6 +2856,8 @@ func (v *getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample) GetAm
 type getEnvironmentByIdEnvironmentPackagesPackage struct {
 	// Unique identifier
 	Id string `json:"id"`
+	// Package slug identifier
+	Slug string `json:"slug"`
 	// Package configuration parameters
 	Params map[string]any `json:"-"`
 	// Artifacts provisioned by this package
@@ -2870,6 +2872,9 @@ type getEnvironmentByIdEnvironmentPackagesPackage struct {
 
 // GetId returns getEnvironmentByIdEnvironmentPackagesPackage.Id, and is useful for accessing the field via an interface.
 func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetId() string { return v.Id }
+
+// GetSlug returns getEnvironmentByIdEnvironmentPackagesPackage.Slug, and is useful for accessing the field via an interface.
+func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetSlug() string { return v.Slug }
 
 // GetParams returns getEnvironmentByIdEnvironmentPackagesPackage.Params, and is useful for accessing the field via an interface.
 func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetParams() map[string]any { return v.Params }
@@ -2933,6 +2938,8 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackage) UnmarshalJSON(b []byte) e
 type __premarshalgetEnvironmentByIdEnvironmentPackagesPackage struct {
 	Id string `json:"id"`
 
+	Slug string `json:"slug"`
+
 	Params json.RawMessage `json:"params"`
 
 	Artifacts []getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
@@ -2958,6 +2965,7 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackage) __premarshalJSON() (*__pr
 	var retval __premarshalgetEnvironmentByIdEnvironmentPackagesPackage
 
 	retval.Id = v.Id
+	retval.Slug = v.Slug
 	{
 
 		dst := &retval.Params
@@ -5931,6 +5939,7 @@ query getEnvironmentById ($organizationId: ID!, $id: ID!) {
 		}
 		packages {
 			id
+			slug
 			params
 			artifacts {
 				id
