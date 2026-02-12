@@ -17,3 +17,5 @@ bindings:
     type: string
   Markdown:
     type: string
+  Cursor:
+    type: github.com/massdriver-cloud/mass/pkg/api/scalars.Cursor

@@ -16,6 +16,7 @@ import (
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/pkg/api"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
+	"github.com/massdriver-cloud/mass/pkg/cli"
 	cmdbundle "github.com/massdriver-cloud/mass/pkg/commands/bundle"
 	"github.com/massdriver-cloud/mass/pkg/commands/bundle/templates"
 	"github.com/massdriver-cloud/mass/pkg/params"
@@ -44,12 +45,36 @@ type bundleNew struct {
 	paramsDir    string
 }
 
+type bundleList struct {
+	search    string
+	sortField string
+	sortOrder string
+	limit     int
+	output    string
+}
+
 func NewCmdBundle() *cobra.Command {
 	bundleCmd := &cobra.Command{
 		Use:   "bundle",
 		Short: "Generate and publish bundles",
 		Long:  helpdocs.MustRender("bundle"),
 	}
+
+	var bundleListInput bundleList
+
+	bundleListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List bundles in your organization",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+			return runBundleList(&bundleListInput)
+		},
+	}
+	bundleListCmd.Flags().StringVarP(&bundleListInput.search, "search", "s", "", "Search bundles (supports AND, OR, -, quotes)")
+	bundleListCmd.Flags().StringVar(&bundleListInput.sortField, "sort", "name", "Sort field (name, created_at)")
+	bundleListCmd.Flags().StringVar(&bundleListInput.sortOrder, "order", "asc", "Sort order (asc, desc)")
+	bundleListCmd.Flags().IntVarP(&bundleListInput.limit, "limit", "l", 0, "Maximum number of results to return")
+	bundleListCmd.Flags().StringVarP(&bundleListInput.output, "output", "o", "table", "Output format (table, json)")
 
 	bundleBuildCmd := &cobra.Command{
 		Use:   "build",
@@ -143,6 +168,7 @@ func NewCmdBundle() *cobra.Command {
 		RunE:  runBundleTemplateRefresh,
 	}
 
+	bundleCmd.AddCommand(bundleListCmd)
 	bundleCmd.AddCommand(bundleBuildCmd)
 	bundleCmd.AddCommand(bundleImportCmd)
 	bundleCmd.AddCommand(bundleLintCmd)
@@ -451,6 +477,54 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 	pullErr := cmdbundle.RunPull(ctx, mdClient, bundleName, version, directory)
 	if pullErr != nil {
 		return fmt.Errorf("error pulling bundle: %w", pullErr)
+	}
+
+	return nil
+}
+
+func runBundleList(input *bundleList) error {
+	ctx := context.Background()
+
+	mdClient, err := client.New()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	opts := api.ReposListOptions{
+		Search:    input.search,
+		SortField: input.sortField,
+		SortOrder: input.sortOrder,
+		Limit:     input.limit,
+	}
+
+	page, err := api.ListRepos(ctx, mdClient, opts)
+	if err != nil {
+		return fmt.Errorf("failed to list bundles: %w", err)
+	}
+
+	switch input.output {
+	case "json":
+		jsonBytes, err := json.MarshalIndent(page, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal bundles to JSON: %w", err)
+		}
+		fmt.Println(string(jsonBytes))
+	case "table":
+		tbl := cli.NewTable("Name", "Latest", "Created At")
+		for _, repo := range page.Items {
+			latest := ""
+			for _, rc := range repo.ReleaseChannels {
+				if rc.Name == "latest" {
+					latest = rc.Tag
+					break
+				}
+			}
+			createdAt := repo.CreatedAt.Format("2006-01-02 15:04:05")
+			tbl.AddRow(repo.Name, latest, createdAt)
+		}
+		tbl.Print()
+	default:
+		return fmt.Errorf("unsupported output format: %s", input.output)
 	}
 
 	return nil
