@@ -65,6 +65,7 @@ func NewCmdBundle() *cobra.Command {
 	bundleListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List bundles in your organization",
+		Long:  helpdocs.MustRender("bundle/list"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 			return runBundleList(&bundleListInput)

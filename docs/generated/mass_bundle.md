@@ -26,6 +26,7 @@ Generate and publish bundles
 * [mass bundle get](/cli/commands/mass_bundle_get)	 - Get bundle information from Massdriver
 * [mass bundle import](/cli/commands/mass_bundle_import)	 - Import declared variables from IaC into massdriver.yaml params
 * [mass bundle lint](/cli/commands/mass_bundle_lint)	 - Check massdriver.yaml file for common errors
+* [mass bundle list](/cli/commands/mass_bundle_list)	 - List bundles in your organization
 * [mass bundle new](/cli/commands/mass_bundle_new)	 - Create a new bundle from a template
 * [mass bundle publish](/cli/commands/mass_bundle_publish)	 - Publish bundle to Massdriver's package manager
 * [mass bundle pull](/cli/commands/mass_bundle_pull)	 - Pull bundle from Massdriver to local directory
