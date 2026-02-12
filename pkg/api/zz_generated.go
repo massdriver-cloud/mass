@@ -22,12 +22,22 @@ const (
 	ArtifactDefinitionUiConnectionOrientationEnvironmentDefault ArtifactDefinitionUiConnectionOrientation = "ENVIRONMENT_DEFAULT"
 )
 
+var AllArtifactDefinitionUiConnectionOrientation = []ArtifactDefinitionUiConnectionOrientation{
+	ArtifactDefinitionUiConnectionOrientationLink,
+	ArtifactDefinitionUiConnectionOrientationEnvironmentDefault,
+}
+
 type ArtifactOrigin string
 
 const (
 	ArtifactOriginImported    ArtifactOrigin = "IMPORTED"
 	ArtifactOriginProvisioned ArtifactOrigin = "PROVISIONED"
 )
+
+var AllArtifactOrigin = []ArtifactOrigin{
+	ArtifactOriginImported,
+	ArtifactOriginProvisioned,
+}
 
 // Arguments required to get container repositories
 type ContainerRepositoryInput struct {
@@ -67,6 +77,14 @@ const (
 	// Deployment was aborted
 	DeploymentStatusAborted DeploymentStatus = "ABORTED"
 )
+
+var AllDeploymentStatus = []DeploymentStatus{
+	DeploymentStatusPending,
+	DeploymentStatusRunning,
+	DeploymentStatusCompleted,
+	DeploymentStatusFailed,
+	DeploymentStatusAborted,
+}
 
 // MutationValidationError includes the requested fields of the GraphQL type ValidationMessage.
 // The GraphQL type's documentation follows.
@@ -115,6 +133,14 @@ const (
 	// Package exists externally
 	PackageStatusExternal PackageStatus = "EXTERNAL"
 )
+
+var AllPackageStatus = []PackageStatus{
+	PackageStatusInitialized,
+	PackageStatusProvisioned,
+	PackageStatusDecommissioned,
+	PackageStatusFailed,
+	PackageStatusExternal,
+}
 
 type PreviewEnvironmentInput struct {
 	Credentials           []Credential   `json:"credentials"`
@@ -238,12 +264,63 @@ const (
 	ReleaseStrategyDevelopment ReleaseStrategy = "DEVELOPMENT"
 )
 
+var AllReleaseStrategy = []ReleaseStrategy{
+	ReleaseStrategyStable,
+	ReleaseStrategyDevelopment,
+}
+
+type ReposSort struct {
+	// Field to sort by
+	Field ReposSortField `json:"field"`
+	// Sort order
+	Order SortOrder `json:"order"`
+}
+
+// GetField returns ReposSort.Field, and is useful for accessing the field via an interface.
+func (v *ReposSort) GetField() ReposSortField { return v.Field }
+
+// GetOrder returns ReposSort.Order, and is useful for accessing the field via an interface.
+func (v *ReposSort) GetOrder() SortOrder { return v.Order }
+
+type ReposSortField string
+
+const (
+	// Sort repositories by name
+	ReposSortFieldName ReposSortField = "NAME"
+	// Sort by creation timestamp
+	ReposSortFieldCreatedAt ReposSortField = "CREATED_AT"
+)
+
+var AllReposSortField = []ReposSortField{
+	ReposSortFieldName,
+	ReposSortFieldCreatedAt,
+}
+
 type ServerMode string
 
 const (
 	ServerModeSelfHosted ServerMode = "SELF_HOSTED"
 	ServerModeManaged    ServerMode = "MANAGED"
 )
+
+var AllServerMode = []ServerMode{
+	ServerModeSelfHosted,
+	ServerModeManaged,
+}
+
+type SortOrder string
+
+const (
+	// Ascending order
+	SortOrderAsc SortOrder = "ASC"
+	// Descending order
+	SortOrderDesc SortOrder = "DESC"
+)
+
+var AllSortOrder = []SortOrder{
+	SortOrderAsc,
+	SortOrderDesc,
+}
 
 // __configurePackageInput is used internally by genqlient
 type __configurePackageInput struct {
@@ -811,6 +888,26 @@ type __listCredentialsInput struct {
 
 // GetOrganizationId returns __listCredentialsInput.OrganizationId, and is useful for accessing the field via an interface.
 func (v *__listCredentialsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// __listReposInput is used internally by genqlient
+type __listReposInput struct {
+	OrganizationId string          `json:"organizationId"`
+	Sort           *ReposSort      `json:"sort,omitempty"`
+	Cursor         *scalars.Cursor `json:"cursor,omitempty"`
+	Search         *string         `json:"search,omitempty"`
+}
+
+// GetOrganizationId returns __listReposInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listReposInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetSort returns __listReposInput.Sort, and is useful for accessing the field via an interface.
+func (v *__listReposInput) GetSort() *ReposSort { return v.Sort }
+
+// GetCursor returns __listReposInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listReposInput) GetCursor() *scalars.Cursor { return v.Cursor }
+
+// GetSearch returns __listReposInput.Search, and is useful for accessing the field via an interface.
+func (v *__listReposInput) GetSearch() *string { return v.Search }
 
 // __publishArtifactDefinitionInput is used internally by genqlient
 type __publishArtifactDefinitionInput struct {
@@ -4567,6 +4664,97 @@ func (v *listCredentialsResponse) GetArtifacts() listCredentialsArtifactsPaginat
 	return v.Artifacts
 }
 
+// listReposReposReposPage includes the requested fields of the GraphQL type ReposPage.
+type listReposReposReposPage struct {
+	// Pagination cursors
+	Cursor listReposReposReposPageCursorPaginationCursor `json:"cursor"`
+	// A list of type repo.
+	Items []listReposReposReposPageItemsRepo `json:"items"`
+}
+
+// GetCursor returns listReposReposReposPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listReposReposReposPage) GetCursor() listReposReposReposPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listReposReposReposPage.Items, and is useful for accessing the field via an interface.
+func (v *listReposReposReposPage) GetItems() []listReposReposReposPageItemsRepo { return v.Items }
+
+// listReposReposReposPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+type listReposReposReposPageCursorPaginationCursor struct {
+	// Cursor to the next page
+	Next string `json:"next"`
+	// Cursor to the previous page
+	Previous string `json:"previous"`
+}
+
+// GetNext returns listReposReposReposPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listReposReposReposPageCursorPaginationCursor) GetNext() string { return v.Next }
+
+// GetPrevious returns listReposReposReposPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listReposReposReposPageCursorPaginationCursor) GetPrevious() string { return v.Previous }
+
+// listReposReposReposPageItemsRepo includes the requested fields of the GraphQL type Repo.
+// The GraphQL type's documentation follows.
+//
+// An IaC bundle repository
+type listReposReposReposPageItemsRepo struct {
+	// Unique identifier
+	Id string `json:"id"`
+	// Name of the repository
+	Name string `json:"name"`
+	// When the repository was created
+	CreatedAt time.Time `json:"createdAt"`
+	// Distribution channels for artifact releases
+	ReleaseChannels []listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel `json:"releaseChannels"`
+}
+
+// GetId returns listReposReposReposPageItemsRepo.Id, and is useful for accessing the field via an interface.
+func (v *listReposReposReposPageItemsRepo) GetId() string { return v.Id }
+
+// GetName returns listReposReposReposPageItemsRepo.Name, and is useful for accessing the field via an interface.
+func (v *listReposReposReposPageItemsRepo) GetName() string { return v.Name }
+
+// GetCreatedAt returns listReposReposReposPageItemsRepo.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listReposReposReposPageItemsRepo) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetReleaseChannels returns listReposReposReposPageItemsRepo.ReleaseChannels, and is useful for accessing the field via an interface.
+func (v *listReposReposReposPageItemsRepo) GetReleaseChannels() []listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel {
+	return v.ReleaseChannels
+}
+
+// listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel includes the requested fields of the GraphQL type ReleaseChannel.
+// The GraphQL type's documentation follows.
+//
+// A release channel that resolves to a specific tag
+type listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel struct {
+	// The channel name (e.g., 'latest', '1.x', '0.x')
+	Name string `json:"name"`
+	// The tag this channel resolves to (e.g., '1.0.0')
+	Tag string `json:"tag"`
+}
+
+// GetName returns listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel.Name, and is useful for accessing the field via an interface.
+func (v *listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel) GetName() string {
+	return v.Name
+}
+
+// GetTag returns listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel.Tag, and is useful for accessing the field via an interface.
+func (v *listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel) GetTag() string { return v.Tag }
+
+// listReposResponse is returned by listRepos on success.
+type listReposResponse struct {
+	// List all bundle repositories with pagination, sorting, and search capabilities.
+	//
+	// Returns a paginated list of repositories (bundles) that the authenticated user has access to
+	// within the specified organization. Each repository can contain multiple releases with
+	// different version strategies (stable vs development).
+	Repos listReposReposReposPage `json:"repos"`
+}
+
+// GetRepos returns listReposResponse.Repos, and is useful for accessing the field via an interface.
+func (v *listReposResponse) GetRepos() listReposReposReposPage { return v.Repos }
+
 // publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload includes the requested fields of the GraphQL type ArtifactDefinitionPayload.
 type publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -4756,7 +4944,7 @@ func (v *setPackageVersionSetPackageVersionPackagePayloadResultPackage) GetSlug(
 	return v.Slug
 }
 
-// The query or mutation executed by configurePackage.
+// The mutation executed by configurePackage.
 const configurePackage_Operation = `
 mutation configurePackage ($organizationId: ID!, $id: ID!, $params: JSON!) {
 	configurePackage(organizationId: $organizationId, id: $id, params: $params) {
@@ -4774,13 +4962,13 @@ mutation configurePackage ($organizationId: ID!, $id: ID!, $params: JSON!) {
 `
 
 func configurePackage(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
 	params map[string]any,
-) (*configurePackageResponse, error) {
-	req := &graphql.Request{
+) (data_ *configurePackageResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "configurePackage",
 		Query:  configurePackage_Operation,
 		Variables: &__configurePackageInput{
@@ -4789,21 +4977,20 @@ func configurePackage(
 			Params:         params,
 		},
 	}
-	var err error
 
-	var data configurePackageResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &configurePackageResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by containerRepository.
+// The query executed by containerRepository.
 const containerRepository_Operation = `
 query containerRepository ($orgId: ID!, $artifactId: ID!, $input: ContainerRepositoryInput!) {
 	containerRepository(organizationId: $orgId, artifactId: $artifactId, input: $input) {
@@ -4814,13 +5001,13 @@ query containerRepository ($orgId: ID!, $artifactId: ID!, $input: ContainerRepos
 `
 
 func containerRepository(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	orgId string,
 	artifactId string,
 	input ContainerRepositoryInput,
-) (*containerRepositoryResponse, error) {
-	req := &graphql.Request{
+) (data_ *containerRepositoryResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "containerRepository",
 		Query:  containerRepository_Operation,
 		Variables: &__containerRepositoryInput{
@@ -4829,21 +5016,20 @@ func containerRepository(
 			Input:      input,
 		},
 	}
-	var err error
 
-	var data containerRepositoryResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &containerRepositoryResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by createArtifact.
+// The mutation executed by createArtifact.
 const createArtifact_Operation = `
 mutation createArtifact ($organizationId: ID!, $artifactName: String!, $artifactType: String!, $artifactPayload: JSON!) {
 	createArtifact(organizationId: $organizationId, name: $artifactName, type: $artifactType, payload: $artifactPayload) {
@@ -4860,14 +5046,14 @@ mutation createArtifact ($organizationId: ID!, $artifactName: String!, $artifact
 `
 
 func createArtifact(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	artifactName string,
 	artifactType string,
 	artifactPayload map[string]any,
-) (*createArtifactResponse, error) {
-	req := &graphql.Request{
+) (data_ *createArtifactResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "createArtifact",
 		Query:  createArtifact_Operation,
 		Variables: &__createArtifactInput{
@@ -4877,21 +5063,20 @@ func createArtifact(
 			ArtifactPayload: artifactPayload,
 		},
 	}
-	var err error
 
-	var data createArtifactResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &createArtifactResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by createEnvironment.
+// The mutation executed by createEnvironment.
 const createEnvironment_Operation = `
 mutation createEnvironment ($organizationId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
 	createEnvironment(organizationId: $organizationId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
@@ -4910,15 +5095,15 @@ mutation createEnvironment ($organizationId: ID!, $projectId: ID!, $name: String
 `
 
 func createEnvironment(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	projectId string,
 	name string,
 	slug string,
 	description string,
-) (*createEnvironmentResponse, error) {
-	req := &graphql.Request{
+) (data_ *createEnvironmentResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "createEnvironment",
 		Query:  createEnvironment_Operation,
 		Variables: &__createEnvironmentInput{
@@ -4929,21 +5114,20 @@ func createEnvironment(
 			Description:    description,
 		},
 	}
-	var err error
 
-	var data createEnvironmentResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &createEnvironmentResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by createEnvironmentConnection.
+// The mutation executed by createEnvironmentConnection.
 const createEnvironmentConnection_Operation = `
 mutation createEnvironmentConnection ($organizationId: ID!, $artifactId: ID!, $environmentId: ID!) {
 	createEnvironmentConnection(organizationId: $organizationId, artifactId: $artifactId, environmentId: $environmentId) {
@@ -4967,13 +5151,13 @@ mutation createEnvironmentConnection ($organizationId: ID!, $artifactId: ID!, $e
 `
 
 func createEnvironmentConnection(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	artifactId string,
 	environmentId string,
-) (*createEnvironmentConnectionResponse, error) {
-	req := &graphql.Request{
+) (data_ *createEnvironmentConnectionResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "createEnvironmentConnection",
 		Query:  createEnvironmentConnection_Operation,
 		Variables: &__createEnvironmentConnectionInput{
@@ -4982,21 +5166,20 @@ func createEnvironmentConnection(
 			EnvironmentId:  environmentId,
 		},
 	}
-	var err error
 
-	var data createEnvironmentConnectionResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &createEnvironmentConnectionResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by createManifest.
+// The mutation executed by createManifest.
 const createManifest_Operation = `
 mutation createManifest ($organizationId: ID!, $bundleId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
 	createManifest(organizationId: $organizationId, bundleId: $bundleId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
@@ -5015,16 +5198,16 @@ mutation createManifest ($organizationId: ID!, $bundleId: ID!, $projectId: ID!, 
 `
 
 func createManifest(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	bundleId string,
 	projectId string,
 	name string,
 	slug string,
 	description string,
-) (*createManifestResponse, error) {
-	req := &graphql.Request{
+) (data_ *createManifestResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "createManifest",
 		Query:  createManifest_Operation,
 		Variables: &__createManifestInput{
@@ -5036,21 +5219,20 @@ func createManifest(
 			Description:    description,
 		},
 	}
-	var err error
 
-	var data createManifestResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &createManifestResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by createProject.
+// The mutation executed by createProject.
 const createProject_Operation = `
 mutation createProject ($organizationId: ID!, $name: String!, $slug: String!, $description: String) {
 	createProject(organizationId: $organizationId, name: $name, slug: $slug, description: $description) {
@@ -5069,14 +5251,14 @@ mutation createProject ($organizationId: ID!, $name: String!, $slug: String!, $d
 `
 
 func createProject(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	name string,
 	slug string,
 	description string,
-) (*createProjectResponse, error) {
-	req := &graphql.Request{
+) (data_ *createProjectResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "createProject",
 		Query:  createProject_Operation,
 		Variables: &__createProjectInput{
@@ -5086,21 +5268,20 @@ func createProject(
 			Description:    description,
 		},
 	}
-	var err error
 
-	var data createProjectResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &createProjectResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by decommissionPackage.
+// The mutation executed by decommissionPackage.
 const decommissionPackage_Operation = `
 mutation decommissionPackage ($organizationId: ID!, $id: ID!, $message: String) {
 	decommissionPackage(organizationId: $organizationId, id: $id, message: $message) {
@@ -5116,13 +5297,13 @@ mutation decommissionPackage ($organizationId: ID!, $id: ID!, $message: String) 
 `
 
 func decommissionPackage(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
 	message string,
-) (*decommissionPackageResponse, error) {
-	req := &graphql.Request{
+) (data_ *decommissionPackageResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "decommissionPackage",
 		Query:  decommissionPackage_Operation,
 		Variables: &__decommissionPackageInput{
@@ -5131,21 +5312,20 @@ func decommissionPackage(
 			Message:        message,
 		},
 	}
-	var err error
 
-	var data decommissionPackageResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &decommissionPackageResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by decommissionPreviewEnvironment.
+// The mutation executed by decommissionPreviewEnvironment.
 const decommissionPreviewEnvironment_Operation = `
 mutation decommissionPreviewEnvironment ($orgId: ID!, $targetId: ID!) {
 	decommissionPreviewEnvironment(organizationId: $orgId, targetId: $targetId) {
@@ -5166,12 +5346,12 @@ mutation decommissionPreviewEnvironment ($orgId: ID!, $targetId: ID!) {
 `
 
 func decommissionPreviewEnvironment(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	orgId string,
 	targetId string,
-) (*decommissionPreviewEnvironmentResponse, error) {
-	req := &graphql.Request{
+) (data_ *decommissionPreviewEnvironmentResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "decommissionPreviewEnvironment",
 		Query:  decommissionPreviewEnvironment_Operation,
 		Variables: &__decommissionPreviewEnvironmentInput{
@@ -5179,21 +5359,20 @@ func decommissionPreviewEnvironment(
 			TargetId: targetId,
 		},
 	}
-	var err error
 
-	var data decommissionPreviewEnvironmentResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &decommissionPreviewEnvironmentResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by deleteArtifact.
+// The mutation executed by deleteArtifact.
 const deleteArtifact_Operation = `
 mutation deleteArtifact ($organizationId: ID!, $id: ID!) {
 	deleteArtifact(organizationId: $organizationId, id: $id) {
@@ -5210,12 +5389,12 @@ mutation deleteArtifact ($organizationId: ID!, $id: ID!) {
 `
 
 func deleteArtifact(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (*deleteArtifactResponse, error) {
-	req := &graphql.Request{
+) (data_ *deleteArtifactResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "deleteArtifact",
 		Query:  deleteArtifact_Operation,
 		Variables: &__deleteArtifactInput{
@@ -5223,21 +5402,20 @@ func deleteArtifact(
 			Id:             id,
 		},
 	}
-	var err error
 
-	var data deleteArtifactResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &deleteArtifactResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by deleteArtifactDefinition.
+// The mutation executed by deleteArtifactDefinition.
 const deleteArtifactDefinition_Operation = `
 mutation deleteArtifactDefinition ($organizationId: ID!, $name: String!) {
 	deleteArtifactDefinition(organizationId: $organizationId, name: $name) {
@@ -5254,12 +5432,12 @@ mutation deleteArtifactDefinition ($organizationId: ID!, $name: String!) {
 `
 
 func deleteArtifactDefinition(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	name string,
-) (*deleteArtifactDefinitionResponse, error) {
-	req := &graphql.Request{
+) (data_ *deleteArtifactDefinitionResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "deleteArtifactDefinition",
 		Query:  deleteArtifactDefinition_Operation,
 		Variables: &__deleteArtifactDefinitionInput{
@@ -5267,21 +5445,20 @@ func deleteArtifactDefinition(
 			Name:           name,
 		},
 	}
-	var err error
 
-	var data deleteArtifactDefinitionResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &deleteArtifactDefinitionResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by deleteProject.
+// The mutation executed by deleteProject.
 const deleteProject_Operation = `
 mutation deleteProject ($organizationId: ID!, $id: ID!) {
 	deleteProject(organizationId: $organizationId, id: $id) {
@@ -5300,12 +5477,12 @@ mutation deleteProject ($organizationId: ID!, $id: ID!) {
 `
 
 func deleteProject(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (*deleteProjectResponse, error) {
-	req := &graphql.Request{
+) (data_ *deleteProjectResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "deleteProject",
 		Query:  deleteProject_Operation,
 		Variables: &__deleteProjectInput{
@@ -5313,21 +5490,20 @@ func deleteProject(
 			Id:             id,
 		},
 	}
-	var err error
 
-	var data deleteProjectResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &deleteProjectResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by deployPackage.
+// The mutation executed by deployPackage.
 const deployPackage_Operation = `
 mutation deployPackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $message: String!) {
 	deployPackage(organizationId: $organizationId, manifestId: $manifestId, targetId: $targetId, message: $message) {
@@ -5343,14 +5519,14 @@ mutation deployPackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID!, 
 `
 
 func deployPackage(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	targetId string,
 	manifestId string,
 	message string,
-) (*deployPackageResponse, error) {
-	req := &graphql.Request{
+) (data_ *deployPackageResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "deployPackage",
 		Query:  deployPackage_Operation,
 		Variables: &__deployPackageInput{
@@ -5360,21 +5536,20 @@ func deployPackage(
 			Message:        message,
 		},
 	}
-	var err error
 
-	var data deployPackageResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &deployPackageResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by deployPreviewEnvironment.
+// The mutation executed by deployPreviewEnvironment.
 const deployPreviewEnvironment_Operation = `
 mutation deployPreviewEnvironment ($organizationId: ID!, $projectId: ID!, $input: PreviewEnvironmentInput!) {
 	deployPreviewEnvironment(projectId: $projectId, organizationId: $organizationId, input: $input) {
@@ -5395,13 +5570,13 @@ mutation deployPreviewEnvironment ($organizationId: ID!, $projectId: ID!, $input
 `
 
 func deployPreviewEnvironment(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	projectId string,
 	input PreviewEnvironmentInput,
-) (*deployPreviewEnvironmentResponse, error) {
-	req := &graphql.Request{
+) (data_ *deployPreviewEnvironmentResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "deployPreviewEnvironment",
 		Query:  deployPreviewEnvironment_Operation,
 		Variables: &__deployPreviewEnvironmentInput{
@@ -5410,21 +5585,20 @@ func deployPreviewEnvironment(
 			Input:          input,
 		},
 	}
-	var err error
 
-	var data deployPreviewEnvironmentResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &deployPreviewEnvironmentResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by downloadArtifact.
+// The query executed by downloadArtifact.
 const downloadArtifact_Operation = `
 query downloadArtifact ($organizationId: ID!, $artifactId: ID!, $format: String!) {
 	downloadArtifact(organizationId: $organizationId, artifactId: $artifactId, format: $format) {
@@ -5434,13 +5608,13 @@ query downloadArtifact ($organizationId: ID!, $artifactId: ID!, $format: String!
 `
 
 func downloadArtifact(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	artifactId string,
 	format string,
-) (*downloadArtifactResponse, error) {
-	req := &graphql.Request{
+) (data_ *downloadArtifactResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "downloadArtifact",
 		Query:  downloadArtifact_Operation,
 		Variables: &__downloadArtifactInput{
@@ -5449,21 +5623,20 @@ func downloadArtifact(
 			Format:         format,
 		},
 	}
-	var err error
 
-	var data downloadArtifactResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &downloadArtifactResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getArtifact.
+// The query executed by getArtifact.
 const getArtifact_Operation = `
 query getArtifact ($organizationId: ID!, $id: ID!) {
 	artifact(organizationId: $organizationId, id: $id) {
@@ -5490,12 +5663,12 @@ query getArtifact ($organizationId: ID!, $id: ID!) {
 `
 
 func getArtifact(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (*getArtifactResponse, error) {
-	req := &graphql.Request{
+) (data_ *getArtifactResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getArtifact",
 		Query:  getArtifact_Operation,
 		Variables: &__getArtifactInput{
@@ -5503,21 +5676,20 @@ func getArtifact(
 			Id:             id,
 		},
 	}
-	var err error
 
-	var data getArtifactResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getArtifactResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getArtifactDefinition.
+// The query executed by getArtifactDefinition.
 const getArtifactDefinition_Operation = `
 query getArtifactDefinition ($organizationId: ID!, $name: String!) {
 	artifactDefinition(organizationId: $organizationId, name: $name) {
@@ -5537,12 +5709,12 @@ query getArtifactDefinition ($organizationId: ID!, $name: String!) {
 `
 
 func getArtifactDefinition(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	name string,
-) (*getArtifactDefinitionResponse, error) {
-	req := &graphql.Request{
+) (data_ *getArtifactDefinitionResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getArtifactDefinition",
 		Query:  getArtifactDefinition_Operation,
 		Variables: &__getArtifactDefinitionInput{
@@ -5550,21 +5722,20 @@ func getArtifactDefinition(
 			Name:           name,
 		},
 	}
-	var err error
 
-	var data getArtifactDefinitionResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getArtifactDefinitionResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getArtifactsByType.
+// The query executed by getArtifactsByType.
 const getArtifactsByType_Operation = `
 query getArtifactsByType ($organizationId: ID!, $artifactType: String!) {
 	artifacts(organizationId: $organizationId, input: {filter:{type:$artifactType}}) {
@@ -5579,12 +5750,12 @@ query getArtifactsByType ($organizationId: ID!, $artifactType: String!) {
 `
 
 func getArtifactsByType(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	artifactType string,
-) (*getArtifactsByTypeResponse, error) {
-	req := &graphql.Request{
+) (data_ *getArtifactsByTypeResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getArtifactsByType",
 		Query:  getArtifactsByType_Operation,
 		Variables: &__getArtifactsByTypeInput{
@@ -5592,21 +5763,20 @@ func getArtifactsByType(
 			ArtifactType:   artifactType,
 		},
 	}
-	var err error
 
-	var data getArtifactsByTypeResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getArtifactsByTypeResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getBundle.
+// The query executed by getBundle.
 const getBundle_Operation = `
 query getBundle ($organizationId: ID!, $id: ID!, $version: VersionConstraint) {
 	bundle(organizationId: $organizationId, id: $id, version: $version) {
@@ -5630,13 +5800,13 @@ query getBundle ($organizationId: ID!, $id: ID!, $version: VersionConstraint) {
 `
 
 func getBundle(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
 	version string,
-) (*getBundleResponse, error) {
-	req := &graphql.Request{
+) (data_ *getBundleResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getBundle",
 		Query:  getBundle_Operation,
 		Variables: &__getBundleInput{
@@ -5645,21 +5815,20 @@ func getBundle(
 			Version:        version,
 		},
 	}
-	var err error
 
-	var data getBundleResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getBundleResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getDeploymentById.
+// The query executed by getDeploymentById.
 const getDeploymentById_Operation = `
 query getDeploymentById ($organizationId: ID!, $id: ID!) {
 	deployment(organizationId: $organizationId, id: $id) {
@@ -5670,12 +5839,12 @@ query getDeploymentById ($organizationId: ID!, $id: ID!) {
 `
 
 func getDeploymentById(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (*getDeploymentByIdResponse, error) {
-	req := &graphql.Request{
+) (data_ *getDeploymentByIdResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getDeploymentById",
 		Query:  getDeploymentById_Operation,
 		Variables: &__getDeploymentByIdInput{
@@ -5683,21 +5852,20 @@ func getDeploymentById(
 			Id:             id,
 		},
 	}
-	var err error
 
-	var data getDeploymentByIdResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getDeploymentByIdResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getDeploymentLogStream.
+// The query executed by getDeploymentLogStream.
 const getDeploymentLogStream_Operation = `
 query getDeploymentLogStream ($organizationId: ID!, $id: ID!) {
 	deploymentLogStream(organizationId: $organizationId, id: $id) {
@@ -5715,12 +5883,12 @@ query getDeploymentLogStream ($organizationId: ID!, $id: ID!) {
 `
 
 func getDeploymentLogStream(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (*getDeploymentLogStreamResponse, error) {
-	req := &graphql.Request{
+) (data_ *getDeploymentLogStreamResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getDeploymentLogStream",
 		Query:  getDeploymentLogStream_Operation,
 		Variables: &__getDeploymentLogStreamInput{
@@ -5728,21 +5896,20 @@ func getDeploymentLogStream(
 			Id:             id,
 		},
 	}
-	var err error
 
-	var data getDeploymentLogStreamResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getDeploymentLogStreamResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getEnvironmentById.
+// The query executed by getEnvironmentById.
 const getEnvironmentById_Operation = `
 query getEnvironmentById ($organizationId: ID!, $id: ID!) {
 	environment(id: $id, organizationId: $organizationId) {
@@ -5801,12 +5968,12 @@ query getEnvironmentById ($organizationId: ID!, $id: ID!) {
 `
 
 func getEnvironmentById(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (*getEnvironmentByIdResponse, error) {
-	req := &graphql.Request{
+) (data_ *getEnvironmentByIdResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getEnvironmentById",
 		Query:  getEnvironmentById_Operation,
 		Variables: &__getEnvironmentByIdInput{
@@ -5814,21 +5981,20 @@ func getEnvironmentById(
 			Id:             id,
 		},
 	}
-	var err error
 
-	var data getEnvironmentByIdResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getEnvironmentByIdResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getEnvironmentsByProject.
+// The query executed by getEnvironmentsByProject.
 const getEnvironmentsByProject_Operation = `
 query getEnvironmentsByProject ($organizationId: ID!, $projectId: ID!) {
 	project(id: $projectId, organizationId: $organizationId) {
@@ -5890,12 +6056,12 @@ query getEnvironmentsByProject ($organizationId: ID!, $projectId: ID!) {
 `
 
 func getEnvironmentsByProject(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	projectId string,
-) (*getEnvironmentsByProjectResponse, error) {
-	req := &graphql.Request{
+) (data_ *getEnvironmentsByProjectResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getEnvironmentsByProject",
 		Query:  getEnvironmentsByProject_Operation,
 		Variables: &__getEnvironmentsByProjectInput{
@@ -5903,21 +6069,20 @@ func getEnvironmentsByProject(
 			ProjectId:      projectId,
 		},
 	}
-	var err error
 
-	var data getEnvironmentsByProjectResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getEnvironmentsByProjectResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getOciRepo.
+// The query executed by getOciRepo.
 const getOciRepo_Operation = `
 query getOciRepo ($organizationId: ID!, $id: ID!) {
 	ociRepo(organizationId: $organizationId, id: $id) {
@@ -5934,12 +6099,12 @@ query getOciRepo ($organizationId: ID!, $id: ID!) {
 `
 
 func getOciRepo(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (*getOciRepoResponse, error) {
-	req := &graphql.Request{
+) (data_ *getOciRepoResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getOciRepo",
 		Query:  getOciRepo_Operation,
 		Variables: &__getOciRepoInput{
@@ -5947,21 +6112,20 @@ func getOciRepo(
 			Id:             id,
 		},
 	}
-	var err error
 
-	var data getOciRepoResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getOciRepoResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getPackage.
+// The query executed by getPackage.
 const getPackage_Operation = `
 query getPackage ($organizationId: ID!, $id: ID!) {
 	package(organizationId: $organizationId, id: $id) {
@@ -6007,12 +6171,12 @@ query getPackage ($organizationId: ID!, $id: ID!) {
 `
 
 func getPackage(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (*getPackageResponse, error) {
-	req := &graphql.Request{
+) (data_ *getPackageResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getPackage",
 		Query:  getPackage_Operation,
 		Variables: &__getPackageInput{
@@ -6020,21 +6184,20 @@ func getPackage(
 			Id:             id,
 		},
 	}
-	var err error
 
-	var data getPackageResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getPackageResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getProjectById.
+// The query executed by getProjectById.
 const getProjectById_Operation = `
 query getProjectById ($organizationId: ID!, $id: ID!) {
 	project(organizationId: $organizationId, id: $id) {
@@ -6048,12 +6211,12 @@ query getProjectById ($organizationId: ID!, $id: ID!) {
 `
 
 func getProjectById(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (*getProjectByIdResponse, error) {
-	req := &graphql.Request{
+) (data_ *getProjectByIdResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getProjectById",
 		Query:  getProjectById_Operation,
 		Variables: &__getProjectByIdInput{
@@ -6061,21 +6224,20 @@ func getProjectById(
 			Id:             id,
 		},
 	}
-	var err error
 
-	var data getProjectByIdResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getProjectByIdResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getProjects.
+// The query executed by getProjects.
 const getProjects_Operation = `
 query getProjects ($organizationId: ID!) {
 	projects(organizationId: $organizationId) {
@@ -6105,32 +6267,31 @@ query getProjects ($organizationId: ID!) {
 `
 
 func getProjects(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
-) (*getProjectsResponse, error) {
-	req := &graphql.Request{
+) (data_ *getProjectsResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getProjects",
 		Query:  getProjects_Operation,
 		Variables: &__getProjectsInput{
 			OrganizationId: organizationId,
 		},
 	}
-	var err error
 
-	var data getProjectsResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getProjectsResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by getServer.
+// The query executed by getServer.
 const getServer_Operation = `
 query getServer {
 	server {
@@ -6142,28 +6303,27 @@ query getServer {
 `
 
 func getServer(
-	ctx context.Context,
-	client graphql.Client,
-) (*getServerResponse, error) {
-	req := &graphql.Request{
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *getServerResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "getServer",
 		Query:  getServer_Operation,
 	}
-	var err error
 
-	var data getServerResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &getServerResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by listArtifactDefinitions.
+// The query executed by listArtifactDefinitions.
 const listArtifactDefinitions_Operation = `
 query listArtifactDefinitions ($organizationId: ID!) {
 	artifactDefinitions(organizationId: $organizationId) {
@@ -6183,32 +6343,31 @@ query listArtifactDefinitions ($organizationId: ID!) {
 `
 
 func listArtifactDefinitions(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
-) (*listArtifactDefinitionsResponse, error) {
-	req := &graphql.Request{
+) (data_ *listArtifactDefinitionsResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "listArtifactDefinitions",
 		Query:  listArtifactDefinitions_Operation,
 		Variables: &__listArtifactDefinitionsInput{
 			OrganizationId: organizationId,
 		},
 	}
-	var err error
 
-	var data listArtifactDefinitionsResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &listArtifactDefinitionsResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by listCredentialArtifactDefinitions.
+// The query executed by listCredentialArtifactDefinitions.
 const listCredentialArtifactDefinitions_Operation = `
 query listCredentialArtifactDefinitions ($organizationId: ID!) {
 	artifactDefinitions(organizationId: $organizationId, input: {filter:{isCredential:true}}) {
@@ -6218,32 +6377,31 @@ query listCredentialArtifactDefinitions ($organizationId: ID!) {
 `
 
 func listCredentialArtifactDefinitions(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
-) (*listCredentialArtifactDefinitionsResponse, error) {
-	req := &graphql.Request{
+) (data_ *listCredentialArtifactDefinitionsResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "listCredentialArtifactDefinitions",
 		Query:  listCredentialArtifactDefinitions_Operation,
 		Variables: &__listCredentialArtifactDefinitionsInput{
 			OrganizationId: organizationId,
 		},
 	}
-	var err error
 
-	var data listCredentialArtifactDefinitionsResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &listCredentialArtifactDefinitionsResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by listCredentials.
+// The query executed by listCredentials.
 const listCredentials_Operation = `
 query listCredentials ($organizationId: ID!) {
 	artifacts(organizationId: $organizationId, input: {filter:{credential:true}}) {
@@ -6258,32 +6416,83 @@ query listCredentials ($organizationId: ID!) {
 `
 
 func listCredentials(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
-) (*listCredentialsResponse, error) {
-	req := &graphql.Request{
+) (data_ *listCredentialsResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "listCredentials",
 		Query:  listCredentials_Operation,
 		Variables: &__listCredentialsInput{
 			OrganizationId: organizationId,
 		},
 	}
-	var err error
 
-	var data listCredentialsResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &listCredentialsResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by publishArtifactDefinition.
+// The query executed by listRepos.
+const listRepos_Operation = `
+query listRepos ($organizationId: ID!, $sort: ReposSort, $cursor: Cursor, $search: String) {
+	repos(organizationId: $organizationId, sort: $sort, cursor: $cursor, search: $search) {
+		cursor {
+			next
+			previous
+		}
+		items {
+			id
+			name
+			createdAt
+			releaseChannels {
+				name
+				tag
+			}
+		}
+	}
+}
+`
+
+func listRepos(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	sort *ReposSort,
+	cursor *scalars.Cursor,
+	search *string,
+) (data_ *listReposResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "listRepos",
+		Query:  listRepos_Operation,
+		Variables: &__listReposInput{
+			OrganizationId: organizationId,
+			Sort:           sort,
+			Cursor:         cursor,
+			Search:         search,
+		},
+	}
+
+	data_ = &listReposResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by publishArtifactDefinition.
 const publishArtifactDefinition_Operation = `
 mutation publishArtifactDefinition ($organizationId: ID!, $schema: JSON!) {
 	publishArtifactDefinition(organizationId: $organizationId, schema: $schema) {
@@ -6300,12 +6509,12 @@ mutation publishArtifactDefinition ($organizationId: ID!, $schema: JSON!) {
 `
 
 func publishArtifactDefinition(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	schema map[string]any,
-) (*publishArtifactDefinitionResponse, error) {
-	req := &graphql.Request{
+) (data_ *publishArtifactDefinitionResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "publishArtifactDefinition",
 		Query:  publishArtifactDefinition_Operation,
 		Variables: &__publishArtifactDefinitionInput{
@@ -6313,21 +6522,20 @@ func publishArtifactDefinition(
 			Schema:         schema,
 		},
 	}
-	var err error
 
-	var data publishArtifactDefinitionResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &publishArtifactDefinitionResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by resetPackage.
+// The mutation executed by resetPackage.
 const resetPackage_Operation = `
 mutation resetPackage ($organizationId: ID!, $id: ID!, $deleteState: Boolean!, $deleteParams: Boolean!, $deleteDeployments: Boolean!) {
 	resetPackage(organizationId: $organizationId, id: $id, deleteState: $deleteState, deleteParams: $deleteParams, deleteDeployments: $deleteDeployments) {
@@ -6345,15 +6553,15 @@ mutation resetPackage ($organizationId: ID!, $id: ID!, $deleteState: Boolean!, $
 `
 
 func resetPackage(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
 	deleteState bool,
 	deleteParams bool,
 	deleteDeployments bool,
-) (*resetPackageResponse, error) {
-	req := &graphql.Request{
+) (data_ *resetPackageResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "resetPackage",
 		Query:  resetPackage_Operation,
 		Variables: &__resetPackageInput{
@@ -6364,21 +6572,20 @@ func resetPackage(
 			DeleteDeployments: deleteDeployments,
 		},
 	}
-	var err error
 
-	var data resetPackageResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &resetPackageResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }
 
-// The query or mutation executed by setPackageVersion.
+// The mutation executed by setPackageVersion.
 const setPackageVersion_Operation = `
 mutation setPackageVersion ($organizationId: ID!, $id: ID!, $version: String!, $releaseStrategy: ReleaseStrategy) {
 	setPackageVersion(organizationId: $organizationId, id: $id, version: $version, releaseStrategy: $releaseStrategy) {
@@ -6395,14 +6602,14 @@ mutation setPackageVersion ($organizationId: ID!, $id: ID!, $version: String!, $
 `
 
 func setPackageVersion(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	organizationId string,
 	id string,
 	version string,
 	releaseStrategy ReleaseStrategy,
-) (*setPackageVersionResponse, error) {
-	req := &graphql.Request{
+) (data_ *setPackageVersionResponse, err_ error) {
+	req_ := &graphql.Request{
 		OpName: "setPackageVersion",
 		Query:  setPackageVersion_Operation,
 		Variables: &__setPackageVersionInput{
@@ -6412,16 +6619,15 @@ func setPackageVersion(
 			ReleaseStrategy: releaseStrategy,
 		},
 	}
-	var err error
 
-	var data setPackageVersionResponse
-	resp := &graphql.Response{Data: &data}
+	data_ = &setPackageVersionResponse{}
+	resp_ := &graphql.Response{Data: data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return data_, err_
 }

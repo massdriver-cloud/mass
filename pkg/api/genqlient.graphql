@@ -624,9 +624,38 @@ mutation deployPreviewEnvironment($organizationId: ID!, $projectId: ID!, $input:
 }
 
 
+# REPOS (BUNDLES)
+
+query listRepos(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: ReposSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor,
+  # @genqlient(omitempty: true, pointer: true)
+  $search: String
+) {
+  repos(organizationId: $organizationId, sort: $sort, cursor: $cursor, search: $search) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      name
+      createdAt
+      releaseChannels {
+        name
+        tag
+      }
+    }
+  }
+}
+
+
 # SERVER
 
-query getServer() {
+query getServer {
   server {
     appUrl
     mode

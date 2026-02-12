@@ -68,12 +68,6 @@ type RootQueryType {
 
   compareDeployments(organizationId: ID!, fromDeploymentId: ID!, toDeploymentId: ID!): Changeset
 
-  "Marketplace Templates"
-  templates(
-    "Organization ID"
-    organizationId: ID!
-  ): [Template]
-
   "List all bundles"
   bundles(
     "Organization ID"
@@ -94,15 +88,6 @@ type RootQueryType {
     or 'latest' for the newest stable release. `+dev` can be appended to include development releases.
     """
     version: VersionConstraint
-  ): Bundle
-
-  "Get a specific template"
-  template(
-    "Organization ID"
-    organizationId: ID!
-
-    "Bundle ID"
-    id: ID!
   ): Bundle
 
   "Get packages deployed from this bundle with filtering and pagination"
@@ -422,15 +407,6 @@ type RootMutationType {
 
   "Delete a bundle"
   deleteBundle(
-    "Organization ID"
-    organizationId: ID!
-
-    "Bundle ID"
-    id: ID!
-  ): BundlePayload
-
-  "Add a template to your bundle catalog"
-  addBundleToCatalog(
     "Organization ID"
     organizationId: ID!
 
@@ -2641,27 +2617,6 @@ type Bundle {
 
   "Information about whether the bundle repo can be deleted"
   deletable: BundleDeletionLifecycle!
-}
-
-"A template bundle"
-type Template {
-  "Unique identifier"
-  id: ID!
-
-  "Name of the template"
-  name: String!
-
-  "Description of the bundle"
-  description: String
-
-  "The operator guide for the bundle in markdown."
-  operatorGuide: Markdown
-
-  "JSON schema for bundle parameters"
-  paramsSchema: JSON!
-
-  "URL to the source code repository"
-  sourceUrl: String
 }
 
 type BundlePayload {
