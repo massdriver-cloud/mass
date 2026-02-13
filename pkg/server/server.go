@@ -43,7 +43,7 @@ type BundleServer struct {
 }
 
 func New(dir string) (*BundleServer, error) {
-	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithVersion("1.41"))
+	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, fmt.Errorf("error creating docker client %w", err)
 	}
