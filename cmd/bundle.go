@@ -41,6 +41,7 @@ type bundleNew struct {
 	description  string
 	templateName string
 	connections  []string
+	artifacts    []string
 	outputDir    string
 	paramsDir    string
 }
@@ -114,6 +115,7 @@ func NewCmdBundle() *cobra.Command {
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.name, "name", "n", "", "Name of the new bundle. Setting this along with --template-name will disable the interactive prompt.")
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.description, "description", "d", "", "Description of the new bundle")
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.templateName, "template-name", "t", "", "Name of the bundle template to use. Setting this along with --name will disable the interactive prompt.")
+	bundleNewCmd.Flags().StringSliceVarP(&bundleNewInput.artifacts, "artifacts", "a", []string{}, "Artifacts and names to add to the bundle - example: network=massdriver/vpc")
 	bundleNewCmd.Flags().StringSliceVarP(&bundleNewInput.connections, "connections", "c", []string{}, "Connections and names to add to the bundle - example: network=massdriver/vpc")
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.outputDir, "output-directory", "o", ".", "Directory to output the new bundle")
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.paramsDir, "params-directory", "p", "", "Path with existing params to use - opentofu module directory or helm chart values.yaml")
@@ -236,6 +238,18 @@ func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
 		}
 	}
 
+	artifactData := make([]templatecache.Artifact, len(input.artifacts))
+	for i, art := range input.artifacts {
+		parts := strings.Split(art, "=")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid connection argument: %s", art)
+		}
+		artifactData[i] = templatecache.Artifact{
+			ArtifactDefinition: parts[1],
+			Name:               parts[0],
+		}
+	}
+
 	templateData := &templatecache.TemplateData{
 		TemplateRepo:       "/massdriver-cloud/application-templates",
 		OutputDir:          input.outputDir,
@@ -243,6 +257,7 @@ func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
 		Description:        input.description,
 		TemplateName:       input.templateName,
 		Connections:        connectionData,
+		Artifacts:          artifactData,
 		ExistingParamsPath: input.paramsDir,
 	}
 

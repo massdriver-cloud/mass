@@ -16,6 +16,7 @@ type TemplateData struct {
 	OutputDir    string            `json:"outputDir"`
 	Type         string            `json:"type"`
 	Connections  []Connection      `json:"connections"`
+	Artifacts    []Artifact        `json:"artifacts"`
 	Envs         map[string]string `json:"envs"`
 
 	// ParamsSchema is a YAML formatted string
@@ -27,6 +28,11 @@ type TemplateData struct {
 	CloudAbbreviation string `json:"cloudAbbreviation"`
 	RepoName          string `json:"repoName"`
 	RepoNameEncoded   string `json:"repoNameEncoded"`
+}
+
+type Artifact struct {
+	Name               string `json:"name"`
+	ArtifactDefinition string `json:"artifact_definition"`
 }
 
 type Connection struct {
