@@ -73,9 +73,27 @@ func NewCmdArtifact() *cobra.Command {
 	}
 	artifactDownloadCmd.Flags().StringP("format", "f", "json", "Download format (json, yaml, etc.)")
 
+	// Update
+	artifactUpdateCmd := &cobra.Command{
+		Use:   "update [artifact-id]",
+		Short: "Update an imported artifact",
+		Long:  helpdocs.MustRender("artifact/update"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runArtifactUpdate,
+		Example: `  # Update artifact payload
+  mass artifact update 12345678-1234-1234-1234-123456789012 -f artifact.json
+
+  # Update artifact payload and rename
+  mass artifact update 12345678-1234-1234-1234-123456789012 -f artifact.json -n new-name`,
+	}
+	artifactUpdateCmd.Flags().StringP("name", "n", "", "New artifact name")
+	artifactUpdateCmd.Flags().StringP("file", "f", "", "Artifact payload file")
+	artifactUpdateCmd.MarkFlagRequired("file")
+
 	artifactCmd.AddCommand(artifactImportCmd)
 	artifactCmd.AddCommand(artifactGetCmd)
 	artifactCmd.AddCommand(artifactDownloadCmd)
+	artifactCmd.AddCommand(artifactUpdateCmd)
 
 	return artifactCmd
 }
@@ -110,6 +128,29 @@ func runArtifactImport(cmd *cobra.Command, args []string) error {
 
 	_, importErr := artifactcmd.RunImport(ctx, mdClient, promptData.Name, promptData.Type, promptData.File)
 	return importErr
+}
+
+func runArtifactUpdate(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	artifactID := args[0]
+	artifactName, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+	artifactFile, err := cmd.Flags().GetString("file")
+	if err != nil {
+		return err
+	}
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	_, updateErr := artifactcmd.RunUpdate(ctx, mdClient, artifactID, artifactName, artifactFile)
+	return updateErr
 }
 
 func runArtifactGet(cmd *cobra.Command, args []string) error {

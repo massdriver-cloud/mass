@@ -43,6 +43,37 @@ func TestCreateArtifact(t *testing.T) {
 	}
 }
 
+func TestUpdateArtifact(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"updateArtifact": map[string]any{
+				"result": map[string]any{
+					"id":   "artifact-id",
+					"name": "updated-name",
+				},
+				"successful": true,
+			},
+		},
+	})
+	mdClient := client.Client{
+		GQL: gqlClient,
+	}
+
+	got, err := api.UpdateArtifact(t.Context(), &mdClient, "artifact-id", "updated-name", map[string]any{"key": "value"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := &api.Artifact{
+		Name: "updated-name",
+		ID:   "artifact-id",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Wanted %v but got %v", want, got)
+	}
+}
+
 func TestGetArtifact(t *testing.T) {
 	type test struct {
 		name     string

@@ -100,6 +100,31 @@ func (response *getArtifactResponse) toArtifact() *Artifact {
 	return artifact
 }
 
+func UpdateArtifact(ctx context.Context, mdClient *client.Client, artifactID string, artifactName string, artifactPayload map[string]any) (*Artifact, error) {
+	response, err := updateArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactID, artifactName, artifactPayload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update artifact %s: %w", artifactID, err)
+	}
+	if !response.UpdateArtifact.Successful {
+		messages := response.UpdateArtifact.GetMessages()
+		if len(messages) > 0 {
+			errMsg := "unable to update artifact:"
+			for _, msg := range messages {
+				errMsg += "\n  - " + msg.Message
+			}
+			return nil, fmt.Errorf("%s", errMsg)
+		}
+		return nil, fmt.Errorf("unable to update artifact")
+	}
+	if response.UpdateArtifact.Result.Id == "" {
+		return nil, fmt.Errorf("update artifact returned no result")
+	}
+	return &Artifact{
+		ID:   response.UpdateArtifact.Result.Id,
+		Name: response.UpdateArtifact.Result.Name,
+	}, nil
+}
+
 func DeleteArtifact(ctx context.Context, mdClient *client.Client, artifactID string) (*Artifact, error) {
 	response, err := deleteArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactID)
 	if err != nil {

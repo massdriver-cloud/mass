@@ -1031,6 +1031,98 @@ func (v *__setPackageVersionInput) GetVersion() string { return v.Version }
 // GetReleaseStrategy returns __setPackageVersionInput.ReleaseStrategy, and is useful for accessing the field via an interface.
 func (v *__setPackageVersionInput) GetReleaseStrategy() ReleaseStrategy { return v.ReleaseStrategy }
 
+// __updateArtifactInput is used internally by genqlient
+type __updateArtifactInput struct {
+	OrganizationId  string         `json:"organizationId"`
+	ArtifactId      string         `json:"artifactId"`
+	ArtifactName    string         `json:"artifactName"`
+	ArtifactPayload map[string]any `json:"-"`
+}
+
+// GetOrganizationId returns __updateArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateArtifactInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetArtifactId returns __updateArtifactInput.ArtifactId, and is useful for accessing the field via an interface.
+func (v *__updateArtifactInput) GetArtifactId() string { return v.ArtifactId }
+
+// GetArtifactName returns __updateArtifactInput.ArtifactName, and is useful for accessing the field via an interface.
+func (v *__updateArtifactInput) GetArtifactName() string { return v.ArtifactName }
+
+// GetArtifactPayload returns __updateArtifactInput.ArtifactPayload, and is useful for accessing the field via an interface.
+func (v *__updateArtifactInput) GetArtifactPayload() map[string]any { return v.ArtifactPayload }
+
+func (v *__updateArtifactInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*__updateArtifactInput
+		ArtifactPayload json.RawMessage `json:"artifactPayload"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.__updateArtifactInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.ArtifactPayload
+		src := firstPass.ArtifactPayload
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal __updateArtifactInput.ArtifactPayload: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshal__updateArtifactInput struct {
+	OrganizationId string `json:"organizationId"`
+
+	ArtifactId string `json:"artifactId"`
+
+	ArtifactName string `json:"artifactName"`
+
+	ArtifactPayload json.RawMessage `json:"artifactPayload"`
+}
+
+func (v *__updateArtifactInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *__updateArtifactInput) __premarshalJSON() (*__premarshal__updateArtifactInput, error) {
+	var retval __premarshal__updateArtifactInput
+
+	retval.OrganizationId = v.OrganizationId
+	retval.ArtifactId = v.ArtifactId
+	retval.ArtifactName = v.ArtifactName
+	{
+
+		dst := &retval.ArtifactPayload
+		src := v.ArtifactPayload
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal __updateArtifactInput.ArtifactPayload: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
 // configurePackageConfigurePackagePackagePayload includes the requested fields of the GraphQL type PackagePayload.
 type configurePackageConfigurePackagePackagePayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -2856,7 +2948,7 @@ func (v *getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample) GetAm
 type getEnvironmentByIdEnvironmentPackagesPackage struct {
 	// Unique identifier
 	Id string `json:"id"`
-	// Package slug identifier
+	// Unique identifier for the package
 	Slug string `json:"slug"`
 	// Package configuration parameters
 	Params map[string]any `json:"-"`
@@ -4952,6 +5044,52 @@ func (v *setPackageVersionSetPackageVersionPackagePayloadResultPackage) GetSlug(
 	return v.Slug
 }
 
+// updateArtifactResponse is returned by updateArtifact on success.
+type updateArtifactResponse struct {
+	// Update an artifact
+	UpdateArtifact updateArtifactUpdateArtifactArtifactPayload `json:"updateArtifact"`
+}
+
+// GetUpdateArtifact returns updateArtifactResponse.UpdateArtifact, and is useful for accessing the field via an interface.
+func (v *updateArtifactResponse) GetUpdateArtifact() updateArtifactUpdateArtifactArtifactPayload {
+	return v.UpdateArtifact
+}
+
+// updateArtifactUpdateArtifactArtifactPayload includes the requested fields of the GraphQL type ArtifactPayload.
+type updateArtifactUpdateArtifactArtifactPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result updateArtifactUpdateArtifactArtifactPayloadResultArtifact `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []MutationValidationError `json:"messages"`
+}
+
+// GetResult returns updateArtifactUpdateArtifactArtifactPayload.Result, and is useful for accessing the field via an interface.
+func (v *updateArtifactUpdateArtifactArtifactPayload) GetResult() updateArtifactUpdateArtifactArtifactPayloadResultArtifact {
+	return v.Result
+}
+
+// GetSuccessful returns updateArtifactUpdateArtifactArtifactPayload.Successful, and is useful for accessing the field via an interface.
+func (v *updateArtifactUpdateArtifactArtifactPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns updateArtifactUpdateArtifactArtifactPayload.Messages, and is useful for accessing the field via an interface.
+func (v *updateArtifactUpdateArtifactArtifactPayload) GetMessages() []MutationValidationError {
+	return v.Messages
+}
+
+// updateArtifactUpdateArtifactArtifactPayloadResultArtifact includes the requested fields of the GraphQL type Artifact.
+type updateArtifactUpdateArtifactArtifactPayloadResultArtifact struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// GetId returns updateArtifactUpdateArtifactArtifactPayloadResultArtifact.Id, and is useful for accessing the field via an interface.
+func (v *updateArtifactUpdateArtifactArtifactPayloadResultArtifact) GetId() string { return v.Id }
+
+// GetName returns updateArtifactUpdateArtifactArtifactPayloadResultArtifact.Name, and is useful for accessing the field via an interface.
+func (v *updateArtifactUpdateArtifactArtifactPayloadResultArtifact) GetName() string { return v.Name }
+
 // The mutation executed by configurePackage.
 const configurePackage_Operation = `
 mutation configurePackage ($organizationId: ID!, $id: ID!, $params: JSON!) {
@@ -6630,6 +6768,53 @@ func setPackageVersion(
 	}
 
 	data_ = &setPackageVersionResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateArtifact.
+const updateArtifact_Operation = `
+mutation updateArtifact ($organizationId: ID!, $artifactId: ID!, $artifactName: String!, $artifactPayload: JSON!) {
+	updateArtifact(organizationId: $organizationId, id: $artifactId, params: {name:$artifactName,payload:$artifactPayload}) {
+		result {
+			id
+			name
+		}
+		successful
+		messages {
+			message
+		}
+	}
+}
+`
+
+func updateArtifact(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	artifactId string,
+	artifactName string,
+	artifactPayload map[string]any,
+) (data_ *updateArtifactResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateArtifact",
+		Query:  updateArtifact_Operation,
+		Variables: &__updateArtifactInput{
+			OrganizationId:  organizationId,
+			ArtifactId:      artifactId,
+			ArtifactName:    artifactName,
+			ArtifactPayload: artifactPayload,
+		},
+	}
+
+	data_ = &updateArtifactResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

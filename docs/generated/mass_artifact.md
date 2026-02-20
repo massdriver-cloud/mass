@@ -27,3 +27,4 @@ Artifacts represent infrastructure resources and connections in Massdriver. They
 * [mass artifact download](/cli/commands/mass_artifact_download)	 - Download an artifact in the specified format
 * [mass artifact get](/cli/commands/mass_artifact_get)	 - Get an artifact from Massdriver
 * [mass artifact import](/cli/commands/mass_artifact_import)	 - Import a custom artifact
+* [mass artifact update](/cli/commands/mass_artifact_update)	 - Update an imported artifact
