@@ -24,7 +24,7 @@ func RunUpdate(ctx context.Context, mdClient *client.Client, artifactID string, 
 		return "", unmarshalErr
 	}
 
-	// If no name provided, fetch the existing artifact to preserve its current name.
+	// Name is required by the backend. If not provided, fetch the existing artifact's name.
 	if artifactName == "" {
 		existing, getErr := api.GetArtifact(ctx, mdClient, artifactID)
 		if getErr != nil {

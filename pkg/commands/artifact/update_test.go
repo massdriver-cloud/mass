@@ -42,7 +42,6 @@ func TestArtifactUpdate(t *testing.T) {
 
 func TestArtifactUpdateWithoutName(t *testing.T) {
 	// When no name is provided, RunUpdate fetches the existing artifact first.
-	// We use a response array: first response for getArtifact, second for updateArtifact.
 	responses := []any{
 		gqlmock.MockQueryResponse("artifact", map[string]any{
 			"id":      "artifact-id",
