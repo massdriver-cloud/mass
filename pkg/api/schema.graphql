@@ -460,10 +460,10 @@ type RootMutationType {
   unlinkManifests(organizationId: ID!, linkId: ID!): LinkPayload
 
   "Create an integration for an organization"
-  createIntegration(organizationId: ID!, input: CreateIntegrationInput!): IntegrationPayload
+  createIntegration(organizationId: ID!, input: CreateIntegrationInput!): IntegrationActivationPayload
 
   "Enable an integration"
-  enableIntegration(organizationId: ID!, id: ID!): IntegrationPayload
+  enableIntegration(organizationId: ID!, id: ID!): IntegrationActivationPayload
 
   "Disable an integration"
   disableIntegration(organizationId: ID!, id: ID!): IntegrationPayload
@@ -739,47 +739,99 @@ type RootSubscriptionType {
     "Deployment ID"
     id: ID!
   ): DeploymentLogStreamLog
+
   deploymentProgress(organizationId: ID!, packageId: ID!): ProvisioningLifecycleEvents
+
   nodeDeleted(
     organizationId: ID!
 
     "Project ID"
     projectId: ID!
   ): DeletedNode
+
   nodeCreated(
     organizationId: ID!
 
     "Project ID"
     projectId: ID!
   ): Node
+
   nodeUpdated(
     organizationId: ID!
 
     "Project ID"
     projectId: ID!
   ): Node
+
   linkCreated(
     organizationId: ID!
 
     "Environment ID"
     environmentId: ID!
   ): Link
+
   linkDeleted(
     organizationId: ID!
 
     "Environment ID"
     environmentId: ID!
   ): Link
+
   linkUpdated(
     organizationId: ID!
 
     "Environment ID"
     environmentId: ID!
   ): Link
+
   nodeContextCreated(organizationId: ID!, environmentId: ID!): NodeContext
+
   nodeContextDeleted(organizationId: ID!, environmentId: ID!): NodeContext
+
   packageAlarms(organizationId: ID!, packageId: ID!): Alarm
+
+  "Subscribe to organization-wide changes for Projects, Environments, and Packages"
+  changefeed(organizationId: ID!): ChangeEvent
 }
+
+type ProjectCreated {
+  project: Project!
+}
+
+type ProjectUpdated {
+  project: Project!
+}
+
+type ProjectDeleted {
+  project: Project!
+}
+
+type EnvironmentCreated {
+  environment: Environment!
+}
+
+type EnvironmentUpdated {
+  environment: Environment!
+}
+
+type EnvironmentDeleted {
+  environment: Environment!
+}
+
+type PackageCreated {
+  package: Package!
+}
+
+type PackageUpdated {
+  package: Package!
+}
+
+type PackageDeleted {
+  package: Package!
+}
+
+"Union of all changefeed event types for Project, Environment, and Package lifecycle events"
+union ChangeEvent = ProjectCreated | ProjectUpdated | ProjectDeleted | EnvironmentCreated | EnvironmentUpdated | EnvironmentDeleted | PackageCreated | PackageUpdated | PackageDeleted
 
 "A service account represents a non-human account used for automated access"
 type ServiceAccount {
@@ -1765,6 +1817,7 @@ type IntegrationType {
   configSchema: JSON!
   authSchema: JSON!
   docs: String!
+  instructions: String!
 }
 
 type IntegrationConfig {
@@ -1778,6 +1831,28 @@ type IntegrationConfig {
   nextRunAt: DateTime
 }
 
+"An activated integration with setup instructions. Only returned when creating or enabling an integration."
+type IntegrationActivation {
+  id: ID!
+
+  organizationId: ID!
+
+  integrationType: String!
+
+  config: JSON!
+
+  status: IntegrationStatus!
+
+  createdAt: DateTime!
+
+  updatedAt: DateTime!
+
+  nextRunAt: DateTime
+
+  "Setup instructions for this integration. May contain sensitive credentials. Store securely - cannot be retrieved again."
+  instructions: String!
+}
+
 type IntegrationPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -1787,6 +1862,17 @@ type IntegrationPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: IntegrationConfig
+}
+
+type IntegrationActivationPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: IntegrationActivation
 }
 
 "Input for creating an integration configuration"

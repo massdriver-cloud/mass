@@ -70,6 +70,24 @@ query getArtifact($organizationId: ID!, $id: ID!) {
   }
 }
 
+mutation updateArtifact($organizationId: ID!, $artifactId: ID!, $artifactName: String!, $artifactPayload: JSON!) {
+  updateArtifact(
+    organizationId: $organizationId,
+    id: $artifactId,
+    params: {name: $artifactName, payload: $artifactPayload}
+  ) {
+    result {
+      id
+      name
+    }
+    successful
+    # @genqlient(typename: "MutationValidationError")
+    messages {
+      message
+    }
+  }
+}
+
 mutation deleteArtifact($organizationId: ID!, $id: ID!) {
   deleteArtifact(organizationId: $organizationId, id: $id) {
     successful
