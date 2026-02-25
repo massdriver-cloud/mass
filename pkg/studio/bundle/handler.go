@@ -9,18 +9,23 @@ import (
 	"path"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-
+	"github.com/massdriver-cloud/mass/pkg/files"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-const allowedMethods = "OPTIONS, POST"
+const (
+	allowedMethods = "OPTIONS, POST"
+	paramsFile     = "_params.auto.tfvars.json"
+)
 
+// Handler handles bundle-specific API requests
 type Handler struct {
 	parsedBundle bundle.Bundle
 	bundleDir    string
 	mdClient     *client.Client
 }
 
+// NewHandler creates a new bundle handler for the given directory
 func NewHandler(dir string, mdClient *client.Client) (*Handler, error) {
 	b, err := bundle.Unmarshal(dir)
 	if err != nil {
@@ -30,14 +35,22 @@ func NewHandler(dir string, mdClient *client.Client) (*Handler, error) {
 	return &Handler{parsedBundle: *b, bundleDir: dir, mdClient: mdClient}, nil
 }
 
+// GetBundle returns the bundle data
+func (h *Handler) GetBundle(w http.ResponseWriter, _ *http.Request) {
+	out, err := json.Marshal(h.parsedBundle)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(out)
+	if err != nil {
+		slog.Error(err.Error())
+	}
+}
+
 // GetSecrets returns the secrets from the bundle
-//
-//	@Summary		Get bundle secrets
-//	@Description	Get bundle secrets
-//	@ID				get-bundle-secrets
-//	@Produce		json
-//	@Success		200	{object}	bundle.AppSpec.Secrets
-//	@Router			/bundle/secrets [get]
 func (h *Handler) GetSecrets(w http.ResponseWriter, _ *http.Request) {
 	var out []byte
 	var err error
@@ -58,13 +71,6 @@ func (h *Handler) GetSecrets(w http.ResponseWriter, _ *http.Request) {
 }
 
 // GetEnvironmentVariables returns the parsed env vars from an application bundle
-//
-//	@Summary		Get parsed env vars
-//	@Description	Get parsed env vars
-//	@ID				get-environment-variables
-//	@Produce		json
-//	@Success		200	{object}	map[string]bundle.ParsedEnvironmentVariable
-//	@Router			/bundle/envs [get]
 func (h *Handler) GetEnvironmentVariables(w http.ResponseWriter, _ *http.Request) {
 	var out []byte
 	if h.parsedBundle.AppSpec == nil || len(h.parsedBundle.AppSpec.Envs) == 0 {
@@ -95,13 +101,6 @@ func (h *Handler) GetEnvironmentVariables(w http.ResponseWriter, _ *http.Request
 }
 
 // Params writes and fetches current parameters to file on demand
-//
-//	@Summary		Write and fetch currently set params to vars file
-//	@Description	Allows users to set their params before deployment for easy recall
-//	@ID				params
-//	@Produce		json
-//	@Success		200	{object}	map[string]any
-//	@Router			/bundle/params [post, get, options]
 func (h *Handler) Params(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost && r.Method != http.MethodOptions && r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -196,6 +195,7 @@ func (h *Handler) readFileAndUnmarshal(readPath string) (map[string]any, error) 
 	return output, err
 }
 
+// Build rebuilds the bundle
 func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Add("Allow", http.MethodPost)
@@ -225,6 +225,7 @@ func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Connections handles GET/POST for bundle connections
 func (h *Handler) Connections(w http.ResponseWriter, r *http.Request) {
 	allowedMethods := "GET, POST"
 	switch r.Method {
@@ -239,14 +240,6 @@ func (h *Handler) Connections(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// getConnections returns the existing connections in the conn file
-//
-//	@Summary		Get bundle connections
-//	@Description	Get bundle connections
-//	@ID				get-bundle-connections
-//	@Produce		json
-//	@Success		200	{object}	bundle.Connections
-//	@Router			/bundle/connections [get]
 func (h *Handler) getConnections(w http.ResponseWriter) {
 	f, err := os.ReadFile(path.Join(h.bundleDir, "src", bundle.ConnsFile))
 	if err != nil {
@@ -261,15 +254,6 @@ func (h *Handler) getConnections(w http.ResponseWriter) {
 	}
 }
 
-// postConnections accepts connections and writes them back to the conn file
-//
-//	@Summary		Post bundle connections
-//	@Description	Post bundle connections
-//	@ID				post-bundle-connections
-//	@Accept			json
-//	@Success		200			{string}	string				"success"
-//	@Param			connectons	body		bundle.Connections	true	"Connections"
-//	@Router			/bundle/connections [post]
 func (h *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
 	conns, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -281,10 +265,6 @@ func (h *Handler) postConnections(w http.ResponseWriter, r *http.Request) {
 
 	connMap := make(map[string]any)
 
-	// We have to go through the unmarshal/marshal dance to ensure
-	// we keep the formatting in the final file. If the json payload
-	// is a single line that would end up back in the file and make
-	// it unreadable.
 	err = json.Unmarshal(conns, &connMap)
 	if err != nil {
 		slog.Debug("Error unmarshalling payload", "error", err)
@@ -314,4 +294,27 @@ func (h *Handler) options(w http.ResponseWriter, r *http.Request) {
 	headers["Access-Control-Allow-Headers"] = r.Header["Access-Control-Request-Headers"]
 	headers["Access-Control-Allow-Methods"] = []string{allowedMethods}
 	w.WriteHeader(http.StatusOK)
+}
+
+// ReconcileParams reads the params file keeping the md_metadata field intact,
+// adds the incoming params, and writes the file back out.
+func ReconcileParams(baseDir string, params map[string]any) error {
+	paramPath := path.Join(baseDir, "src", paramsFile)
+
+	fileParams := make(map[string]any)
+	err := files.Read(paramPath, &fileParams)
+	if err != nil {
+		return err
+	}
+
+	combinedParams := make(map[string]any)
+	if v, ok := fileParams["md_metadata"]; ok {
+		combinedParams["md_metadata"] = v
+	}
+
+	for k, v := range params {
+		combinedParams[k] = v
+	}
+
+	return files.Write(paramPath, combinedParams)
 }

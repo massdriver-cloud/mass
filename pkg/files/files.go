@@ -16,12 +16,17 @@ const UserRW = 0600
 
 func Write(path string, data any) error {
 	var formattedData []byte
+	var err error
 	ext := filepath.Ext(path)
 
 	switch ext {
 	case ".json":
-		json, err := json.MarshalIndent(data, "", "  ")
-		formattedData = json
+		formattedData, err = json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return err
+		}
+	case ".yaml":
+		formattedData, err = yaml.Marshal(data)
 		if err != nil {
 			return err
 		}
