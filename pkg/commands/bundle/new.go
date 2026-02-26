@@ -54,7 +54,10 @@ func generateBasicBundle(data *templates.TemplateData) error {
 }
 
 func generateMassdriverYAML(data *templates.TemplateData) string {
-	yaml := fmt.Sprintf(`schema: draft-07
+	yaml := fmt.Sprintf(`# Massdriver Bundle Specification
+# https://docs.massdriver.cloud/guides/bundle-yaml-spec
+
+schema: draft-07
 name: %q
 description: %q
 source_url: ""
@@ -62,6 +65,7 @@ source_url: ""
 # steps:
 #   - path: src
 #     provisioner: opentofu
+# See provisioners: https://docs.massdriver.cloud/provisioners/overview
 
 params:
   required: []
