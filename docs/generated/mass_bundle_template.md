@@ -18,13 +18,15 @@ Templates are boilerplate for extending the Massdriver platform with private inf
 
 Templates are stored locally and configured via:
 
-1. **Environment variable**: `MD_TEMPLATES_PATH`
-2. **Config file**: `~/.config/massdriver/config.yaml`
+1. **Environment variable**: `MASSDRIVER_TEMPLATES_PATH`
+2. **Config file**: `~/.config/massdriver/config.yaml` (per-profile)
 
 ### Config file example
 
 ```yaml
-templates_path: /path/to/your/templates
+profiles:
+  default:
+    templates_path: /path/to/your/templates
 ```
 
 ## Available Commands
