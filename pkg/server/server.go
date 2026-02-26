@@ -22,7 +22,6 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/proxy"
 	sb "github.com/massdriver-cloud/mass/pkg/server/bundle"
 	sv "github.com/massdriver-cloud/mass/pkg/server/version"
-	"github.com/massdriver-cloud/mass/pkg/templatecache"
 
 	mdclient "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	dockerclient "github.com/moby/moby/client"
@@ -261,24 +260,9 @@ func getUIFiles(ctx context.Context, baseDir string) error {
 	return nil
 }
 
-// setupUIDir creates the base dir for the bundle-ui based off the mass dir
+// setupUIDir creates a temp dir for the bundle-ui
 func setupUIDir() (string, error) {
-	massDir, err := templatecache.GetOrCreateMassDir()
-	if err != nil {
-		return "", err
-	}
-
-	bundleUIDir := path.Join(massDir, "bundle-ui")
-
-	// TODO: Add some smarts so we know what version we are on and don't always wipe the dir
-	if _, err = os.Stat(bundleUIDir); err == nil {
-		slog.Debug("Cleaning up UI dir")
-		if err = os.RemoveAll(bundleUIDir); err != nil {
-			slog.Warn("Error cleaning up UI dir", "error", err)
-		}
-	}
-
-	return bundleUIDir, os.MkdirAll(bundleUIDir, os.ModePerm)
+	return os.MkdirTemp("", "mass-bundle-ui-")
 }
 
 // sanitizeArchivePath from "G305: Zip Slip vulnerability" - stop naughty path traversal like ../..

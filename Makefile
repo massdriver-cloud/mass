@@ -1,4 +1,4 @@
-INSTALL_PATH ?= /usr/local/bin
+INSTALL_PATH ?= ~/bin
 GIT_SHA := $(shell git log -1 --pretty=format:"%H")
 LD_FLAGS := "-X github.com/massdriver-cloud/mass/pkg/version.version=dev -X github.com/massdriver-cloud/mass/pkg/version.gitSHA=local-dev-${GIT_SHA}"
 

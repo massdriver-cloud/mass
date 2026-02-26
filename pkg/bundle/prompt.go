@@ -13,7 +13,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/manifoldco/promptui"
-	"github.com/massdriver-cloud/mass/pkg/templatecache"
+	"github.com/massdriver-cloud/mass/pkg/templates"
 )
 
 var (
@@ -29,7 +29,7 @@ var (
 
 var massdriverArtifactDefinitions map[string]map[string]any
 
-var promptsNew = []func(t *templatecache.TemplateData) error{
+var promptsNew = []func(t *templates.TemplateData) error{
 	getName,
 	getDescription,
 	getTemplate,
@@ -42,7 +42,7 @@ func SetMassdriverArtifactDefinitions(in map[string]map[string]any) {
 	massdriverArtifactDefinitions = in
 }
 
-func RunPromptNew(t *templatecache.TemplateData) error {
+func RunPromptNew(t *templates.TemplateData) error {
 	var err error
 
 	for _, prompt := range promptsNew {
@@ -65,7 +65,7 @@ func bundleNameValidate(name string) error {
 	return nil
 }
 
-func getName(t *templatecache.TemplateData) error {
+func getName(t *templates.TemplateData) error {
 	defaultValue := strings.ReplaceAll(strings.ToLower(t.Name), " ", "-")
 
 	prompt := promptui.Prompt{
@@ -83,7 +83,7 @@ func getName(t *templatecache.TemplateData) error {
 	return nil
 }
 
-func getDescription(t *templatecache.TemplateData) error {
+func getDescription(t *templates.TemplateData) error {
 	validate := func(input string) error {
 		if len(input) == 0 {
 			return errors.New("description cannot be empty")
@@ -108,14 +108,13 @@ func getDescription(t *templatecache.TemplateData) error {
 
 var ignoredTemplateDirs = map[string]bool{"alpha": true}
 
-func getTemplate(t *templatecache.TemplateData) error {
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
-	templates, err := cache.ListTemplates()
-
-	filteredTemplates := removeIgnoredTemplateDirectories(templates)
+func getTemplate(t *templates.TemplateData) error {
+	templateList, err := templates.List()
 	if err != nil {
 		return err
 	}
+
+	filteredTemplates := removeIgnoredTemplateDirectories(templateList)
 
 	prompt := promptui.Select{
 		Label: "Template",
@@ -148,7 +147,7 @@ func connNameValidate(name string) error {
 	return nil
 }
 
-func GetConnections(t *templatecache.TemplateData) error {
+func GetConnections(t *templates.TemplateData) error {
 	none := "(None)"
 
 	artifactDefinitionsTypes := []string{}
@@ -169,7 +168,7 @@ func GetConnections(t *templatecache.TemplateData) error {
 		return err
 	}
 
-	var depMap []templatecache.Connection
+	var depMap []templates.Connection
 	envs := map[string]string{}
 
 	for _, currentDep := range selectedDeps {
@@ -192,7 +191,7 @@ func GetConnections(t *templatecache.TemplateData) error {
 			return errName
 		}
 
-		depMap = append(depMap, templatecache.Connection{Name: result, ArtifactDefinition: currentDep})
+		depMap = append(depMap, templates.Connection{Name: result, ArtifactDefinition: currentDep})
 
 		maps.Copy(envs, GetConnectionEnvs(result, massdriverArtifactDefinitions[currentDep]))
 	}
@@ -202,21 +201,19 @@ func GetConnections(t *templatecache.TemplateData) error {
 	return nil
 }
 
-func removeIgnoredTemplateDirectories(templates []templatecache.TemplateList) []string {
+func removeIgnoredTemplateDirectories(templates []string) []string {
 	filteredTemplates := []string{}
-	for _, repo := range templates {
-		for _, templateName := range repo.Templates {
-			if ignoredTemplateDirs[templateName] {
-				continue
-			}
-			filteredTemplates = append(filteredTemplates, templateName)
+	for _, templateName := range templates {
+		if ignoredTemplateDirs[templateName] {
+			continue
 		}
+		filteredTemplates = append(filteredTemplates, templateName)
 	}
 
 	return filteredTemplates
 }
 
-func getOutputDir(t *templatecache.TemplateData) error {
+func getOutputDir(t *templates.TemplateData) error {
 	prompt := promptui.Prompt{
 		Label:   `Output directory`,
 		Default: "massdriver",
