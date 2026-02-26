@@ -18,10 +18,9 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/cli"
 	cmdbundle "github.com/massdriver-cloud/mass/pkg/commands/bundle"
-	"github.com/massdriver-cloud/mass/pkg/commands/bundle/templates"
 	"github.com/massdriver-cloud/mass/pkg/params"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
-	masstemplates "github.com/massdriver-cloud/mass/pkg/templates"
+	"github.com/massdriver-cloud/mass/pkg/templates"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
@@ -176,11 +175,7 @@ func NewCmdBundle() *cobra.Command {
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
-	t, err := masstemplates.New()
-	if err != nil {
-		return err
-	}
-	templateList, err := templates.RunList(t)
+	templateList, err := templates.List()
 	if err != nil {
 		return err
 	}
@@ -197,8 +192,8 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runBundleNewInteractive(outputDir string) (*masstemplates.TemplateData, error) {
-	templateData := &masstemplates.TemplateData{
+func runBundleNewInteractive(outputDir string) (*templates.TemplateData, error) {
+	templateData := &templates.TemplateData{
 		OutputDir: outputDir,
 	}
 
@@ -210,20 +205,20 @@ func runBundleNewInteractive(outputDir string) (*masstemplates.TemplateData, err
 	return templateData, nil
 }
 
-func runBundleNewFlags(input *bundleNew) (*masstemplates.TemplateData, error) {
-	connectionData := make([]masstemplates.Connection, len(input.connections))
+func runBundleNewFlags(input *bundleNew) (*templates.TemplateData, error) {
+	connectionData := make([]templates.Connection, len(input.connections))
 	for i, conn := range input.connections {
 		parts := strings.Split(conn, "=")
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid connection argument: %s", conn)
 		}
-		connectionData[i] = masstemplates.Connection{
+		connectionData[i] = templates.Connection{
 			ArtifactDefinition: parts[1],
 			Name:               parts[0],
 		}
 	}
 
-	templateData := &masstemplates.TemplateData{
+	templateData := &templates.TemplateData{
 		OutputDir:          input.outputDir,
 		Name:               input.name,
 		Description:        input.description,
@@ -237,11 +232,6 @@ func runBundleNewFlags(input *bundleNew) (*masstemplates.TemplateData, error) {
 
 func runBundleNew(input *bundleNew) error {
 	ctx := context.Background()
-
-	t, tErr := masstemplates.New()
-	if tErr != nil {
-		return fmt.Errorf("error initializing templates: %w", tErr)
-	}
 
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {
@@ -263,7 +253,7 @@ func runBundleNew(input *bundleNew) error {
 
 	bundle.SetMassdriverArtifactDefinitions(artifactDefinitions)
 
-	var templateData *masstemplates.TemplateData
+	var templateData *templates.TemplateData
 	var runErr error
 	if input.name == "" || input.templateName == "" {
 		// run the interactive prompt
@@ -284,7 +274,7 @@ func runBundleNew(input *bundleNew) error {
 		templateData.ParamsSchema = localParams
 	}
 
-	if newErr := cmdbundle.RunNew(t, templateData); newErr != nil {
+	if newErr := cmdbundle.RunNew(templateData); newErr != nil {
 		return fmt.Errorf("error running bundle new: %w", newErr)
 	}
 

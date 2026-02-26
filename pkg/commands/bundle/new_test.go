@@ -21,10 +21,10 @@ func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 	checkErr(err, t)
 
-	tmpl := &templates.Templates{Path: rootTemplateDir}
+	t.Setenv("MASSDRIVER_TEMPLATES_PATH", rootTemplateDir)
 	data := mockTemplateData(testDir)
 
-	err = cmdbundle.RunNew(tmpl, data)
+	err = cmdbundle.RunNew(data)
 	checkErr(err, t)
 
 	wantTopLevel := []string{"home", "massdriver.yaml", "src"}
@@ -46,10 +46,10 @@ func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
 	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 	checkErr(err, t)
 
-	tmpl := &templates.Templates{Path: rootTemplateDir}
+	t.Setenv("MASSDRIVER_TEMPLATES_PATH", rootTemplateDir)
 	data := mockTemplateData(writePath)
 
-	err = cmdbundle.RunNew(tmpl, data)
+	err = cmdbundle.RunNew(data)
 	checkErr(err, t)
 
 	wantTopLevel := []string{"massdriver.yaml", "src"}
@@ -70,10 +70,10 @@ func TestTemplateRender(t *testing.T) {
 	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 	checkErr(err, t)
 
-	tmpl := &templates.Templates{Path: rootTemplateDir}
+	t.Setenv("MASSDRIVER_TEMPLATES_PATH", rootTemplateDir)
 	data := mockTemplateData(testDir)
 
-	err = tmpl.Render(data)
+	err = templates.Render(data)
 	checkErr(err, t)
 
 	renderedTemplate, err := os.ReadFile(path.Join(testDir, "massdriver.yaml"))

@@ -11,10 +11,6 @@ import (
 
 var ErrNotConfigured = errors.New("templates path not configured: set MASSDRIVER_TEMPLATES_PATH environment variable or templates_path in profile in ~/.config/massdriver/config.yaml. See https://docs.massdriver.cloud/guides/bundle-templates for more info")
 
-type Templates struct {
-	Path string
-}
-
 type TemplateData struct {
 	Name               string            `json:"name"`
 	Description        string            `json:"description"`
@@ -36,26 +32,31 @@ type Connection struct {
 	ArtifactDefinition string `json:"artifact_definition"`
 }
 
-func New() (*Templates, error) {
+func getPath() (string, error) {
 	cfg, err := sdkconfig.Get()
 	if err != nil {
-		return nil, ErrNotConfigured
+		return "", ErrNotConfigured
 	}
 	if cfg.TemplatesPath == "" {
-		return nil, ErrNotConfigured
+		return "", ErrNotConfigured
 	}
-	return &Templates{Path: cfg.TemplatesPath}, nil
+	return cfg.TemplatesPath, nil
 }
 
-func (t *Templates) List() ([]string, error) {
-	matches, err := filepath.Glob(filepath.Join(t.Path, "*", "massdriver.yaml"))
+func List() ([]string, error) {
+	templatesPath, err := getPath()
+	if err != nil {
+		return nil, err
+	}
+
+	matches, err := filepath.Glob(filepath.Join(templatesPath, "*", "massdriver.yaml"))
 	if err != nil {
 		return nil, err
 	}
 
 	result := make([]string, 0, len(matches))
 	for _, match := range matches {
-		relPath := strings.TrimPrefix(match, t.Path+string(filepath.Separator))
+		relPath := strings.TrimPrefix(match, templatesPath+string(filepath.Separator))
 		parts := strings.Split(relPath, string(filepath.Separator))
 		if len(parts) >= 1 {
 			result = append(result, parts[0])
@@ -64,12 +65,17 @@ func (t *Templates) List() ([]string, error) {
 	return result, nil
 }
 
-func (t *Templates) Render(data *TemplateData) error {
+func Render(data *TemplateData) error {
+	templatesPath, err := getPath()
+	if err != nil {
+		return err
+	}
+
 	fm := &fileManager{
-		readDirectory:         path.Join(t.Path, data.TemplateName),
+		readDirectory:         path.Join(templatesPath, data.TemplateName),
 		writeDirectory:        data.OutputDir,
 		templateData:          data,
-		templateRootDirectory: t.Path,
+		templateRootDirectory: templatesPath,
 	}
 	return fm.CopyTemplate()
 }

@@ -109,12 +109,7 @@ func getDescription(t *templates.TemplateData) error {
 var ignoredTemplateDirs = map[string]bool{"alpha": true}
 
 func getTemplate(t *templates.TemplateData) error {
-	tmpl, err := templates.New()
-	if err != nil {
-		return err
-	}
-
-	templateList, err := tmpl.List()
+	templateList, err := templates.List()
 	if err != nil {
 		return err
 	}
