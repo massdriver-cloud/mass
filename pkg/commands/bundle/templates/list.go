@@ -1,7 +1,7 @@
 package templates
 
-import "github.com/massdriver-cloud/mass/pkg/templatecache"
+import masstemplates "github.com/massdriver-cloud/mass/pkg/templates"
 
-func RunList(cache templatecache.TemplateCache) ([]string, error) {
+func RunList(cache masstemplates.TemplateCache) ([]string, error) {
 	return cache.ListTemplates()
 }

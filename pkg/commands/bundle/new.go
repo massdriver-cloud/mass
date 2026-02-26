@@ -6,10 +6,10 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
-	"github.com/massdriver-cloud/mass/pkg/templatecache"
+	"github.com/massdriver-cloud/mass/pkg/templates"
 )
 
-func RunNew(bundleCache templatecache.TemplateCache, templateData *templatecache.TemplateData) error {
+func RunNew(bundleCache templates.TemplateCache, templateData *templates.TemplateData) error {
 	renderErr := bundleCache.RenderTemplate(templateData)
 	if renderErr != nil {
 		return fmt.Errorf("failed to render template: %w", renderErr)

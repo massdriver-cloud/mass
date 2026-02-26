@@ -21,7 +21,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/commands/bundle/templates"
 	"github.com/massdriver-cloud/mass/pkg/params"
 	"github.com/massdriver-cloud/mass/pkg/prettylogs"
-	"github.com/massdriver-cloud/mass/pkg/templatecache"
+	masstemplates "github.com/massdriver-cloud/mass/pkg/templates"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
@@ -176,7 +176,7 @@ func NewCmdBundle() *cobra.Command {
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
-	cache, err := templatecache.NewBundleTemplateCache()
+	cache, err := masstemplates.NewBundleTemplateCache()
 	if err != nil {
 		return err
 	}
@@ -197,8 +197,8 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, error) {
-	templateData := &templatecache.TemplateData{
+func runBundleNewInteractive(outputDir string) (*masstemplates.TemplateData, error) {
+	templateData := &masstemplates.TemplateData{
 		OutputDir: outputDir,
 	}
 
@@ -210,20 +210,20 @@ func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, err
 	return templateData, nil
 }
 
-func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
-	connectionData := make([]templatecache.Connection, len(input.connections))
+func runBundleNewFlags(input *bundleNew) (*masstemplates.TemplateData, error) {
+	connectionData := make([]masstemplates.Connection, len(input.connections))
 	for i, conn := range input.connections {
 		parts := strings.Split(conn, "=")
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid connection argument: %s", conn)
 		}
-		connectionData[i] = templatecache.Connection{
+		connectionData[i] = masstemplates.Connection{
 			ArtifactDefinition: parts[1],
 			Name:               parts[0],
 		}
 	}
 
-	templateData := &templatecache.TemplateData{
+	templateData := &masstemplates.TemplateData{
 		OutputDir:          input.outputDir,
 		Name:               input.name,
 		Description:        input.description,
@@ -238,7 +238,7 @@ func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
 func runBundleNew(input *bundleNew) error {
 	ctx := context.Background()
 
-	cache, cacheErr := templatecache.NewBundleTemplateCache()
+	cache, cacheErr := masstemplates.NewBundleTemplateCache()
 	if cacheErr != nil {
 		return fmt.Errorf("error initializing template cache: %w", cacheErr)
 	}
@@ -263,7 +263,7 @@ func runBundleNew(input *bundleNew) error {
 
 	bundle.SetMassdriverArtifactDefinitions(artifactDefinitions)
 
-	var templateData *templatecache.TemplateData
+	var templateData *masstemplates.TemplateData
 	var runErr error
 	if input.name == "" || input.templateName == "" {
 		// run the interactive prompt

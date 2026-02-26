@@ -1,4 +1,4 @@
-package templatecache
+package templates
 
 type TemplateCache interface {
 	RefreshTemplates() error

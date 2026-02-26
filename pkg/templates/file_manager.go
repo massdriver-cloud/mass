@@ -1,4 +1,4 @@
-package templatecache
+package templates
 
 import (
 	"encoding/json"

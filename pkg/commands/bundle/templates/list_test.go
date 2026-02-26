@@ -8,7 +8,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/pkg/commands/bundle/templates"
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
-	"github.com/massdriver-cloud/mass/pkg/templatecache"
+	masstemplates "github.com/massdriver-cloud/mass/pkg/templates"
 )
 
 func TestList(t *testing.T) {
@@ -40,7 +40,7 @@ func TestList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bundleCache := templatecache.NewMockClient(rootTemplateDir)
+	bundleCache := masstemplates.NewMockClient(rootTemplateDir)
 
 	got, err := templates.RunList(bundleCache)
 

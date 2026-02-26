@@ -10,7 +10,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	cmdbundle "github.com/massdriver-cloud/mass/pkg/commands/bundle"
 	"github.com/massdriver-cloud/mass/pkg/mockfilesystem"
-	"github.com/massdriver-cloud/mass/pkg/templatecache"
+	"github.com/massdriver-cloud/mass/pkg/templates"
 	"sigs.k8s.io/yaml"
 )
 
@@ -21,7 +21,7 @@ func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 	checkErr(err, t)
 
-	bundleCache := &templatecache.BundleTemplateCache{
+	bundleCache := &templates.BundleTemplateCache{
 		TemplatePath: rootTemplateDir,
 	}
 
@@ -57,7 +57,7 @@ func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
 
 	checkErr(err, t)
 
-	bundleCache := &templatecache.BundleTemplateCache{
+	bundleCache := &templates.BundleTemplateCache{
 		TemplatePath: rootTemplateDir,
 	}
 
@@ -91,7 +91,7 @@ func TestTemplateRender(t *testing.T) {
 
 	checkErr(err, t)
 
-	bundleCache := &templatecache.BundleTemplateCache{
+	bundleCache := &templates.BundleTemplateCache{
 		TemplatePath: rootTemplateDir,
 	}
 
@@ -133,14 +133,14 @@ func TestTemplateRender(t *testing.T) {
 	}
 }
 
-func mockTemplateData(writePath string) *templatecache.TemplateData {
-	return &templatecache.TemplateData{
+func mockTemplateData(writePath string) *templates.TemplateData {
+	return &templates.TemplateData{
 		OutputDir:    writePath,
 		Type:         "infrastructure",
 		TemplateName: "opentofu",
 		Name:         "aws-dynamodb",
 		Description:  "whatever",
-		Connections: []templatecache.Connection{
+		Connections: []templates.Connection{
 			{ArtifactDefinition: "massdriver/aws-dynamodb-table", Name: "dynamo"},
 		},
 		CloudAbbreviation: "aws",
