@@ -9,8 +9,8 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/templates"
 )
 
-func RunNew(bundleCache templates.TemplateCache, templateData *templates.TemplateData) error {
-	renderErr := bundleCache.RenderTemplate(templateData)
+func RunNew(repo templates.Repository, templateData *templates.TemplateData) error {
+	renderErr := repo.Render(templateData)
 	if renderErr != nil {
 		return fmt.Errorf("failed to render template: %w", renderErr)
 	}

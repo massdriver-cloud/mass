@@ -109,12 +109,12 @@ func getDescription(t *templates.TemplateData) error {
 var ignoredTemplateDirs = map[string]bool{"alpha": true}
 
 func getTemplate(t *templates.TemplateData) error {
-	cache, err := templates.NewBundleTemplateCache()
+	repo, err := templates.NewRepository()
 	if err != nil {
 		return err
 	}
 
-	templates, err := cache.ListTemplates()
+	templates, err := repo.List()
 	if err != nil {
 		return err
 	}

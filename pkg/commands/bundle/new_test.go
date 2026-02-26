@@ -21,13 +21,13 @@ func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 	checkErr(err, t)
 
-	bundleCache := &templates.BundleTemplateCache{
+	repo := &templates.LocalRepository{
 		TemplatePath: rootTemplateDir,
 	}
 
 	templateData := mockTemplateData(testDir)
 
-	err = cmdbundle.RunNew(bundleCache, templateData)
+	err = cmdbundle.RunNew(repo, templateData)
 
 	checkErr(err, t)
 
@@ -57,13 +57,13 @@ func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
 
 	checkErr(err, t)
 
-	bundleCache := &templates.BundleTemplateCache{
+	repo := &templates.LocalRepository{
 		TemplatePath: rootTemplateDir,
 	}
 
 	templateData := mockTemplateData(writePath)
 
-	err = cmdbundle.RunNew(bundleCache, templateData)
+	err = cmdbundle.RunNew(repo, templateData)
 
 	checkErr(err, t)
 
@@ -91,13 +91,13 @@ func TestTemplateRender(t *testing.T) {
 
 	checkErr(err, t)
 
-	bundleCache := &templates.BundleTemplateCache{
+	repo := &templates.LocalRepository{
 		TemplatePath: rootTemplateDir,
 	}
 
 	templateData := mockTemplateData(testDir)
 
-	err = bundleCache.RenderTemplate(templateData)
+	err = repo.Render(templateData)
 
 	checkErr(err, t)
 

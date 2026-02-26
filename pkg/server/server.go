@@ -19,7 +19,6 @@ import (
 
 	"github.com/cli/browser"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
-	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/proxy"
 	sb "github.com/massdriver-cloud/mass/pkg/server/bundle"
 	sv "github.com/massdriver-cloud/mass/pkg/server/version"
@@ -263,7 +262,7 @@ func getUIFiles(ctx context.Context, baseDir string) error {
 
 // setupUIDir creates the base dir for the bundle-ui based off the mass config dir
 func setupUIDir() (string, error) {
-	massDir, err := config.GetConfigDir()
+	massDir, err := getConfigDir()
 	if err != nil {
 		return "", err
 	}
@@ -279,6 +278,19 @@ func setupUIDir() (string, error) {
 	}
 
 	return bundleUIDir, os.MkdirAll(bundleUIDir, os.ModePerm)
+}
+
+// getConfigDir returns the path to the massdriver config directory
+func getConfigDir() (string, error) {
+	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
+	if xdgConfigHome != "" {
+		return filepath.Join(xdgConfigHome, "massdriver"), nil
+	}
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(homeDir, ".config", "massdriver"), nil
 }
 
 // sanitizeArchivePath from "G305: Zip Slip vulnerability" - stop naughty path traversal like ../..

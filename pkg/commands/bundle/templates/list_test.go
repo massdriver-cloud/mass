@@ -40,9 +40,9 @@ func TestList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bundleCache := masstemplates.NewMockClient(rootTemplateDir)
+	repo := masstemplates.NewMockRepository(rootTemplateDir)
 
-	got, err := templates.RunList(bundleCache)
+	got, err := templates.RunList(repo)
 
 	if err != nil {
 		t.Fatal(err)

@@ -1,10 +1,10 @@
 package templates
 
-type TemplateCache interface {
-	RefreshTemplates() error
-	ListTemplates() ([]string, error)
-	GetTemplatePath() (string, error)
-	RenderTemplate(*TemplateData) error
+// Repository provides access to bundle templates
+type Repository interface {
+	List() ([]string, error)
+	Path() (string, error)
+	Render(*TemplateData) error
 }
 
 type TemplateData struct {
@@ -22,7 +22,7 @@ type TemplateData struct {
 
 	// Path to a terraform-module or helm-chart to parse for params
 	ExistingParamsPath string `json:"existingParamsPath"`
-	// Specificaly for the README
+	// Specifically for the README
 	CloudAbbreviation string `json:"cloudAbbreviation"`
 	RepoName          string `json:"repoName"`
 	RepoNameEncoded   string `json:"repoNameEncoded"`
