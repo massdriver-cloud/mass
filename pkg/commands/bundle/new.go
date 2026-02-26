@@ -58,7 +58,10 @@ func generateMassdriverYAML(data *templates.TemplateData) string {
 name: %q
 description: %q
 source_url: ""
-access: private
+
+# steps:
+#   - path: src
+#     provisioner: opentofu
 
 params:
   required: []
