@@ -2,12 +2,15 @@ package templates
 
 import (
 	"errors"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
 	sdkconfig "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
 )
+
+const envTemplatesPath = "MASSDRIVER_TEMPLATES_PATH"
 
 var ErrNotConfigured = errors.New("templates path not configured: set MASSDRIVER_TEMPLATES_PATH environment variable or templates_path in profile in ~/.config/massdriver/config.yaml. See https://docs.massdriver.cloud/guides/bundle-templates for more info")
 
@@ -33,14 +36,18 @@ type Connection struct {
 }
 
 func getPath() (string, error) {
+	// Check env var directly first - allows tests and standalone usage
+	if envPath := os.Getenv(envTemplatesPath); envPath != "" {
+		return envPath, nil
+	}
+
+	// Fall back to SDK config (requires full config with credentials)
 	cfg, err := sdkconfig.Get()
-	if err != nil {
-		return "", ErrNotConfigured
+	if err == nil && cfg.TemplatesPath != "" {
+		return cfg.TemplatesPath, nil
 	}
-	if cfg.TemplatesPath == "" {
-		return "", ErrNotConfigured
-	}
-	return cfg.TemplatesPath, nil
+
+	return "", ErrNotConfigured
 }
 
 func List() ([]string, error) {
