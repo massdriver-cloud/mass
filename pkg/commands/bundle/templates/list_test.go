@@ -3,7 +3,6 @@ package templates_test
 import (
 	"fmt"
 	"path"
-	"reflect"
 	"sort"
 	"testing"
 
@@ -18,9 +17,9 @@ func TestList(t *testing.T) {
 
 	directories := []string{
 		rootTemplateDir,
-		fmt.Sprintf("%s/massdriver-cloud/application-templates/kubernetes-cronjob", rootTemplateDir),
-		fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/opentofu", rootTemplateDir),
-		fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/bicep", rootTemplateDir),
+		fmt.Sprintf("%s/kubernetes-cronjob", rootTemplateDir),
+		fmt.Sprintf("%s/opentofu", rootTemplateDir),
+		fmt.Sprintf("%s/bicep", rootTemplateDir),
 	}
 
 	err := mockfilesystem.MakeDirectories(directories)
@@ -30,9 +29,9 @@ func TestList(t *testing.T) {
 	}
 
 	files := []mockfilesystem.VirtualFile{
-		{Path: fmt.Sprintf("%s/massdriver-cloud/application-templates/kubernetes-cronjob/massdriver.yaml", rootTemplateDir)},
-		{Path: fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/opentofu/massdriver.yaml", rootTemplateDir)},
-		{Path: fmt.Sprintf("%s/massdriver-cloud/infrastructure-templates/bicep/massdriver.yaml", rootTemplateDir)},
+		{Path: fmt.Sprintf("%s/kubernetes-cronjob/massdriver.yaml", rootTemplateDir)},
+		{Path: fmt.Sprintf("%s/opentofu/massdriver.yaml", rootTemplateDir)},
+		{Path: fmt.Sprintf("%s/bicep/massdriver.yaml", rootTemplateDir)},
 	}
 
 	err = mockfilesystem.MakeFiles(files)
@@ -49,20 +48,19 @@ func TestList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := []templatecache.TemplateList{
-		{
-			Repository: "massdriver-cloud/application-templates",
-			Templates:  []string{"kubernetes-cronjob"},
-		},
-		{
-			Repository: "massdriver-cloud/infrastructure-templates",
-			Templates:  []string{"bicep", "opentofu"},
-		},
+	want := []string{"bicep", "kubernetes-cronjob", "opentofu"}
+
+	sort.Strings(got)
+
+	if len(got) != len(want) {
+		t.Errorf("got %v, wanted %v", got, want)
+		return
 	}
 
-	sort.Slice(got, func(i int, j int) bool { return got[i].Repository < got[j].Repository })
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
+	for i := range got {
+		if got[i] != want[i] {
+			t.Errorf("got %v, wanted %v", got, want)
+			break
+		}
 	}
 }

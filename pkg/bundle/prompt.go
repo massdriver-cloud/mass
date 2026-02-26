@@ -109,13 +109,17 @@ func getDescription(t *templatecache.TemplateData) error {
 var ignoredTemplateDirs = map[string]bool{"alpha": true}
 
 func getTemplate(t *templatecache.TemplateData) error {
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
-	templates, err := cache.ListTemplates()
-
-	filteredTemplates := removeIgnoredTemplateDirectories(templates)
+	cache, err := templatecache.NewBundleTemplateCache()
 	if err != nil {
 		return err
 	}
+
+	templates, err := cache.ListTemplates()
+	if err != nil {
+		return err
+	}
+
+	filteredTemplates := removeIgnoredTemplateDirectories(templates)
 
 	prompt := promptui.Select{
 		Label: "Template",
@@ -202,15 +206,13 @@ func GetConnections(t *templatecache.TemplateData) error {
 	return nil
 }
 
-func removeIgnoredTemplateDirectories(templates []templatecache.TemplateList) []string {
+func removeIgnoredTemplateDirectories(templates []string) []string {
 	filteredTemplates := []string{}
-	for _, repo := range templates {
-		for _, templateName := range repo.Templates {
-			if ignoredTemplateDirs[templateName] {
-				continue
-			}
-			filteredTemplates = append(filteredTemplates, templateName)
+	for _, templateName := range templates {
+		if ignoredTemplateDirs[templateName] {
+			continue
 		}
+		filteredTemplates = append(filteredTemplates, templateName)
 	}
 
 	return filteredTemplates

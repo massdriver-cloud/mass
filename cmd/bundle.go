@@ -162,13 +162,6 @@ func NewCmdBundle() *cobra.Command {
 		RunE:  runBundleTemplateList,
 	}
 
-	bundleTemplateRefreshCmd := &cobra.Command{
-		Use:   "refresh",
-		Short: "Update template list from the official Massdriver Github",
-		Long:  helpdocs.MustRender("bundle/template-refresh"),
-		RunE:  runBundleTemplateRefresh,
-	}
-
 	bundleCmd.AddCommand(bundleListCmd)
 	bundleCmd.AddCommand(bundleBuildCmd)
 	bundleCmd.AddCommand(bundleImportCmd)
@@ -179,39 +172,33 @@ func NewCmdBundle() *cobra.Command {
 	bundleCmd.AddCommand(bundlePullCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
-	bundleTemplateCmd.AddCommand(bundleTemplateRefreshCmd)
 	return bundleCmd
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
+	cache, err := templatecache.NewBundleTemplateCache()
+	if err != nil {
+		return err
+	}
 	templateList, err := templates.RunList(cache)
 	if err != nil {
 		return err
 	}
-	// TODO: BubbleTea a nice data grid for this. Repo title row with template list sub rows.
 
-	view := ""
-	for _, repo := range templateList {
-		templates := strings.Join(repo.Templates, "\n")
-		view = fmt.Sprintf("Repository: %s\nTemplates:\n%s", repo.Repository, templates)
+	if len(templateList) == 0 {
+		fmt.Println("No templates found.")
+		return nil
 	}
 
-	fmt.Println(view)
+	fmt.Println("Available templates:")
+	for _, tmpl := range templateList {
+		fmt.Printf("  %s\n", tmpl)
+	}
 	return nil
-}
-
-func runBundleTemplateRefresh(cmd *cobra.Command, args []string) error {
-	cache, _ := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
-
-	return templates.RunRefresh(cache)
 }
 
 func runBundleNewInteractive(outputDir string) (*templatecache.TemplateData, error) {
 	templateData := &templatecache.TemplateData{
-		// Promptui templates are a nightmare. Need to support multi repos when moving this to bubbletea
-		TemplateRepo: "/massdriver-cloud/application-templates",
-		// TODO: unify bundle build and app build outputDir logic and support
 		OutputDir: outputDir,
 	}
 
@@ -237,7 +224,6 @@ func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
 	}
 
 	templateData := &templatecache.TemplateData{
-		TemplateRepo:       "/massdriver-cloud/application-templates",
 		OutputDir:          input.outputDir,
 		Name:               input.name,
 		Description:        input.description,
@@ -252,18 +238,9 @@ func runBundleNewFlags(input *bundleNew) (*templatecache.TemplateData, error) {
 func runBundleNew(input *bundleNew) error {
 	ctx := context.Background()
 
-	cache, cacheErr := templatecache.NewBundleTemplateCache(templatecache.GithubTemplatesFetcher)
+	cache, cacheErr := templatecache.NewBundleTemplateCache()
 	if cacheErr != nil {
 		return fmt.Errorf("error initializing template cache: %w", cacheErr)
-	}
-
-	// If MD_TEMPLATES_PATH is set then it's most likely local dev work on templates so don't fetch
-	// or the refresh will overwrite whatever path this points to
-	if os.Getenv("MD_TEMPLATES_PATH") == "" {
-		refreshErr := templates.RunRefresh(cache)
-		if refreshErr != nil {
-			return fmt.Errorf("error refreshing template cache: %w", refreshErr)
-		}
 	}
 
 	mdClient, mdClientErr := client.New()

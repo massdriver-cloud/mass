@@ -2,7 +2,7 @@ package templatecache
 
 type TemplateCache interface {
 	RefreshTemplates() error
-	ListTemplates() ([]TemplateList, error)
+	ListTemplates() ([]string, error)
 	GetTemplatePath() (string, error)
 	RenderTemplate(*TemplateData) error
 }
@@ -12,7 +12,6 @@ type TemplateData struct {
 	Description  string            `json:"description"`
 	Location     string            `json:"location"`
 	TemplateName string            `json:"templateName"`
-	TemplateRepo string            `json:"templateRepo"`
 	OutputDir    string            `json:"outputDir"`
 	Type         string            `json:"type"`
 	Connections  []Connection      `json:"connections"`
@@ -33,5 +32,3 @@ type Connection struct {
 	Name               string `json:"name"`
 	ArtifactDefinition string `json:"artifact_definition"`
 }
-
-type Fetcher func(writePath string) error

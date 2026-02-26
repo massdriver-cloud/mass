@@ -16,17 +16,17 @@ type VirtualFile struct {
 
 /*
 Sets up a test bundle in the location specified by rootTemplateDir.
-Includes a parsable massdriver.yaml template, and an empty src/main.tf
+Includes a parsable massdriver.yaml template, and an empty src/main.tf.
+Templates are stored at rootTemplateDir/{template}/massdriver.yaml
 */
 func SetupBundleTemplate(rootTemplateDir string) error {
-	repoPath := "massdriver-cloud/infrastructure-templates"
 	templatePath := "opentofu"
 	srcPath := "src"
 
 	directories := []string{
-		path.Join(rootTemplateDir, repoPath),
-		path.Join(rootTemplateDir, repoPath, templatePath),
-		path.Join(rootTemplateDir, repoPath, templatePath, srcPath),
+		rootTemplateDir,
+		path.Join(rootTemplateDir, templatePath),
+		path.Join(rootTemplateDir, templatePath, srcPath),
 	}
 
 	fixturePath := path.Join(projectRoot(), "/pkg/mockfilesystem/testdata/massdriver.yaml.txt")
@@ -38,11 +38,11 @@ func SetupBundleTemplate(rootTemplateDir string) error {
 
 	files := []VirtualFile{
 		{
-			Path:    fmt.Sprintf("%s/massdriver.yaml", path.Join(rootTemplateDir, repoPath, templatePath)),
+			Path:    fmt.Sprintf("%s/massdriver.yaml", path.Join(rootTemplateDir, templatePath)),
 			Content: massdriverYamlTemplate,
 		},
 		{
-			Path: fmt.Sprintf("%s/main.tf", path.Join(rootTemplateDir, repoPath, templatePath, srcPath)),
+			Path: fmt.Sprintf("%s/main.tf", path.Join(rootTemplateDir, templatePath, srcPath)),
 		},
 	}
 

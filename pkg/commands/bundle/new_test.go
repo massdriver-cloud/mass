@@ -23,7 +23,6 @@ func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 
 	bundleCache := &templatecache.BundleTemplateCache{
 		TemplatePath: rootTemplateDir,
-		Fetch:        func(filePath string) error { return nil },
 	}
 
 	templateData := mockTemplateData(testDir)
@@ -60,7 +59,6 @@ func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
 
 	bundleCache := &templatecache.BundleTemplateCache{
 		TemplatePath: rootTemplateDir,
-		Fetch:        func(filePath string) error { return nil },
 	}
 
 	templateData := mockTemplateData(writePath)
@@ -95,7 +93,6 @@ func TestTemplateRender(t *testing.T) {
 
 	bundleCache := &templatecache.BundleTemplateCache{
 		TemplatePath: rootTemplateDir,
-		Fetch:        func(filePath string) error { return nil },
 	}
 
 	templateData := mockTemplateData(testDir)
@@ -141,7 +138,6 @@ func mockTemplateData(writePath string) *templatecache.TemplateData {
 		OutputDir:    writePath,
 		Type:         "infrastructure",
 		TemplateName: "opentofu",
-		TemplateRepo: "massdriver-cloud/infrastructure-templates",
 		Name:         "aws-dynamodb",
 		Description:  "whatever",
 		Connections: []templatecache.Connection{

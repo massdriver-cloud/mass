@@ -19,10 +19,10 @@ import (
 
 	"github.com/cli/browser"
 	"github.com/massdriver-cloud/mass/pkg/bundle"
+	"github.com/massdriver-cloud/mass/pkg/config"
 	"github.com/massdriver-cloud/mass/pkg/proxy"
 	sb "github.com/massdriver-cloud/mass/pkg/server/bundle"
 	sv "github.com/massdriver-cloud/mass/pkg/server/version"
-	"github.com/massdriver-cloud/mass/pkg/templatecache"
 
 	mdclient "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	dockerclient "github.com/moby/moby/client"
@@ -261,9 +261,9 @@ func getUIFiles(ctx context.Context, baseDir string) error {
 	return nil
 }
 
-// setupUIDir creates the base dir for the bundle-ui based off the mass dir
+// setupUIDir creates the base dir for the bundle-ui based off the mass config dir
 func setupUIDir() (string, error) {
-	massDir, err := templatecache.GetOrCreateMassDir()
+	massDir, err := config.GetConfigDir()
 	if err != nil {
 		return "", err
 	}
