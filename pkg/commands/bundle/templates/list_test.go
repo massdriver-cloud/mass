@@ -22,9 +22,7 @@ func TestList(t *testing.T) {
 		fmt.Sprintf("%s/bicep", rootTemplateDir),
 	}
 
-	err := mockfilesystem.MakeDirectories(directories)
-
-	if err != nil {
+	if err := mockfilesystem.MakeDirectories(directories); err != nil {
 		t.Fatal(err)
 	}
 
@@ -34,22 +32,18 @@ func TestList(t *testing.T) {
 		{Path: fmt.Sprintf("%s/bicep/massdriver.yaml", rootTemplateDir)},
 	}
 
-	err = mockfilesystem.MakeFiles(files)
-
-	if err != nil {
+	if err := mockfilesystem.MakeFiles(files); err != nil {
 		t.Fatal(err)
 	}
 
-	repo := masstemplates.NewMockRepository(rootTemplateDir)
+	tmpl := &masstemplates.Templates{Path: rootTemplateDir}
 
-	got, err := templates.RunList(repo)
-
+	got, err := templates.RunList(tmpl)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	want := []string{"bicep", "kubernetes-cronjob", "opentofu"}
-
 	sort.Strings(got)
 
 	if len(got) != len(want) {

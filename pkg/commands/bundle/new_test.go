@@ -21,29 +21,19 @@ func TestCopyFilesFromTemplateToCurrentDirectory(t *testing.T) {
 	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
 	checkErr(err, t)
 
-	repo := &templates.LocalRepository{
-		TemplatePath: rootTemplateDir,
-	}
+	tmpl := &templates.Templates{Path: rootTemplateDir}
+	data := mockTemplateData(testDir)
 
-	templateData := mockTemplateData(testDir)
-
-	err = cmdbundle.RunNew(repo, templateData)
-
+	err = cmdbundle.RunNew(tmpl, data)
 	checkErr(err, t)
 
-	wantTopLevel := []string{
-		"home",
-		"massdriver.yaml",
-		"src",
-	}
-
-	if errorString, assertion := mockfilesystem.AssertDirectoryContents(testDir, wantTopLevel); assertion != true {
+	wantTopLevel := []string{"home", "massdriver.yaml", "src"}
+	if errorString, assertion := mockfilesystem.AssertDirectoryContents(testDir, wantTopLevel); !assertion {
 		t.Errorf("%s", errorString)
 	}
 
 	wantSecondLevel := []string{"main.tf"}
-
-	if errorString, assertion := mockfilesystem.AssertDirectoryContents(path.Join(testDir, "src"), wantSecondLevel); assertion != true {
+	if errorString, assertion := mockfilesystem.AssertDirectoryContents(path.Join(testDir, "src"), wantSecondLevel); !assertion {
 		t.Errorf("%s", errorString)
 	}
 }
@@ -54,31 +44,21 @@ func TestCopyFilesFromTemplateToNonExistentDirectory(t *testing.T) {
 	writePath := path.Join(testDir, "./bundles/aws-sqs-queue")
 
 	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
-
 	checkErr(err, t)
 
-	repo := &templates.LocalRepository{
-		TemplatePath: rootTemplateDir,
-	}
+	tmpl := &templates.Templates{Path: rootTemplateDir}
+	data := mockTemplateData(writePath)
 
-	templateData := mockTemplateData(writePath)
-
-	err = cmdbundle.RunNew(repo, templateData)
-
+	err = cmdbundle.RunNew(tmpl, data)
 	checkErr(err, t)
 
-	wantTopLevel := []string{
-		"massdriver.yaml",
-		"src",
-	}
-
-	if errorString, assertion := mockfilesystem.AssertDirectoryContents(writePath, wantTopLevel); assertion != true {
+	wantTopLevel := []string{"massdriver.yaml", "src"}
+	if errorString, assertion := mockfilesystem.AssertDirectoryContents(writePath, wantTopLevel); !assertion {
 		t.Errorf("%s", errorString)
 	}
 
 	wantSecondLevel := []string{"main.tf"}
-
-	if errorString, assertion := mockfilesystem.AssertDirectoryContents(path.Join(writePath, "src"), wantSecondLevel); assertion != true {
+	if errorString, assertion := mockfilesystem.AssertDirectoryContents(path.Join(writePath, "src"), wantSecondLevel); !assertion {
 		t.Errorf("%s", errorString)
 	}
 }
@@ -88,44 +68,32 @@ func TestTemplateRender(t *testing.T) {
 	rootTemplateDir := path.Join(testDir, "/home/md-cloud")
 
 	err := mockfilesystem.SetupBundleTemplate(rootTemplateDir)
-
 	checkErr(err, t)
 
-	repo := &templates.LocalRepository{
-		TemplatePath: rootTemplateDir,
-	}
+	tmpl := &templates.Templates{Path: rootTemplateDir}
+	data := mockTemplateData(testDir)
 
-	templateData := mockTemplateData(testDir)
-
-	err = repo.Render(templateData)
-
+	err = tmpl.Render(data)
 	checkErr(err, t)
 
 	renderedTemplate, err := os.ReadFile(path.Join(testDir, "massdriver.yaml"))
 	fmt.Println(string(renderedTemplate))
-
 	checkErr(err, t)
 
 	got := &bundle.Bundle{}
-
 	err = yaml.Unmarshal(renderedTemplate, got)
-
 	checkErr(err, t)
 
 	wantConnections := map[string]any{
 		"properties": map[string]any{
-			"aws_authentication": map[string]any{
-				"$ref": "massdriver/aws-iam-role",
-			},
-			"dynamo": map[string]any{
-				"$ref": "massdriver/aws-dynamodb-table",
-			},
+			"aws_authentication": map[string]any{"$ref": "massdriver/aws-iam-role"},
+			"dynamo":             map[string]any{"$ref": "massdriver/aws-dynamodb-table"},
 		},
 		"required": []any{"aws_authentication", "dynamo"},
 	}
 
-	if got.Name != templateData.Name {
-		t.Errorf("Expected rendered template's name field to be %s but got %s", templateData.Name, got.Name)
+	if got.Name != data.Name {
+		t.Errorf("Expected rendered template's name field to be %s but got %s", data.Name, got.Name)
 	}
 
 	if !reflect.DeepEqual(got.Connections, wantConnections) {
@@ -135,14 +103,12 @@ func TestTemplateRender(t *testing.T) {
 
 func mockTemplateData(writePath string) *templates.TemplateData {
 	return &templates.TemplateData{
-		OutputDir:    writePath,
-		Type:         "infrastructure",
-		TemplateName: "opentofu",
-		Name:         "aws-dynamodb",
-		Description:  "whatever",
-		Connections: []templates.Connection{
-			{ArtifactDefinition: "massdriver/aws-dynamodb-table", Name: "dynamo"},
-		},
+		OutputDir:         writePath,
+		Type:              "infrastructure",
+		TemplateName:      "opentofu",
+		Name:              "aws-dynamodb",
+		Description:       "whatever",
+		Connections:       []templates.Connection{{ArtifactDefinition: "massdriver/aws-dynamodb-table", Name: "dynamo"}},
 		CloudAbbreviation: "aws",
 		RepoName:          "massdriver-cloud/bundle-templates",
 		RepoNameEncoded:   "massdriver-cloud/bundle-templates",

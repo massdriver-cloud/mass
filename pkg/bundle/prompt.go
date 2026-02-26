@@ -109,17 +109,17 @@ func getDescription(t *templates.TemplateData) error {
 var ignoredTemplateDirs = map[string]bool{"alpha": true}
 
 func getTemplate(t *templates.TemplateData) error {
-	repo, err := templates.NewRepository()
+	tmpl, err := templates.New()
 	if err != nil {
 		return err
 	}
 
-	templates, err := repo.List()
+	templateList, err := tmpl.List()
 	if err != nil {
 		return err
 	}
 
-	filteredTemplates := removeIgnoredTemplateDirectories(templates)
+	filteredTemplates := removeIgnoredTemplateDirectories(templateList)
 
 	prompt := promptui.Select{
 		Label: "Template",

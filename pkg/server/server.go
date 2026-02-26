@@ -260,37 +260,9 @@ func getUIFiles(ctx context.Context, baseDir string) error {
 	return nil
 }
 
-// setupUIDir creates the base dir for the bundle-ui based off the mass config dir
+// setupUIDir creates a temp dir for the bundle-ui
 func setupUIDir() (string, error) {
-	massDir, err := getConfigDir()
-	if err != nil {
-		return "", err
-	}
-
-	bundleUIDir := path.Join(massDir, "bundle-ui")
-
-	// TODO: Add some smarts so we know what version we are on and don't always wipe the dir
-	if _, err = os.Stat(bundleUIDir); err == nil {
-		slog.Debug("Cleaning up UI dir")
-		if err = os.RemoveAll(bundleUIDir); err != nil {
-			slog.Warn("Error cleaning up UI dir", "error", err)
-		}
-	}
-
-	return bundleUIDir, os.MkdirAll(bundleUIDir, os.ModePerm)
-}
-
-// getConfigDir returns the path to the massdriver config directory
-func getConfigDir() (string, error) {
-	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
-	if xdgConfigHome != "" {
-		return filepath.Join(xdgConfigHome, "massdriver"), nil
-	}
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(homeDir, ".config", "massdriver"), nil
+	return os.MkdirTemp("", "mass-bundle-ui-")
 }
 
 // sanitizeArchivePath from "G305: Zip Slip vulnerability" - stop naughty path traversal like ../..

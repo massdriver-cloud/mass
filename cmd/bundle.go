@@ -176,11 +176,11 @@ func NewCmdBundle() *cobra.Command {
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
-	cache, err := masstemplates.NewRepository()
+	t, err := masstemplates.New()
 	if err != nil {
 		return err
 	}
-	templateList, err := templates.RunList(cache)
+	templateList, err := templates.RunList(t)
 	if err != nil {
 		return err
 	}
@@ -238,9 +238,9 @@ func runBundleNewFlags(input *bundleNew) (*masstemplates.TemplateData, error) {
 func runBundleNew(input *bundleNew) error {
 	ctx := context.Background()
 
-	cache, cacheErr := masstemplates.NewRepository()
-	if cacheErr != nil {
-		return fmt.Errorf("error initializing template cache: %w", cacheErr)
+	t, tErr := masstemplates.New()
+	if tErr != nil {
+		return fmt.Errorf("error initializing templates: %w", tErr)
 	}
 
 	mdClient, mdClientErr := client.New()
@@ -284,7 +284,7 @@ func runBundleNew(input *bundleNew) error {
 		templateData.ParamsSchema = localParams
 	}
 
-	if newErr := cmdbundle.RunNew(cache, templateData); newErr != nil {
+	if newErr := cmdbundle.RunNew(t, templateData); newErr != nil {
 		return fmt.Errorf("error running bundle new: %w", newErr)
 	}
 
