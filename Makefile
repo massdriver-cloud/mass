@@ -54,8 +54,10 @@ build:
 		$(MAKE) build.macos; \
 	elif [ "$$(uname -s)" = "Linux" ]; then \
 		$(MAKE) build.linux; \
+	elif echo "$$(uname -s)" | grep -q -E "^(MINGW|MSYS|Windows)"; then \
+		$(MAKE) build.windows; \
 	else \
-		echo "Error: Unsupported operating system. Please use 'make build.macos' or 'make build.linux' directly."; \
+		echo "Error: Unsupported operating system. Please use 'make build.macos', 'make build.linux', or 'make build.windows' directly."; \
 		exit 1; \
 	fi
 
@@ -66,6 +68,10 @@ build.macos: bin
 .PHONY: build.linux
 build.linux: bin
 	GOOS=linux GOARCH=amd64 go build -o bin/mass-linux-amd64 -ldflags=${LD_FLAGS}
+
+.PHONY: build.windows
+build.windows: bin
+	GOOS=windows GOARCH=amd64 go build -o bin/mass-windows-amd64.exe -ldflags=${LD_FLAGS}
 
 .PHONY: install.macos
 install.macos: build.macos
