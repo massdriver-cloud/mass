@@ -111,10 +111,27 @@ var ignoredTemplateDirs = map[string]bool{"alpha": true}
 func getTemplate(t *templates.TemplateData) error {
 	templateList, err := templates.List()
 	if err != nil {
+		if errors.Is(err, templates.ErrNotConfigured) {
+			fmt.Println()
+			fmt.Println("💡 Did you know? You can set up bundle templates for faster development!")
+			fmt.Println("   Set MASSDRIVER_TEMPLATES_PATH or templates_path in your config profile.")
+			fmt.Println("   See: https://docs.massdriver.cloud/guides/bundle-templates")
+			fmt.Println()
+			fmt.Println("   Continuing without a template - we'll generate a basic massdriver.yaml for you.")
+			fmt.Println()
+			t.TemplateName = ""
+			return nil
+		}
 		return err
 	}
 
 	filteredTemplates := removeIgnoredTemplateDirectories(templateList)
+
+	if len(filteredTemplates) == 0 {
+		fmt.Println("No templates found in templates path. Generating a basic massdriver.yaml.")
+		t.TemplateName = ""
+		return nil
+	}
 
 	prompt := promptui.Select{
 		Label: "Template",
