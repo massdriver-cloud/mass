@@ -25,7 +25,6 @@ func TestLintSchema(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Schema:      "draft-07",
 				Type:        "infrastructure",
 				Params:      map[string]any{"properties": map[string]any{}},
 				Connections: map[string]any{"properties": map[string]any{}},
@@ -33,27 +32,6 @@ func TestLintSchema(t *testing.T) {
 				UI:          map[string]any{"properties": map[string]any{}},
 			},
 			want: bundle.LintResult{},
-		},
-		{
-			name: "Invalid missing schema field",
-			bun: &bundle.Bundle{
-				Name:        "example",
-				Description: "description",
-				Type:        "infrastructure",
-				Params:      map[string]any{"properties": map[string]any{}},
-				Connections: map[string]any{"properties": map[string]any{}},
-				Artifacts:   map[string]any{"properties": map[string]any{}},
-				UI:          map[string]any{"properties": map[string]any{}},
-			},
-			want: bundle.LintResult{
-				Issues: []bundle.LintIssue{
-					{
-						Rule:     "schema-validation",
-						Severity: bundle.LintError,
-						Message:  "missing property 'schema'",
-					},
-				},
-			},
 		},
 	}
 
@@ -164,8 +142,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
-					Schema:      "draft-07",
-					Type:        "infrastructure",
+						Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lint/module",
 						Provisioner: "opentofu",
@@ -186,8 +163,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
-					Schema:      "draft-07",
-					Type:        "infrastructure",
+						Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lint/module",
 						Provisioner: "opentofu",
@@ -293,7 +269,6 @@ func TestLintMatchRequired(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Schema:      "draft-07",
 				Type:        "infrastructure",
 				Params: map[string]any{
 					"required": []any{"foo"},
@@ -314,7 +289,6 @@ func TestLintMatchRequired(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Schema:      "draft-07",
 				Type:        "infrastructure",
 				Params: map[string]any{
 					"required": []any{"bar"},
@@ -343,7 +317,6 @@ func TestLintMatchRequired(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Schema:      "draft-07",
 				Type:        "infrastructure",
 				Params: map[string]any{
 					"required": []any{"foo"},
@@ -370,7 +343,6 @@ func TestLintMatchRequired(t *testing.T) {
 			bun: &bundle.Bundle{
 				Name:        "example",
 				Description: "description",
-				Schema:      "draft-07",
 				Type:        "infrastructure",
 				Params: map[string]any{
 					"required": []any{"foo"},

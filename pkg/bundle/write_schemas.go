@@ -8,7 +8,7 @@ import (
 )
 
 const idURLPattern = "https://schemas.massdriver.cloud/schemas/bundles/%s/schema-%s.json"
-const jsonSchemaURLPattern = "http://json-schema.org/%s/schema"
+const jsonSchemaURL = "http://json-schema.org/draft-07/schema"
 
 type Schema struct {
 	schema map[string]any
@@ -74,18 +74,14 @@ func generateIDURL(mdName string, schemaType string) string {
 	return fmt.Sprintf(idURLPattern, mdName, schemaType)
 }
 
-func generateSchemaURL(schema string) string {
-	return fmt.Sprintf(jsonSchemaURLPattern, schema)
-}
-
-// Metadata returns common metadata fields for each JSON Schema
+// buildMetadata returns common metadata fields for each JSON Schema
 func buildMetadata(schemaType string, b Bundle) map[string]string {
 	if schemaType == "ui" {
 		return make(map[string]string)
 	}
 
 	return map[string]string{
-		"$schema":     generateSchemaURL(b.Schema),
+		"$schema":     jsonSchemaURL,
 		"$id":         generateIDURL(b.Name, schemaType),
 		"title":       b.Name,
 		"description": b.Description,

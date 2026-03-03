@@ -31,7 +31,6 @@ type Step struct {
 }
 
 type Bundle struct {
-	Schema      string         `json:"schema,omitempty" yaml:"schema,omitempty"`
 	Name        string         `json:"name,omitempty" yaml:"name,omitempty"`
 	Description string         `json:"description,omitempty" yaml:"description,omitempty"`
 	SourceURL   string         `json:"source_url,omitempty" yaml:"source_url,omitempty"`
