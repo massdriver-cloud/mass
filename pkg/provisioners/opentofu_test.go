@@ -141,7 +141,7 @@ func TestOpentofuExportMassdriverInputs(t *testing.T) {
 			if tc.existingMassdriverVars != "" {
 				err = os.WriteFile(path.Join(testDir, "_massdriver_variables.tf"), []byte(tc.existingMassdriverVars), 0644)
 				if err != nil {
-					t.Fatalf("unexpected error writing existing massdriver vars: %s", err)
+					t.Fatalf("unexpected error writing existing massdriver vars: %v", err)
 				}
 			}
 
