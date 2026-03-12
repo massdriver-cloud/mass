@@ -19,30 +19,9 @@
             "properties": {
                 "default_tags": {
                     "type": "object",
-                    "properties": {
-                        "managed-by": {
-                            "type": "string"
-                        },
-                        "md-manifest": {
-                            "type": "string"
-                        },
-                        "md-package": {
-                            "type": "string"
-                        },
-                        "md-project": {
-                            "type": "string"
-                        },
-                        "md-target": {
-                            "type": "string"
-                        }
-                    },
-                    "required": [
-                        "managed-by",
-                        "md-manifest",
-                        "md-package",
-                        "md-project",
-                        "md-target"
-                    ]
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
                 "deployment": {
                     "type": "object",

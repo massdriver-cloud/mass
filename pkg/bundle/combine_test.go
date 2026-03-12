@@ -10,15 +10,10 @@ import (
 var mdMetadataMap = map[string]any{
 	"properties": map[string]any{
 		"default_tags": map[string]any{
-			"properties": map[string]any{
-				"managed-by":  map[string]any{"type": "string"},
-				"md-manifest": map[string]any{"type": "string"},
-				"md-package":  map[string]any{"type": "string"},
-				"md-project":  map[string]any{"type": "string"},
-				"md-target":   map[string]any{"type": "string"},
+			"type": "object",
+			"additionalProperties": map[string]any{
+				"type": "string",
 			},
-			"required": []any{"managed-by", "md-manifest", "md-package", "md-project", "md-target"},
-			"type":     "object",
 		},
 		"deployment": map[string]any{
 			"properties": map[string]any{
