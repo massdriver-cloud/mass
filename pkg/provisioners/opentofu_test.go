@@ -130,12 +130,12 @@ func TestOpentofuExportMassdriverInputs(t *testing.T) {
 
 			content, err := os.ReadFile(path.Join("testdata", "opentofu", fmt.Sprintf("%s.tf", tfFile)))
 			if err != nil {
-				t.Fatalf("%d, unexpected error", err)
+				t.Fatalf("unexpected error: %v", err)
 			}
 
 			err = os.WriteFile(path.Join(testDir, "variables.tf"), content, 0644)
 			if err != nil {
-				t.Fatalf("%d, unexpected error", err)
+				t.Fatalf("unexpected error: %v", err)
 			}
 
 			if tc.existingMassdriverVars != "" {
@@ -208,12 +208,12 @@ func TestOpentofuReadProvisionerInputs(t *testing.T) {
 
 			content, err := os.ReadFile(path.Join("testdata", "opentofu", fmt.Sprintf("%s.tf", tc.name)))
 			if err != nil {
-				t.Fatalf("%d, unexpected error", err)
+				t.Fatalf("unexpected error: %v", err)
 			}
 
 			err = os.WriteFile(path.Join(testDir, "variables.tf"), content, 0644)
 			if err != nil {
-				t.Fatalf("%d, unexpected error", err)
+				t.Fatalf("unexpected error: %v", err)
 			}
 
 			prov := provisioners.OpentofuProvisioner{}

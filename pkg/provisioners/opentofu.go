@@ -31,6 +31,8 @@ func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables 
 				os.Remove(massdriverVarsBackup) //nolint:errcheck
 			}
 		}()
+	} else if !errors.Is(statErr, os.ErrNotExist) {
+		return statErr
 	}
 
 	// read existing OpenTofu variables for this step (excludes _massdriver_variables.tf)
