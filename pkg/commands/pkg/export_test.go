@@ -280,7 +280,7 @@ func TestExportPackage(t *testing.T) {
 			}
 
 			// Run the function
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 			defer cancel()
 
 			err := pkg.ExportPackageWithConfig(ctx, &config, tt.pkg, tt.baseDir)
@@ -334,7 +334,7 @@ func TestExportPackage_FileSystemError(t *testing.T) {
 		StateFetcher:       &MockStateFetcher{},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := pkg.ExportPackageWithConfig(ctx, &config, pack, "/tmp/export")
 
 	require.Error(t, err)

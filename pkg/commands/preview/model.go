@@ -91,7 +91,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case artifactSelection:
 				currentModel, currentModelOk := m.current.(artifacttable.Model)
 				if !currentModelOk {
-					break
+					return m, nil // type mismatch — abort this keypress entirely, do not advance cursor
 				}
 				selectedArtifacts := currentModel.SelectedArtifacts
 				if len(selectedArtifacts) > 0 {

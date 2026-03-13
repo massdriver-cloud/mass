@@ -31,9 +31,9 @@ func (p *NoopProvisioner) ExportMassdriverInputs(string, map[string]any) error {
 	return nil
 }
 
-// ReadProvisionerInputs is a no-op for unknown provisioner types.
+// ReadProvisionerInputs returns nil to signal this provisioner type has no inputs to match.
 func (p *NoopProvisioner) ReadProvisionerInputs(string) (map[string]any, error) {
-	return map[string]any{}, nil
+	return nil, nil //nolint:nilnil // nil is a sentinel meaning "no inputs to check" — callers test for nil explicitly
 }
 
 // InitializeStep is a no-op for unknown provisioner types.
