@@ -10,6 +10,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/api"
 )
 
+// Model is the Bubble Tea model for the artifact selection table.
 type Model struct {
 	table             table.Model
 	help              help.Model
@@ -24,6 +25,7 @@ const (
 	columnKeyArtifactData = "artifactData"
 )
 
+// New creates an artifact table model populated with the given artifacts.
 func New(artifacts []*api.Artifact) Model {
 	columns := []table.Column{
 		table.NewColumn(columnKeyName, "Name", 40),
@@ -74,13 +76,15 @@ func New(artifacts []*api.Artifact) Model {
 	}
 }
 
+// Init satisfies the tea.Model interface and performs no initialization.
 func (m Model) Init() tea.Cmd {
 	return nil
 }
 
+// Update handles incoming messages and updates the model state.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	//nolint:gocritic
+	//nolint:gocritic // single-case type switch is intentional; msg is reused as typed value below
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.help.Width = msg.Width
@@ -92,6 +96,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// View renders the artifact table and help text as a string.
 func (m Model) View() string {
 	body := strings.Builder{}
 	body.WriteString("Select credentials:")

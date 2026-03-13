@@ -10,9 +10,13 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// DeploymentStatusSleep is the interval between deployment status polling requests.
 var DeploymentStatusSleep = time.Duration(10) * time.Second
+
+// DeploymentTimeout is the maximum duration to wait for a deployment to complete.
 var DeploymentTimeout = time.Duration(5) * time.Minute
 
+// RunDeploy deploys the named package and polls until the deployment completes or times out.
 func RunDeploy(ctx context.Context, mdClient *client.Client, name, message string) (*api.Deployment, error) {
 	pkg, err := api.GetPackage(ctx, mdClient, name)
 	if err != nil {

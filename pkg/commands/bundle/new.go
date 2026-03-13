@@ -5,12 +5,14 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/massdriver-cloud/mass/pkg/bundle"
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
 	"github.com/massdriver-cloud/mass/pkg/templates"
 )
 
+// RunNew creates a new bundle from the given template data.
 func RunNew(data *templates.TemplateData) error {
 	if data.TemplateName == "" {
 		return generateBasicBundle(data)
@@ -46,7 +48,7 @@ func generateBasicBundle(data *templates.TemplateData) error {
 	content := generateMassdriverYAML(data)
 
 	outputPath := filepath.Join(data.OutputDir, "massdriver.yaml")
-	if err := os.WriteFile(outputPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(outputPath, []byte(content), 0600); err != nil {
 		return fmt.Errorf("failed to write massdriver.yaml: %w", err)
 	}
 
@@ -74,19 +76,21 @@ params:
 `, data.Name, data.Description)
 
 	// Add connections
-	yaml += "connections:\n"
+	var sb strings.Builder
+	sb.WriteString("connections:\n")
 	if len(data.Connections) == 0 {
-		yaml += "  required: []\n  properties: {}\n"
+		sb.WriteString("  required: []\n  properties: {}\n")
 	} else {
-		yaml += "  required:\n"
+		sb.WriteString("  required:\n")
 		for _, conn := range data.Connections {
-			yaml += fmt.Sprintf("    - %s\n", conn.Name)
+			sb.WriteString(fmt.Sprintf("    - %s\n", conn.Name))
 		}
-		yaml += "  properties:\n"
+		sb.WriteString("  properties:\n")
 		for _, conn := range data.Connections {
-			yaml += fmt.Sprintf("    %s:\n      $ref: %s\n", conn.Name, conn.ArtifactDefinition)
+			sb.WriteString(fmt.Sprintf("    %s:\n      $ref: %s\n", conn.Name, conn.ArtifactDefinition))
 		}
 	}
+	yaml += sb.String()
 
 	yaml += `
 artifacts:

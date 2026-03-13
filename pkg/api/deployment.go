@@ -8,11 +8,13 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// Deployment represents a Massdriver deployment operation and its current status.
 type Deployment struct {
 	ID     string `json:"id"`
 	Status string `json:"status"`
 }
 
+// DeploymentLog represents a single log entry from a deployment operation.
 type DeploymentLog struct {
 	Content   string
 	Step      string
@@ -20,6 +22,7 @@ type DeploymentLog struct {
 	Index     int
 }
 
+// GetDeployment retrieves a deployment by ID from the Massdriver API.
 func GetDeployment(ctx context.Context, mdClient *client.Client, id string) (*Deployment, error) {
 	response, err := getDeploymentById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id)
 
@@ -33,6 +36,7 @@ func (d *getDeploymentByIdDeployment) toDeployment() *Deployment {
 	}
 }
 
+// DeployPackage initiates a deployment of a package in the Massdriver API.
 func DeployPackage(ctx context.Context, mdClient *client.Client, targetID, manifestID, message string) (*Deployment, error) {
 	response, err := deployPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, targetID, manifestID, message)
 
@@ -59,6 +63,7 @@ func (d *decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment
 	}
 }
 
+// GetDeploymentLogs retrieves the log stream for a given deployment.
 func GetDeploymentLogs(ctx context.Context, mdClient *client.Client, deploymentID string) ([]DeploymentLog, error) {
 	response, err := getDeploymentLogStream(ctx, mdClient.GQL, mdClient.Config.OrganizationID, deploymentID)
 	if err != nil {

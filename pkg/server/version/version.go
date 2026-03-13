@@ -1,3 +1,4 @@
+// Package version provides an HTTP handler for reporting the current CLI version.
 package version
 
 import (
@@ -8,12 +9,14 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/version"
 )
 
+// Version holds version comparison information for the CLI.
 type Version struct {
 	IsLatest       bool   `json:"isLatest"`
 	LatestVersion  string `json:"latestVersion"`
 	CurrentVersion string `json:"currentVersion"`
 }
 
+// Latest handles an HTTP request and responds with the current and latest CLI version info.
 func Latest(w http.ResponseWriter, _ *http.Request) {
 	latest, err := version.GetLatestVersion()
 	if err != nil {

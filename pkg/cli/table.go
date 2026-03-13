@@ -1,3 +1,4 @@
+// Package cli provides shared CLI utilities such as table formatting helpers.
 package cli
 
 import (

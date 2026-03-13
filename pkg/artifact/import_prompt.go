@@ -1,3 +1,4 @@
+// Package artifact provides types and prompts for importing artifacts into Massdriver.
 package artifact
 
 import (
@@ -16,6 +17,7 @@ import (
 var artifactNameFormat = regexp.MustCompile(`[a-z][a-z0-9-]*[a-z0-9]`)
 var artifactDefinitions = []string{}
 
+// ImportedArtifact holds the user-supplied data needed to import an artifact.
 type ImportedArtifact struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
@@ -28,6 +30,7 @@ var promptsNew = []func(t *ImportedArtifact) error{
 	getFile,
 }
 
+// RunArtifactImportPrompt interactively prompts the user to fill in any missing artifact import fields.
 func RunArtifactImportPrompt(ctx context.Context, mdClient *client.Client, t *ImportedArtifact) error {
 	var err error
 

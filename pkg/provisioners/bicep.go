@@ -1,3 +1,4 @@
+// Package provisioners provides implementations for various infrastructure provisioners.
 package provisioners
 
 import (
@@ -10,8 +11,10 @@ import (
 	"github.com/massdriver-cloud/airlock/pkg/bicep"
 )
 
+// BicepProvisioner implements Provisioner for Azure Bicep templates.
 type BicepProvisioner struct{}
 
+// ExportMassdriverInputs appends auto-generated Bicep param declarations from the massdriver schema to the step's template.
 func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]any) error {
 	// read existing bicep params for this step
 	bicepParamsImport := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
@@ -20,7 +23,11 @@ func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map
 	}
 
 	newParams := FindMissingFromAirlock(variables, bicepParamsImport.Schema)
-	if len(newParams["properties"].(map[string]any)) == 0 {
+	newParamsProps, newParamsPropsOk := newParams["properties"].(map[string]any)
+	if !newParamsPropsOk {
+		return errors.New("failed to get properties from missing params")
+	}
+	if len(newParamsProps) == 0 {
 		return nil
 	}
 
@@ -34,7 +41,7 @@ func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map
 		return transpileErr
 	}
 
-	bicepFile, openErr := os.OpenFile(path.Join(stepPath, "template.bicep"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	bicepFile, openErr := os.OpenFile(path.Join(stepPath, "template.bicep"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if openErr != nil {
 		return openErr
 	}
@@ -50,6 +57,7 @@ func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map
 	return nil
 }
 
+// ReadProvisionerInputs reads the Bicep parameter declarations from the step's template file.
 func (p *BicepProvisioner) ReadProvisionerInputs(stepPath string) (map[string]any, error) {
 	bicepParamsImport := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
 
@@ -67,6 +75,7 @@ func (p *BicepProvisioner) ReadProvisionerInputs(stepPath string) (map[string]an
 	return variables, nil
 }
 
+// InitializeStep copies the source Bicep template file into the step directory.
 func (p *BicepProvisioner) InitializeStep(stepPath string, sourcePath string) error {
 	pathInfo, statErr := os.Stat(sourcePath)
 	if statErr != nil {

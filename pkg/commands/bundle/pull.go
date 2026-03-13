@@ -12,8 +12,8 @@ import (
 	"oras.land/oras-go/v2/content/file"
 )
 
+// RunPull pulls a bundle from the Massdriver registry into the specified directory.
 func RunPull(ctx context.Context, mdClient *client.Client, bundleName string, version string, directory string) error {
-
 	fmt.Printf("Pulling bundle %s:%s from organization %s to directory %s\n",
 		prettylogs.Underline(bundleName),
 		prettylogs.Underline(version),

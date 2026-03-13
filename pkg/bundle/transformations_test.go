@@ -8,7 +8,6 @@ import (
 )
 
 func TestEnsureBooleansHaveDefault(t *testing.T) {
-
 	testCases := []struct {
 		name  string
 		input map[string]any

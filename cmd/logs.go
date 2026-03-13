@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdLogs returns a cobra command for retrieving deployment logs.
 func NewCmdLogs() *cobra.Command {
 	logsCmd := &cobra.Command{
 		Use:   "logs [deployment-id]",

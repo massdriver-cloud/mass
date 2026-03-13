@@ -1,3 +1,4 @@
+// Package project provides commands for managing Massdriver projects.
 package project
 
 import (
@@ -11,13 +12,14 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func RunExport(ctx context.Context, mdClient *client.Client, projectIdOrSlug string) error {
-	envs, getErr := api.GetEnvironmentsByProject(ctx, mdClient, projectIdOrSlug)
+// RunExport exports all environments and their packages for the specified project.
+func RunExport(ctx context.Context, mdClient *client.Client, projectIDOrSlug string) error {
+	envs, getErr := api.GetEnvironmentsByProject(ctx, mdClient, projectIDOrSlug)
 	if getErr != nil {
 		return getErr
 	}
 
-	directory := filepath.Join(".", projectIdOrSlug)
+	directory := filepath.Join(".", projectIDOrSlug)
 	for _, env := range envs {
 		exportErr := environment.ExportEnvironment(ctx, mdClient, &env, directory)
 		if exportErr != nil {

@@ -1,3 +1,4 @@
+// Package artifact provides command implementations for artifact operations.
 package artifact
 
 import (
@@ -13,6 +14,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// RunImport reads an artifact from a file, validates it, and imports it into the Massdriver API.
 func RunImport(ctx context.Context, mdClient *client.Client, artifactName string, artifactType string, artifactFile string) (string, error) {
 	bytes, readErr := os.ReadFile(artifactFile)
 	if readErr != nil {

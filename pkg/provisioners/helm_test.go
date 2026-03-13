@@ -1,7 +1,6 @@
 package provisioners_test
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -43,7 +42,7 @@ func TestHelmReadProvisionerInputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			testDir := t.TempDir()
 
-			content, err := os.ReadFile(path.Join("testdata", "helm", fmt.Sprintf("%s.yaml", tc.name)))
+			content, err := os.ReadFile(path.Join("testdata", "helm", tc.name+".yaml"))
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

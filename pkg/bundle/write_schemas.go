@@ -10,13 +10,15 @@ import (
 const idURLPattern = "https://schemas.massdriver.cloud/schemas/bundles/%s/schema-%s.json"
 const jsonSchemaURL = "http://json-schema.org/draft-07/schema"
 
+// Schema holds a JSON schema map and its label used when writing schema files.
 type Schema struct {
 	schema map[string]any
 	label  string
 }
 
+// WriteSchemas writes the bundle's artifact, params, connections, and UI schemas to JSON files in buildPath.
 func (b *Bundle) WriteSchemas(buildPath string) error {
-	mkdirErr := os.MkdirAll(buildPath, 0755)
+	mkdirErr := os.MkdirAll(buildPath, 0750)
 
 	if mkdirErr != nil {
 		return mkdirErr
@@ -59,7 +61,7 @@ func generateSchema(schema map[string]any, metadata map[string]string) ([]byte, 
 		return nil, err
 	}
 
-	return []byte(fmt.Sprintf("%s\n", string(json))), nil
+	return []byte(string(json) + "\n"), nil
 }
 
 func mergeMaps(a map[string]any, b map[string]string) map[string]any {

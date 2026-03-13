@@ -1,7 +1,9 @@
+// Package jsonschema provides utilities for loading and validating JSON schemas.
 package jsonschema
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -70,8 +72,8 @@ func LoadSchemaFromReader(reader io.Reader) (*jsonschema.Schema, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON schema: %w", err)
 	}
-	if err := compiler.AddResource("schema.json", schema); err != nil {
-		return nil, fmt.Errorf("failed to add resource to compiler: %w", err)
+	if addErr := compiler.AddResource("schema.json", schema); addErr != nil {
+		return nil, fmt.Errorf("failed to add resource to compiler: %w", addErr)
 	}
 
 	compiledSchema, err := compiler.Compile("schema.json")
@@ -113,6 +115,7 @@ type Loader struct {
 	fallback jsonschema.URLLoader
 }
 
+// Load resolves the given URL using any configured mappings, falling back to standard loaders.
 func (l *Loader) Load(url string) (any, error) {
 	for prefix, dir := range l.mappings {
 		if suffix, ok := strings.CutPrefix(url, prefix); ok {
@@ -139,6 +142,7 @@ func loadFile(path string) (any, error) {
 // FileLoader handles loading schema files from the local filesystem.
 type FileLoader struct{}
 
+// Load loads a schema from the local filesystem given a file:// URL.
 func (l FileLoader) Load(url string) (any, error) {
 	path, err := l.ToFile(url)
 	if err != nil {
@@ -147,6 +151,7 @@ func (l FileLoader) Load(url string) (any, error) {
 	return loadFile(path)
 }
 
+// ToFile converts a file:// URL to a local filesystem path.
 func (l FileLoader) ToFile(url string) (string, error) {
 	u, err := gourl.Parse(url)
 	if err != nil {
@@ -169,9 +174,14 @@ func (l FileLoader) ToFile(url string) (string, error) {
 // HTTPLoader handles loading schemas from HTTP/HTTPS URLs with YAML support.
 type HTTPLoader http.Client
 
+// Load fetches and parses a schema from an HTTP or HTTPS URL.
 func (l *HTTPLoader) Load(url string) (any, error) {
 	client := (*http.Client)(l)
-	resp, err := client.Get(url)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

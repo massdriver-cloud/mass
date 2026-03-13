@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// PushFlag associates a CLI flag name with a target string attribute pointer.
 type PushFlag struct {
 	Flag      string
 	Attribute *string
@@ -17,6 +18,7 @@ type PushFlag struct {
 
 var pushInput = image.PushImageInput{}
 
+// NewCmdImage returns a cobra command for managing container images.
 func NewCmdImage() *cobra.Command {
 	imageCmd := &cobra.Command{
 		Use:   "image",
@@ -83,5 +85,5 @@ func validatePushInputAndAddFlags(input *image.PushImageInput) error {
 }
 
 func invalidImageName(imageName string) bool {
-	return !(len(strings.Split(imageName, "/")) == 2)
+	return len(strings.Split(imageName, "/")) != 2
 }

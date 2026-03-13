@@ -1,3 +1,4 @@
+// Package version provides version information and update-checking utilities for the mass CLI.
 package version
 
 import (
@@ -8,6 +9,7 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+// LatestReleaseURL is the URL to the latest release of the mass CLI on GitHub.
 const (
 	LatestReleaseURL = "https://github.com/massdriver-cloud/mass/releases/latest"
 )
@@ -24,14 +26,17 @@ func MassVersion() string {
 	return version
 }
 
+// MassGitSHA returns the git SHA of the build, set via ldflags during release.
 func MassGitSHA() string {
 	return gitSHA
 }
 
+// SetVersion overrides the version string, used in tests and custom builds.
 func SetVersion(setVersion string) {
 	version = setVersion
 }
 
+// GetLatestVersion fetches the latest release version tag from GitHub.
 func GetLatestVersion() (string, error) {
 	ctx := context.Background()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, LatestReleaseURL, nil)
@@ -50,6 +55,7 @@ func GetLatestVersion() (string, error) {
 	return latestVersion, nil
 }
 
+// CheckForNewerVersionAvailable compares the current version to latestVersion and returns true if an upgrade is available.
 func CheckForNewerVersionAvailable(latestVersion string) (bool, string) {
 	currentVersion := version
 

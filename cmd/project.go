@@ -23,6 +23,7 @@ import (
 //go:embed templates/project.get.md.tmpl
 var projectTemplates embed.FS
 
+// NewCmdProject returns a cobra command for managing projects.
 func NewCmdProject() *cobra.Command {
 	projectCmd := &cobra.Command{
 		Use:     "project",
@@ -115,9 +116,9 @@ func runProjectGet(cmd *cobra.Command, args []string) error {
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(project, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal project to JSON: %w", err)
+		jsonBytes, marshalErr := json.MarshalIndent(project, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal project to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
@@ -135,7 +136,7 @@ func runProjectGet(cmd *cobra.Command, args []string) error {
 func runProjectExport(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	projectId := args[0]
+	projectID := args[0]
 
 	cmd.SilenceUsage = true
 
@@ -144,7 +145,7 @@ func runProjectExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	return project.RunExport(ctx, mdClient, projectId)
+	return project.RunExport(ctx, mdClient, projectID)
 }
 
 func runProjectList(cmd *cobra.Command, args []string) error {
@@ -192,8 +193,8 @@ func renderProject(project *api.Project) error {
 	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, project); err != nil {
-		return fmt.Errorf("failed to execute template: %w", err)
+	if renderErr := tmpl.Execute(&buf, project); renderErr != nil {
+		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 
 	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
@@ -243,7 +244,7 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 func runProjectDelete(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	projectIdOrSlug := args[0]
+	projectIDOrSlug := args[0]
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return err
@@ -257,7 +258,7 @@ func runProjectDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get project details for confirmation
-	project, getErr := api.GetProject(ctx, mdClient, projectIdOrSlug)
+	project, getErr := api.GetProject(ctx, mdClient, projectIDOrSlug)
 	if getErr != nil {
 		return fmt.Errorf("error getting project: %w", getErr)
 	}
@@ -276,7 +277,7 @@ func runProjectDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	deletedProject, err := api.DeleteProject(ctx, mdClient, projectIdOrSlug)
+	deletedProject, err := api.DeleteProject(ctx, mdClient, projectIDOrSlug)
 	if err != nil {
 		return err
 	}

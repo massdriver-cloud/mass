@@ -3,23 +3,27 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/mitchellh/mapstructure"
 )
 
+// Project represents a Massdriver project grouping related environments.
 type Project struct {
-	ID            string         `json:"id"`
-	Name          string         `json:"name"`
-	Slug          string         `json:"slug"`
-	Description   string         `json:"description"`
-	DefaultParams map[string]any `json:"defaultParams"`
-	Cost          Cost           `json:"cost"`
-	Environments  []Environment  `json:"environments"`
+	ID            string         `json:"id" mapstructure:"id"`
+	Name          string         `json:"name" mapstructure:"name"`
+	Slug          string         `json:"slug" mapstructure:"slug"`
+	Description   string         `json:"description" mapstructure:"description"`
+	DefaultParams map[string]any `json:"defaultParams" mapstructure:"defaultParams"`
+	Cost          Cost           `json:"cost" mapstructure:"cost"`
+	Environments  []Environment  `json:"environments" mapstructure:"environments"`
 }
 
+// GetProject retrieves a project by ID or slug from the Massdriver API.
 func GetProject(ctx context.Context, mdClient *client.Client, idOrSlug string) (*Project, error) {
 	response, err := getProjectById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, idOrSlug)
 	if err != nil {
@@ -37,14 +41,15 @@ func toProject(p any) (*Project, error) {
 	return &proj, nil
 }
 
+// ListProjects returns all projects for the configured organization.
 func ListProjects(ctx context.Context, mdClient *client.Client) ([]Project, error) {
 	response, err := getProjects(ctx, mdClient.GQL, mdClient.Config.OrganizationID)
 	records := []Project{}
 
 	for _, resp := range response.Projects {
-		proj, err := toProject(resp)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert project: %w", err)
+		proj, projErr := toProject(resp)
+		if projErr != nil {
+			return nil, fmt.Errorf("failed to convert project: %w", projErr)
 		}
 		records = append(records, *proj)
 	}
@@ -52,6 +57,7 @@ func ListProjects(ctx context.Context, mdClient *client.Client) ([]Project, erro
 	return records, err
 }
 
+// GetDefaultParams returns the project's default package parameters as a preview package map.
 func (p *Project) GetDefaultParams() map[string]PreviewPackage {
 	packages := make(map[string]PreviewPackage)
 
@@ -73,6 +79,7 @@ func (p *Project) GetDefaultParams() map[string]PreviewPackage {
 	return packages
 }
 
+// CreateProject creates a new project in the Massdriver API.
 func CreateProject(ctx context.Context, mdClient *client.Client, name string, slug string, description string) (*Project, error) {
 	response, err := createProject(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name, slug, description)
 	if err != nil {
@@ -81,17 +88,20 @@ func CreateProject(ctx context.Context, mdClient *client.Client, name string, sl
 	if !response.CreateProject.Successful {
 		messages := response.CreateProject.GetMessages()
 		if len(messages) > 0 {
-			errMsg := "unable to create project:"
+			var sb strings.Builder
+			sb.WriteString("unable to create project:")
 			for _, msg := range messages {
-				errMsg += "\n  - " + msg.Message
+				sb.WriteString("\n  - ")
+				sb.WriteString(msg.Message)
 			}
-			return nil, fmt.Errorf("%s", errMsg)
+			return nil, errors.New(sb.String())
 		}
-		return nil, fmt.Errorf("unable to create project")
+		return nil, errors.New("unable to create project")
 	}
 	return toProject(response.CreateProject.Result)
 }
 
+// DeleteProject removes a project by ID or slug from the Massdriver API.
 func DeleteProject(ctx context.Context, mdClient *client.Client, idOrSlug string) (*Project, error) {
 	response, err := deleteProject(ctx, mdClient.GQL, mdClient.Config.OrganizationID, idOrSlug)
 	if err != nil {
@@ -100,13 +110,15 @@ func DeleteProject(ctx context.Context, mdClient *client.Client, idOrSlug string
 	if !response.DeleteProject.Successful {
 		messages := response.DeleteProject.GetMessages()
 		if len(messages) > 0 {
-			errMsg := "unable to delete project:"
+			var sb strings.Builder
+			sb.WriteString("unable to delete project:")
 			for _, msg := range messages {
-				errMsg += "\n  - " + msg.Message
+				sb.WriteString("\n  - ")
+				sb.WriteString(msg.Message)
 			}
-			return nil, fmt.Errorf("%s", errMsg)
+			return nil, errors.New(sb.String())
 		}
-		return nil, fmt.Errorf("unable to delete project")
+		return nil, errors.New("unable to delete project")
 	}
 	return toProject(response.DeleteProject.Result)
 }

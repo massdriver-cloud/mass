@@ -36,7 +36,7 @@ func TestUpdateSelectsArtifactDefinition(t *testing.T) {
 	pressSpace := tea.KeyMsg{Type: tea.KeySpace}
 	updatedModel, _ = updatedModel.Update(pressSpace)
 
-	//nolint:errcheck
+	//nolint:errcheck // type assertion to concrete Model is safe in this test context
 	finalModel := (updatedModel).(artdeftable.Model)
 
 	got := finalModel.SelectedArtifactDefinitions

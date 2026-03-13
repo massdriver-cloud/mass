@@ -15,6 +15,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// DereferenceOptions holds configuration for schema dereferencing operations.
 type DereferenceOptions struct {
 	Client *client.Client
 	Cwd    string
@@ -26,17 +27,18 @@ var massdriverDefinitionPattern = regexp.MustCompile(`^[a-zA-Z0-9-]+(\/[a-zA-Z0-
 var httpPattern = regexp.MustCompile(`^(http|https)://`)
 var fragmentPattern = regexp.MustCompile(`^#`)
 
+// DereferenceSchema recursively resolves $ref pointers in a schema value.
 func DereferenceSchema(anyVal any, opts DereferenceOptions) (any, error) {
 	val := getValue(anyVal)
 
-	switch val.Kind() { //nolint:exhaustive
+	switch val.Kind() { //nolint:exhaustive // only slice/array and map need dereferencing; other kinds returned as-is
 	case reflect.Slice, reflect.Array:
 		return dereferenceList(val, opts)
 	case reflect.Map:
 		schemaInterface := val.Interface()
 		schema, ok := schemaInterface.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("schema is not an object")
+			return nil, errors.New("schema is not an object")
 		}
 		hydratedSchema := map[string]any{}
 
@@ -46,11 +48,11 @@ func DereferenceSchema(anyVal any, opts DereferenceOptions) (any, error) {
 		if schemaRefInterface, refOk := schema["$ref"]; refOk {
 			schemaRefValue, refStringOk := schemaRefInterface.(string)
 			if !refStringOk {
-				return nil, fmt.Errorf("$ref is not a string")
+				return nil, errors.New("$ref is not a string")
 			}
 
 			var err error
-			if relativeFilePathPattern.MatchString(schemaRefValue) { //nolint:gocritic
+			if relativeFilePathPattern.MatchString(schemaRefValue) { //nolint:gocritic // long if-else chain matches ref types; restructuring reduces readability
 				// this is a relative file ref
 				// build up the path from where the dir current schema was read
 				hydratedSchema, err = dereferenceFilePathRef(hydratedSchema, schema, schemaRefValue, opts)
@@ -60,9 +62,7 @@ func DereferenceSchema(anyVal any, opts DereferenceOptions) (any, error) {
 			} else if massdriverDefinitionPattern.MatchString(schemaRefValue) {
 				// this must be a published schema, so fetch from massdriver
 				hydratedSchema, err = dereferenceMassdriverRef(hydratedSchema, schema, schemaRefValue, opts)
-			} else if fragmentPattern.MatchString(schemaRefValue) {
-				// this is a fragment, so we do nothing and leave the schema as is
-				// since fragments are not dereferenced in the same way as full schemas
+			} else if fragmentPattern.MatchString(schemaRefValue) { //nolint:revive // fragment refs are intentionally left as-is
 			} else {
 				return nil, fmt.Errorf("unable to resolve ref: %s", schemaRefValue)
 			}
@@ -90,7 +90,7 @@ func dereferenceMap(hydratedSchema map[string]any, schema map[string]any, opts D
 
 func dereferenceList(val reflect.Value, opts DereferenceOptions) ([]any, error) {
 	hydratedList := make([]any, 0)
-	for i := 0; i < val.Len(); i++ {
+	for i := range val.Len() {
 		hydratedVal, err := DereferenceSchema(val.Index(i).Interface(), opts)
 		if err != nil {
 			return hydratedList, err
@@ -110,7 +110,7 @@ func dereferenceMassdriverRef(hydratedSchema map[string]any, schema map[string]a
 		var ok bool
 		referencedSchema, ok = nestedSchema.(map[string]any)
 		if !ok {
-			return hydratedSchema, fmt.Errorf("schema is not a map")
+			return hydratedSchema, errors.New("schema is not a map")
 		}
 	}
 

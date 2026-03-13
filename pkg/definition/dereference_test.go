@@ -143,13 +143,14 @@ func TestDereferenceSchema(t *testing.T) {
 
 			got, gotErr := definition.DereferenceSchema(test.Input, opts)
 
-			if test.ExpectedErrorSuffix == "" && gotErr != nil {
+			switch {
+			case test.ExpectedErrorSuffix == "" && gotErr != nil:
 				t.Errorf("unexpected error: %v", gotErr)
-			} else if test.ExpectedErrorSuffix != "" {
+			case test.ExpectedErrorSuffix != "":
 				if !strings.HasSuffix(gotErr.Error(), test.ExpectedErrorSuffix) {
 					t.Errorf("got %v, want %v", gotErr.Error(), test.ExpectedErrorSuffix)
 				}
-			} else {
+			default:
 				if fmt.Sprint(got) != fmt.Sprint(test.Expected) {
 					t.Errorf("got %v, want %v", got, test.Expected)
 				}

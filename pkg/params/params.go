@@ -1,6 +1,7 @@
 package params
 
 import (
+	"errors"
 	"fmt"
 	"path"
 
@@ -11,6 +12,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// GetFromPath imports a params schema from the given IaC path for the named template type.
 func GetFromPath(templateName, paramsPath string) (string, error) {
 	if paramsPath == "" {
 		return "", nil
@@ -33,7 +35,7 @@ func GetFromPath(templateName, paramsPath string) (string, error) {
 
 	if importResult.Schema == nil {
 		fmt.Println("Params schema unable to be imported.")
-		return "", fmt.Errorf("failed to import params schema")
+		return "", errors.New("failed to import params schema")
 	}
 
 	props := map[string]any{

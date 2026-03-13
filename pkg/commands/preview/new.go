@@ -12,6 +12,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// KeyMap defines the key bindings for navigating the preview environment initialization UI.
 type KeyMap struct {
 	Quit key.Binding
 	Next key.Binding

@@ -77,7 +77,7 @@ func TestPackageBundle(t *testing.T) {
 			}
 
 			if len(manifest.Layers) != len(tc.expectedLayers) {
-				for title, _ := range tc.expectedLayers {
+				for title := range tc.expectedLayers {
 					found := false
 					for _, layer := range manifest.Layers {
 						if layer.Annotations[ocispec.AnnotationTitle] == title {

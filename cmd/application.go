@@ -1,9 +1,11 @@
-package cmd
+// Package cmd provides the CLI commands for the mass tool.
+package cmd //nolint:dupl // application and infrastructure are intentionally duplicated deprecated compatibility shims
 
 import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdApp returns a deprecated cobra command for managing applications (renamed to package).
 func NewCmdApp() *cobra.Command {
 	appCmd := &cobra.Command{
 		Use:        "application",

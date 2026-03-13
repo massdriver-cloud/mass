@@ -302,12 +302,6 @@ linters:
       # Default: []
       disable:
         - fieldalignment # too strict
-      # Settings per analyzer.
-      settings:
-        shadow:
-          # Whether to be strict about shadowing; can be noisy.
-          # Default: false
-          strict: true
 
     inamedparam:
       # Skips check for interface methods with only a single parameter.
@@ -376,7 +370,8 @@ linters:
       # - "default": report only the default slog logger
       # https://github.com/go-simpler/sloglint?tab=readme-ov-file#no-global
       # Default: ""
-      no-global: all
+      # Disabled: server package is intentionally designed around a global structured logger
+      no-global: ""
       # Enforce using methods that accept a context.
       # Values:
       # - "": disabled
@@ -421,22 +416,13 @@ linters:
     # Allow unused params at the cobra command level
     - linters: [revive]
       text: "unused-parameter: parameter ('cmd'|'args') seems to be unused, consider removing or renaming it as _"
-    # GQL client autogens to artifactId and orgId
+    # 'api' is a domain-appropriate package name for this layer; revive flags it as "meaningless"
     - linters: [revive]
-      text: "var-naming: var artifactId should be artifactID"
-    - linters: [revive]
-      text: "var-naming: (var|func parameter) orgId should be orgID"
-    - linters: [stylecheck]
-      text: "ST1003: func parameter orgId should be orgID"
-    - source: "^//\\s*go:generate\\s"
-      linters: [lll]
-    # Allow TODO for now
-    - source: "(noinspection|TODO)"
-      linters: [godox]
-    - source: "//noinspection"
-      linters: [gocritic]
-    - source: "^\\s+if _, ok := err\\.\\([^.]+\\.InternalError\\); ok {"
-      linters: [errorlint]
+      text: "var-naming: avoid meaningless package names"
+      path: "pkg/api/"
+    # cmd/ uses "json"/"text" as CLI output-format literals; extracting them as constants adds no value
+    - linters: [goconst]
+      path: "^cmd/"
     - path: "_test\\.go"
       linters:
         - revive

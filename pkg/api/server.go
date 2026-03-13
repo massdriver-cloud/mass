@@ -8,12 +8,14 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+// Server holds metadata about the Massdriver server instance.
 type Server struct {
-	Version string `json:"version"`
-	Mode    string `json:"mode"`
-	AppURL  string `json:"appUrl"`
+	Version string `json:"version" mapstructure:"version"`
+	Mode    string `json:"mode" mapstructure:"mode"`
+	AppURL  string `json:"appUrl" mapstructure:"appUrl"`
 }
 
+// GetServer retrieves server metadata from the Massdriver API.
 func GetServer(ctx context.Context, mdClient *client.Client) (*Server, error) {
 	response, err := getServer(ctx, mdClient.GQL)
 	if err != nil {

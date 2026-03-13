@@ -8,6 +8,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// DeployPreviewEnvironment deploys a preview environment for the given project and package configurations.
 func DeployPreviewEnvironment(ctx context.Context, mdClient *client.Client, projectID string, credentials []Credential, packageParams map[string]PreviewPackage, ciContext map[string]any) (*Environment, error) {
 	// Validate that no package has both params and remote references
 	for packageName, pkg := range packageParams {
@@ -40,6 +41,7 @@ func DeployPreviewEnvironment(ctx context.Context, mdClient *client.Client, proj
 	return nil, NewMutationError("failed to deploy environment", response.DeployPreviewEnvironment.Messages)
 }
 
+// DecommissionPreviewEnvironment tears down the preview environment identified by slug or ID.
 func DecommissionPreviewEnvironment(ctx context.Context, mdClient *client.Client, projectTargetSlugOrTargetID string) (*Environment, error) {
 	cmdLog := debuglog.Log().With().Str("orgID", mdClient.Config.OrganizationID).Str("projectTargetSlugOrTargetID", projectTargetSlugOrTargetID).Logger()
 	cmdLog.Info().Msg("Decommissioning preview environment.")

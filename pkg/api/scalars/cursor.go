@@ -1,3 +1,4 @@
+// Package scalars provides custom GraphQL scalar types.
 package scalars
 
 // Cursor represents pagination cursor with omitempty on all fields

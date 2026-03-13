@@ -10,7 +10,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-// Runs a preview environment deployment
+// RunDeploy deploys a preview environment for the given project using the provided configuration and CI context.
 func RunDeploy(ctx context.Context, mdClient *client.Client, projectSlug string, previewCfg *api.PreviewConfig, ciContext *map[string]any) (*api.Environment, error) {
 	packagesWithInterpolatedParams, err := interpolateParams(previewCfg.Packages)
 

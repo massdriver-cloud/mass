@@ -1,9 +1,10 @@
-package cmd
+package cmd //nolint:dupl // application and infrastructure are intentionally duplicated deprecated compatibility shims
 
 import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdInfra returns a deprecated cobra command for managing infrastructure (renamed to package).
 func NewCmdInfra() *cobra.Command {
 	infraCmd := &cobra.Command{
 		Use:        "infrastructure",

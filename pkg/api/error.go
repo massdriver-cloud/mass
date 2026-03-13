@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// MutationError represents an error returned from a GraphQL mutation, including validation messages.
 type MutationError struct {
 	Err      string
 	Messages []MutationValidationError
@@ -19,6 +20,7 @@ func (m *MutationError) Error() string {
 	return err
 }
 
+// NewMutationError creates a new MutationError with the given message and validation errors.
 func NewMutationError(msg string, validationErrors []MutationValidationError) error {
 	return &MutationError{Err: msg, Messages: validationErrors}
 }

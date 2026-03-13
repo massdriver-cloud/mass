@@ -1,4 +1,4 @@
-// Selectable artifact definition table
+// Package artdeftable provides a selectable artifact definition table TUI component.
 package artdeftable
 
 import (
@@ -13,6 +13,7 @@ import (
 	"golang.org/x/text/language"
 )
 
+// Model is the bubbletea model for the selectable artifact definition table component.
 type Model struct {
 	table                       table.Model
 	help                        help.Model
@@ -26,6 +27,7 @@ const (
 	columnKeyArtDefData = "artDefData"
 )
 
+// New creates a new Model pre-populated with the provided artifact definitions.
 func New(creds []*api.ArtifactDefinition) Model {
 	columns := []table.Column{
 		table.NewColumn(columnKeyLabel, "Name", 40),
@@ -74,13 +76,15 @@ func New(creds []*api.ArtifactDefinition) Model {
 	}
 }
 
+// Init returns the initial command for the artdeftable model (none required).
 func (m Model) Init() tea.Cmd {
 	return nil
 }
 
+// Update handles incoming messages and updates the artdeftable model state.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	//nolint:gocritic
+	//nolint:gocritic // single-case type switch is intentional; msg is reused as typed value below
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.help.Width = msg.Width
@@ -92,6 +96,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// View renders the artifact definition table as a string for display.
 func (m Model) View() string {
 	body := strings.Builder{}
 	body.WriteString("Select credential types:")

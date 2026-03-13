@@ -25,7 +25,11 @@ func TestRunPatch(t *testing.T) {
 		},
 		func(req *http.Request) any {
 			vars := gqlmock.ParseInputVariables(req)
-			paramsJSON := []byte(vars["params"].(string))
+			paramsStr, ok := vars["params"].(string)
+			if !ok {
+				panic("vars[\"params\"] is not a string")
+			}
+			paramsJSON := []byte(paramsStr)
 
 			params := map[string]any{}
 			gqlmock.MustUnmarshalJSON(paramsJSON, &params)

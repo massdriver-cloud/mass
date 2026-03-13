@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// versionCmd represents the version command
+// NewCmdVersion returns a cobra command that prints the current CLI version.
 func NewCmdVersion() *cobra.Command {
 	versionCmd := &cobra.Command{
 		Use:     "version",

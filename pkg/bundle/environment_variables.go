@@ -7,6 +7,7 @@ import (
 	"github.com/itchyny/gojq"
 )
 
+// ParsedEnvironmentVariable holds the result of evaluating a jq expression against bundle params.
 type ParsedEnvironmentVariable struct {
 	Error string `json:"error"`
 	Value string `json:"value"`
@@ -14,6 +15,7 @@ type ParsedEnvironmentVariable struct {
 
 const nonStringReturnErrorMessage = "failed to return value of type string"
 
+// ParseEnvironmentVariables evaluates each jq query against params and returns the results keyed by env var name.
 func ParseEnvironmentVariables(params map[string]any, query map[string]string) map[string]ParsedEnvironmentVariable {
 	results := make(map[string]ParsedEnvironmentVariable)
 

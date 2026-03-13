@@ -1,10 +1,11 @@
+// Package params provides utilities for working with bundle parameter schemas.
 package params
 
 import (
 	"maps"
 )
 
-// Merges two schemas by combining properties and required
+// MergeSchemas merges two schemas by combining properties and required fields.
 func MergeSchemas(m1, m2 map[string]any) map[string]any {
 	resultProperties := map[string]any{}
 	resultRequired := []any{}
@@ -45,7 +46,7 @@ func deduplicateSliceInterface(slice []any) []any {
 	result := []any{}
 
 	for _, elem := range slice {
-		//nolint:errcheck
+		//nolint:errcheck // slice elements are always strings in the deduplication context
 		elemString := elem.(string)
 		if _, exists := dedupMap[elemString]; !exists {
 			dedupMap[elemString] = true

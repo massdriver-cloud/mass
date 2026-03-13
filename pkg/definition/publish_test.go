@@ -53,9 +53,9 @@ func TestPublish(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch r.URL.Path {
 				case "/json-schemas/artifact-definition.json":
-					w.Write([]byte(artifactDefSchema))
+					_, _ = w.Write(artifactDefSchema)
 				case "/json-schemas/draft-7.json":
-					w.Write([]byte(metaSchema))
+					_, _ = w.Write(metaSchema)
 				default:
 					http.NotFound(w, r)
 				}

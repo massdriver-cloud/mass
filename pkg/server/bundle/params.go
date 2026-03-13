@@ -8,7 +8,7 @@ import (
 
 const paramsFile = "_params.auto.tfvars.json"
 
-// reconcileParams reads the params file keeping the md_metadata field intact as it's
+// ReconcileParams reads the params file keeping the md_metadata field intact as it's
 // not represented in the UI yet, adds the incoming params, and writes the file back out.
 func ReconcileParams(baseDir string, params map[string]any) error {
 	paramPath := path.Join(baseDir, "src", paramsFile)

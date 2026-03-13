@@ -1,3 +1,4 @@
+// Package image provides Docker client utilities for building and pushing container images.
 package image
 
 import (
@@ -21,16 +22,19 @@ import (
 
 var dockerURIPattern = regexp.MustCompile("[a-zA-Z0-9-_]+.docker.pkg.dev")
 
+// DockerClient defines the Docker API methods used for building and pushing images.
 type DockerClient interface {
 	ImageBuild(ctx context.Context, buildContext io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error)
 	ImagePush(ctx context.Context, image string, options image.PushOptions) (io.ReadCloser, error)
 	ImageTag(ctx context.Context, source, target string) error
 }
 
+// Client wraps a DockerClient to provide image build and push operations.
 type Client struct {
 	Cli DockerClient
 }
 
+// NewImageClient creates a new Client using the Docker Engine API from the environment.
 func NewImageClient() (Client, error) {
 	cli, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
 
@@ -41,6 +45,7 @@ func NewImageClient() (Client, error) {
 	return Client{Cli: cli}, nil
 }
 
+// BuildImage builds a Docker image using the provided input and tags it for the given container repository.
 func (c *Client) BuildImage(input PushImageInput, containerRepository *api.ContainerRepository) error {
 	tar, err := packageBuildDirectory(input.DockerBuildContext)
 	if err != nil {
@@ -80,6 +85,7 @@ func (c *Client) BuildImage(input PushImageInput, containerRepository *api.Conta
 	return nil
 }
 
+// PushImage pushes the built image to the given container repository.
 func (c *Client) PushImage(input PushImageInput, containerRepository *api.ContainerRepository) error {
 	ctx := context.Background()
 	auth, authErr := createAuthForCloud(containerRepository)

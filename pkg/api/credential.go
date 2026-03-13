@@ -1,4 +1,4 @@
-// Manages credential-type artifacts
+// Package api provides client functions for interacting with the Massdriver API.
 package api
 
 import (
@@ -9,11 +9,11 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-// List supported credential types
+// ListCredentialTypes returns all supported credential artifact definition types.
 func ListCredentialTypes(ctx context.Context, mdClient *client.Client) []*ArtifactDefinition {
 	response, err := listCredentialArtifactDefinitions(ctx, mdClient.GQL, mdClient.Config.OrganizationID)
 	if err != nil {
-		slog.Error("Failed to fetch credential artifact definitions", "error", err)
+		slog.ErrorContext(ctx, "Failed to fetch credential artifact definitions", "error", err)
 		os.Exit(1)
 	}
 
@@ -27,7 +27,7 @@ func ListCredentialTypes(ctx context.Context, mdClient *client.Client) []*Artifa
 	return artifactDefinitions
 }
 
-// Get the first page of artifacts for an artifact type
+// ListArtifactsByType returns the first page of artifacts for the given artifact type.
 func ListArtifactsByType(ctx context.Context, mdClient *client.Client, artifactType string) ([]*Artifact, error) {
 	artifactList := []*Artifact{}
 	response, err := getArtifactsByType(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactType)
@@ -39,7 +39,7 @@ func ListArtifactsByType(ctx context.Context, mdClient *client.Client, artifactT
 	return artifactList, err
 }
 
-// List all credential artifacts
+// ListCredentials returns all credential artifacts for the configured organization.
 func ListCredentials(ctx context.Context, mdClient *client.Client) ([]*Artifact, error) {
 	artifactList := []*Artifact{}
 	response, err := listCredentials(ctx, mdClient.GQL, mdClient.Config.OrganizationID)

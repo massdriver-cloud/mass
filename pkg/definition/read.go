@@ -3,6 +3,7 @@ package definition
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,7 +12,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func Read(ctx context.Context, mdClient *client.Client, path string) (map[string]any, error) {
+// Read reads and dereferences an artifact definition from path, supporting JSON, YAML, and massdriver.yaml formats.
+func Read(_ context.Context, mdClient *client.Client, path string) (map[string]any, error) {
 	// Check if this is a massdriver.yaml file (experimental artifact definition format)
 	if IsMassdriverYAMLArtifactDefinition(path) {
 		built, buildErr := Build(path)
@@ -30,7 +32,7 @@ func Read(ctx context.Context, mdClient *client.Client, path string) (map[string
 		}
 		dereferenced, ok := dereferencedAny.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("dereferenced artifact definition is not a map")
+			return nil, errors.New("dereferenced artifact definition is not a map")
 		}
 		return dereferenced, nil
 	}
@@ -68,7 +70,7 @@ func Read(ctx context.Context, mdClient *client.Client, path string) (map[string
 
 	dereferencedArtifact, ok := dereferencedArtifactAny.(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("dereferenced artifact definition is not a map")
+		return nil, errors.New("dereferenced artifact definition is not a map")
 	}
 
 	return dereferencedArtifact, nil

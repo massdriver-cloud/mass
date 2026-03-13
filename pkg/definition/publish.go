@@ -10,6 +10,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// Publish reads, validates, and publishes an artifact definition from path to the Massdriver API.
 func Publish(ctx context.Context, mdClient *client.Client, path string) (*api.ArtifactDefinitionWithSchema, error) {
 	artDef, readErr := Read(ctx, mdClient, path)
 	if readErr != nil {

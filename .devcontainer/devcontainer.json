@@ -1,34 +1,32 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
-// https://github.com/microsoft/vscode-dev-containers/tree/v0.217.4/containers/go
+// For format details, see https://aka.ms/devcontainer.json.
 {
 	"name": "Go",
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
+	"image": "mcr.microsoft.com/devcontainers/go:1.24-bookworm",
 	"runArgs": [
 		"--cap-add=SYS_PTRACE",
 		"--security-opt",
 		"seccomp=unconfined"
 	],
-	// Set *default* container specific settings.json values on container create.
+	"features": {
+		// Pins golangci-lint to match version expected by .golangci.yaml
+		"ghcr.io/guiyomh/features/golangci-lint:0": {}
+	},
 	"customizations": {
 		"vscode": {
 			"settings": {
 				"go.toolsManagement.checkForUpdates": "local",
 				"go.useLanguageServer": true,
 				"go.gopath": "/go",
-				"go.goroot": "/usr/local/go"
+				"go.goroot": "/usr/local/go",
+				"go.lintTool": "golangci-lint",
+				"go.lintOnSave": "workspace",
+				"go.formatTool": "goimports"
 			},
-			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
 				"golang.Go"
 			]
 		}
 	},
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "go version",
-	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode"
 }

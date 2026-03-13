@@ -19,6 +19,7 @@ var (
 	previewDeployCiContextPath = "/home/runner/work/_temp/_github_workflow/event.json"
 )
 
+// NewCmdPreview returns a cobra command for creating and deploying preview environments.
 func NewCmdPreview() *cobra.Command {
 	previewCmd := &cobra.Command{
 		Use:     "preview",

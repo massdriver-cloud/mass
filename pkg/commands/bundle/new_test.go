@@ -106,9 +106,9 @@ func TestGenerateBasicBundleWithoutTemplate(t *testing.T) {
 	writePath := path.Join(testDir, "my-bundle")
 
 	data := &templates.TemplateData{
-		OutputDir:   writePath,
-		Name:        "my-test-bundle",
-		Description: "A test bundle without a template",
+		OutputDir:    writePath,
+		Name:         "my-test-bundle",
+		Description:  "A test bundle without a template",
 		TemplateName: "", // No template
 		Connections: []templates.Connection{
 			{Name: "vpc", ArtifactDefinition: "massdriver/aws-vpc"},

@@ -1,3 +1,4 @@
+// Package bundle provides HTTP handlers for the local bundle development server.
 package bundle
 
 import (
@@ -15,12 +16,14 @@ import (
 
 const allowedMethods = "OPTIONS, POST"
 
+// Handler serves HTTP requests for local bundle development operations.
 type Handler struct {
 	parsedBundle bundle.Bundle
 	bundleDir    string
 	mdClient     *client.Client
 }
 
+// NewHandler creates a new Handler by loading the bundle from the given directory.
 func NewHandler(dir string, mdClient *client.Client) (*Handler, error) {
 	b, err := bundle.Unmarshal(dir)
 	if err != nil {
@@ -196,6 +199,7 @@ func (h *Handler) readFileAndUnmarshal(readPath string) (map[string]any, error) 
 	return output, err
 }
 
+// Build handles HTTP requests to rebuild the bundle and reload it onto the handler.
 func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Add("Allow", http.MethodPost)
@@ -225,6 +229,7 @@ func (h *Handler) Build(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Connections handles HTTP GET and POST requests for bundle connection data.
 func (h *Handler) Connections(w http.ResponseWriter, r *http.Request) {
 	allowedMethods := "GET, POST"
 	switch r.Method {

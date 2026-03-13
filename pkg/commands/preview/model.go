@@ -23,6 +23,7 @@ type artifactPrompt struct {
 	selection              api.Artifact
 }
 
+// Model is the bubbletea model for the interactive preview environment initialization UI.
 type Model struct {
 	keys            KeyMap
 	help            help.Model
@@ -43,6 +44,7 @@ type Model struct {
 	promptCursor int
 }
 
+// PreviewConfig returns the preview environment configuration built from the user's selections.
 func (m Model) PreviewConfig() *api.PreviewConfig {
 	credentials := make([]api.Credential, 0) // Initialize with empty slice
 
@@ -57,10 +59,13 @@ func (m Model) PreviewConfig() *api.PreviewConfig {
 	}
 }
 
+// Init returns the initial command for the preview model (none required).
 func (m Model) Init() tea.Cmd {
 	return nil
 }
 
+// Update handles incoming messages and updates the preview model state accordingly.
+//
 //nolint:gocognit
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.loaded {
@@ -84,7 +89,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.prompts = initArtifactPrompts(m)
 				m.mode = artifactSelection
 			case artifactSelection:
-				selectedArtifacts := m.current.(artifacttable.Model).SelectedArtifacts
+				currentModel, currentModelOk := m.current.(artifacttable.Model)
+				if !currentModelOk {
+					break
+				}
+				selectedArtifacts := currentModel.SelectedArtifacts
 				if len(selectedArtifacts) > 0 {
 					// TODO limit 1 in UI w/ Maximum validation error OR call next automatically
 					// when selecting in an artifact prompt
@@ -129,6 +138,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// View renders the current state of the preview model as a string for display.
 func (m Model) View() string {
 	if !m.loaded {
 		return "loading..."

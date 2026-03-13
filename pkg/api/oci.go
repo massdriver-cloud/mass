@@ -8,21 +8,25 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+// OciRepoReleaseChannel represents a release channel entry for an OCI repository.
 type OciRepoReleaseChannel struct {
-	Name string `json:"name"`
-	Tag  string `json:"tag"`
+	Name string `json:"name" mapstructure:"name"`
+	Tag  string `json:"tag" mapstructure:"tag"`
 }
 
+// OciRepoTag represents a single tag in an OCI repository.
 type OciRepoTag struct {
-	Tag string `json:"tag"`
+	Tag string `json:"tag" mapstructure:"tag"`
 }
 
+// OciRepo represents an OCI container image repository with its tags and release channels.
 type OciRepo struct {
-	Name            string                  `json:"name"`
-	Tags            []OciRepoTag            `json:"tags"`
-	ReleaseChannels []OciRepoReleaseChannel `json:"releaseChannels"`
+	Name            string                  `json:"name" mapstructure:"name"`
+	Tags            []OciRepoTag            `json:"tags" mapstructure:"tags"`
+	ReleaseChannels []OciRepoReleaseChannel `json:"releaseChannels" mapstructure:"releaseChannels"`
 }
 
+// GetOciRepo retrieves an OCI repository by name from the Massdriver API.
 func GetOciRepo(ctx context.Context, mdClient *client.Client, repo string) (*OciRepo, error) {
 	response, err := getOciRepo(ctx, mdClient.GQL, mdClient.Config.OrganizationID, repo)
 	if err != nil {
@@ -40,6 +44,7 @@ func toOciRepo(v any) (*OciRepo, error) {
 	return &repo, nil
 }
 
+// GetOciRepoTags retrieves the list of tags for an OCI repository from the Massdriver API.
 func GetOciRepoTags(ctx context.Context, mdClient *client.Client, repo string) ([]string, error) {
 	response, err := getOciRepo(ctx, mdClient.GQL, mdClient.Config.OrganizationID, repo)
 	if err != nil {

@@ -1,8 +1,8 @@
+// Package helpdocs provides embedded help documentation rendered via glamour.
 package helpdocs
 
 import (
 	"embed"
-	"fmt"
 	"os"
 	"sync"
 
@@ -17,8 +17,9 @@ var (
 	once          sync.Once
 )
 
+// MustRender renders a named help document from the embedded filesystem, applying glamour styling.
 func MustRender(name string) string {
-	path := fmt.Sprintf("%s.md", name)
+	path := name + ".md"
 	data, err := helpdocs.ReadFile(path)
 	if err != nil {
 		panic(err)

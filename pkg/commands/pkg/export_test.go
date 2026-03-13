@@ -10,6 +10,7 @@ import (
 	"github.com/massdriver-cloud/mass/pkg/commands/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 // Mock implementations
@@ -181,7 +182,7 @@ func TestExportPackage(t *testing.T) {
 				mfs.On("WriteFile", "/tmp/export/test-manifest/artifact_output.json", mock.Anything, os.FileMode(0644)).Return(nil)
 
 				// State fetcher expectations
-				msf.On("FetchState", mock.Anything, "pkg-123", "src").Return(nil, nil)
+				msf.On("FetchState", mock.Anything, "pkg-123", "src").Return(nil, pkg.ErrNoState)
 			},
 			expectedDirs: []string{"/tmp/export/test-manifest"},
 			expectedFiles: []string{
@@ -286,10 +287,10 @@ func TestExportPackage(t *testing.T) {
 
 			// Check error expectation
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// Verify mock calls
 			mockFS.AssertExpectations(t)
@@ -336,6 +337,6 @@ func TestExportPackage_FileSystemError(t *testing.T) {
 	ctx := context.Background()
 	err := pkg.ExportPackageWithConfig(ctx, &config, pack, "/tmp/export")
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create directory")
 }

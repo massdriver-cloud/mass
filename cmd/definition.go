@@ -25,6 +25,7 @@ import (
 //go:embed templates/definition.get.md.tmpl
 var definitionTemplates embed.FS
 
+// NewCmdDefinition returns a cobra command for managing artifact definitions.
 func NewCmdDefinition() *cobra.Command {
 	definitionCmd := &cobra.Command{
 		Use:     "definition",
@@ -74,6 +75,7 @@ func NewCmdDefinition() *cobra.Command {
 	return definitionCmd
 }
 
+//nolint:dupl // runDefinitionGet and runArtifactGet share the same output-format pattern; refactoring would add complexity for marginal gain
 func runDefinitionGet(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
@@ -96,9 +98,9 @@ func runDefinitionGet(cmd *cobra.Command, args []string) error {
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(ad, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal definition to JSON: %w", err)
+		jsonBytes, marshalErr := json.MarshalIndent(ad, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal definition to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
@@ -183,8 +185,8 @@ func renderDefinition(ad *api.ArtifactDefinitionWithSchema) error {
 	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return fmt.Errorf("failed to execute template: %w", err)
+	if renderErr := tmpl.Execute(&buf, data); renderErr != nil {
+		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 
 	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())

@@ -16,18 +16,13 @@ type URLHelper struct {
 
 // NewURLHelper creates a new URLHelper instance
 func NewURLHelper(ctx context.Context, mdClient *client.Client) (*URLHelper, error) {
+	appURL := strings.Replace(mdClient.Config.URL, "api.", "app.", 1)
 	server, err := GetServer(ctx, mdClient)
-	if err != nil {
-		// Fallback: try to derive from API URL
-		appURL := strings.Replace(mdClient.Config.URL, "api.", "app.", 1)
-		return &URLHelper{
-			baseURL: appURL,
-			orgID:   mdClient.Config.OrganizationID,
-		}, nil
+	if err == nil {
+		appURL = server.AppURL
 	}
-
 	return &URLHelper{
-		baseURL: server.AppURL,
+		baseURL: appURL,
 		orgID:   mdClient.Config.OrganizationID,
 	}, nil
 }

@@ -1,3 +1,4 @@
+// Package gqlmock provides utilities for mocking GraphQL HTTP clients in tests.
 package gqlmock
 
 import (
@@ -9,8 +10,10 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// MockEndpoint is the default GraphQL endpoint path used by mock clients.
 const MockEndpoint string = "/graphql"
 
+// NewClient creates a GraphQL client backed by the given mux without a real HTTP connection.
 func NewClient(mux *http.ServeMux) graphql.Client {
 	return graphql.NewClient(MockEndpoint, &http.Client{Transport: localRoundTripper{handler: mux}})
 }
@@ -27,6 +30,7 @@ func (l localRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	return w.Result(), nil
 }
 
+// MustMarshalJSON marshals v to JSON, panicking on error.
 func MustMarshalJSON(v map[string]any) []byte {
 	data, err := json.Marshal(v)
 	if err != nil {
@@ -35,6 +39,7 @@ func MustMarshalJSON(v map[string]any) []byte {
 	return data
 }
 
+// MustUnmarshalJSON unmarshals JSON data into v, panicking on error.
 func MustUnmarshalJSON(data []byte, v any) {
 	err := json.Unmarshal(data, &v)
 	if err != nil {
@@ -42,6 +47,7 @@ func MustUnmarshalJSON(data []byte, v any) {
 	}
 }
 
+// MustWrite writes a string to w, panicking on error.
 func MustWrite(w io.Writer, s string) {
 	_, err := io.WriteString(w, s)
 	if err != nil {
@@ -49,6 +55,7 @@ func MustWrite(w io.Writer, s string) {
 	}
 }
 
+// MuxWithJSONResponseMap creates a mux that routes responses by GraphQL operation name.
 func MuxWithJSONResponseMap(responses map[string]any) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc(MockEndpoint, func(w http.ResponseWriter, req *http.Request) {
@@ -64,13 +71,14 @@ func MuxWithJSONResponseMap(responses map[string]any) *http.ServeMux {
 	return mux
 }
 
-// Takes a map of graphql operation names to JSON responses and creates a GraphQL client that returns based on operation name
+// NewClientWithJSONResponseMap creates a GraphQL client that returns responses keyed by operation name.
 func NewClientWithJSONResponseMap(responses map[string]any) graphql.Client {
 	mux := MuxWithJSONResponseMap(responses)
 	client := NewClient(mux)
 	return client
 }
 
+// MuxWithJSONResponseArray creates a mux that returns responses from the array in order.
 func MuxWithJSONResponseArray(responses []any) *http.ServeMux {
 	mux := http.NewServeMux()
 	counter := 0
@@ -84,6 +92,7 @@ func MuxWithJSONResponseArray(responses []any) *http.ServeMux {
 	return mux
 }
 
+// MuxWithJSONResponse creates a mux that always responds with the given JSON map.
 func MuxWithJSONResponse(response map[string]any) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc(MockEndpoint, func(w http.ResponseWriter, _ *http.Request) {
@@ -105,8 +114,10 @@ func ParseInputVariables(req *http.Request) map[string]any {
 	return parsedReq.Variables
 }
 
+// ResponseFunc is a function type that produces a response from an HTTP request.
 type ResponseFunc func(req *http.Request) any
 
+// MuxWithFuncResponseArray creates a mux that invokes each ResponseFunc in order per request.
 func MuxWithFuncResponseArray(responses []ResponseFunc) *http.ServeMux {
 	mux := http.NewServeMux()
 	counter := 0
@@ -128,26 +139,28 @@ func NewClientWithFuncResponseArray(responses []ResponseFunc) graphql.Client {
 	return client
 }
 
-// Takes a JSON map and creates a GraphQL client that always returns it
+// NewClientWithSingleJSONResponse creates a GraphQL client that always returns the given JSON map.
 func NewClientWithSingleJSONResponse(response map[string]any) graphql.Client {
 	mux := MuxWithJSONResponse(response)
 	client := NewClient(mux)
 	return client
 }
 
-// Takes an array of responses and creates a graphql client that returns them in order
+// NewClientWithJSONResponseArray creates a GraphQL client that returns responses from the array in order.
 func NewClientWithJSONResponseArray(responses []any) graphql.Client {
 	mux := MuxWithJSONResponseArray(responses)
 	client := NewClient(mux)
 	return client
 }
 
+// GraphQLRequest represents the JSON body of an incoming GraphQL HTTP request.
 type GraphQLRequest struct {
 	OperationName string         `json:"operationName"`
 	Query         string         `json:"query"`
 	Variables     map[string]any `json:"variables"`
 }
 
+// MockQueryResponse builds a QueryResponse with the given data keyed by operation name.
 func MockQueryResponse(operationName string, responseData any) QueryResponse {
 	r := QueryResponse{
 		Data: map[string]any{},
@@ -170,20 +183,24 @@ func MockMutationResponse(operationName string, result any) MutationResponse {
 	return r
 }
 
+// QueryResponse represents a GraphQL query response envelope.
 type QueryResponse struct {
 	Data map[string]any `json:"data"`
 }
 
+// MutationResponseMessage holds a single message from a mutation response.
 type MutationResponseMessage struct {
 	Message string `json:"message"`
 }
 
+// MutationResponseData holds the result and messages for a single mutation operation.
 type MutationResponseData struct {
 	Successful bool                      `json:"successful"`
 	Result     any                       `json:"result"`
 	Messages   []MutationResponseMessage `json:"messages"`
 }
 
+// MutationResponse represents a GraphQL mutation response envelope.
 type MutationResponse struct {
 	Data map[string]MutationResponseData `json:"data"`
 }

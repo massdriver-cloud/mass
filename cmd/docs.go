@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -27,24 +26,21 @@ sidebar_label: %s
 ---
 `
 
+// NewCmdDocs returns a cobra command for generating CLI documentation.
 func NewCmdDocs() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "docs",
 		Short: "Gen docs",
 		Long:  "Gen docs",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			dir, err := cmd.Flags().GetString("directory")
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
-			err = os.MkdirAll(dir, os.ModePerm)
-			if err != nil {
-				log.Fatal(err)
+			if err = os.MkdirAll(dir, 0750); err != nil {
+				return err
 			}
-			err = GenMarkdownTreeCustom(rootCmd, dir, filePrepender, linkHandler)
-			if err != nil {
-				log.Fatal(err)
-			}
+			return GenMarkdownTreeCustom(rootCmd, dir, filePrepender, linkHandler)
 		},
 		Args:   cobra.NoArgs,
 		Hidden: false,
@@ -119,12 +115,12 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 	}
 
 	if cmd.Runnable() {
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.UseLine()))
+		fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.UseLine())
 	}
 
 	if len(cmd.Example) > 0 {
 		buf.WriteString("### Examples\n\n")
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.Example))
+		fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.Example)
 	}
 
 	if err := printOptions(buf, cmd, name); err != nil {
@@ -137,7 +133,7 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 			pname := parent.CommandPath()
 			link := pname + mdFileEnding
 			link = strings.ReplaceAll(link, " ", "_")
-			buf.WriteString(fmt.Sprintf("* [%s](%s)\t - %s\n", pname, linkHandler(link), parent.Short))
+			fmt.Fprintf(buf, "* [%s](%s)\t - %s\n", pname, linkHandler(link), parent.Short)
 			cmd.VisitParents(func(c *cobra.Command) {
 				if c.DisableAutoGenTag {
 					cmd.DisableAutoGenTag = c.DisableAutoGenTag
@@ -155,7 +151,7 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 			cname := name + " " + child.Name()
 			link := cname + mdFileEnding
 			link = strings.ReplaceAll(link, " ", "_")
-			buf.WriteString(fmt.Sprintf("* [%s](%s)\t - %s\n", cname, linkHandler(link), child.Short))
+			fmt.Fprintf(buf, "* [%s](%s)\t - %s\n", cname, linkHandler(link), child.Short)
 		}
 	}
 	if !cmd.DisableAutoGenTag {

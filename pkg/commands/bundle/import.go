@@ -14,6 +14,8 @@ import (
 	yaml3 "gopkg.in/yaml.v3"
 )
 
+// RunImport checks for missing IaC parameters and updates massdriver.yaml with any found.
+//
 //nolint:funlen,gocognit
 func RunImport(buildPath string, skipVerify bool) error {
 	fmt.Println("Checking IaC for missing parameters...")
@@ -50,7 +52,11 @@ func RunImport(buildPath string, skipVerify bool) error {
 		missing = verifyImport(missing)
 	}
 
-	if len(missing["properties"].(map[string]any)) == 0 {
+	missingProps, missingPropsOk := missing["properties"].(map[string]any)
+	if !missingPropsOk {
+		return errors.New("missing properties is not a map[string]any")
+	}
+	if len(missingProps) == 0 {
 		fmt.Println("No missing parameters found.")
 		return nil
 	}
@@ -133,6 +139,7 @@ func RunImport(buildPath string, skipVerify bool) error {
 	return nil
 }
 
+//nolint:gocognit // inherently complex due to deep schema validation logic
 func verifyImport(params map[string]any) map[string]any {
 	importedProperties := map[string]any{}
 	paramsToImport := map[string]any{
@@ -142,12 +149,12 @@ func verifyImport(params map[string]any) map[string]any {
 
 	missingProperties := map[string]any{}
 	if _, ok := params["properties"]; ok {
-		//nolint:errcheck
+		//nolint:errcheck // key presence checked by surrounding if; type is always map[string]any
 		missingProperties = params["properties"].(map[string]any)
 	}
 	missingRequired := []any{}
 	if _, ok := params["required"]; ok {
-		//nolint:errcheck
+		//nolint:errcheck // key presence checked by surrounding if; type is always []any
 		missingRequired = params["required"].([]any)
 	}
 
@@ -159,7 +166,7 @@ func verifyImport(params map[string]any) map[string]any {
 		}
 
 		validate := func(s string) error {
-			//nolint:gocritic
+			//nolint:gocritic // mixed &&/|| precedence is intentional; matches promptui validation pattern
 			if len(s) == 1 && strings.Contains("YyNn", s) || prompt.Default != "" && len(s) == 0 {
 				return nil
 			}
@@ -173,8 +180,16 @@ func verifyImport(params map[string]any) map[string]any {
 		if confirmed {
 			importedProperties[paramName] = missingProperties[paramName]
 			for _, req := range missingRequired {
-				if req.(string) == paramName {
-					paramsToImport["required"] = append(paramsToImport["required"].([]any), paramName)
+				reqStr, reqOk := req.(string)
+				if !reqOk {
+					continue
+				}
+				if reqStr == paramName {
+					currentReq, currentReqOk := paramsToImport["required"].([]any)
+					if !currentReqOk {
+						continue
+					}
+					paramsToImport["required"] = append(currentReq, paramName)
 				}
 			}
 		}

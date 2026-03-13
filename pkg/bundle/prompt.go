@@ -42,6 +42,7 @@ func SetMassdriverArtifactDefinitions(in map[string]map[string]any) {
 	massdriverArtifactDefinitions = in
 }
 
+// RunPromptNew interactively prompts the user to fill in all fields of a new bundle template.
 func RunPromptNew(t *templates.TemplateData) error {
 	var err error
 
@@ -164,6 +165,7 @@ func connNameValidate(name string) error {
 	return nil
 }
 
+// GetConnections prompts the user to select and name the connections for the bundle.
 func GetConnections(t *templates.TemplateData) error {
 	none := "(None)"
 
@@ -316,15 +318,25 @@ func getExistingParamsPath(templateName string) (string, error) {
 	return prompt.Run()
 }
 
+// GetConnectionEnvs extracts environment variable templates from an artifact definition for the given connection name.
 func GetConnectionEnvs(connectionName string, artifactDefinition map[string]any) map[string]string {
 	envs := map[string]string{}
 
 	mdBlock, mdBlockExists := artifactDefinition["$md"]
 	if mdBlockExists {
-		envsBlock, envsBlockExists := mdBlock.(map[string]any)["envTemplates"]
+		mdBlockMap, mdBlockMapOk := mdBlock.(map[string]any)
+		if !mdBlockMapOk {
+			return envs
+		}
+		envsBlock, envsBlockExists := mdBlockMap["envTemplates"]
 		if envsBlockExists {
-			for envName, value := range envsBlock.(map[string]any) {
-				//nolint:errcheck
+			envsBlockMap, envsBlockMapOk := envsBlock.(map[string]any)
+			if !envsBlockMapOk {
+				return envs
+			}
+
+			for envName, value := range envsBlockMap {
+				//nolint:errcheck // value type is string as enforced by the surrounding map range
 				envValue := value.(string)
 				envs[envName] = strings.ReplaceAll(envValue, "connection_name", connectionName)
 			}

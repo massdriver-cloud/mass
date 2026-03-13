@@ -1,3 +1,4 @@
+// Package templates handles rendering and copying bundle templates to a target directory.
 package templates
 
 import (
@@ -41,7 +42,7 @@ func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkEr
 				return makeWriteDirectoryAndParents(f.writeDirectory)
 			}
 
-			return os.Mkdir(outputPath, 0755)
+			return os.Mkdir(outputPath, 0750)
 		}
 
 		return nil
@@ -76,7 +77,7 @@ func (f *fileManager) promptAndWrite(template []byte, outputPath string) error {
 			return scanErr
 		}
 
-		if !(response == "y" || response == "Y" || response == "yes" || response == "all") {
+		if response != "y" && response != "Y" && response != "yes" && response != "all" {
 			fmt.Println("keeping existing file")
 			return nil
 		}
@@ -117,7 +118,7 @@ func relativeWritePath(currentFilePath, readDirectory string) string {
 
 func makeWriteDirectoryAndParents(writeDirectory string) error {
 	if _, err := os.Stat(writeDirectory); err != nil {
-		return os.MkdirAll(writeDirectory, 0755)
+		return os.MkdirAll(writeDirectory, 0750)
 	}
 
 	return nil

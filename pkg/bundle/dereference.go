@@ -9,6 +9,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// DereferenceSchemas resolves all $ref entries in the bundle's schemas using the API client.
 func (b *Bundle) DereferenceSchemas(path string, mdClient *client.Client) error {
 	cwd := filepath.Dir(path)
 

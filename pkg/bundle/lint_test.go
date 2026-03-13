@@ -46,7 +46,7 @@ func TestLintSchema(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch r.URL.Path {
 				case "/json-schemas/bundle.json":
-					w.Write([]byte(bundleSchema))
+					_, _ = w.Write(bundleSchema)
 				default:
 					http.NotFound(w, r)
 				}
@@ -61,7 +61,7 @@ func TestLintSchema(t *testing.T) {
 
 			got := tc.bun.LintSchema(&mdClient)
 
-			assert.Equal(t, len(tc.want.Issues), len(got.Issues))
+			assert.Len(t, got.Issues, len(tc.want.Issues))
 			for i := range tc.want.Issues {
 				assert.Equal(t, tc.want.Issues[i].Rule, got.Issues[i].Rule)
 				assert.Equal(t, tc.want.Issues[i].Severity, got.Issues[i].Severity)
@@ -142,7 +142,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
-						Type:        "infrastructure",
+					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lint/module",
 						Provisioner: "opentofu",
@@ -163,7 +163,7 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 				bun: &bundle.Bundle{
 					Name:        "example",
 					Description: "description",
-						Type:        "infrastructure",
+					Type:        "infrastructure",
 					Steps: []bundle.Step{{
 						Path:        "testdata/lint/module",
 						Provisioner: "opentofu",

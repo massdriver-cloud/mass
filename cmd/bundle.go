@@ -52,7 +52,8 @@ type bundleList struct {
 	output    string
 }
 
-func NewCmdBundle() *cobra.Command {
+// NewCmdBundle returns a cobra command for generating and publishing bundles.
+func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders are necessarily long
 	bundleCmd := &cobra.Command{
 		Use:   "bundle",
 		Short: "Generate and publish bundles",
@@ -340,11 +341,12 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 
 	results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
 
-	if results.HasErrors() {
+	switch {
+	case results.HasErrors():
 		return fmt.Errorf("linting failed with %d error(s)", len(results.Errors()))
-	} else if results.HasWarnings() {
+	case results.HasWarnings():
 		fmt.Printf("Linting completed with %d warning(s)\n", len(results.Warnings()))
-	} else {
+	default:
 		fmt.Println("Linting completed, massdriver.yaml is valid!")
 	}
 
@@ -395,16 +397,17 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	if !skipLint {
 		results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
 
-		if results.HasErrors() {
+		switch {
+		case results.HasErrors():
 			fmt.Printf("Halting publish: Linting failed with %d error(s)\n", len(results.Errors()))
 			os.Exit(1)
-		} else if results.HasWarnings() {
+		case results.HasWarnings():
 			if failWarnings {
 				fmt.Printf("Halting publish: linting failed with %d warning(s)\n", len(results.Warnings()))
 				os.Exit(1)
 			}
 			fmt.Printf("Linting completed with %d warning(s)\n", len(results.Warnings()))
-		} else {
+		default:
 			fmt.Println("Linting completed, massdriver.yaml is valid!")
 		}
 	}
@@ -503,7 +506,7 @@ func runBundleGet(cmd *cobra.Command, args []string) error {
 
 	arg := args[0]
 	parts := strings.Split(arg, "@")
-	bundleId := parts[0]
+	bundleID := parts[0]
 	version := "latest"
 	if len(parts) == 2 {
 		version = parts[1]
@@ -520,16 +523,16 @@ func runBundleGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	bundle, err := api.GetBundle(ctx, mdClient, bundleId, &version)
+	bundle, err := api.GetBundle(ctx, mdClient, bundleID, &version)
 	if err != nil {
 		return err
 	}
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(bundle, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal bundle to JSON: %w", err)
+		jsonBytes, marshalErr := json.MarshalIndent(bundle, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal bundle to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
@@ -572,8 +575,8 @@ func renderBundle(b *api.Bundle, mdClient *client.Client) error {
 	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return fmt.Errorf("failed to execute template: %w", err)
+	if renderErr := tmpl.Execute(&buf, data); renderErr != nil {
+		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 
 	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())

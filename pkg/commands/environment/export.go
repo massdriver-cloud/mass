@@ -1,7 +1,9 @@
+// Package environment provides commands for managing Massdriver environments.
 package environment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -11,8 +13,9 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func RunExport(ctx context.Context, mdClient *client.Client, environmentIdOrSlug string) error {
-	env, getErr := api.GetEnvironment(ctx, mdClient, environmentIdOrSlug)
+// RunExport exports all packages in the specified environment to the current directory.
+func RunExport(ctx context.Context, mdClient *client.Client, environmentIDOrSlug string) error {
+	env, getErr := api.GetEnvironment(ctx, mdClient, environmentIDOrSlug)
 	if getErr != nil {
 		return getErr
 	}
@@ -20,6 +23,7 @@ func RunExport(ctx context.Context, mdClient *client.Client, environmentIdOrSlug
 	return ExportEnvironment(ctx, mdClient, env, ".")
 }
 
+// ExportEnvironment exports all packages in the given environment into a subdirectory of baseDir.
 func ExportEnvironment(ctx context.Context, mdClient *client.Client, environment *api.Environment, baseDir string) error {
 	validateErr := validateEnvironmentExport(environment)
 	if validateErr != nil {
@@ -39,15 +43,15 @@ func ExportEnvironment(ctx context.Context, mdClient *client.Client, environment
 
 func validateEnvironmentExport(environment *api.Environment) error {
 	if environment == nil {
-		return fmt.Errorf("environment cannot be nil")
+		return errors.New("environment cannot be nil")
 	}
 
 	if environment.Slug == "" {
-		return fmt.Errorf("environment slug is required")
+		return errors.New("environment slug is required")
 	}
 
 	if len(environment.Packages) == 0 {
-		return fmt.Errorf("environment must have at least one package")
+		return errors.New("environment must have at least one package")
 	}
 
 	return nil
