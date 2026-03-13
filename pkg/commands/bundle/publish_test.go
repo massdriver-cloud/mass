@@ -1,7 +1,6 @@
-package bundle
+package bundle //nolint:testpackage // needs access to unexported bundle internals
 
 import (
-	"context"
 	"regexp"
 	"testing"
 
@@ -62,7 +61,7 @@ func TestGetVersion(t *testing.T) {
 				GQL: gqlClient,
 			}
 
-			ver, err := getVersion(context.Background(), &mdClient, b, tc.developmentRelease)
+			ver, err := getVersion(t.Context(), &mdClient, b, tc.developmentRelease)
 			if tc.wantErr != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tc.wantErr)

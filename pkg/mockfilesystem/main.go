@@ -1,3 +1,4 @@
+// Package mockfilesystem provides helpers for creating virtual file structures in tests.
 package mockfilesystem
 
 import (
@@ -9,16 +10,13 @@ import (
 	"runtime"
 )
 
+// VirtualFile represents a file path and its contents for use in test fixture setup.
 type VirtualFile struct {
 	Path    string
 	Content []byte
 }
 
-/*
-Sets up a test bundle in the location specified by rootTemplateDir.
-Includes a parsable massdriver.yaml template, and an empty src/main.tf.
-Templates are stored at rootTemplateDir/{template}/massdriver.yaml
-*/
+// SetupBundleTemplate sets up a test bundle template in rootTemplateDir with a parsable massdriver.yaml and empty src/main.tf.
 func SetupBundleTemplate(rootTemplateDir string) error {
 	templatePath := "opentofu"
 	srcPath := "src"
@@ -38,11 +36,11 @@ func SetupBundleTemplate(rootTemplateDir string) error {
 
 	files := []VirtualFile{
 		{
-			Path:    fmt.Sprintf("%s/massdriver.yaml", path.Join(rootTemplateDir, templatePath)),
+			Path:    path.Join(rootTemplateDir, templatePath) + "/massdriver.yaml",
 			Content: massdriverYamlTemplate,
 		},
 		{
-			Path: fmt.Sprintf("%s/main.tf", path.Join(rootTemplateDir, templatePath, srcPath)),
+			Path: path.Join(rootTemplateDir, templatePath, srcPath) + "/main.tf",
 		},
 	}
 
@@ -61,6 +59,7 @@ func SetupBundleTemplate(rootTemplateDir string) error {
 	return nil
 }
 
+// SetupBundle sets up a complete test bundle directory at rootDir with massdriver.yaml and source files.
 func SetupBundle(rootDir string) error {
 	srcPath := "src"
 	deployPath := "deploy"
@@ -88,15 +87,15 @@ func SetupBundle(rootDir string) error {
 
 	files := []VirtualFile{
 		{
-			Path:    fmt.Sprintf("%s/massdriver.yaml", rootDir),
+			Path:    rootDir + "/massdriver.yaml",
 			Content: massdriverYamlFile,
 		},
 		{
-			Path:    fmt.Sprintf("%s/main.tf", path.Join(rootDir, srcPath)),
+			Path:    path.Join(rootDir, srcPath) + "/main.tf",
 			Content: mainTF,
 		},
 		{
-			Path: fmt.Sprintf("%s/main.tf", path.Join(rootDir, deployPath)),
+			Path: path.Join(rootDir, deployPath) + "/main.tf",
 		},
 	}
 
@@ -115,8 +114,9 @@ func SetupBundle(rootDir string) error {
 	return nil
 }
 
+// WithOperatorGuide adds an operator guide file of the given type to rootDir.
 func WithOperatorGuide(rootDir string, guideType string) error {
-	operatorGuideFilePath := fmt.Sprintf("%s/pkg/mockfilesystem/testdata/operator.md", projectRoot())
+	operatorGuideFilePath := projectRoot() + "/pkg/mockfilesystem/testdata/operator.md"
 	operatorGuideMd, err := os.ReadFile(operatorGuideFilePath)
 
 	if err != nil {
@@ -125,7 +125,7 @@ func WithOperatorGuide(rootDir string, guideType string) error {
 
 	files := []VirtualFile{
 		{
-			Path:    fmt.Sprintf("%s/operator.%s", rootDir, guideType),
+			Path:    rootDir + "/operator." + guideType,
 			Content: operatorGuideMd,
 		},
 	}
@@ -139,6 +139,7 @@ func WithOperatorGuide(rootDir string, guideType string) error {
 	return nil
 }
 
+// WithFilesToIgnore adds files and directories to rootDir that should be excluded during bundle operations.
 func WithFilesToIgnore(rootDir string) error {
 	directories := []string{
 		path.Join(rootDir, "shouldntexist"),
@@ -146,10 +147,10 @@ func WithFilesToIgnore(rootDir string) error {
 
 	files := []VirtualFile{
 		{
-			Path: fmt.Sprintf("%s/shouldntexist.txt", rootDir),
+			Path: rootDir + "/shouldntexist.txt",
 		},
 		{
-			Path: fmt.Sprintf("%s/src/.tfstate", rootDir),
+			Path: rootDir + "/src/.tfstate",
 		},
 	}
 
@@ -168,6 +169,7 @@ func WithFilesToIgnore(rootDir string) error {
 	return nil
 }
 
+// MakeFiles writes each VirtualFile to disk.
 func MakeFiles(files []VirtualFile) error {
 	for _, file := range files {
 		// #nosec G306
@@ -180,9 +182,10 @@ func MakeFiles(files []VirtualFile) error {
 	return nil
 }
 
+// MakeDirectories creates each named directory, including any missing parents.
 func MakeDirectories(names []string) error {
 	for _, name := range names {
-		err := os.MkdirAll(name, 0755)
+		err := os.MkdirAll(name, 0750)
 		if err != nil {
 			return err
 		}
@@ -191,6 +194,7 @@ func MakeDirectories(names []string) error {
 	return nil
 }
 
+// AssertDirectoryContents returns a diff message and whether the directory contents match the expected list.
 func AssertDirectoryContents(path string, want []string) (string, bool) {
 	filesInDirectory, _ := os.ReadDir(path)
 	got := []string{}

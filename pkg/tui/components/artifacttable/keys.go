@@ -1,9 +1,11 @@
+// Package artifacttable provides a Bubble Tea table component for displaying and selecting artifacts.
 package artifacttable
 
 import (
 	"github.com/charmbracelet/bubbles/key"
 )
 
+// KeyMap defines the key bindings for the artifact table component.
 type KeyMap struct {
 	RowDown         key.Binding
 	RowUp           key.Binding

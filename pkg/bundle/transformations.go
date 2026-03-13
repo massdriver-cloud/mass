@@ -2,6 +2,7 @@ package bundle
 
 var paramsTransformations = []func(map[string]any) error{EnsureBooleansHaveDefault}
 
+// ApplyTransformations recursively applies each transformation function to the schema and its nested objects.
 func ApplyTransformations(schema map[string]any, transformations []func(map[string]any) error) error {
 	for _, transformation := range transformations {
 		err := transformation(schema)

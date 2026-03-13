@@ -144,7 +144,7 @@ func TestGetEnvironment(t *testing.T) {
 }
 
 func TestGetEnvironmentsByPackage(t *testing.T) {
-	packageId := "pkg-uuid1"
+	packageID := "pkg-uuid1"
 
 	want := []api.Environment{
 		{
@@ -250,7 +250,7 @@ func TestGetEnvironmentsByPackage(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	got, err := api.GetEnvironmentsByProject(t.Context(), &mdClient, packageId)
+	got, err := api.GetEnvironmentsByProject(t.Context(), &mdClient, packageID)
 
 	if err != nil {
 		t.Fatal(err)

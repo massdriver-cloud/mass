@@ -15,10 +15,14 @@ import (
 	"github.com/moby/term"
 )
 
-const AWS = "AWS"
-const GCP = "GCP"
-const AZURE = "Azure"
+// Cloud provider identifiers used to distinguish container registry types.
+const (
+	AWS   = "AWS"
+	GCP   = "GCP"
+	AZURE = "Azure"
+)
 
+// Push builds (optionally) and pushes a container image to the appropriate cloud registry.
 func Push(ctx context.Context, mdClient *client.Client, input PushImageInput, imageClient Client) error {
 	var imageName = prettylogs.Underline(input.ImageName)
 	var location = prettylogs.Underline(input.Location)

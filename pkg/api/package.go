@@ -9,18 +9,20 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+// Package represents a deployed bundle instance within a Massdriver environment.
 type Package struct {
-	ID               string            `json:"id"`
-	Slug             string            `json:"slug"`
-	Status           string            `json:"status"`
-	Artifacts        []Artifact        `json:"artifacts,omitempty"`
-	RemoteReferences []RemoteReference `json:"remoteReferences,omitempty"`
+	ID               string            `json:"id" mapstructure:"id"`
+	Slug             string            `json:"slug" mapstructure:"slug"`
+	Status           string            `json:"status" mapstructure:"status"`
+	Artifacts        []Artifact        `json:"artifacts,omitempty" mapstructure:"artifacts"`
+	RemoteReferences []RemoteReference `json:"remoteReferences,omitempty" mapstructure:"remoteReferences"`
 	Bundle           *Bundle           `json:"bundle,omitempty" mapstructure:"bundle,omitempty"`
-	Params           map[string]any    `json:"params"`
+	Params           map[string]any    `json:"params" mapstructure:"params"`
 	Manifest         *Manifest         `json:"manifest" mapstructure:"manifest,omitempty"`
 	Environment      *Environment      `json:"environment,omitempty" mapstructure:"environment,omitempty"`
 }
 
+// ParamsJSON returns the package parameters serialized as a pretty-printed JSON string.
 func (p *Package) ParamsJSON() (string, error) {
 	paramsJSON, err := json.MarshalIndent(p.Params, "", "  ")
 	if err != nil {
@@ -29,6 +31,7 @@ func (p *Package) ParamsJSON() (string, error) {
 	return string(paramsJSON), nil
 }
 
+// GetPackage retrieves a package by slug or ID from the Massdriver API.
 func GetPackage(ctx context.Context, mdClient *client.Client, name string) (*Package, error) {
 	response, err := getPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name)
 	if err != nil {
@@ -46,6 +49,7 @@ func toPackage(p any) (*Package, error) {
 	return &pkg, nil
 }
 
+// ConfigurePackage updates the configuration parameters of a package in the Massdriver API.
 func ConfigurePackage(ctx context.Context, mdClient *client.Client, name string, params map[string]any) (*Package, error) {
 	response, err := configurePackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, name, params)
 
@@ -60,6 +64,7 @@ func ConfigurePackage(ctx context.Context, mdClient *client.Client, name string,
 	return nil, NewMutationError("failed to configure package", response.ConfigurePackage.Messages)
 }
 
+// SetPackageVersion sets the bundle version and release strategy for a package.
 func SetPackageVersion(ctx context.Context, mdClient *client.Client, id string, version string, releaseStrategy ReleaseStrategy) (*Package, error) {
 	response, err := setPackageVersion(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id, version, releaseStrategy)
 
@@ -74,6 +79,7 @@ func SetPackageVersion(ctx context.Context, mdClient *client.Client, id string, 
 	return nil, NewMutationError("failed to set package version", response.SetPackageVersion.Messages)
 }
 
+// DecommissionPackage initiates decommissioning of a package and all its resources.
 func DecommissionPackage(ctx context.Context, mdClient *client.Client, id string, message string) (*Deployment, error) {
 	response, err := decommissionPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id, message)
 
@@ -88,6 +94,7 @@ func DecommissionPackage(ctx context.Context, mdClient *client.Client, id string
 	return nil, NewMutationError("failed to decommission package", response.DecommissionPackage.Messages)
 }
 
+// ResetPackage resets the deployment state of a package in the Massdriver API.
 func ResetPackage(ctx context.Context, mdClient *client.Client, id string) (*Package, error) {
 	deleteState := false
 	deleteParams := false

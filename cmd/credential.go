@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdCredential returns a cobra command for managing credentials.
 func NewCmdCredential() *cobra.Command {
 	credentialCmd := &cobra.Command{
 		Use:     "credential",

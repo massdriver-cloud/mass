@@ -1,3 +1,4 @@
+// Package pkg provides command implementations for managing Massdriver packages.
 package pkg
 
 import (
@@ -9,7 +10,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-// Updates a packages configuration parameters.
+// RunConfigure updates a package's configuration parameters.
 func RunConfigure(ctx context.Context, mdClient *client.Client, name string, params map[string]any) (*api.Package, error) {
 	pkg, err := api.GetPackage(ctx, mdClient, name)
 

@@ -9,13 +9,16 @@ import (
 	"github.com/massdriver-cloud/airlock/pkg/helm"
 )
 
+// HelmProvisioner implements Provisioner for Helm charts.
 type HelmProvisioner struct{}
 
+// ExportMassdriverInputs is a no-op for Helm since variables need not be declared before use.
 func (p *HelmProvisioner) ExportMassdriverInputs(_ string, _ map[string]any) error {
 	// Nothing to do here. Helm doesn't require variables to be declared before use, nor does it require types to be specified
 	return nil
 }
 
+// ReadProvisionerInputs reads the Helm values.yaml and returns its schema as a map.
 func (p *HelmProvisioner) ReadProvisionerInputs(stepPath string) (map[string]any, error) {
 	helmParamsImport := helm.HelmToSchema(path.Join(stepPath, "values.yaml"))
 
@@ -33,6 +36,7 @@ func (p *HelmProvisioner) ReadProvisionerInputs(stepPath string) (map[string]any
 	return variables, nil
 }
 
+// InitializeStep copies the Helm chart directory into the step directory.
 func (p *HelmProvisioner) InitializeStep(stepPath string, sourcePath string) error {
 	pathInfo, statErr := os.Stat(sourcePath)
 	if statErr != nil {

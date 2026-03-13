@@ -1,7 +1,6 @@
 package provisioners_test
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"reflect"
@@ -73,7 +72,7 @@ param bar string
 		t.Run(tc.name, func(t *testing.T) {
 			testDir := t.TempDir()
 
-			content, err := os.ReadFile(path.Join("testdata", "bicep", fmt.Sprintf("%s.bicep", tc.name)))
+			content, err := os.ReadFile(path.Join("testdata", "bicep", tc.name+".bicep"))
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}
@@ -131,7 +130,7 @@ func TestBicepReadProvisionerInputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			testDir := t.TempDir()
 
-			content, err := os.ReadFile(path.Join("testdata", "bicep", fmt.Sprintf("%s.bicep", tc.name)))
+			content, err := os.ReadFile(path.Join("testdata", "bicep", tc.name+".bicep"))
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

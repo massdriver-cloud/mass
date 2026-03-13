@@ -1,4 +1,4 @@
-package files
+package files //nolint:testpackage // needs access to unexported file internals
 
 import (
 	"os"
@@ -94,6 +94,7 @@ func TestRead_TFVARS(t *testing.T) {
 	}
 }
 
+//nolint:gocyclo // test function validates many complex tfvars cases
 func TestRead_ComplexTFVars(t *testing.T) {
 	var result map[string]interface{}
 	err := Read("testdata/complex.tfvars", &result)
@@ -145,7 +146,10 @@ func TestRead_ComplexTFVars(t *testing.T) {
 			t.Errorf("Expected global_secondary_indexes to have 2 items, got %d", len(gsi))
 		}
 		if len(gsi) > 0 {
-			firstIndex := gsi[0].(map[string]interface{})
+			firstIndex, firstIndexOk := gsi[0].(map[string]interface{})
+			if !firstIndexOk {
+				t.Fatal("Expected first global_secondary_index to be a map[string]interface{}")
+			}
 			if name, ok := firstIndex["name"].(string); !ok || name != "user-audit-index" {
 				t.Errorf("Expected first index name to be 'user-audit-index', got %v", firstIndex["name"])
 			}

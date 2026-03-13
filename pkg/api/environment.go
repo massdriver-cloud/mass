@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -9,31 +10,34 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const envUrlTemplate = "%s/orgs/%s/projects/%s/environments/%s"
+const envURLTemplate = "%s/orgs/%s/projects/%s/environments/%s"
 
+// Environment represents a Massdriver deployment environment within a project.
 type Environment struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Slug        string    `json:"slug"`
-	Description string    `json:"description,omitempty"`
+	ID          string    `json:"id" mapstructure:"id"`
+	Name        string    `json:"name" mapstructure:"name"`
+	Slug        string    `json:"slug" mapstructure:"slug"`
+	Description string    `json:"description,omitempty" mapstructure:"description"`
 	Cost        Cost      `json:"cost" mapstructure:"cost"`
 	Packages    []Package `json:"packages,omitempty" mapstructure:"packages,omitempty"`
 	Project     *Project  `json:"project,omitempty" mapstructure:"project,omitempty"`
 }
 
-func GetEnvironment(ctx context.Context, mdClient *client.Client, environmentId string) (*Environment, error) {
-	response, err := getEnvironmentById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, environmentId)
+// GetEnvironment retrieves an environment by ID from the Massdriver API.
+func GetEnvironment(ctx context.Context, mdClient *client.Client, environmentID string) (*Environment, error) {
+	response, err := getEnvironmentById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, environmentID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get environment %s: %w", environmentId, err)
+		return nil, fmt.Errorf("failed to get environment %s: %w", environmentID, err)
 	}
 
 	return toEnvironment(response.Environment)
 }
 
-func GetEnvironmentsByProject(ctx context.Context, mdClient *client.Client, projectId string) ([]Environment, error) {
-	response, err := getEnvironmentsByProject(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectId)
+// GetEnvironmentsByProject retrieves all environments for the given project ID.
+func GetEnvironmentsByProject(ctx context.Context, mdClient *client.Client, projectID string) ([]Environment, error) {
+	response, err := getEnvironmentsByProject(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get environments for project %s: %w", projectId, err)
+		return nil, fmt.Errorf("failed to get environments for project %s: %w", projectID, err)
 	}
 
 	envs := make([]Environment, len(response.Project.Environments))
@@ -48,16 +52,17 @@ func GetEnvironmentsByProject(ctx context.Context, mdClient *client.Client, proj
 	return envs, nil
 }
 
+// URL returns the application URL for this environment.
 func (e *Environment) URL(ctx context.Context, mdClient *client.Client) string {
-	var appUrl string
+	var appURL string
 	server, serverErr := GetServer(ctx, mdClient)
 	if serverErr != nil {
 		// this is greedy (and potentially wrong) but it's VERY unlikely that this query will fail AND the search/replace will be inaccurate
-		appUrl = strings.Replace(mdClient.Config.URL, "api.", "app.", 1)
+		appURL = strings.Replace(mdClient.Config.URL, "api.", "app.", 1)
 	} else {
-		appUrl = server.AppURL
+		appURL = server.AppURL
 	}
-	return fmt.Sprintf(envUrlTemplate, appUrl, mdClient.Config.OrganizationID, e.Project.Slug, e.Slug)
+	return fmt.Sprintf(envURLTemplate, appURL, mdClient.Config.OrganizationID, e.Project.Slug, e.Slug)
 }
 
 func toEnvironment(v any) (*Environment, error) {
@@ -68,40 +73,46 @@ func toEnvironment(v any) (*Environment, error) {
 	return &env, nil
 }
 
-func CreateEnvironment(ctx context.Context, mdClient *client.Client, projectId string, name string, slug string, description string) (*Environment, error) {
-	response, err := createEnvironment(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectId, name, slug, description)
+// CreateEnvironment creates a new environment within the given project.
+func CreateEnvironment(ctx context.Context, mdClient *client.Client, projectID string, name string, slug string, description string) (*Environment, error) {
+	response, err := createEnvironment(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectID, name, slug, description)
 	if err != nil {
 		return nil, err
 	}
 	if !response.CreateEnvironment.Successful {
 		messages := response.CreateEnvironment.GetMessages()
 		if len(messages) > 0 {
-			errMsg := "unable to create environment:"
+			var sb strings.Builder
+			sb.WriteString("unable to create environment:")
 			for _, msg := range messages {
-				errMsg += "\n  - " + msg.Message
+				sb.WriteString("\n  - ")
+				sb.WriteString(msg.Message)
 			}
-			return nil, fmt.Errorf("%s", errMsg)
+			return nil, errors.New(sb.String())
 		}
-		return nil, fmt.Errorf("unable to create environment")
+		return nil, errors.New("unable to create environment")
 	}
 	return toEnvironment(response.CreateEnvironment.Result)
 }
 
-func SetEnvironmentDefault(ctx context.Context, mdClient *client.Client, environmentId string, artifactId string) error {
-	response, err := createEnvironmentConnection(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactId, environmentId)
+// SetEnvironmentDefault sets the default artifact connection for an environment.
+func SetEnvironmentDefault(ctx context.Context, mdClient *client.Client, environmentID string, artifactID string) error {
+	response, err := createEnvironmentConnection(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactID, environmentID)
 	if err != nil {
 		return fmt.Errorf("failed to set environment default: %w", err)
 	}
 	if !response.CreateEnvironmentConnection.Successful {
 		messages := response.CreateEnvironmentConnection.GetMessages()
 		if len(messages) > 0 {
-			errMsg := "unable to set environment default:"
+			var sb strings.Builder
+			sb.WriteString("unable to set environment default:")
 			for _, msg := range messages {
-				errMsg += "\n  - " + msg.Message
+				sb.WriteString("\n  - ")
+				sb.WriteString(msg.Message)
 			}
-			return fmt.Errorf("%s", errMsg)
+			return errors.New(sb.String())
 		}
-		return fmt.Errorf("unable to set environment default")
+		return errors.New("unable to set environment default")
 	}
 	return nil
 }

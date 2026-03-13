@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
+	"strings"
 
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 	"github.com/massdriver-cloud/mass/pkg/jsonschema"
@@ -40,11 +41,6 @@ type LintIssue struct {
 	Severity LintSeverity
 	Message  string
 	Rule     string // The name of the lint rule that generated this issue
-}
-
-// Error implements the error interface for LintIssue
-func (i LintIssue) Error() string {
-	return fmt.Sprintf("[%s]: %s", i.Severity, i.Message)
 }
 
 // LintResult holds the results of a linting operation
@@ -127,6 +123,7 @@ func (r *LintResult) IsClean() bool {
 	return len(r.Issues) == 0
 }
 
+// LintSchema validates the bundle against the Massdriver bundle JSON schema.
 func (b *Bundle) LintSchema(mdClient *client.Client) LintResult {
 	var result LintResult
 
@@ -151,6 +148,9 @@ func (b *Bundle) LintSchema(mdClient *client.Client) LintResult {
 	return result
 }
 
+// LintParamsConnectionsNameCollision reports an error if any param and connection share the same name.
+//
+//nolint:gocognit // inherently complex due to deep schema validation logic
 func (b *Bundle) LintParamsConnectionsNameCollision() LintResult {
 	var result LintResult
 
@@ -158,10 +158,14 @@ func (b *Bundle) LintParamsConnectionsNameCollision() LintResult {
 		if params, ok := b.Params["properties"]; ok {
 			if b.Connections != nil {
 				if connections, connectionsOk := b.Connections["properties"]; connectionsOk {
-					for param := range params.(map[string]any) {
-						for connection := range connections.(map[string]any) {
-							if param == connection {
-								result.AddError("name-collision", fmt.Sprintf("a parameter and connection have the same name: %s", param))
+					paramsMap, paramsMapOk := params.(map[string]any)
+					connectionsMap, connectionsMapOk := connections.(map[string]any)
+					if paramsMapOk && connectionsMapOk {
+						for param := range paramsMap {
+							for connection := range connectionsMap {
+								if param == connection {
+									result.AddError("name-collision", "a parameter and connection have the same name: "+param)
+								}
 							}
 						}
 					}
@@ -172,6 +176,7 @@ func (b *Bundle) LintParamsConnectionsNameCollision() LintResult {
 	return result
 }
 
+// LintMatchRequired checks that every required param is declared in the properties schema.
 func (b *Bundle) LintMatchRequired() LintResult {
 	var result LintResult
 
@@ -196,7 +201,6 @@ func (b *Bundle) LintMatchRequired() LintResult {
 	return result
 }
 
-//nolint:gocognit
 func matchRequired(sch *schema.Schema) error {
 	expandedProperties := schema.ExpandProperties(sch)
 
@@ -222,6 +226,8 @@ func matchRequired(sch *schema.Schema) error {
 	return nil
 }
 
+// LintInputsMatchProvisioner warns when massdriver.yaml params differ from the provisioner's declared variables.
+//
 //nolint:gocognit
 func (b *Bundle) LintInputsMatchProvisioner() LintResult {
 	var result LintResult
@@ -265,16 +271,17 @@ func (b *Bundle) LintInputsMatchProvisioner() LintResult {
 		}
 
 		if len(missingMassdriverInputs) > 0 || len(missingProvisionerInputs) > 0 {
-			errMsg := fmt.Sprintf("missing inputs detected in step %s:\n", step.Path)
+			var sb strings.Builder
+			sb.WriteString(fmt.Sprintf("missing inputs detected in step %s:\n", step.Path))
 
 			for _, p := range missingMassdriverInputs {
-				errMsg += fmt.Sprintf("\t- input \"%s\" declared in IaC but missing massdriver.yaml declaration\n", p)
+				sb.WriteString(fmt.Sprintf("\t- input \"%s\" declared in IaC but missing massdriver.yaml declaration\n", p))
 			}
 			for _, v := range missingProvisionerInputs {
-				errMsg += fmt.Sprintf("\t- input \"%s\" declared in massdriver.yaml but missing IaC declaration\n", v)
+				sb.WriteString(fmt.Sprintf("\t- input \"%s\" declared in massdriver.yaml but missing IaC declaration\n", v))
 			}
 
-			result.AddWarning("param-mismatch", errMsg)
+			result.AddWarning("param-mismatch", sb.String())
 		}
 	}
 

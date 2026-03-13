@@ -1,3 +1,4 @@
+// Package definition provides utilities for reading, building, and publishing artifact definitions.
 package definition
 
 import (

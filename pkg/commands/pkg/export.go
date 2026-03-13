@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,21 +20,31 @@ import (
 const emptyStateResponse = `{"version":4}`
 const bundleSpecVersionOCI = "application/vnd.massdriver.bundle.v1+json"
 
-// Interfaces for dependency injection to enable testing
+// ErrNoState is returned by FetchState when the package has no state yet.
+var ErrNoState = errors.New("no state found for package step")
+
+// FileSystem is an interface for dependency injection of filesystem operations to enable testing.
 type FileSystem interface {
 	MkdirAll(path string, perm os.FileMode) error
 	WriteFile(filename string, data []byte, perm os.FileMode) error
 }
+
+// BundleFetcher is an interface for downloading a bundle from a registry into a directory.
 type BundleFetcher interface {
 	FetchBundle(ctx context.Context, bundleName string, directory string) error
 }
+
+// ArtifactDownloader is an interface for retrieving artifact data by ID.
 type ArtifactDownloader interface {
 	DownloadArtifact(ctx context.Context, artifactID string) (string, error)
 }
+
+// StateFetcher is an interface for retrieving Terraform state for a given package step.
 type StateFetcher interface {
 	FetchState(ctx context.Context, packageID string, stepPath string) (any, error)
 }
 
+// ExportPackageConfig holds all dependencies needed to export a package.
 type ExportPackageConfig struct {
 	Client             *client.Client
 	FileSystem         FileSystem
@@ -42,19 +53,25 @@ type ExportPackageConfig struct {
 	StateFetcher       StateFetcher
 }
 
+// DefaultFileSystem is the production FileSystem implementation backed by the os package.
 type DefaultFileSystem struct{}
 
+// MkdirAll creates the directory path and any necessary parents.
 func (dfs *DefaultFileSystem) MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
 }
+
+// WriteFile writes data to the named file, creating it if necessary.
 func (dfs *DefaultFileSystem) WriteFile(filename string, data []byte, perm os.FileMode) error {
 	return os.WriteFile(filename, data, perm)
 }
 
+// DefaultBundleFetcher is the production BundleFetcher that pulls bundles via OCI.
 type DefaultBundleFetcher struct {
 	Client *client.Client
 }
 
+// FetchBundle downloads the named bundle into directory using OCI pull.
 func (dbf *DefaultBundleFetcher) FetchBundle(ctx context.Context, bundleName string, directory string) error {
 	repo, repoErr := sdkbundle.GetBundleRepository(dbf.Client, bundleName)
 	if repoErr != nil {
@@ -77,18 +94,22 @@ func (dbf *DefaultBundleFetcher) FetchBundle(ctx context.Context, bundleName str
 	return pullErr
 }
 
+// DefaultArtifactDownloader is the production ArtifactDownloader that fetches artifacts from the API.
 type DefaultArtifactDownloader struct {
 	Client *client.Client
 }
 
+// DownloadArtifact retrieves the artifact with the given ID as a JSON string.
 func (dad *DefaultArtifactDownloader) DownloadArtifact(ctx context.Context, artifactID string) (string, error) {
 	return api.DownloadArtifact(ctx, dad.Client, artifactID, "json")
 }
 
+// DefaultStateFetcher is the production StateFetcher that retrieves Terraform state from the API.
 type DefaultStateFetcher struct {
 	Client *client.Client
 }
 
+// FetchState retrieves the Terraform state for the given package and step from the API.
 func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, packageID string, stepPath string) (any, error) {
 	var result any
 	resp, requestErr := dsf.Client.HTTP.R().
@@ -104,12 +125,13 @@ func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, packageID string
 	}
 
 	if string(resp.Body()) == emptyStateResponse {
-		return nil, nil // No state found, return nil
+		return nil, ErrNoState
 	}
 
 	return result, nil
 }
 
+// RunExport fetches a package by slug or ID and exports it to the current directory.
 func RunExport(ctx context.Context, mdClient *client.Client, packageSlugOrID string) error {
 	pkg, err := api.GetPackage(ctx, mdClient, packageSlugOrID)
 	if err != nil {
@@ -119,6 +141,7 @@ func RunExport(ctx context.Context, mdClient *client.Client, packageSlugOrID str
 	return ExportPackage(ctx, mdClient, pkg, ".")
 }
 
+// ExportPackage exports a package to baseDirectory using default production dependencies.
 func ExportPackage(ctx context.Context, mdClient *client.Client, pkg *api.Package, baseDirectory string) error {
 	config := ExportPackageConfig{
 		FileSystem:         &DefaultFileSystem{},
@@ -130,6 +153,9 @@ func ExportPackage(ctx context.Context, mdClient *client.Client, pkg *api.Packag
 	return ExportPackageWithConfig(ctx, &config, pkg, baseDirectory)
 }
 
+// ExportPackageWithConfig exports a package using the provided configuration and dependency overrides.
+//
+//nolint:gocognit // inherently complex due to deep schema validation logic
 func ExportPackageWithConfig(ctx context.Context, config *ExportPackageConfig, pkg *api.Package, baseDirectory string) error {
 	validateErr := validatePackageExport(pkg)
 	if validateErr != nil {
@@ -191,7 +217,7 @@ func ExportPackageWithConfig(ctx context.Context, config *ExportPackageConfig, p
 
 func validatePackageExport(pkg *api.Package) error {
 	if pkg == nil {
-		return fmt.Errorf("package is nil")
+		return errors.New("package is nil")
 	}
 
 	if pkg.Manifest == nil {
@@ -261,7 +287,9 @@ func writeArtifactWithConfig(ctx context.Context, config *ExportPackageConfig, a
 
 func writeStateWithConfig(ctx context.Context, config *ExportPackageConfig, pkg *api.Package, directory string) error {
 	var unmarshalledBundle bundle.Bundle
-	mapstructure.Decode(pkg.Bundle.Spec, &unmarshalledBundle)
+	if err := mapstructure.Decode(pkg.Bundle.Spec, &unmarshalledBundle); err != nil {
+		return fmt.Errorf("failed to decode bundle spec: %w", err)
+	}
 
 	var steps []bundle.Step
 	if unmarshalledBundle.Steps != nil {
@@ -276,17 +304,16 @@ func writeStateWithConfig(ctx context.Context, config *ExportPackageConfig, pkg 
 	}
 
 	for _, step := range steps {
-		stateFileName := fmt.Sprintf("%s.tfstate.json", step.Path)
+		stateFileName := step.Path + ".tfstate.json"
 		stateFilePath := filepath.Join(directory, stateFileName)
 
 		result, err := config.StateFetcher.FetchState(ctx, pkg.ID, step.Path)
-		if err != nil {
-			return fmt.Errorf("failed to fetch state for package %s, step %s: %w", pkg.Slug, step.Path, err)
-		}
-
-		if result == nil {
+		if errors.Is(err, ErrNoState) {
 			// no state found, skip writing
 			continue
+		}
+		if err != nil {
+			return fmt.Errorf("failed to fetch state for package %s, step %s: %w", pkg.Slug, step.Path, err)
 		}
 
 		data, marshalErr := json.MarshalIndent(result, "", "  ")

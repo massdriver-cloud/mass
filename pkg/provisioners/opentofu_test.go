@@ -2,7 +2,6 @@ package provisioners_test
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path"
 	"reflect"
@@ -128,7 +127,7 @@ func TestOpentofuExportMassdriverInputs(t *testing.T) {
 				tfFile = tc.name
 			}
 
-			content, err := os.ReadFile(path.Join("testdata", "opentofu", fmt.Sprintf("%s.tf", tfFile)))
+			content, err := os.ReadFile(path.Join("testdata", "opentofu", tfFile+".tf"))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -206,7 +205,7 @@ func TestOpentofuReadProvisionerInputs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			testDir := t.TempDir()
 
-			content, err := os.ReadFile(path.Join("testdata", "opentofu", fmt.Sprintf("%s.tf", tc.name)))
+			content, err := os.ReadFile(path.Join("testdata", "opentofu", tc.name+".tf"))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

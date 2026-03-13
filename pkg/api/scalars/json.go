@@ -13,6 +13,7 @@ func MarshalJSON(v any) ([]byte, error) {
 	return json.Marshal(string(bytes))
 }
 
+// UnmarshalJSON unmarshals raw JSON bytes into the provided map.
 func UnmarshalJSON(data []byte, v *map[string]any) error {
 	return json.Unmarshal(data, v)
 }

@@ -22,6 +22,7 @@ import (
 //go:embed templates/environment.get.md.tmpl
 var environmentTemplates embed.FS
 
+// NewCmdEnvironment returns a cobra command for managing environments.
 func NewCmdEnvironment() *cobra.Command {
 	environmentCmd := &cobra.Command{
 		Use:     "environment",
@@ -84,7 +85,7 @@ func NewCmdEnvironment() *cobra.Command {
 func runEnvironmentExport(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	environmentId := args[0]
+	environmentID := args[0]
 
 	cmd.SilenceUsage = true
 
@@ -93,13 +94,13 @@ func runEnvironmentExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	return environment.RunExport(ctx, mdClient, environmentId)
+	return environment.RunExport(ctx, mdClient, environmentID)
 }
 
 func runEnvironmentGet(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	environmentId := args[0]
+	environmentID := args[0]
 
 	outputFormat, err := cmd.Flags().GetString("output")
 	if err != nil {
@@ -112,16 +113,16 @@ func runEnvironmentGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	environment, err := api.GetEnvironment(ctx, mdClient, environmentId)
+	environment, err := api.GetEnvironment(ctx, mdClient, environmentID)
 	if err != nil {
 		return err
 	}
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(environment, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal environment to JSON: %w", err)
+		jsonBytes, marshalErr := json.MarshalIndent(environment, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal environment to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
@@ -139,7 +140,7 @@ func runEnvironmentGet(cmd *cobra.Command, args []string) error {
 func runEnvironmentList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	projectId := args[0]
+	projectID := args[0]
 
 	cmd.SilenceUsage = true
 
@@ -148,7 +149,7 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	environments, err := api.GetEnvironmentsByProject(ctx, mdClient, projectId)
+	environments, err := api.GetEnvironmentsByProject(ctx, mdClient, projectID)
 	if err != nil {
 		return err
 	}
@@ -185,8 +186,8 @@ func renderEnvironment(environment *api.Environment) error {
 	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, environment); err != nil {
-		return fmt.Errorf("failed to execute template: %w", err)
+	if renderErr := tmpl.Execute(&buf, environment); renderErr != nil {
+		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 
 	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
@@ -217,7 +218,7 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 	if len(parts) < 2 {
 		return fmt.Errorf("unable to determine project from slug %s (expected format: project-env)", fullSlug)
 	}
-	projectIdOrSlug := parts[0]
+	projectIDOrSlug := parts[0]
 	envSlug := strings.Join(parts[1:], "-")
 
 	if name == "" {
@@ -229,7 +230,7 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	env, err := api.CreateEnvironment(ctx, mdClient, projectIdOrSlug, name, envSlug, "")
+	env, err := api.CreateEnvironment(ctx, mdClient, projectIDOrSlug, name, envSlug, "")
 	if err != nil {
 		return err
 	}
@@ -237,7 +238,7 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✅ Environment `%s` created successfully\n", fullSlug)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(projectIdOrSlug, env.Slug))
+		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(projectIDOrSlug, env.Slug))
 	}
 	return nil
 }
@@ -245,8 +246,8 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	environmentId := args[0]
-	artifactId := args[1]
+	environmentID := args[0]
+	artifactID := args[1]
 
 	cmd.SilenceUsage = true
 
@@ -255,12 +256,12 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	err := api.SetEnvironmentDefault(ctx, mdClient, environmentId, artifactId)
+	err := api.SetEnvironmentDefault(ctx, mdClient, environmentID, artifactID)
 	if err != nil {
 		return err
 	}
 
-	environment, err := api.GetEnvironment(ctx, mdClient, environmentId)
+	environment, err := api.GetEnvironment(ctx, mdClient, environmentID)
 	if err != nil {
 		return fmt.Errorf("failed to get environment: %w", err)
 	}

@@ -9,32 +9,34 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+// Bundle represents a Massdriver bundle (IaC module) and its metadata.
 type Bundle struct {
-	ID                string         `json:"id"`
-	Name              string         `json:"name"`
-	Version           string         `json:"version"`
-	Description       string         `json:"description,omitempty"`
-	Spec              map[string]any `json:"spec,omitempty"`
-	SpecVersion       string         `json:"specVersion,omitempty"`
-	Icon              string         `json:"icon,omitempty"`
-	SourceURL         string         `json:"sourceUrl,omitempty"`
-	ParamsSchema      map[string]any `json:"paramsSchema,omitempty"`
-	ConnectionsSchema map[string]any `json:"connectionsSchema,omitempty"`
-	ArtifactsSchema   map[string]any `json:"artifactsSchema,omitempty"`
-	UISchema          map[string]any `json:"uiSchema,omitempty"`
-	OperatorGuide     string         `json:"operatorGuide,omitempty"`
-	CreatedAt         time.Time      `json:"createdAt,omitempty"`
-	UpdatedAt         time.Time      `json:"updatedAt,omitempty"`
+	ID                string         `json:"id" mapstructure:"id"`
+	Name              string         `json:"name" mapstructure:"name"`
+	Version           string         `json:"version" mapstructure:"version"`
+	Description       string         `json:"description,omitempty" mapstructure:"description"`
+	Spec              map[string]any `json:"spec,omitempty" mapstructure:"spec"`
+	SpecVersion       string         `json:"specVersion,omitempty" mapstructure:"specVersion"`
+	Icon              string         `json:"icon,omitempty" mapstructure:"icon"`
+	SourceURL         string         `json:"sourceUrl,omitempty" mapstructure:"sourceUrl"`
+	ParamsSchema      map[string]any `json:"paramsSchema,omitempty" mapstructure:"paramsSchema"`
+	ConnectionsSchema map[string]any `json:"connectionsSchema,omitempty" mapstructure:"connectionsSchema"`
+	ArtifactsSchema   map[string]any `json:"artifactsSchema,omitempty" mapstructure:"artifactsSchema"`
+	UISchema          map[string]any `json:"uiSchema,omitempty" mapstructure:"uiSchema"`
+	OperatorGuide     string         `json:"operatorGuide,omitempty" mapstructure:"operatorGuide"`
+	CreatedAt         time.Time      `json:"createdAt,omitempty" mapstructure:"createdAt"`
+	UpdatedAt         time.Time      `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
 }
 
-func GetBundle(ctx context.Context, mdClient *client.Client, bundleId string, version *string) (*Bundle, error) {
+// GetBundle retrieves a bundle by ID and optional version from the Massdriver API.
+func GetBundle(ctx context.Context, mdClient *client.Client, bundleID string, version *string) (*Bundle, error) {
 	versionStr := ""
 	if version != nil {
 		versionStr = *version
 	}
-	response, err := getBundle(ctx, mdClient.GQL, mdClient.Config.OrganizationID, bundleId, versionStr)
+	response, err := getBundle(ctx, mdClient.GQL, mdClient.Config.OrganizationID, bundleID, versionStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get bundle %s: %w", bundleId, err)
+		return nil, fmt.Errorf("failed to get bundle %s: %w", bundleID, err)
 	}
 	return toBundle(response.Bundle)
 }

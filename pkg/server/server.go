@@ -1,3 +1,4 @@
+// Package server provides the local bundle development server.
 package server
 
 import (
@@ -32,6 +33,7 @@ const (
 	bundleBuilderUI = "https://github.com/massdriver-cloud/massdriver-devtool-ui/releases/latest/download/devtool-ui.tar.gz"
 )
 
+// BundleServer is the local development server for building and testing bundles.
 type BundleServer struct {
 	BaseDir          string
 	Bundle           *bundle.Bundle
@@ -41,6 +43,7 @@ type BundleServer struct {
 	httpServer *http.Server
 }
 
+// New creates a BundleServer for the bundle at dir.
 func New(dir string) (*BundleServer, error) {
 	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
@@ -68,8 +71,9 @@ func New(dir string) (*BundleServer, error) {
 	}, nil
 }
 
+// Start begins listening on the given port and optionally opens the UI in a browser.
 func (b *BundleServer) Start(port string, launchBrowser bool) error {
-	ln, err := net.Listen("tcp", "127.0.0.1:"+port)
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:"+port)
 	if err != nil {
 		slog.Error(err.Error())
 		return err
@@ -86,6 +90,7 @@ func (b *BundleServer) Start(port string, launchBrowser bool) error {
 	return b.httpServer.Serve(ln)
 }
 
+// Stop gracefully shuts down the HTTP server.
 func (b *BundleServer) Stop(ctx context.Context) error {
 	return b.httpServer.Shutdown(ctx)
 }
@@ -94,12 +99,12 @@ func (b *BundleServer) Stop(ctx context.Context) error {
 func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 	bundleUIDir, err := setupUIDir()
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(ctx, err.Error())
 		os.Exit(1)
 	}
 
 	if err = getUIFiles(ctx, bundleUIDir); err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(ctx, err.Error())
 		os.Exit(1)
 	}
 
@@ -131,7 +136,7 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 
 	proxy, err := proxy.New(b.MassdriverClient.Config.URL)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(ctx, err.Error())
 		os.Exit(1)
 	}
 
@@ -139,7 +144,7 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 
 	bundleHandler, err := sb.NewHandler(b.BaseDir, b.MassdriverClient)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(ctx, err.Error())
 		os.Exit(1)
 	}
 
@@ -149,7 +154,7 @@ func (b *BundleServer) RegisterHandlers(ctx context.Context) {
 	http.Handle("/bundle/envs", originHeaderMiddleware(http.HandlerFunc(bundleHandler.GetEnvironmentVariables)))
 	http.Handle("/bundle/params", originHeaderMiddleware(http.HandlerFunc(bundleHandler.Params)))
 
-	http.Handle("/config", originHeaderMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/config", originHeaderMiddleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		type ConfigResponse struct {
 			OrgID  string `json:"orgID"`
 			APIKey string `json:"apiKey"`
@@ -240,7 +245,7 @@ func getUIFiles(ctx context.Context, baseDir string) error {
 			continue
 		}
 
-		if err = os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+		if err = os.MkdirAll(filepath.Dir(path), 0750); err != nil {
 			return err
 		}
 

@@ -1,3 +1,4 @@
+// Package proxy provides an HTTP reverse proxy for Massdriver API requests.
 package proxy
 
 import (
@@ -7,6 +8,7 @@ import (
 	"strings"
 )
 
+// New creates a reverse proxy that forwards requests to the given URL.
 func New(proxyURL string) (*httputil.ReverseProxy, error) {
 	target, err := url.Parse(proxyURL)
 	if err != nil {

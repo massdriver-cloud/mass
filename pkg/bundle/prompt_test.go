@@ -1,4 +1,4 @@
-package bundle
+package bundle //nolint:testpackage // needs access to unexported bundle internals
 
 import (
 	"reflect"

@@ -9,7 +9,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-// Updates a packages configuration parameters.
+// RunPatch updates a package's configuration parameters using jq set expressions.
 func RunPatch(ctx context.Context, mdClient *client.Client, name string, setValues []string) (*api.Package, error) {
 	pkg, err := api.GetPackage(ctx, mdClient, name)
 

@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdSchema returns a cobra command for managing JSON schemas.
 func NewCmdSchema() *cobra.Command {
 	schemaCmd := &cobra.Command{
 		Use:   "schema",
@@ -28,7 +29,7 @@ func NewCmdSchema() *cobra.Command {
 		RunE:  runSchemaDereference,
 	}
 	schemaDereferenceCmd.Flags().StringP("file", "f", "", "Path to JSON document")
-	schemaDereferenceCmd.MarkFlagRequired("file")
+	_ = schemaDereferenceCmd.MarkFlagRequired("file")
 
 	schemaValidateCmd := &cobra.Command{
 		Use:   "validate",
@@ -38,8 +39,8 @@ func NewCmdSchema() *cobra.Command {
 	}
 	schemaValidateCmd.Flags().StringP("document", "d", "document.json", "Path to JSON document")
 	schemaValidateCmd.Flags().StringP("schema", "s", "./schema.json", "Path to JSON Schema")
-	schemaValidateCmd.MarkFlagRequired("document")
-	schemaValidateCmd.MarkFlagRequired("schema")
+	_ = schemaValidateCmd.MarkFlagRequired("document")
+	_ = schemaValidateCmd.MarkFlagRequired("schema")
 
 	schemaCmd.AddCommand(schemaDereferenceCmd)
 	schemaCmd.AddCommand(schemaValidateCmd)

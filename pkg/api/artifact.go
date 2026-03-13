@@ -2,38 +2,43 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// RemoteReference holds a reference to a remote artifact.
 type RemoteReference struct {
-	Artifact Artifact `json:"artifact"`
+	Artifact Artifact `json:"artifact" mapstructure:"artifact"`
 }
 
+// Artifact represents an artifact stored in Massdriver.
 type Artifact struct {
-	ID                 string                        `json:"id"`
-	Name               string                        `json:"name"`
-	Type               string                        `json:"type"`
-	Field              string                        `json:"field,omitempty"`
-	Payload            map[string]any                `json:"payload,omitempty"`
-	Formats            []string                      `json:"formats,omitempty"`
-	CreatedAt          time.Time                     `json:"createdAt,omitempty"`
-	UpdatedAt          time.Time                     `json:"updatedAt,omitempty"`
-	ArtifactDefinition *ArtifactDefinitionWithSchema `json:"artifactDefinition,omitempty"`
-	Package            *ArtifactPackage              `json:"package,omitempty"`
-	Origin             string                        `json:"origin,omitempty"`
+	ID                 string                        `json:"id" mapstructure:"id"`
+	Name               string                        `json:"name" mapstructure:"name"`
+	Type               string                        `json:"type" mapstructure:"type"`
+	Field              string                        `json:"field,omitempty" mapstructure:"field"`
+	Payload            map[string]any                `json:"payload,omitempty" mapstructure:"payload"`
+	Formats            []string                      `json:"formats,omitempty" mapstructure:"formats"`
+	CreatedAt          time.Time                     `json:"createdAt,omitempty" mapstructure:"createdAt"`
+	UpdatedAt          time.Time                     `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+	ArtifactDefinition *ArtifactDefinitionWithSchema `json:"artifactDefinition,omitempty" mapstructure:"artifactDefinition"`
+	Package            *ArtifactPackage              `json:"package,omitempty" mapstructure:"package"`
+	Origin             string                        `json:"origin,omitempty" mapstructure:"origin"`
 }
 
 // ArtifactPackage is a minimal representation of a Package containing only ID and Slug.
 // We use a separate struct instead of the full Package struct because Package has required
 // non-omitempty fields (Status, Params) that we don't have when getting artifact details.
 type ArtifactPackage struct {
-	ID   string `json:"id"`
-	Slug string `json:"slug"`
+	ID   string `json:"id" mapstructure:"id"`
+	Slug string `json:"slug" mapstructure:"slug"`
 }
 
+// CreateArtifact creates a new artifact in the Massdriver API.
 func CreateArtifact(ctx context.Context, mdClient *client.Client, artifactName string, artifactType string, artifactPayload map[string]any) (*Artifact, error) {
 	response, err := createArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactName, artifactType, artifactPayload)
 	if err != nil {
@@ -52,6 +57,7 @@ func (payload *createArtifactCreateArtifactArtifactPayload) toArtifact() *Artifa
 	}
 }
 
+// DownloadArtifact downloads an artifact from Massdriver in the specified format.
 func DownloadArtifact(ctx context.Context, mdClient *client.Client, artifactID string, format string) (string, error) {
 	response, err := downloadArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactID, format)
 	if err != nil {
@@ -61,6 +67,7 @@ func DownloadArtifact(ctx context.Context, mdClient *client.Client, artifactID s
 	return response.DownloadArtifact.RenderedArtifact, nil
 }
 
+// GetArtifact retrieves an artifact by ID from the Massdriver API.
 func GetArtifact(ctx context.Context, mdClient *client.Client, artifactID string) (*Artifact, error) {
 	response, err := getArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactID)
 	if err != nil {
@@ -100,6 +107,7 @@ func (response *getArtifactResponse) toArtifact() *Artifact {
 	return artifact
 }
 
+// UpdateArtifact updates an existing artifact in the Massdriver API.
 func UpdateArtifact(ctx context.Context, mdClient *client.Client, artifactID string, artifactName string, artifactPayload map[string]any) (*Artifact, error) {
 	response, err := updateArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactID, artifactName, artifactPayload)
 	if err != nil {
@@ -108,16 +116,18 @@ func UpdateArtifact(ctx context.Context, mdClient *client.Client, artifactID str
 	if !response.UpdateArtifact.Successful {
 		messages := response.UpdateArtifact.GetMessages()
 		if len(messages) > 0 {
-			errMsg := "unable to update artifact:"
+			var sb strings.Builder
+			sb.WriteString("unable to update artifact:")
 			for _, msg := range messages {
-				errMsg += "\n  - " + msg.Message
+				sb.WriteString("\n  - ")
+				sb.WriteString(msg.Message)
 			}
-			return nil, fmt.Errorf("%s", errMsg)
+			return nil, errors.New(sb.String())
 		}
-		return nil, fmt.Errorf("unable to update artifact")
+		return nil, errors.New("unable to update artifact")
 	}
 	if response.UpdateArtifact.Result.Id == "" {
-		return nil, fmt.Errorf("update artifact returned no result")
+		return nil, errors.New("update artifact returned no result")
 	}
 	return &Artifact{
 		ID:   response.UpdateArtifact.Result.Id,
@@ -125,6 +135,7 @@ func UpdateArtifact(ctx context.Context, mdClient *client.Client, artifactID str
 	}, nil
 }
 
+// DeleteArtifact deletes an artifact by ID from the Massdriver API.
 func DeleteArtifact(ctx context.Context, mdClient *client.Client, artifactID string) (*Artifact, error) {
 	response, err := deleteArtifact(ctx, mdClient.GQL, mdClient.Config.OrganizationID, artifactID)
 	if err != nil {
@@ -133,17 +144,19 @@ func DeleteArtifact(ctx context.Context, mdClient *client.Client, artifactID str
 	if !response.DeleteArtifact.Successful {
 		messages := response.DeleteArtifact.GetMessages()
 		if len(messages) > 0 {
-			errMsg := "unable to delete artifact:"
+			var sb strings.Builder
+			sb.WriteString("unable to delete artifact:")
 			for _, msg := range messages {
-				errMsg += "\n  - " + msg.Message
+				sb.WriteString("\n  - ")
+				sb.WriteString(msg.Message)
 			}
-			return nil, fmt.Errorf("%s", errMsg)
+			return nil, errors.New(sb.String())
 		}
-		return nil, fmt.Errorf("unable to delete artifact")
+		return nil, errors.New("unable to delete artifact")
 	}
 	// Check if result is empty (genqlient generates value types, not pointers)
 	if response.DeleteArtifact.Result.Id == "" {
-		return nil, fmt.Errorf("delete artifact returned no result")
+		return nil, errors.New("delete artifact returned no result")
 	}
 	return &Artifact{
 		ID:   response.DeleteArtifact.Result.Id,

@@ -13,6 +13,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// Delete removes an artifact definition by name, prompting for confirmation unless force is set.
 func Delete(ctx context.Context, mdClient *client.Client, definitionName string, force bool) error {
 	// Get definition details for confirmation
 	ad, getErr := Get(ctx, mdClient, definitionName)

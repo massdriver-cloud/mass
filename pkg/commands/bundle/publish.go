@@ -15,16 +15,16 @@ import (
 	"oras.land/oras-go/v2/content/memory"
 )
 
+// RunPublish packages and publishes a bundle to the Massdriver registry.
 func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *client.Client, buildFromDir string, developmentRelease bool) error {
-
 	version, versionErr := getVersion(ctx, mdClient, b, developmentRelease)
 	if versionErr != nil {
 		return versionErr
 	}
 
 	var printBundleName = prettylogs.Underline(b.Name)
-	var printOrganizationId = prettylogs.Underline(mdClient.Config.OrganizationID)
-	fmt.Printf("Publishing %s:%s to organization %s...\n", printBundleName, version, printOrganizationId)
+	var printOrganizationID = prettylogs.Underline(mdClient.Config.OrganizationID)
+	fmt.Printf("Publishing %s:%s to organization %s...\n", printBundleName, version, printOrganizationID)
 
 	repo, repoErr := sdkbundle.GetBundleRepository(mdClient, b.Name)
 	if repoErr != nil {
@@ -51,7 +51,7 @@ func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *client.Client, 
 		return fmt.Errorf("publishing bundle: %w", publishErr)
 	}
 
-	fmt.Printf("Bundle %s:%s successfully published to organization %s!\n", printBundleName, version, printOrganizationId)
+	fmt.Printf("Bundle %s:%s successfully published to organization %s!\n", printBundleName, version, printOrganizationID)
 
 	// Output repo instances URL
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
@@ -73,9 +73,8 @@ func getVersion(ctx context.Context, mdClient *client.Client, b *bundle.Bundle, 
 	if b.Version != "0.0.0" && slices.Contains(existingVersions, b.Version) {
 		if !developmentRelease {
 			return "", fmt.Errorf("version %s already exists for bundle %s", b.Version, b.Name)
-		} else {
-			return "", fmt.Errorf("version %s already exists for bundle %s - cannot publish a development release for an existing version", b.Version, b.Name)
 		}
+		return "", fmt.Errorf("version %s already exists for bundle %s - cannot publish a development release for an existing version", b.Version, b.Name)
 	}
 
 	version := b.Version

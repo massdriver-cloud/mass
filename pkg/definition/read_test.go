@@ -1,7 +1,6 @@
 package definition_test
 
 import (
-	"context"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -49,7 +48,7 @@ func TestRead(t *testing.T) {
 				GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]any{"data": map[string]any{}}),
 			}
 
-			got, err := definition.Read(context.Background(), &mdClient, tc.file)
+			got, err := definition.Read(t.Context(), &mdClient, tc.file)
 			if err != nil {
 				t.Fatal(err)
 			}

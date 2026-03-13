@@ -1,3 +1,4 @@
+// Package files provides utilities for reading and writing files in various formats.
 package files
 
 import (
@@ -12,8 +13,10 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// UserRW is the file permission mode for owner read/write only.
 const UserRW = 0600
 
+// Write serializes data and writes it to path using the format inferred from the file extension.
 func Write(path string, data any) error {
 	var formattedData []byte
 	ext := filepath.Ext(path)
@@ -32,6 +35,7 @@ func Write(path string, data any) error {
 	return os.WriteFile(path, formattedData, UserRW)
 }
 
+// Read reads and deserializes the file at path into v using the format inferred from the file extension.
 func Read(path string, v any) error {
 	ext := filepath.Ext(path)
 
@@ -88,9 +92,9 @@ func decodeTFVars(path string, v any) error {
 			return fmt.Errorf("failed to evaluate attribute %s: %s", name, diags.Error())
 		}
 		// Convert cty.Value to Go value using JSON marshaling
-		jsonBytes, err := ctyjson.Marshal(val, val.Type())
-		if err != nil {
-			return fmt.Errorf("failed to marshal attribute %s: %w", name, err)
+		jsonBytes, marshalErr := ctyjson.Marshal(val, val.Type())
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal attribute %s: %w", name, marshalErr)
 		}
 		var goVal interface{}
 		if err = json.Unmarshal(jsonBytes, &goVal); err != nil {

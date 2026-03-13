@@ -32,7 +32,8 @@ var (
 //go:embed templates/package.get.md.tmpl
 var packageTemplates embed.FS
 
-func NewCmdPkg() *cobra.Command {
+// NewCmdPkg returns a cobra command for managing packages of IaC deployed in environments.
+func NewCmdPkg() *cobra.Command { //nolint:funlen // cobra command builders are necessarily long
 	pkgCmd := &cobra.Command{
 		Use:     "package",
 		Aliases: []string{"pkg"},
@@ -180,9 +181,9 @@ func runPkgGet(cmd *cobra.Command, args []string) error {
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(pkg, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal package to JSON: %w", err)
+		jsonBytes, marshalErr := json.MarshalIndent(pkg, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal package to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
@@ -209,8 +210,8 @@ func renderPackage(pkg *api.Package) error {
 	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, pkg); err != nil {
-		return fmt.Errorf("failed to execute template: %w", err)
+	if renderErr := tmpl.Execute(&buf, pkg); renderErr != nil {
+		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 
 	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())
@@ -338,7 +339,7 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	bundleIdOrName, err := cmd.Flags().GetString("bundle")
+	bundleIDOrName, err := cmd.Flags().GetString("bundle")
 	if err != nil {
 		return err
 	}
@@ -349,7 +350,7 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 	if len(parts) != 3 {
 		return fmt.Errorf("unable to determine project, environment, and manifest from slug %s (expected format: project-env-manifest)", fullSlug)
 	}
-	projectIdOrSlug := parts[0]
+	projectIDOrSlug := parts[0]
 	environmentSlug := parts[1]
 	manifestSlug := parts[2]
 
@@ -362,7 +363,7 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	_, err = api.CreateManifest(ctx, mdClient, bundleIdOrName, projectIdOrSlug, name, manifestSlug, "")
+	_, err = api.CreateManifest(ctx, mdClient, bundleIDOrName, projectIDOrSlug, name, manifestSlug, "")
 	if err != nil {
 		return err
 	}
@@ -370,7 +371,7 @@ func runPkgCreate(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✅ Package `%s` created successfully\n", fullSlug)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.PackageURL(projectIdOrSlug, environmentSlug, manifestSlug))
+		fmt.Printf("🔗 %s\n", urlHelper.PackageURL(projectIDOrSlug, environmentSlug, manifestSlug))
 	}
 	return nil
 }
@@ -395,11 +396,12 @@ func runPkgVersion(cmd *cobra.Command, args []string) error {
 
 	// Convert release channel to ReleaseStrategy enum value
 	var releaseStrategy api.ReleaseStrategy
-	if releaseChannel == "development" {
+	switch releaseChannel {
+	case "development":
 		releaseStrategy = api.ReleaseStrategyDevelopment
-	} else if releaseChannel == "stable" {
+	case "stable":
 		releaseStrategy = api.ReleaseStrategyStable
-	} else {
+	default:
 		return fmt.Errorf("invalid release-channel: must be 'stable' or 'development', got '%s'", releaseChannel)
 	}
 

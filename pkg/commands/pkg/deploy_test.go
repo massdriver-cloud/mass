@@ -32,7 +32,7 @@ func TestRunDeploy(t *testing.T) {
 	mdClient := client.Client{
 		GQL: gqlmock.NewClientWithJSONResponseArray(responses),
 	}
-	pkg.DeploymentStatusSleep = 0
+	pkg.DeploymentStatusSleep = 0 //nolint:reassign // intentionally overriding sleep duration in tests
 
 	deployment, err := pkg.RunDeploy(t.Context(), &mdClient, "ecomm-prod-cache", "foo")
 	if err != nil {

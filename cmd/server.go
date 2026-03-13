@@ -19,6 +19,7 @@ import (
 
 var programLevel = new(slog.LevelVar) // Info by default
 
+// NewCmdServer returns a cobra command for starting the bundle development server.
 func NewCmdServer() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "server",
@@ -39,11 +40,11 @@ func NewCmdServer() *cobra.Command {
 }
 
 // @title						Massdriver API
-// @description				Massdriver Bundle Development Server API
-// @contact.url				https://github.com/massdriver-cloud/mass
+// @description					Massdriver Bundle Development Server API
+// @contact.url					https://github.com/massdriver-cloud/mass
 // @contact.name				Massdriver
 // @license.name				Apache 2.0
-// @license.url				https://github.com/massdriver-cloud/mass/blob/main/LICENSE
+// @license.url					https://github.com/massdriver-cloud/mass/blob/main/LICENSE
 // @host						127.0.0.1:8080
 // @externalDocs.description	OpenAPI
 // @externalDocs.url			https://swagger.io/resources/open-api/

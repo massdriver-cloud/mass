@@ -1,3 +1,4 @@
+// Package bundle provides types and functions for working with Massdriver bundles.
 package bundle
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// Build dereferences schemas, writes them to disk, and exports provisioner inputs for all steps.
 func (b *Bundle) Build(buildPath string, mdClient *client.Client) error {
 	err := b.DereferenceSchemas(buildPath, mdClient)
 	if err != nil {

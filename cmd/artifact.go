@@ -20,6 +20,7 @@ import (
 //go:embed templates/artifact.get.md.tmpl
 var artifactTemplates embed.FS
 
+// NewCmdArtifact returns a cobra command for managing artifacts.
 func NewCmdArtifact() *cobra.Command {
 	artifactCmd := &cobra.Command{
 		Use:   "artifact",
@@ -37,9 +38,9 @@ func NewCmdArtifact() *cobra.Command {
 	artifactImportCmd.Flags().StringP("name", "n", "", "Artifact name")
 	artifactImportCmd.Flags().StringP("type", "t", "", "Artifact type")
 	artifactImportCmd.Flags().StringP("file", "f", "", "Artifact file")
-	artifactImportCmd.MarkFlagRequired("name")
-	artifactImportCmd.MarkFlagRequired("type")
-	artifactImportCmd.MarkFlagRequired("file")
+	_ = artifactImportCmd.MarkFlagRequired("name")
+	_ = artifactImportCmd.MarkFlagRequired("type")
+	_ = artifactImportCmd.MarkFlagRequired("file")
 
 	// Get
 	artifactGetCmd := &cobra.Command{
@@ -88,7 +89,7 @@ func NewCmdArtifact() *cobra.Command {
 	}
 	artifactUpdateCmd.Flags().StringP("name", "n", "", "New artifact name")
 	artifactUpdateCmd.Flags().StringP("file", "f", "", "Artifact payload file")
-	artifactUpdateCmd.MarkFlagRequired("file")
+	_ = artifactUpdateCmd.MarkFlagRequired("file")
 
 	artifactCmd.AddCommand(artifactImportCmd)
 	artifactCmd.AddCommand(artifactGetCmd)
@@ -153,6 +154,7 @@ func runArtifactUpdate(cmd *cobra.Command, args []string) error {
 	return updateErr
 }
 
+//nolint:dupl // runArtifactGet and runDefinitionGet share the same output-format pattern; refactoring would add complexity for marginal gain
 func runArtifactGet(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
@@ -175,9 +177,9 @@ func runArtifactGet(cmd *cobra.Command, args []string) error {
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(artifact, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal artifact to JSON: %w", err)
+		jsonBytes, marshalErr := json.MarshalIndent(artifact, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal artifact to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
@@ -262,8 +264,8 @@ func renderArtifact(artifact *api.Artifact) error {
 	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return fmt.Errorf("failed to execute template: %w", err)
+	if renderErr := tmpl.Execute(&buf, data); renderErr != nil {
+		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 
 	r, err := glamour.NewTermRenderer(glamour.WithAutoStyle())

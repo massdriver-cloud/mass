@@ -16,48 +16,55 @@ var embedFS embed.FS
 
 var validSemverRegex = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 
+// MetadataSchema holds the parsed JSON schema for bundle metadata.
 var MetadataSchema = parseMetadataSchema()
 
+// ParamsFile and ConnsFile are the filenames used for auto-generated tfvars JSON files.
 const (
 	ParamsFile = "_params.auto.tfvars.json"
 	ConnsFile  = "_connections.auto.tfvars.json"
 )
 
+// Step represents a single provisioner step within a bundle.
 type Step struct {
-	Path         string         `json:"path,omitempty" yaml:"path,omitempty"`
-	Provisioner  string         `json:"provisioner,omitempty" yaml:"provisioner,omitempty"`
-	SkipOnDelete bool           `json:"skip_on_delete,omitempty" yaml:"skip_on_delete,omitempty"`
-	Config       map[string]any `json:"config,omitempty" yaml:"config,omitempty"`
+	Path         string         `json:"path,omitempty" yaml:"path,omitempty" mapstructure:"path"`
+	Provisioner  string         `json:"provisioner,omitempty" yaml:"provisioner,omitempty" mapstructure:"provisioner"`
+	SkipOnDelete bool           `json:"skip_on_delete,omitempty" yaml:"skip_on_delete,omitempty" mapstructure:"skip_on_delete"`
+	Config       map[string]any `json:"config,omitempty" yaml:"config,omitempty" mapstructure:"config"`
 }
 
+// Bundle represents a Massdriver bundle definition parsed from massdriver.yaml.
 type Bundle struct {
-	Name        string         `json:"name,omitempty" yaml:"name,omitempty"`
-	Description string         `json:"description,omitempty" yaml:"description,omitempty"`
-	SourceURL   string         `json:"source_url,omitempty" yaml:"source_url,omitempty"`
-	Type        string         `json:"type,omitempty" yaml:"type,omitempty"`
-	Access      string         `json:"access,omitempty" yaml:"access,omitempty"`
-	Version     string         `json:"version,omitempty" yaml:"version,omitempty"`
-	Steps       []Step         `json:"steps,omitempty" yaml:"steps,omitempty"`
-	Artifacts   map[string]any `json:"artifacts,omitempty" yaml:"artifacts,omitempty"`
-	Params      map[string]any `json:"params,omitempty" yaml:"params,omitempty"`
-	Connections map[string]any `json:"connections,omitempty" yaml:"connections,omitempty"`
-	UI          map[string]any `json:"ui,omitempty" yaml:"ui,omitempty"`
-	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty"`
+	Name        string         `json:"name,omitempty" yaml:"name,omitempty" mapstructure:"name"`
+	Description string         `json:"description,omitempty" yaml:"description,omitempty" mapstructure:"description"`
+	SourceURL   string         `json:"source_url,omitempty" yaml:"source_url,omitempty" mapstructure:"source_url"`
+	Type        string         `json:"type,omitempty" yaml:"type,omitempty" mapstructure:"type"`
+	Access      string         `json:"access,omitempty" yaml:"access,omitempty" mapstructure:"access"`
+	Version     string         `json:"version,omitempty" yaml:"version,omitempty" mapstructure:"version"`
+	Steps       []Step         `json:"steps,omitempty" yaml:"steps,omitempty" mapstructure:"steps"`
+	Artifacts   map[string]any `json:"artifacts,omitempty" yaml:"artifacts,omitempty" mapstructure:"artifacts"`
+	Params      map[string]any `json:"params,omitempty" yaml:"params,omitempty" mapstructure:"params"`
+	Connections map[string]any `json:"connections,omitempty" yaml:"connections,omitempty" mapstructure:"connections"`
+	UI          map[string]any `json:"ui,omitempty" yaml:"ui,omitempty" mapstructure:"ui"`
+	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty" mapstructure:"app"`
 }
 
+// AppSpec defines the application-specific configuration for environment variables, policies, and secrets.
 type AppSpec struct {
-	Envs     map[string]string `json:"envs" yaml:"envs"`
-	Policies []string          `json:"policies" yaml:"policies"`
-	Secrets  map[string]Secret `json:"secrets" yaml:"secrets"`
+	Envs     map[string]string `json:"envs" yaml:"envs" mapstructure:"envs"`
+	Policies []string          `json:"policies" yaml:"policies" mapstructure:"policies"`
+	Secrets  map[string]Secret `json:"secrets" yaml:"secrets" mapstructure:"secrets"`
 }
 
+// Secret describes a secret that the bundle expects to be injected at runtime.
 type Secret struct {
-	Required    bool   `json:"required,omitempty" yaml:"required,omitempty"`
-	JSON        bool   `json:"json,omitempty" yaml:"json,omitempty"`
-	Title       string `json:"title,omitempty" yaml:"title,omitempty"`
-	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+	Required    bool   `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
+	JSON        bool   `json:"json,omitempty" yaml:"json,omitempty" mapstructure:"json"`
+	Title       string `json:"title,omitempty" yaml:"title,omitempty" mapstructure:"title"`
+	Description string `json:"description,omitempty" yaml:"description,omitempty" mapstructure:"description"`
 }
 
+// Unmarshal reads and parses the massdriver.yaml file from the given directory into a Bundle.
 func Unmarshal(readDirectory string) (*Bundle, error) {
 	unmarshalledBundle := &Bundle{}
 	if err := files.Read(path.Join(readDirectory, "massdriver.yaml"), unmarshalledBundle); err != nil {

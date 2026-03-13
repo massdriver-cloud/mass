@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 )
 
+// KeyMap defines the key bindings for navigating the artifact definition table.
 type KeyMap struct {
 	RowDown         key.Binding
 	RowUp           key.Binding

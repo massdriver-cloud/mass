@@ -75,9 +75,15 @@ func TestDeployPreviewEnvironmentInterpolation(t *testing.T) {
 
 		input := parsedReq.Variables["input"]
 		inputMap, ok := input.(map[string]any)
-		_ = ok
+		if !ok {
+			panic("input is not a map[string]any")
+		}
 
-		paramsJSON := []byte((inputMap["packageConfigurations"]).(string))
+		pkgConfStr, pkgConfOk := inputMap["packageConfigurations"].(string)
+		if !pkgConfOk {
+			panic("inputMap[\"packageConfigurations\"] is not a string")
+		}
+		paramsJSON := []byte(pkgConfStr)
 
 		got := map[string]any{}
 		gqlmock.MustUnmarshalJSON(paramsJSON, &got)

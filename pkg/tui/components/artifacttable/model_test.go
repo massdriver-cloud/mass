@@ -40,7 +40,7 @@ func TestUpdateSelectsArtifactDefinition(t *testing.T) {
 	pressEsc := tea.KeyMsg{Type: tea.KeyEsc}
 	updatedModel, _ = updatedModel.Update(pressEsc)
 
-	//nolint:errcheck
+	//nolint:errcheck // type assertion to concrete Model is safe in this test context
 	finalModel := (updatedModel).(artifacttable.Model)
 
 	got := finalModel.SelectedArtifacts

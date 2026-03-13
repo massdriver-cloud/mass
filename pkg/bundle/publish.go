@@ -13,16 +13,19 @@ import (
 	"oras.land/oras-go/v2/content"
 )
 
+// Publisher handles packaging and publishing bundles to an OCI registry.
 type Publisher struct {
 	Store oras.Target
 	Repo  oras.Target
 }
 
+// PublishBundle copies the packaged bundle manifest from the local store to the remote repository.
 func (p *Publisher) PublishBundle(ctx context.Context, tag string) error {
 	_, copyErr := oras.Copy(ctx, p.Store, tag, p.Repo, tag, oras.DefaultCopyOptions)
 	return copyErr
 }
 
+// PackageBundle walks bundleDir, pushes all files to the OCI store, and creates a manifest tagged with tag.
 func (p *Publisher) PackageBundle(ctx context.Context, bundleDir string, tag string) (ocispec.Descriptor, error) {
 	ignoreMatcher, ignoreErr := getIgnores(filepath.Join(bundleDir, ".mdignore"))
 	if ignoreErr != nil {

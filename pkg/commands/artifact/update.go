@@ -12,6 +12,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
+// RunUpdate updates an existing artifact with the data from the given file.
 func RunUpdate(ctx context.Context, mdClient *client.Client, artifactID string, artifactName string, artifactFile string) (string, error) {
 	bytes, readErr := os.ReadFile(artifactFile)
 	if readErr != nil {

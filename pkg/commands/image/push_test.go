@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/pkg/api"
@@ -60,12 +58,6 @@ func (mockGQLClient) GetContainerRepository(client graphql.Client, artifactID st
 }
 
 func TestPushLatestImage(t *testing.T) {
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer func() {
-		log.SetOutput((os.Stderr))
-	}()
-
 	mdClient := client.Client{
 		GQL: &mockGQLClient{},
 	}
@@ -90,12 +82,6 @@ func TestPushLatestImage(t *testing.T) {
 }
 
 func TestPushImage(t *testing.T) {
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer func() {
-		log.SetOutput((os.Stderr))
-	}()
-
 	mdClient := client.Client{
 		GQL: &mockGQLClient{},
 	}

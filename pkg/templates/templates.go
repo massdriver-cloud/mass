@@ -12,8 +12,10 @@ import (
 
 const envTemplatesPath = "MASSDRIVER_TEMPLATES_PATH"
 
+// ErrNotConfigured is returned when the templates path has not been set via env var or config file.
 var ErrNotConfigured = errors.New("templates path not configured: set MASSDRIVER_TEMPLATES_PATH environment variable or templates_path in profile in ~/.config/massdriver/config.yaml. See https://docs.massdriver.cloud/guides/bundle-templates for more info")
 
+// TemplateData holds values used when rendering a bundle template.
 type TemplateData struct {
 	Name               string            `json:"name"`
 	Description        string            `json:"description"`
@@ -30,6 +32,7 @@ type TemplateData struct {
 	RepoNameEncoded    string            `json:"repoNameEncoded"`
 }
 
+// Connection represents a bundle connection with a name and artifact definition reference.
 type Connection struct {
 	Name               string `json:"name"`
 	ArtifactDefinition string `json:"artifact_definition"`
@@ -50,6 +53,7 @@ func getPath() (string, error) {
 	return "", ErrNotConfigured
 }
 
+// List returns the names of all available bundle templates.
 func List() ([]string, error) {
 	templatesPath, err := getPath()
 	if err != nil {
@@ -72,6 +76,7 @@ func List() ([]string, error) {
 	return result, nil
 }
 
+// Render copies and renders the named template into the output directory specified in data.
 func Render(data *TemplateData) error {
 	templatesPath, err := getPath()
 	if err != nil {

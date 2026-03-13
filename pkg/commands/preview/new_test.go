@@ -54,7 +54,7 @@ func TestRunNew(t *testing.T) {
 	teahelper.AssertModelViewContains(t, updatedModel.View(), "aws-credentials")
 	updatedModel, _ = updatedModel.Update(pressNext)
 
-	//nolint:errcheck
+	//nolint:errcheck // type assertion to concrete Model is safe in this test context
 	updatedInitializeModel := (updatedModel).(preview.Model)
 	got := updatedInitializeModel.PreviewConfig()
 

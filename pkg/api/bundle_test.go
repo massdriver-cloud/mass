@@ -11,13 +11,13 @@ import (
 )
 
 func TestGetBundle(t *testing.T) {
-	bundleId := "aws-vpc"
+	bundleID := "aws-vpc"
 	version := "1.0.0"
 
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
 			"bundle": map[string]any{
-				"id":          bundleId,
+				"id":          bundleID,
 				"name":        "AWS VPC",
 				"version":     version,
 				"description": "AWS Virtual Private Cloud bundle",
@@ -44,14 +44,14 @@ func TestGetBundle(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	got, err := api.GetBundle(t.Context(), &mdClient, bundleId, &version)
+	got, err := api.GetBundle(t.Context(), &mdClient, bundleID, &version)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	want := &api.Bundle{
-		ID:          bundleId,
+		ID:          bundleID,
 		Name:        "AWS VPC",
 		Version:     version,
 		Description: "AWS Virtual Private Cloud bundle",
@@ -79,12 +79,12 @@ func TestGetBundle(t *testing.T) {
 }
 
 func TestGetBundleWithoutVersion(t *testing.T) {
-	bundleId := "aws-vpc"
+	bundleID := "aws-vpc"
 
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
 			"bundle": map[string]any{
-				"id":        bundleId,
+				"id":        bundleID,
 				"name":      "AWS VPC",
 				"version":   "latest",
 				"createdAt": "2024-01-01T00:00:00Z",
@@ -96,14 +96,14 @@ func TestGetBundleWithoutVersion(t *testing.T) {
 		GQL: gqlClient,
 	}
 
-	got, err := api.GetBundle(t.Context(), &mdClient, bundleId, nil)
+	got, err := api.GetBundle(t.Context(), &mdClient, bundleID, nil)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	want := &api.Bundle{
-		ID:        bundleId,
+		ID:        bundleID,
 		Name:      "AWS VPC",
 		Version:   "latest",
 		CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),

@@ -1,3 +1,4 @@
+// Package preview provides commands for managing preview environments in Massdriver.
 package preview
 
 import (

@@ -6,6 +6,9 @@ import (
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 )
 
+// FindMissingFromAirlock returns schema properties present in mdParamsSchema but absent from the airlock schema.
+//
+//nolint:gocognit // inherently complex due to deep schema validation logic
 func FindMissingFromAirlock(mdParamsSchema map[string]any, airlockParams *schema.Schema) map[string]any {
 	mdProperties := map[string]any{}
 	mdRequired := []any{}
@@ -37,7 +40,11 @@ func FindMissingFromAirlock(mdParamsSchema map[string]any, airlockParams *schema
 		if !slices.Contains(airlockParamsNames, key) {
 			missingProperties[key] = value
 			for _, elem := range mdRequired {
-				if key == elem.(string) {
+				elemStr, elemOk := elem.(string)
+				if !elemOk {
+					continue
+				}
+				if key == elemStr {
 					missingRequired = append(missingRequired, key)
 				}
 			}
@@ -50,6 +57,9 @@ func FindMissingFromAirlock(mdParamsSchema map[string]any, airlockParams *schema
 	}
 }
 
+// FindMissingFromMassdriver returns schema properties present in airlockInputsSchema but absent from the massdriver schema.
+//
+//nolint:gocognit // inherently complex due to deep schema validation logic
 func FindMissingFromMassdriver(airlockInputsSchema map[string]any, mdParamsSchema map[string]any) map[string]any {
 	mdProperties := map[string]any{}
 	var ok bool
@@ -85,7 +95,11 @@ func FindMissingFromMassdriver(airlockInputsSchema map[string]any, mdParamsSchem
 		if _, exists := mdProperties[airlockParamName]; !exists {
 			missingProperties[airlockParamName] = airlockParamValue
 			for _, elem := range airlockRequired {
-				if airlockParamName == elem.(string) {
+				elemStr, elemOk := elem.(string)
+				if !elemOk {
+					continue
+				}
+				if airlockParamName == elemStr {
 					missingRequired = append(missingRequired, airlockParamName)
 				}
 			}
