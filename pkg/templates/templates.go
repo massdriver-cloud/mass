@@ -3,7 +3,6 @@ package templates
 import (
 	"errors"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -84,7 +83,7 @@ func Render(data *TemplateData) error {
 	}
 
 	fm := &fileManager{
-		readDirectory:         path.Join(templatesPath, data.TemplateName),
+		readDirectory:         filepath.Join(templatesPath, data.TemplateName),
 		writeDirectory:        data.OutputDir,
 		templateData:          data,
 		templateRootDirectory: templatesPath,

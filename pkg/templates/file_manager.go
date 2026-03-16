@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/osteele/liquid"
 )
@@ -35,7 +33,7 @@ func (f *fileManager) mkDirOrWriteFile(filePath string, info fs.FileInfo, walkEr
 	}
 
 	relativeWritePath := relativeWritePath(filePath, f.readDirectory)
-	outputPath := path.Join(f.writeDirectory, relativeWritePath)
+	outputPath := filepath.Join(f.writeDirectory, relativeWritePath)
 	if info.IsDir() {
 		if _, checkDirExistsErr := os.Stat(outputPath); errors.Is(checkDirExistsErr, os.ErrNotExist) {
 			if isBundleRootDirectory(relativeWritePath) {
@@ -108,12 +106,11 @@ func (f *fileManager) writeToFile(outputPath string, outBytes []byte) error {
 }
 
 func relativeWritePath(currentFilePath, readDirectory string) string {
-	path := strings.Replace(currentFilePath, readDirectory, "", 1)
-	if path == "" {
-		path = "."
+	rel, err := filepath.Rel(readDirectory, currentFilePath)
+	if err != nil {
+		return "."
 	}
-
-	return path
+	return rel
 }
 
 func makeWriteDirectoryAndParents(writeDirectory string) error {
@@ -129,5 +126,5 @@ func isBundleRootDirectory(relativeWritePath string) bool {
 }
 
 func isInsideBundleRootDirectory(relativeWritePath string) bool {
-	return filepath.Dir(relativeWritePath) == "/"
+	return filepath.Dir(relativeWritePath) == "."
 }
