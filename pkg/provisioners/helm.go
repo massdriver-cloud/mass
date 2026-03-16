@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/massdriver-cloud/airlock/pkg/helm"
 )
@@ -20,7 +20,7 @@ func (p *HelmProvisioner) ExportMassdriverInputs(_ string, _ map[string]any) err
 
 // ReadProvisionerInputs reads the Helm values.yaml and returns its schema as a map.
 func (p *HelmProvisioner) ReadProvisionerInputs(stepPath string) (map[string]any, error) {
-	helmParamsImport := helm.HelmToSchema(path.Join(stepPath, "values.yaml"))
+	helmParamsImport := helm.HelmToSchema(filepath.Join(stepPath, "values.yaml"))
 
 	schemaBytes, marshallErr := json.Marshal(helmParamsImport.Schema)
 	if marshallErr != nil {
@@ -46,10 +46,10 @@ func (p *HelmProvisioner) InitializeStep(stepPath string, sourcePath string) err
 		return errors.New("path is not a directory containing a helm chart")
 	}
 
-	if _, chartErr := os.Stat(path.Join(sourcePath, "Chart.yaml")); errors.Is(chartErr, os.ErrNotExist) {
+	if _, chartErr := os.Stat(filepath.Join(sourcePath, "Chart.yaml")); errors.Is(chartErr, os.ErrNotExist) {
 		return errors.New("path does not contain 'Chart.yaml' file, and therefore isn't a valid Helm chart")
 	}
-	if _, valuesErr := os.Stat(path.Join(sourcePath, "values.yaml")); errors.Is(valuesErr, os.ErrNotExist) {
+	if _, valuesErr := os.Stat(filepath.Join(sourcePath, "values.yaml")); errors.Is(valuesErr, os.ErrNotExist) {
 		return errors.New("path does not contain 'values.yaml' file, and therefore isn't a valid Helm chart")
 	}
 

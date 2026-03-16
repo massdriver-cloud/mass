@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -266,7 +265,7 @@ func getExistingParamsPath(templateName string) (string, error) {
 			if !pathInfo.IsDir() {
 				return errors.New("path must be a directory containing a Terraform/OpenTofu module")
 			}
-			matches, err := filepath.Glob(path.Join(input, "*.tf"))
+			matches, err := filepath.Glob(filepath.Join(input, "*.tf"))
 			if err != nil {
 				return errors.New("unable to read directory")
 			}
@@ -288,10 +287,10 @@ func getExistingParamsPath(templateName string) (string, error) {
 			if !pathInfo.IsDir() {
 				return errors.New("path must be a directory containing a helm chart")
 			}
-			if _, chartErr := os.Stat(path.Join(input, "Chart.yaml")); errors.Is(chartErr, os.ErrNotExist) {
+			if _, chartErr := os.Stat(filepath.Join(input, "Chart.yaml")); errors.Is(chartErr, os.ErrNotExist) {
 				return errors.New("path does not contain 'Chart.yaml' file, and therefore isn't a valid Helm chart")
 			}
-			if _, valuesErr := os.Stat(path.Join(input, "values.yaml")); errors.Is(valuesErr, os.ErrNotExist) {
+			if _, valuesErr := os.Stat(filepath.Join(input, "values.yaml")); errors.Is(valuesErr, os.ErrNotExist) {
 				return errors.New("path does not contain 'values.yaml' file, and therefore isn't a valid Helm chart")
 			}
 			return nil

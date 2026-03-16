@@ -3,7 +3,6 @@ package bundle
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -31,7 +30,7 @@ func RunNew(data *templates.TemplateData) error {
 
 		for _, step := range b.Steps {
 			prov := provisioners.NewProvisioner(step.Provisioner)
-			if err := prov.InitializeStep(path.Join(data.OutputDir, step.Path), data.ExistingParamsPath); err != nil {
+			if err := prov.InitializeStep(filepath.Join(data.OutputDir, step.Path), data.ExistingParamsPath); err != nil {
 				return fmt.Errorf("failed to initialize step %q: %w", step.Path, err)
 			}
 		}

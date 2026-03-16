@@ -3,7 +3,7 @@ package params
 import (
 	"errors"
 	"fmt"
-	"path"
+	"path/filepath"
 
 	"github.com/massdriver-cloud/airlock/pkg/bicep"
 	"github.com/massdriver-cloud/airlock/pkg/helm"
@@ -24,7 +24,7 @@ func GetFromPath(templateName, paramsPath string) (string, error) {
 	case "terraform-module", "opentofu-module":
 		importResult = opentofu.TofuToSchema(paramsPath)
 	case "helm-chart":
-		importResult = helm.HelmToSchema(path.Join(paramsPath, "values.yaml"))
+		importResult = helm.HelmToSchema(filepath.Join(paramsPath, "values.yaml"))
 	case "bicep-template":
 		importResult = bicep.BicepToSchema(paramsPath)
 	default:
