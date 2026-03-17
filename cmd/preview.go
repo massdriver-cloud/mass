@@ -7,9 +7,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/pkg/api"
-	"github.com/massdriver-cloud/mass/pkg/commands/preview"
-	"github.com/massdriver-cloud/mass/pkg/files"
+	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/commands/preview"
+	"github.com/massdriver-cloud/mass/internal/files"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )

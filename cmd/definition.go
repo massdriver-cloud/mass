@@ -13,10 +13,10 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/pkg/api"
-	"github.com/massdriver-cloud/mass/pkg/cli"
-	"github.com/massdriver-cloud/mass/pkg/definition"
-	"github.com/massdriver-cloud/mass/pkg/prettylogs"
+	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/cli"
+	"github.com/massdriver-cloud/mass/internal/definition"
+	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/spf13/cobra"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"

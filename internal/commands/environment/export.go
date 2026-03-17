@@ -1,0 +1,58 @@
+// Package environment provides commands for managing Massdriver environments.
+package environment
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"path/filepath"
+
+	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/commands/pkg"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+)
+
+// RunExport exports all packages in the specified environment to the current directory.
+func RunExport(ctx context.Context, mdClient *client.Client, environmentIDOrSlug string) error {
+	env, getErr := api.GetEnvironment(ctx, mdClient, environmentIDOrSlug)
+	if getErr != nil {
+		return getErr
+	}
+
+	return ExportEnvironment(ctx, mdClient, env, ".")
+}
+
+// ExportEnvironment exports all packages in the given environment into a subdirectory of baseDir.
+func ExportEnvironment(ctx context.Context, mdClient *client.Client, environment *api.Environment, baseDir string) error {
+	validateErr := validateEnvironmentExport(environment)
+	if validateErr != nil {
+		return fmt.Errorf("environment validation failed: %w", validateErr)
+	}
+
+	directory := filepath.Join(baseDir, environment.Slug)
+	for _, pack := range environment.Packages {
+		exportErr := pkg.ExportPackage(ctx, mdClient, &pack, directory)
+		if exportErr != nil {
+			return fmt.Errorf("failed to export package %s: %w", pack.Slug, exportErr)
+		}
+	}
+
+	return nil
+}
+
+func validateEnvironmentExport(environment *api.Environment) error {
+	if environment == nil {
+		return errors.New("environment cannot be nil")
+	}
+
+	if environment.Slug == "" {
+		return errors.New("environment slug is required")
+	}
+
+	if len(environment.Packages) == 0 {
+		return errors.New("environment must have at least one package")
+	}
+
+	return nil
+}
