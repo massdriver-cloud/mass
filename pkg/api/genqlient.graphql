@@ -440,7 +440,22 @@ query getPackage($organizationId: ID!, $id: ID!) {
     id
     slug
     status
+    deployedVersion
     params
+    latestDeployment {
+      id
+      status
+      action
+      version
+      createdAt
+    }
+    activeDeployment {
+      id
+      status
+      action
+      version
+      createdAt
+    }
     artifacts {
       id
       name

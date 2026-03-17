@@ -62,6 +62,24 @@ func (v *Credential) GetArtifactDefinitionType() string { return v.ArtifactDefin
 // GetArtifactId returns Credential.ArtifactId, and is useful for accessing the field via an interface.
 func (v *Credential) GetArtifactId() string { return v.ArtifactId }
 
+// Action type of a deployment
+type DeploymentAction string
+
+const (
+	// Provision new infrastructure
+	DeploymentActionProvision DeploymentAction = "PROVISION"
+	// Decommission existing infrastructure
+	DeploymentActionDecommission DeploymentAction = "DECOMMISSION"
+	// Plan deployment without executing
+	DeploymentActionPlan DeploymentAction = "PLAN"
+)
+
+var AllDeploymentAction = []DeploymentAction{
+	DeploymentActionProvision,
+	DeploymentActionDecommission,
+	DeploymentActionPlan,
+}
+
 // Status of a deployment
 type DeploymentStatus string
 
@@ -3854,8 +3872,16 @@ type getPackagePackage struct {
 	Slug string `json:"slug"`
 	// Current status of the package
 	Status PackageStatus `json:"status"`
+	// The semantic version that was last executed.
+	// This reflects what has been provisioned to infrastructure, which may differ from `resolvedVersion`
+	// if the package hasn't been deployed since the version was changed. Returns nil if never deployed.
+	DeployedVersion string `json:"deployedVersion"`
 	// Package configuration parameters
 	Params map[string]any `json:"-"`
+	// The latest deployment for this package
+	LatestDeployment getPackagePackageLatestDeployment `json:"latestDeployment"`
+	// Currently active deployment for this package
+	ActiveDeployment getPackagePackageActiveDeployment `json:"activeDeployment"`
 	// Artifacts provisioned by this package
 	Artifacts []getPackagePackageArtifactsArtifact `json:"artifacts"`
 	// Artifacts from a remote source like another project or a resource not managed by massdriver
@@ -3875,8 +3901,21 @@ func (v *getPackagePackage) GetSlug() string { return v.Slug }
 // GetStatus returns getPackagePackage.Status, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetStatus() PackageStatus { return v.Status }
 
+// GetDeployedVersion returns getPackagePackage.DeployedVersion, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetDeployedVersion() string { return v.DeployedVersion }
+
 // GetParams returns getPackagePackage.Params, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetParams() map[string]any { return v.Params }
+
+// GetLatestDeployment returns getPackagePackage.LatestDeployment, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetLatestDeployment() getPackagePackageLatestDeployment {
+	return v.LatestDeployment
+}
+
+// GetActiveDeployment returns getPackagePackage.ActiveDeployment, and is useful for accessing the field via an interface.
+func (v *getPackagePackage) GetActiveDeployment() getPackagePackageActiveDeployment {
+	return v.ActiveDeployment
+}
 
 // GetArtifacts returns getPackagePackage.Artifacts, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetArtifacts() []getPackagePackageArtifactsArtifact { return v.Artifacts }
@@ -3935,7 +3974,13 @@ type __premarshalgetPackagePackage struct {
 
 	Status PackageStatus `json:"status"`
 
+	DeployedVersion string `json:"deployedVersion"`
+
 	Params json.RawMessage `json:"params"`
+
+	LatestDeployment getPackagePackageLatestDeployment `json:"latestDeployment"`
+
+	ActiveDeployment getPackagePackageActiveDeployment `json:"activeDeployment"`
 
 	Artifacts []getPackagePackageArtifactsArtifact `json:"artifacts"`
 
@@ -3962,6 +4007,7 @@ func (v *getPackagePackage) __premarshalJSON() (*__premarshalgetPackagePackage, 
 	retval.Id = v.Id
 	retval.Slug = v.Slug
 	retval.Status = v.Status
+	retval.DeployedVersion = v.DeployedVersion
 	{
 
 		dst := &retval.Params
@@ -3974,6 +4020,8 @@ func (v *getPackagePackage) __premarshalJSON() (*__premarshalgetPackagePackage, 
 				"unable to marshal getPackagePackage.Params: %w", err)
 		}
 	}
+	retval.LatestDeployment = v.LatestDeployment
+	retval.ActiveDeployment = v.ActiveDeployment
 	retval.Artifacts = v.Artifacts
 	retval.RemoteReferences = v.RemoteReferences
 	retval.Bundle = v.Bundle
@@ -3981,6 +4029,33 @@ func (v *getPackagePackage) __premarshalJSON() (*__premarshalgetPackagePackage, 
 	retval.Environment = v.Environment
 	return &retval, nil
 }
+
+// getPackagePackageActiveDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A deployment represents an instance of a bundle being deployed to a target environment
+type getPackagePackageActiveDeployment struct {
+	Id        string           `json:"id"`
+	Status    DeploymentStatus `json:"status"`
+	Action    DeploymentAction `json:"action"`
+	Version   string           `json:"version"`
+	CreatedAt time.Time        `json:"createdAt"`
+}
+
+// GetId returns getPackagePackageActiveDeployment.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetId() string { return v.Id }
+
+// GetStatus returns getPackagePackageActiveDeployment.Status, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetStatus() DeploymentStatus { return v.Status }
+
+// GetAction returns getPackagePackageActiveDeployment.Action, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetAction() DeploymentAction { return v.Action }
+
+// GetVersion returns getPackagePackageActiveDeployment.Version, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetVersion() string { return v.Version }
+
+// GetCreatedAt returns getPackagePackageActiveDeployment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageActiveDeployment) GetCreatedAt() time.Time { return v.CreatedAt }
 
 // getPackagePackageArtifactsArtifact includes the requested fields of the GraphQL type Artifact.
 type getPackagePackageArtifactsArtifact struct {
@@ -4127,6 +4202,33 @@ func (v *getPackagePackageEnvironmentProject) GetId() string { return v.Id }
 
 // GetSlug returns getPackagePackageEnvironmentProject.Slug, and is useful for accessing the field via an interface.
 func (v *getPackagePackageEnvironmentProject) GetSlug() string { return v.Slug }
+
+// getPackagePackageLatestDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A deployment represents an instance of a bundle being deployed to a target environment
+type getPackagePackageLatestDeployment struct {
+	Id        string           `json:"id"`
+	Status    DeploymentStatus `json:"status"`
+	Action    DeploymentAction `json:"action"`
+	Version   string           `json:"version"`
+	CreatedAt time.Time        `json:"createdAt"`
+}
+
+// GetId returns getPackagePackageLatestDeployment.Id, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetId() string { return v.Id }
+
+// GetStatus returns getPackagePackageLatestDeployment.Status, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetStatus() DeploymentStatus { return v.Status }
+
+// GetAction returns getPackagePackageLatestDeployment.Action, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetAction() DeploymentAction { return v.Action }
+
+// GetVersion returns getPackagePackageLatestDeployment.Version, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetVersion() string { return v.Version }
+
+// GetCreatedAt returns getPackagePackageLatestDeployment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getPackagePackageLatestDeployment) GetCreatedAt() time.Time { return v.CreatedAt }
 
 // getPackagePackageManifest includes the requested fields of the GraphQL type Manifest.
 // The GraphQL type's documentation follows.
@@ -6279,7 +6381,22 @@ query getPackage ($organizationId: ID!, $id: ID!) {
 		id
 		slug
 		status
+		deployedVersion
 		params
+		latestDeployment {
+			id
+			status
+			action
+			version
+			createdAt
+		}
+		activeDeployment {
+			id
+			status
+			action
+			version
+			createdAt
+		}
 		artifacts {
 			id
 			name

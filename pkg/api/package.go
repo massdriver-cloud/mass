@@ -4,22 +4,35 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/mitchellh/mapstructure"
 )
 
+// PackageDeployment represents a deployment summary embedded in a package response.
+type PackageDeployment struct {
+	ID        string    `json:"id" mapstructure:"id"`
+	Status    string    `json:"status" mapstructure:"status"`
+	Action    string    `json:"action" mapstructure:"action"`
+	Version   string    `json:"version" mapstructure:"version"`
+	CreatedAt time.Time `json:"createdAt" mapstructure:"createdAt"`
+}
+
 // Package represents a deployed bundle instance within a Massdriver environment.
 type Package struct {
-	ID               string            `json:"id" mapstructure:"id"`
-	Slug             string            `json:"slug" mapstructure:"slug"`
-	Status           string            `json:"status" mapstructure:"status"`
-	Artifacts        []Artifact        `json:"artifacts,omitempty" mapstructure:"artifacts"`
-	RemoteReferences []RemoteReference `json:"remoteReferences,omitempty" mapstructure:"remoteReferences"`
-	Bundle           *Bundle           `json:"bundle,omitempty" mapstructure:"bundle,omitempty"`
-	Params           map[string]any    `json:"params" mapstructure:"params"`
-	Manifest         *Manifest         `json:"manifest" mapstructure:"manifest,omitempty"`
-	Environment      *Environment      `json:"environment,omitempty" mapstructure:"environment,omitempty"`
+	ID               string             `json:"id" mapstructure:"id"`
+	Slug             string             `json:"slug" mapstructure:"slug"`
+	Status           string             `json:"status" mapstructure:"status"`
+	DeployedVersion  string             `json:"deployedVersion,omitempty" mapstructure:"deployedVersion"`
+	LatestDeployment *PackageDeployment `json:"latestDeployment,omitempty" mapstructure:"latestDeployment"`
+	ActiveDeployment *PackageDeployment `json:"activeDeployment,omitempty" mapstructure:"activeDeployment"`
+	Artifacts        []Artifact         `json:"artifacts,omitempty" mapstructure:"artifacts"`
+	RemoteReferences []RemoteReference  `json:"remoteReferences,omitempty" mapstructure:"remoteReferences"`
+	Bundle           *Bundle            `json:"bundle,omitempty" mapstructure:"bundle,omitempty"`
+	Params           map[string]any     `json:"params" mapstructure:"params"`
+	Manifest         *Manifest          `json:"manifest" mapstructure:"manifest,omitempty"`
+	Environment      *Environment       `json:"environment,omitempty" mapstructure:"environment,omitempty"`
 }
 
 // ParamsJSON returns the package parameters serialized as a pretty-printed JSON string.
@@ -46,6 +59,15 @@ func toPackage(p any) (*Package, error) {
 	if err := mapstructure.Decode(p, &pkg); err != nil {
 		return nil, fmt.Errorf("failed to decode package: %w", err)
 	}
+
+	// mapstructure creates empty structs for nil nested objects; nil them out
+	if pkg.LatestDeployment != nil && pkg.LatestDeployment.ID == "" {
+		pkg.LatestDeployment = nil
+	}
+	if pkg.ActiveDeployment != nil && pkg.ActiveDeployment.ID == "" {
+		pkg.ActiveDeployment = nil
+	}
+
 	return &pkg, nil
 }
 
