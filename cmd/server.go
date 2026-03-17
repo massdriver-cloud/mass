@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -128,7 +129,11 @@ func setupLogging(level string) {
 
 func handleSignals(ctx context.Context, s *server.BundleServer) {
 	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signals := []os.Signal{os.Interrupt}
+	if runtime.GOOS != "windows" {
+		signals = append(signals, syscall.SIGTERM)
+	}
+	signal.Notify(c, signals...)
 	go func(s *server.BundleServer) {
 		for sig := range c {
 			slog.Info("Shutting down", "signal", sig)

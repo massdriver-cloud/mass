@@ -28,6 +28,17 @@ builds:
       - arm64
     ldflags: *build-ldflags
 
+  - id: windows-build
+    binary: mass
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags: *build-ldflags
+
 archives:
   - id: linux-archives
     builds:
@@ -37,6 +48,11 @@ archives:
   - id: darwin-archives
     builds:
       - darwin-build
+    name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+
+  - id: windows-archives
+    builds:
+      - windows-build
     name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
 
 checksum:

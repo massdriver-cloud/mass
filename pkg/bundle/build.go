@@ -2,7 +2,7 @@
 package bundle
 
 import (
-	"path"
+	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/pkg/provisioners"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
@@ -23,7 +23,7 @@ func (b *Bundle) Build(buildPath string, mdClient *client.Client) error {
 	combined := b.CombineParamsConnsMetadata()
 	for _, step := range b.Steps {
 		prov := provisioners.NewProvisioner(step.Provisioner)
-		err = prov.ExportMassdriverInputs(path.Join(buildPath, step.Path), combined)
+		err = prov.ExportMassdriverInputs(filepath.Join(buildPath, step.Path), combined)
 		if err != nil {
 			return err
 		}

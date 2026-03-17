@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/manifoldco/promptui"
@@ -20,7 +20,7 @@ import (
 func RunImport(buildPath string, skipVerify bool) error {
 	fmt.Println("Checking IaC for missing parameters...")
 
-	mdYamlPath := path.Join(buildPath, "massdriver.yaml")
+	mdYamlPath := filepath.Join(buildPath, "massdriver.yaml")
 	fileBytes, readErr := os.ReadFile(mdYamlPath)
 	if readErr != nil {
 		return readErr
@@ -41,7 +41,7 @@ func RunImport(buildPath string, skipVerify bool) error {
 	missing := map[string]any{}
 	for _, step := range b.Steps {
 		prov := provisioners.NewProvisioner(step.Provisioner)
-		inputs, readProvErr := prov.ReadProvisionerInputs(path.Join(buildPath, step.Path))
+		inputs, readProvErr := prov.ReadProvisionerInputs(filepath.Join(buildPath, step.Path))
 		if readProvErr != nil {
 			return readProvErr
 		}

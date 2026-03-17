@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/massdriver-cloud/airlock/pkg/bicep"
 )
@@ -17,7 +17,7 @@ type BicepProvisioner struct{}
 // ExportMassdriverInputs appends auto-generated Bicep param declarations from the massdriver schema to the step's template.
 func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]any) error {
 	// read existing bicep params for this step
-	bicepParamsImport := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
+	bicepParamsImport := bicep.BicepToSchema(filepath.Join(stepPath, "template.bicep"))
 	if bicepParamsImport.Schema == nil {
 		return errors.New("failed to read existing Bicep param declarations: " + bicepParamsImport.PrettyDiags())
 	}
@@ -41,7 +41,7 @@ func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map
 		return transpileErr
 	}
 
-	bicepFile, openErr := os.OpenFile(path.Join(stepPath, "template.bicep"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	bicepFile, openErr := os.OpenFile(filepath.Join(stepPath, "template.bicep"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if openErr != nil {
 		return openErr
 	}
@@ -59,7 +59,7 @@ func (p *BicepProvisioner) ExportMassdriverInputs(stepPath string, variables map
 
 // ReadProvisionerInputs reads the Bicep parameter declarations from the step's template file.
 func (p *BicepProvisioner) ReadProvisionerInputs(stepPath string) (map[string]any, error) {
-	bicepParamsImport := bicep.BicepToSchema(path.Join(stepPath, "template.bicep"))
+	bicepParamsImport := bicep.BicepToSchema(filepath.Join(stepPath, "template.bicep"))
 
 	schemaBytes, marshallErr := json.Marshal(bicepParamsImport.Schema)
 	if marshallErr != nil {
@@ -85,5 +85,5 @@ func (p *BicepProvisioner) InitializeStep(stepPath string, sourcePath string) er
 		return errors.New("path is a directory not a bicep template")
 	}
 
-	return copyFile(sourcePath, path.Join(stepPath, "template.bicep"))
+	return copyFile(sourcePath, filepath.Join(stepPath, "template.bicep"))
 }

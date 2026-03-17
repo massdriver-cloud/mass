@@ -4,7 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"path"
+	"path/filepath"
 	"regexp"
 
 	"github.com/massdriver-cloud/mass/pkg/files"
@@ -67,7 +67,7 @@ type Secret struct {
 // Unmarshal reads and parses the massdriver.yaml file from the given directory into a Bundle.
 func Unmarshal(readDirectory string) (*Bundle, error) {
 	unmarshalledBundle := &Bundle{}
-	if err := files.Read(path.Join(readDirectory, "massdriver.yaml"), unmarshalledBundle); err != nil {
+	if err := files.Read(filepath.Join(readDirectory, "massdriver.yaml"), unmarshalledBundle); err != nil {
 		return nil, err
 	}
 

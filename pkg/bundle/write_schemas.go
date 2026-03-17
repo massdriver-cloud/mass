@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 )
 
 const idURLPattern = "https://schemas.massdriver.cloud/schemas/bundles/%s/schema-%s.json"
@@ -38,10 +38,10 @@ func (b *Bundle) WriteSchemas(buildPath string) error {
 			return err
 		}
 
-		filepath := fmt.Sprintf("/schema-%s.json", task.label)
+		filename := fmt.Sprintf("schema-%s.json", task.label)
 
 		// #nosec G306
-		err = os.WriteFile(path.Join(buildPath, filepath), content, 0644)
+		err = os.WriteFile(filepath.Join(buildPath, filename), content, 0644)
 
 		if err != nil {
 			return err

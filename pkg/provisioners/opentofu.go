@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/massdriver-cloud/airlock/pkg/opentofu"
 )
@@ -15,7 +15,7 @@ type OpentofuProvisioner struct{}
 
 // ExportMassdriverInputs generates the _massdriver_variables.tf file from the massdriver schema.
 func (p *OpentofuProvisioner) ExportMassdriverInputs(stepPath string, variables map[string]any) (retErr error) {
-	massdriverVarsFile := path.Join(stepPath, "_massdriver_variables.tf")
+	massdriverVarsFile := filepath.Join(stepPath, "_massdriver_variables.tf")
 	massdriverVarsBackup := massdriverVarsFile + ".bak"
 
 	// If _massdriver_variables.tf already exists, rename it so airlock won't read it
@@ -101,7 +101,7 @@ func (p *OpentofuProvisioner) InitializeStep(stepPath string, sourcePath string)
 	}
 
 	// remove the dummy main.tf if we are copying from a source
-	maintfPath := path.Join(stepPath, "main.tf")
+	maintfPath := filepath.Join(stepPath, "main.tf")
 	if _, maintfErr := os.Stat(maintfPath); maintfErr == nil {
 		err := os.Remove(maintfPath)
 		if err != nil {

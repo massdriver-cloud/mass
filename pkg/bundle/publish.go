@@ -47,6 +47,7 @@ func (p *Publisher) PackageBundle(ctx context.Context, bundleDir string, tag str
 		if err != nil {
 			return err
 		}
+		bundleRelativePath = filepath.ToSlash(bundleRelativePath)
 
 		if ignoreMatcher != nil && ignoreMatcher.MatchesPath(bundleRelativePath) {
 			return nil
