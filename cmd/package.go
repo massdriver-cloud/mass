@@ -12,11 +12,11 @@ import (
 	"text/template"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/pkg/api"
-	"github.com/massdriver-cloud/mass/pkg/cli"
-	"github.com/massdriver-cloud/mass/pkg/commands/pkg"
-	"github.com/massdriver-cloud/mass/pkg/files"
-	"github.com/massdriver-cloud/mass/pkg/prettylogs"
+	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/cli"
+	"github.com/massdriver-cloud/mass/internal/commands/pkg"
+	"github.com/massdriver-cloud/mass/internal/files"
+	"github.com/massdriver-cloud/mass/internal/prettylogs"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"

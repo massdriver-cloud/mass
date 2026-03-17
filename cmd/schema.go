@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/pkg/definition"
-	"github.com/massdriver-cloud/mass/pkg/jsonschema"
-	"github.com/massdriver-cloud/mass/pkg/prettylogs"
+	"github.com/massdriver-cloud/mass/internal/definition"
+	"github.com/massdriver-cloud/mass/internal/jsonschema"
+	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
