@@ -24,7 +24,7 @@ type Package struct {
 	ID               string             `json:"id" mapstructure:"id"`
 	Slug             string             `json:"slug" mapstructure:"slug"`
 	Status           string             `json:"status" mapstructure:"status"`
-	DeployedVersion  string             `json:"deployedVersion,omitempty" mapstructure:"deployedVersion"`
+	DeployedVersion  *string            `json:"deployedVersion,omitempty" mapstructure:"deployedVersion"`
 	LatestDeployment *PackageDeployment `json:"latestDeployment,omitempty" mapstructure:"latestDeployment"`
 	ActiveDeployment *PackageDeployment `json:"activeDeployment,omitempty" mapstructure:"activeDeployment"`
 	Artifacts        []Artifact         `json:"artifacts,omitempty" mapstructure:"artifacts"`
@@ -60,7 +60,10 @@ func toPackage(p any) (*Package, error) {
 		return nil, fmt.Errorf("failed to decode package: %w", err)
 	}
 
-	// mapstructure creates empty structs for nil nested objects; nil them out
+	// mapstructure creates empty structs/pointers for nil values; nil them out
+	if pkg.DeployedVersion != nil && *pkg.DeployedVersion == "" {
+		pkg.DeployedVersion = nil
+	}
 	if pkg.LatestDeployment != nil && pkg.LatestDeployment.ID == "" {
 		pkg.LatestDeployment = nil
 	}

@@ -204,7 +204,15 @@ func renderPackage(pkg *api.Package) error {
 		return fmt.Errorf("failed to read template: %w", err)
 	}
 
-	tmpl, err := template.New("package").Parse(string(tmplBytes))
+	funcMap := template.FuncMap{
+		"deref": func(s *string) string {
+			if s == nil {
+				return ""
+			}
+			return *s
+		},
+	}
+	tmpl, err := template.New("package").Funcs(funcMap).Parse(string(tmplBytes))
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}

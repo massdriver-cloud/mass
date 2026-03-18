@@ -440,6 +440,7 @@ query getPackage($organizationId: ID!, $id: ID!) {
     id
     slug
     status
+    # @genqlient(pointer: true)
     deployedVersion
     params
     latestDeployment {

@@ -4,7 +4,7 @@
 
 **Environment:** {{.Environment.Slug}}
 
-**Deployed Version:** {{if .DeployedVersion}}{{.DeployedVersion}}{{else}}N/A{{end}}
+**Deployed Version:** {{if .DeployedVersion}}{{deref .DeployedVersion}}{{else}}N/A{{end}}
 
 {{if .LatestDeployment -}}
 ## Latest Deployment
@@ -15,7 +15,7 @@
 | Status | {{.LatestDeployment.Status}} |
 | Action | {{.LatestDeployment.Action}} |
 | Version | {{.LatestDeployment.Version}} |
-| Created At | {{.LatestDeployment.CreatedAt.Format "2006-01-02 15:04:05 UTC"}} |
+| Created At | {{.LatestDeployment.CreatedAt.UTC.Format "2006-01-02 15:04:05 UTC"}} |
 {{end}}
 {{- if .ActiveDeployment -}}
 ## Active Deployment
@@ -26,7 +26,7 @@
 | Status | {{.ActiveDeployment.Status}} |
 | Action | {{.ActiveDeployment.Action}} |
 | Version | {{.ActiveDeployment.Version}} |
-| Created At | {{.ActiveDeployment.CreatedAt.Format "2006-01-02 15:04:05 UTC"}} |
+| Created At | {{.ActiveDeployment.CreatedAt.UTC.Format "2006-01-02 15:04:05 UTC"}} |
 {{end}}
 ## Parameters
 ```json
