@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/pkg/commands/image"
+	"github.com/massdriver-cloud/mass/internal/commands/image"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )

@@ -10,9 +10,9 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/pkg/api"
-	"github.com/massdriver-cloud/mass/pkg/artifact"
-	artifactcmd "github.com/massdriver-cloud/mass/pkg/commands/artifact"
+	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/artifact"
+	artifactcmd "github.com/massdriver-cloud/mass/internal/commands/artifact"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )

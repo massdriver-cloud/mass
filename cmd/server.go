@@ -14,7 +14,7 @@ import (
 	"time"
 
 	_ "github.com/massdriver-cloud/mass/docs" // Init swagger docs
-	"github.com/massdriver-cloud/mass/pkg/server"
+	"github.com/massdriver-cloud/mass/internal/server"
 	"github.com/spf13/cobra"
 )
 
