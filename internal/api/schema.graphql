@@ -281,12 +281,7 @@ type RootQueryType {
   ): Package
 
   "Finds a package by its naming convention, the name prefix (project-target-manifest) without the random unique suffix."
-  getPackageByNamingConvention(
-    organizationId: ID!
-
-    "Package ID or {project.slug}-{environment.slug}-{manifest.slug} i.e.: ecomm-staging-database"
-    name: String!
-  ): Package @deprecated(reason: "Use package(id: $id){}")
+  getPackageByNamingConvention(organizationId: ID!, name: String!): Package @deprecated(reason: "Use package(id: $id){}")
 
   """
   List all bundle repositories with pagination, sorting, and search capabilities.
@@ -541,34 +536,13 @@ type RootMutationType {
   createManifest(organizationId: ID!, bundleId: ID!, projectId: ID!, name: String!, slug: String!, description: String): ManifestPayload
 
   "Update a manifest"
-  updateManifest(
-    organizationId: ID!
-
-    "Manifest ID or {project.slug}-{manifest.slug} i.e.: ecomm-database"
-    id: ID!
-
-    name: String!
-
-    description: String
-  ): ManifestPayload
+  updateManifest(organizationId: ID!, id: ID!, name: String!, description: String): ManifestPayload
 
   "Removes a manifest from a project. This will fail if infrastructure is still provisioned in a target."
-  deleteManifest(
-    organizationId: ID!
-
-    "Manifest ID or {project.slug}-{manifest.slug} i.e.: ecomm-database"
-    id: ID!
-  ): ManifestPayload
+  deleteManifest(organizationId: ID!, id: ID!): ManifestPayload
 
   "Set the manifest position in the graph page"
-  setManifestPosition(
-    organizationId: ID!
-
-    "Manifest ID or {project.slug}-{manifest.slug} i.e.: ecomm-database"
-    id: ID!
-
-    params: GraphPositionParams!
-  ): ManifestPayload
+  setManifestPosition(organizationId: ID!, id: ID!, params: GraphPositionParams!): ManifestPayload
 
   "Adds a Service Account to a group"
   addServiceAccountToGroup(groupId: ID!, organizationId: ID!, serviceAccountId: ID!): ServiceAccountMemberPayload
@@ -623,7 +597,6 @@ type RootMutationType {
   resetPackage(
     organizationId: ID!
 
-    "Package ID or {project.slug}-{environment.slug}-{manifest.slug} i.e.: ecomm-staging-database"
     id: ID!
 
     "Destroy the state of the package"
@@ -689,24 +662,10 @@ type RootMutationType {
   ): PackagePayload
 
   "Set a secret value for the package."
-  setPackageSecret(
-    organizationId: ID!
-
-    "Package ID or {project.slug}-{environment.slug}-{manifest.slug} i.e.: ecomm-staging-database"
-    id: ID!
-
-    input: SetSecretValueInput!
-  ): SecretMetadataPayload
+  setPackageSecret(organizationId: ID!, id: ID!, input: SetSecretValueInput!): SecretMetadataPayload
 
   "Remove a secret value from the package."
-  unsetPackageSecret(
-    organizationId: ID!
-
-    "Package ID or {project.slug}-{environment.slug}-{manifest.slug} i.e.: ecomm-staging-database"
-    id: ID!
-
-    input: UnsetSecretValueInput!
-  ): SecretMetadataPayload
+  unsetPackageSecret(organizationId: ID!, id: ID!, input: UnsetSecretValueInput!): SecretMetadataPayload
 
   "Create a project"
   createProject(organizationId: ID!, name: String!, description: String, slug: String!): ProjectPayload
@@ -883,7 +842,6 @@ enum ServerMode {
 }
 
 enum EmailAuthMethodType {
-  PASSWORDLESS
   PASSKEY
 }
 
@@ -1399,13 +1357,13 @@ type Organization {
 
   name: String!
 
-  slug: String!
-
   createdAt: DateTime
 
   updatedAt: DateTime
 
   attribution: String
+
+  slug: String!
 
   "Statistics for projects you have access to within this organization."
   dashboard: DashboardStatistics
