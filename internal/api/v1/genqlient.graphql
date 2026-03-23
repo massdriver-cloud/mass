@@ -1,0 +1,570 @@
+# PROJECTS
+
+query getProjects(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: ProjectsSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  projects(organizationId: $organizationId, sort: $sort, cursor: $cursor) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      name
+      description
+      createdAt
+      updatedAt
+      cost {
+        monthlyAverage {
+          amount
+          currency
+        }
+        dailyAverage {
+          amount
+          currency
+        }
+      }
+    }
+  }
+}
+
+query getProjectById($organizationId: ID!, $id: ID!) {
+  project(organizationId: $organizationId, id: $id) {
+    id
+    name
+    description
+    createdAt
+    updatedAt
+    deletable {
+      result
+      constraints {
+        message
+        type
+        id
+      }
+    }
+    cost {
+      monthlyAverage {
+        amount
+        currency
+      }
+      dailyAverage {
+        amount
+        currency
+      }
+    }
+    environments {
+      cursor {
+        next
+        previous
+      }
+      items {
+        id
+        name
+        description
+        createdAt
+        updatedAt
+        project {
+          id
+          name
+        }
+      }
+    }
+    blueprint {
+      components {
+        items {
+          id
+          name
+          description
+          createdAt
+          updatedAt
+          repo {
+            name
+          }
+          project {
+            id
+            name
+          }
+        }
+      }
+      links {
+        items {
+          id
+          fromField
+          toField
+          createdAt
+          updatedAt
+          fromComponent {
+            id
+            name
+          }
+          toComponent {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+}
+
+mutation createProject($organizationId: ID!, $input: CreateProjectInput!) {
+  createProject(organizationId: $organizationId, input: $input) {
+    result {
+      id
+      name
+      description
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation updateProject($organizationId: ID!, $id: ID!, $input: UpdateProjectInput!) {
+  updateProject(organizationId: $organizationId, id: $id, input: $input) {
+    result {
+      id
+      name
+      description
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation deleteProject($organizationId: ID!, $id: ID!) {
+  deleteProject(organizationId: $organizationId, id: $id) {
+    result {
+      id
+      name
+      description
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+
+# ENVIRONMENTS
+
+query getEnvironments(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $filter: EnvironmentsFilter,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: EnvironmentsSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  environments(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      name
+      description
+      createdAt
+      updatedAt
+      project {
+        id
+        name
+      }
+    }
+  }
+}
+
+query getEnvironmentById($organizationId: ID!, $id: ID!) {
+  environment(organizationId: $organizationId, id: $id) {
+    id
+    name
+    description
+    createdAt
+    updatedAt
+    project {
+      id
+      name
+      description
+    }
+    instances {
+      cursor {
+        next
+        previous
+      }
+      items {
+        id
+        name
+        status
+        version
+        releaseStrategy
+        createdAt
+        updatedAt
+        environment {
+          id
+          name
+        }
+        bundle {
+          id
+          name
+          version
+        }
+      }
+    }
+  }
+}
+
+mutation createEnvironment($organizationId: ID!, $projectId: ID!, $input: CreateEnvironmentInput!) {
+  createEnvironment(organizationId: $organizationId, projectId: $projectId, input: $input) {
+    result {
+      id
+      name
+      description
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation updateEnvironment($organizationId: ID!, $id: ID!, $input: UpdateEnvironmentInput!) {
+  updateEnvironment(organizationId: $organizationId, id: $id, input: $input) {
+    result {
+      id
+      name
+      description
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation deleteEnvironment($organizationId: ID!, $id: ID!) {
+  deleteEnvironment(organizationId: $organizationId, id: $id) {
+    result {
+      id
+      name
+      description
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+
+# INSTANCES (formerly Packages)
+
+query getInstances(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $filter: InstancesFilter,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: InstancesSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  instances(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      name
+      status
+      version
+      releaseStrategy
+      createdAt
+      updatedAt
+      environment {
+        id
+        name
+      }
+      bundle {
+        id
+        name
+        version
+      }
+    }
+  }
+}
+
+query getInstanceById($organizationId: ID!, $id: ID!) {
+  instance(organizationId: $organizationId, id: $id) {
+    id
+    name
+    status
+    version
+    releaseStrategy
+    createdAt
+    updatedAt
+    environment {
+      id
+      name
+      description
+      createdAt
+      updatedAt
+      project {
+        id
+        name
+        description
+      }
+    }
+    bundle {
+      id
+      name
+      version
+      description
+      icon
+      sourceUrl
+      createdAt
+      updatedAt
+    }
+  }
+}
+
+
+# DEPLOYMENTS
+
+query getDeployments(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $filter: DeploymentsFilter,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: DeploymentsSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  deployments(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      status
+      action
+      version
+      message
+      createdAt
+      updatedAt
+      lastTransitionedAt
+      elapsedTime
+      deployedBy
+      instance {
+        id
+        name
+      }
+    }
+  }
+}
+
+query getDeploymentById($organizationId: ID!, $id: ID!) {
+  deployment(organizationId: $organizationId, id: $id) {
+    id
+    status
+    action
+    version
+    message
+    createdAt
+    updatedAt
+    lastTransitionedAt
+    elapsedTime
+    deployedBy
+    instance {
+      id
+      name
+      status
+      version
+      releaseStrategy
+      createdAt
+      updatedAt
+      environment {
+        id
+        name
+        description
+      }
+      bundle {
+        id
+        name
+        version
+      }
+    }
+  }
+}
+
+
+# BUNDLES
+
+query getBundle($organizationId: ID!, $id: BundleId!) {
+  bundle(organizationId: $organizationId, id: $id) {
+    id
+    name
+    version
+    description
+    icon
+    sourceUrl
+    createdAt
+    updatedAt
+  }
+}
+
+
+# COMPONENTS (formerly Manifests)
+
+mutation addComponent($organizationId: ID!, $projectId: ID!, $input: AddComponentInput!) {
+  addComponent(organizationId: $organizationId, projectId: $projectId, input: $input) {
+    result {
+      id
+      name
+      description
+      createdAt
+      updatedAt
+      repo {
+        name
+      }
+      project {
+        id
+        name
+        description
+      }
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation removeComponent($organizationId: ID!, $projectId: ID!, $id: ID!) {
+  removeComponent(organizationId: $organizationId, projectId: $projectId, id: $id) {
+    result {
+      id
+      name
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation linkComponents($organizationId: ID!, $projectId: ID!, $input: LinkComponentsInput!) {
+  linkComponents(organizationId: $organizationId, projectId: $projectId, input: $input) {
+    result {
+      id
+      fromField
+      toField
+      fromComponent {
+        id
+        name
+      }
+      toComponent {
+        id
+        name
+      }
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation unlinkComponents($organizationId: ID!, $id: ID!) {
+  unlinkComponents(organizationId: $organizationId, id: $id) {
+    result {
+      id
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+
+# VIEWER
+
+query getViewer {
+  viewer {
+    ... on AccountViewer {
+      id
+      email
+      firstName
+      lastName
+      createdAt
+      updatedAt
+      defaultOrganization {
+        id
+        name
+      }
+    }
+    ... on ServiceAccountViewer {
+      id
+      name
+      description
+      createdAt
+      updatedAt
+      organization {
+        id
+        name
+      }
+    }
+  }
+}
+
+
+# SERVER
+
+query getServer {
+  server {
+    appUrl
+    version
+    mode
+    ssoProviders {
+      name
+      loginUrl
+      uiIconUrl
+      uiLabel
+    }
+    emailAuthMethods {
+      name
+    }
+  }
+}

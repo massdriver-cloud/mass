@@ -40,8 +40,8 @@ Configure and deploying infrastructure and applications.
 * [mass docs](/cli/commands/mass_docs)	 - Gen docs
 * [mass environment](/cli/commands/mass_environment)	 - Environment management
 * [mass image](/cli/commands/mass_image)	 - Container image integration Massdriver
+* [mass instance](/cli/commands/mass_instance)	 - Manage instances of IaC deployed in environments.
 * [mass logs](/cli/commands/mass_logs)	 - Get deployment logs
-* [mass package](/cli/commands/mass_package)	 - Manage packages of IaC deployed in environments.
 * [mass preview](/cli/commands/mass_preview)	 - Create & deploy preview environments
 * [mass project](/cli/commands/mass_project)	 - Project management
 * [mass schema](/cli/commands/mass_schema)	 - Manage JSON Schemas

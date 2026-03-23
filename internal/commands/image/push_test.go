@@ -7,7 +7,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/api/v0"
 	"github.com/massdriver-cloud/mass/internal/commands/image"
 
 	"github.com/Khan/genqlient/graphql"

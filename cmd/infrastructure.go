@@ -17,16 +17,16 @@ func NewCmdInfra() *cobra.Command {
 		Aliases:    []string{"cfg"},
 		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
 		Args:       cobra.ExactArgs(1),
-		RunE:       runPkgConfigure,
+		RunE:       runInstanceConfigure,
 	}
 
-	infraConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params JSON file. This file supports bash interpolation.")
+	infraConfigureCmd.Flags().StringVarP(&instanceParamsPath, "params", "p", instanceParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 
 	infraDeployCmd := &cobra.Command{
 		Use:        `deploy <project>-<env>-<manifest>`,
 		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
 		Args:       cobra.ExactArgs(1),
-		RunE:       runPkgDeploy,
+		RunE:       runInstanceDeploy,
 	}
 
 	infraDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
@@ -36,24 +36,24 @@ func NewCmdInfra() *cobra.Command {
 		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
 		Aliases:    []string{"cfg"},
 		Args:       cobra.ExactArgs(1),
-		RunE:       runPkgPatch,
+		RunE:       runInstancePatch,
 	}
 
-	infraPatchCmd.Flags().StringArrayVarP(&pkgPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
+	infraPatchCmd.Flags().StringArrayVarP(&instancePatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 
 	// app and infra are the same, lets reuse a get command/template here.
-	pkgGetCmd := &cobra.Command{
+	infraGetCmd := &cobra.Command{
 		Use:        `get <project>-<env>-<manifest>`,
 		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
 		Aliases:    []string{"g"},
 		Args:       cobra.ExactArgs(1), // Enforce exactly one argument
-		RunE:       runPkgGet,
+		RunE:       runInstanceGet,
 	}
 
 	infraCmd.AddCommand(infraConfigureCmd)
 	infraCmd.AddCommand(infraDeployCmd)
 	infraCmd.AddCommand(infraPatchCmd)
-	infraCmd.AddCommand(pkgGetCmd)
+	infraCmd.AddCommand(infraGetCmd)
 
 	return infraCmd
 }
