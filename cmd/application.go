@@ -18,16 +18,16 @@ func NewCmdApp() *cobra.Command {
 		Aliases:    []string{"cfg"},
 		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
 		Args:       cobra.ExactArgs(1),
-		RunE:       runPkgConfigure,
+		RunE:       runInstanceConfigure,
 	}
 
-	appConfigureCmd.Flags().StringVarP(&pkgParamsPath, "params", "p", pkgParamsPath, "Path to params JSON file. This file supports bash interpolation.")
+	appConfigureCmd.Flags().StringVarP(&instanceParamsPath, "params", "p", instanceParamsPath, "Path to params JSON file. This file supports bash interpolation.")
 
 	appDeployCmd := &cobra.Command{
 		Use:        `deploy <project>-<env>-<manifest>`,
 		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
 		Args:       cobra.ExactArgs(1),
-		RunE:       runPkgDeploy,
+		RunE:       runInstanceDeploy,
 	}
 
 	appDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
@@ -37,24 +37,24 @@ func NewCmdApp() *cobra.Command {
 		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
 		Aliases:    []string{"cfg"},
 		Args:       cobra.ExactArgs(1),
-		RunE:       runPkgPatch,
+		RunE:       runInstancePatch,
 	}
 
-	appPatchCmd.Flags().StringArrayVarP(&pkgPatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
+	appPatchCmd.Flags().StringArrayVarP(&instancePatchQueries, "set", "s", []string{}, "Sets a package parameter value using JQ expressions.")
 
 	// app and infra are the same, lets reuse a get command/template here.
-	pkgGetCmd := &cobra.Command{
+	appGetCmd := &cobra.Command{
 		Use:        `get  <project>-<env>-<manifest>`,
 		Deprecated: "This has been moved under `package`. This command will be removed in v2.",
 		Aliases:    []string{"g"},
 		Args:       cobra.ExactArgs(1), // Enforce exactly one argument
-		RunE:       runPkgGet,
+		RunE:       runInstanceGet,
 	}
 
 	appCmd.AddCommand(appDeployCmd)
 	appCmd.AddCommand(appConfigureCmd)
 	appCmd.AddCommand(appPatchCmd)
-	appCmd.AddCommand(pkgGetCmd)
+	appCmd.AddCommand(appGetCmd)
 
 	return appCmd
 }

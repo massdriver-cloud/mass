@@ -1,0 +1,1859 @@
+schema {
+  mutation: RootMutationType
+  query: RootQueryType
+}
+
+"Links a mutation to its JSON Schema and UI Schema for form generation"
+directive @inputs(
+  "URL to the UI Schema"
+  ui: String!
+
+  "URL to the JSON Schema"
+  schema: String!
+
+  "Schema name matching the mutation (e.g., createProject)"
+  name: String!
+) on FIELD_DEFINITION
+
+type RootQueryType {
+  "List all projects you have access to. Returns a paginated list sorted by name."
+  projects(
+    "Your organization ID"
+    organizationId: ID!
+
+    "How to sort results"
+    sort: ProjectsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): ProjectsPage
+
+  "Get a single project by its ID."
+  project(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The project ID"
+    id: ID!
+  ): Project
+
+  "List all environments you have access to. Returns a paginated list sorted by name."
+  environments(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Filter results"
+    filter: EnvironmentsFilter
+
+    "How to sort results"
+    sort: EnvironmentsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): EnvironmentsPage
+
+  "Get a single environment by its ID."
+  environment(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The environment ID"
+    id: ID!
+  ): Environment
+
+  "List all instances you have access to. Returns a paginated list sorted by name."
+  instances(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Filter results"
+    filter: InstancesFilter
+
+    "How to sort results"
+    sort: InstancesSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): InstancesPage
+
+  "Get a single instance by its ID."
+  instance(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The instance ID"
+    id: ID!
+  ): Instance
+
+  """
+  Get the configuration fields available across your instances.
+
+  Returns all the unique fields from your instance configurations that you can
+  use to build search filters or dashboards. For example, if your instances have
+  'database.instance_type' or 'cluster.node_count' fields, they'll appear here.
+  """
+  paramDimensions(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Scope which instances' schemas to introspect"
+    filter: ParamDimensionsFilter
+
+    "How to sort results"
+    sort: ParamDimensionsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): ParamDimensionsPage
+
+  "List all deployments you have access to. Returns a paginated list, newest first."
+  deployments(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Filter results"
+    filter: DeploymentsFilter
+
+    "How to sort results"
+    sort: DeploymentsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): DeploymentsPage
+
+  "Get a single deployment by its ID."
+  deployment(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The deployment ID"
+    id: ID!
+  ): Deployment
+
+  """
+  Get a bundle by its identifier.
+
+  The ID format is `name@version` where version can be an exact version,
+  a constraint, or a channel:
+
+  - `aws-aurora-postgres@1.2.3` — exact version
+  - `aws-aurora-postgres@~1.2` — latest patch in 1.2.x
+  - `aws-aurora-postgres@~1` — latest minor in 1.x.x
+  - `aws-aurora-postgres@latest` — newest stable release
+  - `aws-aurora-postgres@latest+dev` — newest release including dev builds
+  - `aws-aurora-postgres` — shorthand for `name@latest`
+  """
+  bundle(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Bundle identifier (e.g., 'aws-aurora-postgres@1.2.3' or 'aws-aurora-postgres@latest')"
+    id: BundleId!
+  ): Bundle
+
+  "Get information about yourself (the authenticated user or service account)."
+  viewer: Viewer
+
+  "Get server info and available authentication methods. No authentication required."
+  server: Server!
+}
+
+type RootMutationType {
+  "Create a new project in your organization."
+  createProject(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Create a new project. A project is the complete model of your application—its infrastructure, architecture, configurations, and environments."
+    input: CreateProjectInput!
+  ): ProjectPayload @inputs(name: "createProject", schema: "\/graphql\/v1\/inputs\/createProject.json", ui: "\/graphql\/v1\/inputs\/createProject.ui.json")
+
+  "Update a project's name or description."
+  updateProject(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The project ID to update"
+    id: ID!
+
+    "Update an existing project's name and description. The ID cannot be changed after creation."
+    input: UpdateProjectInput!
+  ): ProjectPayload @inputs(name: "updateProject", schema: "\/graphql\/v1\/inputs\/updateProject.json", ui: "\/graphql\/v1\/inputs\/updateProject.ui.json")
+
+  "Delete a project. You must delete all environments first."
+  deleteProject(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The project ID to delete"
+    id: ID!
+  ): ProjectPayload
+
+  "Create a new environment in a project."
+  createEnvironment(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The project to create the environment in"
+    projectId: ID!
+
+    "Create a new environment. Environments are isolated deployment contexts like production, staging, or development, each with independent secrets and configurations."
+    input: CreateEnvironmentInput!
+  ): EnvironmentPayload @inputs(name: "createEnvironment", schema: "\/graphql\/v1\/inputs\/createEnvironment.json", ui: "\/graphql\/v1\/inputs\/createEnvironment.ui.json")
+
+  "Update an environment's name or description."
+  updateEnvironment(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The environment ID to update"
+    id: ID!
+
+    "Update an existing environment's name and description. The ID cannot be changed after creation."
+    input: UpdateEnvironmentInput!
+  ): EnvironmentPayload @inputs(name: "updateEnvironment", schema: "\/graphql\/v1\/inputs\/updateEnvironment.json", ui: "\/graphql\/v1\/inputs\/updateEnvironment.ui.json")
+
+  "Delete an environment. You must decommission all packages first."
+  deleteEnvironment(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The environment ID to delete"
+    id: ID!
+  ): EnvironmentPayload
+
+  "Add a component to a project's blueprint."
+  addComponent(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The project ID"
+    projectId: ID!
+
+    "Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application."
+    input: AddComponentInput!
+  ): ComponentPayload @inputs(name: "addComponent", schema: "\/graphql\/v1\/inputs\/addComponent.json", ui: "\/graphql\/v1\/inputs\/addComponent.ui.json")
+
+  "Remove a component from a project's blueprint."
+  removeComponent(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The project ID"
+    projectId: ID!
+
+    "The component ID to remove"
+    id: ID!
+  ): ComponentPayload
+
+  "Create a link between two components."
+  linkComponents(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The project ID"
+    projectId: ID!
+
+    "Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources."
+    input: LinkComponentsInput!
+  ): LinkPayload @inputs(name: "linkComponents", schema: "\/graphql\/v1\/inputs\/linkComponents.json", ui: "\/graphql\/v1\/inputs\/linkComponents.ui.json")
+
+  "Remove a link between two components."
+  unlinkComponents(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The link ID to remove"
+    id: ID!
+  ): LinkPayload
+
+  "Accept a pending group invitation."
+  acceptGroupInvite(
+    "The invitation ID to accept"
+    id: ID!
+  ): InviteViewerPayload
+
+  "Upload or replace your profile avatar. Accepts PNG, JPG, GIF, or WebP (max 1 MB)."
+  setAccountAvatar(
+    "The image file to upload"
+    avatar: Upload!
+  ): AvatarViewerPayload
+
+  "Remove your profile avatar."
+  removeAccountAvatar: AvatarViewerPayload
+
+  "Create a new organization. You become the owner and first admin."
+  createOrganization(
+    "Create a new organization. An organization is the top-level container for all your projects, environments, and infrastructure resources."
+    input: CreateOrganizationInput!
+  ): OrganizationPayload @inputs(name: "createOrganization", schema: "\/graphql\/v1\/inputs\/createOrganization.json", ui: "\/graphql\/v1\/inputs\/createOrganization.ui.json")
+
+  "Upload or replace your organization's logo. Accepts PNG, JPG, GIF, or WebP (max 1 MB)."
+  setOrganizationLogo(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The image file to upload"
+    logo: Upload!
+  ): LogoOrganizationPayload
+
+  "Remove your organization's logo."
+  removeOrganizationLogo(
+    "Your organization ID"
+    organizationId: ID!
+  ): LogoOrganizationPayload
+}
+
+"How this Massdriver instance is deployed."
+enum ServerMode {
+  "Self-hosted in your own infrastructure"
+  SELF_HOSTED
+
+  "Massdriver's managed cloud service"
+  MANAGED
+}
+
+"Type of email-based authentication."
+enum EmailAuthMethodType {
+  "Sign in with a passkey (WebAuthn)"
+  PASSKEY
+}
+
+"An SSO provider available for authentication."
+type SsoProvider {
+  "Provider name (e.g., 'google', 'okta')"
+  name: String!
+
+  "URL to start the SSO login flow"
+  loginUrl: String!
+
+  "Icon to display on the login button"
+  uiIconUrl: String
+
+  "Label to display on the login button"
+  uiLabel: String
+}
+
+"An email-based authentication method."
+type EmailAuthMethod {
+  "Authentication type"
+  name: EmailAuthMethodType!
+}
+
+"Information about this Massdriver server."
+type Server {
+  "Base URL of the application"
+  appUrl: String!
+
+  "Server version (e.g., '1.2.3')"
+  version: String!
+
+  "Whether this is self-hosted or managed"
+  mode: ServerMode!
+
+  "SSO providers available for login"
+  ssoProviders: [SsoProvider]
+
+  "Email auth methods available"
+  emailAuthMethods: [EmailAuthMethod]
+}
+
+"Create a new organization. An organization is the top-level container for all your projects, environments, and infrastructure resources."
+input CreateOrganizationInput {
+  "A short, memorable identifier for looking up this organization in the API and CLI. Choose something concise and meaningful—human-readable, not a UUID. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation."
+  id: String!
+
+  "A human-readable name for the organization"
+  name: String!
+}
+
+"An organization with full details."
+type Organization {
+  id: ID!
+
+  "Organization name"
+  name: String!
+
+  "When this organization was created (UTC)"
+  createdAt: DateTime!
+
+  "When this organization was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The organization's logo image."
+  logo: LogoOrganization
+}
+
+type OrganizationPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Organization
+}
+
+"An organization's logo image."
+type LogoOrganization {
+  id: ID!
+
+  "URL to the logo image. Uses the organization's internal ID for privacy."
+  url: String!
+
+  "MIME type (e.g., image\/png)"
+  contentType: String!
+
+  "File size in bytes"
+  fileSize: Int!
+
+  "Image width in pixels"
+  width: Int
+
+  "Image height in pixels"
+  height: Int
+
+  "When the logo was uploaded (UTC)"
+  createdAt: DateTime!
+
+  "When the logo was last changed (UTC)"
+  updatedAt: DateTime!
+}
+
+type LogoOrganizationPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: LogoOrganization
+}
+
+"Available fields for sorting organizations."
+enum ViewerOrganizationsSortField {
+  "Sort alphabetically by organization name"
+  NAME
+
+  "Sort by when you joined the organization"
+  CREATED_AT
+}
+
+"Billing status of an organization."
+enum ViewerBillingStatus {
+  "Free trial period"
+  TRIAL
+
+  "Subscription is active and paid"
+  ACTIVE
+
+  "Payment is overdue"
+  PAST_DUE
+
+  "Trial has expired"
+  EXPIRED
+
+  "Subscription was canceled"
+  CANCELED
+
+  "Account is temporarily suspended"
+  SUSPENDED
+
+  "Waiting for payment to process"
+  PAYMENT_PENDING
+
+  "Payment failed"
+  PAYMENT_FAILED
+}
+
+"Available fields for sorting identities."
+enum IdentitiesSortField {
+  "Sort by provider name"
+  PROVIDER
+
+  "Sort by when the identity was linked"
+  CREATED_AT
+}
+
+"Available fields for sorting invites."
+enum InvitesSortField {
+  "Sort by when the invite was sent"
+  CREATED_AT
+}
+
+"Type of group."
+enum ViewerGroupType {
+  "Organization administrators"
+  ORGANIZATION_ADMIN
+
+  "Organization viewers"
+  ORGANIZATION_VIEWER
+
+  "Custom group with specific permissions"
+  CUSTOM
+}
+
+"Sorting options for the organizations list."
+input ViewerOrganizationsSort {
+  "Which field to sort by"
+  field: ViewerOrganizationsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Sorting options for identities list."
+input IdentitiesSort {
+  "Which field to sort by"
+  field: IdentitiesSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Sorting options for invites list."
+input InvitesSort {
+  "Which field to sort by"
+  field: InvitesSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Billing information for an organization."
+type ViewerOrganizationBilling {
+  "Current billing status"
+  status: ViewerBillingStatus!
+}
+
+"An organization you belong to."
+type ViewerOrganization {
+  id: ID!
+
+  "Organization name"
+  name: String!
+
+  "Billing status for this organization."
+  billing: ViewerOrganizationBilling
+}
+
+type ViewerOrganizationsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type viewer_organization."
+  items: [ViewerOrganization]
+}
+
+"An OAuth\/OIDC provider identity linked to your account."
+type AccountIdentityViewer {
+  id: ID!
+
+  "OAuth provider (e.g., 'google', 'github')"
+  provider: String!
+
+  "When this identity was linked (UTC)"
+  createdAt: DateTime!
+}
+
+type IdentitiesViewerPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type account_identity_viewer."
+  items: [AccountIdentityViewer]
+}
+
+"Organization info from an invitation."
+type InviteOrganizationViewer {
+  id: ID!
+
+  "Organization name"
+  name: String!
+}
+
+"Group info from an invitation."
+type InviteGroupViewer {
+  id: ID!
+
+  "Group name"
+  name: String!
+
+  "Type of group."
+  type: ViewerGroupType!
+
+  "The organization this group belongs to."
+  organization: InviteOrganizationViewer!
+}
+
+"A pending group membership invitation."
+type InviteViewer {
+  id: ID!
+
+  "Email the invitation was sent to"
+  email: String!
+
+  "When the invitation was sent (UTC)"
+  createdAt: DateTime!
+
+  "The group you've been invited to join."
+  group: InviteGroupViewer!
+}
+
+type InvitesViewerPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type invite_viewer."
+  items: [InviteViewer]
+}
+
+"Your profile avatar image."
+type AvatarViewer {
+  id: ID!
+
+  "URL to the avatar image."
+  url: String!
+
+  "MIME type (e.g., image\/png)"
+  contentType: String!
+
+  "File size in bytes"
+  fileSize: Int!
+
+  "Image width in pixels"
+  width: Int
+
+  "Image height in pixels"
+  height: Int
+
+  "When the avatar was uploaded (UTC)"
+  createdAt: DateTime!
+
+  "When the avatar was last changed (UTC)"
+  updatedAt: DateTime!
+}
+
+type InviteViewerPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: InviteViewer
+}
+
+type AvatarViewerPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: AvatarViewer
+}
+
+"Information about the authenticated user."
+type AccountViewer {
+  id: ID!
+
+  "Email address"
+  email: String!
+
+  "First name"
+  firstName: String
+
+  "Last name"
+  lastName: String
+
+  "When you signed up (UTC)"
+  createdAt: DateTime!
+
+  "When your profile was last updated (UTC)"
+  updatedAt: DateTime!
+
+  "Your profile avatar."
+  avatar: AvatarViewer
+
+  "Organizations you belong to."
+  organizations(
+    "How to sort results"
+    sort: ViewerOrganizationsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): ViewerOrganizationsPage
+
+  "Your most recently joined organization. Useful for setting a default context."
+  defaultOrganization: ViewerOrganization
+
+  "OAuth\/OIDC identities linked to your account."
+  identities(
+    "How to sort"
+    sort: IdentitiesSort
+
+    "Pagination cursor"
+    cursor: Cursor
+  ): IdentitiesViewerPage
+
+  "Pending group membership invitations."
+  invites(
+    "How to sort"
+    sort: InvitesSort
+
+    "Pagination cursor"
+    cursor: Cursor
+  ): InvitesViewerPage
+}
+
+"Information about the authenticated service account (API client)."
+type ServiceAccountViewer {
+  id: ID!
+
+  "Service account name"
+  name: String!
+
+  "What this service account is used for"
+  description: String
+
+  "When this service account was created (UTC)"
+  createdAt: DateTime!
+
+  "When this service account was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The organization this service account belongs to."
+  organization: ViewerOrganization!
+}
+
+"The authenticated entity making this request. Returns AccountViewer for users, ServiceAccountViewer for API clients."
+union Viewer = AccountViewer | ServiceAccountViewer
+
+"Available fields for sorting components."
+enum ComponentsSortField {
+  "Sort alphabetically by component name"
+  NAME
+
+  "Sort by when the component was created"
+  CREATED_AT
+}
+
+"Available fields for sorting links."
+enum LinksSortField {
+  "Sort by when the link was created"
+  CREATED_AT
+}
+
+"Sorting options for the components list."
+input ComponentsSort {
+  "Which field to sort by"
+  field: ComponentsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Sorting options for the links list."
+input LinksSort {
+  "Which field to sort by"
+  field: LinksSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Filter which components to return."
+input ComponentsFilter {
+  "Filter by component ID (e.g., 'database')"
+  id: IdFilter
+
+  "Filter by bundle name"
+  bundleName: BundleNameFilter
+}
+
+"Filter which links to return."
+input LinksFilter {
+  "Filter by source (from) component ID"
+  fromComponentId: IdFilter
+
+  "Filter by destination (to) component ID"
+  toComponentId: IdFilter
+}
+
+"Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application."
+input AddComponentInput {
+  "Name of the bundle to add (e.g., 'aws-aurora-postgres')"
+  bundleName: RepoName!
+
+  "Optional description of this component's purpose"
+  description: String
+
+  "A short, memorable identifier for this component. This becomes the final segment of package identifiers. For example, project 'ecomm' with environment 'prod' and component 'db' creates 'ecomm-prod-db'. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation."
+  id: String!
+
+  "Display name for this component (e.g., 'Billing Database')"
+  name: String!
+}
+
+"Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources."
+input LinkComponentsInput {
+  "Component that produces the artifact (e.g., 'database')"
+  from: ID!
+
+  "Output field name on the source component"
+  fromField: String!
+
+  "Version constraint for the source component (e.g., '~1.0', '1.2.3', 'latest')"
+  fromVersion: VersionConstraint!
+
+  "Component that consumes the artifact (e.g., 'app')"
+  to: ID!
+
+  "Input field name on the destination component"
+  toField: String!
+
+  "Version constraint for the destination component (e.g., '~1.0', '1.2.3', 'latest')"
+  toVersion: VersionConstraint!
+}
+
+"A component returned in list results."
+type ComponentLeaf {
+  id: ID!
+
+  "Display name"
+  name: String!
+
+  "Component description"
+  description: String
+
+  "When this component was created (UTC)"
+  createdAt: DateTime!
+
+  "When this component was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The bundle repository this component uses."
+  repo: RepoLeaf
+
+  "The project containing this component."
+  project: ProjectLeaf
+}
+
+"A component with its full details and related resources."
+type Component {
+  id: ID!
+
+  "Display name"
+  name: String!
+
+  "Component description"
+  description: String
+
+  "When this component was created (UTC)"
+  createdAt: DateTime!
+
+  "When this component was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The bundle repository this component uses."
+  repo: Repo
+
+  "The project containing this component."
+  project: Project
+}
+
+"A link returned in list results."
+type LinkLeaf {
+  id: ID!
+
+  "Output field name on the source component"
+  fromField: String!
+
+  "Input field name on the destination component"
+  toField: String!
+
+  "When this link was created (UTC)"
+  createdAt: DateTime!
+
+  "When this link was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The source (from) component."
+  fromComponent: ComponentLeaf
+
+  "The destination (to) component."
+  toComponent: ComponentLeaf
+}
+
+"A link with its full details."
+type Link {
+  id: ID!
+
+  "Output field name on the source component"
+  fromField: String!
+
+  "Input field name on the destination component"
+  toField: String!
+
+  "When this link was created (UTC)"
+  createdAt: DateTime!
+
+  "When this link was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The source (from) component."
+  fromComponent: Component
+
+  "The destination (to) component."
+  toComponent: Component
+}
+
+"""
+A project's infrastructure blueprint.
+
+The blueprint contains all components (bundle instances) and links (connections
+between them) that define how your infrastructure fits together.
+"""
+type Blueprint {
+  "Components in this blueprint."
+  components(
+    "Filter results"
+    filter: ComponentsFilter
+
+    "How to sort results"
+    sort: ComponentsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): ComponentsPage
+
+  "Links between components in this blueprint."
+  links(
+    "Filter results"
+    filter: LinksFilter
+
+    "How to sort results"
+    sort: LinksSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): LinksPage
+}
+
+type ComponentsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type component_leaf."
+  items: [ComponentLeaf]
+}
+
+type LinksPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type link_leaf."
+  items: [LinkLeaf]
+}
+
+type ComponentPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Component
+}
+
+type LinkPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Link
+}
+
+"The current state of a deployment operation."
+enum DeploymentStatus {
+  "Waiting to start"
+  PENDING
+
+  "Currently executing"
+  RUNNING
+
+  "Finished successfully"
+  COMPLETED
+
+  "Failed - check logs for details"
+  FAILED
+
+  "Manually stopped before completion"
+  ABORTED
+}
+
+"The type of infrastructure operation."
+enum DeploymentAction {
+  "Create or update infrastructure"
+  PROVISION
+
+  "Tear down infrastructure"
+  DECOMMISSION
+
+  "Preview changes without applying them"
+  PLAN
+}
+
+"Available fields for sorting deployments."
+enum DeploymentsSortField {
+  "Sort by when the deployment started"
+  CREATED_AT
+
+  "Sort by deployment status"
+  STATUS
+}
+
+"Sorting options for the deployments list."
+input DeploymentsSort {
+  "Which field to sort by"
+  field: DeploymentsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Filter which deployments to return."
+input DeploymentsFilter {
+  "Filter by instance ID"
+  instanceId: IdFilter
+
+  "Filter by deployment status"
+  status: DeploymentStatusFilter
+
+  "Filter by deployment action"
+  action: DeploymentActionFilter
+}
+
+"A deployment returned in list results."
+type DeploymentLeaf {
+  id: ID!
+
+  "Current state of the deployment"
+  status: DeploymentStatus!
+
+  "Type of operation"
+  action: DeploymentAction!
+
+  "Bundle version being deployed"
+  version: String!
+
+  "Deployment message or commit info"
+  message: String
+
+  "When this deployment started (UTC)"
+  createdAt: DateTime!
+
+  "When this deployment was last updated (UTC)"
+  updatedAt: DateTime!
+
+  "When the status last changed (UTC)"
+  lastTransitionedAt: DateTime
+
+  "How long the deployment has been running, in seconds."
+  elapsedTime: Int!
+
+  "Who started this deployment."
+  deployedBy: String
+
+  "The instance being deployed."
+  instance: InstanceLeaf
+}
+
+"A deployment with its full details and related resources."
+type Deployment {
+  id: ID!
+
+  "Current state of the deployment"
+  status: DeploymentStatus!
+
+  "Type of operation"
+  action: DeploymentAction!
+
+  "Bundle version being deployed"
+  version: String!
+
+  "Deployment message or commit info"
+  message: String
+
+  "When this deployment started (UTC)"
+  createdAt: DateTime!
+
+  "When this deployment was last updated (UTC)"
+  updatedAt: DateTime!
+
+  "When the status last changed (UTC)"
+  lastTransitionedAt: DateTime
+
+  "How long the deployment has been running, in seconds."
+  elapsedTime: Int!
+
+  "Who started this deployment."
+  deployedBy: String
+
+  "The instance being deployed."
+  instance: Instance
+}
+
+type DeploymentsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type deployment_leaf."
+  items: [DeploymentLeaf]
+}
+
+"Available fields for sorting instances."
+enum InstancesSortField {
+  "Sort alphabetically by instance name"
+  NAME
+
+  "Sort by when the instance was created"
+  CREATED_AT
+}
+
+"The current state of an instance."
+enum InstanceStatus {
+  "Created but not yet deployed"
+  INITIALIZED
+
+  "Successfully deployed and running"
+  PROVISIONED
+
+  "Infrastructure has been torn down"
+  DECOMMISSIONED
+
+  "Deployment failed - check the deployment logs"
+  FAILED
+
+  "Imported infrastructure managed outside Massdriver"
+  EXTERNAL
+}
+
+"Which bundle releases an instance will use."
+enum ReleaseStrategy {
+  "Only use stable, published releases"
+  STABLE
+
+  "Use development releases for testing"
+  DEVELOPMENT
+}
+
+"Available fields for sorting param dimensions."
+enum ParamDimensionsSortField {
+  "Sort by field path"
+  FIELD
+
+  "Sort by label"
+  LABEL
+}
+
+"A configuration field available in instance params. Use these to build search filters."
+type ParamDimension {
+  "Path to the field (e.g., 'database.instance_type')"
+  field: String!
+
+  "Human-readable field name"
+  label: String!
+
+  "What this field configures"
+  description: String
+
+  "Data type (string, number, boolean, etc.)"
+  type: String
+}
+
+"Sorting options for the instances list."
+input InstancesSort {
+  "Which field to sort by"
+  field: InstancesSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Filter which instances to return."
+input InstancesFilter {
+  "Filter by project ID"
+  projectId: IdFilter
+
+  "Filter by environment ID"
+  environmentId: IdFilter
+
+  "Filter by instance status"
+  status: InstanceStatusFilter
+
+  "Filter by bundle name"
+  bundleName: BundleNameFilter
+
+  "Filter by param dimension values. Multiple filters are combined with AND."
+  paramDimension: [ParamDimensionFilter!]
+}
+
+"Filter which param dimensions to return. Scopes which instances' schemas are introspected."
+input ParamDimensionsFilter {
+  "Only include dimensions from instances in these projects"
+  projectId: IdFilter
+
+  "Only include dimensions from instances in these environments"
+  environmentId: IdFilter
+
+  "Only include dimensions from instances using these bundles"
+  bundleName: BundleNameFilter
+}
+
+"Sorting options for the param dimensions list."
+input ParamDimensionsSort {
+  "Which field to sort by"
+  field: ParamDimensionsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"An instance returned in list results."
+type InstanceLeaf {
+  id: ID!
+
+  "Instance display name"
+  name: String!
+
+  "Current state of the instance"
+  status: InstanceStatus!
+
+  "Version constraint (e.g., '~1.0' or '1.2.3')"
+  version: String!
+
+  "Whether to use stable or development releases"
+  releaseStrategy: ReleaseStrategy!
+
+  "When this instance was created (UTC)"
+  createdAt: DateTime!
+
+  "When this instance was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The environment this instance is deployed in."
+  environment: EnvironmentLeaf
+
+  "The bundle version currently deployed."
+  bundle: BundleLeaf
+}
+
+"An instance with its full details and related resources."
+type Instance {
+  id: ID!
+
+  "Instance display name"
+  name: String!
+
+  "Current state of the instance"
+  status: InstanceStatus!
+
+  "Version constraint (e.g., '~1.0' or '1.2.3')"
+  version: String!
+
+  "Whether to use stable or development releases"
+  releaseStrategy: ReleaseStrategy!
+
+  "When this instance was created (UTC)"
+  createdAt: DateTime!
+
+  "When this instance was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The environment this instance is deployed in."
+  environment: Environment
+
+  "The bundle version currently deployed."
+  bundle: Bundle
+}
+
+type InstancesPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type instance_leaf."
+  items: [InstanceLeaf]
+}
+
+type ParamDimensionsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type param_dimension."
+  items: [ParamDimension]
+}
+
+"Available fields for sorting environments."
+enum EnvironmentsSortField {
+  "Sort alphabetically by environment name"
+  NAME
+
+  "Sort by when the environment was created"
+  CREATED_AT
+}
+
+"Sorting options for the environments list."
+input EnvironmentsSort {
+  "Which field to sort by"
+  field: EnvironmentsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Filter which environments to return."
+input EnvironmentsFilter {
+  "Filter by project ID"
+  projectId: IdFilter
+
+  "Filter by environment ID"
+  id: StringFilter
+}
+
+"Create a new environment. Environments are isolated deployment contexts like production, staging, or development, each with independent secrets and configurations."
+input CreateEnvironmentInput {
+  "An optional description of the environment's purpose"
+  description: String
+
+  "A short, memorable identifier for looking up this environment in the API and CLI. This becomes the second segment of package identifiers. For example, project 'ecomm' with environment 'prod' and component 'db' creates 'ecomm-prod-db'. Use familiar names like 'prod', 'staging', 'dev'—human-readable, not a UUID. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation."
+  id: String!
+
+  "A human-readable name for the environment"
+  name: String!
+}
+
+"Update an existing environment's name and description. The ID cannot be changed after creation."
+input UpdateEnvironmentInput {
+  "An optional description of the environment's purpose"
+  description: String
+
+  "A human-readable name for the environment"
+  name: String
+}
+
+"An environment returned in list results."
+type EnvironmentLeaf {
+  id: ID!
+
+  "Display name"
+  name: String!
+
+  "What this environment is for"
+  description: String
+
+  "When this environment was created (UTC)"
+  createdAt: DateTime!
+
+  "When this environment was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The project containing this environment."
+  project: ProjectLeaf
+}
+
+"An environment with its full details and related resources."
+type Environment {
+  id: ID!
+
+  "Display name"
+  name: String!
+
+  "What this environment is for"
+  description: String
+
+  "When this environment was created (UTC)"
+  createdAt: DateTime!
+
+  "When this environment was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The project containing this environment."
+  project: Project
+
+  "The instances deployed in this environment."
+  instances(
+    "Filter results (projectId and environmentId are ignored — already scoped by parent)"
+    filter: InstancesFilter
+
+    sort: InstancesSort
+
+    cursor: Cursor
+  ): InstancesPage
+}
+
+type EnvironmentsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type environment_leaf."
+  items: [EnvironmentLeaf]
+}
+
+type EnvironmentPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Environment
+}
+
+"Available fields for sorting projects."
+enum ProjectsSortField {
+  "Sort alphabetically by project name"
+  NAME
+
+  "Sort by when the project was created"
+  CREATED_AT
+}
+
+"Sorting options for the projects list."
+input ProjectsSort {
+  "Which field to sort by"
+  field: ProjectsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Create a new project. A project is the complete model of your application—its infrastructure, architecture, configurations, and environments."
+input CreateProjectInput {
+  "An optional description of the project's purpose or contents"
+  description: String
+
+  "A short, memorable identifier for looking up this project in the API and CLI. This becomes the first segment of all resource identifiers within the project. For example, a project 'ecomm' with environment 'prod' and component 'db' creates the package identifier 'ecomm-prod-db'. Choose something concise and meaningful—human-readable, not a UUID. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation."
+  id: String!
+
+  "A human-readable name for the project"
+  name: String!
+}
+
+"Update an existing project's name and description. The ID cannot be changed after creation."
+input UpdateProjectInput {
+  "An optional description of the project's purpose or contents"
+  description: String
+
+  "A human-readable name for the project"
+  name: String
+}
+
+"A project returned in list results."
+type ProjectLeaf {
+  id: ID!
+
+  "Display name"
+  name: String!
+
+  "What this project is for"
+  description: String
+
+  "When this project was created (UTC)"
+  createdAt: DateTime!
+
+  "When this project was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "Cloud provider costs for this project."
+  cost: CostSummary!
+}
+
+"A project with its full details and related resources."
+type Project {
+  id: ID!
+
+  "Display name"
+  name: String!
+
+  "What this project is for"
+  description: String
+
+  "When this project was created (UTC)"
+  createdAt: DateTime!
+
+  "When this project was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "Whether this project can be deleted and any constraints preventing deletion."
+  deletable: Deletable!
+
+  "Cloud provider costs for this project."
+  cost: CostSummary!
+
+  "The environments in this project, like staging or production."
+  environments(sort: EnvironmentsSort, cursor: Cursor): EnvironmentsPage
+
+  "The infrastructure blueprint for this project (components and links)."
+  blueprint: Blueprint
+}
+
+type ProjectsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type project_leaf."
+  items: [ProjectLeaf]
+}
+
+type ProjectPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Project
+}
+
+"""
+Semantic version (e.g., `1.2.3` or `1.2.3-dev.20060102T150405Z`).
+
+Always a fully resolved version, never a constraint or channel.
+"""
+scalar Semver
+
+"""
+Bundle identifier in `name@version` format.
+
+Returns the fully resolved version of a bundle (e.g., `aws-aurora-postgres@1.2.3`
+or `aws-aurora-postgres@1.2.3-dev.20060102T150405Z`).
+
+As an input, accepts:
+- `aws-aurora-postgres` — bare name, resolves to latest
+- `aws-aurora-postgres@1.2.3` — exact version
+- `aws-aurora-postgres@~1.2` — release channel (resolved server-side)
+- `aws-aurora-postgres@latest` — latest stable release
+- `aws-aurora-postgres@latest+dev` — latest including dev builds
+"""
+scalar BundleId
+
+"""
+Version constraint for bundle releases.
+
+Accepts exact versions or release channels:
+- `1.2.3` — exact version
+- `1.2.3-dev.20060102T150405Z` — exact dev release
+- `~1.2` — latest patch in 1.2.x series
+- `~1` — latest minor in 1.x.x series
+- `~1.2+dev` — latest in 1.2.x including dev builds
+- `latest` — newest stable release
+- `latest+dev` — newest release including dev builds
+"""
+scalar VersionConstraint
+
+"A bundle returned in list results."
+type BundleLeaf {
+  "Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')"
+  id: BundleId!
+
+  "Bundle name (e.g., 'aws-aurora-postgres')"
+  name: RepoName!
+
+  "Resolved semantic version (e.g., '1.2.3')"
+  version: Semver!
+
+  "What this bundle provides"
+  description: String
+
+  "URL to the bundle icon"
+  icon: String
+
+  "URL to the bundle source code"
+  sourceUrl: String
+
+  "When this bundle version was published (UTC)"
+  createdAt: DateTime!
+
+  "When this bundle version was last modified (UTC)"
+  updatedAt: DateTime!
+}
+
+"A bundle with its full details and related resources."
+type Bundle {
+  "Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')"
+  id: BundleId!
+
+  "Bundle name (e.g., 'aws-aurora-postgres')"
+  name: RepoName!
+
+  "Resolved semantic version (e.g., '1.2.3')"
+  version: Semver!
+
+  "What this bundle provides"
+  description: String
+
+  "URL to the bundle icon"
+  icon: String
+
+  "URL to the bundle source code"
+  sourceUrl: String
+
+  "When this bundle version was published (UTC)"
+  createdAt: DateTime!
+
+  "When this bundle version was last modified (UTC)"
+  updatedAt: DateTime!
+}
+
+"""
+Repository name (e.g., 'aws-aurora-postgres').
+
+The short name of a repository in your organization's catalog.
+"""
+scalar RepoName
+
+"Reference to a repository."
+type RepoLeaf {
+  "Repository name"
+  name: RepoName!
+}
+
+"Reference to a repository."
+type Repo {
+  "Repository name"
+  name: RepoName!
+}
+
+"A single cost measurement with amount and currency."
+type CostSample {
+  "The cost amount (null if no data available)"
+  amount: Float
+
+  "The currency code, e.g. USD (null if no data available)"
+  currency: String
+}
+
+"Cost summary with monthly and daily metrics."
+type CostSummary {
+  "Previous month's total cost"
+  lastMonth: CostSample!
+
+  "Average monthly cost"
+  monthlyAverage: CostSample!
+
+  "Previous day's cost"
+  lastDay: CostSample!
+
+  "Average daily cost"
+  dailyAverage: CostSample!
+}
+
+"A constraint preventing a resource from being deleted."
+type DeletionConstraint {
+  "Human-readable explanation of why deletion is blocked"
+  message: String!
+
+  "The type of resource that cannot be deleted (e.g., 'project', 'environment')"
+  type: String!
+
+  "The identifier of the resource that cannot be deleted"
+  id: String!
+}
+
+"Indicates whether a resource can be deleted and any constraints preventing deletion."
+type Deletable {
+  "Whether the resource can be deleted"
+  result: Boolean!
+
+  "Constraints preventing deletion, if any"
+  constraints: [DeletionConstraint]
+}
+
+"Sort direction for paginated results."
+enum SortOrder {
+  "Ascending order (A→Z, oldest→newest)"
+  ASC
+
+  "Descending order (Z→A, newest→oldest)"
+  DESC
+}
+
+"Filter for ID fields. All provided operators are combined with AND."
+input IdFilter {
+  "Exact match"
+  eq: ID
+
+  "Match any of these values"
+  in: [ID!]
+}
+
+"Filter for string fields. All provided operators are combined with AND."
+input StringFilter {
+  "Exact match"
+  eq: String
+
+  "Match any of these values"
+  in: [String!]
+}
+
+"Filter for bundle name fields."
+input BundleNameFilter {
+  "Exact match"
+  eq: RepoName
+
+  "Match any of these values"
+  in: [RepoName!]
+}
+
+"Filter for instance status. All provided operators are combined with AND."
+input InstanceStatusFilter {
+  "Exact match"
+  eq: InstanceStatus
+
+  "Match any of these statuses"
+  in: [InstanceStatus!]
+}
+
+"Filter for deployment status. All provided operators are combined with AND."
+input DeploymentStatusFilter {
+  "Exact match"
+  eq: DeploymentStatus
+
+  "Match any of these statuses"
+  in: [DeploymentStatus!]
+}
+
+"Filter for deployment action. All provided operators are combined with AND."
+input DeploymentActionFilter {
+  "Exact match"
+  eq: DeploymentAction
+
+  "Match any of these actions"
+  in: [DeploymentAction!]
+}
+
+"""
+Filter instances by a configuration parameter value at a specific path.
+Use `paramDimensions` query to discover available dimensions.
+"""
+input ParamDimensionFilter {
+  "Dot-path to the param field (e.g., 'database.instance_type')"
+  dimension: String!
+
+  "Exact match"
+  eq: String
+
+  "Match any of these values"
+  in: [String!]
+
+  "Case-insensitive substring match"
+  contains: String
+}
+
+input Cursor {
+  "Maximum number of items to return"
+  limit: Int
+
+  "Cursor after which to return items"
+  next: String
+
+  "Cursor before which to return items"
+  previous: String
+}
+
+type PaginationCursor {
+  "Cursor to the next page"
+  next: String
+
+  "Cursor to the previous page"
+  previous: String
+}
+
+type ValidationOption {
+  "The name of a variable to be subsituted in a validation message template"
+  key: String!
+
+  "The value of a variable to be substituted in a validation message template"
+  value: String!
+}
+
+"""
+Validation messages are returned when mutation input does not meet the requirements.
+  While client-side validation is highly recommended to provide the best User Experience,
+  All inputs will always be validated server-side.
+
+  Some examples of validations are:
+
+  * Username must be at least 10 characters
+  * Email field does not contain an email address
+  * Birth Date is required
+
+  While GraphQL has support for required values, mutation data fields are always
+  set to optional in our API. This allows 'required field' messages
+  to be returned in the same manner as other validations. The only exceptions
+  are id fields, which may be required to perform updates or deletes.
+"""
+type ValidationMessage {
+  """
+  The input field that the error applies to. The field can be used to
+  identify which field the error message should be displayed next to in the
+  presentation layer.
+
+  If there are multiple errors to display for a field, multiple validation
+  messages will be in the result.
+
+  This field may be null in cases where an error cannot be applied to a specific field.
+  """
+  field: String
+
+  """
+  A friendly error message, appropriate for display to the end user.
+
+  The message is interpolated to include the appropriate variables.
+
+  Example: `Username must be at least 10 characters`
+
+  This message may change without notice, so we do not recommend you match against the text.
+  Instead, use the *code* field for matching.
+  """
+  message: String
+
+  "A unique error code for the type of validation used."
+  code: String!
+
+  """
+  A template used to generate the error message, with placeholders for option substiution.
+
+  Example: `Username must be at least {count} characters`
+
+  This message may change without notice, so we do not recommend you match against the text.
+  Instead, use the *code* field for matching.
+  """
+  template: String
+
+  "A list of substitutions to be applied to a validation message template"
+  options: [ValidationOption]
+}
+
+"Represents an uploaded file."
+scalar Upload
+
+"""
+The `DateTime` scalar type represents a date and time in the UTC
+timezone. The DateTime appears in a JSON response as an ISO8601 formatted
+string, including UTC timezone ("Z"). The parsed date and time string will
+be converted to UTC if there is an offset.
+"""
+scalar DateTime

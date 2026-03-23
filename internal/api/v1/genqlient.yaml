@@ -1,0 +1,25 @@
+# For full documentation see:
+# https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
+
+schema: schema.graphql
+operations:
+  - genqlient.graphql
+generated: zz_generated.go
+package: api
+bindings:
+  JSON:
+    type: map[string]any
+    marshaler: github.com/massdriver-cloud/mass/internal/api/v1/scalars.MarshalJSON
+    unmarshaler: github.com/massdriver-cloud/mass/internal/api/v1/scalars.UnmarshalJSON
+  DateTime:
+    type: time.Time
+  VersionConstraint:
+    type: string
+  Semver:
+    type: string
+  BundleId:
+    type: string
+  RepoName:
+    type: string
+  Upload:
+    type: string

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/api/v0"
 	artifactpkg "github.com/massdriver-cloud/mass/internal/artifact"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"

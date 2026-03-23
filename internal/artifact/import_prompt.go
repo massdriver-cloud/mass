@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"sort"
 
-	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/api/v0"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/manifoldco/promptui"
