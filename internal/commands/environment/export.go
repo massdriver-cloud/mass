@@ -7,9 +7,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/commands/pkg"
-
+	"github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/commands/instance"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
@@ -32,7 +31,7 @@ func ExportEnvironment(ctx context.Context, mdClient *client.Client, environment
 
 	directory := filepath.Join(baseDir, environment.Slug)
 	for _, pack := range environment.Packages {
-		exportErr := pkg.ExportPackage(ctx, mdClient, &pack, directory)
+		exportErr := instance.ExportPackage(ctx, mdClient, &pack, directory)
 		if exportErr != nil {
 			return fmt.Errorf("failed to export package %s: %w", pack.Slug, exportErr)
 		}

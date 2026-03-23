@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/api/v0"
 	"github.com/massdriver-cloud/mass/internal/commands/preview"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/mass/internal/tui/teahelper"

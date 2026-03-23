@@ -16,7 +16,7 @@ import (
 	"github.com/docker/docker/api/types/registry"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
-	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/api/v0"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 )
 
