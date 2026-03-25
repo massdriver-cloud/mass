@@ -30,7 +30,7 @@ go install github.com/massdriver-cloud/mass
 
 ## Usage
 
-The `mass` command line tool provides a number of subcommands to interact with Massdriver Cloud. For detailed usage and examples, please see the [official documentation](https://docs.massdriver.cloud/cli/overview).
+The `mass` command line tool provides a number of subcommands to interact with Massdriver Cloud. For detailed usage and examples, please see the [official documentation](https://docs.massdriver.cloud/cli/commands/mass).
 
 ## Contributing
 
