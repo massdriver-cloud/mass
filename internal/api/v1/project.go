@@ -12,15 +12,16 @@ import (
 
 // Project represents a Massdriver project.
 type Project struct {
-	ID          string      `json:"id" mapstructure:"id"`
-	Name        string      `json:"name" mapstructure:"name"`
-	Description string      `json:"description" mapstructure:"description"`
-	Cost        CostSummary `json:"cost" mapstructure:"cost"`
+	ID           string        `json:"id" mapstructure:"id"`
+	Name         string        `json:"name" mapstructure:"name"`
+	Description  string        `json:"description" mapstructure:"description"`
+	Cost         CostSummary   `json:"cost" mapstructure:"cost"`
+	Environments []Environment `json:"environments,omitempty" mapstructure:"-"`
 }
 
 // GetProject retrieves a project by ID from the Massdriver API.
 func GetProject(ctx context.Context, mdClient *client.Client, id string) (*Project, error) {
-	response, err := getProjectById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id)
+	response, err := getProject(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project %s: %w", id, err)
 	}
@@ -30,7 +31,7 @@ func GetProject(ctx context.Context, mdClient *client.Client, id string) (*Proje
 
 // ListProjects returns all projects for the configured organization.
 func ListProjects(ctx context.Context, mdClient *client.Client) ([]Project, error) {
-	response, err := getProjects(ctx, mdClient.GQL, mdClient.Config.OrganizationID, nil, nil)
+	response, err := listProjects(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list projects: %w", err)
 	}
@@ -52,12 +53,25 @@ func toProject(p any) (*Project, error) {
 	if err := mapstructure.Decode(p, &proj); err != nil {
 		return nil, fmt.Errorf("failed to decode project: %w", err)
 	}
+
+	// Unwrap paginated environments (API returns {items: [...]})
+	type envPage struct {
+		Items []Environment `mapstructure:"items"`
+	}
+	type hasEnvs struct {
+		Environments envPage `mapstructure:"environments"`
+	}
+	var wrapper hasEnvs
+	if err := mapstructure.Decode(p, &wrapper); err == nil && len(wrapper.Environments.Items) > 0 {
+		proj.Environments = wrapper.Environments.Items
+	}
+
 	return &proj, nil
 }
 
 // CreateProject creates a new project in the Massdriver API.
 func CreateProject(ctx context.Context, mdClient *client.Client, input CreateProjectInput) (*Project, error) {
-	response, err := createProject(ctx, mdClient.GQL, mdClient.Config.OrganizationID, input)
+	response, err := createProject(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, input)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +93,7 @@ func CreateProject(ctx context.Context, mdClient *client.Client, input CreatePro
 
 // UpdateProject updates a project in the Massdriver API.
 func UpdateProject(ctx context.Context, mdClient *client.Client, id string, input UpdateProjectInput) (*Project, error) {
-	response, err := updateProject(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id, input)
+	response, err := updateProject(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id, input)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +115,7 @@ func UpdateProject(ctx context.Context, mdClient *client.Client, id string, inpu
 
 // DeleteProject removes a project by ID from the Massdriver API.
 func DeleteProject(ctx context.Context, mdClient *client.Client, id string) (*Project, error) {
-	response, err := deleteProject(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id)
+	response, err := deleteProject(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, err
 	}

@@ -9,8 +9,8 @@ package: api
 bindings:
   JSON:
     type: map[string]any
-    marshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.MarshalJSON
-    unmarshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.UnmarshalJSON
+    marshaler: github.com/massdriver-cloud/mass/internal/api/v0/scalars.MarshalJSON
+    unmarshaler: github.com/massdriver-cloud/mass/internal/api/v0/scalars.UnmarshalJSON
   DateTime:
     type: time.Time
   VersionConstraint:
@@ -18,4 +18,4 @@ bindings:
   Markdown:
     type: string
   Cursor:
-    type: github.com/massdriver-cloud/mass/pkg/api/scalars.Cursor
+    type: github.com/massdriver-cloud/mass/internal/api/v0/scalars.Cursor

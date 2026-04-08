@@ -9,45 +9,8 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/massdriver-cloud/mass/internal/api/v1/scalars"
 )
-
-// Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application.
-type AddComponentInput struct {
-	// Name of the bundle to add (e.g., 'aws-aurora-postgres')
-	BundleName string `json:"bundleName"`
-	// Optional description of this component's purpose
-	Description string `json:"description"`
-	// A short, memorable identifier for this component. This becomes the final segment of package identifiers. For example, project 'ecomm' with environment 'prod' and component 'db' creates 'ecomm-prod-db'. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation.
-	Id string `json:"id"`
-	// Display name for this component (e.g., 'Billing Database')
-	Name string `json:"name"`
-}
-
-// GetBundleName returns AddComponentInput.BundleName, and is useful for accessing the field via an interface.
-func (v *AddComponentInput) GetBundleName() string { return v.BundleName }
-
-// GetDescription returns AddComponentInput.Description, and is useful for accessing the field via an interface.
-func (v *AddComponentInput) GetDescription() string { return v.Description }
-
-// GetId returns AddComponentInput.Id, and is useful for accessing the field via an interface.
-func (v *AddComponentInput) GetId() string { return v.Id }
-
-// GetName returns AddComponentInput.Name, and is useful for accessing the field via an interface.
-func (v *AddComponentInput) GetName() string { return v.Name }
-
-// Filter for bundle name fields.
-type BundleNameFilter struct {
-	// Exact match
-	Eq string `json:"eq"`
-	// Match any of these values
-	In []string `json:"in"`
-}
-
-// GetEq returns BundleNameFilter.Eq, and is useful for accessing the field via an interface.
-func (v *BundleNameFilter) GetEq() string { return v.Eq }
-
-// GetIn returns BundleNameFilter.In, and is useful for accessing the field via an interface.
-func (v *BundleNameFilter) GetIn() []string { return v.In }
 
 // Create a new environment. Environments are isolated deployment contexts like production, staging, or development, each with independent secrets and configurations.
 type CreateEnvironmentInput struct {
@@ -57,6 +20,8 @@ type CreateEnvironmentInput struct {
 	Id string `json:"id"`
 	// A human-readable name for the environment
 	Name string `json:"name"`
+	// Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope.
+	Tags map[string]any `json:"-"`
 }
 
 // GetDescription returns CreateEnvironmentInput.Description, and is useful for accessing the field via an interface.
@@ -68,6 +33,81 @@ func (v *CreateEnvironmentInput) GetId() string { return v.Id }
 // GetName returns CreateEnvironmentInput.Name, and is useful for accessing the field via an interface.
 func (v *CreateEnvironmentInput) GetName() string { return v.Name }
 
+// GetTags returns CreateEnvironmentInput.Tags, and is useful for accessing the field via an interface.
+func (v *CreateEnvironmentInput) GetTags() map[string]any { return v.Tags }
+
+func (v *CreateEnvironmentInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*CreateEnvironmentInput
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.CreateEnvironmentInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal CreateEnvironmentInput.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalCreateEnvironmentInput struct {
+	Description string `json:"description"`
+
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Tags json.RawMessage `json:"tags"`
+}
+
+func (v *CreateEnvironmentInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *CreateEnvironmentInput) __premarshalJSON() (*__premarshalCreateEnvironmentInput, error) {
+	var retval __premarshalCreateEnvironmentInput
+
+	retval.Description = v.Description
+	retval.Id = v.Id
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal CreateEnvironmentInput.Tags: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
 // Create a new project. A project is the complete model of your application—its infrastructure, architecture, configurations, and environments.
 type CreateProjectInput struct {
 	// An optional description of the project's purpose or contents
@@ -76,6 +116,8 @@ type CreateProjectInput struct {
 	Id string `json:"id"`
 	// A human-readable name for the project
 	Name string `json:"name"`
+	// Key-value tags for this project. Keys and values must be strings. Must conform to the organization's tag constraints for the project scope.
+	Tags map[string]any `json:"-"`
 }
 
 // GetDescription returns CreateProjectInput.Description, and is useful for accessing the field via an interface.
@@ -87,8 +129,83 @@ func (v *CreateProjectInput) GetId() string { return v.Id }
 // GetName returns CreateProjectInput.Name, and is useful for accessing the field via an interface.
 func (v *CreateProjectInput) GetName() string { return v.Name }
 
+// GetTags returns CreateProjectInput.Tags, and is useful for accessing the field via an interface.
+func (v *CreateProjectInput) GetTags() map[string]any { return v.Tags }
+
+func (v *CreateProjectInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*CreateProjectInput
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.CreateProjectInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal CreateProjectInput.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalCreateProjectInput struct {
+	Description string `json:"description"`
+
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Tags json.RawMessage `json:"tags"`
+}
+
+func (v *CreateProjectInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *CreateProjectInput) __premarshalJSON() (*__premarshalCreateProjectInput, error) {
+	var retval __premarshalCreateProjectInput
+
+	retval.Description = v.Description
+	retval.Id = v.Id
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal CreateProjectInput.Tags: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
 type Cursor struct {
-	// Maximum number of items to return
+	// Maximum number of items per page. Default: 20. Minimum: 1. Maximum: 100.
 	Limit int `json:"limit"`
 	// Cursor after which to return items
 	Next string `json:"next"`
@@ -104,136 +221,6 @@ func (v *Cursor) GetNext() string { return v.Next }
 
 // GetPrevious returns Cursor.Previous, and is useful for accessing the field via an interface.
 func (v *Cursor) GetPrevious() string { return v.Previous }
-
-// The type of infrastructure operation.
-type DeploymentAction string
-
-const (
-	// Create or update infrastructure
-	DeploymentActionProvision DeploymentAction = "PROVISION"
-	// Tear down infrastructure
-	DeploymentActionDecommission DeploymentAction = "DECOMMISSION"
-	// Preview changes without applying them
-	DeploymentActionPlan DeploymentAction = "PLAN"
-)
-
-var AllDeploymentAction = []DeploymentAction{
-	DeploymentActionProvision,
-	DeploymentActionDecommission,
-	DeploymentActionPlan,
-}
-
-// Filter for deployment action. All provided operators are combined with AND.
-type DeploymentActionFilter struct {
-	// Exact match
-	Eq DeploymentAction `json:"eq"`
-	// Match any of these actions
-	In []DeploymentAction `json:"in"`
-}
-
-// GetEq returns DeploymentActionFilter.Eq, and is useful for accessing the field via an interface.
-func (v *DeploymentActionFilter) GetEq() DeploymentAction { return v.Eq }
-
-// GetIn returns DeploymentActionFilter.In, and is useful for accessing the field via an interface.
-func (v *DeploymentActionFilter) GetIn() []DeploymentAction { return v.In }
-
-// The current state of a deployment operation.
-type DeploymentStatus string
-
-const (
-	// Waiting to start
-	DeploymentStatusPending DeploymentStatus = "PENDING"
-	// Currently executing
-	DeploymentStatusRunning DeploymentStatus = "RUNNING"
-	// Finished successfully
-	DeploymentStatusCompleted DeploymentStatus = "COMPLETED"
-	// Failed - check logs for details
-	DeploymentStatusFailed DeploymentStatus = "FAILED"
-	// Manually stopped before completion
-	DeploymentStatusAborted DeploymentStatus = "ABORTED"
-)
-
-var AllDeploymentStatus = []DeploymentStatus{
-	DeploymentStatusPending,
-	DeploymentStatusRunning,
-	DeploymentStatusCompleted,
-	DeploymentStatusFailed,
-	DeploymentStatusAborted,
-}
-
-// Filter for deployment status. All provided operators are combined with AND.
-type DeploymentStatusFilter struct {
-	// Exact match
-	Eq DeploymentStatus `json:"eq"`
-	// Match any of these statuses
-	In []DeploymentStatus `json:"in"`
-}
-
-// GetEq returns DeploymentStatusFilter.Eq, and is useful for accessing the field via an interface.
-func (v *DeploymentStatusFilter) GetEq() DeploymentStatus { return v.Eq }
-
-// GetIn returns DeploymentStatusFilter.In, and is useful for accessing the field via an interface.
-func (v *DeploymentStatusFilter) GetIn() []DeploymentStatus { return v.In }
-
-// Filter which deployments to return.
-type DeploymentsFilter struct {
-	// Filter by instance ID
-	InstanceId IdFilter `json:"instanceId"`
-	// Filter by deployment status
-	Status DeploymentStatusFilter `json:"status"`
-	// Filter by deployment action
-	Action DeploymentActionFilter `json:"action"`
-}
-
-// GetInstanceId returns DeploymentsFilter.InstanceId, and is useful for accessing the field via an interface.
-func (v *DeploymentsFilter) GetInstanceId() IdFilter { return v.InstanceId }
-
-// GetStatus returns DeploymentsFilter.Status, and is useful for accessing the field via an interface.
-func (v *DeploymentsFilter) GetStatus() DeploymentStatusFilter { return v.Status }
-
-// GetAction returns DeploymentsFilter.Action, and is useful for accessing the field via an interface.
-func (v *DeploymentsFilter) GetAction() DeploymentActionFilter { return v.Action }
-
-// Sorting options for the deployments list.
-type DeploymentsSort struct {
-	// Which field to sort by
-	Field DeploymentsSortField `json:"field"`
-	// Sort direction
-	Order SortOrder `json:"order"`
-}
-
-// GetField returns DeploymentsSort.Field, and is useful for accessing the field via an interface.
-func (v *DeploymentsSort) GetField() DeploymentsSortField { return v.Field }
-
-// GetOrder returns DeploymentsSort.Order, and is useful for accessing the field via an interface.
-func (v *DeploymentsSort) GetOrder() SortOrder { return v.Order }
-
-// Available fields for sorting deployments.
-type DeploymentsSortField string
-
-const (
-	// Sort by when the deployment started
-	DeploymentsSortFieldCreatedAt DeploymentsSortField = "CREATED_AT"
-	// Sort by deployment status
-	DeploymentsSortFieldStatus DeploymentsSortField = "STATUS"
-)
-
-var AllDeploymentsSortField = []DeploymentsSortField{
-	DeploymentsSortFieldCreatedAt,
-	DeploymentsSortFieldStatus,
-}
-
-// Type of email-based authentication.
-type EmailAuthMethodType string
-
-const (
-	// Sign in with a passkey (WebAuthn)
-	EmailAuthMethodTypePasskey EmailAuthMethodType = "PASSKEY"
-)
-
-var AllEmailAuthMethodType = []EmailAuthMethodType{
-	EmailAuthMethodTypePasskey,
-}
 
 // Filter which environments to return.
 type EnvironmentsFilter struct {
@@ -316,166 +303,6 @@ var AllInstanceStatus = []InstanceStatus{
 	InstanceStatusExternal,
 }
 
-// Filter for instance status. All provided operators are combined with AND.
-type InstanceStatusFilter struct {
-	// Exact match
-	Eq InstanceStatus `json:"eq"`
-	// Match any of these statuses
-	In []InstanceStatus `json:"in"`
-}
-
-// GetEq returns InstanceStatusFilter.Eq, and is useful for accessing the field via an interface.
-func (v *InstanceStatusFilter) GetEq() InstanceStatus { return v.Eq }
-
-// GetIn returns InstanceStatusFilter.In, and is useful for accessing the field via an interface.
-func (v *InstanceStatusFilter) GetIn() []InstanceStatus { return v.In }
-
-// Filter which instances to return.
-type InstancesFilter struct {
-	// Filter by project ID
-	ProjectId IdFilter `json:"projectId"`
-	// Filter by environment ID
-	EnvironmentId IdFilter `json:"environmentId"`
-	// Filter by instance status
-	Status InstanceStatusFilter `json:"status"`
-	// Filter by bundle name
-	BundleName BundleNameFilter `json:"bundleName"`
-	// Filter by param dimension values. Multiple filters are combined with AND.
-	ParamDimension []ParamDimensionFilter `json:"paramDimension"`
-}
-
-// GetProjectId returns InstancesFilter.ProjectId, and is useful for accessing the field via an interface.
-func (v *InstancesFilter) GetProjectId() IdFilter { return v.ProjectId }
-
-// GetEnvironmentId returns InstancesFilter.EnvironmentId, and is useful for accessing the field via an interface.
-func (v *InstancesFilter) GetEnvironmentId() IdFilter { return v.EnvironmentId }
-
-// GetStatus returns InstancesFilter.Status, and is useful for accessing the field via an interface.
-func (v *InstancesFilter) GetStatus() InstanceStatusFilter { return v.Status }
-
-// GetBundleName returns InstancesFilter.BundleName, and is useful for accessing the field via an interface.
-func (v *InstancesFilter) GetBundleName() BundleNameFilter { return v.BundleName }
-
-// GetParamDimension returns InstancesFilter.ParamDimension, and is useful for accessing the field via an interface.
-func (v *InstancesFilter) GetParamDimension() []ParamDimensionFilter { return v.ParamDimension }
-
-// Sorting options for the instances list.
-type InstancesSort struct {
-	// Which field to sort by
-	Field InstancesSortField `json:"field"`
-	// Sort direction
-	Order SortOrder `json:"order"`
-}
-
-// GetField returns InstancesSort.Field, and is useful for accessing the field via an interface.
-func (v *InstancesSort) GetField() InstancesSortField { return v.Field }
-
-// GetOrder returns InstancesSort.Order, and is useful for accessing the field via an interface.
-func (v *InstancesSort) GetOrder() SortOrder { return v.Order }
-
-// Available fields for sorting instances.
-type InstancesSortField string
-
-const (
-	// Sort alphabetically by instance name
-	InstancesSortFieldName InstancesSortField = "NAME"
-	// Sort by when the instance was created
-	InstancesSortFieldCreatedAt InstancesSortField = "CREATED_AT"
-)
-
-var AllInstancesSortField = []InstancesSortField{
-	InstancesSortFieldName,
-	InstancesSortFieldCreatedAt,
-}
-
-// Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources.
-type LinkComponentsInput struct {
-	// Component that produces the artifact (e.g., 'database')
-	From string `json:"from"`
-	// Output field name on the source component
-	FromField string `json:"fromField"`
-	// Version constraint for the source component (e.g., '~1.0', '1.2.3', 'latest')
-	FromVersion string `json:"fromVersion"`
-	// Component that consumes the artifact (e.g., 'app')
-	To string `json:"to"`
-	// Input field name on the destination component
-	ToField string `json:"toField"`
-	// Version constraint for the destination component (e.g., '~1.0', '1.2.3', 'latest')
-	ToVersion string `json:"toVersion"`
-}
-
-// GetFrom returns LinkComponentsInput.From, and is useful for accessing the field via an interface.
-func (v *LinkComponentsInput) GetFrom() string { return v.From }
-
-// GetFromField returns LinkComponentsInput.FromField, and is useful for accessing the field via an interface.
-func (v *LinkComponentsInput) GetFromField() string { return v.FromField }
-
-// GetFromVersion returns LinkComponentsInput.FromVersion, and is useful for accessing the field via an interface.
-func (v *LinkComponentsInput) GetFromVersion() string { return v.FromVersion }
-
-// GetTo returns LinkComponentsInput.To, and is useful for accessing the field via an interface.
-func (v *LinkComponentsInput) GetTo() string { return v.To }
-
-// GetToField returns LinkComponentsInput.ToField, and is useful for accessing the field via an interface.
-func (v *LinkComponentsInput) GetToField() string { return v.ToField }
-
-// GetToVersion returns LinkComponentsInput.ToVersion, and is useful for accessing the field via an interface.
-func (v *LinkComponentsInput) GetToVersion() string { return v.ToVersion }
-
-// Filter instances by a configuration parameter value at a specific path.
-// Use `paramDimensions` query to discover available dimensions.
-type ParamDimensionFilter struct {
-	// Dot-path to the param field (e.g., 'database.instance_type')
-	Dimension string `json:"dimension"`
-	// Exact match
-	Eq string `json:"eq"`
-	// Match any of these values
-	In []string `json:"in"`
-	// Case-insensitive substring match
-	Contains string `json:"contains"`
-}
-
-// GetDimension returns ParamDimensionFilter.Dimension, and is useful for accessing the field via an interface.
-func (v *ParamDimensionFilter) GetDimension() string { return v.Dimension }
-
-// GetEq returns ParamDimensionFilter.Eq, and is useful for accessing the field via an interface.
-func (v *ParamDimensionFilter) GetEq() string { return v.Eq }
-
-// GetIn returns ParamDimensionFilter.In, and is useful for accessing the field via an interface.
-func (v *ParamDimensionFilter) GetIn() []string { return v.In }
-
-// GetContains returns ParamDimensionFilter.Contains, and is useful for accessing the field via an interface.
-func (v *ParamDimensionFilter) GetContains() string { return v.Contains }
-
-// Sorting options for the projects list.
-type ProjectsSort struct {
-	// Which field to sort by
-	Field ProjectsSortField `json:"field"`
-	// Sort direction
-	Order SortOrder `json:"order"`
-}
-
-// GetField returns ProjectsSort.Field, and is useful for accessing the field via an interface.
-func (v *ProjectsSort) GetField() ProjectsSortField { return v.Field }
-
-// GetOrder returns ProjectsSort.Order, and is useful for accessing the field via an interface.
-func (v *ProjectsSort) GetOrder() SortOrder { return v.Order }
-
-// Available fields for sorting projects.
-type ProjectsSortField string
-
-const (
-	// Sort alphabetically by project name
-	ProjectsSortFieldName ProjectsSortField = "NAME"
-	// Sort by when the project was created
-	ProjectsSortFieldCreatedAt ProjectsSortField = "CREATED_AT"
-)
-
-var AllProjectsSortField = []ProjectsSortField{
-	ProjectsSortFieldName,
-	ProjectsSortFieldCreatedAt,
-}
-
 // Which bundle releases an instance will use.
 type ReleaseStrategy string
 
@@ -489,21 +316,6 @@ const (
 var AllReleaseStrategy = []ReleaseStrategy{
 	ReleaseStrategyStable,
 	ReleaseStrategyDevelopment,
-}
-
-// How this Massdriver instance is deployed.
-type ServerMode string
-
-const (
-	// Self-hosted in your own infrastructure
-	ServerModeSelfHosted ServerMode = "SELF_HOSTED"
-	// Massdriver's managed cloud service
-	ServerModeManaged ServerMode = "MANAGED"
-)
-
-var AllServerMode = []ServerMode{
-	ServerModeSelfHosted,
-	ServerModeManaged,
 }
 
 // Sort direction for paginated results.
@@ -541,6 +353,8 @@ type UpdateEnvironmentInput struct {
 	Description string `json:"description"`
 	// A human-readable name for the environment
 	Name string `json:"name"`
+	// Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope.
+	Tags map[string]any `json:"-"`
 }
 
 // GetDescription returns UpdateEnvironmentInput.Description, and is useful for accessing the field via an interface.
@@ -549,12 +363,86 @@ func (v *UpdateEnvironmentInput) GetDescription() string { return v.Description 
 // GetName returns UpdateEnvironmentInput.Name, and is useful for accessing the field via an interface.
 func (v *UpdateEnvironmentInput) GetName() string { return v.Name }
 
+// GetTags returns UpdateEnvironmentInput.Tags, and is useful for accessing the field via an interface.
+func (v *UpdateEnvironmentInput) GetTags() map[string]any { return v.Tags }
+
+func (v *UpdateEnvironmentInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UpdateEnvironmentInput
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UpdateEnvironmentInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal UpdateEnvironmentInput.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalUpdateEnvironmentInput struct {
+	Description string `json:"description"`
+
+	Name string `json:"name"`
+
+	Tags json.RawMessage `json:"tags"`
+}
+
+func (v *UpdateEnvironmentInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UpdateEnvironmentInput) __premarshalJSON() (*__premarshalUpdateEnvironmentInput, error) {
+	var retval __premarshalUpdateEnvironmentInput
+
+	retval.Description = v.Description
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal UpdateEnvironmentInput.Tags: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
 // Update an existing project's name and description. The ID cannot be changed after creation.
 type UpdateProjectInput struct {
 	// An optional description of the project's purpose or contents
 	Description string `json:"description"`
 	// A human-readable name for the project
 	Name string `json:"name"`
+	// Key-value tags for this project. Keys and values must be strings. Must conform to the organization's tag constraints for the project scope.
+	Tags map[string]any `json:"-"`
 }
 
 // GetDescription returns UpdateProjectInput.Description, and is useful for accessing the field via an interface.
@@ -563,21 +451,77 @@ func (v *UpdateProjectInput) GetDescription() string { return v.Description }
 // GetName returns UpdateProjectInput.Name, and is useful for accessing the field via an interface.
 func (v *UpdateProjectInput) GetName() string { return v.Name }
 
-// __addComponentInput is used internally by genqlient
-type __addComponentInput struct {
-	OrganizationId string            `json:"organizationId"`
-	ProjectId      string            `json:"projectId"`
-	Input          AddComponentInput `json:"input"`
+// GetTags returns UpdateProjectInput.Tags, and is useful for accessing the field via an interface.
+func (v *UpdateProjectInput) GetTags() map[string]any { return v.Tags }
+
+func (v *UpdateProjectInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UpdateProjectInput
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UpdateProjectInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal UpdateProjectInput.Tags: %w", err)
+			}
+		}
+	}
+	return nil
 }
 
-// GetOrganizationId returns __addComponentInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__addComponentInput) GetOrganizationId() string { return v.OrganizationId }
+type __premarshalUpdateProjectInput struct {
+	Description string `json:"description"`
 
-// GetProjectId returns __addComponentInput.ProjectId, and is useful for accessing the field via an interface.
-func (v *__addComponentInput) GetProjectId() string { return v.ProjectId }
+	Name string `json:"name"`
 
-// GetInput returns __addComponentInput.Input, and is useful for accessing the field via an interface.
-func (v *__addComponentInput) GetInput() AddComponentInput { return v.Input }
+	Tags json.RawMessage `json:"tags"`
+}
+
+func (v *UpdateProjectInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UpdateProjectInput) __premarshalJSON() (*__premarshalUpdateProjectInput, error) {
+	var retval __premarshalUpdateProjectInput
+
+	retval.Description = v.Description
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal UpdateProjectInput.Tags: %w", err)
+		}
+	}
+	return &retval, nil
+}
 
 // __createEnvironmentInput is used internally by genqlient
 type __createEnvironmentInput struct {
@@ -631,185 +575,57 @@ func (v *__deleteProjectInput) GetOrganizationId() string { return v.Organizatio
 // GetId returns __deleteProjectInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteProjectInput) GetId() string { return v.Id }
 
-// __getBundleInput is used internally by genqlient
-type __getBundleInput struct {
+// __getEnvironmentInput is used internally by genqlient
+type __getEnvironmentInput struct {
 	OrganizationId string `json:"organizationId"`
 	Id             string `json:"id"`
 }
 
-// GetOrganizationId returns __getBundleInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getBundleInput) GetOrganizationId() string { return v.OrganizationId }
+// GetOrganizationId returns __getEnvironmentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getEnvironmentInput) GetOrganizationId() string { return v.OrganizationId }
 
-// GetId returns __getBundleInput.Id, and is useful for accessing the field via an interface.
-func (v *__getBundleInput) GetId() string { return v.Id }
+// GetId returns __getEnvironmentInput.Id, and is useful for accessing the field via an interface.
+func (v *__getEnvironmentInput) GetId() string { return v.Id }
 
-// __getDeploymentByIdInput is used internally by genqlient
-type __getDeploymentByIdInput struct {
+// __getProjectInput is used internally by genqlient
+type __getProjectInput struct {
 	OrganizationId string `json:"organizationId"`
 	Id             string `json:"id"`
 }
 
-// GetOrganizationId returns __getDeploymentByIdInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getDeploymentByIdInput) GetOrganizationId() string { return v.OrganizationId }
+// GetOrganizationId returns __getProjectInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getProjectInput) GetOrganizationId() string { return v.OrganizationId }
 
-// GetId returns __getDeploymentByIdInput.Id, and is useful for accessing the field via an interface.
-func (v *__getDeploymentByIdInput) GetId() string { return v.Id }
+// GetId returns __getProjectInput.Id, and is useful for accessing the field via an interface.
+func (v *__getProjectInput) GetId() string { return v.Id }
 
-// __getDeploymentsInput is used internally by genqlient
-type __getDeploymentsInput struct {
-	OrganizationId string             `json:"organizationId"`
-	Filter         *DeploymentsFilter `json:"filter,omitempty"`
-	Sort           *DeploymentsSort   `json:"sort,omitempty"`
-	Cursor         *Cursor            `json:"cursor,omitempty"`
-}
-
-// GetOrganizationId returns __getDeploymentsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getDeploymentsInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetFilter returns __getDeploymentsInput.Filter, and is useful for accessing the field via an interface.
-func (v *__getDeploymentsInput) GetFilter() *DeploymentsFilter { return v.Filter }
-
-// GetSort returns __getDeploymentsInput.Sort, and is useful for accessing the field via an interface.
-func (v *__getDeploymentsInput) GetSort() *DeploymentsSort { return v.Sort }
-
-// GetCursor returns __getDeploymentsInput.Cursor, and is useful for accessing the field via an interface.
-func (v *__getDeploymentsInput) GetCursor() *Cursor { return v.Cursor }
-
-// __getEnvironmentByIdInput is used internally by genqlient
-type __getEnvironmentByIdInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __getEnvironmentByIdInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getEnvironmentByIdInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getEnvironmentByIdInput.Id, and is useful for accessing the field via an interface.
-func (v *__getEnvironmentByIdInput) GetId() string { return v.Id }
-
-// __getEnvironmentsInput is used internally by genqlient
-type __getEnvironmentsInput struct {
+// __listEnvironmentsInput is used internally by genqlient
+type __listEnvironmentsInput struct {
 	OrganizationId string              `json:"organizationId"`
 	Filter         *EnvironmentsFilter `json:"filter,omitempty"`
 	Sort           *EnvironmentsSort   `json:"sort,omitempty"`
 	Cursor         *Cursor             `json:"cursor,omitempty"`
 }
 
-// GetOrganizationId returns __getEnvironmentsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getEnvironmentsInput) GetOrganizationId() string { return v.OrganizationId }
+// GetOrganizationId returns __listEnvironmentsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listEnvironmentsInput) GetOrganizationId() string { return v.OrganizationId }
 
-// GetFilter returns __getEnvironmentsInput.Filter, and is useful for accessing the field via an interface.
-func (v *__getEnvironmentsInput) GetFilter() *EnvironmentsFilter { return v.Filter }
+// GetFilter returns __listEnvironmentsInput.Filter, and is useful for accessing the field via an interface.
+func (v *__listEnvironmentsInput) GetFilter() *EnvironmentsFilter { return v.Filter }
 
-// GetSort returns __getEnvironmentsInput.Sort, and is useful for accessing the field via an interface.
-func (v *__getEnvironmentsInput) GetSort() *EnvironmentsSort { return v.Sort }
+// GetSort returns __listEnvironmentsInput.Sort, and is useful for accessing the field via an interface.
+func (v *__listEnvironmentsInput) GetSort() *EnvironmentsSort { return v.Sort }
 
-// GetCursor returns __getEnvironmentsInput.Cursor, and is useful for accessing the field via an interface.
-func (v *__getEnvironmentsInput) GetCursor() *Cursor { return v.Cursor }
+// GetCursor returns __listEnvironmentsInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listEnvironmentsInput) GetCursor() *Cursor { return v.Cursor }
 
-// __getInstanceByIdInput is used internally by genqlient
-type __getInstanceByIdInput struct {
+// __listProjectsInput is used internally by genqlient
+type __listProjectsInput struct {
 	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
 }
 
-// GetOrganizationId returns __getInstanceByIdInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getInstanceByIdInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getInstanceByIdInput.Id, and is useful for accessing the field via an interface.
-func (v *__getInstanceByIdInput) GetId() string { return v.Id }
-
-// __getInstancesInput is used internally by genqlient
-type __getInstancesInput struct {
-	OrganizationId string           `json:"organizationId"`
-	Filter         *InstancesFilter `json:"filter,omitempty"`
-	Sort           *InstancesSort   `json:"sort,omitempty"`
-	Cursor         *Cursor          `json:"cursor,omitempty"`
-}
-
-// GetOrganizationId returns __getInstancesInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getInstancesInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetFilter returns __getInstancesInput.Filter, and is useful for accessing the field via an interface.
-func (v *__getInstancesInput) GetFilter() *InstancesFilter { return v.Filter }
-
-// GetSort returns __getInstancesInput.Sort, and is useful for accessing the field via an interface.
-func (v *__getInstancesInput) GetSort() *InstancesSort { return v.Sort }
-
-// GetCursor returns __getInstancesInput.Cursor, and is useful for accessing the field via an interface.
-func (v *__getInstancesInput) GetCursor() *Cursor { return v.Cursor }
-
-// __getProjectByIdInput is used internally by genqlient
-type __getProjectByIdInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __getProjectByIdInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getProjectByIdInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getProjectByIdInput.Id, and is useful for accessing the field via an interface.
-func (v *__getProjectByIdInput) GetId() string { return v.Id }
-
-// __getProjectsInput is used internally by genqlient
-type __getProjectsInput struct {
-	OrganizationId string        `json:"organizationId"`
-	Sort           *ProjectsSort `json:"sort,omitempty"`
-	Cursor         *Cursor       `json:"cursor,omitempty"`
-}
-
-// GetOrganizationId returns __getProjectsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getProjectsInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetSort returns __getProjectsInput.Sort, and is useful for accessing the field via an interface.
-func (v *__getProjectsInput) GetSort() *ProjectsSort { return v.Sort }
-
-// GetCursor returns __getProjectsInput.Cursor, and is useful for accessing the field via an interface.
-func (v *__getProjectsInput) GetCursor() *Cursor { return v.Cursor }
-
-// __linkComponentsInput is used internally by genqlient
-type __linkComponentsInput struct {
-	OrganizationId string              `json:"organizationId"`
-	ProjectId      string              `json:"projectId"`
-	Input          LinkComponentsInput `json:"input"`
-}
-
-// GetOrganizationId returns __linkComponentsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__linkComponentsInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetProjectId returns __linkComponentsInput.ProjectId, and is useful for accessing the field via an interface.
-func (v *__linkComponentsInput) GetProjectId() string { return v.ProjectId }
-
-// GetInput returns __linkComponentsInput.Input, and is useful for accessing the field via an interface.
-func (v *__linkComponentsInput) GetInput() LinkComponentsInput { return v.Input }
-
-// __removeComponentInput is used internally by genqlient
-type __removeComponentInput struct {
-	OrganizationId string `json:"organizationId"`
-	ProjectId      string `json:"projectId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __removeComponentInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__removeComponentInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetProjectId returns __removeComponentInput.ProjectId, and is useful for accessing the field via an interface.
-func (v *__removeComponentInput) GetProjectId() string { return v.ProjectId }
-
-// GetId returns __removeComponentInput.Id, and is useful for accessing the field via an interface.
-func (v *__removeComponentInput) GetId() string { return v.Id }
-
-// __unlinkComponentsInput is used internally by genqlient
-type __unlinkComponentsInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __unlinkComponentsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__unlinkComponentsInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __unlinkComponentsInput.Id, and is useful for accessing the field via an interface.
-func (v *__unlinkComponentsInput) GetId() string { return v.Id }
+// GetOrganizationId returns __listProjectsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listProjectsInput) GetOrganizationId() string { return v.OrganizationId }
 
 // __updateEnvironmentInput is used internally by genqlient
 type __updateEnvironmentInput struct {
@@ -842,183 +658,6 @@ func (v *__updateProjectInput) GetId() string { return v.Id }
 
 // GetInput returns __updateProjectInput.Input, and is useful for accessing the field via an interface.
 func (v *__updateProjectInput) GetInput() UpdateProjectInput { return v.Input }
-
-// addComponentAddComponentComponentPayload includes the requested fields of the GraphQL type ComponentPayload.
-type addComponentAddComponentComponentPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result addComponentAddComponentComponentPayloadResultComponent `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []addComponentAddComponentComponentPayloadMessagesValidationMessage `json:"messages"`
-}
-
-// GetResult returns addComponentAddComponentComponentPayload.Result, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayload) GetResult() addComponentAddComponentComponentPayloadResultComponent {
-	return v.Result
-}
-
-// GetSuccessful returns addComponentAddComponentComponentPayload.Successful, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns addComponentAddComponentComponentPayload.Messages, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayload) GetMessages() []addComponentAddComponentComponentPayloadMessagesValidationMessage {
-	return v.Messages
-}
-
-// addComponentAddComponentComponentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
-// The GraphQL type's documentation follows.
-//
-// Validation messages are returned when mutation input does not meet the requirements.
-// While client-side validation is highly recommended to provide the best User Experience,
-// All inputs will always be validated server-side.
-//
-// Some examples of validations are:
-//
-// * Username must be at least 10 characters
-// * Email field does not contain an email address
-// * Birth Date is required
-//
-// While GraphQL has support for required values, mutation data fields are always
-// set to optional in our API. This allows 'required field' messages
-// to be returned in the same manner as other validations. The only exceptions
-// are id fields, which may be required to perform updates or deletes.
-type addComponentAddComponentComponentPayloadMessagesValidationMessage struct {
-	// A unique error code for the type of validation used.
-	Code string `json:"code"`
-	// The input field that the error applies to. The field can be used to
-	// identify which field the error message should be displayed next to in the
-	// presentation layer.
-	//
-	// If there are multiple errors to display for a field, multiple validation
-	// messages will be in the result.
-	//
-	// This field may be null in cases where an error cannot be applied to a specific field.
-	Field string `json:"field"`
-	// A friendly error message, appropriate for display to the end user.
-	//
-	// The message is interpolated to include the appropriate variables.
-	//
-	// Example: `Username must be at least 10 characters`
-	//
-	// This message may change without notice, so we do not recommend you match against the text.
-	// Instead, use the *code* field for matching.
-	Message string `json:"message"`
-}
-
-// GetCode returns addComponentAddComponentComponentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadMessagesValidationMessage) GetCode() string {
-	return v.Code
-}
-
-// GetField returns addComponentAddComponentComponentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadMessagesValidationMessage) GetField() string {
-	return v.Field
-}
-
-// GetMessage returns addComponentAddComponentComponentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadMessagesValidationMessage) GetMessage() string {
-	return v.Message
-}
-
-// addComponentAddComponentComponentPayloadResultComponent includes the requested fields of the GraphQL type Component.
-// The GraphQL type's documentation follows.
-//
-// A component with its full details and related resources.
-type addComponentAddComponentComponentPayloadResultComponent struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-	// Component description
-	Description string `json:"description"`
-	// When this component was created (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this component was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// The bundle repository this component uses.
-	Repo addComponentAddComponentComponentPayloadResultComponentRepo `json:"repo"`
-	// The project containing this component.
-	Project addComponentAddComponentComponentPayloadResultComponentProject `json:"project"`
-}
-
-// GetId returns addComponentAddComponentComponentPayloadResultComponent.Id, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponent) GetId() string { return v.Id }
-
-// GetName returns addComponentAddComponentComponentPayloadResultComponent.Name, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponent) GetName() string { return v.Name }
-
-// GetDescription returns addComponentAddComponentComponentPayloadResultComponent.Description, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponent) GetDescription() string {
-	return v.Description
-}
-
-// GetCreatedAt returns addComponentAddComponentComponentPayloadResultComponent.CreatedAt, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponent) GetCreatedAt() time.Time {
-	return v.CreatedAt
-}
-
-// GetUpdatedAt returns addComponentAddComponentComponentPayloadResultComponent.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponent) GetUpdatedAt() time.Time {
-	return v.UpdatedAt
-}
-
-// GetRepo returns addComponentAddComponentComponentPayloadResultComponent.Repo, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponent) GetRepo() addComponentAddComponentComponentPayloadResultComponentRepo {
-	return v.Repo
-}
-
-// GetProject returns addComponentAddComponentComponentPayloadResultComponent.Project, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponent) GetProject() addComponentAddComponentComponentPayloadResultComponentProject {
-	return v.Project
-}
-
-// addComponentAddComponentComponentPayloadResultComponentProject includes the requested fields of the GraphQL type Project.
-// The GraphQL type's documentation follows.
-//
-// A project with its full details and related resources.
-type addComponentAddComponentComponentPayloadResultComponentProject struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-	// What this project is for
-	Description string `json:"description"`
-}
-
-// GetId returns addComponentAddComponentComponentPayloadResultComponentProject.Id, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponentProject) GetId() string { return v.Id }
-
-// GetName returns addComponentAddComponentComponentPayloadResultComponentProject.Name, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponentProject) GetName() string {
-	return v.Name
-}
-
-// GetDescription returns addComponentAddComponentComponentPayloadResultComponentProject.Description, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponentProject) GetDescription() string {
-	return v.Description
-}
-
-// addComponentAddComponentComponentPayloadResultComponentRepo includes the requested fields of the GraphQL type Repo.
-// The GraphQL type's documentation follows.
-//
-// Reference to a repository.
-type addComponentAddComponentComponentPayloadResultComponentRepo struct {
-	// Repository name
-	Name string `json:"name"`
-}
-
-// GetName returns addComponentAddComponentComponentPayloadResultComponentRepo.Name, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponentRepo) GetName() string { return v.Name }
-
-// addComponentResponse is returned by addComponent on success.
-type addComponentResponse struct {
-	// Add a component to a project's blueprint.
-	AddComponent addComponentAddComponentComponentPayload `json:"addComponent"`
-}
-
-// GetAddComponent returns addComponentResponse.AddComponent, and is useful for accessing the field via an interface.
-func (v *addComponentResponse) GetAddComponent() addComponentAddComponentComponentPayload {
-	return v.AddComponent
-}
 
 // createEnvironmentCreateEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
 type createEnvironmentCreateEnvironmentEnvironmentPayload struct {
@@ -1103,7 +742,7 @@ func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationM
 // createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
 // The GraphQL type's documentation follows.
 //
-// An environment with its full details and related resources.
+// An environment.
 type createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment struct {
 	Id string `json:"id"`
 	// Display name
@@ -1219,7 +858,7 @@ func (v *createProjectCreateProjectProjectPayloadMessagesValidationMessage) GetM
 // createProjectCreateProjectProjectPayloadResultProject includes the requested fields of the GraphQL type Project.
 // The GraphQL type's documentation follows.
 //
-// A project with its full details and related resources.
+// A project.
 type createProjectCreateProjectProjectPayloadResultProject struct {
 	Id string `json:"id"`
 	// Display name
@@ -1333,7 +972,7 @@ func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationM
 // deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
 // The GraphQL type's documentation follows.
 //
-// An environment with its full details and related resources.
+// An environment.
 type deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment struct {
 	Id string `json:"id"`
 	// Display name
@@ -1449,7 +1088,7 @@ func (v *deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage) GetM
 // deleteProjectDeleteProjectProjectPayloadResultProject includes the requested fields of the GraphQL type Project.
 // The GraphQL type's documentation follows.
 //
-// A project with its full details and related resources.
+// A project.
 type deleteProjectDeleteProjectProjectPayloadResultProject struct {
 	Id string `json:"id"`
 	// Display name
@@ -1480,399 +1119,11 @@ func (v *deleteProjectResponse) GetDeleteProject() deleteProjectDeleteProjectPro
 	return v.DeleteProject
 }
 
-// getBundleBundle includes the requested fields of the GraphQL type Bundle.
+// getEnvironmentEnvironment includes the requested fields of the GraphQL type Environment.
 // The GraphQL type's documentation follows.
 //
-// A bundle with its full details and related resources.
-type getBundleBundle struct {
-	// Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')
-	Id string `json:"id"`
-	// Bundle name (e.g., 'aws-aurora-postgres')
-	Name string `json:"name"`
-	// Resolved semantic version (e.g., '1.2.3')
-	Version string `json:"version"`
-	// What this bundle provides
-	Description string `json:"description"`
-	// URL to the bundle icon
-	Icon string `json:"icon"`
-	// URL to the bundle source code
-	SourceUrl string `json:"sourceUrl"`
-	// When this bundle version was published (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this bundle version was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-// GetId returns getBundleBundle.Id, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetId() string { return v.Id }
-
-// GetName returns getBundleBundle.Name, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetName() string { return v.Name }
-
-// GetVersion returns getBundleBundle.Version, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetVersion() string { return v.Version }
-
-// GetDescription returns getBundleBundle.Description, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetDescription() string { return v.Description }
-
-// GetIcon returns getBundleBundle.Icon, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetIcon() string { return v.Icon }
-
-// GetSourceUrl returns getBundleBundle.SourceUrl, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetSourceUrl() string { return v.SourceUrl }
-
-// GetCreatedAt returns getBundleBundle.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// GetUpdatedAt returns getBundleBundle.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// getBundleResponse is returned by getBundle on success.
-type getBundleResponse struct {
-	// Get a bundle by its identifier.
-	//
-	// The ID format is `name@version` where version can be an exact version,
-	// a constraint, or a channel:
-	//
-	// - `aws-aurora-postgres@1.2.3` — exact version
-	// - `aws-aurora-postgres@~1.2` — latest patch in 1.2.x
-	// - `aws-aurora-postgres@~1` — latest minor in 1.x.x
-	// - `aws-aurora-postgres@latest` — newest stable release
-	// - `aws-aurora-postgres@latest+dev` — newest release including dev builds
-	// - `aws-aurora-postgres` — shorthand for `name@latest`
-	Bundle getBundleBundle `json:"bundle"`
-}
-
-// GetBundle returns getBundleResponse.Bundle, and is useful for accessing the field via an interface.
-func (v *getBundleResponse) GetBundle() getBundleBundle { return v.Bundle }
-
-// getDeploymentByIdDeployment includes the requested fields of the GraphQL type Deployment.
-// The GraphQL type's documentation follows.
-//
-// A deployment with its full details and related resources.
-type getDeploymentByIdDeployment struct {
-	Id string `json:"id"`
-	// Current state of the deployment
-	Status DeploymentStatus `json:"status"`
-	// Type of operation
-	Action DeploymentAction `json:"action"`
-	// Bundle version being deployed
-	Version string `json:"version"`
-	// Deployment message or commit info
-	Message string `json:"message"`
-	// When this deployment started (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this deployment was last updated (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// When the status last changed (UTC)
-	LastTransitionedAt time.Time `json:"lastTransitionedAt"`
-	// How long the deployment has been running, in seconds.
-	ElapsedTime int `json:"elapsedTime"`
-	// Who started this deployment.
-	DeployedBy string `json:"deployedBy"`
-	// The instance being deployed.
-	Instance getDeploymentByIdDeploymentInstance `json:"instance"`
-}
-
-// GetId returns getDeploymentByIdDeployment.Id, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetId() string { return v.Id }
-
-// GetStatus returns getDeploymentByIdDeployment.Status, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetStatus() DeploymentStatus { return v.Status }
-
-// GetAction returns getDeploymentByIdDeployment.Action, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetAction() DeploymentAction { return v.Action }
-
-// GetVersion returns getDeploymentByIdDeployment.Version, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetVersion() string { return v.Version }
-
-// GetMessage returns getDeploymentByIdDeployment.Message, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetMessage() string { return v.Message }
-
-// GetCreatedAt returns getDeploymentByIdDeployment.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// GetUpdatedAt returns getDeploymentByIdDeployment.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// GetLastTransitionedAt returns getDeploymentByIdDeployment.LastTransitionedAt, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetLastTransitionedAt() time.Time { return v.LastTransitionedAt }
-
-// GetElapsedTime returns getDeploymentByIdDeployment.ElapsedTime, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetElapsedTime() int { return v.ElapsedTime }
-
-// GetDeployedBy returns getDeploymentByIdDeployment.DeployedBy, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetDeployedBy() string { return v.DeployedBy }
-
-// GetInstance returns getDeploymentByIdDeployment.Instance, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetInstance() getDeploymentByIdDeploymentInstance {
-	return v.Instance
-}
-
-// getDeploymentByIdDeploymentInstance includes the requested fields of the GraphQL type Instance.
-// The GraphQL type's documentation follows.
-//
-// An instance with its full details and related resources.
-type getDeploymentByIdDeploymentInstance struct {
-	Id string `json:"id"`
-	// Instance display name
-	Name string `json:"name"`
-	// Current state of the instance
-	Status InstanceStatus `json:"status"`
-	// Version constraint (e.g., '~1.0' or '1.2.3')
-	Version string `json:"version"`
-	// Whether to use stable or development releases
-	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
-	// When this instance was created (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this instance was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// The environment this instance is deployed in.
-	Environment getDeploymentByIdDeploymentInstanceEnvironment `json:"environment"`
-	// The bundle version currently deployed.
-	Bundle getDeploymentByIdDeploymentInstanceBundle `json:"bundle"`
-}
-
-// GetId returns getDeploymentByIdDeploymentInstance.Id, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstance) GetId() string { return v.Id }
-
-// GetName returns getDeploymentByIdDeploymentInstance.Name, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstance) GetName() string { return v.Name }
-
-// GetStatus returns getDeploymentByIdDeploymentInstance.Status, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstance) GetStatus() InstanceStatus { return v.Status }
-
-// GetVersion returns getDeploymentByIdDeploymentInstance.Version, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstance) GetVersion() string { return v.Version }
-
-// GetReleaseStrategy returns getDeploymentByIdDeploymentInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstance) GetReleaseStrategy() ReleaseStrategy {
-	return v.ReleaseStrategy
-}
-
-// GetCreatedAt returns getDeploymentByIdDeploymentInstance.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstance) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// GetUpdatedAt returns getDeploymentByIdDeploymentInstance.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstance) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// GetEnvironment returns getDeploymentByIdDeploymentInstance.Environment, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstance) GetEnvironment() getDeploymentByIdDeploymentInstanceEnvironment {
-	return v.Environment
-}
-
-// GetBundle returns getDeploymentByIdDeploymentInstance.Bundle, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstance) GetBundle() getDeploymentByIdDeploymentInstanceBundle {
-	return v.Bundle
-}
-
-// getDeploymentByIdDeploymentInstanceBundle includes the requested fields of the GraphQL type Bundle.
-// The GraphQL type's documentation follows.
-//
-// A bundle with its full details and related resources.
-type getDeploymentByIdDeploymentInstanceBundle struct {
-	// Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')
-	Id string `json:"id"`
-	// Bundle name (e.g., 'aws-aurora-postgres')
-	Name string `json:"name"`
-	// Resolved semantic version (e.g., '1.2.3')
-	Version string `json:"version"`
-}
-
-// GetId returns getDeploymentByIdDeploymentInstanceBundle.Id, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstanceBundle) GetId() string { return v.Id }
-
-// GetName returns getDeploymentByIdDeploymentInstanceBundle.Name, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstanceBundle) GetName() string { return v.Name }
-
-// GetVersion returns getDeploymentByIdDeploymentInstanceBundle.Version, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstanceBundle) GetVersion() string { return v.Version }
-
-// getDeploymentByIdDeploymentInstanceEnvironment includes the requested fields of the GraphQL type Environment.
-// The GraphQL type's documentation follows.
-//
-// An environment with its full details and related resources.
-type getDeploymentByIdDeploymentInstanceEnvironment struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-	// What this environment is for
-	Description string `json:"description"`
-}
-
-// GetId returns getDeploymentByIdDeploymentInstanceEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstanceEnvironment) GetId() string { return v.Id }
-
-// GetName returns getDeploymentByIdDeploymentInstanceEnvironment.Name, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstanceEnvironment) GetName() string { return v.Name }
-
-// GetDescription returns getDeploymentByIdDeploymentInstanceEnvironment.Description, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeploymentInstanceEnvironment) GetDescription() string {
-	return v.Description
-}
-
-// getDeploymentByIdResponse is returned by getDeploymentById on success.
-type getDeploymentByIdResponse struct {
-	// Get a single deployment by its ID.
-	Deployment getDeploymentByIdDeployment `json:"deployment"`
-}
-
-// GetDeployment returns getDeploymentByIdResponse.Deployment, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdResponse) GetDeployment() getDeploymentByIdDeployment { return v.Deployment }
-
-// getDeploymentsDeploymentsDeploymentsPage includes the requested fields of the GraphQL type DeploymentsPage.
-type getDeploymentsDeploymentsDeploymentsPage struct {
-	// Pagination cursors
-	Cursor getDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor `json:"cursor"`
-	// A list of type deployment_leaf.
-	Items []getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf `json:"items"`
-}
-
-// GetCursor returns getDeploymentsDeploymentsDeploymentsPage.Cursor, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPage) GetCursor() getDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor {
-	return v.Cursor
-}
-
-// GetItems returns getDeploymentsDeploymentsDeploymentsPage.Items, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPage) GetItems() []getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf {
-	return v.Items
-}
-
-// getDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
-type getDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor struct {
-	// Cursor to the next page
-	Next string `json:"next"`
-	// Cursor to the previous page
-	Previous string `json:"previous"`
-}
-
-// GetNext returns getDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor) GetNext() string {
-	return v.Next
-}
-
-// GetPrevious returns getDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor) GetPrevious() string {
-	return v.Previous
-}
-
-// getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf includes the requested fields of the GraphQL type DeploymentLeaf.
-// The GraphQL type's documentation follows.
-//
-// A deployment returned in list results.
-type getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf struct {
-	Id string `json:"id"`
-	// Current state of the deployment
-	Status DeploymentStatus `json:"status"`
-	// Type of operation
-	Action DeploymentAction `json:"action"`
-	// Bundle version being deployed
-	Version string `json:"version"`
-	// Deployment message or commit info
-	Message string `json:"message"`
-	// When this deployment started (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this deployment was last updated (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// When the status last changed (UTC)
-	LastTransitionedAt time.Time `json:"lastTransitionedAt"`
-	// How long the deployment has been running, in seconds.
-	ElapsedTime int `json:"elapsedTime"`
-	// Who started this deployment.
-	DeployedBy string `json:"deployedBy"`
-	// The instance being deployed.
-	Instance getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeafInstanceInstanceLeaf `json:"instance"`
-}
-
-// GetId returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetId() string { return v.Id }
-
-// GetStatus returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.Status, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetStatus() DeploymentStatus {
-	return v.Status
-}
-
-// GetAction returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.Action, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetAction() DeploymentAction {
-	return v.Action
-}
-
-// GetVersion returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.Version, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetVersion() string {
-	return v.Version
-}
-
-// GetMessage returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.Message, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetMessage() string {
-	return v.Message
-}
-
-// GetCreatedAt returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetCreatedAt() time.Time {
-	return v.CreatedAt
-}
-
-// GetUpdatedAt returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetUpdatedAt() time.Time {
-	return v.UpdatedAt
-}
-
-// GetLastTransitionedAt returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.LastTransitionedAt, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetLastTransitionedAt() time.Time {
-	return v.LastTransitionedAt
-}
-
-// GetElapsedTime returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.ElapsedTime, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetElapsedTime() int {
-	return v.ElapsedTime
-}
-
-// GetDeployedBy returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.DeployedBy, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetDeployedBy() string {
-	return v.DeployedBy
-}
-
-// GetInstance returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf.Instance, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeaf) GetInstance() getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeafInstanceInstanceLeaf {
-	return v.Instance
-}
-
-// getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeafInstanceInstanceLeaf includes the requested fields of the GraphQL type InstanceLeaf.
-// The GraphQL type's documentation follows.
-//
-// An instance returned in list results.
-type getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeafInstanceInstanceLeaf struct {
-	Id string `json:"id"`
-	// Instance display name
-	Name string `json:"name"`
-}
-
-// GetId returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeafInstanceInstanceLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeafInstanceInstanceLeaf) GetId() string {
-	return v.Id
-}
-
-// GetName returns getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeafInstanceInstanceLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getDeploymentsDeploymentsDeploymentsPageItemsDeploymentLeafInstanceInstanceLeaf) GetName() string {
-	return v.Name
-}
-
-// getDeploymentsResponse is returned by getDeployments on success.
-type getDeploymentsResponse struct {
-	// List all deployments you have access to. Returns a paginated list, newest first.
-	Deployments getDeploymentsDeploymentsDeploymentsPage `json:"deployments"`
-}
-
-// GetDeployments returns getDeploymentsResponse.Deployments, and is useful for accessing the field via an interface.
-func (v *getDeploymentsResponse) GetDeployments() getDeploymentsDeploymentsDeploymentsPage {
-	return v.Deployments
-}
-
-// getEnvironmentByIdEnvironment includes the requested fields of the GraphQL type Environment.
-// The GraphQL type's documentation follows.
-//
-// An environment with its full details and related resources.
-type getEnvironmentByIdEnvironment struct {
+// An environment.
+type getEnvironmentEnvironment struct {
 	Id string `json:"id"`
 	// Display name
 	Name string `json:"name"`
@@ -1882,80 +1133,102 @@ type getEnvironmentByIdEnvironment struct {
 	CreatedAt time.Time `json:"createdAt"`
 	// When this environment was last modified (UTC)
 	UpdatedAt time.Time `json:"updatedAt"`
+	// Cloud provider costs for this environment.
+	Cost getEnvironmentEnvironmentCostCostSummary `json:"cost"`
 	// The project containing this environment.
-	Project getEnvironmentByIdEnvironmentProject `json:"project"`
-	// The instances deployed in this environment.
-	Instances getEnvironmentByIdEnvironmentInstancesInstancesPage `json:"instances"`
+	Project getEnvironmentEnvironmentProject `json:"project"`
+	// The realized infrastructure blueprint for this environment (instances and connections).
+	Blueprint getEnvironmentEnvironmentBlueprint `json:"blueprint"`
 }
 
-// GetId returns getEnvironmentByIdEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetId() string { return v.Id }
+// GetId returns getEnvironmentEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetId() string { return v.Id }
 
-// GetName returns getEnvironmentByIdEnvironment.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetName() string { return v.Name }
+// GetName returns getEnvironmentEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetName() string { return v.Name }
 
-// GetDescription returns getEnvironmentByIdEnvironment.Description, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetDescription() string { return v.Description }
+// GetDescription returns getEnvironmentEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetDescription() string { return v.Description }
 
-// GetCreatedAt returns getEnvironmentByIdEnvironment.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetCreatedAt() time.Time { return v.CreatedAt }
+// GetCreatedAt returns getEnvironmentEnvironment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetCreatedAt() time.Time { return v.CreatedAt }
 
-// GetUpdatedAt returns getEnvironmentByIdEnvironment.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetUpdatedAt() time.Time { return v.UpdatedAt }
+// GetUpdatedAt returns getEnvironmentEnvironment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetUpdatedAt() time.Time { return v.UpdatedAt }
 
-// GetProject returns getEnvironmentByIdEnvironment.Project, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetProject() getEnvironmentByIdEnvironmentProject {
-	return v.Project
+// GetCost returns getEnvironmentEnvironment.Cost, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetCost() getEnvironmentEnvironmentCostCostSummary { return v.Cost }
+
+// GetProject returns getEnvironmentEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetProject() getEnvironmentEnvironmentProject { return v.Project }
+
+// GetBlueprint returns getEnvironmentEnvironment.Blueprint, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetBlueprint() getEnvironmentEnvironmentBlueprint {
+	return v.Blueprint
 }
 
-// GetInstances returns getEnvironmentByIdEnvironment.Instances, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetInstances() getEnvironmentByIdEnvironmentInstancesInstancesPage {
+// getEnvironmentEnvironmentBlueprint includes the requested fields of the GraphQL type EnvironmentBlueprint.
+// The GraphQL type's documentation follows.
+//
+// An environment's realized infrastructure blueprint.
+//
+// The environment blueprint contains all instances (deployed packages) and
+// connections (runtime wiring between them) showing how your infrastructure
+// is actually deployed. This mirrors the project-level blueprint at the
+// environment level.
+type getEnvironmentEnvironmentBlueprint struct {
+	// Instances deployed in this environment.
+	Instances getEnvironmentEnvironmentBlueprintInstancesInstancesPage `json:"instances"`
+}
+
+// GetInstances returns getEnvironmentEnvironmentBlueprint.Instances, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprint) GetInstances() getEnvironmentEnvironmentBlueprintInstancesInstancesPage {
 	return v.Instances
 }
 
-// getEnvironmentByIdEnvironmentInstancesInstancesPage includes the requested fields of the GraphQL type InstancesPage.
-type getEnvironmentByIdEnvironmentInstancesInstancesPage struct {
+// getEnvironmentEnvironmentBlueprintInstancesInstancesPage includes the requested fields of the GraphQL type InstancesPage.
+type getEnvironmentEnvironmentBlueprintInstancesInstancesPage struct {
 	// Pagination cursors
-	Cursor getEnvironmentByIdEnvironmentInstancesInstancesPageCursorPaginationCursor `json:"cursor"`
-	// A list of type instance_leaf.
-	Items []getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf `json:"items"`
+	Cursor getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor `json:"cursor"`
+	// A list of type instance.
+	Items []getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance `json:"items"`
 }
 
-// GetCursor returns getEnvironmentByIdEnvironmentInstancesInstancesPage.Cursor, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPage) GetCursor() getEnvironmentByIdEnvironmentInstancesInstancesPageCursorPaginationCursor {
+// GetCursor returns getEnvironmentEnvironmentBlueprintInstancesInstancesPage.Cursor, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPage) GetCursor() getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor {
 	return v.Cursor
 }
 
-// GetItems returns getEnvironmentByIdEnvironmentInstancesInstancesPage.Items, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPage) GetItems() []getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf {
+// GetItems returns getEnvironmentEnvironmentBlueprintInstancesInstancesPage.Items, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPage) GetItems() []getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance {
 	return v.Items
 }
 
-// getEnvironmentByIdEnvironmentInstancesInstancesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
-type getEnvironmentByIdEnvironmentInstancesInstancesPageCursorPaginationCursor struct {
+// getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+type getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor struct {
 	// Cursor to the next page
 	Next string `json:"next"`
 	// Cursor to the previous page
 	Previous string `json:"previous"`
 }
 
-// GetNext returns getEnvironmentByIdEnvironmentInstancesInstancesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageCursorPaginationCursor) GetNext() string {
+// GetNext returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor) GetNext() string {
 	return v.Next
 }
 
-// GetPrevious returns getEnvironmentByIdEnvironmentInstancesInstancesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageCursorPaginationCursor) GetPrevious() string {
+// GetPrevious returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor) GetPrevious() string {
 	return v.Previous
 }
 
-// getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf includes the requested fields of the GraphQL type InstanceLeaf.
+// getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance includes the requested fields of the GraphQL type Instance.
 // The GraphQL type's documentation follows.
 //
-// An instance returned in list results.
-type getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf struct {
+// An instance.
+type getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance struct {
 	Id string `json:"id"`
-	// Instance display name
+	// Display name
 	Name string `json:"name"`
 	// Current state of the instance
 	Status InstanceStatus `json:"status"`
@@ -1967,110 +1240,139 @@ type getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf struct
 	CreatedAt time.Time `json:"createdAt"`
 	// When this instance was last modified (UTC)
 	UpdatedAt time.Time `json:"updatedAt"`
-	// The environment this instance is deployed in.
-	Environment getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf `json:"environment"`
 	// The bundle version currently deployed.
-	Bundle getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf `json:"bundle"`
+	Bundle getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle `json:"bundle"`
 }
 
-// GetId returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf) GetId() string {
+// GetId returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetId() string {
 	return v.Id
 }
 
-// GetName returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf) GetName() string {
+// GetName returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetName() string {
 	return v.Name
 }
 
-// GetStatus returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf.Status, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf) GetStatus() InstanceStatus {
+// GetStatus returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Status, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetStatus() InstanceStatus {
 	return v.Status
 }
 
-// GetVersion returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf.Version, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf) GetVersion() string {
+// GetVersion returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Version, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetVersion() string {
 	return v.Version
 }
 
-// GetReleaseStrategy returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf.ReleaseStrategy, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf) GetReleaseStrategy() ReleaseStrategy {
+// GetReleaseStrategy returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetReleaseStrategy() ReleaseStrategy {
 	return v.ReleaseStrategy
 }
 
-// GetCreatedAt returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf) GetCreatedAt() time.Time {
+// GetCreatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetCreatedAt() time.Time {
 	return v.CreatedAt
 }
 
-// GetUpdatedAt returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf) GetUpdatedAt() time.Time {
+// GetUpdatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
 }
 
-// GetEnvironment returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf.Environment, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf) GetEnvironment() getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf {
-	return v.Environment
-}
-
-// GetBundle returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf.Bundle, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeaf) GetBundle() getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf {
+// GetBundle returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Bundle, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetBundle() getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle {
 	return v.Bundle
 }
 
-// getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf includes the requested fields of the GraphQL type BundleLeaf.
+// getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle includes the requested fields of the GraphQL type Bundle.
 // The GraphQL type's documentation follows.
 //
-// A bundle returned in list results.
-type getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf struct {
-	// Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')
-	Id string `json:"id"`
+// A bundle.
+type getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle struct {
 	// Bundle name (e.g., 'aws-aurora-postgres')
 	Name string `json:"name"`
-	// Resolved semantic version (e.g., '1.2.3')
-	Version string `json:"version"`
-}
-
-// GetId returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf) GetId() string {
-	return v.Id
-}
-
-// GetName returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf) GetName() string {
-	return v.Name
-}
-
-// GetVersion returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf.Version, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf) GetVersion() string {
-	return v.Version
-}
-
-// getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf includes the requested fields of the GraphQL type EnvironmentLeaf.
-// The GraphQL type's documentation follows.
-//
-// An environment returned in list results.
-type getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf struct {
+	// Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')
 	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
 }
 
-// GetId returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf) GetId() string {
-	return v.Id
-}
-
-// GetName returns getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf) GetName() string {
+// GetName returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetName() string {
 	return v.Name
 }
 
-// getEnvironmentByIdEnvironmentProject includes the requested fields of the GraphQL type Project.
+// GetId returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetId() string {
+	return v.Id
+}
+
+// getEnvironmentEnvironmentCostCostSummary includes the requested fields of the GraphQL type CostSummary.
 // The GraphQL type's documentation follows.
 //
-// A project with its full details and related resources.
-type getEnvironmentByIdEnvironmentProject struct {
+// Cost summary with monthly and daily metrics.
+type getEnvironmentEnvironmentCostCostSummary struct {
+	// Average monthly cost
+	MonthlyAverage getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	// Average daily cost
+	DailyAverage getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+}
+
+// GetMonthlyAverage returns getEnvironmentEnvironmentCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummary) GetMonthlyAverage() getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample {
+	return v.MonthlyAverage
+}
+
+// GetDailyAverage returns getEnvironmentEnvironmentCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummary) GetDailyAverage() getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample {
+	return v.DailyAverage
+}
+
+// getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement with amount and currency.
+type getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample struct {
+	// The cost amount (null if no data available)
+	Amount float64 `json:"amount"`
+	// The currency code, e.g. USD (null if no data available)
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement with amount and currency.
+type getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample struct {
+	// The cost amount (null if no data available)
+	Amount float64 `json:"amount"`
+	// The currency code, e.g. USD (null if no data available)
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getEnvironmentEnvironmentProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project.
+type getEnvironmentEnvironmentProject struct {
 	Id string `json:"id"`
 	// Display name
 	Name string `json:"name"`
@@ -2078,889 +1380,315 @@ type getEnvironmentByIdEnvironmentProject struct {
 	Description string `json:"description"`
 }
 
-// GetId returns getEnvironmentByIdEnvironmentProject.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentProject) GetId() string { return v.Id }
+// GetId returns getEnvironmentEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentProject) GetId() string { return v.Id }
 
-// GetName returns getEnvironmentByIdEnvironmentProject.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentProject) GetName() string { return v.Name }
+// GetName returns getEnvironmentEnvironmentProject.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentProject) GetName() string { return v.Name }
 
-// GetDescription returns getEnvironmentByIdEnvironmentProject.Description, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentProject) GetDescription() string { return v.Description }
+// GetDescription returns getEnvironmentEnvironmentProject.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentProject) GetDescription() string { return v.Description }
 
-// getEnvironmentByIdResponse is returned by getEnvironmentById on success.
-type getEnvironmentByIdResponse struct {
+// getEnvironmentResponse is returned by getEnvironment on success.
+type getEnvironmentResponse struct {
 	// Get a single environment by its ID.
-	Environment getEnvironmentByIdEnvironment `json:"environment"`
+	Environment getEnvironmentEnvironment `json:"environment"`
 }
 
-// GetEnvironment returns getEnvironmentByIdResponse.Environment, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdResponse) GetEnvironment() getEnvironmentByIdEnvironment {
-	return v.Environment
-}
+// GetEnvironment returns getEnvironmentResponse.Environment, and is useful for accessing the field via an interface.
+func (v *getEnvironmentResponse) GetEnvironment() getEnvironmentEnvironment { return v.Environment }
 
-// getEnvironmentsEnvironmentsEnvironmentsPage includes the requested fields of the GraphQL type EnvironmentsPage.
-type getEnvironmentsEnvironmentsEnvironmentsPage struct {
-	// Pagination cursors
-	Cursor getEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor `json:"cursor"`
-	// A list of type environment_leaf.
-	Items []getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf `json:"items"`
-}
-
-// GetCursor returns getEnvironmentsEnvironmentsEnvironmentsPage.Cursor, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPage) GetCursor() getEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor {
-	return v.Cursor
-}
-
-// GetItems returns getEnvironmentsEnvironmentsEnvironmentsPage.Items, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPage) GetItems() []getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf {
-	return v.Items
-}
-
-// getEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
-type getEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor struct {
-	// Cursor to the next page
-	Next string `json:"next"`
-	// Cursor to the previous page
-	Previous string `json:"previous"`
-}
-
-// GetNext returns getEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor) GetNext() string {
-	return v.Next
-}
-
-// GetPrevious returns getEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor) GetPrevious() string {
-	return v.Previous
-}
-
-// getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf includes the requested fields of the GraphQL type EnvironmentLeaf.
+// getProjectProject includes the requested fields of the GraphQL type Project.
 // The GraphQL type's documentation follows.
 //
-// An environment returned in list results.
-type getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-	// What this environment is for
-	Description string `json:"description"`
-	// When this environment was created (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this environment was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// The project containing this environment.
-	Project getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf `json:"project"`
-}
-
-// GetId returns getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetId() string { return v.Id }
-
-// GetName returns getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetName() string {
-	return v.Name
-}
-
-// GetDescription returns getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.Description, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetDescription() string {
-	return v.Description
-}
-
-// GetCreatedAt returns getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetCreatedAt() time.Time {
-	return v.CreatedAt
-}
-
-// GetUpdatedAt returns getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetUpdatedAt() time.Time {
-	return v.UpdatedAt
-}
-
-// GetProject returns getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.Project, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetProject() getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf {
-	return v.Project
-}
-
-// getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf includes the requested fields of the GraphQL type ProjectLeaf.
-// The GraphQL type's documentation follows.
-//
-// A project returned in list results.
-type getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-}
-
-// GetId returns getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf) GetId() string {
-	return v.Id
-}
-
-// GetName returns getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf) GetName() string {
-	return v.Name
-}
-
-// getEnvironmentsResponse is returned by getEnvironments on success.
-type getEnvironmentsResponse struct {
-	// List all environments you have access to. Returns a paginated list sorted by name.
-	Environments getEnvironmentsEnvironmentsEnvironmentsPage `json:"environments"`
-}
-
-// GetEnvironments returns getEnvironmentsResponse.Environments, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsResponse) GetEnvironments() getEnvironmentsEnvironmentsEnvironmentsPage {
-	return v.Environments
-}
-
-// getInstanceByIdInstance includes the requested fields of the GraphQL type Instance.
-// The GraphQL type's documentation follows.
-//
-// An instance with its full details and related resources.
-type getInstanceByIdInstance struct {
-	Id string `json:"id"`
-	// Instance display name
-	Name string `json:"name"`
-	// Current state of the instance
-	Status InstanceStatus `json:"status"`
-	// Version constraint (e.g., '~1.0' or '1.2.3')
-	Version string `json:"version"`
-	// Whether to use stable or development releases
-	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
-	// When this instance was created (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this instance was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// The environment this instance is deployed in.
-	Environment getInstanceByIdInstanceEnvironment `json:"environment"`
-	// The bundle version currently deployed.
-	Bundle getInstanceByIdInstanceBundle `json:"bundle"`
-}
-
-// GetId returns getInstanceByIdInstance.Id, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstance) GetId() string { return v.Id }
-
-// GetName returns getInstanceByIdInstance.Name, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstance) GetName() string { return v.Name }
-
-// GetStatus returns getInstanceByIdInstance.Status, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstance) GetStatus() InstanceStatus { return v.Status }
-
-// GetVersion returns getInstanceByIdInstance.Version, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstance) GetVersion() string { return v.Version }
-
-// GetReleaseStrategy returns getInstanceByIdInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstance) GetReleaseStrategy() ReleaseStrategy { return v.ReleaseStrategy }
-
-// GetCreatedAt returns getInstanceByIdInstance.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstance) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// GetUpdatedAt returns getInstanceByIdInstance.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstance) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// GetEnvironment returns getInstanceByIdInstance.Environment, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstance) GetEnvironment() getInstanceByIdInstanceEnvironment {
-	return v.Environment
-}
-
-// GetBundle returns getInstanceByIdInstance.Bundle, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstance) GetBundle() getInstanceByIdInstanceBundle { return v.Bundle }
-
-// getInstanceByIdInstanceBundle includes the requested fields of the GraphQL type Bundle.
-// The GraphQL type's documentation follows.
-//
-// A bundle with its full details and related resources.
-type getInstanceByIdInstanceBundle struct {
-	// Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')
-	Id string `json:"id"`
-	// Bundle name (e.g., 'aws-aurora-postgres')
-	Name string `json:"name"`
-	// Resolved semantic version (e.g., '1.2.3')
-	Version string `json:"version"`
-	// What this bundle provides
-	Description string `json:"description"`
-	// URL to the bundle icon
-	Icon string `json:"icon"`
-	// URL to the bundle source code
-	SourceUrl string `json:"sourceUrl"`
-	// When this bundle version was published (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this bundle version was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-// GetId returns getInstanceByIdInstanceBundle.Id, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceBundle) GetId() string { return v.Id }
-
-// GetName returns getInstanceByIdInstanceBundle.Name, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceBundle) GetName() string { return v.Name }
-
-// GetVersion returns getInstanceByIdInstanceBundle.Version, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceBundle) GetVersion() string { return v.Version }
-
-// GetDescription returns getInstanceByIdInstanceBundle.Description, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceBundle) GetDescription() string { return v.Description }
-
-// GetIcon returns getInstanceByIdInstanceBundle.Icon, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceBundle) GetIcon() string { return v.Icon }
-
-// GetSourceUrl returns getInstanceByIdInstanceBundle.SourceUrl, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceBundle) GetSourceUrl() string { return v.SourceUrl }
-
-// GetCreatedAt returns getInstanceByIdInstanceBundle.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceBundle) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// GetUpdatedAt returns getInstanceByIdInstanceBundle.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceBundle) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// getInstanceByIdInstanceEnvironment includes the requested fields of the GraphQL type Environment.
-// The GraphQL type's documentation follows.
-//
-// An environment with its full details and related resources.
-type getInstanceByIdInstanceEnvironment struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-	// What this environment is for
-	Description string `json:"description"`
-	// When this environment was created (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this environment was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// The project containing this environment.
-	Project getInstanceByIdInstanceEnvironmentProject `json:"project"`
-}
-
-// GetId returns getInstanceByIdInstanceEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceEnvironment) GetId() string { return v.Id }
-
-// GetName returns getInstanceByIdInstanceEnvironment.Name, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceEnvironment) GetName() string { return v.Name }
-
-// GetDescription returns getInstanceByIdInstanceEnvironment.Description, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceEnvironment) GetDescription() string { return v.Description }
-
-// GetCreatedAt returns getInstanceByIdInstanceEnvironment.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceEnvironment) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// GetUpdatedAt returns getInstanceByIdInstanceEnvironment.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceEnvironment) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// GetProject returns getInstanceByIdInstanceEnvironment.Project, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceEnvironment) GetProject() getInstanceByIdInstanceEnvironmentProject {
-	return v.Project
-}
-
-// getInstanceByIdInstanceEnvironmentProject includes the requested fields of the GraphQL type Project.
-// The GraphQL type's documentation follows.
-//
-// A project with its full details and related resources.
-type getInstanceByIdInstanceEnvironmentProject struct {
+// A project.
+type getProjectProject struct {
 	Id string `json:"id"`
 	// Display name
 	Name string `json:"name"`
 	// What this project is for
 	Description string `json:"description"`
-}
-
-// GetId returns getInstanceByIdInstanceEnvironmentProject.Id, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceEnvironmentProject) GetId() string { return v.Id }
-
-// GetName returns getInstanceByIdInstanceEnvironmentProject.Name, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceEnvironmentProject) GetName() string { return v.Name }
-
-// GetDescription returns getInstanceByIdInstanceEnvironmentProject.Description, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdInstanceEnvironmentProject) GetDescription() string { return v.Description }
-
-// getInstanceByIdResponse is returned by getInstanceById on success.
-type getInstanceByIdResponse struct {
-	// Get a single instance by its ID.
-	Instance getInstanceByIdInstance `json:"instance"`
-}
-
-// GetInstance returns getInstanceByIdResponse.Instance, and is useful for accessing the field via an interface.
-func (v *getInstanceByIdResponse) GetInstance() getInstanceByIdInstance { return v.Instance }
-
-// getInstancesInstancesInstancesPage includes the requested fields of the GraphQL type InstancesPage.
-type getInstancesInstancesInstancesPage struct {
-	// Pagination cursors
-	Cursor getInstancesInstancesInstancesPageCursorPaginationCursor `json:"cursor"`
-	// A list of type instance_leaf.
-	Items []getInstancesInstancesInstancesPageItemsInstanceLeaf `json:"items"`
-}
-
-// GetCursor returns getInstancesInstancesInstancesPage.Cursor, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPage) GetCursor() getInstancesInstancesInstancesPageCursorPaginationCursor {
-	return v.Cursor
-}
-
-// GetItems returns getInstancesInstancesInstancesPage.Items, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPage) GetItems() []getInstancesInstancesInstancesPageItemsInstanceLeaf {
-	return v.Items
-}
-
-// getInstancesInstancesInstancesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
-type getInstancesInstancesInstancesPageCursorPaginationCursor struct {
-	// Cursor to the next page
-	Next string `json:"next"`
-	// Cursor to the previous page
-	Previous string `json:"previous"`
-}
-
-// GetNext returns getInstancesInstancesInstancesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageCursorPaginationCursor) GetNext() string { return v.Next }
-
-// GetPrevious returns getInstancesInstancesInstancesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageCursorPaginationCursor) GetPrevious() string {
-	return v.Previous
-}
-
-// getInstancesInstancesInstancesPageItemsInstanceLeaf includes the requested fields of the GraphQL type InstanceLeaf.
-// The GraphQL type's documentation follows.
-//
-// An instance returned in list results.
-type getInstancesInstancesInstancesPageItemsInstanceLeaf struct {
-	Id string `json:"id"`
-	// Instance display name
-	Name string `json:"name"`
-	// Current state of the instance
-	Status InstanceStatus `json:"status"`
-	// Version constraint (e.g., '~1.0' or '1.2.3')
-	Version string `json:"version"`
-	// Whether to use stable or development releases
-	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
-	// When this instance was created (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this instance was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// The environment this instance is deployed in.
-	Environment getInstancesInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf `json:"environment"`
-	// The bundle version currently deployed.
-	Bundle getInstancesInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf `json:"bundle"`
-}
-
-// GetId returns getInstancesInstancesInstancesPageItemsInstanceLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeaf) GetId() string { return v.Id }
-
-// GetName returns getInstancesInstancesInstancesPageItemsInstanceLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeaf) GetName() string { return v.Name }
-
-// GetStatus returns getInstancesInstancesInstancesPageItemsInstanceLeaf.Status, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeaf) GetStatus() InstanceStatus {
-	return v.Status
-}
-
-// GetVersion returns getInstancesInstancesInstancesPageItemsInstanceLeaf.Version, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeaf) GetVersion() string { return v.Version }
-
-// GetReleaseStrategy returns getInstancesInstancesInstancesPageItemsInstanceLeaf.ReleaseStrategy, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeaf) GetReleaseStrategy() ReleaseStrategy {
-	return v.ReleaseStrategy
-}
-
-// GetCreatedAt returns getInstancesInstancesInstancesPageItemsInstanceLeaf.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeaf) GetCreatedAt() time.Time {
-	return v.CreatedAt
-}
-
-// GetUpdatedAt returns getInstancesInstancesInstancesPageItemsInstanceLeaf.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeaf) GetUpdatedAt() time.Time {
-	return v.UpdatedAt
-}
-
-// GetEnvironment returns getInstancesInstancesInstancesPageItemsInstanceLeaf.Environment, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeaf) GetEnvironment() getInstancesInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf {
-	return v.Environment
-}
-
-// GetBundle returns getInstancesInstancesInstancesPageItemsInstanceLeaf.Bundle, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeaf) GetBundle() getInstancesInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf {
-	return v.Bundle
-}
-
-// getInstancesInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf includes the requested fields of the GraphQL type BundleLeaf.
-// The GraphQL type's documentation follows.
-//
-// A bundle returned in list results.
-type getInstancesInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf struct {
-	// Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')
-	Id string `json:"id"`
-	// Bundle name (e.g., 'aws-aurora-postgres')
-	Name string `json:"name"`
-	// Resolved semantic version (e.g., '1.2.3')
-	Version string `json:"version"`
-}
-
-// GetId returns getInstancesInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf) GetId() string {
-	return v.Id
-}
-
-// GetName returns getInstancesInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf) GetName() string {
-	return v.Name
-}
-
-// GetVersion returns getInstancesInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf.Version, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeafBundleBundleLeaf) GetVersion() string {
-	return v.Version
-}
-
-// getInstancesInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf includes the requested fields of the GraphQL type EnvironmentLeaf.
-// The GraphQL type's documentation follows.
-//
-// An environment returned in list results.
-type getInstancesInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-}
-
-// GetId returns getInstancesInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf) GetId() string {
-	return v.Id
-}
-
-// GetName returns getInstancesInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getInstancesInstancesInstancesPageItemsInstanceLeafEnvironmentEnvironmentLeaf) GetName() string {
-	return v.Name
-}
-
-// getInstancesResponse is returned by getInstances on success.
-type getInstancesResponse struct {
-	// List all instances you have access to. Returns a paginated list sorted by name.
-	Instances getInstancesInstancesInstancesPage `json:"instances"`
-}
-
-// GetInstances returns getInstancesResponse.Instances, and is useful for accessing the field via an interface.
-func (v *getInstancesResponse) GetInstances() getInstancesInstancesInstancesPage { return v.Instances }
-
-// getProjectByIdProject includes the requested fields of the GraphQL type Project.
-// The GraphQL type's documentation follows.
-//
-// A project with its full details and related resources.
-type getProjectByIdProject struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-	// What this project is for
-	Description string `json:"description"`
+	// The environments in this project, like staging or production.
+	Environments getProjectProjectEnvironmentsEnvironmentsPage `json:"environments"`
 	// When this project was created (UTC)
 	CreatedAt time.Time `json:"createdAt"`
 	// When this project was last modified (UTC)
 	UpdatedAt time.Time `json:"updatedAt"`
 	// Whether this project can be deleted and any constraints preventing deletion.
-	Deletable getProjectByIdProjectDeletable `json:"deletable"`
+	Deletable getProjectProjectDeletable `json:"deletable"`
 	// Cloud provider costs for this project.
-	Cost getProjectByIdProjectCostCostSummary `json:"cost"`
-	// The environments in this project, like staging or production.
-	Environments getProjectByIdProjectEnvironmentsEnvironmentsPage `json:"environments"`
-	// The infrastructure blueprint for this project (components and links).
-	Blueprint getProjectByIdProjectBlueprint `json:"blueprint"`
+	Cost getProjectProjectCostCostSummary `json:"cost"`
 }
 
-// GetId returns getProjectByIdProject.Id, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetId() string { return v.Id }
+// GetId returns getProjectProject.Id, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetId() string { return v.Id }
 
-// GetName returns getProjectByIdProject.Name, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetName() string { return v.Name }
+// GetName returns getProjectProject.Name, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetName() string { return v.Name }
 
-// GetDescription returns getProjectByIdProject.Description, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetDescription() string { return v.Description }
+// GetDescription returns getProjectProject.Description, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetDescription() string { return v.Description }
 
-// GetCreatedAt returns getProjectByIdProject.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// GetUpdatedAt returns getProjectByIdProject.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// GetDeletable returns getProjectByIdProject.Deletable, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetDeletable() getProjectByIdProjectDeletable { return v.Deletable }
-
-// GetCost returns getProjectByIdProject.Cost, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetCost() getProjectByIdProjectCostCostSummary { return v.Cost }
-
-// GetEnvironments returns getProjectByIdProject.Environments, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetEnvironments() getProjectByIdProjectEnvironmentsEnvironmentsPage {
+// GetEnvironments returns getProjectProject.Environments, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetEnvironments() getProjectProjectEnvironmentsEnvironmentsPage {
 	return v.Environments
 }
 
-// GetBlueprint returns getProjectByIdProject.Blueprint, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetBlueprint() getProjectByIdProjectBlueprint { return v.Blueprint }
+// GetCreatedAt returns getProjectProject.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetCreatedAt() time.Time { return v.CreatedAt }
 
-// getProjectByIdProjectBlueprint includes the requested fields of the GraphQL type Blueprint.
-// The GraphQL type's documentation follows.
-//
-// A project's infrastructure blueprint.
-//
-// The blueprint contains all components (bundle instances) and links (connections
-// between them) that define how your infrastructure fits together.
-type getProjectByIdProjectBlueprint struct {
-	// Components in this blueprint.
-	Components getProjectByIdProjectBlueprintComponentsComponentsPage `json:"components"`
-	// Links between components in this blueprint.
-	Links getProjectByIdProjectBlueprintLinksLinksPage `json:"links"`
-}
+// GetUpdatedAt returns getProjectProject.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetUpdatedAt() time.Time { return v.UpdatedAt }
 
-// GetComponents returns getProjectByIdProjectBlueprint.Components, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprint) GetComponents() getProjectByIdProjectBlueprintComponentsComponentsPage {
-	return v.Components
-}
+// GetDeletable returns getProjectProject.Deletable, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetDeletable() getProjectProjectDeletable { return v.Deletable }
 
-// GetLinks returns getProjectByIdProjectBlueprint.Links, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprint) GetLinks() getProjectByIdProjectBlueprintLinksLinksPage {
-	return v.Links
-}
+// GetCost returns getProjectProject.Cost, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetCost() getProjectProjectCostCostSummary { return v.Cost }
 
-// getProjectByIdProjectBlueprintComponentsComponentsPage includes the requested fields of the GraphQL type ComponentsPage.
-type getProjectByIdProjectBlueprintComponentsComponentsPage struct {
-	// A list of type component_leaf.
-	Items []getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf `json:"items"`
-}
-
-// GetItems returns getProjectByIdProjectBlueprintComponentsComponentsPage.Items, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPage) GetItems() []getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf {
-	return v.Items
-}
-
-// getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf includes the requested fields of the GraphQL type ComponentLeaf.
-// The GraphQL type's documentation follows.
-//
-// A component returned in list results.
-type getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-	// Component description
-	Description string `json:"description"`
-	// When this component was created (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this component was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// The bundle repository this component uses.
-	Repo getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafRepoRepoLeaf `json:"repo"`
-	// The project containing this component.
-	Project getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafProjectProjectLeaf `json:"project"`
-}
-
-// GetId returns getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf) GetId() string {
-	return v.Id
-}
-
-// GetName returns getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf) GetName() string {
-	return v.Name
-}
-
-// GetDescription returns getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf.Description, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf) GetDescription() string {
-	return v.Description
-}
-
-// GetCreatedAt returns getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf) GetCreatedAt() time.Time {
-	return v.CreatedAt
-}
-
-// GetUpdatedAt returns getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf) GetUpdatedAt() time.Time {
-	return v.UpdatedAt
-}
-
-// GetRepo returns getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf.Repo, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf) GetRepo() getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafRepoRepoLeaf {
-	return v.Repo
-}
-
-// GetProject returns getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf.Project, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeaf) GetProject() getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafProjectProjectLeaf {
-	return v.Project
-}
-
-// getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafProjectProjectLeaf includes the requested fields of the GraphQL type ProjectLeaf.
-// The GraphQL type's documentation follows.
-//
-// A project returned in list results.
-type getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafProjectProjectLeaf struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-}
-
-// GetId returns getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafProjectProjectLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafProjectProjectLeaf) GetId() string {
-	return v.Id
-}
-
-// GetName returns getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafProjectProjectLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafProjectProjectLeaf) GetName() string {
-	return v.Name
-}
-
-// getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafRepoRepoLeaf includes the requested fields of the GraphQL type RepoLeaf.
-// The GraphQL type's documentation follows.
-//
-// Reference to a repository.
-type getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafRepoRepoLeaf struct {
-	// Repository name
-	Name string `json:"name"`
-}
-
-// GetName returns getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafRepoRepoLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintComponentsComponentsPageItemsComponentLeafRepoRepoLeaf) GetName() string {
-	return v.Name
-}
-
-// getProjectByIdProjectBlueprintLinksLinksPage includes the requested fields of the GraphQL type LinksPage.
-type getProjectByIdProjectBlueprintLinksLinksPage struct {
-	// A list of type link_leaf.
-	Items []getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf `json:"items"`
-}
-
-// GetItems returns getProjectByIdProjectBlueprintLinksLinksPage.Items, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPage) GetItems() []getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf {
-	return v.Items
-}
-
-// getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf includes the requested fields of the GraphQL type LinkLeaf.
-// The GraphQL type's documentation follows.
-//
-// A link returned in list results.
-type getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf struct {
-	Id string `json:"id"`
-	// Output field name on the source component
-	FromField string `json:"fromField"`
-	// Input field name on the destination component
-	ToField string `json:"toField"`
-	// When this link was created (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this link was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// The source (from) component.
-	FromComponent getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafFromComponentComponentLeaf `json:"fromComponent"`
-	// The destination (to) component.
-	ToComponent getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafToComponentComponentLeaf `json:"toComponent"`
-}
-
-// GetId returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf) GetId() string { return v.Id }
-
-// GetFromField returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf.FromField, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf) GetFromField() string {
-	return v.FromField
-}
-
-// GetToField returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf.ToField, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf) GetToField() string {
-	return v.ToField
-}
-
-// GetCreatedAt returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf) GetCreatedAt() time.Time {
-	return v.CreatedAt
-}
-
-// GetUpdatedAt returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf) GetUpdatedAt() time.Time {
-	return v.UpdatedAt
-}
-
-// GetFromComponent returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf.FromComponent, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf) GetFromComponent() getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafFromComponentComponentLeaf {
-	return v.FromComponent
-}
-
-// GetToComponent returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf.ToComponent, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeaf) GetToComponent() getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafToComponentComponentLeaf {
-	return v.ToComponent
-}
-
-// getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafFromComponentComponentLeaf includes the requested fields of the GraphQL type ComponentLeaf.
-// The GraphQL type's documentation follows.
-//
-// A component returned in list results.
-type getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafFromComponentComponentLeaf struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-}
-
-// GetId returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafFromComponentComponentLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafFromComponentComponentLeaf) GetId() string {
-	return v.Id
-}
-
-// GetName returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafFromComponentComponentLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafFromComponentComponentLeaf) GetName() string {
-	return v.Name
-}
-
-// getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafToComponentComponentLeaf includes the requested fields of the GraphQL type ComponentLeaf.
-// The GraphQL type's documentation follows.
-//
-// A component returned in list results.
-type getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafToComponentComponentLeaf struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-}
-
-// GetId returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafToComponentComponentLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafToComponentComponentLeaf) GetId() string {
-	return v.Id
-}
-
-// GetName returns getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafToComponentComponentLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectBlueprintLinksLinksPageItemsLinkLeafToComponentComponentLeaf) GetName() string {
-	return v.Name
-}
-
-// getProjectByIdProjectCostCostSummary includes the requested fields of the GraphQL type CostSummary.
+// getProjectProjectCostCostSummary includes the requested fields of the GraphQL type CostSummary.
 // The GraphQL type's documentation follows.
 //
 // Cost summary with monthly and daily metrics.
-type getProjectByIdProjectCostCostSummary struct {
+type getProjectProjectCostCostSummary struct {
 	// Average monthly cost
-	MonthlyAverage getProjectByIdProjectCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	MonthlyAverage getProjectProjectCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
 	// Average daily cost
-	DailyAverage getProjectByIdProjectCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+	DailyAverage getProjectProjectCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
 }
 
-// GetMonthlyAverage returns getProjectByIdProjectCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectCostCostSummary) GetMonthlyAverage() getProjectByIdProjectCostCostSummaryMonthlyAverageCostSample {
+// GetMonthlyAverage returns getProjectProjectCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummary) GetMonthlyAverage() getProjectProjectCostCostSummaryMonthlyAverageCostSample {
 	return v.MonthlyAverage
 }
 
-// GetDailyAverage returns getProjectByIdProjectCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectCostCostSummary) GetDailyAverage() getProjectByIdProjectCostCostSummaryDailyAverageCostSample {
+// GetDailyAverage returns getProjectProjectCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummary) GetDailyAverage() getProjectProjectCostCostSummaryDailyAverageCostSample {
 	return v.DailyAverage
 }
 
-// getProjectByIdProjectCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// getProjectProjectCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
 // The GraphQL type's documentation follows.
 //
 // A single cost measurement with amount and currency.
-type getProjectByIdProjectCostCostSummaryDailyAverageCostSample struct {
+type getProjectProjectCostCostSummaryDailyAverageCostSample struct {
 	// The cost amount (null if no data available)
 	Amount float64 `json:"amount"`
 	// The currency code, e.g. USD (null if no data available)
 	Currency string `json:"currency"`
 }
 
-// GetAmount returns getProjectByIdProjectCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
-	return v.Amount
-}
+// GetAmount returns getProjectProjectCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummaryDailyAverageCostSample) GetAmount() float64 { return v.Amount }
 
-// GetCurrency returns getProjectByIdProjectCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+// GetCurrency returns getProjectProjectCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummaryDailyAverageCostSample) GetCurrency() string {
 	return v.Currency
 }
 
-// getProjectByIdProjectCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// getProjectProjectCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
 // The GraphQL type's documentation follows.
 //
 // A single cost measurement with amount and currency.
-type getProjectByIdProjectCostCostSummaryMonthlyAverageCostSample struct {
+type getProjectProjectCostCostSummaryMonthlyAverageCostSample struct {
 	// The cost amount (null if no data available)
 	Amount float64 `json:"amount"`
 	// The currency code, e.g. USD (null if no data available)
 	Currency string `json:"currency"`
 }
 
-// GetAmount returns getProjectByIdProjectCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+// GetAmount returns getProjectProjectCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
 	return v.Amount
 }
 
-// GetCurrency returns getProjectByIdProjectCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+// GetCurrency returns getProjectProjectCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
 	return v.Currency
 }
 
-// getProjectByIdProjectDeletable includes the requested fields of the GraphQL type Deletable.
+// getProjectProjectDeletable includes the requested fields of the GraphQL type Deletable.
 // The GraphQL type's documentation follows.
 //
 // Indicates whether a resource can be deleted and any constraints preventing deletion.
-type getProjectByIdProjectDeletable struct {
+type getProjectProjectDeletable struct {
 	// Whether the resource can be deleted
 	Result bool `json:"result"`
-	// Constraints preventing deletion, if any
-	Constraints []getProjectByIdProjectDeletableConstraintsDeletionConstraint `json:"constraints"`
 }
 
-// GetResult returns getProjectByIdProjectDeletable.Result, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectDeletable) GetResult() bool { return v.Result }
+// GetResult returns getProjectProjectDeletable.Result, and is useful for accessing the field via an interface.
+func (v *getProjectProjectDeletable) GetResult() bool { return v.Result }
 
-// GetConstraints returns getProjectByIdProjectDeletable.Constraints, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectDeletable) GetConstraints() []getProjectByIdProjectDeletableConstraintsDeletionConstraint {
-	return v.Constraints
+// getProjectProjectEnvironmentsEnvironmentsPage includes the requested fields of the GraphQL type EnvironmentsPage.
+type getProjectProjectEnvironmentsEnvironmentsPage struct {
+	// A list of type environment.
+	Items []getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment `json:"items"`
 }
 
-// getProjectByIdProjectDeletableConstraintsDeletionConstraint includes the requested fields of the GraphQL type DeletionConstraint.
-// The GraphQL type's documentation follows.
-//
-// A constraint preventing a resource from being deleted.
-type getProjectByIdProjectDeletableConstraintsDeletionConstraint struct {
-	// Human-readable explanation of why deletion is blocked
-	Message string `json:"message"`
-	// The type of resource that cannot be deleted (e.g., 'project', 'environment')
-	Type string `json:"type"`
-	// The identifier of the resource that cannot be deleted
-	Id string `json:"id"`
-}
-
-// GetMessage returns getProjectByIdProjectDeletableConstraintsDeletionConstraint.Message, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectDeletableConstraintsDeletionConstraint) GetMessage() string {
-	return v.Message
-}
-
-// GetType returns getProjectByIdProjectDeletableConstraintsDeletionConstraint.Type, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectDeletableConstraintsDeletionConstraint) GetType() string { return v.Type }
-
-// GetId returns getProjectByIdProjectDeletableConstraintsDeletionConstraint.Id, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectDeletableConstraintsDeletionConstraint) GetId() string { return v.Id }
-
-// getProjectByIdProjectEnvironmentsEnvironmentsPage includes the requested fields of the GraphQL type EnvironmentsPage.
-type getProjectByIdProjectEnvironmentsEnvironmentsPage struct {
-	// Pagination cursors
-	Cursor getProjectByIdProjectEnvironmentsEnvironmentsPageCursorPaginationCursor `json:"cursor"`
-	// A list of type environment_leaf.
-	Items []getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf `json:"items"`
-}
-
-// GetCursor returns getProjectByIdProjectEnvironmentsEnvironmentsPage.Cursor, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPage) GetCursor() getProjectByIdProjectEnvironmentsEnvironmentsPageCursorPaginationCursor {
-	return v.Cursor
-}
-
-// GetItems returns getProjectByIdProjectEnvironmentsEnvironmentsPage.Items, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPage) GetItems() []getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf {
+// GetItems returns getProjectProjectEnvironmentsEnvironmentsPage.Items, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPage) GetItems() []getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment {
 	return v.Items
 }
 
-// getProjectByIdProjectEnvironmentsEnvironmentsPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
-type getProjectByIdProjectEnvironmentsEnvironmentsPageCursorPaginationCursor struct {
+// getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment includes the requested fields of the GraphQL type Environment.
+// The GraphQL type's documentation follows.
+//
+// An environment.
+type getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment struct {
+	Id string `json:"id"`
+	// Display name
+	Name string `json:"name"`
+	// What this environment is for
+	Description string `json:"description"`
+	// When this environment was created (UTC)
+	CreatedAt time.Time `json:"createdAt"`
+	// When this environment was last modified (UTC)
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Cloud provider costs for this environment.
+	Cost getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary `json:"cost"`
+}
+
+// GetId returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetId() string { return v.Id }
+
+// GetName returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetDescription() string {
+	return v.Description
+}
+
+// GetCreatedAt returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetCost returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.Cost, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetCost() getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary {
+	return v.Cost
+}
+
+// getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary includes the requested fields of the GraphQL type CostSummary.
+// The GraphQL type's documentation follows.
+//
+// Cost summary with monthly and daily metrics.
+type getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary struct {
+	// Average monthly cost
+	MonthlyAverage getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	// Average daily cost
+	DailyAverage getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+}
+
+// GetMonthlyAverage returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary) GetMonthlyAverage() getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample {
+	return v.MonthlyAverage
+}
+
+// GetDailyAverage returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary) GetDailyAverage() getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample {
+	return v.DailyAverage
+}
+
+// getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement with amount and currency.
+type getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample struct {
+	// The cost amount (null if no data available)
+	Amount float64 `json:"amount"`
+	// The currency code, e.g. USD (null if no data available)
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement with amount and currency.
+type getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample struct {
+	// The cost amount (null if no data available)
+	Amount float64 `json:"amount"`
+	// The currency code, e.g. USD (null if no data available)
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getProjectResponse is returned by getProject on success.
+type getProjectResponse struct {
+	// Get a single project by its ID.
+	Project getProjectProject `json:"project"`
+}
+
+// GetProject returns getProjectResponse.Project, and is useful for accessing the field via an interface.
+func (v *getProjectResponse) GetProject() getProjectProject { return v.Project }
+
+// listEnvironmentsEnvironmentsEnvironmentsPage includes the requested fields of the GraphQL type EnvironmentsPage.
+type listEnvironmentsEnvironmentsEnvironmentsPage struct {
+	// Pagination cursors
+	Cursor listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor `json:"cursor"`
+	// A list of type environment.
+	Items []listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment `json:"items"`
+}
+
+// GetCursor returns listEnvironmentsEnvironmentsEnvironmentsPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPage) GetCursor() listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listEnvironmentsEnvironmentsEnvironmentsPage.Items, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPage) GetItems() []listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment {
+	return v.Items
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+type listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor struct {
 	// Cursor to the next page
 	Next string `json:"next"`
 	// Cursor to the previous page
 	Previous string `json:"previous"`
 }
 
-// GetNext returns getProjectByIdProjectEnvironmentsEnvironmentsPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPageCursorPaginationCursor) GetNext() string {
+// GetNext returns listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor) GetNext() string {
 	return v.Next
 }
 
-// GetPrevious returns getProjectByIdProjectEnvironmentsEnvironmentsPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPageCursorPaginationCursor) GetPrevious() string {
+// GetPrevious returns listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor) GetPrevious() string {
 	return v.Previous
 }
 
-// getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf includes the requested fields of the GraphQL type EnvironmentLeaf.
+// listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment includes the requested fields of the GraphQL type Environment.
 // The GraphQL type's documentation follows.
 //
-// An environment returned in list results.
-type getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf struct {
+// An environment.
+type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment struct {
 	Id string `json:"id"`
 	// Display name
 	Name string `json:"name"`
@@ -2971,107 +1699,154 @@ type getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf struc
 	// When this environment was last modified (UTC)
 	UpdatedAt time.Time `json:"updatedAt"`
 	// The project containing this environment.
-	Project getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf `json:"project"`
+	Project listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject `json:"project"`
+	// Cloud provider costs for this environment.
+	Cost listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary `json:"cost"`
 }
 
-// GetId returns getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetId() string {
-	return v.Id
-}
+// GetId returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetId() string { return v.Id }
 
-// GetName returns getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetName() string {
+// GetName returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetName() string {
 	return v.Name
 }
 
-// GetDescription returns getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.Description, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetDescription() string {
+// GetDescription returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetDescription() string {
 	return v.Description
 }
 
-// GetCreatedAt returns getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetCreatedAt() time.Time {
+// GetCreatedAt returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetCreatedAt() time.Time {
 	return v.CreatedAt
 }
 
-// GetUpdatedAt returns getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetUpdatedAt() time.Time {
+// GetUpdatedAt returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
 }
 
-// GetProject returns getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf.Project, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeaf) GetProject() getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf {
+// GetProject returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetProject() listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject {
 	return v.Project
 }
 
-// getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf includes the requested fields of the GraphQL type ProjectLeaf.
+// GetCost returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Cost, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetCost() listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary {
+	return v.Cost
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary includes the requested fields of the GraphQL type CostSummary.
 // The GraphQL type's documentation follows.
 //
-// A project returned in list results.
-type getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf struct {
+// Cost summary with monthly and daily metrics.
+type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary struct {
+	// Average monthly cost
+	MonthlyAverage listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	// Average daily cost
+	DailyAverage listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+}
+
+// GetMonthlyAverage returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary) GetMonthlyAverage() listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample {
+	return v.MonthlyAverage
+}
+
+// GetDailyAverage returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary) GetDailyAverage() listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample {
+	return v.DailyAverage
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement with amount and currency.
+type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample struct {
+	// The cost amount (null if no data available)
+	Amount float64 `json:"amount"`
+	// The currency code, e.g. USD (null if no data available)
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost measurement with amount and currency.
+type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample struct {
+	// The cost amount (null if no data available)
+	Amount float64 `json:"amount"`
+	// The currency code, e.g. USD (null if no data available)
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project.
+type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject struct {
 	Id string `json:"id"`
 	// Display name
 	Name string `json:"name"`
 }
 
-// GetId returns getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf) GetId() string {
+// GetId returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject) GetId() string {
 	return v.Id
 }
 
-// GetName returns getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProjectEnvironmentsEnvironmentsPageItemsEnvironmentLeafProjectProjectLeaf) GetName() string {
+// GetName returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject.Name, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject) GetName() string {
 	return v.Name
 }
 
-// getProjectByIdResponse is returned by getProjectById on success.
-type getProjectByIdResponse struct {
-	// Get a single project by its ID.
-	Project getProjectByIdProject `json:"project"`
+// listEnvironmentsResponse is returned by listEnvironments on success.
+type listEnvironmentsResponse struct {
+	// List all environments you have access to. Returns a paginated list sorted by name.
+	Environments listEnvironmentsEnvironmentsEnvironmentsPage `json:"environments"`
 }
 
-// GetProject returns getProjectByIdResponse.Project, and is useful for accessing the field via an interface.
-func (v *getProjectByIdResponse) GetProject() getProjectByIdProject { return v.Project }
-
-// getProjectsProjectsProjectsPage includes the requested fields of the GraphQL type ProjectsPage.
-type getProjectsProjectsProjectsPage struct {
-	// Pagination cursors
-	Cursor getProjectsProjectsProjectsPageCursorPaginationCursor `json:"cursor"`
-	// A list of type project_leaf.
-	Items []getProjectsProjectsProjectsPageItemsProjectLeaf `json:"items"`
+// GetEnvironments returns listEnvironmentsResponse.Environments, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsResponse) GetEnvironments() listEnvironmentsEnvironmentsEnvironmentsPage {
+	return v.Environments
 }
 
-// GetCursor returns getProjectsProjectsProjectsPage.Cursor, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPage) GetCursor() getProjectsProjectsProjectsPageCursorPaginationCursor {
-	return v.Cursor
+// listProjectsProjectsProjectsPage includes the requested fields of the GraphQL type ProjectsPage.
+type listProjectsProjectsProjectsPage struct {
+	// A list of type project.
+	Items []listProjectsProjectsProjectsPageItemsProject `json:"items"`
 }
 
-// GetItems returns getProjectsProjectsProjectsPage.Items, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPage) GetItems() []getProjectsProjectsProjectsPageItemsProjectLeaf {
+// GetItems returns listProjectsProjectsProjectsPage.Items, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPage) GetItems() []listProjectsProjectsProjectsPageItemsProject {
 	return v.Items
 }
 
-// getProjectsProjectsProjectsPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
-type getProjectsProjectsProjectsPageCursorPaginationCursor struct {
-	// Cursor to the next page
-	Next string `json:"next"`
-	// Cursor to the previous page
-	Previous string `json:"previous"`
-}
-
-// GetNext returns getProjectsProjectsProjectsPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageCursorPaginationCursor) GetNext() string { return v.Next }
-
-// GetPrevious returns getProjectsProjectsProjectsPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageCursorPaginationCursor) GetPrevious() string {
-	return v.Previous
-}
-
-// getProjectsProjectsProjectsPageItemsProjectLeaf includes the requested fields of the GraphQL type ProjectLeaf.
+// listProjectsProjectsProjectsPageItemsProject includes the requested fields of the GraphQL type Project.
 // The GraphQL type's documentation follows.
 //
-// A project returned in list results.
-type getProjectsProjectsProjectsPageItemsProjectLeaf struct {
+// A project.
+type listProjectsProjectsProjectsPageItemsProject struct {
 	Id string `json:"id"`
 	// Display name
 	Name string `json:"name"`
@@ -3082,828 +1857,100 @@ type getProjectsProjectsProjectsPageItemsProjectLeaf struct {
 	// When this project was last modified (UTC)
 	UpdatedAt time.Time `json:"updatedAt"`
 	// Cloud provider costs for this project.
-	Cost getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummary `json:"cost"`
+	Cost listProjectsProjectsProjectsPageItemsProjectCostCostSummary `json:"cost"`
 }
 
-// GetId returns getProjectsProjectsProjectsPageItemsProjectLeaf.Id, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeaf) GetId() string { return v.Id }
+// GetId returns listProjectsProjectsProjectsPageItemsProject.Id, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetId() string { return v.Id }
 
-// GetName returns getProjectsProjectsProjectsPageItemsProjectLeaf.Name, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeaf) GetName() string { return v.Name }
+// GetName returns listProjectsProjectsProjectsPageItemsProject.Name, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetName() string { return v.Name }
 
-// GetDescription returns getProjectsProjectsProjectsPageItemsProjectLeaf.Description, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeaf) GetDescription() string {
-	return v.Description
-}
+// GetDescription returns listProjectsProjectsProjectsPageItemsProject.Description, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetDescription() string { return v.Description }
 
-// GetCreatedAt returns getProjectsProjectsProjectsPageItemsProjectLeaf.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeaf) GetCreatedAt() time.Time {
-	return v.CreatedAt
-}
+// GetCreatedAt returns listProjectsProjectsProjectsPageItemsProject.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetCreatedAt() time.Time { return v.CreatedAt }
 
-// GetUpdatedAt returns getProjectsProjectsProjectsPageItemsProjectLeaf.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeaf) GetUpdatedAt() time.Time {
-	return v.UpdatedAt
-}
+// GetUpdatedAt returns listProjectsProjectsProjectsPageItemsProject.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetUpdatedAt() time.Time { return v.UpdatedAt }
 
-// GetCost returns getProjectsProjectsProjectsPageItemsProjectLeaf.Cost, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeaf) GetCost() getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummary {
+// GetCost returns listProjectsProjectsProjectsPageItemsProject.Cost, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetCost() listProjectsProjectsProjectsPageItemsProjectCostCostSummary {
 	return v.Cost
 }
 
-// getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummary includes the requested fields of the GraphQL type CostSummary.
+// listProjectsProjectsProjectsPageItemsProjectCostCostSummary includes the requested fields of the GraphQL type CostSummary.
 // The GraphQL type's documentation follows.
 //
 // Cost summary with monthly and daily metrics.
-type getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummary struct {
+type listProjectsProjectsProjectsPageItemsProjectCostCostSummary struct {
 	// Average monthly cost
-	MonthlyAverage getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	MonthlyAverage listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
 	// Average daily cost
-	DailyAverage getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+	DailyAverage listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
 }
 
-// GetMonthlyAverage returns getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummary) GetMonthlyAverage() getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryMonthlyAverageCostSample {
+// GetMonthlyAverage returns listProjectsProjectsProjectsPageItemsProjectCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummary) GetMonthlyAverage() listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample {
 	return v.MonthlyAverage
 }
 
-// GetDailyAverage returns getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummary) GetDailyAverage() getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryDailyAverageCostSample {
+// GetDailyAverage returns listProjectsProjectsProjectsPageItemsProjectCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummary) GetDailyAverage() listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample {
 	return v.DailyAverage
 }
 
-// getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
 // The GraphQL type's documentation follows.
 //
 // A single cost measurement with amount and currency.
-type getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryDailyAverageCostSample struct {
+type listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample struct {
 	// The cost amount (null if no data available)
 	Amount float64 `json:"amount"`
 	// The currency code, e.g. USD (null if no data available)
 	Currency string `json:"currency"`
 }
 
-// GetAmount returns getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
+// GetAmount returns listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
 	return v.Amount
 }
 
-// GetCurrency returns getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+// GetCurrency returns listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample) GetCurrency() string {
 	return v.Currency
 }
 
-// getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
 // The GraphQL type's documentation follows.
 //
 // A single cost measurement with amount and currency.
-type getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryMonthlyAverageCostSample struct {
+type listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample struct {
 	// The cost amount (null if no data available)
 	Amount float64 `json:"amount"`
 	// The currency code, e.g. USD (null if no data available)
 	Currency string `json:"currency"`
 }
 
-// GetAmount returns getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+// GetAmount returns listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
 	return v.Amount
 }
 
-// GetCurrency returns getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectsPageItemsProjectLeafCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+// GetCurrency returns listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
 	return v.Currency
 }
 
-// getProjectsResponse is returned by getProjects on success.
-type getProjectsResponse struct {
+// listProjectsResponse is returned by listProjects on success.
+type listProjectsResponse struct {
 	// List all projects you have access to. Returns a paginated list sorted by name.
-	Projects getProjectsProjectsProjectsPage `json:"projects"`
+	Projects listProjectsProjectsProjectsPage `json:"projects"`
 }
 
-// GetProjects returns getProjectsResponse.Projects, and is useful for accessing the field via an interface.
-func (v *getProjectsResponse) GetProjects() getProjectsProjectsProjectsPage { return v.Projects }
-
-// getServerResponse is returned by getServer on success.
-type getServerResponse struct {
-	// Get server info and available authentication methods. No authentication required.
-	Server getServerServer `json:"server"`
-}
-
-// GetServer returns getServerResponse.Server, and is useful for accessing the field via an interface.
-func (v *getServerResponse) GetServer() getServerServer { return v.Server }
-
-// getServerServer includes the requested fields of the GraphQL type Server.
-// The GraphQL type's documentation follows.
-//
-// Information about this Massdriver server.
-type getServerServer struct {
-	// Base URL of the application
-	AppUrl string `json:"appUrl"`
-	// Server version (e.g., '1.2.3')
-	Version string `json:"version"`
-	// Whether this is self-hosted or managed
-	Mode ServerMode `json:"mode"`
-	// SSO providers available for login
-	SsoProviders []getServerServerSsoProvidersSsoProvider `json:"ssoProviders"`
-	// Email auth methods available
-	EmailAuthMethods []getServerServerEmailAuthMethodsEmailAuthMethod `json:"emailAuthMethods"`
-}
-
-// GetAppUrl returns getServerServer.AppUrl, and is useful for accessing the field via an interface.
-func (v *getServerServer) GetAppUrl() string { return v.AppUrl }
-
-// GetVersion returns getServerServer.Version, and is useful for accessing the field via an interface.
-func (v *getServerServer) GetVersion() string { return v.Version }
-
-// GetMode returns getServerServer.Mode, and is useful for accessing the field via an interface.
-func (v *getServerServer) GetMode() ServerMode { return v.Mode }
-
-// GetSsoProviders returns getServerServer.SsoProviders, and is useful for accessing the field via an interface.
-func (v *getServerServer) GetSsoProviders() []getServerServerSsoProvidersSsoProvider {
-	return v.SsoProviders
-}
-
-// GetEmailAuthMethods returns getServerServer.EmailAuthMethods, and is useful for accessing the field via an interface.
-func (v *getServerServer) GetEmailAuthMethods() []getServerServerEmailAuthMethodsEmailAuthMethod {
-	return v.EmailAuthMethods
-}
-
-// getServerServerEmailAuthMethodsEmailAuthMethod includes the requested fields of the GraphQL type EmailAuthMethod.
-// The GraphQL type's documentation follows.
-//
-// An email-based authentication method.
-type getServerServerEmailAuthMethodsEmailAuthMethod struct {
-	// Authentication type
-	Name EmailAuthMethodType `json:"name"`
-}
-
-// GetName returns getServerServerEmailAuthMethodsEmailAuthMethod.Name, and is useful for accessing the field via an interface.
-func (v *getServerServerEmailAuthMethodsEmailAuthMethod) GetName() EmailAuthMethodType { return v.Name }
-
-// getServerServerSsoProvidersSsoProvider includes the requested fields of the GraphQL type SsoProvider.
-// The GraphQL type's documentation follows.
-//
-// An SSO provider available for authentication.
-type getServerServerSsoProvidersSsoProvider struct {
-	// Provider name (e.g., 'google', 'okta')
-	Name string `json:"name"`
-	// URL to start the SSO login flow
-	LoginUrl string `json:"loginUrl"`
-	// Icon to display on the login button
-	UiIconUrl string `json:"uiIconUrl"`
-	// Label to display on the login button
-	UiLabel string `json:"uiLabel"`
-}
-
-// GetName returns getServerServerSsoProvidersSsoProvider.Name, and is useful for accessing the field via an interface.
-func (v *getServerServerSsoProvidersSsoProvider) GetName() string { return v.Name }
-
-// GetLoginUrl returns getServerServerSsoProvidersSsoProvider.LoginUrl, and is useful for accessing the field via an interface.
-func (v *getServerServerSsoProvidersSsoProvider) GetLoginUrl() string { return v.LoginUrl }
-
-// GetUiIconUrl returns getServerServerSsoProvidersSsoProvider.UiIconUrl, and is useful for accessing the field via an interface.
-func (v *getServerServerSsoProvidersSsoProvider) GetUiIconUrl() string { return v.UiIconUrl }
-
-// GetUiLabel returns getServerServerSsoProvidersSsoProvider.UiLabel, and is useful for accessing the field via an interface.
-func (v *getServerServerSsoProvidersSsoProvider) GetUiLabel() string { return v.UiLabel }
-
-// getViewerResponse is returned by getViewer on success.
-type getViewerResponse struct {
-	// Get information about yourself (the authenticated user or service account).
-	Viewer getViewerViewer `json:"-"`
-}
-
-// GetViewer returns getViewerResponse.Viewer, and is useful for accessing the field via an interface.
-func (v *getViewerResponse) GetViewer() getViewerViewer { return v.Viewer }
-
-func (v *getViewerResponse) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getViewerResponse
-		Viewer json.RawMessage `json:"viewer"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getViewerResponse = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Viewer
-		src := firstPass.Viewer
-		if len(src) != 0 && string(src) != "null" {
-			err = __unmarshalgetViewerViewer(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getViewerResponse.Viewer: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalgetViewerResponse struct {
-	Viewer json.RawMessage `json:"viewer"`
-}
-
-func (v *getViewerResponse) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getViewerResponse) __premarshalJSON() (*__premarshalgetViewerResponse, error) {
-	var retval __premarshalgetViewerResponse
-
-	{
-
-		dst := &retval.Viewer
-		src := v.Viewer
-		var err error
-		*dst, err = __marshalgetViewerViewer(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getViewerResponse.Viewer: %w", err)
-		}
-	}
-	return &retval, nil
-}
-
-// getViewerViewer includes the requested fields of the GraphQL interface Viewer.
-//
-// getViewerViewer is implemented by the following types:
-// getViewerViewerAccountViewer
-// getViewerViewerServiceAccountViewer
-// The GraphQL type's documentation follows.
-//
-// The authenticated entity making this request. Returns AccountViewer for users, ServiceAccountViewer for API clients.
-type getViewerViewer interface {
-	implementsGraphQLInterfacegetViewerViewer()
-	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
-	GetTypename() string
-}
-
-func (v *getViewerViewerAccountViewer) implementsGraphQLInterfacegetViewerViewer()        {}
-func (v *getViewerViewerServiceAccountViewer) implementsGraphQLInterfacegetViewerViewer() {}
-
-func __unmarshalgetViewerViewer(b []byte, v *getViewerViewer) error {
-	if string(b) == "null" {
-		return nil
-	}
-
-	var tn struct {
-		TypeName string `json:"__typename"`
-	}
-	err := json.Unmarshal(b, &tn)
-	if err != nil {
-		return err
-	}
-
-	switch tn.TypeName {
-	case "AccountViewer":
-		*v = new(getViewerViewerAccountViewer)
-		return json.Unmarshal(b, *v)
-	case "ServiceAccountViewer":
-		*v = new(getViewerViewerServiceAccountViewer)
-		return json.Unmarshal(b, *v)
-	case "":
-		return fmt.Errorf(
-			"response was missing Viewer.__typename")
-	default:
-		return fmt.Errorf(
-			`unexpected concrete type for getViewerViewer: "%v"`, tn.TypeName)
-	}
-}
-
-func __marshalgetViewerViewer(v *getViewerViewer) ([]byte, error) {
-
-	var typename string
-	switch v := (*v).(type) {
-	case *getViewerViewerAccountViewer:
-		typename = "AccountViewer"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*getViewerViewerAccountViewer
-		}{typename, v}
-		return json.Marshal(result)
-	case *getViewerViewerServiceAccountViewer:
-		typename = "ServiceAccountViewer"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*getViewerViewerServiceAccountViewer
-		}{typename, v}
-		return json.Marshal(result)
-	case nil:
-		return []byte("null"), nil
-	default:
-		return nil, fmt.Errorf(
-			`unexpected concrete type for getViewerViewer: "%T"`, v)
-	}
-}
-
-// getViewerViewerAccountViewer includes the requested fields of the GraphQL type AccountViewer.
-// The GraphQL type's documentation follows.
-//
-// Information about the authenticated user.
-type getViewerViewerAccountViewer struct {
-	Typename string `json:"__typename"`
-	Id       string `json:"id"`
-	// Email address
-	Email string `json:"email"`
-	// First name
-	FirstName string `json:"firstName"`
-	// Last name
-	LastName string `json:"lastName"`
-	// When you signed up (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When your profile was last updated (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// Your most recently joined organization. Useful for setting a default context.
-	DefaultOrganization getViewerViewerAccountViewerDefaultOrganizationViewerOrganization `json:"defaultOrganization"`
-}
-
-// GetTypename returns getViewerViewerAccountViewer.Typename, and is useful for accessing the field via an interface.
-func (v *getViewerViewerAccountViewer) GetTypename() string { return v.Typename }
-
-// GetId returns getViewerViewerAccountViewer.Id, and is useful for accessing the field via an interface.
-func (v *getViewerViewerAccountViewer) GetId() string { return v.Id }
-
-// GetEmail returns getViewerViewerAccountViewer.Email, and is useful for accessing the field via an interface.
-func (v *getViewerViewerAccountViewer) GetEmail() string { return v.Email }
-
-// GetFirstName returns getViewerViewerAccountViewer.FirstName, and is useful for accessing the field via an interface.
-func (v *getViewerViewerAccountViewer) GetFirstName() string { return v.FirstName }
-
-// GetLastName returns getViewerViewerAccountViewer.LastName, and is useful for accessing the field via an interface.
-func (v *getViewerViewerAccountViewer) GetLastName() string { return v.LastName }
-
-// GetCreatedAt returns getViewerViewerAccountViewer.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getViewerViewerAccountViewer) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// GetUpdatedAt returns getViewerViewerAccountViewer.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getViewerViewerAccountViewer) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// GetDefaultOrganization returns getViewerViewerAccountViewer.DefaultOrganization, and is useful for accessing the field via an interface.
-func (v *getViewerViewerAccountViewer) GetDefaultOrganization() getViewerViewerAccountViewerDefaultOrganizationViewerOrganization {
-	return v.DefaultOrganization
-}
-
-// getViewerViewerAccountViewerDefaultOrganizationViewerOrganization includes the requested fields of the GraphQL type ViewerOrganization.
-// The GraphQL type's documentation follows.
-//
-// An organization you belong to.
-type getViewerViewerAccountViewerDefaultOrganizationViewerOrganization struct {
-	Id string `json:"id"`
-	// Organization name
-	Name string `json:"name"`
-}
-
-// GetId returns getViewerViewerAccountViewerDefaultOrganizationViewerOrganization.Id, and is useful for accessing the field via an interface.
-func (v *getViewerViewerAccountViewerDefaultOrganizationViewerOrganization) GetId() string {
-	return v.Id
-}
-
-// GetName returns getViewerViewerAccountViewerDefaultOrganizationViewerOrganization.Name, and is useful for accessing the field via an interface.
-func (v *getViewerViewerAccountViewerDefaultOrganizationViewerOrganization) GetName() string {
-	return v.Name
-}
-
-// getViewerViewerServiceAccountViewer includes the requested fields of the GraphQL type ServiceAccountViewer.
-// The GraphQL type's documentation follows.
-//
-// Information about the authenticated service account (API client).
-type getViewerViewerServiceAccountViewer struct {
-	Typename string `json:"__typename"`
-	Id       string `json:"id"`
-	// Service account name
-	Name string `json:"name"`
-	// What this service account is used for
-	Description string `json:"description"`
-	// When this service account was created (UTC)
-	CreatedAt time.Time `json:"createdAt"`
-	// When this service account was last modified (UTC)
-	UpdatedAt time.Time `json:"updatedAt"`
-	// The organization this service account belongs to.
-	Organization getViewerViewerServiceAccountViewerOrganization `json:"organization"`
-}
-
-// GetTypename returns getViewerViewerServiceAccountViewer.Typename, and is useful for accessing the field via an interface.
-func (v *getViewerViewerServiceAccountViewer) GetTypename() string { return v.Typename }
-
-// GetId returns getViewerViewerServiceAccountViewer.Id, and is useful for accessing the field via an interface.
-func (v *getViewerViewerServiceAccountViewer) GetId() string { return v.Id }
-
-// GetName returns getViewerViewerServiceAccountViewer.Name, and is useful for accessing the field via an interface.
-func (v *getViewerViewerServiceAccountViewer) GetName() string { return v.Name }
-
-// GetDescription returns getViewerViewerServiceAccountViewer.Description, and is useful for accessing the field via an interface.
-func (v *getViewerViewerServiceAccountViewer) GetDescription() string { return v.Description }
-
-// GetCreatedAt returns getViewerViewerServiceAccountViewer.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getViewerViewerServiceAccountViewer) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// GetUpdatedAt returns getViewerViewerServiceAccountViewer.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getViewerViewerServiceAccountViewer) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// GetOrganization returns getViewerViewerServiceAccountViewer.Organization, and is useful for accessing the field via an interface.
-func (v *getViewerViewerServiceAccountViewer) GetOrganization() getViewerViewerServiceAccountViewerOrganization {
-	return v.Organization
-}
-
-// getViewerViewerServiceAccountViewerOrganization includes the requested fields of the GraphQL type ViewerOrganization.
-// The GraphQL type's documentation follows.
-//
-// An organization you belong to.
-type getViewerViewerServiceAccountViewerOrganization struct {
-	Id string `json:"id"`
-	// Organization name
-	Name string `json:"name"`
-}
-
-// GetId returns getViewerViewerServiceAccountViewerOrganization.Id, and is useful for accessing the field via an interface.
-func (v *getViewerViewerServiceAccountViewerOrganization) GetId() string { return v.Id }
-
-// GetName returns getViewerViewerServiceAccountViewerOrganization.Name, and is useful for accessing the field via an interface.
-func (v *getViewerViewerServiceAccountViewerOrganization) GetName() string { return v.Name }
-
-// linkComponentsLinkComponentsLinkPayload includes the requested fields of the GraphQL type LinkPayload.
-type linkComponentsLinkComponentsLinkPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result linkComponentsLinkComponentsLinkPayloadResultLink `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage `json:"messages"`
-}
-
-// GetResult returns linkComponentsLinkComponentsLinkPayload.Result, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayload) GetResult() linkComponentsLinkComponentsLinkPayloadResultLink {
-	return v.Result
-}
-
-// GetSuccessful returns linkComponentsLinkComponentsLinkPayload.Successful, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns linkComponentsLinkComponentsLinkPayload.Messages, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayload) GetMessages() []linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage {
-	return v.Messages
-}
-
-// linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
-// The GraphQL type's documentation follows.
-//
-// Validation messages are returned when mutation input does not meet the requirements.
-// While client-side validation is highly recommended to provide the best User Experience,
-// All inputs will always be validated server-side.
-//
-// Some examples of validations are:
-//
-// * Username must be at least 10 characters
-// * Email field does not contain an email address
-// * Birth Date is required
-//
-// While GraphQL has support for required values, mutation data fields are always
-// set to optional in our API. This allows 'required field' messages
-// to be returned in the same manner as other validations. The only exceptions
-// are id fields, which may be required to perform updates or deletes.
-type linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage struct {
-	// A unique error code for the type of validation used.
-	Code string `json:"code"`
-	// The input field that the error applies to. The field can be used to
-	// identify which field the error message should be displayed next to in the
-	// presentation layer.
-	//
-	// If there are multiple errors to display for a field, multiple validation
-	// messages will be in the result.
-	//
-	// This field may be null in cases where an error cannot be applied to a specific field.
-	Field string `json:"field"`
-	// A friendly error message, appropriate for display to the end user.
-	//
-	// The message is interpolated to include the appropriate variables.
-	//
-	// Example: `Username must be at least 10 characters`
-	//
-	// This message may change without notice, so we do not recommend you match against the text.
-	// Instead, use the *code* field for matching.
-	Message string `json:"message"`
-}
-
-// GetCode returns linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage) GetCode() string {
-	return v.Code
-}
-
-// GetField returns linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage) GetField() string {
-	return v.Field
-}
-
-// GetMessage returns linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage) GetMessage() string {
-	return v.Message
-}
-
-// linkComponentsLinkComponentsLinkPayloadResultLink includes the requested fields of the GraphQL type Link.
-// The GraphQL type's documentation follows.
-//
-// A link with its full details.
-type linkComponentsLinkComponentsLinkPayloadResultLink struct {
-	Id string `json:"id"`
-	// Output field name on the source component
-	FromField string `json:"fromField"`
-	// Input field name on the destination component
-	ToField string `json:"toField"`
-	// The source (from) component.
-	FromComponent linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent `json:"fromComponent"`
-	// The destination (to) component.
-	ToComponent linkComponentsLinkComponentsLinkPayloadResultLinkToComponent `json:"toComponent"`
-}
-
-// GetId returns linkComponentsLinkComponentsLinkPayloadResultLink.Id, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetId() string { return v.Id }
-
-// GetFromField returns linkComponentsLinkComponentsLinkPayloadResultLink.FromField, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetFromField() string { return v.FromField }
-
-// GetToField returns linkComponentsLinkComponentsLinkPayloadResultLink.ToField, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetToField() string { return v.ToField }
-
-// GetFromComponent returns linkComponentsLinkComponentsLinkPayloadResultLink.FromComponent, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetFromComponent() linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent {
-	return v.FromComponent
-}
-
-// GetToComponent returns linkComponentsLinkComponentsLinkPayloadResultLink.ToComponent, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetToComponent() linkComponentsLinkComponentsLinkPayloadResultLinkToComponent {
-	return v.ToComponent
-}
-
-// linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent includes the requested fields of the GraphQL type Component.
-// The GraphQL type's documentation follows.
-//
-// A component with its full details and related resources.
-type linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-}
-
-// GetId returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Id, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetId() string { return v.Id }
-
-// GetName returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Name, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetName() string {
-	return v.Name
-}
-
-// linkComponentsLinkComponentsLinkPayloadResultLinkToComponent includes the requested fields of the GraphQL type Component.
-// The GraphQL type's documentation follows.
-//
-// A component with its full details and related resources.
-type linkComponentsLinkComponentsLinkPayloadResultLinkToComponent struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-}
-
-// GetId returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Id, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetId() string { return v.Id }
-
-// GetName returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Name, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetName() string {
-	return v.Name
-}
-
-// linkComponentsResponse is returned by linkComponents on success.
-type linkComponentsResponse struct {
-	// Create a link between two components.
-	LinkComponents linkComponentsLinkComponentsLinkPayload `json:"linkComponents"`
-}
-
-// GetLinkComponents returns linkComponentsResponse.LinkComponents, and is useful for accessing the field via an interface.
-func (v *linkComponentsResponse) GetLinkComponents() linkComponentsLinkComponentsLinkPayload {
-	return v.LinkComponents
-}
-
-// removeComponentRemoveComponentComponentPayload includes the requested fields of the GraphQL type ComponentPayload.
-type removeComponentRemoveComponentComponentPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result removeComponentRemoveComponentComponentPayloadResultComponent `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []removeComponentRemoveComponentComponentPayloadMessagesValidationMessage `json:"messages"`
-}
-
-// GetResult returns removeComponentRemoveComponentComponentPayload.Result, and is useful for accessing the field via an interface.
-func (v *removeComponentRemoveComponentComponentPayload) GetResult() removeComponentRemoveComponentComponentPayloadResultComponent {
-	return v.Result
-}
-
-// GetSuccessful returns removeComponentRemoveComponentComponentPayload.Successful, and is useful for accessing the field via an interface.
-func (v *removeComponentRemoveComponentComponentPayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns removeComponentRemoveComponentComponentPayload.Messages, and is useful for accessing the field via an interface.
-func (v *removeComponentRemoveComponentComponentPayload) GetMessages() []removeComponentRemoveComponentComponentPayloadMessagesValidationMessage {
-	return v.Messages
-}
-
-// removeComponentRemoveComponentComponentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
-// The GraphQL type's documentation follows.
-//
-// Validation messages are returned when mutation input does not meet the requirements.
-// While client-side validation is highly recommended to provide the best User Experience,
-// All inputs will always be validated server-side.
-//
-// Some examples of validations are:
-//
-// * Username must be at least 10 characters
-// * Email field does not contain an email address
-// * Birth Date is required
-//
-// While GraphQL has support for required values, mutation data fields are always
-// set to optional in our API. This allows 'required field' messages
-// to be returned in the same manner as other validations. The only exceptions
-// are id fields, which may be required to perform updates or deletes.
-type removeComponentRemoveComponentComponentPayloadMessagesValidationMessage struct {
-	// A unique error code for the type of validation used.
-	Code string `json:"code"`
-	// The input field that the error applies to. The field can be used to
-	// identify which field the error message should be displayed next to in the
-	// presentation layer.
-	//
-	// If there are multiple errors to display for a field, multiple validation
-	// messages will be in the result.
-	//
-	// This field may be null in cases where an error cannot be applied to a specific field.
-	Field string `json:"field"`
-	// A friendly error message, appropriate for display to the end user.
-	//
-	// The message is interpolated to include the appropriate variables.
-	//
-	// Example: `Username must be at least 10 characters`
-	//
-	// This message may change without notice, so we do not recommend you match against the text.
-	// Instead, use the *code* field for matching.
-	Message string `json:"message"`
-}
-
-// GetCode returns removeComponentRemoveComponentComponentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
-func (v *removeComponentRemoveComponentComponentPayloadMessagesValidationMessage) GetCode() string {
-	return v.Code
-}
-
-// GetField returns removeComponentRemoveComponentComponentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
-func (v *removeComponentRemoveComponentComponentPayloadMessagesValidationMessage) GetField() string {
-	return v.Field
-}
-
-// GetMessage returns removeComponentRemoveComponentComponentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
-func (v *removeComponentRemoveComponentComponentPayloadMessagesValidationMessage) GetMessage() string {
-	return v.Message
-}
-
-// removeComponentRemoveComponentComponentPayloadResultComponent includes the requested fields of the GraphQL type Component.
-// The GraphQL type's documentation follows.
-//
-// A component with its full details and related resources.
-type removeComponentRemoveComponentComponentPayloadResultComponent struct {
-	Id string `json:"id"`
-	// Display name
-	Name string `json:"name"`
-}
-
-// GetId returns removeComponentRemoveComponentComponentPayloadResultComponent.Id, and is useful for accessing the field via an interface.
-func (v *removeComponentRemoveComponentComponentPayloadResultComponent) GetId() string { return v.Id }
-
-// GetName returns removeComponentRemoveComponentComponentPayloadResultComponent.Name, and is useful for accessing the field via an interface.
-func (v *removeComponentRemoveComponentComponentPayloadResultComponent) GetName() string {
-	return v.Name
-}
-
-// removeComponentResponse is returned by removeComponent on success.
-type removeComponentResponse struct {
-	// Remove a component from a project's blueprint.
-	RemoveComponent removeComponentRemoveComponentComponentPayload `json:"removeComponent"`
-}
-
-// GetRemoveComponent returns removeComponentResponse.RemoveComponent, and is useful for accessing the field via an interface.
-func (v *removeComponentResponse) GetRemoveComponent() removeComponentRemoveComponentComponentPayload {
-	return v.RemoveComponent
-}
-
-// unlinkComponentsResponse is returned by unlinkComponents on success.
-type unlinkComponentsResponse struct {
-	// Remove a link between two components.
-	UnlinkComponents unlinkComponentsUnlinkComponentsLinkPayload `json:"unlinkComponents"`
-}
-
-// GetUnlinkComponents returns unlinkComponentsResponse.UnlinkComponents, and is useful for accessing the field via an interface.
-func (v *unlinkComponentsResponse) GetUnlinkComponents() unlinkComponentsUnlinkComponentsLinkPayload {
-	return v.UnlinkComponents
-}
-
-// unlinkComponentsUnlinkComponentsLinkPayload includes the requested fields of the GraphQL type LinkPayload.
-type unlinkComponentsUnlinkComponentsLinkPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result unlinkComponentsUnlinkComponentsLinkPayloadResultLink `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage `json:"messages"`
-}
-
-// GetResult returns unlinkComponentsUnlinkComponentsLinkPayload.Result, and is useful for accessing the field via an interface.
-func (v *unlinkComponentsUnlinkComponentsLinkPayload) GetResult() unlinkComponentsUnlinkComponentsLinkPayloadResultLink {
-	return v.Result
-}
-
-// GetSuccessful returns unlinkComponentsUnlinkComponentsLinkPayload.Successful, and is useful for accessing the field via an interface.
-func (v *unlinkComponentsUnlinkComponentsLinkPayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns unlinkComponentsUnlinkComponentsLinkPayload.Messages, and is useful for accessing the field via an interface.
-func (v *unlinkComponentsUnlinkComponentsLinkPayload) GetMessages() []unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage {
-	return v.Messages
-}
-
-// unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
-// The GraphQL type's documentation follows.
-//
-// Validation messages are returned when mutation input does not meet the requirements.
-// While client-side validation is highly recommended to provide the best User Experience,
-// All inputs will always be validated server-side.
-//
-// Some examples of validations are:
-//
-// * Username must be at least 10 characters
-// * Email field does not contain an email address
-// * Birth Date is required
-//
-// While GraphQL has support for required values, mutation data fields are always
-// set to optional in our API. This allows 'required field' messages
-// to be returned in the same manner as other validations. The only exceptions
-// are id fields, which may be required to perform updates or deletes.
-type unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage struct {
-	// A unique error code for the type of validation used.
-	Code string `json:"code"`
-	// The input field that the error applies to. The field can be used to
-	// identify which field the error message should be displayed next to in the
-	// presentation layer.
-	//
-	// If there are multiple errors to display for a field, multiple validation
-	// messages will be in the result.
-	//
-	// This field may be null in cases where an error cannot be applied to a specific field.
-	Field string `json:"field"`
-	// A friendly error message, appropriate for display to the end user.
-	//
-	// The message is interpolated to include the appropriate variables.
-	//
-	// Example: `Username must be at least 10 characters`
-	//
-	// This message may change without notice, so we do not recommend you match against the text.
-	// Instead, use the *code* field for matching.
-	Message string `json:"message"`
-}
-
-// GetCode returns unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
-func (v *unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage) GetCode() string {
-	return v.Code
-}
-
-// GetField returns unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
-func (v *unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage) GetField() string {
-	return v.Field
-}
-
-// GetMessage returns unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
-func (v *unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage) GetMessage() string {
-	return v.Message
-}
-
-// unlinkComponentsUnlinkComponentsLinkPayloadResultLink includes the requested fields of the GraphQL type Link.
-// The GraphQL type's documentation follows.
-//
-// A link with its full details.
-type unlinkComponentsUnlinkComponentsLinkPayloadResultLink struct {
-	Id string `json:"id"`
-}
-
-// GetId returns unlinkComponentsUnlinkComponentsLinkPayloadResultLink.Id, and is useful for accessing the field via an interface.
-func (v *unlinkComponentsUnlinkComponentsLinkPayloadResultLink) GetId() string { return v.Id }
+// GetProjects returns listProjectsResponse.Projects, and is useful for accessing the field via an interface.
+func (v *listProjectsResponse) GetProjects() listProjectsProjectsProjectsPage { return v.Projects }
 
 // updateEnvironmentResponse is returned by updateEnvironment on success.
 type updateEnvironmentResponse struct {
@@ -3999,7 +2046,7 @@ func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationM
 // updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
 // The GraphQL type's documentation follows.
 //
-// An environment with its full details and related resources.
+// An environment.
 type updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment struct {
 	Id string `json:"id"`
 	// Display name
@@ -4115,7 +2162,7 @@ func (v *updateProjectUpdateProjectProjectPayloadMessagesValidationMessage) GetM
 // updateProjectUpdateProjectProjectPayloadResultProject includes the requested fields of the GraphQL type Project.
 // The GraphQL type's documentation follows.
 //
-// A project with its full details and related resources.
+// A project.
 type updateProjectUpdateProjectProjectPayloadResultProject struct {
 	Id string `json:"id"`
 	// Display name
@@ -4133,64 +2180,6 @@ func (v *updateProjectUpdateProjectProjectPayloadResultProject) GetName() string
 // GetDescription returns updateProjectUpdateProjectProjectPayloadResultProject.Description, and is useful for accessing the field via an interface.
 func (v *updateProjectUpdateProjectProjectPayloadResultProject) GetDescription() string {
 	return v.Description
-}
-
-// The mutation executed by addComponent.
-const addComponent_Operation = `
-mutation addComponent ($organizationId: ID!, $projectId: ID!, $input: AddComponentInput!) {
-	addComponent(organizationId: $organizationId, projectId: $projectId, input: $input) {
-		result {
-			id
-			name
-			description
-			createdAt
-			updatedAt
-			repo {
-				name
-			}
-			project {
-				id
-				name
-				description
-			}
-		}
-		successful
-		messages {
-			code
-			field
-			message
-		}
-	}
-}
-`
-
-func addComponent(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	projectId string,
-	input AddComponentInput,
-) (data_ *addComponentResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "addComponent",
-		Query:  addComponent_Operation,
-		Variables: &__addComponentInput{
-			OrganizationId: organizationId,
-			ProjectId:      projectId,
-			Input:          input,
-		},
-	}
-
-	data_ = &addComponentResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
 }
 
 // The mutation executed by createEnvironment.
@@ -4379,207 +2368,48 @@ func deleteProject(
 	return data_, err_
 }
 
-// The query executed by getBundle.
-const getBundle_Operation = `
-query getBundle ($organizationId: ID!, $id: BundleId!) {
-	bundle(organizationId: $organizationId, id: $id) {
-		id
-		name
-		version
-		description
-		icon
-		sourceUrl
-		createdAt
-		updatedAt
-	}
-}
-`
-
-func getBundle(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	id string,
-) (data_ *getBundleResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getBundle",
-		Query:  getBundle_Operation,
-		Variables: &__getBundleInput{
-			OrganizationId: organizationId,
-			Id:             id,
-		},
-	}
-
-	data_ = &getBundleResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getDeploymentById.
-const getDeploymentById_Operation = `
-query getDeploymentById ($organizationId: ID!, $id: ID!) {
-	deployment(organizationId: $organizationId, id: $id) {
-		id
-		status
-		action
-		version
-		message
-		createdAt
-		updatedAt
-		lastTransitionedAt
-		elapsedTime
-		deployedBy
-		instance {
-			id
-			name
-			status
-			version
-			releaseStrategy
-			createdAt
-			updatedAt
-			environment {
-				id
-				name
-				description
-			}
-			bundle {
-				id
-				name
-				version
-			}
-		}
-	}
-}
-`
-
-func getDeploymentById(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	id string,
-) (data_ *getDeploymentByIdResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getDeploymentById",
-		Query:  getDeploymentById_Operation,
-		Variables: &__getDeploymentByIdInput{
-			OrganizationId: organizationId,
-			Id:             id,
-		},
-	}
-
-	data_ = &getDeploymentByIdResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getDeployments.
-const getDeployments_Operation = `
-query getDeployments ($organizationId: ID!, $filter: DeploymentsFilter, $sort: DeploymentsSort, $cursor: Cursor) {
-	deployments(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
-		cursor {
-			next
-			previous
-		}
-		items {
-			id
-			status
-			action
-			version
-			message
-			createdAt
-			updatedAt
-			lastTransitionedAt
-			elapsedTime
-			deployedBy
-			instance {
-				id
-				name
-			}
-		}
-	}
-}
-`
-
-func getDeployments(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	filter *DeploymentsFilter,
-	sort *DeploymentsSort,
-	cursor *Cursor,
-) (data_ *getDeploymentsResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getDeployments",
-		Query:  getDeployments_Operation,
-		Variables: &__getDeploymentsInput{
-			OrganizationId: organizationId,
-			Filter:         filter,
-			Sort:           sort,
-			Cursor:         cursor,
-		},
-	}
-
-	data_ = &getDeploymentsResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getEnvironmentById.
-const getEnvironmentById_Operation = `
-query getEnvironmentById ($organizationId: ID!, $id: ID!) {
+// The query executed by getEnvironment.
+const getEnvironment_Operation = `
+query getEnvironment ($organizationId: ID!, $id: ID!) {
 	environment(organizationId: $organizationId, id: $id) {
 		id
 		name
 		description
 		createdAt
 		updatedAt
+		cost {
+			monthlyAverage {
+				amount
+				currency
+			}
+			dailyAverage {
+				amount
+				currency
+			}
+		}
 		project {
 			id
 			name
 			description
 		}
-		instances {
-			cursor {
-				next
-				previous
-			}
-			items {
-				id
-				name
-				status
-				version
-				releaseStrategy
-				createdAt
-				updatedAt
-				environment {
-					id
-					name
+		blueprint {
+			instances {
+				cursor {
+					next
+					previous
 				}
-				bundle {
+				items {
 					id
 					name
+					status
 					version
+					releaseStrategy
+					createdAt
+					updatedAt
+					bundle {
+						name
+						id
+					}
 				}
 			}
 		}
@@ -4587,22 +2417,22 @@ query getEnvironmentById ($organizationId: ID!, $id: ID!) {
 }
 `
 
-func getEnvironmentById(
+func getEnvironment(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (data_ *getEnvironmentByIdResponse, err_ error) {
+) (data_ *getEnvironmentResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "getEnvironmentById",
-		Query:  getEnvironmentById_Operation,
-		Variables: &__getEnvironmentByIdInput{
+		OpName: "getEnvironment",
+		Query:  getEnvironment_Operation,
+		Variables: &__getEnvironmentInput{
 			OrganizationId: organizationId,
 			Id:             id,
 		},
 	}
 
-	data_ = &getEnvironmentByIdResponse{}
+	data_ = &getEnvironmentResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -4614,9 +2444,81 @@ func getEnvironmentById(
 	return data_, err_
 }
 
-// The query executed by getEnvironments.
-const getEnvironments_Operation = `
-query getEnvironments ($organizationId: ID!, $filter: EnvironmentsFilter, $sort: EnvironmentsSort, $cursor: Cursor) {
+// The query executed by getProject.
+const getProject_Operation = `
+query getProject ($organizationId: ID!, $id: ID!) {
+	project(organizationId: $organizationId, id: $id) {
+		id
+		name
+		description
+		environments {
+			items {
+				id
+				name
+				description
+				createdAt
+				updatedAt
+				cost {
+					monthlyAverage {
+						amount
+						currency
+					}
+					dailyAverage {
+						amount
+						currency
+					}
+				}
+			}
+		}
+		createdAt
+		updatedAt
+		deletable {
+			result
+		}
+		cost {
+			monthlyAverage {
+				amount
+				currency
+			}
+			dailyAverage {
+				amount
+				currency
+			}
+		}
+	}
+}
+`
+
+func getProject(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *getProjectResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getProject",
+		Query:  getProject_Operation,
+		Variables: &__getProjectInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &getProjectResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by listEnvironments.
+const listEnvironments_Operation = `
+query listEnvironments ($organizationId: ID!, $filter: EnvironmentsFilter, $sort: EnvironmentsSort, $cursor: Cursor) {
 	environments(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
 		cursor {
 			next
@@ -4632,23 +2534,33 @@ query getEnvironments ($organizationId: ID!, $filter: EnvironmentsFilter, $sort:
 				id
 				name
 			}
+			cost {
+				monthlyAverage {
+					amount
+					currency
+				}
+				dailyAverage {
+					amount
+					currency
+				}
+			}
 		}
 	}
 }
 `
 
-func getEnvironments(
+func listEnvironments(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
 	filter *EnvironmentsFilter,
 	sort *EnvironmentsSort,
 	cursor *Cursor,
-) (data_ *getEnvironmentsResponse, err_ error) {
+) (data_ *listEnvironmentsResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "getEnvironments",
-		Query:  getEnvironments_Operation,
-		Variables: &__getEnvironmentsInput{
+		OpName: "listEnvironments",
+		Query:  listEnvironments_Operation,
+		Variables: &__listEnvironmentsInput{
 			OrganizationId: organizationId,
 			Filter:         filter,
 			Sort:           sort,
@@ -4656,7 +2568,7 @@ func getEnvironments(
 		},
 	}
 
-	data_ = &getEnvironmentsResponse{}
+	data_ = &listEnvironmentsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -4668,249 +2580,10 @@ func getEnvironments(
 	return data_, err_
 }
 
-// The query executed by getInstanceById.
-const getInstanceById_Operation = `
-query getInstanceById ($organizationId: ID!, $id: ID!) {
-	instance(organizationId: $organizationId, id: $id) {
-		id
-		name
-		status
-		version
-		releaseStrategy
-		createdAt
-		updatedAt
-		environment {
-			id
-			name
-			description
-			createdAt
-			updatedAt
-			project {
-				id
-				name
-				description
-			}
-		}
-		bundle {
-			id
-			name
-			version
-			description
-			icon
-			sourceUrl
-			createdAt
-			updatedAt
-		}
-	}
-}
-`
-
-func getInstanceById(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	id string,
-) (data_ *getInstanceByIdResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getInstanceById",
-		Query:  getInstanceById_Operation,
-		Variables: &__getInstanceByIdInput{
-			OrganizationId: organizationId,
-			Id:             id,
-		},
-	}
-
-	data_ = &getInstanceByIdResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getInstances.
-const getInstances_Operation = `
-query getInstances ($organizationId: ID!, $filter: InstancesFilter, $sort: InstancesSort, $cursor: Cursor) {
-	instances(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
-		cursor {
-			next
-			previous
-		}
-		items {
-			id
-			name
-			status
-			version
-			releaseStrategy
-			createdAt
-			updatedAt
-			environment {
-				id
-				name
-			}
-			bundle {
-				id
-				name
-				version
-			}
-		}
-	}
-}
-`
-
-func getInstances(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	filter *InstancesFilter,
-	sort *InstancesSort,
-	cursor *Cursor,
-) (data_ *getInstancesResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getInstances",
-		Query:  getInstances_Operation,
-		Variables: &__getInstancesInput{
-			OrganizationId: organizationId,
-			Filter:         filter,
-			Sort:           sort,
-			Cursor:         cursor,
-		},
-	}
-
-	data_ = &getInstancesResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getProjectById.
-const getProjectById_Operation = `
-query getProjectById ($organizationId: ID!, $id: ID!) {
-	project(organizationId: $organizationId, id: $id) {
-		id
-		name
-		description
-		createdAt
-		updatedAt
-		deletable {
-			result
-			constraints {
-				message
-				type
-				id
-			}
-		}
-		cost {
-			monthlyAverage {
-				amount
-				currency
-			}
-			dailyAverage {
-				amount
-				currency
-			}
-		}
-		environments {
-			cursor {
-				next
-				previous
-			}
-			items {
-				id
-				name
-				description
-				createdAt
-				updatedAt
-				project {
-					id
-					name
-				}
-			}
-		}
-		blueprint {
-			components {
-				items {
-					id
-					name
-					description
-					createdAt
-					updatedAt
-					repo {
-						name
-					}
-					project {
-						id
-						name
-					}
-				}
-			}
-			links {
-				items {
-					id
-					fromField
-					toField
-					createdAt
-					updatedAt
-					fromComponent {
-						id
-						name
-					}
-					toComponent {
-						id
-						name
-					}
-				}
-			}
-		}
-	}
-}
-`
-
-func getProjectById(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	id string,
-) (data_ *getProjectByIdResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getProjectById",
-		Query:  getProjectById_Operation,
-		Variables: &__getProjectByIdInput{
-			OrganizationId: organizationId,
-			Id:             id,
-		},
-	}
-
-	data_ = &getProjectByIdResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getProjects.
-const getProjects_Operation = `
-query getProjects ($organizationId: ID!, $sort: ProjectsSort, $cursor: Cursor) {
-	projects(organizationId: $organizationId, sort: $sort, cursor: $cursor) {
-		cursor {
-			next
-			previous
-		}
+// The query executed by listProjects.
+const listProjects_Operation = `
+query listProjects ($organizationId: ID!) {
+	projects(organizationId: $organizationId, sort: {field:NAME,order:ASC}) {
 		items {
 			id
 			name
@@ -4932,265 +2605,20 @@ query getProjects ($organizationId: ID!, $sort: ProjectsSort, $cursor: Cursor) {
 }
 `
 
-func getProjects(
+func listProjects(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-	sort *ProjectsSort,
-	cursor *Cursor,
-) (data_ *getProjectsResponse, err_ error) {
+) (data_ *listProjectsResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "getProjects",
-		Query:  getProjects_Operation,
-		Variables: &__getProjectsInput{
+		OpName: "listProjects",
+		Query:  listProjects_Operation,
+		Variables: &__listProjectsInput{
 			OrganizationId: organizationId,
-			Sort:           sort,
-			Cursor:         cursor,
 		},
 	}
 
-	data_ = &getProjectsResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getServer.
-const getServer_Operation = `
-query getServer {
-	server {
-		appUrl
-		version
-		mode
-		ssoProviders {
-			name
-			loginUrl
-			uiIconUrl
-			uiLabel
-		}
-		emailAuthMethods {
-			name
-		}
-	}
-}
-`
-
-func getServer(
-	ctx_ context.Context,
-	client_ graphql.Client,
-) (data_ *getServerResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getServer",
-		Query:  getServer_Operation,
-	}
-
-	data_ = &getServerResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getViewer.
-const getViewer_Operation = `
-query getViewer {
-	viewer {
-		__typename
-		... on AccountViewer {
-			id
-			email
-			firstName
-			lastName
-			createdAt
-			updatedAt
-			defaultOrganization {
-				id
-				name
-			}
-		}
-		... on ServiceAccountViewer {
-			id
-			name
-			description
-			createdAt
-			updatedAt
-			organization {
-				id
-				name
-			}
-		}
-	}
-}
-`
-
-func getViewer(
-	ctx_ context.Context,
-	client_ graphql.Client,
-) (data_ *getViewerResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getViewer",
-		Query:  getViewer_Operation,
-	}
-
-	data_ = &getViewerResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The mutation executed by linkComponents.
-const linkComponents_Operation = `
-mutation linkComponents ($organizationId: ID!, $projectId: ID!, $input: LinkComponentsInput!) {
-	linkComponents(organizationId: $organizationId, projectId: $projectId, input: $input) {
-		result {
-			id
-			fromField
-			toField
-			fromComponent {
-				id
-				name
-			}
-			toComponent {
-				id
-				name
-			}
-		}
-		successful
-		messages {
-			code
-			field
-			message
-		}
-	}
-}
-`
-
-func linkComponents(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	projectId string,
-	input LinkComponentsInput,
-) (data_ *linkComponentsResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "linkComponents",
-		Query:  linkComponents_Operation,
-		Variables: &__linkComponentsInput{
-			OrganizationId: organizationId,
-			ProjectId:      projectId,
-			Input:          input,
-		},
-	}
-
-	data_ = &linkComponentsResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The mutation executed by removeComponent.
-const removeComponent_Operation = `
-mutation removeComponent ($organizationId: ID!, $projectId: ID!, $id: ID!) {
-	removeComponent(organizationId: $organizationId, projectId: $projectId, id: $id) {
-		result {
-			id
-			name
-		}
-		successful
-		messages {
-			code
-			field
-			message
-		}
-	}
-}
-`
-
-func removeComponent(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	projectId string,
-	id string,
-) (data_ *removeComponentResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "removeComponent",
-		Query:  removeComponent_Operation,
-		Variables: &__removeComponentInput{
-			OrganizationId: organizationId,
-			ProjectId:      projectId,
-			Id:             id,
-		},
-	}
-
-	data_ = &removeComponentResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The mutation executed by unlinkComponents.
-const unlinkComponents_Operation = `
-mutation unlinkComponents ($organizationId: ID!, $id: ID!) {
-	unlinkComponents(organizationId: $organizationId, id: $id) {
-		result {
-			id
-		}
-		successful
-		messages {
-			code
-			field
-			message
-		}
-	}
-}
-`
-
-func unlinkComponents(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	id string,
-) (data_ *unlinkComponentsResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "unlinkComponents",
-		Query:  unlinkComponents_Operation,
-		Variables: &__unlinkComponentsInput{
-			OrganizationId: organizationId,
-			Id:             id,
-		},
-	}
-
-	data_ = &unlinkComponentsResponse{}
+	data_ = &listProjectsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

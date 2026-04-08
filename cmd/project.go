@@ -13,7 +13,8 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api/v0"
+	apiv0 "github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/project"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
@@ -86,7 +87,7 @@ func NewCmdProject() *cobra.Command {
 func runProjectGet(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	projectSlug := args[0]
+	projectID := args[0]
 	outputFormat, err := cmd.Flags().GetString("output")
 	if err != nil {
 		return err
@@ -97,21 +98,9 @@ func runProjectGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	projects, err := api.ListProjects(ctx, mdClient)
+	project, err := api.GetProject(ctx, mdClient, projectID)
 	if err != nil {
 		return err
-	}
-
-	var project *api.Project
-	for _, p := range projects {
-		if p.Slug == projectSlug {
-			project = &p
-			break
-		}
-	}
-
-	if project == nil {
-		return fmt.Errorf("project not found: %s", projectSlug)
 	}
 
 	switch outputFormat {
@@ -166,14 +155,14 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 	for _, project := range projects {
 		monthly := ""
 		daily := ""
-		if project.Cost.Monthly.Average.Amount != nil {
-			monthly = fmt.Sprintf("%v", *project.Cost.Monthly.Average.Amount)
+		if project.Cost.MonthlyAverage.Amount != nil {
+			monthly = fmt.Sprintf("%v", *project.Cost.MonthlyAverage.Amount)
 		}
-		if project.Cost.Daily.Average.Amount != nil {
-			daily = fmt.Sprintf("%v", *project.Cost.Daily.Average.Amount)
+		if project.Cost.DailyAverage.Amount != nil {
+			daily = fmt.Sprintf("%v", *project.Cost.DailyAverage.Amount)
 		}
 		description := cli.TruncateString(project.Description, 60)
-		tbl.AddRow(project.Slug, project.Name, description, monthly, daily)
+		tbl.AddRow(project.ID, project.Name, description, monthly, daily)
 	}
 
 	tbl.Print()
@@ -214,13 +203,13 @@ func renderProject(project *api.Project) error {
 func runProjectCreate(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	slug := args[0]
+	id := args[0]
 	name, err := cmd.Flags().GetString("name")
 	if err != nil {
 		return err
 	}
 	if name == "" {
-		name = slug
+		name = id
 	}
 
 	mdClient, mdClientErr := client.New()
@@ -228,15 +217,21 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	project, err := api.CreateProject(ctx, mdClient, name, slug, "")
+	input := api.CreateProjectInput{
+		Id:          id,
+		Name:        name,
+		Description: "",
+	}
+
+	project, err := api.CreateProject(ctx, mdClient, input)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("✅ Project `%s` created successfully\n", project.Slug)
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	fmt.Printf("✅ Project `%s` created successfully\n", project.ID)
+	urlHelper, urlErr := apiv0.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.ProjectURL(project.Slug))
+		fmt.Printf("🔗 %s\n", urlHelper.ProjectURL(project.ID))
 	}
 	return nil
 }
@@ -244,7 +239,7 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 func runProjectDelete(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	projectIDOrSlug := args[0]
+	projectID := args[0]
 	force, err := cmd.Flags().GetBool("force")
 	if err != nil {
 		return err
@@ -258,30 +253,30 @@ func runProjectDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get project details for confirmation
-	project, getErr := api.GetProject(ctx, mdClient, projectIDOrSlug)
+	project, getErr := api.GetProject(ctx, mdClient, projectID)
 	if getErr != nil {
 		return fmt.Errorf("error getting project: %w", getErr)
 	}
 
-	// Prompt for confirmation - requires typing the project slug unless --force is used
+	// Prompt for confirmation - requires typing the project ID unless --force is used
 	if !force {
-		fmt.Printf("WARNING: This will permanently delete project `%s` and all its resources.\n", project.Slug)
-		fmt.Printf("Type `%s` to confirm deletion: ", project.Slug)
+		fmt.Printf("WARNING: This will permanently delete project `%s` and all its resources.\n", project.ID)
+		fmt.Printf("Type `%s` to confirm deletion: ", project.ID)
 		reader := bufio.NewReader(os.Stdin)
 		answer, _ := reader.ReadString('\n')
 		answer = strings.TrimSpace(answer)
 
-		if answer != project.Slug {
+		if answer != project.ID {
 			fmt.Println("Deletion cancelled.")
 			return nil
 		}
 	}
 
-	deletedProject, err := api.DeleteProject(ctx, mdClient, projectIDOrSlug)
+	deletedProject, err := api.DeleteProject(ctx, mdClient, projectID)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Project %s deleted successfully (ID: %s)\n", deletedProject.Slug, deletedProject.ID)
+	fmt.Printf("Project %s deleted successfully (ID: %s)\n", deletedProject.Name, deletedProject.ID)
 	return nil
 }

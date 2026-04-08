@@ -2,6 +2,8 @@ module github.com/massdriver-cloud/mass
 
 go 1.24.2
 
+toolchain go1.24.12
+
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/BurntSushi/toml v1.4.0
@@ -18,7 +20,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.23.0
 	github.com/itchyny/gojq v0.12.16
 	github.com/manifoldco/promptui v0.9.0
-	github.com/massdriver-cloud/airlock v0.0.10
+	github.com/massdriver-cloud/airlock v0.0.9
 	github.com/massdriver-cloud/massdriver-sdk-go v0.0.10
 	github.com/mattn/go-runewidth v0.0.16
 	github.com/mitchellh/mapstructure v1.5.0
@@ -50,13 +52,17 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
+	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alecthomas/chroma/v2 v2.14.0 // indirect
+	github.com/alexflint/go-arg v1.4.2 // indirect
+	github.com/alexflint/go-scalar v1.0.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/charmbracelet/x/ansi v0.5.2 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
@@ -117,9 +123,6 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/swaggo/files v1.0.1 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.19 // indirect
-	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
-	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
-	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/yuin/goldmark v1.7.8 // indirect
 	github.com/yuin/goldmark-emoji v1.0.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.57.0 // indirect

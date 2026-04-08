@@ -11,7 +11,8 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api/v0"
+	apiv0 "github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/environment"
 
@@ -57,13 +58,13 @@ func NewCmdEnvironment() *cobra.Command {
 	}
 
 	environmentCreateCmd := &cobra.Command{
-		Use:   "create [slug]",
+		Use:   "create [ID]",
 		Short: "Create an environment",
 		Long:  helpdocs.MustRender("environment/create"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEnvironmentCreate,
 	}
-	environmentCreateCmd.Flags().StringP("name", "n", "", "Environment name (defaults to slug if not provided)")
+	environmentCreateCmd.Flags().StringP("name", "n", "", "Environment name (defaults to ID if not provided)")
 
 	environmentDefaultCmd := &cobra.Command{
 		Use:   "default [environment] [artifact-id]",
@@ -149,12 +150,12 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	environments, err := api.GetEnvironmentsByProject(ctx, mdClient, projectID)
+	environments, err := apiv0.GetEnvironmentsByProject(ctx, mdClient, projectID)
 	if err != nil {
 		return err
 	}
 
-	tbl := cli.NewTable("ID/Slug", "Name", "Description", "Monthly $", "Daily $")
+	tbl := cli.NewTable("ID", "Name", "Description", "Monthly $", "Daily $")
 
 	for _, env := range environments {
 		monthly := ""
@@ -207,22 +208,22 @@ func renderEnvironment(environment *api.Environment) error {
 func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	fullSlug := args[0]
+	fullID := args[0]
 	name, err := cmd.Flags().GetString("name")
 	if err != nil {
 		return err
 	}
 
-	// Parse project-env format: extract project and env slugs separately
-	parts := strings.Split(fullSlug, "-")
+	// Parse project-env format: extract project and env IDs separately
+	parts := strings.Split(fullID, "-")
 	if len(parts) < 2 {
-		return fmt.Errorf("unable to determine project from slug %s (expected format: project-env)", fullSlug)
+		return fmt.Errorf("unable to determine project from ID %s (expected format: project-env)", fullID)
 	}
-	projectIDOrSlug := parts[0]
-	envSlug := strings.Join(parts[1:], "-")
+	projectID := parts[0]
+	envID := strings.Join(parts[1:], "-")
 
 	if name == "" {
-		name = envSlug
+		name = envID
 	}
 
 	mdClient, mdClientErr := client.New()
@@ -230,15 +231,20 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	env, err := api.CreateEnvironment(ctx, mdClient, projectIDOrSlug, name, envSlug, "")
+	input := api.CreateEnvironmentInput{
+		Id:   envID,
+		Name: name,
+	}
+
+	env, err := api.CreateEnvironment(ctx, mdClient, projectID, input)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("✅ Environment `%s` created successfully\n", fullSlug)
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	fmt.Printf("✅ Environment `%s` created successfully\n", fullID)
+	urlHelper, urlErr := apiv0.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(projectIDOrSlug, env.Slug))
+		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(projectID, env.ID))
 	}
 	return nil
 }
@@ -256,19 +262,19 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	err := api.SetEnvironmentDefault(ctx, mdClient, environmentID, artifactID)
+	err := apiv0.SetEnvironmentDefault(ctx, mdClient, environmentID, artifactID)
 	if err != nil {
 		return err
 	}
 
-	environment, err := api.GetEnvironment(ctx, mdClient, environmentID)
+	environment, err := apiv0.GetEnvironment(ctx, mdClient, environmentID)
 	if err != nil {
 		return fmt.Errorf("failed to get environment: %w", err)
 	}
 
 	fullEnvSlug := fmt.Sprintf("%s-%s", environment.Project.Slug, environment.Slug)
 	fmt.Printf("✅ Environment `%s` default connection set successfully\n", fullEnvSlug)
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	urlHelper, urlErr := apiv0.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
 		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(environment.Project.Slug, environment.Slug))
 	}

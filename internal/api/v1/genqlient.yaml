@@ -11,6 +11,10 @@ bindings:
     type: map[string]any
     marshaler: github.com/massdriver-cloud/mass/internal/api/v1/scalars.MarshalJSON
     unmarshaler: github.com/massdriver-cloud/mass/internal/api/v1/scalars.UnmarshalJSON
+  Map:
+    type: map[string]any
+    marshaler: github.com/massdriver-cloud/mass/internal/api/v1/scalars.MarshalJSON
+    unmarshaler: github.com/massdriver-cloud/mass/internal/api/v1/scalars.UnmarshalJSON
   DateTime:
     type: time.Time
   VersionConstraint:
@@ -19,7 +23,7 @@ bindings:
     type: string
   BundleId:
     type: string
-  RepoName:
+  OciRepoName:
     type: string
   Upload:
     type: string

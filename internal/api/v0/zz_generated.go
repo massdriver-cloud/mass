@@ -3875,7 +3875,7 @@ type getPackagePackage struct {
 	// The semantic version that was last executed.
 	// This reflects what has been provisioned to infrastructure, which may differ from `resolvedVersion`
 	// if the package hasn't been deployed since the version was changed. Returns nil if never deployed.
-	DeployedVersion string `json:"deployedVersion"`
+	DeployedVersion *string `json:"deployedVersion"`
 	// Package configuration parameters
 	Params map[string]any `json:"-"`
 	// The latest deployment for this package
@@ -3902,7 +3902,7 @@ func (v *getPackagePackage) GetSlug() string { return v.Slug }
 func (v *getPackagePackage) GetStatus() PackageStatus { return v.Status }
 
 // GetDeployedVersion returns getPackagePackage.DeployedVersion, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetDeployedVersion() string { return v.DeployedVersion }
+func (v *getPackagePackage) GetDeployedVersion() *string { return v.DeployedVersion }
 
 // GetParams returns getPackagePackage.Params, and is useful for accessing the field via an interface.
 func (v *getPackagePackage) GetParams() map[string]any { return v.Params }
@@ -3974,7 +3974,7 @@ type __premarshalgetPackagePackage struct {
 
 	Status PackageStatus `json:"status"`
 
-	DeployedVersion string `json:"deployedVersion"`
+	DeployedVersion *string `json:"deployedVersion"`
 
 	Params json.RawMessage `json:"params"`
 

@@ -151,11 +151,92 @@ type RootQueryType {
     id: BundleId!
   ): Bundle
 
+  "List all groups in your organization. Returns a paginated list."
+  groups(
+    "Your organization ID"
+    organizationId: ID!
+
+    "How to sort results"
+    sort: GroupsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): GroupsPage
+
+  "Get a single group by its ID."
+  group(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The group ID"
+    id: ID!
+  ): Group
+
+  "Get your organization and its settings."
+  organization(
+    "Your organization ID"
+    organizationId: ID!
+  ): Organization
+
   "Get information about yourself (the authenticated user or service account)."
   viewer: Viewer
 
   "Get server info and available authentication methods. No authentication required."
   server: Server!
+
+  "List all supported integration types. Use these to discover what integrations are available and their configuration schemas."
+  integrationTypes(
+    "Your organization ID"
+    organizationId: ID!
+  ): IntegrationTypesPage
+
+  "List your organization's configured integrations."
+  integrations(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Filter results"
+    filter: IntegrationsFilter
+
+    "How to sort results"
+    sort: IntegrationsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): IntegrationsPage
+
+  "Get a single integration by its type ID."
+  integration(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The integration type ID (e.g., 'aws-cost-and-usage-reports')"
+    id: ID!
+  ): Integration
+
+  "List audit log events for your organization. Returns newest first by default."
+  auditLogs(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Filter results"
+    filter: AuditLogsFilter
+
+    "How to sort results"
+    sort: AuditLogsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): AuditLogsPage
+
+  "Get a single audit log event by its ID."
+  auditLog(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The audit log event ID"
+    id: ID!
+  ): AuditLog
 }
 
 type RootMutationType {
@@ -267,6 +348,21 @@ type RootMutationType {
     id: ID!
   ): LinkPayload
 
+  "Set the position of a component on the canvas."
+  setComponentPosition(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The project ID"
+    projectId: ID!
+
+    "The component ID"
+    id: ID!
+
+    "Set the position of a component on the canvas."
+    input: SetComponentPositionInput!
+  ): ComponentPayload @inputs(name: "setComponentPosition", schema: "\/graphql\/v1\/inputs\/setComponentPosition.json", ui: "\/graphql\/v1\/inputs\/setComponentPosition.ui.json")
+
   "Accept a pending group invitation."
   acceptGroupInvite(
     "The invitation ID to accept"
@@ -281,6 +377,90 @@ type RootMutationType {
 
   "Remove your profile avatar."
   removeAccountAvatar: AvatarViewerPayload
+
+  "Create a new group in your organization."
+  createGroup(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Create a new group. Groups control which projects members can access."
+    input: CreateGroupInput!
+  ): GroupPayload @inputs(name: "createGroup", schema: "\/graphql\/v1\/inputs\/createGroup.json", ui: "\/graphql\/v1\/inputs\/createGroup.ui.json")
+
+  "Update a group's name or description."
+  updateGroup(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The group ID to update"
+    id: ID!
+
+    "Update a group's name or description."
+    input: UpdateGroupInput!
+  ): GroupPayload @inputs(name: "updateGroup", schema: "\/graphql\/v1\/inputs\/updateGroup.json", ui: "\/graphql\/v1\/inputs\/updateGroup.ui.json")
+
+  "Delete a custom group. Predefined organization groups cannot be deleted."
+  deleteGroup(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The group ID to delete"
+    id: ID!
+  ): GroupPayload
+
+  "Invite a user to a group by email address."
+  createGroupInvitation(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The group ID to invite the user to"
+    groupId: ID!
+
+    "Email address of the user to invite"
+    email: String!
+  ): GroupInvitationPayload
+
+  "Remove a pending invitation from a group."
+  deleteGroupInvitation(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The group ID"
+    groupId: ID!
+
+    "Email address of the invitation to remove"
+    email: String!
+  ): GroupInvitationPayload
+
+  "Remove a member from a group."
+  deleteGroupMember(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The group ID"
+    groupId: ID!
+
+    "Email address of the member to remove"
+    email: String!
+  ): GroupMemberPayload
+
+  "Create a new tag constraint in your organization."
+  createOrganizationTagConstraint(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Define a structural tag constraint for your organization. Tag constraints control which tags can be set on resources at each level of the hierarchy."
+    input: CreateOrganizationTagConstraintInput!
+  ): OrganizationTagConstraintPayload @inputs(name: "createOrganizationTagConstraint", schema: "\/graphql\/v1\/inputs\/createOrganizationTagConstraint.json", ui: "\/graphql\/v1\/inputs\/createOrganizationTagConstraint.ui.json")
+
+  "Delete a tag constraint from your organization."
+  deleteOrganizationTagConstraint(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The tag constraint ID to delete"
+    id: ID!
+  ): OrganizationTagConstraintPayload
 
   "Create a new organization. You become the owner and first admin."
   createOrganization(
@@ -302,6 +482,615 @@ type RootMutationType {
     "Your organization ID"
     organizationId: ID!
   ): LogoOrganizationPayload
+
+  "Remove a member from the organization. Deletes all group memberships and pending invitations."
+  deleteOrganizationMember(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Email address of the member to remove"
+    email: String!
+  ): DeletedOrganizationMemberPayload
+
+  "Create and activate an integration for your organization."
+  createIntegration(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The integration type to configure (e.g., 'aws-cost-and-usage-reports')"
+    id: ID!
+
+    "Create and activate an integration for your organization. The config and auth payloads must conform to the integration type's configSchema and authSchema respectively."
+    input: CreateIntegrationInput!
+  ): IntegrationActivationPayload @inputs(name: "createIntegration", schema: "\/graphql\/v1\/inputs\/createIntegration.json", ui: "\/graphql\/v1\/inputs\/createIntegration.ui.json")
+
+  "Delete an integration. This disables it first, then removes the configuration."
+  deleteIntegration(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The integration type ID to delete"
+    id: ID!
+  ): IntegrationPayload
+
+  "Create a scoped, time-limited access token. The token value is only returned in this response."
+  createAccessToken(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Create a scoped, time-limited access token for API authentication."
+    input: CreateAccessTokenInput!
+  ): AccessTokenWithValuePayload @inputs(name: "createAccessToken", schema: "\/graphql\/v1\/inputs\/createAccessToken.json", ui: "\/graphql\/v1\/inputs\/createAccessToken.ui.json")
+
+  "Revoke an access token. The token immediately stops working but the record is preserved for audit."
+  revokeAccessToken(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The access token ID to revoke"
+    id: ID!
+  ): AccessTokenPayload
+
+  "Create a new service account. The secret token is only returned in this response."
+  createServiceAccount(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Create a new service account for programmatic API access."
+    input: CreateServiceAccountInput!
+  ): ServiceAccountWithSecretPayload @inputs(name: "createServiceAccount", schema: "\/graphql\/v1\/inputs\/createServiceAccount.json", ui: "\/graphql\/v1\/inputs\/createServiceAccount.ui.json")
+
+  "Delete a service account. This action cannot be undone."
+  deleteServiceAccount(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The service account ID to delete"
+    id: ID!
+  ): ServiceAccountPayload
+
+  "Add a service account to a group, granting it the group's access level."
+  addServiceAccountToGroup(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The service account ID"
+    serviceAccountId: ID!
+
+    "The group ID to add the service account to"
+    groupId: ID!
+  ): ServiceAccountGroupPayload
+
+  "Remove a service account from a group."
+  removeServiceAccountFromGroup(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The service account ID"
+    serviceAccountId: ID!
+
+    "The group ID to remove the service account from"
+    groupId: ID!
+  ): ServiceAccountGroupPayload
+
+  """
+  Set a remote reference on an instance.
+
+  Links an instance's resource field to a resource from another project or
+  an imported resource. The instance must not be in a provisioned or failed state.
+  """
+  setRemoteReference(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Link an instance's resource field to a resource from another project or an imported resource. The instance must not be in a provisioned or failed state."
+    input: SetRemoteReferenceInput!
+  ): RemoteReferencePayload @inputs(name: "setRemoteReference", schema: "\/graphql\/v1\/inputs\/setRemoteReference.json", ui: "\/graphql\/v1\/inputs\/setRemoteReference.ui.json")
+
+  """
+  Remove a remote reference from an instance.
+
+  The reference can only be removed if no provisioned instances are connected
+  through it. Removing the last remote reference resets the instance status
+  from EXTERNAL back to INITIALIZED.
+  """
+  removeRemoteReference(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Remove a remote reference from an instance. The reference can only be removed if no provisioned instances are connected through it."
+    input: RemoveRemoteReferenceInput!
+  ): RemoteReferencePayload @inputs(name: "removeRemoteReference", schema: "\/graphql\/v1\/inputs\/removeRemoteReference.json", ui: "\/graphql\/v1\/inputs\/removeRemoteReference.ui.json")
+}
+
+"Link an instance's resource field to a resource from another project or an imported resource. The instance must not be in a provisioned or failed state."
+input SetRemoteReferenceInput {
+  "The resource field to assign the reference to"
+  field: String!
+
+  "The instance to set the remote reference on"
+  instanceId: ID!
+
+  "The resource to reference — either a UUID for imported resources or 'instance.field' for provisioned resources"
+  resourceId: ID!
+}
+
+"Remove a remote reference from an instance. The reference can only be removed if no provisioned instances are connected through it."
+input RemoveRemoteReferenceInput {
+  "The resource field to remove the reference from"
+  field: String!
+
+  "The instance the reference belongs to"
+  instanceId: ID!
+}
+
+"A remote reference linking an instance to an external resource."
+type RemoteReference {
+  "Unique identifier"
+  id: ID!
+
+  "The resource field this reference is assigned to"
+  field: String!
+
+  "When this remote reference was created (UTC)"
+  createdAt: DateTime!
+
+  "When this remote reference was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The external resource this reference points to."
+  resource: Resource!
+}
+
+type RemoteReferencePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: RemoteReference
+}
+
+"A service account."
+type ServiceAccount {
+  "Service account identifier"
+  id: ID!
+
+  "Service account name"
+  name: String!
+
+  "What this service account is for"
+  description: String
+
+  "When this service account was created (UTC)"
+  createdAt: DateTime!
+
+  "When this service account was last modified (UTC)"
+  updatedAt: DateTime!
+}
+
+"A service account with its secret token. The secret is only visible on creation."
+type ServiceAccountWithSecret {
+  "Service account identifier"
+  id: ID!
+
+  "Service account name"
+  name: String!
+
+  "What this service account is for"
+  description: String
+
+  "Secret token for authentication. Only returned on creation."
+  secret: String!
+
+  "When this service account was created (UTC)"
+  createdAt: DateTime!
+
+  "When this service account was last modified (UTC)"
+  updatedAt: DateTime!
+}
+
+type ServiceAccountPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: ServiceAccount
+}
+
+type ServiceAccountWithSecretPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: ServiceAccountWithSecret
+}
+
+type ServiceAccountGroupPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: ServiceAccount
+}
+
+"Create a new service account for programmatic API access."
+input CreateServiceAccountInput {
+  "What this service account is used for"
+  description: String
+
+  "A human-readable name for the service account"
+  name: String!
+}
+
+"An access token with the raw token value. Only returned on creation."
+type AccessTokenWithValue {
+  "Access token identifier"
+  id: ID!
+
+  "Label for this token"
+  name: String!
+
+  "The full token value. Store securely — this is the only time it is shown."
+  token: String!
+
+  "Short prefix for identifying this token in lists (e.g., md_a1b2c3d4)"
+  prefix: String!
+
+  "Permission scopes granted to this token"
+  scopes: [String!]!
+
+  "When this token expires (UTC)"
+  expiresAt: DateTime!
+
+  "When this token was created (UTC)"
+  createdAt: DateTime!
+}
+
+"An access token's metadata. Does not include the raw token value."
+type AccessToken {
+  "Access token identifier"
+  id: ID!
+
+  "Label for this token"
+  name: String!
+
+  "Short prefix for identifying this token (e.g., md_a1b2c3d4)"
+  prefix: String!
+
+  "Permission scopes granted to this token"
+  scopes: [String!]!
+
+  "When this token expires (UTC)"
+  expiresAt: DateTime!
+
+  "When this token was revoked, if applicable (UTC)"
+  revokedAt: DateTime
+
+  "When this token was last used for authentication (UTC)"
+  lastUsedAt: DateTime
+
+  "When this token was created (UTC)"
+  createdAt: DateTime!
+}
+
+type AccessTokenWithValuePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: AccessTokenWithValue
+}
+
+type AccessTokenPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: AccessToken
+}
+
+"Create a scoped, time-limited access token for API authentication."
+input CreateAccessTokenInput {
+  "How many minutes until this token expires. Defaults to 60 (1 hour). Maximum ~5,256,000 (10 years)."
+  expiresInMinutes: Int
+
+  "A label to identify this token (e.g., 'CI deploy key')"
+  name: String!
+
+  "Permission scopes. At least one required. Currently only [\"*\"] (full access) is supported."
+  scopes: [String!]!
+
+  "Create the token on behalf of this service account. Omit to create for the authenticated identity."
+  serviceAccountId: String
+}
+
+"The type of actor that performed an action."
+enum AuditLogActorType {
+  "Human user account"
+  ACCOUNT
+
+  "Service account (API key)"
+  SERVICE_ACCOUNT
+
+  "Automated deployment"
+  DEPLOYMENT
+
+  "System action or legacy event"
+  SYSTEM
+}
+
+"Available fields for sorting audit logs."
+enum AuditLogsSortField {
+  "Sort by when the event occurred"
+  OCCURRED_AT
+
+  "Sort by event type"
+  TYPE
+}
+
+"Sorting options for the audit logs list."
+input AuditLogsSort {
+  "Which field to sort by"
+  field: AuditLogsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Filter by the type of actor that performed the action."
+input AuditLogActorTypeFilter {
+  "Exact match"
+  eq: AuditLogActorType
+
+  "Match any of these actor types"
+  in: [AuditLogActorType!]
+}
+
+"Filter which audit logs to return."
+input AuditLogsFilter {
+  "Filter by when the event occurred"
+  occurredAt: DatetimeFilter
+
+  "Filter by event type (e.g., 'project.created')"
+  type: StringFilter
+
+  "Filter by who performed the action"
+  actorType: AuditLogActorTypeFilter
+
+  "Filter by the actor's ID"
+  actorId: IdFilter
+}
+
+"The actor that performed an audit-logged action."
+type V1AuditLogActor {
+  "Actor's unique identifier"
+  id: ID!
+
+  "What kind of actor this is"
+  type: AuditLogActorType!
+
+  "Display name (email for users, name for service accounts)"
+  name: String!
+}
+
+"An audit log event."
+type AuditLog {
+  "Unique event identifier"
+  id: ID!
+
+  "When the event occurred (UTC)"
+  occurredAt: DateTime!
+
+  "Event type (e.g., 'project.created')"
+  type: String!
+
+  "Where the event originated"
+  source: String!
+
+  "Resource the event applies to (MRI format)"
+  subject: String
+
+  "Event payload with context and resource details"
+  data: Map
+
+  "Who performed this action"
+  actor: V1AuditLogActor!
+}
+
+type AuditLogsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type audit_log."
+  items: [AuditLog]
+}
+
+"The current status of an integration."
+enum IntegrationStatus {
+  "Integration is inactive"
+  DISABLED
+
+  "Integration is being deactivated"
+  DISABLING
+
+  "Integration is being activated"
+  ENABLING
+
+  "Integration is active and running"
+  ENABLED
+}
+
+"Available fields for sorting integrations."
+enum IntegrationsSortField {
+  "Sort by when the integration was created"
+  CREATED_AT
+
+  "Sort alphabetically by integration type"
+  ID
+}
+
+"Filter for integration status."
+input IntegrationStatusFilter {
+  "Exact match"
+  eq: IntegrationStatus
+
+  "Match any of these statuses"
+  in: [IntegrationStatus!]
+}
+
+"Filter options for the integrations list."
+input IntegrationsFilter {
+  "Filter by integration type ID"
+  id: StringFilter
+
+  "Filter by status"
+  status: IntegrationStatusFilter
+}
+
+"Sorting options for the integrations list."
+input IntegrationsSort {
+  "Which field to sort by"
+  field: IntegrationsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Create and activate an integration for your organization. The config and auth payloads must conform to the integration type's configSchema and authSchema respectively."
+input CreateIntegrationInput {
+  "Authentication credentials. Must conform to the integration type's authSchema. Write-only — not returned in queries."
+  auth: Map!
+
+  "Integration-specific configuration. Must conform to the integration type's configSchema."
+  config: Map!
+}
+
+"A supported integration type that can be configured for your organization."
+type IntegrationTypeInfo {
+  "Unique identifier for this integration type"
+  id: String!
+
+  "Display name"
+  name: String!
+
+  "What this integration does"
+  description: String
+
+  "URL to the documentation"
+  docs: String!
+
+  "JSON Schema for the `config` field when creating this integration"
+  configSchema: Map!
+
+  "JSON Schema for the `auth` field when creating this integration"
+  authSchema: Map!
+}
+
+type IntegrationTypesPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type integration_type_info."
+  items: [IntegrationTypeInfo]
+}
+
+"A configured integration."
+type Integration {
+  "Integration type identifier (unique per organization)"
+  id: ID!
+
+  "The type of integration"
+  integrationTypeId: String!
+
+  "Integration-specific configuration"
+  config: Map!
+
+  "Current status"
+  status: IntegrationStatus!
+
+  "When this integration was created (UTC)"
+  createdAt: DateTime!
+
+  "When this integration was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "When this integration will next execute"
+  nextRunAt: DateTime
+}
+
+"A newly created integration with setup instructions."
+type IntegrationActivation {
+  "Integration type identifier"
+  id: ID!
+
+  "The type of integration"
+  integrationTypeId: String!
+
+  "Integration-specific configuration"
+  config: Map!
+
+  "Current status"
+  status: IntegrationStatus!
+
+  "When this integration was created (UTC)"
+  createdAt: DateTime!
+
+  "When this integration was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "When this integration will next execute"
+  nextRunAt: DateTime
+
+  "Setup instructions for this integration. May contain sensitive credentials — store securely."
+  instructions: String!
+}
+
+type IntegrationsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type integration."
+  items: [Integration]
+}
+
+type IntegrationPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Integration
+}
+
+type IntegrationActivationPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: IntegrationActivation
 }
 
 "How this Massdriver instance is deployed."
@@ -358,6 +1147,225 @@ type Server {
   emailAuthMethods: [EmailAuthMethod]
 }
 
+"The resource level where a tag constraint applies."
+enum TagConstraintScope {
+  "Tag is set on the organization"
+  ORGANIZATION
+
+  "Tag is set on projects"
+  PROJECT
+
+  "Tag is set on environments"
+  ENVIRONMENT
+
+  "Tag is set on components"
+  COMPONENT
+
+  "Tag is set on instances"
+  INSTANCE
+}
+
+"Available fields for sorting tag constraints."
+enum OrganizationTagConstraintsSortField {
+  "Sort alphabetically by tag key"
+  KEY
+
+  "Sort by resource scope level"
+  SCOPE
+
+  "Sort by when the constraint was created"
+  CREATED_AT
+}
+
+"Sorting options for the tag constraints list."
+input OrganizationTagConstraintsSort {
+  "Which field to sort by"
+  field: OrganizationTagConstraintsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Define a structural tag constraint for your organization. Tag constraints control which tags can be set on resources at each level of the hierarchy."
+input CreateOrganizationTagConstraintInput {
+  "The tag key name. Must start with a letter. Keys starting with MD_ are reserved."
+  key: String!
+
+  "Whether this tag must be set when creating a resource at the specified scope."
+  required: Boolean
+
+  "The resource level where this tag is set. Values cascade to child resources."
+  scope: TagConstraintScope!
+}
+
+"A tag constraint."
+type OrganizationTagConstraint {
+  "Unique identifier"
+  id: ID!
+
+  "The tag key name (e.g. TEAM, DOMAIN)"
+  key: String!
+
+  "Resource level where this tag is set"
+  scope: TagConstraintScope!
+
+  "Whether this tag must be set when creating a resource at the specified scope"
+  required: Boolean!
+
+  "When this constraint was created (UTC)"
+  createdAt: DateTime!
+
+  "When this constraint was last modified (UTC)"
+  updatedAt: DateTime!
+}
+
+type OrganizationTagConstraintsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type organization_tag_constraint."
+  items: [OrganizationTagConstraint]
+}
+
+type OrganizationTagConstraintPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: OrganizationTagConstraint
+}
+
+"The role of a group within an organization."
+enum GroupRole {
+  "Full administrative access to the organization"
+  ORGANIZATION_ADMIN
+
+  "Read-only access to the organization"
+  ORGANIZATION_VIEWER
+
+  "Custom role with project-level access grants"
+  CUSTOM
+}
+
+"Available fields for sorting groups."
+enum GroupsSortField {
+  "Sort alphabetically by group name"
+  NAME
+
+  "Sort by when the group was created"
+  CREATED_AT
+}
+
+"Sorting options for the groups list."
+input GroupsSort {
+  "Which field to sort by"
+  field: GroupsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Create a new group. Groups control which projects members can access."
+input CreateGroupInput {
+  "What this group is for"
+  description: String
+
+  "A human-readable name for the group"
+  name: String!
+}
+
+"Update a group's name or description."
+input UpdateGroupInput {
+  "What this group is for"
+  description: String
+
+  "A human-readable name for the group"
+  name: String!
+}
+
+"A group."
+type Group {
+  "Group identifier"
+  id: ID!
+
+  "Group name"
+  name: String!
+
+  "What this group is for"
+  description: String
+
+  "Access level within the organization"
+  role: GroupRole!
+
+  "When this group was created (UTC)"
+  createdAt: DateTime!
+
+  "When this group was last modified (UTC)"
+  updatedAt: DateTime!
+}
+
+"An invitation to join a group."
+type GroupInvitation {
+  "Invitation identifier"
+  id: ID!
+
+  "Email address of the invited user"
+  email: String!
+
+  "When the invitation was sent (UTC)"
+  createdAt: DateTime!
+}
+
+"A group member."
+type GroupMember {
+  "Email address of the member"
+  email: String!
+}
+
+type GroupsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type group."
+  items: [Group]
+}
+
+type GroupPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Group
+}
+
+type GroupInvitationPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: GroupInvitation
+}
+
+type GroupMemberPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: GroupMember
+}
+
 "Create a new organization. An organization is the top-level container for all your projects, environments, and infrastructure resources."
 input CreateOrganizationInput {
   "A short, memorable identifier for looking up this organization in the API and CLI. Choose something concise and meaningful—human-readable, not a UUID. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation."
@@ -367,7 +1375,7 @@ input CreateOrganizationInput {
   name: String!
 }
 
-"An organization with full details."
+"An organization."
 type Organization {
   id: ID!
 
@@ -382,6 +1390,27 @@ type Organization {
 
   "The organization's logo image."
   logo: LogoOrganization
+
+  "Tag constraints that define the structural tags for this organization."
+  tagConstraints(
+    "How to sort results"
+    sort: OrganizationTagConstraintsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): OrganizationTagConstraintsPage
+
+  "JSON Schema describing the tag fields for a given resource scope."
+  tagSchema(
+    "Resource level (e.g. PROJECT, ENVIRONMENT)"
+    scope: TagConstraintScope!
+  ): Map!
+}
+
+"A deleted organization member."
+type DeletedOrganizationMember {
+  "Email address of the removed member"
+  email: String!
 }
 
 type OrganizationPayload {
@@ -393,6 +1422,17 @@ type OrganizationPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: Organization
+}
+
+type DeletedOrganizationMemberPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: DeletedOrganizationMember
 }
 
 "An organization's logo image."
@@ -504,7 +1544,7 @@ input ViewerOrganizationsSort {
   order: SortOrder!
 }
 
-"Sorting options for identities list."
+"Sorting options for the identities list."
 input IdentitiesSort {
   "Which field to sort by"
   field: IdentitiesSortField!
@@ -513,7 +1553,7 @@ input IdentitiesSort {
   order: SortOrder!
 }
 
-"Sorting options for invites list."
+"Sorting options for the invites list."
 input InvitesSort {
   "Which field to sort by"
   field: InvitesSortField!
@@ -772,8 +1812,8 @@ input ComponentsFilter {
   "Filter by component ID (e.g., 'database')"
   id: IdFilter
 
-  "Filter by bundle name"
-  bundleName: BundleNameFilter
+  "Filter by OCI repository name"
+  ociRepoName: OciRepoNameFilter
 }
 
 "Filter which links to return."
@@ -787,9 +1827,6 @@ input LinksFilter {
 
 "Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application."
 input AddComponentInput {
-  "Name of the bundle to add (e.g., 'aws-aurora-postgres')"
-  bundleName: RepoName!
-
   "Optional description of this component's purpose"
   description: String
 
@@ -798,6 +1835,12 @@ input AddComponentInput {
 
   "Display name for this component (e.g., 'Billing Database')"
   name: String!
+
+  "Name of the OCI repository for the bundle to add (e.g., 'aws-aurora-postgres')"
+  ociRepoName: OciRepoName!
+
+  "Key-value tags for this component. Keys and values must be strings. Must conform to the organization's tag constraints for the component scope."
+  tags: Map
 }
 
 "Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources."
@@ -821,38 +1864,39 @@ input LinkComponentsInput {
   toVersion: VersionConstraint!
 }
 
-"A component returned in list results."
-type ComponentLeaf {
-  id: ID!
+"Set the position of a component on the canvas."
+input SetComponentPositionInput {
+  "Horizontal position in pixels"
+  x: Int!
 
-  "Display name"
-  name: String!
-
-  "Component description"
-  description: String
-
-  "When this component was created (UTC)"
-  createdAt: DateTime!
-
-  "When this component was last modified (UTC)"
-  updatedAt: DateTime!
-
-  "The bundle repository this component uses."
-  repo: RepoLeaf
-
-  "The project containing this component."
-  project: ProjectLeaf
+  "Vertical position in pixels"
+  y: Int!
 }
 
-"A component with its full details and related resources."
+"A component's position on the canvas."
+type ComponentPosition {
+  "Horizontal position in pixels"
+  x: Int!
+
+  "Vertical position in pixels"
+  y: Int!
+}
+
+"A component."
 type Component {
   id: ID!
 
   "Display name"
   name: String!
 
-  "Component description"
+  "What this component is for"
   description: String
+
+  "Tags assigned directly to this component"
+  tags: Map!
+
+  "Position on the canvas"
+  position: ComponentPosition
 
   "When this component was created (UTC)"
   createdAt: DateTime!
@@ -860,37 +1904,14 @@ type Component {
   "When this component was last modified (UTC)"
   updatedAt: DateTime!
 
-  "The bundle repository this component uses."
-  repo: Repo
+  "The OCI repository this component uses."
+  ociRepo: OciRepo
 
   "The project containing this component."
   project: Project
 }
 
-"A link returned in list results."
-type LinkLeaf {
-  id: ID!
-
-  "Output field name on the source component"
-  fromField: String!
-
-  "Input field name on the destination component"
-  toField: String!
-
-  "When this link was created (UTC)"
-  createdAt: DateTime!
-
-  "When this link was last modified (UTC)"
-  updatedAt: DateTime!
-
-  "The source (from) component."
-  fromComponent: ComponentLeaf
-
-  "The destination (to) component."
-  toComponent: ComponentLeaf
-}
-
-"A link with its full details."
+"A link."
 type Link {
   id: ID!
 
@@ -949,16 +1970,16 @@ type ComponentsPage {
   "Pagination cursors"
   cursor: PaginationCursor!
 
-  "A list of type component_leaf."
-  items: [ComponentLeaf]
+  "A list of type component."
+  items: [Component]
 }
 
 type LinksPage {
   "Pagination cursors"
   cursor: PaginationCursor!
 
-  "A list of type link_leaf."
-  items: [LinkLeaf]
+  "A list of type link."
+  items: [Link]
 }
 
 type ComponentPayload {
@@ -1043,42 +2064,7 @@ input DeploymentsFilter {
   action: DeploymentActionFilter
 }
 
-"A deployment returned in list results."
-type DeploymentLeaf {
-  id: ID!
-
-  "Current state of the deployment"
-  status: DeploymentStatus!
-
-  "Type of operation"
-  action: DeploymentAction!
-
-  "Bundle version being deployed"
-  version: String!
-
-  "Deployment message or commit info"
-  message: String
-
-  "When this deployment started (UTC)"
-  createdAt: DateTime!
-
-  "When this deployment was last updated (UTC)"
-  updatedAt: DateTime!
-
-  "When the status last changed (UTC)"
-  lastTransitionedAt: DateTime
-
-  "How long the deployment has been running, in seconds."
-  elapsedTime: Int!
-
-  "Who started this deployment."
-  deployedBy: String
-
-  "The instance being deployed."
-  instance: InstanceLeaf
-}
-
-"A deployment with its full details and related resources."
+"A deployment."
 type Deployment {
   id: ID!
 
@@ -1117,8 +2103,8 @@ type DeploymentsPage {
   "Pagination cursors"
   cursor: PaginationCursor!
 
-  "A list of type deployment_leaf."
-  items: [DeploymentLeaf]
+  "A list of type deployment."
+  items: [Deployment]
 }
 
 "Available fields for sorting instances."
@@ -1201,8 +2187,8 @@ input InstancesFilter {
   "Filter by instance status"
   status: InstanceStatusFilter
 
-  "Filter by bundle name"
-  bundleName: BundleNameFilter
+  "Filter by OCI repository name"
+  ociRepoName: OciRepoNameFilter
 
   "Filter by param dimension values. Multiple filters are combined with AND."
   paramDimension: [ParamDimensionFilter!]
@@ -1217,7 +2203,7 @@ input ParamDimensionsFilter {
   environmentId: IdFilter
 
   "Only include dimensions from instances using these bundles"
-  bundleName: BundleNameFilter
+  ociRepoName: OciRepoNameFilter
 }
 
 "Sorting options for the param dimensions list."
@@ -1229,44 +2215,70 @@ input ParamDimensionsSort {
   order: SortOrder!
 }
 
-"An instance returned in list results."
-type InstanceLeaf {
+"An artifact produced or consumed by an instance."
+type Resource {
+  "Resource identifier (`package.field` for provisioned resources, UUID for imports)"
   id: ID!
 
-  "Instance display name"
+  "Resource name"
   name: String!
 
-  "Current state of the instance"
-  status: InstanceStatus!
+  "Resource type (e.g., the artifact definition type)"
+  type: String
 
-  "Version constraint (e.g., '~1.0' or '1.2.3')"
-  version: String!
-
-  "Whether to use stable or development releases"
-  releaseStrategy: ReleaseStrategy!
-
-  "When this instance was created (UTC)"
+  "When this resource was created (UTC)"
   createdAt: DateTime!
 
-  "When this instance was last modified (UTC)"
+  "When this resource was last modified (UTC)"
   updatedAt: DateTime!
-
-  "The environment this instance is deployed in."
-  environment: EnvironmentLeaf
-
-  "The bundle version currently deployed."
-  bundle: BundleLeaf
 }
 
-"An instance with its full details and related resources."
+"A resource keyed by the output handle that produced it."
+type InstanceResource {
+  "The output handle that produced this resource"
+  field: String!
+
+  "The resource artifact"
+  resource: Resource!
+}
+
+"A dependency keyed by the input handle that consumes it."
+type InstanceDependency {
+  "The input handle that consumes this resource"
+  field: String!
+
+  "The resource artifact"
+  resource: Resource!
+}
+
+type InstanceResourcesPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type instance_resource."
+  items: [InstanceResource]
+}
+
+type InstanceDependenciesPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type instance_dependency."
+  items: [InstanceDependency]
+}
+
+"An instance."
 type Instance {
   id: ID!
 
-  "Instance display name"
+  "Display name"
   name: String!
 
   "Current state of the instance"
   status: InstanceStatus!
+
+  "Tags assigned directly to this instance"
+  tags: Map!
 
   "Version constraint (e.g., '~1.0' or '1.2.3')"
   version: String!
@@ -1279,20 +2291,38 @@ type Instance {
 
   "When this instance was last modified (UTC)"
   updatedAt: DateTime!
+
+  "The actual version resolved from the version constraint, used for the next deployment."
+  resolvedVersion: String!
+
+  "The version last deployed to infrastructure. May differ from resolvedVersion if not yet deployed."
+  deployedVersion: String
+
+  "Newest version available for upgrade, or null if already on the latest matching version."
+  availableUpgrade: String
+
+  "Cloud provider costs for this instance."
+  cost: CostSummary!
 
   "The environment this instance is deployed in."
   environment: Environment
 
   "The bundle version currently deployed."
   bundle: Bundle
+
+  "Resources produced by this instance (its output artifacts)."
+  resources(cursor: Cursor): InstanceResourcesPage
+
+  "Dependencies consumed by this instance (artifacts from other instances wired via connections)."
+  dependencies(cursor: Cursor): InstanceDependenciesPage
 }
 
 type InstancesPage {
   "Pagination cursors"
   cursor: PaginationCursor!
 
-  "A list of type instance_leaf."
-  items: [InstanceLeaf]
+  "A list of type instance."
+  items: [Instance]
 }
 
 type ParamDimensionsPage {
@@ -1301,6 +2331,98 @@ type ParamDimensionsPage {
 
   "A list of type param_dimension."
   items: [ParamDimension]
+}
+
+"Available fields for sorting connections."
+enum ConnectionsSortField {
+  "Sort by when the connection was created"
+  CREATED_AT
+}
+
+"Sorting options for the connections list."
+input ConnectionsSort {
+  "Which field to sort by"
+  field: ConnectionsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Filter which connections to return."
+input ConnectionsFilter {
+  "Filter by source (from) instance ID"
+  fromInstanceId: IdFilter
+
+  "Filter by destination (to) instance ID"
+  toInstanceId: IdFilter
+}
+
+"A connection between two instances in an environment, representing the runtime wiring of a blueprint link."
+type Connection {
+  id: ID!
+
+  "Output field name on the source instance"
+  fromField: String!
+
+  "Input field name on the destination instance"
+  toField: String!
+
+  "When this connection was created (UTC)"
+  createdAt: DateTime!
+
+  "When this connection was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "The source (from) instance that produces the resource."
+  fromInstance: Instance
+
+  "The destination (to) instance that consumes the resource."
+  toInstance: Instance
+
+  "The blueprint link this connection instantiates."
+  link: Link
+}
+
+"""
+An environment's realized infrastructure blueprint.
+
+The environment blueprint contains all instances (deployed packages) and
+connections (runtime wiring between them) showing how your infrastructure
+is actually deployed. This mirrors the project-level blueprint at the
+environment level.
+"""
+type EnvironmentBlueprint {
+  "Instances deployed in this environment."
+  instances(
+    "Filter results"
+    filter: InstancesFilter
+
+    "How to sort results"
+    sort: InstancesSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): InstancesPage
+
+  "Connections between instances in this environment."
+  connections(
+    "Filter results"
+    filter: ConnectionsFilter
+
+    "How to sort results"
+    sort: ConnectionsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): ConnectionsPage
+}
+
+type ConnectionsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type connection."
+  items: [Connection]
 }
 
 "Available fields for sorting environments."
@@ -1340,6 +2462,9 @@ input CreateEnvironmentInput {
 
   "A human-readable name for the environment"
   name: String!
+
+  "Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope."
+  tags: Map
 }
 
 "Update an existing environment's name and description. The ID cannot be changed after creation."
@@ -1349,29 +2474,12 @@ input UpdateEnvironmentInput {
 
   "A human-readable name for the environment"
   name: String
+
+  "Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope."
+  tags: Map
 }
 
-"An environment returned in list results."
-type EnvironmentLeaf {
-  id: ID!
-
-  "Display name"
-  name: String!
-
-  "What this environment is for"
-  description: String
-
-  "When this environment was created (UTC)"
-  createdAt: DateTime!
-
-  "When this environment was last modified (UTC)"
-  updatedAt: DateTime!
-
-  "The project containing this environment."
-  project: ProjectLeaf
-}
-
-"An environment with its full details and related resources."
+"An environment."
 type Environment {
   id: ID!
 
@@ -1380,6 +2488,9 @@ type Environment {
 
   "What this environment is for"
   description: String
+
+  "Tags assigned directly to this environment"
+  tags: Map!
 
   "When this environment was created (UTC)"
   createdAt: DateTime!
@@ -1390,23 +2501,22 @@ type Environment {
   "The project containing this environment."
   project: Project
 
-  "The instances deployed in this environment."
-  instances(
-    "Filter results (projectId and environmentId are ignored — already scoped by parent)"
-    filter: InstancesFilter
+  "Cloud provider costs for this environment."
+  cost: CostSummary!
 
-    sort: InstancesSort
+  "Whether this environment can be deleted and any constraints preventing deletion."
+  deletable: Deletable!
 
-    cursor: Cursor
-  ): InstancesPage
+  "The realized infrastructure blueprint for this environment (instances and connections)."
+  blueprint: EnvironmentBlueprint
 }
 
 type EnvironmentsPage {
   "Pagination cursors"
   cursor: PaginationCursor!
 
-  "A list of type environment_leaf."
-  items: [EnvironmentLeaf]
+  "A list of type environment."
+  items: [Environment]
 }
 
 type EnvironmentPayload {
@@ -1448,6 +2558,9 @@ input CreateProjectInput {
 
   "A human-readable name for the project"
   name: String!
+
+  "Key-value tags for this project. Keys and values must be strings. Must conform to the organization's tag constraints for the project scope."
+  tags: Map
 }
 
 "Update an existing project's name and description. The ID cannot be changed after creation."
@@ -1457,29 +2570,12 @@ input UpdateProjectInput {
 
   "A human-readable name for the project"
   name: String
+
+  "Key-value tags for this project. Keys and values must be strings. Must conform to the organization's tag constraints for the project scope."
+  tags: Map
 }
 
-"A project returned in list results."
-type ProjectLeaf {
-  id: ID!
-
-  "Display name"
-  name: String!
-
-  "What this project is for"
-  description: String
-
-  "When this project was created (UTC)"
-  createdAt: DateTime!
-
-  "When this project was last modified (UTC)"
-  updatedAt: DateTime!
-
-  "Cloud provider costs for this project."
-  cost: CostSummary!
-}
-
-"A project with its full details and related resources."
+"A project."
 type Project {
   id: ID!
 
@@ -1488,6 +2584,9 @@ type Project {
 
   "What this project is for"
   description: String
+
+  "Tags assigned directly to this project"
+  tags: Map!
 
   "When this project was created (UTC)"
   createdAt: DateTime!
@@ -1512,8 +2611,8 @@ type ProjectsPage {
   "Pagination cursors"
   cursor: PaginationCursor!
 
-  "A list of type project_leaf."
-  items: [ProjectLeaf]
+  "A list of type project."
+  items: [Project]
 }
 
 type ProjectPayload {
@@ -1563,40 +2662,13 @@ Accepts exact versions or release channels:
 """
 scalar VersionConstraint
 
-"A bundle returned in list results."
-type BundleLeaf {
-  "Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')"
-  id: BundleId!
-
-  "Bundle name (e.g., 'aws-aurora-postgres')"
-  name: RepoName!
-
-  "Resolved semantic version (e.g., '1.2.3')"
-  version: Semver!
-
-  "What this bundle provides"
-  description: String
-
-  "URL to the bundle icon"
-  icon: String
-
-  "URL to the bundle source code"
-  sourceUrl: String
-
-  "When this bundle version was published (UTC)"
-  createdAt: DateTime!
-
-  "When this bundle version was last modified (UTC)"
-  updatedAt: DateTime!
-}
-
-"A bundle with its full details and related resources."
+"A bundle."
 type Bundle {
   "Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')"
   id: BundleId!
 
   "Bundle name (e.g., 'aws-aurora-postgres')"
-  name: RepoName!
+  name: OciRepoName!
 
   "Resolved semantic version (e.g., '1.2.3')"
   version: Semver!
@@ -1615,25 +2687,22 @@ type Bundle {
 
   "When this bundle version was last modified (UTC)"
   updatedAt: DateTime!
+
+  "OCI repository path for this bundle (e.g., 'aws-aurora-postgres')"
+  repo: String!
 }
 
 """
-Repository name (e.g., 'aws-aurora-postgres').
+OCI repository name (e.g., 'aws-aurora-postgres').
 
-The short name of a repository in your organization's catalog.
+The short name of an OCI repository in your organization's catalog.
 """
-scalar RepoName
+scalar OciRepoName
 
-"Reference to a repository."
-type RepoLeaf {
-  "Repository name"
-  name: RepoName!
-}
-
-"Reference to a repository."
-type Repo {
-  "Repository name"
-  name: RepoName!
+"An OCI repository."
+type OciRepo {
+  "OCI repository name"
+  name: OciRepoName!
 }
 
 "A single cost measurement with amount and currency."
@@ -1708,13 +2777,34 @@ input StringFilter {
   in: [String!]
 }
 
-"Filter for bundle name fields."
-input BundleNameFilter {
+"Filter by OCI repository name."
+input OciRepoNameFilter {
   "Exact match"
-  eq: RepoName
+  eq: OciRepoName
 
   "Match any of these values"
-  in: [RepoName!]
+  in: [OciRepoName!]
+}
+
+"""
+Filter for datetime fields. All provided operators are combined with AND.
+Useful for date range queries.
+"""
+input DatetimeFilter {
+  "Exact match"
+  eq: DateTime
+
+  "After this date\/time"
+  gt: DateTime
+
+  "On or after this date\/time"
+  gte: DateTime
+
+  "Before this date\/time"
+  lt: DateTime
+
+  "On or before this date\/time"
+  lte: DateTime
 }
 
 "Filter for instance status. All provided operators are combined with AND."
@@ -1763,7 +2853,7 @@ input ParamDimensionFilter {
 }
 
 input Cursor {
-  "Maximum number of items to return"
+  "Maximum number of items per page. Default: 20. Minimum: 1. Maximum: 100."
   limit: Int
 
   "Cursor after which to return items"
@@ -1780,6 +2870,9 @@ type PaginationCursor {
   "Cursor to the previous page"
   previous: String
 }
+
+"A key-value map. Does not accept arrays, strings, or other JSON primitives."
+scalar Map
 
 type ValidationOption {
   "The name of a variable to be subsituted in a validation message template"

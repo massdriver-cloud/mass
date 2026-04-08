@@ -12,15 +12,17 @@ import (
 
 // Environment represents a Massdriver deployment environment within a project.
 type Environment struct {
-	ID          string   `json:"id" mapstructure:"id"`
-	Name        string   `json:"name" mapstructure:"name"`
-	Description string   `json:"description,omitempty" mapstructure:"description"`
-	Project     *Project `json:"project,omitempty" mapstructure:"project,omitempty"`
+	ID          string      `json:"id" mapstructure:"id"`
+	Name        string      `json:"name" mapstructure:"name"`
+	Description string      `json:"description,omitempty" mapstructure:"description"`
+	Cost        CostSummary `json:"cost" mapstructure:"cost"`
+	Project     *Project    `json:"project,omitempty" mapstructure:"project,omitempty"`
+	Blueprint   *Blueprint  `json:"blueprint,omitempty" mapstructure:"-"`
 }
 
 // GetEnvironment retrieves an environment by ID from the Massdriver API.
 func GetEnvironment(ctx context.Context, mdClient *client.Client, id string) (*Environment, error) {
-	response, err := getEnvironmentById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id)
+	response, err := getEnvironment(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get environment %s: %w", id, err)
 	}
@@ -30,7 +32,7 @@ func GetEnvironment(ctx context.Context, mdClient *client.Client, id string) (*E
 
 // ListEnvironments returns environments, optionally filtered.
 func ListEnvironments(ctx context.Context, mdClient *client.Client, filter *EnvironmentsFilter) ([]Environment, error) {
-	response, err := getEnvironments(ctx, mdClient.GQL, mdClient.Config.OrganizationID, filter, nil, nil)
+	response, err := listEnvironments(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list environments: %w", err)
 	}
@@ -52,12 +54,30 @@ func toEnvironment(v any) (*Environment, error) {
 	if err := mapstructure.Decode(v, &env); err != nil {
 		return nil, fmt.Errorf("failed to decode environment: %w", err)
 	}
+
+	// Unwrap paginated blueprint.instances (API returns {blueprint: {instances: {items: [...]}}})
+	type instPage struct {
+		Items []Instance `mapstructure:"items"`
+	}
+	type blueprint struct {
+		Instances instPage `mapstructure:"instances"`
+	}
+	type hasBP struct {
+		Blueprint blueprint `mapstructure:"blueprint"`
+	}
+	var wrapper hasBP
+	if err := mapstructure.Decode(v, &wrapper); err == nil && len(wrapper.Blueprint.Instances.Items) > 0 {
+		env.Blueprint = &Blueprint{
+			Instances: wrapper.Blueprint.Instances.Items,
+		}
+	}
+
 	return &env, nil
 }
 
 // CreateEnvironment creates a new environment within the given project.
 func CreateEnvironment(ctx context.Context, mdClient *client.Client, projectID string, input CreateEnvironmentInput) (*Environment, error) {
-	response, err := createEnvironment(ctx, mdClient.GQL, mdClient.Config.OrganizationID, projectID, input)
+	response, err := createEnvironment(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, projectID, input)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +99,7 @@ func CreateEnvironment(ctx context.Context, mdClient *client.Client, projectID s
 
 // UpdateEnvironment updates an environment in the Massdriver API.
 func UpdateEnvironment(ctx context.Context, mdClient *client.Client, id string, input UpdateEnvironmentInput) (*Environment, error) {
-	response, err := updateEnvironment(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id, input)
+	response, err := updateEnvironment(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id, input)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +121,7 @@ func UpdateEnvironment(ctx context.Context, mdClient *client.Client, id string, 
 
 // DeleteEnvironment removes an environment by ID from the Massdriver API.
 func DeleteEnvironment(ctx context.Context, mdClient *client.Client, id string) (*Environment, error) {
-	response, err := deleteEnvironment(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id)
+	response, err := deleteEnvironment(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, err
 	}

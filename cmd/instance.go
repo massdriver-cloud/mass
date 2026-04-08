@@ -13,7 +13,6 @@ import (
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	apiv0 "github.com/massdriver-cloud/mass/internal/api/v0"
-	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/instance"
 	"github.com/massdriver-cloud/mass/internal/files"
@@ -175,7 +174,7 @@ func runInstanceGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	instance, err := api.GetInstance(ctx, mdClient, instanceId)
+	instance, err := apiv0.GetPackage(ctx, mdClient, instanceId)
 	if err != nil {
 		return err
 	}
@@ -199,7 +198,7 @@ func runInstanceGet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func renderInstance(instance *api.Instance) error {
+func renderInstance(instance *apiv0.Package) error {
 	tmplBytes, err := instanceTemplates.ReadFile("templates/instance.get.md.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to read template: %w", err)
