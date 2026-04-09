@@ -66,7 +66,7 @@ func toEnvironment(v any) (*Environment, error) {
 		Blueprint blueprint `mapstructure:"blueprint"`
 	}
 	var wrapper hasBP
-	if err := mapstructure.Decode(v, &wrapper); err == nil && len(wrapper.Blueprint.Instances.Items) > 0 {
+	if err := mapstructure.Decode(v, &wrapper); err == nil && len(wrapper.Blueprint.Instances.Items) > 0 { //nolint:musttag // internal unwrapping struct
 		env.Blueprint = &Blueprint{
 			Instances: wrapper.Blueprint.Instances.Items,
 		}

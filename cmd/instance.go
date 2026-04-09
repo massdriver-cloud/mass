@@ -167,14 +167,14 @@ func runInstanceGet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	instanceId := args[0]
+	instanceID := args[0]
 
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	instance, err := apiv0.GetPackage(ctx, mdClient, instanceId)
+	instance, err := apiv0.GetPackage(ctx, mdClient, instanceID)
 	if err != nil {
 		return err
 	}

@@ -71,7 +71,7 @@ func (msf *MockStateFetcher) FetchState(ctx context.Context, packageID string, s
 func TestExportPackage(t *testing.T) {
 	tests := []struct {
 		name          string
-		instance           *api.Package
+		instance      *api.Package
 		baseDir       string
 		setupMocks    func(*MockFileSystem, *MockBundleFetcher, *MockArtifactDownloader, *MockStateFetcher)
 		expectedDirs  []string
