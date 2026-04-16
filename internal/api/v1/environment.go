@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/mitchellh/mapstructure"
@@ -12,12 +13,13 @@ import (
 
 // Environment represents a Massdriver deployment environment within a project.
 type Environment struct {
-	ID          string      `json:"id" mapstructure:"id"`
-	Name        string      `json:"name" mapstructure:"name"`
-	Description string      `json:"description,omitempty" mapstructure:"description"`
-	Cost        CostSummary `json:"cost" mapstructure:"cost"`
-	Project     *Project    `json:"project,omitempty" mapstructure:"project,omitempty"`
-	Blueprint   *Blueprint  `json:"blueprint,omitempty" mapstructure:"-"`
+	ID          string            `json:"id" mapstructure:"id"`
+	Name        string            `json:"name" mapstructure:"name"`
+	Description string            `json:"description,omitempty" mapstructure:"description"`
+	Cost        CostSummary       `json:"cost" mapstructure:"cost"`
+	Tags        map[string]string `json:"tags,omitempty" mapstructure:"tags"`
+	Project     *Project          `json:"project,omitempty" mapstructure:"project,omitempty"`
+	Blueprint   *Blueprint        `json:"blueprint,omitempty" mapstructure:"-"`
 }
 
 // GetEnvironment retrieves an environment by ID from the Massdriver API.
@@ -66,7 +68,7 @@ func toEnvironment(v any) (*Environment, error) {
 		Blueprint blueprint `mapstructure:"blueprint"`
 	}
 	var wrapper hasBP
-	if err := mapstructure.Decode(v, &wrapper); err == nil && len(wrapper.Blueprint.Instances.Items) > 0 { //nolint:musttag // internal unwrapping struct
+	if err := mapstructure.Decode(v, &wrapper); err == nil && len(wrapper.Blueprint.Instances.Items) > 0 {
 		env.Blueprint = &Blueprint{
 			Instances: wrapper.Blueprint.Instances.Items,
 		}
@@ -139,4 +141,52 @@ func DeleteEnvironment(ctx context.Context, mdClient *client.Client, id string) 
 		return nil, errors.New("unable to delete environment")
 	}
 	return toEnvironment(response.DeleteEnvironment.Result)
+}
+
+// EnvironmentDefault is a default resource for an environment. Instances in
+// the environment automatically inherit defaults for their required resource types.
+type EnvironmentDefault struct {
+	ID        string                     `json:"id" mapstructure:"id"`
+	Resource  EnvironmentDefaultResource `json:"resource" mapstructure:"resource"`
+	CreatedAt time.Time                  `json:"createdAt" mapstructure:"createdAt"`
+	UpdatedAt time.Time                  `json:"updatedAt" mapstructure:"updatedAt"`
+}
+
+// EnvironmentDefaultResource is a resource referenced by an environment default.
+type EnvironmentDefaultResource struct {
+	ID           string        `json:"id" mapstructure:"id"`
+	Name         string        `json:"name" mapstructure:"name"`
+	ResourceType *ResourceType `json:"resourceType,omitempty" mapstructure:"resourceType,omitempty"`
+}
+
+// SetEnvironmentDefault sets a resource as the default of its type for an environment.
+// All instances in the environment will automatically inherit this resource. Only one
+// resource per type can be the default — remove the existing default first to change it.
+func SetEnvironmentDefault(ctx context.Context, mdClient *client.Client, environmentID, resourceID string) (*EnvironmentDefault, error) {
+	response, err := setEnvironmentDefault(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, environmentID, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	if !response.SetEnvironmentDefault.Successful {
+		messages := response.SetEnvironmentDefault.GetMessages()
+		if len(messages) > 0 {
+			var sb strings.Builder
+			sb.WriteString("unable to set environment default:")
+			for _, msg := range messages {
+				sb.WriteString("\n  - ")
+				sb.WriteString(msg.Message)
+			}
+			return nil, errors.New(sb.String())
+		}
+		return nil, errors.New("unable to set environment default")
+	}
+	return toEnvironmentDefault(response.SetEnvironmentDefault.Result)
+}
+
+func toEnvironmentDefault(v any) (*EnvironmentDefault, error) {
+	ed := EnvironmentDefault{}
+	if err := mapstructure.Decode(v, &ed); err != nil {
+		return nil, fmt.Errorf("failed to decode environment default: %w", err)
+	}
+	return &ed, nil
 }

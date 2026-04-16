@@ -13,7 +13,6 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	apiv0 "github.com/massdriver-cloud/mass/internal/api/v0"
 	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/project"
@@ -229,7 +228,7 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("✅ Project `%s` created successfully\n", project.ID)
-	urlHelper, urlErr := apiv0.NewURLHelper(ctx, mdClient)
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
 		fmt.Printf("🔗 %s\n", urlHelper.ProjectURL(project.ID))
 	}

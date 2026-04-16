@@ -1,3 +1,23 @@
+# SERVER
+
+query getServer {
+  server {
+    appUrl
+    version
+    mode
+    ssoProviders {
+      name
+      loginUrl
+      uiIconUrl
+      uiLabel
+    }
+    emailAuthMethods {
+      name
+    }
+  }
+}
+
+
 # PROJECTS
 
 query listProjects($organizationId: ID!) {
@@ -6,6 +26,7 @@ query listProjects($organizationId: ID!) {
       id
       name
       description
+      tags
       createdAt
       updatedAt
       cost {
@@ -27,6 +48,7 @@ query getProject($organizationId: ID!, $id: ID!) {
     id
     name
     description
+    tags
     environments {
       items {
         id
@@ -115,6 +137,12 @@ mutation deleteProject($organizationId: ID!, $id: ID!) {
 
 # ENVIRONMENTS
 
+# @genqlient(for: "EnvironmentsFilter.projectId", omitempty: true, pointer: true)
+# @genqlient(for: "EnvironmentsFilter.id", omitempty: true, pointer: true)
+# @genqlient(for: "IdFilter.eq", omitempty: true)
+# @genqlient(for: "IdFilter.in", omitempty: true)
+# @genqlient(for: "StringFilter.eq", omitempty: true)
+# @genqlient(for: "StringFilter.in", omitempty: true)
 query listEnvironments(
   $organizationId: ID!,
   # @genqlient(omitempty: true, pointer: true)
@@ -133,6 +161,7 @@ query listEnvironments(
       id
       name
       description
+      tags
       createdAt
       updatedAt
       project {
@@ -158,6 +187,7 @@ query getEnvironment($organizationId: ID!, $id: ID!) {
     id
     name
     description
+    tags
     createdAt
     updatedAt
     cost {
@@ -237,6 +267,293 @@ mutation deleteEnvironment($organizationId: ID!, $id: ID!) {
       id
       name
       description
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation setEnvironmentDefault($organizationId: ID!, $environmentId: ID!, $resourceId: ID!) {
+  setEnvironmentDefault(organizationId: $organizationId, environmentId: $environmentId, resourceId: $resourceId) {
+    result {
+      id
+      createdAt
+      updatedAt
+      resource {
+        id
+        name
+        resourceType {
+          id
+          name
+        }
+      }
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+
+# INSTANCES
+
+# @genqlient(for: "InstancesFilter.projectId", omitempty: true, pointer: true)
+# @genqlient(for: "InstancesFilter.environmentId", omitempty: true, pointer: true)
+# @genqlient(for: "InstancesFilter.status", omitempty: true, pointer: true)
+# @genqlient(for: "InstancesFilter.ociRepoName", omitempty: true, pointer: true)
+# @genqlient(for: "InstancesFilter.paramDimension", omitempty: true)
+# @genqlient(for: "IdFilter.eq", omitempty: true)
+# @genqlient(for: "IdFilter.in", omitempty: true)
+# @genqlient(for: "InstanceStatusFilter.eq", omitempty: true)
+# @genqlient(for: "InstanceStatusFilter.in", omitempty: true)
+# @genqlient(for: "OciRepoNameFilter.eq", omitempty: true)
+# @genqlient(for: "OciRepoNameFilter.in", omitempty: true)
+# @genqlient(for: "OciRepoNameFilter.startsWith", omitempty: true)
+# @genqlient(for: "ParamDimensionFilter.eq", omitempty: true)
+# @genqlient(for: "ParamDimensionFilter.in", omitempty: true)
+# @genqlient(for: "ParamDimensionFilter.contains", omitempty: true)
+query listInstances(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $filter: InstancesFilter,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: InstancesSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  instances(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      name
+      status
+      version
+      releaseStrategy
+      resolvedVersion
+      deployedVersion
+      availableUpgrade
+      tags
+      createdAt
+      updatedAt
+      cost {
+        monthlyAverage {
+          amount
+          currency
+        }
+        dailyAverage {
+          amount
+          currency
+        }
+      }
+      environment {
+        id
+        name
+        project {
+          id
+          name
+        }
+      }
+      bundle {
+        id
+        name
+        version
+      }
+    }
+  }
+}
+
+query getInstance($organizationId: ID!, $id: ID!) {
+  instance(organizationId: $organizationId, id: $id) {
+    id
+    name
+    status
+    params
+    tags
+    version
+    releaseStrategy
+    resolvedVersion
+    deployedVersion
+    availableUpgrade
+    tags
+    createdAt
+    updatedAt
+    cost {
+      monthlyAverage {
+        amount
+        currency
+      }
+      dailyAverage {
+        amount
+        currency
+      }
+    }
+    environment {
+      id
+      name
+      project {
+        id
+        name
+      }
+    }
+    bundle {
+      id
+      name
+      version
+    }
+    statePaths {
+      stepName
+      stateUrl
+    }
+  }
+}
+
+mutation updateInstance($organizationId: ID!, $id: ID!, $input: UpdateInstanceInput!) {
+  updateInstance(organizationId: $organizationId, id: $id, input: $input) {
+    result {
+      id
+      name
+      status
+      version
+      releaseStrategy
+      resolvedVersion
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation setInstanceSecret($organizationId: ID!, $id: ID!, $input: SetInstanceSecretInput!) {
+  setInstanceSecret(organizationId: $organizationId, id: $id, input: $input) {
+    result {
+      name
+      createdAt
+      updatedAt
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation removeInstanceSecret($organizationId: ID!, $id: ID!, $name: String!) {
+  removeInstanceSecret(organizationId: $organizationId, id: $id, name: $name) {
+    result {
+      name
+      createdAt
+      updatedAt
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+
+# DEPLOYMENTS
+
+# @genqlient(for: "DeploymentsFilter.instanceId", omitempty: true, pointer: true)
+# @genqlient(for: "DeploymentsFilter.status", omitempty: true, pointer: true)
+# @genqlient(for: "DeploymentsFilter.action", omitempty: true, pointer: true)
+# @genqlient(for: "IdFilter.eq", omitempty: true)
+# @genqlient(for: "IdFilter.in", omitempty: true)
+# @genqlient(for: "DeploymentStatusFilter.eq", omitempty: true)
+# @genqlient(for: "DeploymentStatusFilter.in", omitempty: true)
+# @genqlient(for: "DeploymentActionFilter.eq", omitempty: true)
+# @genqlient(for: "DeploymentActionFilter.in", omitempty: true)
+query listDeployments(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $filter: DeploymentsFilter,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: DeploymentsSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  deployments(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      status
+      action
+      version
+      message
+      createdAt
+      updatedAt
+      lastTransitionedAt
+      elapsedTime
+      deployedBy
+      instance {
+        id
+        name
+      }
+    }
+  }
+}
+
+query getDeployment($organizationId: ID!, $id: ID!) {
+  deployment(organizationId: $organizationId, id: $id) {
+    id
+    status
+    action
+    version
+    message
+    createdAt
+    updatedAt
+    lastTransitionedAt
+    elapsedTime
+    deployedBy
+    instance {
+      id
+      name
+      status
+      environment {
+        id
+        name
+        project {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+
+mutation createDeployment($organizationId: ID!, $id: ID!, $input: CreateDeploymentInput!) {
+  createDeployment(organizationId: $organizationId, id: $id, input: $input) {
+    result {
+      id
+      status
+      action
+      version
+      message
+      createdAt
+      instance {
+        id
+        name
+      }
     }
     successful
     messages {

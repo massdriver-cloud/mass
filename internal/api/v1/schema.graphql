@@ -1,5 +1,6 @@
 schema {
   mutation: RootMutationType
+  subscription: RootSubscriptionType
   query: RootQueryType
 }
 
@@ -130,6 +131,21 @@ type RootQueryType {
     id: ID!
   ): Deployment
 
+  "List bundle releases. Returns all published versions, filterable by repository, type, or search."
+  bundles(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Filter results"
+    filter: BundlesFilter
+
+    "How to sort results. Defaults to name ascending, or relevance when search is active."
+    sort: BundlesSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): BundlesPage
+
   """
   Get a bundle by its identifier.
 
@@ -150,6 +166,30 @@ type RootQueryType {
     "Bundle identifier (e.g., 'aws-aurora-postgres@1.2.3' or 'aws-aurora-postgres@latest')"
     id: BundleId!
   ): Bundle
+
+  "Get an OCI repository by name."
+  ociRepo(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The repository name (e.g., 'aws-aurora-postgres')"
+    id: ID!
+  ): OciRepo
+
+  "List OCI repositories in your organization. Returns a paginated list sorted by name."
+  ociRepos(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Filter results"
+    filter: OciReposFilter
+
+    "How to sort results. Defaults to name ascending, or relevance when search is active."
+    sort: OciReposSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): OciReposPage
 
   "List all groups in your organization. Returns a paginated list."
   groups(
@@ -237,6 +277,80 @@ type RootQueryType {
     "The audit log event ID"
     id: ID!
   ): AuditLog
+
+  "List resource types available to your organization. Includes public types and your organization's private types."
+  resourceTypes(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Filter results"
+    filter: ResourceTypesFilter
+
+    "How to sort results"
+    sort: ResourceTypesSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): ResourceTypesPage
+
+  "Get a single resource type by its ID."
+  resourceType(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The resource type ID (e.g., `aws-iam-role`)"
+    id: ID!
+  ): ResourceType
+
+  "List all resources in your organization."
+  resources(
+    "Your organization ID"
+    organizationId: ID!
+
+    "Filter results"
+    filter: ResourcesFilter
+
+    "How to sort results"
+    sort: ResourcesSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): ResourcesPage
+
+  "Get a single resource by its ID."
+  resource(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The resource ID"
+    id: ID!
+  ): Resource
+}
+
+type RootSubscriptionType {
+  "Subscribe to organization-level events such as project creation. Requires organization membership."
+  organizationEvents(
+    "Your organization's unique identifier"
+    organizationId: ID!
+  ): Event
+
+  "Subscribe to events within a project (project changes, environment lifecycle). Requires read access to the project."
+  projectEvents(
+    "Your organization's unique identifier"
+    organizationId: ID!
+
+    "The project to watch"
+    projectId: ID!
+  ): Event
+
+  "Subscribe to events for a specific instance (configuration changes, deployment creation). Requires read access to the instance's project."
+  instanceEvents(
+    "Your organization's unique identifier"
+    organizationId: ID!
+
+    "The instance to watch"
+    instanceId: ID!
+  ): Event
 }
 
 type RootMutationType {
@@ -302,6 +416,34 @@ type RootMutationType {
     "The environment ID to delete"
     id: ID!
   ): EnvironmentPayload
+
+  """
+  Set a resource as the default of its type for an environment. All instances
+  in the environment will automatically inherit this resource. Only one resource
+  per type can be the default — remove the existing default first to change it.
+  """
+  setEnvironmentDefault(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The environment to set the default on"
+    environmentId: ID!
+
+    "The resource to set as the default for its type"
+    resourceId: ID!
+  ): EnvironmentDefaultPayload
+
+  """
+  Remove an environment default. Instances will no longer inherit this resource
+  automatically. This can cause deployments to fail if instances depend on it.
+  """
+  removeEnvironmentDefault(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The environment default ID to remove"
+    id: ID!
+  ): EnvironmentDefaultPayload
 
   "Add a component to a project's blueprint."
   addComponent(
@@ -504,6 +646,24 @@ type RootMutationType {
     input: CreateIntegrationInput!
   ): IntegrationActivationPayload @inputs(name: "createIntegration", schema: "\/graphql\/v1\/inputs\/createIntegration.json", ui: "\/graphql\/v1\/inputs\/createIntegration.ui.json")
 
+  "Enable a disabled integration. Re-runs the integration's activation process and resumes scheduling."
+  enableIntegration(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The integration type ID to enable"
+    id: ID!
+  ): IntegrationActivationPayload
+
+  "Disable an integration. Stops scheduling and runs the integration's deactivation process."
+  disableIntegration(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The integration type ID to disable"
+    id: ID!
+  ): IntegrationPayload
+
   "Delete an integration. This disables it first, then removes the configuration."
   deleteIntegration(
     "Your organization ID"
@@ -601,6 +761,294 @@ type RootMutationType {
     "Remove a remote reference from an instance. The reference can only be removed if no provisioned instances are connected through it."
     input: RemoveRemoteReferenceInput!
   ): RemoteReferencePayload @inputs(name: "removeRemoteReference", schema: "\/graphql\/v1\/inputs\/removeRemoteReference.json", ui: "\/graphql\/v1\/inputs\/removeRemoteReference.ui.json")
+
+  "Import a new resource such as cloud credentials or a network configuration."
+  createResource(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The resource type ID (e.g., `aws-iam-role`)"
+    resourceTypeId: ID!
+
+    "Import a new resource with a name and optional payload conforming to the resource type's schema."
+    input: CreateResourceInput!
+  ): ResourcePayload @inputs(name: "createResource", schema: "\/graphql\/v1\/inputs\/createResource.json", ui: "\/graphql\/v1\/inputs\/createResource.ui.json")
+
+  "Update an imported resource's name or payload. Provisioned resources cannot be updated through the API."
+  updateResource(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The resource ID"
+    id: ID!
+
+    "Update a resource's name or payload. Provisioned resources can only have their name updated. Imported resources can also update their payload."
+    input: UpdateResourceInput!
+  ): ResourcePayload @inputs(name: "updateResource", schema: "\/graphql\/v1\/inputs\/updateResource.json", ui: "\/graphql\/v1\/inputs\/updateResource.ui.json")
+
+  "Delete an imported resource. Provisioned resources are removed when their instance is decommissioned."
+  deleteResource(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The resource ID to delete"
+    id: ID!
+  ): ResourcePayload
+
+  "Update an instance's version constraint or release strategy. Changes take effect on the next deployment."
+  updateInstance(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The instance ID to update"
+    id: ID!
+
+    "Update an instance's version constraint or release strategy. Changes take effect on the next deployment."
+    input: UpdateInstanceInput!
+  ): InstancePayload @inputs(name: "updateInstance", schema: "\/graphql\/v1\/inputs\/updateInstance.json", ui: "\/graphql\/v1\/inputs\/updateInstance.ui.json")
+
+  "Create or update a secret on an instance. The value is encrypted at rest and never returned in API responses."
+  setInstanceSecret(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The instance ID"
+    id: ID!
+
+    "Create or update a secret on an instance. The secret value is encrypted at rest and never returned in API responses."
+    input: SetInstanceSecretInput!
+  ): InstanceSecretPayload @inputs(name: "setInstanceSecret", schema: "\/graphql\/v1\/inputs\/setInstanceSecret.json", ui: "\/graphql\/v1\/inputs\/setInstanceSecret.ui.json")
+
+  "Remove a secret from an instance."
+  removeInstanceSecret(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The instance ID"
+    id: ID!
+
+    "The secret name to remove"
+    name: String!
+  ): InstanceSecretPayload
+
+  """
+  Deploy an instance with configuration parameters.
+
+  Caches the provided params on the instance, then creates a deployment.
+  Use action PROVISION to apply changes, PLAN to preview them, or
+  DECOMMISSION to tear down infrastructure.
+  """
+  createDeployment(
+    "Your organization ID"
+    organizationId: ID!
+
+    "The instance to deploy"
+    id: ID!
+
+    "Deploy an instance with configuration parameters. Params are validated against the bundle's params schema, cached on the instance, and snapshotted into the deployment."
+    input: CreateDeploymentInput!
+  ): DeploymentPayload @inputs(name: "createDeployment", schema: "\/graphql\/v1\/inputs\/createDeployment.json", ui: "\/graphql\/v1\/inputs\/createDeployment.ui.json")
+}
+
+"The type of change that occurred."
+enum EventAction {
+  "A new resource was created"
+  CREATED
+
+  "An existing resource was modified"
+  UPDATED
+
+  "A resource was removed"
+  DELETED
+}
+
+"A lifecycle event for a resource in your organization."
+interface Event {
+  "What happened"
+  action: EventAction!
+
+  "When it happened (UTC)"
+  timestamp: DateTime!
+}
+
+"A project lifecycle event."
+type ProjectEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The affected project"
+  project: Project!
+}
+
+"An environment lifecycle event."
+type EnvironmentEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The affected environment"
+  environment: Environment!
+}
+
+"An instance lifecycle event."
+type InstanceEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The affected instance"
+  instance: Instance!
+}
+
+"How a resource was created."
+enum ResourceOrigin {
+  "Manually imported by a user"
+  IMPORTED
+
+  "Created by deploying an instance"
+  PROVISIONED
+}
+
+"Available fields for sorting resources."
+enum ResourcesSortField {
+  "Sort alphabetically by name"
+  NAME
+
+  "Sort by when the resource was created"
+  CREATED_AT
+}
+
+"Sorting options for the resources list."
+input ResourcesSort {
+  "Which field to sort by"
+  field: ResourcesSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Filter which resources to return."
+input ResourcesFilter {
+  "Filter by origin (IMPORTED or PROVISIONED)"
+  origin: ResourceOriginFilter
+}
+
+"Filter for resource origin."
+input ResourceOriginFilter {
+  "Exact match"
+  eq: ResourceOrigin
+
+  "Match any of these origins"
+  in: [ResourceOrigin!]
+}
+
+"Import a new resource with a name and optional payload conforming to the resource type's schema."
+input CreateResourceInput {
+  "A human-readable name for this resource"
+  name: String!
+
+  "Resource data conforming to the resource type's schema. Structure varies by type."
+  payload: Map
+}
+
+"Update a resource's name or payload. Provisioned resources can only have their name updated. Imported resources can also update their payload."
+input UpdateResourceInput {
+  "A new human-readable name for this resource"
+  name: String
+
+  "Updated resource data. Only applicable to imported resources."
+  payload: Map
+}
+
+"An infrastructure resource such as a cloud credential, database, or network."
+type Resource {
+  "Unique resource identifier"
+  id: ID!
+
+  "Human-readable name"
+  name: String!
+
+  "Resource type identifier (e.g., `aws-iam-role`). Prefer `resourceType { id }`."
+  type: String
+
+  "How this resource was created"
+  origin: ResourceOrigin!
+
+  "The resource type this resource conforms to."
+  resourceType: ResourceType
+
+  "When this resource was created (UTC)"
+  createdAt: DateTime!
+
+  "When this resource was last modified (UTC)"
+  updatedAt: DateTime!
+}
+
+type ResourcesPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type resource."
+  items: [Resource]
+}
+
+type ResourcePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Resource
+}
+
+"Available fields for sorting resource types."
+enum ResourceTypesSortField {
+  "Sort alphabetically by resource type name"
+  NAME
+
+  "Sort by when the resource type was created"
+  CREATED_AT
+}
+
+"Sorting options for the resource types list."
+input ResourceTypesSort {
+  "Which field to sort by"
+  field: ResourceTypesSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Filter which resource types to return."
+input ResourceTypesFilter {
+  "Filter by resource type ID"
+  id: StringFilter
+}
+
+"A resource type defines what kind of infrastructure a resource represents, such as an AWS IAM role or a VPC."
+type ResourceType {
+  "Resource type identifier (e.g., `aws-iam-role`)"
+  id: ID!
+
+  "Human-readable display name"
+  name: String!
+
+  "When this resource type was created (UTC)"
+  createdAt: DateTime!
+
+  "When this resource type was last modified (UTC)"
+  updatedAt: DateTime!
+}
+
+type ResourceTypesPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type resource_type."
+  items: [ResourceType]
 }
 
 "Link an instance's resource field to a resource from another project or an imported resource. The instance must not be in a provisioned or failed state."
@@ -653,7 +1101,7 @@ type RemoteReferencePayload {
   result: RemoteReference
 }
 
-"A service account."
+"A non-human identity for programmatic API access. Permissions are controlled through group memberships."
 type ServiceAccount {
   "Service account identifier"
   id: ID!
@@ -1198,7 +1646,7 @@ input CreateOrganizationTagConstraintInput {
   scope: TagConstraintScope!
 }
 
-"A tag constraint."
+"A rule defining an allowed tag key, which resource level it applies to, and whether it's required."
 type OrganizationTagConstraint {
   "Unique identifier"
   id: ID!
@@ -1286,7 +1734,7 @@ input UpdateGroupInput {
   name: String!
 }
 
-"A group."
+"A set of users and service accounts that share the same access level within your organization."
 type Group {
   "Group identifier"
   id: ID!
@@ -1375,7 +1823,7 @@ input CreateOrganizationInput {
   name: String!
 }
 
-"An organization."
+"Your top-level account containing projects, environments, members, and infrastructure."
 type Organization {
   id: ID!
 
@@ -1400,7 +1848,7 @@ type Organization {
     cursor: Cursor
   ): OrganizationTagConstraintsPage
 
-  "JSON Schema describing the tag fields for a given resource scope."
+  "Returns a JSON Schema you can use to validate tags for the specified resource scope."
   tagSchema(
     "Resource level (e.g. PROJECT, ENVIRONMENT)"
     scope: TagConstraintScope!
@@ -1882,7 +2330,7 @@ type ComponentPosition {
   y: Int!
 }
 
-"A component."
+"A bundle placed in a project's blueprint, defining what infrastructure can be deployed to environments."
 type Component {
   id: ID!
 
@@ -1911,7 +2359,7 @@ type Component {
   project: Project
 }
 
-"A link."
+"A dependency between two components in a blueprint, wiring an output of one to an input of another."
 type Link {
   id: ID!
 
@@ -2004,6 +2452,18 @@ type LinkPayload {
   result: Link
 }
 
+"Deploy an instance with configuration parameters. Params are validated against the bundle's params schema, cached on the instance, and snapshotted into the deployment."
+input CreateDeploymentInput {
+  "The operation to perform: PROVISION to apply changes, PLAN to preview them, or DECOMMISSION to tear down infrastructure"
+  action: DeploymentAction!
+
+  "A short message describing the reason for this deployment"
+  message: String
+
+  "Bundle configuration parameters. Validated against the bundle's params schema."
+  params: Map!
+}
+
 "The current state of a deployment operation."
 enum DeploymentStatus {
   "Waiting to start"
@@ -2064,7 +2524,7 @@ input DeploymentsFilter {
   action: DeploymentActionFilter
 }
 
-"A deployment."
+"A record of an infrastructure provisioning operation, tracking its progress, action, and outcome."
 type Deployment {
   id: ID!
 
@@ -2105,6 +2565,17 @@ type DeploymentsPage {
 
   "A list of type deployment."
   items: [Deployment]
+}
+
+type DeploymentPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Deployment
 }
 
 "Available fields for sorting instances."
@@ -2215,22 +2686,56 @@ input ParamDimensionsSort {
   order: SortOrder!
 }
 
-"An artifact produced or consumed by an instance."
-type Resource {
-  "Resource identifier (`package.field` for provisioned resources, UUID for imports)"
-  id: ID!
+"Update an instance's version constraint or release strategy. Changes take effect on the next deployment."
+input UpdateInstanceInput {
+  "Whether to use stable or development releases"
+  releaseStrategy: ReleaseStrategy
 
-  "Resource name"
+  "Version constraint for the bundle (e.g., '~1.0', '1.2.3', 'latest'). Resolved against available releases."
+  version: String
+}
+
+"Create or update a secret on an instance. The secret value is encrypted at rest and never returned in API responses."
+input SetInstanceSecretInput {
+  "The secret name, as defined in the bundle's massdriver.yaml"
   name: String!
 
-  "Resource type (e.g., the artifact definition type)"
-  type: String
+  "The secret value. Will be encrypted at rest."
+  value: String!
+}
 
-  "When this resource was created (UTC)"
+"Metadata about a secret on an instance. The value is never exposed."
+type InstanceSecret {
+  "The secret name"
+  name: String!
+
+  "When this secret was created (UTC)"
   createdAt: DateTime!
 
-  "When this resource was last modified (UTC)"
+  "When this secret was last modified (UTC)"
   updatedAt: DateTime!
+}
+
+type InstancePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Instance
+}
+
+type InstanceSecretPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: InstanceSecret
 }
 
 "A resource keyed by the output handle that produced it."
@@ -2251,6 +2756,15 @@ type InstanceDependency {
   resource: Resource!
 }
 
+"A Terraform\/OpenTofu state path for a deployment step."
+type InstanceStatePath {
+  "URL for this step's state on the Massdriver HTTP state backend."
+  stateUrl: String!
+
+  "The step's path identifier from the bundle definition"
+  stepName: String!
+}
+
 type InstanceResourcesPage {
   "Pagination cursors"
   cursor: PaginationCursor!
@@ -2267,7 +2781,7 @@ type InstanceDependenciesPage {
   items: [InstanceDependency]
 }
 
-"An instance."
+"A deployed piece of infrastructure in an environment, created from a bundle."
 type Instance {
   id: ID!
 
@@ -2276,6 +2790,9 @@ type Instance {
 
   "Current state of the instance"
   status: InstanceStatus!
+
+  "Cached configuration parameters, set during the last deployment"
+  params: Map
 
   "Tags assigned directly to this instance"
   tags: Map!
@@ -2309,6 +2826,9 @@ type Instance {
 
   "The bundle version currently deployed."
   bundle: Bundle
+
+  "Terraform\/OpenTofu state paths for each deployment step, in bundle step order."
+  statePaths: [InstanceStatePath!]!
 
   "Resources produced by this instance (its output artifacts)."
   resources(cursor: Cursor): InstanceResourcesPage
@@ -2479,7 +2999,7 @@ input UpdateEnvironmentInput {
   tags: Map
 }
 
-"An environment."
+"A deployment target within a project (e.g., staging, production) that contains your deployed infrastructure."
 type Environment {
   id: ID!
 
@@ -2509,6 +3029,55 @@ type Environment {
 
   "The realized infrastructure blueprint for this environment (instances and connections)."
   blueprint: EnvironmentBlueprint
+
+  "Default resources for this environment. Instances inherit these automatically."
+  defaults(cursor: Cursor): EnvironmentDefaultsPage
+}
+
+"A resource referenced by an environment default."
+type EnvironmentDefaultResource {
+  "Unique resource identifier"
+  id: ID!
+
+  "Human-readable resource name"
+  name: String!
+
+  "The resource type this resource conforms to."
+  resourceType: ResourceType
+}
+
+"A default resource for an environment. Instances in the environment automatically inherit defaults for their required resource types."
+type EnvironmentDefault {
+  "Unique identifier for this environment default"
+  id: ID!
+
+  "The resource set as the default."
+  resource: EnvironmentDefaultResource!
+
+  "When this default was set (UTC)"
+  createdAt: DateTime!
+
+  "When this default was last modified (UTC)"
+  updatedAt: DateTime!
+}
+
+type EnvironmentDefaultsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type environment_default."
+  items: [EnvironmentDefault]
+}
+
+type EnvironmentDefaultPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: EnvironmentDefault
 }
 
 type EnvironmentsPage {
@@ -2575,7 +3144,7 @@ input UpdateProjectInput {
   tags: Map
 }
 
-"A project."
+"A container for organizing related infrastructure. Each project has a blueprint and one or more environments."
 type Project {
   id: ID!
 
@@ -2649,6 +3218,18 @@ As an input, accepts:
 scalar BundleId
 
 """
+Release channel for automatic bundle upgrades.
+
+- `~1` — latest minor in 1.x.x series
+- `~1.2` — latest patch in 1.2.x series
+- `~1+dev` — latest in 1.x.x including dev builds
+- `~1.2+dev` — latest in 1.2.x including dev builds
+- `latest` — newest stable release
+- `latest+dev` — newest release including dev builds
+"""
+scalar ReleaseChannel
+
+"""
 Version constraint for bundle releases.
 
 Accepts exact versions or release channels:
@@ -2662,7 +3243,48 @@ Accepts exact versions or release channels:
 """
 scalar VersionConstraint
 
-"A bundle."
+"Available fields for sorting bundles."
+enum BundlesSortField {
+  "Sort alphabetically by bundle name"
+  NAME
+
+  "Sort by when the bundle version was published"
+  CREATED_AT
+}
+
+"Sorting options for the bundles list."
+input BundlesSort {
+  "Which field to sort by"
+  field: BundlesSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Filter which bundles to return."
+input BundlesFilter {
+  "Filter by OCI repository name"
+  ociRepo: OciRepoNameFilter
+
+  "Filter by resource type produced (e.g., 'dynamodb-table')"
+  resourceType: StringFilter
+
+  "Filter by dependency type consumed (e.g., 'iam-role')"
+  dependencyType: StringFilter
+
+  "Unified search across bundle name, description, operator guide, and readme. Results are ranked by relevance by default. Pass sort to override with a specific field order. For terms longer than 3 characters, also matches bundle names by prefix. Pagination cursors from search results are not interchangeable with non-search cursors."
+  search: String
+}
+
+type BundlesPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type bundle."
+  items: [Bundle]
+}
+
+"A versioned infrastructure-as-code bundle (e.g., `aws-aurora-postgres@1.2.3`)."
 type Bundle {
   "Bundle identifier in `name@version` format (e.g., 'aws-aurora-postgres@1.2.3')"
   id: BundleId!
@@ -2699,10 +3321,153 @@ The short name of an OCI repository in your organization's catalog.
 """
 scalar OciRepoName
 
-"An OCI repository."
+"Available fields for sorting OCI repositories."
+enum OciReposSortField {
+  "Sort alphabetically by repository name"
+  NAME
+
+  "Sort by when the repository was created"
+  CREATED_AT
+}
+
+"Available fields for sorting tags."
+enum OciRepoTagsSortField {
+  "Sort by semantic version order"
+  VERSION
+
+  "Sort by when the tag was published"
+  CREATED_AT
+}
+
+"Available fields for sorting release channels."
+enum OciRepoReleaseChannelsSortField {
+  "Sort alphabetically by channel name"
+  NAME
+}
+
+"Filter which OCI repositories to return."
+input OciReposFilter {
+  "Filter by OCI artifact type (e.g., 'application\/vnd.massdriver.bundle.v1+json')"
+  artifactType: String
+
+  "Filter by repository name"
+  name: OciRepoNameFilter
+
+  "Unified search across repository name, readme, and changelog. Results are ranked by relevance by default. Pass sort to override with a specific field order. For terms longer than 3 characters, also matches names by prefix. Pagination cursors from search results are not interchangeable with non-search cursors."
+  search: String
+}
+
+"Sorting options for the OCI repositories list."
+input OciReposSort {
+  "Which field to sort by"
+  field: OciReposSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Sorting options for tags."
+input OciRepoTagsSort {
+  "Which field to sort by"
+  field: OciRepoTagsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"Filter which release channels to return."
+input OciRepoReleaseChannelsFilter {
+  "When true, return only stable channels. When false, return only development channels. When omitted, return all channels."
+  stable: Boolean
+}
+
+"Sorting options for release channels."
+input OciRepoReleaseChannelsSort {
+  "Which field to sort by"
+  field: OciRepoReleaseChannelsSortField!
+
+  "Sort direction"
+  order: SortOrder!
+}
+
+"A release channel that auto-resolves to the latest matching version."
+type OciRepoReleaseChannel {
+  "Channel constraint (e.g., '~1', '~1.2', 'latest')"
+  name: ReleaseChannel!
+
+  "The resolved version this channel currently points to"
+  tag: Semver!
+}
+
+"A published version tag in an OCI repository."
+type OciRepoTag {
+  "Semantic version (e.g., '1.2.3')"
+  tag: Semver!
+
+  "When this version was published (UTC)"
+  createdAt: DateTime!
+}
+
+"An OCI repository in your organization's catalog."
 type OciRepo {
-  "OCI repository name"
+  id: ID!
+
+  "Repository name (e.g., 'aws-aurora-postgres')"
   name: OciRepoName!
+
+  "The OCI artifact type stored in this repository."
+  artifactType: String!
+
+  "When this repository was created (UTC)"
+  createdAt: DateTime!
+
+  "When this repository was last modified (UTC)"
+  updatedAt: DateTime!
+
+  "Release channels for automatic version tracking. Each channel resolves to the latest matching tag."
+  releaseChannels(
+    "Filter channels"
+    filter: OciRepoReleaseChannelsFilter
+
+    "How to sort channels"
+    sort: OciRepoReleaseChannelsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): OciRepoReleaseChannelsPage
+
+  "Published version tags in this repository."
+  tags(
+    "How to sort tags"
+    sort: OciRepoTagsSort
+
+    "Pagination cursor from a previous response"
+    cursor: Cursor
+  ): OciRepoTagsPage
+}
+
+type OciReposPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type oci_repo."
+  items: [OciRepo]
+}
+
+type OciRepoTagsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type oci_repo_tag."
+  items: [OciRepoTag]
+}
+
+type OciRepoReleaseChannelsPage {
+  "Pagination cursors"
+  cursor: PaginationCursor!
+
+  "A list of type oci_repo_release_channel."
+  items: [OciRepoReleaseChannel]
 }
 
 "A single cost measurement with amount and currency."
@@ -2784,6 +3549,9 @@ input OciRepoNameFilter {
 
   "Match any of these values"
   in: [OciRepoName!]
+
+  "Prefix match (e.g., 'aws-' matches 'aws-aurora-postgres')"
+  startsWith: OciRepoName
 }
 
 """

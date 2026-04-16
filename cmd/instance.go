@@ -13,6 +13,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	apiv0 "github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/instance"
 	"github.com/massdriver-cloud/mass/internal/files"
@@ -99,7 +100,7 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 		Example: `mass instance create dbbundle-test-serverless --bundle aws-rds-cluster`,
 		Long:    helpdocs.MustRender("instance/create"),
 		Args:    cobra.ExactArgs(1),
-		RunE:    runPkgCreate,
+		RunE:    runInstanceCreate,
 	}
 	instanceCreateCmd.Flags().StringP("name", "n", "", "Manifest name (defaults to slug if not provided)")
 	instanceCreateCmd.Flags().StringP("bundle", "b", "", "Bundle ID or name (required)")
@@ -174,7 +175,7 @@ func runInstanceGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	instance, err := apiv0.GetPackage(ctx, mdClient, instanceID)
+	instance, err := api.GetInstance(ctx, mdClient, instanceID)
 	if err != nil {
 		return err
 	}
@@ -198,7 +199,7 @@ func runInstanceGet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func renderInstance(instance *apiv0.Package) error {
+func renderInstance(instance *api.Instance) error {
 	tmplBytes, err := instanceTemplates.ReadFile("templates/instance.get.md.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to read template: %w", err)
@@ -286,12 +287,10 @@ func runInstanceConfigure(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✅ Instance `%s` configured successfully\n", configuredInstance.ID)
 
 	// Get instance details to build URL
-	instanceDetails, err := apiv0.GetPackage(ctx, mdClient, configuredInstance.ID)
-	if err == nil && instanceDetails.Environment != nil && instanceDetails.Environment.Project != nil && instanceDetails.Manifest != nil {
-		urlHelper, urlErr := apiv0.NewURLHelper(ctx, mdClient)
-		if urlErr == nil {
-			fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(instanceDetails.Environment.Project.ID, instanceDetails.Environment.ID, instanceDetails.Manifest.ID))
-		}
+	instanceDetails, err := api.GetInstance(ctx, mdClient, configuredInstance.ID)
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	if urlErr == nil {
+		fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(instanceDetails.ID))
 	}
 
 	return nil
@@ -338,7 +337,7 @@ func runInstanceExport(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runPkgCreate(cmd *cobra.Command, args []string) error {
+func runInstanceCreate(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	fullID := args[0]
@@ -552,23 +551,24 @@ func runInstanceList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	env, err := apiv0.GetEnvironment(ctx, mdClient, environmentID)
+	filter := api.InstancesFilter{
+		EnvironmentId: &api.IdFilter{Eq: environmentID},
+	}
+
+	instances, err := api.ListInstances(ctx, mdClient, &filter)
 	if err != nil {
 		return err
 	}
 
 	tbl := cli.NewTable("ID", "Name", "Bundle", "Status")
 
-	for _, p := range env.Packages {
-		name := ""
-		if p.Manifest != nil {
-			name = p.Manifest.Name
-		}
+	for _, instance := range instances {
+		name := instance.Name
 		bundleName := ""
-		if p.Bundle != nil {
-			bundleName = p.Bundle.Name
+		if instance.Bundle != nil {
+			bundleName = instance.Bundle.Name
 		}
-		tbl.AddRow(p.ID, name, bundleName, p.Status)
+		tbl.AddRow(instance.ID, name, bundleName, instance.Status)
 	}
 
 	tbl.Print()

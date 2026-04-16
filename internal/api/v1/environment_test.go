@@ -105,6 +105,74 @@ func TestCreateEnvironment(t *testing.T) {
 	}
 }
 
+func TestSetEnvironmentDefault(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"setEnvironmentDefault": map[string]any{
+				"result": map[string]any{
+					"id": "envdef-1",
+					"resource": map[string]any{
+						"id":   "res-1",
+						"name": "default-vpc",
+						"resourceType": map[string]any{
+							"id":   "aws-vpc",
+							"name": "AWS VPC",
+						},
+					},
+				},
+				"successful": true,
+			},
+		},
+	})
+	mdClient := client.Client{
+		GQLv1: gqlClient,
+	}
+
+	envDefault, err := api.SetEnvironmentDefault(t.Context(), &mdClient, "env-1", "res-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if envDefault.ID != "envdef-1" {
+		t.Errorf("got %s, wanted envdef-1", envDefault.ID)
+	}
+	if envDefault.Resource.ID != "res-1" {
+		t.Errorf("got resource ID %s, wanted res-1", envDefault.Resource.ID)
+	}
+	if envDefault.Resource.Name != "default-vpc" {
+		t.Errorf("got resource name %s, wanted default-vpc", envDefault.Resource.Name)
+	}
+	if envDefault.Resource.ResourceType == nil || envDefault.Resource.ResourceType.ID != "aws-vpc" {
+		t.Errorf("expected resource type aws-vpc")
+	}
+}
+
+func TestSetEnvironmentDefaultFailure(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"setEnvironmentDefault": map[string]any{
+				"result":     nil,
+				"successful": false,
+				"messages": []map[string]any{
+					{
+						"code":    "conflict",
+						"field":   "resourceId",
+						"message": "a default of this resource type already exists",
+					},
+				},
+			},
+		},
+	})
+	mdClient := client.Client{
+		GQLv1: gqlClient,
+	}
+
+	_, err := api.SetEnvironmentDefault(t.Context(), &mdClient, "env-1", "res-1")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
 func TestDeleteEnvironment(t *testing.T) {
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{

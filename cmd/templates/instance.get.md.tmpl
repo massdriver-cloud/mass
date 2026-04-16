@@ -1,34 +1,23 @@
-# Package: {{.Slug}}
+# Package: {{.ID}}
 
 **Bundle:** {{.Bundle.Name}}
 
-**Environment:** {{.Environment.Slug}}
+**Environment:** {{.Environment.ID}}
 
-**Deployed Version:** {{if .DeployedVersion}}{{deref .DeployedVersion}}{{else}}N/A{{end}}
+**Status:** {{.Status}}
 
-{{if .LatestDeployment -}}
-## Latest Deployment
+**Deployed Version:** {{if .DeployedVersion}}`{{deref .DeployedVersion}}`{{else}}N/A{{end}}
 
-| Field | Value |
-|-------|-------|
-| ID | {{.LatestDeployment.ID}} |
-| Status | {{.LatestDeployment.Status}} |
-| Action | {{.LatestDeployment.Action}} |
-| Version | {{.LatestDeployment.Version}} |
-| Created At | {{.LatestDeployment.CreatedAt.UTC.Format "2006-01-02 15:04:05 UTC"}} |
-{{end}}
-{{- if .ActiveDeployment -}}
-## Active Deployment
+**Tags:**
+{{- if .Tags}}
+{{- range $key, $value := .Tags}}
+- **{{$key}}:** {{$value}}
+{{- end}}
+{{- else}}
+No tags
+{{- end}}
 
-| Field | Value |
-|-------|-------|
-| ID | {{.ActiveDeployment.ID}} |
-| Status | {{.ActiveDeployment.Status}} |
-| Action | {{.ActiveDeployment.Action}} |
-| Version | {{.ActiveDeployment.Version}} |
-| Created At | {{.ActiveDeployment.CreatedAt.UTC.Format "2006-01-02 15:04:05 UTC"}} |
-{{end}}
-## Parameters
+**Parameters:**
 ```json
 {{.ParamsJSON}}
 ```
