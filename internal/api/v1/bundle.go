@@ -1,7 +1,12 @@
 package api
 
 import (
+	"context"
+	"fmt"
 	"time"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/mitchellh/mapstructure"
 )
 
 // Bundle represents a Massdriver bundle (IaC module) and its metadata.
@@ -12,6 +17,43 @@ type Bundle struct {
 	Description string    `json:"description,omitempty" mapstructure:"description"`
 	Icon        string    `json:"icon,omitempty" mapstructure:"icon"`
 	SourceURL   string    `json:"sourceUrl,omitempty" mapstructure:"sourceUrl"`
+	Repo        string    `json:"repo,omitempty" mapstructure:"repo"`
 	CreatedAt   time.Time `json:"createdAt,omitempty" mapstructure:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+}
+
+// GetBundle retrieves a bundle by its identifier (e.g., "aws-aurora-postgres@1.2.3" or "aws-aurora-postgres@latest").
+func GetBundle(ctx context.Context, mdClient *client.Client, id string) (*Bundle, error) {
+	response, err := getBundle(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bundle %s: %w", id, err)
+	}
+	return toBundle(response.Bundle)
+}
+
+// ListBundles returns bundles, optionally filtered and sorted.
+func ListBundles(ctx context.Context, mdClient *client.Client, filter *BundlesFilter, sort *BundlesSort) ([]Bundle, error) {
+	response, err := listBundles(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, sort, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list bundles: %w", err)
+	}
+
+	bundles := make([]Bundle, 0, len(response.Bundles.Items))
+	for _, resp := range response.Bundles.Items {
+		b, bErr := toBundle(resp)
+		if bErr != nil {
+			return nil, fmt.Errorf("failed to convert bundle: %w", bErr)
+		}
+		bundles = append(bundles, *b)
+	}
+
+	return bundles, nil
+}
+
+func toBundle(v any) (*Bundle, error) {
+	b := Bundle{}
+	if err := mapstructure.Decode(v, &b); err != nil {
+		return nil, fmt.Errorf("failed to decode bundle: %w", err)
+	}
+	return &b, nil
 }

@@ -402,12 +402,12 @@ func runInstanceVersion(cmd *cobra.Command, args []string) error {
 	}
 
 	// Convert release channel to ReleaseStrategy enum value
-	var releaseStrategy apiv0.ReleaseStrategy
+	var releaseStrategy api.ReleaseStrategy
 	switch releaseChannel {
 	case "development":
-		releaseStrategy = apiv0.ReleaseStrategyDevelopment
+		releaseStrategy = api.ReleaseStrategyDevelopment
 	case "stable":
-		releaseStrategy = apiv0.ReleaseStrategyStable
+		releaseStrategy = api.ReleaseStrategyStable
 	default:
 		return fmt.Errorf("invalid release-channel: must be 'stable' or 'development', got '%s'", releaseChannel)
 	}
@@ -417,7 +417,12 @@ func runInstanceVersion(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	updatedPkg, err := apiv0.SetPackageVersion(ctx, mdClient, instanceID, version, releaseStrategy)
+	input := api.UpdateInstanceInput{
+		Version:         version,
+		ReleaseStrategy: releaseStrategy,
+	}
+
+	updatedPkg, err := api.UpdateInstance(ctx, mdClient, instanceID, input)
 	if err != nil {
 		return err
 	}
@@ -427,9 +432,9 @@ func runInstanceVersion(cmd *cobra.Command, args []string) error {
 	// Get instance details to build URL
 	instanceDetails, err := apiv0.GetPackage(ctx, mdClient, updatedPkg.ID)
 	if err == nil && instanceDetails.Environment != nil && instanceDetails.Environment.Project != nil && instanceDetails.Manifest != nil {
-		urlHelper, urlErr := apiv0.NewURLHelper(ctx, mdClient)
+		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 		if urlErr == nil {
-			fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(instanceDetails.Environment.Project.ID, instanceDetails.Environment.ID, instanceDetails.Manifest.ID))
+			fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(instanceDetails.ID))
 		}
 	}
 
@@ -563,12 +568,7 @@ func runInstanceList(cmd *cobra.Command, args []string) error {
 	tbl := cli.NewTable("ID", "Name", "Bundle", "Status")
 
 	for _, instance := range instances {
-		name := instance.Name
-		bundleName := ""
-		if instance.Bundle != nil {
-			bundleName = instance.Bundle.Name
-		}
-		tbl.AddRow(instance.ID, name, bundleName, instance.Status)
+		tbl.AddRow(instance.ID, instance.Component.Name, instance.Bundle.Name, instance.Status)
 	}
 
 	tbl.Print()

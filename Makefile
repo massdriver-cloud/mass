@@ -5,8 +5,8 @@ LD_FLAGS := "-X github.com/massdriver-cloud/mass/pkg/version.version=dev -X gith
 MASSDRIVER_PATH?=../massdriver
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(dir $(MKFILE_PATH))
-API_DIR := pkg/api
-SCHEMA_URL ?= https://api.massdriver.cloud/graphql/schema.graphql
+API_DIR := internal/api/v1
+SCHEMA_URL ?= https://api.massdriver.cloud/graphql/v1/schema.graphql
 
 .DEFAULT_GOAL := install
 

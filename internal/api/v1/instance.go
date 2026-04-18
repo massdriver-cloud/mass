@@ -30,6 +30,7 @@ type Instance struct {
 	StatePaths       []InstanceStatePath `json:"statePaths,omitempty" mapstructure:"statePaths"`
 	Environment      *Environment        `json:"environment,omitempty" mapstructure:"environment,omitempty"`
 	Bundle           *Bundle             `json:"bundle,omitempty" mapstructure:"bundle,omitempty"`
+	Component        *Component          `json:"component,omitempty" mapstructure:"component,omitempty"`
 }
 
 // InstanceStatePath is a Terraform/OpenTofu state path for a deployment step.

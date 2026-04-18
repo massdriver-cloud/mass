@@ -137,6 +137,9 @@ mutation deleteProject($organizationId: ID!, $id: ID!) {
 
 # ENVIRONMENTS
 
+# @genqlient(for: "Cursor.limit", omitempty: true)
+# @genqlient(for: "Cursor.next", omitempty: true)
+# @genqlient(for: "Cursor.previous", omitempty: true)
 # @genqlient(for: "EnvironmentsFilter.projectId", omitempty: true, pointer: true)
 # @genqlient(for: "EnvironmentsFilter.id", omitempty: true, pointer: true)
 # @genqlient(for: "IdFilter.eq", omitempty: true)
@@ -219,6 +222,11 @@ query getEnvironment($organizationId: ID!, $id: ID!) {
           releaseStrategy
           createdAt
           updatedAt
+          component {
+            id
+            name
+            description
+          }
           bundle {
             name
             id
@@ -368,6 +376,11 @@ query listInstances(
         name
         version
       }
+      component {
+        id
+        name
+        description
+      }
     }
   }
 }
@@ -409,6 +422,11 @@ query getInstance($organizationId: ID!, $id: ID!) {
       id
       name
       version
+    }
+    component {
+      id
+      name
+      description
     }
     statePaths {
       stepName
@@ -554,6 +572,272 @@ mutation createDeployment($organizationId: ID!, $id: ID!, $input: CreateDeployme
         id
         name
       }
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+
+# BUNDLES
+
+# @genqlient(for: "BundlesFilter.ociRepo", omitempty: true, pointer: true)
+# @genqlient(for: "BundlesFilter.resourceType", omitempty: true, pointer: true)
+# @genqlient(for: "BundlesFilter.dependencyType", omitempty: true, pointer: true)
+# @genqlient(for: "BundlesFilter.search", omitempty: true)
+# @genqlient(for: "OciRepoNameFilter.eq", omitempty: true)
+# @genqlient(for: "OciRepoNameFilter.in", omitempty: true)
+# @genqlient(for: "OciRepoNameFilter.startsWith", omitempty: true)
+# @genqlient(for: "StringFilter.eq", omitempty: true)
+# @genqlient(for: "StringFilter.in", omitempty: true)
+query listBundles(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $filter: BundlesFilter,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: BundlesSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  bundles(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      name
+      version
+      description
+      icon
+      sourceUrl
+      repo
+      createdAt
+      updatedAt
+    }
+  }
+}
+
+query getBundle($organizationId: ID!, $id: BundleId!) {
+  bundle(organizationId: $organizationId, id: $id) {
+    id
+    name
+    version
+    description
+    icon
+    sourceUrl
+    repo
+    createdAt
+    updatedAt
+  }
+}
+
+
+# OCI REPOS
+
+# @genqlient(for: "OciReposFilter.artifactType", omitempty: true)
+# @genqlient(for: "OciReposFilter.name", omitempty: true, pointer: true)
+# @genqlient(for: "OciReposFilter.search", omitempty: true)
+# @genqlient(for: "OciRepoNameFilter.eq", omitempty: true)
+# @genqlient(for: "OciRepoNameFilter.in", omitempty: true)
+# @genqlient(for: "OciRepoNameFilter.startsWith", omitempty: true)
+query listOciRepos(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $filter: OciReposFilter,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: OciReposSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  ociRepos(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      name
+      artifactType
+      createdAt
+      updatedAt
+      releaseChannels {
+        items {
+          name
+          tag
+        }
+      }
+    }
+  }
+}
+
+query getOciRepo($organizationId: ID!, $id: ID!) {
+  ociRepo(organizationId: $organizationId, id: $id) {
+    id
+    name
+    artifactType
+    createdAt
+    updatedAt
+    releaseChannels {
+      items {
+        name
+        tag
+      }
+    }
+    tags {
+      items {
+        tag
+        createdAt
+      }
+    }
+  }
+}
+
+
+# RESOURCE TYPES
+
+# @genqlient(for: "ResourceTypesFilter.id", omitempty: true, pointer: true)
+query listResourceTypes(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $filter: ResourceTypesFilter,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: ResourceTypesSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  resourceTypes(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      name
+      icon
+      connectionOrientation
+      createdAt
+      updatedAt
+    }
+  }
+}
+
+query getResourceType($organizationId: ID!, $id: ID!) {
+  resourceType(organizationId: $organizationId, id: $id) {
+    id
+    name
+    icon
+    connectionOrientation
+    createdAt
+    updatedAt
+  }
+}
+
+
+# RESOURCES
+
+# @genqlient(for: "ResourcesFilter.origin", omitempty: true, pointer: true)
+# @genqlient(for: "ResourceOriginFilter.eq", omitempty: true)
+# @genqlient(for: "ResourceOriginFilter.in", omitempty: true)
+# @genqlient(for: "CreateResourceInput.payload", omitempty: true)
+# @genqlient(for: "UpdateResourceInput.name", omitempty: true)
+# @genqlient(for: "UpdateResourceInput.payload", omitempty: true)
+query listResources(
+  $organizationId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $filter: ResourcesFilter,
+  # @genqlient(omitempty: true, pointer: true)
+  $sort: ResourcesSort,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  resources(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+    cursor {
+      next
+      previous
+    }
+    items {
+      id
+      name
+      origin
+      resourceType {
+        id
+        name
+      }
+      createdAt
+      updatedAt
+    }
+  }
+}
+
+query getResource($organizationId: ID!, $id: ID!) {
+  resource(organizationId: $organizationId, id: $id) {
+    id
+    name
+    origin
+    resourceType {
+      id
+      name
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+mutation createResource($organizationId: ID!, $resourceTypeId: ID!, $input: CreateResourceInput!) {
+  createResource(organizationId: $organizationId, resourceTypeId: $resourceTypeId, input: $input) {
+    result {
+      id
+      name
+      origin
+      resourceType {
+        id
+        name
+      }
+      createdAt
+      updatedAt
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation updateResource($organizationId: ID!, $id: ID!, $input: UpdateResourceInput!) {
+  updateResource(organizationId: $organizationId, id: $id, input: $input) {
+    result {
+      id
+      name
+      origin
+      resourceType {
+        id
+        name
+      }
+      createdAt
+      updatedAt
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation deleteResource($organizationId: ID!, $id: ID!) {
+  deleteResource(organizationId: $organizationId, id: $id) {
+    result {
+      id
+      name
+      origin
     }
     successful
     messages {

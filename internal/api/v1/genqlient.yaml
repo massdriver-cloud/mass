@@ -25,5 +25,7 @@ bindings:
     type: string
   OciRepoName:
     type: string
+  ReleaseChannel:
+    type: string
   Upload:
     type: string

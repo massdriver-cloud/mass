@@ -14,7 +14,8 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api/v0"
+	apiv0 "github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	cmdbundle "github.com/massdriver-cloud/mass/internal/commands/bundle"
@@ -46,9 +47,9 @@ type bundleNew struct {
 
 type bundleList struct {
 	search    string
+	name      string
 	sortField string
 	sortOrder string
-	limit     int
 	output    string
 }
 
@@ -71,10 +72,10 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 			return runBundleList(&bundleListInput)
 		},
 	}
-	bundleListCmd.Flags().StringVarP(&bundleListInput.search, "search", "s", "", "Search bundles (supports AND, OR, -, quotes)")
-	bundleListCmd.Flags().StringVar(&bundleListInput.sortField, "sort", "name", "Sort field (name, created_at)")
+	bundleListCmd.Flags().StringVarP(&bundleListInput.search, "search", "s", "", "Search bundles by name, readme, and changelog")
+	bundleListCmd.Flags().StringVarP(&bundleListInput.name, "name", "n", "", "Filter by exact bundle name")
+	bundleListCmd.Flags().StringVar(&bundleListInput.sortField, "sort", "", "Sort field (name, created_at). Defaults to name, or relevance when using --search")
 	bundleListCmd.Flags().StringVar(&bundleListInput.sortOrder, "order", "asc", "Sort order (asc, desc)")
-	bundleListCmd.Flags().IntVarP(&bundleListInput.limit, "limit", "l", 0, "Maximum number of results to return")
 	bundleListCmd.Flags().StringVarP(&bundleListInput.output, "output", "o", "table", "Output format (table, json)")
 
 	bundleBuildCmd := &cobra.Command{
@@ -239,7 +240,7 @@ func runBundleNew(input *bundleNew) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	artifactDefs, listErr := api.ListArtifactDefinitions(ctx, mdClient)
+	artifactDefs, listErr := apiv0.ListArtifactDefinitions(ctx, mdClient)
 	if listErr != nil {
 		return fmt.Errorf("error listing artifact definitions: %w", listErr)
 	}
@@ -461,28 +462,42 @@ func runBundleList(input *bundleList) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	opts := api.ReposListOptions{
-		Search:    input.search,
-		SortField: input.sortField,
-		SortOrder: input.sortOrder,
-		Limit:     input.limit,
+	filter := &api.OciReposFilter{
+		ArtifactType: "application/vnd.massdriver.bundle.v1+json",
+		Search:       input.search,
+	}
+	if input.name != "" {
+		filter.Name = &api.OciRepoNameFilter{Eq: input.name}
 	}
 
-	page, err := api.ListRepos(ctx, mdClient, opts)
+	var sort *api.OciReposSort
+	if input.sortField != "" {
+		order := api.SortOrderAsc
+		if strings.EqualFold(input.sortOrder, "desc") {
+			order = api.SortOrderDesc
+		}
+		field := api.OciReposSortFieldName
+		if strings.EqualFold(input.sortField, "created_at") {
+			field = api.OciReposSortFieldCreatedAt
+		}
+		sort = &api.OciReposSort{Field: field, Order: order}
+	}
+
+	repos, err := api.ListOciRepos(ctx, mdClient, filter, sort)
 	if err != nil {
 		return fmt.Errorf("failed to list bundles: %w", err)
 	}
 
 	switch input.output {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(page, "", "  ")
+		jsonBytes, err := json.MarshalIndent(repos, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal bundles to JSON: %w", err)
 		}
 		fmt.Println(string(jsonBytes))
 	case "table":
 		tbl := cli.NewTable("Name", "Latest", "Created At")
-		for _, repo := range page.Items {
+		for _, repo := range repos {
 			latest := ""
 			for _, rc := range repo.ReleaseChannels {
 				if rc.Name == "latest" {
@@ -504,12 +519,9 @@ func runBundleList(input *bundleList) error {
 func runBundleGet(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	arg := args[0]
-	parts := strings.Split(arg, "@")
-	bundleID := parts[0]
-	version := "latest"
-	if len(parts) == 2 {
-		version = parts[1]
+	bundleID := args[0]
+	if !strings.Contains(bundleID, "@") {
+		bundleID = bundleID + "@latest"
 	}
 
 	outputFormat, err := cmd.Flags().GetString("output")
@@ -523,7 +535,7 @@ func runBundleGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	bundle, err := api.GetBundle(ctx, mdClient, bundleID, &version)
+	bundle, err := api.GetBundle(ctx, mdClient, bundleID)
 	if err != nil {
 		return err
 	}

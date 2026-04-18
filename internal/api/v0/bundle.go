@@ -1,11 +1,9 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"time"
 
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -28,18 +26,18 @@ type Bundle struct {
 	UpdatedAt         time.Time      `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
 }
 
-// GetBundle retrieves a bundle by ID and optional version from the Massdriver API.
-func GetBundle(ctx context.Context, mdClient *client.Client, bundleID string, version *string) (*Bundle, error) {
-	versionStr := ""
-	if version != nil {
-		versionStr = *version
-	}
-	response, err := getBundle(ctx, mdClient.GQL, mdClient.Config.OrganizationID, bundleID, versionStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get bundle %s: %w", bundleID, err)
-	}
-	return toBundle(response.Bundle)
-}
+// // GetBundle retrieves a bundle by ID and optional version from the Massdriver API.
+// func GetBundle(ctx context.Context, mdClient *client.Client, bundleID string, version *string) (*Bundle, error) {
+// 	versionStr := ""
+// 	if version != nil {
+// 		versionStr = *version
+// 	}
+// 	response, err := getBundle(ctx, mdClient.GQL, mdClient.Config.OrganizationID, bundleID, versionStr)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to get bundle %s: %w", bundleID, err)
+// 	}
+// 	return toBundle(response.Bundle)
+// }
 
 func toBundle(b any) (*Bundle, error) {
 	// Type assert to the generated type
