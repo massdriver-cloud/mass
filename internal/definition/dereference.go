@@ -17,8 +17,9 @@ import (
 
 // DereferenceOptions holds configuration for schema dereferencing operations.
 type DereferenceOptions struct {
-	Client *client.Client
-	Cwd    string
+	Client  *client.Client
+	Cwd     string
+	StripID bool
 }
 
 // relativeFilePathPattern only accepts relative file path prefixes "./" and "../"
@@ -112,6 +113,13 @@ func dereferenceMassdriverRef(hydratedSchema map[string]any, schema map[string]a
 		if !ok {
 			return hydratedSchema, errors.New("schema is not a map")
 		}
+	}
+
+	// This is a hack to get around the issue of the UI choking if the params schema has 2 or more of the same $id in it.
+	// We need the "$id" in artifacts and connections, but we need to strip it out of params and ui schemas, hence the conditional.
+	// This logic should be removed when we have a better solution for this in the UI/API - probably after resource types are in OCI
+	if opts.StripID {
+		delete(referencedSchema, "$id")
 	}
 
 	hydratedSchema, err = replaceRef(schema, referencedSchema, opts)

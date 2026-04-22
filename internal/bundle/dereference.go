@@ -13,14 +13,18 @@ import (
 func (b *Bundle) DereferenceSchemas(path string, mdClient *client.Client) error {
 	cwd := filepath.Dir(path)
 
+	// The stripID is a hack to get around the issue of the UI choking if the params schema has 2 or more of the same $id in it.
+	// We need the "$id" in artifacts and connections, but we need to strip it out of params and ui schemas, hence the conditional.
+	// This logic should be removed when we have a better solution for this in the UI/API - probably after resource types are in OCI
 	tasks := []struct {
-		schema *map[string]any
-		label  string
+		schema  *map[string]any
+		label   string
+		stripID bool
 	}{
-		{schema: &b.Artifacts, label: "artifacts"},
-		{schema: &b.Params, label: "params"},
-		{schema: &b.Connections, label: "connections"},
-		{schema: &b.UI, label: "ui"},
+		{schema: &b.Artifacts, label: "artifacts", stripID: false},
+		{schema: &b.Params, label: "params", stripID: true},
+		{schema: &b.Connections, label: "connections", stripID: false},
+		{schema: &b.UI, label: "ui", stripID: true},
 	}
 
 	for _, task := range tasks {
@@ -30,7 +34,7 @@ func (b *Bundle) DereferenceSchemas(path string, mdClient *client.Client) error 
 			}
 		}
 
-		dereferencedSchema, err := definition.DereferenceSchema(*task.schema, definition.DereferenceOptions{Client: mdClient, Cwd: cwd})
+		dereferencedSchema, err := definition.DereferenceSchema(*task.schema, definition.DereferenceOptions{Client: mdClient, Cwd: cwd, StripID: task.stripID})
 
 		if err != nil {
 			return err
