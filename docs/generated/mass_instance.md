@@ -30,13 +30,11 @@ Packages are used to:
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
-* [mass instance configure](/cli/commands/mass_instance_configure)	 - Configure instance
 * [mass instance create](/cli/commands/mass_instance_create)	 - Create a manifest (add bundle to project)
 * [mass instance deploy](/cli/commands/mass_instance_deploy)	 - Deploy instances
 * [mass instance destroy](/cli/commands/mass_instance_destroy)	 - Destroy (decommission) an instance
 * [mass instance export](/cli/commands/mass_instance_export)	 - Export instances
 * [mass instance get](/cli/commands/mass_instance_get)	 - Get an instance
 * [mass instance list](/cli/commands/mass_instance_list)	 - List instances in an environment
-* [mass instance patch](/cli/commands/mass_instance_patch)	 - Patch individual instance parameter values
 * [mass instance reset](/cli/commands/mass_instance_reset)	 - Reset instance status to 'Initialized'
 * [mass instance version](/cli/commands/mass_instance_version)	 - Set instance version

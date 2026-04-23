@@ -533,22 +533,34 @@ func (v *DeploymentActionFilter) GetIn() []DeploymentAction { return v.In }
 
 // The current state of a deployment operation.
 //
-// Every deployment moves through a linear lifecycle:
+// Deployments created with `createDeployment` enter the lifecycle at `PENDING`.
+// Deployments created with `proposeDeployment` enter at `PROPOSED` and require
+// approval before they can run:
 //
 // ```mermaid
 // stateDiagram-v2
-// [*] --> PENDING: Deployment created
-// PENDING --> RUNNING: Execution starts
-// RUNNING --> COMPLETED: Success
-// RUNNING --> FAILED: Error
-// RUNNING --> ABORTED: Manually stopped
+// [*] --> PENDING: "createDeployment"
+// [*] --> PROPOSED: "proposeDeployment"
+// PROPOSED --> APPROVED: "approveDeployment"
+// PROPOSED --> REJECTED: "rejectDeployment"
+// PENDING --> RUNNING: "Execution starts"
+// APPROVED --> RUNNING: "Execution starts"
+// RUNNING --> COMPLETED: "Success"
+// RUNNING --> FAILED: "Error"
+// RUNNING --> ABORTED: "Manually stopped"
 // ```
 //
-// Once a deployment reaches a terminal state (`COMPLETED`, `FAILED`, or `ABORTED`),
-// it cannot transition again.
+// Once a deployment reaches a terminal state (`COMPLETED`, `FAILED`, `ABORTED`,
+// or `REJECTED`), it cannot transition again.
 type DeploymentStatus string
 
 const (
+	// A proposed deployment awaiting human approval. Proposed deployments are not scheduled and do not block the queue.
+	DeploymentStatusProposed DeploymentStatus = "PROPOSED"
+	// The proposal was rejected and will never run. Terminal.
+	DeploymentStatusRejected DeploymentStatus = "REJECTED"
+	// The proposal was approved and is waiting to execute. Approved deployments are drained from the queue alongside PENDING deployments.
+	DeploymentStatusApproved DeploymentStatus = "APPROVED"
 	// The deployment is queued and waiting for execution to begin.
 	DeploymentStatusPending DeploymentStatus = "PENDING"
 	// Infrastructure changes are actively being applied.
@@ -562,6 +574,9 @@ const (
 )
 
 var AllDeploymentStatus = []DeploymentStatus{
+	DeploymentStatusProposed,
+	DeploymentStatusRejected,
+	DeploymentStatusApproved,
 	DeploymentStatusPending,
 	DeploymentStatusRunning,
 	DeploymentStatusCompleted,
@@ -617,7 +632,7 @@ func (v *DeploymentsFilter) GetAction() *DeploymentActionFilter { return v.Actio
 type DeploymentsSort struct {
 	// The field to sort by.
 	Field DeploymentsSortField `json:"field"`
-	// Ascending or descending order.
+	// `ASC` for A-Z / oldest first, `DESC` for Z-A / newest first.
 	Order SortOrder `json:"order"`
 }
 
@@ -672,7 +687,7 @@ func (v *EnvironmentsFilter) GetId() *StringFilter { return v.Id }
 type EnvironmentsSort struct {
 	// The field to sort by.
 	Field EnvironmentsSortField `json:"field"`
-	// Sort direction (`ASC` or `DESC`).
+	// `ASC` for A-Z / oldest first, `DESC` for Z-A / newest first.
 	Order SortOrder `json:"order"`
 }
 
@@ -726,15 +741,15 @@ func (v *IdFilter) GetIn() []string { return v.In }
 //
 // ```mermaid
 // stateDiagram-v2
-// [*] --> INITIALIZED: Component added to environment
-// INITIALIZED --> PROVISIONED: Deployment succeeds
-// INITIALIZED --> FAILED: Deployment fails
-// PROVISIONED --> PROVISIONED: Redeploy / update
-// PROVISIONED --> DECOMMISSIONED: Decommission succeeds
-// PROVISIONED --> FAILED: Deployment fails
-// FAILED --> PROVISIONED: Retry succeeds
-// FAILED --> DECOMMISSIONED: Decommission
-// [*] --> EXTERNAL: Remote reference set
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
 // ```
 type InstanceStatus string
 
@@ -978,6 +993,78 @@ func (v *ParamDimensionFilter) GetIn() []string { return v.In }
 // GetContains returns ParamDimensionFilter.Contains, and is useful for accessing the field via an interface.
 func (v *ParamDimensionFilter) GetContains() string { return v.Contains }
 
+// Upsert a resource type for your organization from a JSON Schema document. If an existing resource type has the same identifier, its schema is replaced. **Deprecated:** this mutation exists solely to bridge V0 `publishArtifactDefinition` into the V1 API while resource types are being migrated to OCI. New integrations should use the OCI-native publishing flow — this mutation may be removed without notice.
+type PublishResourceTypeInput struct {
+	// The full JSON Schema document describing the shape of data this resource type exposes to dependents. Must include `$md.name` (a kebab-case identifier like `aws-iam-role`) and should include `$md.label`, `$md.icon`, and `$md.ui.connectionOrientation`.
+	Schema map[string]any `json:"-"`
+}
+
+// GetSchema returns PublishResourceTypeInput.Schema, and is useful for accessing the field via an interface.
+func (v *PublishResourceTypeInput) GetSchema() map[string]any { return v.Schema }
+
+func (v *PublishResourceTypeInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*PublishResourceTypeInput
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.PublishResourceTypeInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal PublishResourceTypeInput.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalPublishResourceTypeInput struct {
+	Schema json.RawMessage `json:"schema"`
+}
+
+func (v *PublishResourceTypeInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *PublishResourceTypeInput) __premarshalJSON() (*__premarshalPublishResourceTypeInput, error) {
+	var retval __premarshalPublishResourceTypeInput
+
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal PublishResourceTypeInput.Schema: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
 // Controls which bundle releases are eligible for deployment.
 //
 // The release strategy works in conjunction with the version constraint to
@@ -1036,10 +1123,15 @@ func (v *ResourceOriginFilter) GetIn() []ResourceOrigin { return v.In }
 type ResourceTypesFilter struct {
 	// Filter by resource type identifier (e.g., `aws-iam-role`, `kubernetes-cluster`).
 	Id *StringFilter `json:"id,omitempty"`
+	// Full-text search across the resource type's display name and identifier (e.g., `"iam"` matches `AWS IAM Role` / `aws-iam-role`). Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, identifier-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries.
+	Search string `json:"search"`
 }
 
 // GetId returns ResourceTypesFilter.Id, and is useful for accessing the field via an interface.
 func (v *ResourceTypesFilter) GetId() *StringFilter { return v.Id }
+
+// GetSearch returns ResourceTypesFilter.Search, and is useful for accessing the field via an interface.
+func (v *ResourceTypesFilter) GetSearch() string { return v.Search }
 
 // Controls the sort order of the resource types list.
 type ResourceTypesSort struct {
@@ -1076,10 +1168,20 @@ var AllResourceTypesSortField = []ResourceTypesSortField{
 type ResourcesFilter struct {
 	// Return only resources with the specified origin (IMPORTED or PROVISIONED).
 	Origin *ResourceOriginFilter `json:"origin,omitempty"`
+	// Return only resources of the given resource type, matched by the type's identifier (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	ResourceType StringFilter `json:"resourceType"`
+	// Full-text search across the resource name. Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, name-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries.
+	Search string `json:"search"`
 }
 
 // GetOrigin returns ResourcesFilter.Origin, and is useful for accessing the field via an interface.
 func (v *ResourcesFilter) GetOrigin() *ResourceOriginFilter { return v.Origin }
+
+// GetResourceType returns ResourcesFilter.ResourceType, and is useful for accessing the field via an interface.
+func (v *ResourcesFilter) GetResourceType() StringFilter { return v.ResourceType }
+
+// GetSearch returns ResourcesFilter.Search, and is useful for accessing the field via an interface.
+func (v *ResourcesFilter) GetSearch() string { return v.Search }
 
 // Controls the sort order of the resources list.
 //
@@ -1554,6 +1656,34 @@ func (v *__deleteResourceInput) GetOrganizationId() string { return v.Organizati
 // GetId returns __deleteResourceInput.Id, and is useful for accessing the field via an interface.
 func (v *__deleteResourceInput) GetId() string { return v.Id }
 
+// __deleteResourceTypeInput is used internally by genqlient
+type __deleteResourceTypeInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteResourceTypeInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteResourceTypeInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteResourceTypeInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteResourceTypeInput) GetId() string { return v.Id }
+
+// __exportResourceInput is used internally by genqlient
+type __exportResourceInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+	Format         string `json:"format,omitempty"`
+}
+
+// GetOrganizationId returns __exportResourceInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__exportResourceInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __exportResourceInput.Id, and is useful for accessing the field via an interface.
+func (v *__exportResourceInput) GetId() string { return v.Id }
+
+// GetFormat returns __exportResourceInput.Format, and is useful for accessing the field via an interface.
+func (v *__exportResourceInput) GetFormat() string { return v.Format }
+
 // __getBundleInput is used internally by genqlient
 type __getBundleInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -1798,6 +1928,18 @@ func (v *__listResourcesInput) GetSort() *ResourcesSort { return v.Sort }
 // GetCursor returns __listResourcesInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__listResourcesInput) GetCursor() *Cursor { return v.Cursor }
 
+// __publishResourceTypeInput is used internally by genqlient
+type __publishResourceTypeInput struct {
+	OrganizationId string                   `json:"organizationId"`
+	Input          PublishResourceTypeInput `json:"input"`
+}
+
+// GetOrganizationId returns __publishResourceTypeInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__publishResourceTypeInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetInput returns __publishResourceTypeInput.Input, and is useful for accessing the field via an interface.
+func (v *__publishResourceTypeInput) GetInput() PublishResourceTypeInput { return v.Input }
+
 // __removeInstanceSecretInput is used internally by genqlient
 type __removeInstanceSecretInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -2000,6 +2142,7 @@ func (v *createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMess
 // Use the `status` field to monitor progress and `elapsed_time` to track duration.
 // The `deployed_by` field identifies the user or service account that initiated the operation.
 type createDeploymentCreateDeploymentDeploymentPayloadResultDeployment struct {
+	// Unique identifier for this deployment.
 	Id string `json:"id"`
 	// Current lifecycle state of this deployment.
 	Status DeploymentStatus `json:"status"`
@@ -2064,15 +2207,15 @@ func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeployment) GetI
 //
 // ```mermaid
 // stateDiagram-v2
-// [*] --> INITIALIZED: Component added to environment
-// INITIALIZED --> PROVISIONED: Deployment succeeds
-// INITIALIZED --> FAILED: Deployment fails
-// PROVISIONED --> PROVISIONED: Redeploy / update
-// PROVISIONED --> DECOMMISSIONED: Decommission succeeds
-// PROVISIONED --> FAILED: Deployment fails
-// FAILED --> PROVISIONED: Retry succeeds
-// FAILED --> DECOMMISSIONED: Decommission
-// [*] --> EXTERNAL: Remote reference set
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -2353,12 +2496,12 @@ func (v *createProjectCreateProjectProjectPayloadMessagesValidationMessage) GetM
 //
 // ```mermaid
 // graph LR
-// P[Project] --> B[Blueprint]
-// P --> E1[Environment: staging]
-// P --> E2[Environment: production]
-// B --> C1[Component: database]
-// B --> C2[Component: cache]
-// C1 -.->|Link| C2
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
 // ```
 //
 // Tags set on a project are inherited by all environments and instances within it.
@@ -2476,8 +2619,8 @@ func (v *createResourceCreateResourceResourcePayloadMessagesValidationMessage) G
 // createResourceCreateResourceResourcePayloadResultResource includes the requested fields of the GraphQL type Resource.
 // The GraphQL type's documentation follows.
 //
-// An infrastructure artifact such as cloud credentials, a database connection string,
-// a network configuration, or any other output produced by (or imported into) Massdriver.
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
 //
 // Resources are the connective tissue between instances. When an instance is deployed, it
 // produces resources as outputs. Other instances can consume those resources as inputs,
@@ -2565,7 +2708,7 @@ type createResourceResponse struct {
 	// Import a new resource into your organization.
 	//
 	// Creates a manually-managed resource (origin: `IMPORTED`) such as cloud credentials,
-	// a network configuration, or any other infrastructure artifact. The resource must
+	// a network configuration, or any other infrastructure output. The resource must
 	// conform to the schema defined by the specified resource type.
 	//
 	// ```graphql
@@ -2810,12 +2953,12 @@ func (v *deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage) GetM
 //
 // ```mermaid
 // graph LR
-// P[Project] --> B[Blueprint]
-// P --> E1[Environment: staging]
-// P --> E2[Environment: production]
-// B --> C1[Component: database]
-// B --> C2[Component: cache]
-// C1 -.->|Link| C2
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
 // ```
 //
 // Tags set on a project are inherited by all environments and instances within it.
@@ -2933,8 +3076,8 @@ func (v *deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage) G
 // deleteResourceDeleteResourceResourcePayloadResultResource includes the requested fields of the GraphQL type Resource.
 // The GraphQL type's documentation follows.
 //
-// An infrastructure artifact such as cloud credentials, a database connection string,
-// a network configuration, or any other output produced by (or imported into) Massdriver.
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
 //
 // Resources are the connective tissue between instances. When an instance is deployed, it
 // produces resources as outputs. Other instances can consume those resources as inputs,
@@ -2982,6 +3125,420 @@ func (v *deleteResourceResponse) GetDeleteResource() deleteResourceDeleteResourc
 	return v.DeleteResource
 }
 
+// deleteResourceTypeDeleteResourceTypeResourceTypePayload includes the requested fields of the GraphQL type ResourceTypePayload.
+type deleteResourceTypeDeleteResourceTypeResourceTypePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns deleteResourceTypeDeleteResourceTypeResourceTypePayload.Result, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayload) GetResult() deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType {
+	return v.Result
+}
+
+// GetSuccessful returns deleteResourceTypeDeleteResourceTypeResourceTypePayload.Successful, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns deleteResourceTypeDeleteResourceTypeResourceTypePayload.Messages, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayload) GetMessages() []deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+}
+
+// GetId returns deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType.Id, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType) GetId() string {
+	return v.Id
+}
+
+// GetName returns deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType.Name, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType) GetName() string {
+	return v.Name
+}
+
+// deleteResourceTypeResponse is returned by deleteResourceType on success.
+type deleteResourceTypeResponse struct {
+	// **Deprecated — use at your own risk.** This mutation exists only to bridge V0's
+	// `deleteArtifactDefinition` into V1 while resource types are being migrated to OCI.
+	// New integrations should use the OCI-native publishing flow. This mutation may be
+	// removed or change behavior without notice.
+	//
+	// Delete a resource type. The resource type cannot be deleted while it is still in
+	// use — either as a dependency or output in a bundle, or by any existing
+	// imported/provisioned resources of this type. Remove those consumers first.
+	DeleteResourceType deleteResourceTypeDeleteResourceTypeResourceTypePayload `json:"deleteResourceType"`
+}
+
+// GetDeleteResourceType returns deleteResourceTypeResponse.DeleteResourceType, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeResponse) GetDeleteResourceType() deleteResourceTypeDeleteResourceTypeResourceTypePayload {
+	return v.DeleteResourceType
+}
+
+// exportResourceExportResourceResourceWithSensitiveValuesPayload includes the requested fields of the GraphQL type ResourceWithSensitiveValuesPayload.
+type exportResourceExportResourceResourceWithSensitiveValuesPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns exportResourceExportResourceResourceWithSensitiveValuesPayload.Result, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayload) GetResult() exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues {
+	return v.Result
+}
+
+// GetSuccessful returns exportResourceExportResourceResourceWithSensitiveValuesPayload.Successful, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns exportResourceExportResourceResourceWithSensitiveValuesPayload.Messages, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayload) GetMessages() []exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues includes the requested fields of the GraphQL type ResourceWithSensitiveValues.
+// The GraphQL type's documentation follows.
+//
+// A resource with its sensitive payload values revealed, returned by the `exportResource` mutation.
+//
+// Unlike the regular `Resource` type — where fields marked `$md.sensitive` in the resource
+// type's schema are masked — this type exposes the raw values so they can be consumed by
+// automation or copied into downstream systems. Requesting this type is recorded in the
+// audit log.
+type exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues struct {
+	// Unique identifier for this resource.
+	Id string `json:"id"`
+	// Human-readable display name for this resource.
+	Name string `json:"name"`
+	// How this resource was created.
+	Origin ResourceOrigin `json:"origin"`
+	// The resource type that this resource conforms to, defining its schema and validation rules.
+	ResourceType exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType `json:"resourceType"`
+	// The resource's payload with `$md.sensitive` fields unmasked. The shape is defined by
+	// the resource type's schema.
+	Payload map[string]any `json:"-"`
+	// The resource rendered in the requested `format`. For `json` this is a stringified JSON
+	// document of the payload; for resource-type-specific formats (e.g. `yaml`, `env`) this is
+	// the template output defined by the resource type's schema.
+	Rendered string `json:"rendered"`
+	// When this resource was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this resource was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Id, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetId() string {
+	return v.Id
+}
+
+// GetName returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Name, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetName() string {
+	return v.Name
+}
+
+// GetOrigin returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Origin, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetOrigin() ResourceOrigin {
+	return v.Origin
+}
+
+// GetResourceType returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.ResourceType, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetResourceType() exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType {
+	return v.ResourceType
+}
+
+// GetPayload returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Payload, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetPayload() map[string]any {
+	return v.Payload
+}
+
+// GetRendered returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Rendered, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetRendered() string {
+	return v.Rendered
+}
+
+// GetCreatedAt returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.CreatedAt, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues
+		Payload json.RawMessage `json:"payload"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Payload
+		src := firstPass.Payload
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Payload: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalexportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Origin ResourceOrigin `json:"origin"`
+
+	ResourceType exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType `json:"resourceType"`
+
+	Payload json.RawMessage `json:"payload"`
+
+	Rendered string `json:"rendered"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) __premarshalJSON() (*__premarshalexportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues, error) {
+	var retval __premarshalexportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Origin = v.Origin
+	retval.ResourceType = v.ResourceType
+	{
+
+		dst := &retval.Payload
+		src := v.Payload
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Payload: %w", err)
+		}
+	}
+	retval.Rendered = v.Rendered
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+}
+
+// GetId returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.Id, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetId() string {
+	return v.Id
+}
+
+// GetName returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.Name, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetName() string {
+	return v.Name
+}
+
+// exportResourceResponse is returned by exportResource on success.
+type exportResourceResponse struct {
+	// Export a resource, returning it along with its unmasked `payload` and a `rendered`
+	// copy in the requested `format` (defaults to `json`).
+	//
+	// Exports are recorded in the audit log so that access to sensitive payload data —
+	// credentials, connection strings, IaC outputs — is attributable to the actor who
+	// performed it. The resource itself is not modified.
+	//
+	// Works for both imported and provisioned resources. The caller must have permission
+	// to view the resource.
+	ExportResource exportResourceExportResourceResourceWithSensitiveValuesPayload `json:"exportResource"`
+}
+
+// GetExportResource returns exportResourceResponse.ExportResource, and is useful for accessing the field via an interface.
+func (v *exportResourceResponse) GetExportResource() exportResourceExportResourceResourceWithSensitiveValuesPayload {
+	return v.ExportResource
+}
+
 // getBundleBundle includes the requested fields of the GraphQL type Bundle.
 // The GraphQL type's documentation follows.
 //
@@ -2998,15 +3555,15 @@ func (v *deleteResourceResponse) GetDeleteResource() deleteResourceDeleteResourc
 //
 // ```mermaid
 // graph TD
-// R[OCI Repository: aws-aurora-postgres] --> T1[Tag: 1.0.0]
-// R --> T2[Tag: 1.1.0]
-// R --> T3[Tag: 1.2.3]
+// R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+// R --> T2["Tag: 1.1.0"]
+// R --> T3["Tag: 1.2.3"]
 // R --> RC1["Channel: ~1 → 1.2.3"]
 // R --> RC2["Channel: latest → 1.2.3"]
 // T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
-// B --> D1[Dependency: aws-iam-role]
-// B --> D2[Dependency: aws-vpc]
-// B --> RES[Resource: aurora-cluster]
+// B --> D1["Dependency: aws-iam-role"]
+// B --> D2["Dependency: aws-vpc"]
+// B --> RES["Resource: aurora-cluster"]
 // ```
 type getBundleBundle struct {
 	// Composite identifier in `name@version` format (e.g., `aws-aurora-postgres@1.2.3`). Always contains the fully resolved semver version.
@@ -3102,6 +3659,7 @@ func (v *getBundleResponse) GetBundle() getBundleBundle { return v.Bundle }
 // Use the `status` field to monitor progress and `elapsed_time` to track duration.
 // The `deployed_by` field identifies the user or service account that initiated the operation.
 type getDeploymentDeployment struct {
+	// Unique identifier for this deployment.
 	Id string `json:"id"`
 	// Current lifecycle state of this deployment.
 	Status DeploymentStatus `json:"status"`
@@ -3121,7 +3679,7 @@ type getDeploymentDeployment struct {
 	//
 	// For `RUNNING` deployments, this is a live timer counting from creation.
 	// For terminal states, this is the total time from creation to the final status transition.
-	// Returns `0` for `PENDING` deployments.
+	// Returns `0` for deployments that have not yet executed (`PENDING`, `PROPOSED`, `APPROVED`).
 	ElapsedTime int `json:"elapsedTime"`
 	// The name of the user or service account that initiated this deployment. Null if the initiator has been removed.
 	DeployedBy string `json:"deployedBy"`
@@ -3176,15 +3734,15 @@ func (v *getDeploymentDeployment) GetInstance() getDeploymentDeploymentInstance 
 //
 // ```mermaid
 // stateDiagram-v2
-// [*] --> INITIALIZED: Component added to environment
-// INITIALIZED --> PROVISIONED: Deployment succeeds
-// INITIALIZED --> FAILED: Deployment fails
-// PROVISIONED --> PROVISIONED: Redeploy / update
-// PROVISIONED --> DECOMMISSIONED: Decommission succeeds
-// PROVISIONED --> FAILED: Deployment fails
-// FAILED --> PROVISIONED: Retry succeeds
-// FAILED --> DECOMMISSIONED: Decommission
-// [*] --> EXTERNAL: Remote reference set
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -3261,12 +3819,12 @@ func (v *getDeploymentDeploymentInstanceEnvironment) GetProject() getDeploymentD
 //
 // ```mermaid
 // graph LR
-// P[Project] --> B[Blueprint]
-// P --> E1[Environment: staging]
-// P --> E2[Environment: production]
-// B --> C1[Component: database]
-// B --> C2[Component: cache]
-// C1 -.->|Link| C2
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
 // ```
 //
 // Tags set on a project are inherited by all environments and instances within it.
@@ -3528,15 +4086,15 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginatio
 //
 // ```mermaid
 // stateDiagram-v2
-// [*] --> INITIALIZED: Component added to environment
-// INITIALIZED --> PROVISIONED: Deployment succeeds
-// INITIALIZED --> FAILED: Deployment fails
-// PROVISIONED --> PROVISIONED: Redeploy / update
-// PROVISIONED --> DECOMMISSIONED: Decommission succeeds
-// PROVISIONED --> FAILED: Deployment fails
-// FAILED --> PROVISIONED: Retry succeeds
-// FAILED --> DECOMMISSIONED: Decommission
-// [*] --> EXTERNAL: Remote reference set
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -3625,15 +4183,15 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) 
 //
 // ```mermaid
 // graph TD
-// R[OCI Repository: aws-aurora-postgres] --> T1[Tag: 1.0.0]
-// R --> T2[Tag: 1.1.0]
-// R --> T3[Tag: 1.2.3]
+// R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+// R --> T2["Tag: 1.1.0"]
+// R --> T3["Tag: 1.2.3"]
 // R --> RC1["Channel: ~1 → 1.2.3"]
 // R --> RC2["Channel: latest → 1.2.3"]
 // T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
-// B --> D1[Dependency: aws-iam-role]
-// B --> D2[Dependency: aws-vpc]
-// B --> RES[Resource: aurora-cluster]
+// B --> D1["Dependency: aws-iam-role"]
+// B --> D2["Dependency: aws-vpc"]
+// B --> RES["Resource: aurora-cluster"]
 // ```
 type getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle struct {
 	// OCI repository name this bundle belongs to (e.g., `aws-aurora-postgres`).
@@ -3782,12 +4340,12 @@ func (v *getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample) GetCu
 //
 // ```mermaid
 // graph LR
-// P[Project] --> B[Blueprint]
-// P --> E1[Environment: staging]
-// P --> E2[Environment: production]
-// B --> C1[Component: database]
-// B --> C2[Component: cache]
-// C1 -.->|Link| C2
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
 // ```
 //
 // Tags set on a project are inherited by all environments and instances within it.
@@ -3831,15 +4389,15 @@ func (v *getEnvironmentResponse) GetEnvironment() getEnvironmentEnvironment { re
 //
 // ```mermaid
 // stateDiagram-v2
-// [*] --> INITIALIZED: Component added to environment
-// INITIALIZED --> PROVISIONED: Deployment succeeds
-// INITIALIZED --> FAILED: Deployment fails
-// PROVISIONED --> PROVISIONED: Redeploy / update
-// PROVISIONED --> DECOMMISSIONED: Decommission succeeds
-// PROVISIONED --> FAILED: Deployment fails
-// FAILED --> PROVISIONED: Retry succeeds
-// FAILED --> DECOMMISSIONED: Decommission
-// [*] --> EXTERNAL: Remote reference set
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -4100,15 +4658,15 @@ func (v *getInstanceInstance) __premarshalJSON() (*__premarshalgetInstanceInstan
 //
 // ```mermaid
 // graph TD
-// R[OCI Repository: aws-aurora-postgres] --> T1[Tag: 1.0.0]
-// R --> T2[Tag: 1.1.0]
-// R --> T3[Tag: 1.2.3]
+// R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+// R --> T2["Tag: 1.1.0"]
+// R --> T3["Tag: 1.2.3"]
 // R --> RC1["Channel: ~1 → 1.2.3"]
 // R --> RC2["Channel: latest → 1.2.3"]
 // T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
-// B --> D1[Dependency: aws-iam-role]
-// B --> D2[Dependency: aws-vpc]
-// B --> RES[Resource: aurora-cluster]
+// B --> D1["Dependency: aws-iam-role"]
+// B --> D2["Dependency: aws-vpc"]
+// B --> RES["Resource: aurora-cluster"]
 // ```
 type getInstanceInstanceBundle struct {
 	// Composite identifier in `name@version` format (e.g., `aws-aurora-postgres@1.2.3`). Always contains the fully resolved semver version.
@@ -4286,12 +4844,12 @@ func (v *getInstanceInstanceEnvironment) GetProject() getInstanceInstanceEnviron
 //
 // ```mermaid
 // graph LR
-// P[Project] --> B[Blueprint]
-// P --> E1[Environment: staging]
-// P --> E2[Environment: production]
-// B --> C1[Component: database]
-// B --> C2[Component: cache]
-// C1 -.->|Link| C2
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
 // ```
 //
 // Tags set on a project are inherited by all environments and instances within it.
@@ -4357,7 +4915,9 @@ type getOciRepoOciRepo struct {
 	Id string `json:"id"`
 	// Repository name, unique within your organization (e.g., `aws-aurora-postgres`).
 	Name string `json:"name"`
-	// The OCI artifact media type for bundles stored in this repository. Currently always `application/vnd.massdriver.bundle.v1+json`.
+	// The [OCI artifact type](https://github.com/opencontainers/image-spec/blob/main/manifest.md#guidelines-for-artifact-usage)
+	// stored in this repository. Currently always
+	// `application/vnd.massdriver.bundle.v1+json`.
 	ArtifactType string `json:"artifactType"`
 	// Timestamp when this repository was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
@@ -4513,12 +5073,12 @@ func (v *getOciRepoResponse) GetOciRepo() getOciRepoOciRepo { return v.OciRepo }
 //
 // ```mermaid
 // graph LR
-// P[Project] --> B[Blueprint]
-// P --> E1[Environment: staging]
-// P --> E2[Environment: production]
-// B --> C1[Component: database]
-// B --> C2[Component: cache]
-// C1 -.->|Link| C2
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
 // ```
 //
 // Tags set on a project are inherited by all environments and instances within it.
@@ -4923,8 +5483,8 @@ func (v *getProjectResponse) GetProject() getProjectProject { return v.Project }
 // getResourceResource includes the requested fields of the GraphQL type Resource.
 // The GraphQL type's documentation follows.
 //
-// An infrastructure artifact such as cloud credentials, a database connection string,
-// a network configuration, or any other output produced by (or imported into) Massdriver.
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
 //
 // Resources are the connective tissue between instances. When an instance is deployed, it
 // produces resources as outputs. Other instances can consume those resources as inputs,
@@ -4944,6 +5504,28 @@ type getResourceResource struct {
 	Origin ResourceOrigin `json:"origin"`
 	// The resource type that this resource conforms to, defining its schema and validation rules.
 	ResourceType getResourceResourceResourceType `json:"resourceType"`
+	// The bundle output handle that produced this resource (e.g., `authentication`, `database`).
+	//
+	// Set only for **provisioned** resources — it corresponds to a field declared under
+	// `artifacts` in the producing bundle's `massdriver.yaml`. Null for **imported** resources.
+	Field string `json:"field"`
+	// The instance whose deployment produced this resource.
+	//
+	// Null for **imported** resources. For **provisioned** resources, this is the instance
+	// that owns the resource's lifecycle — updating or decommissioning the instance will
+	// update or remove the resource.
+	Instance getResourceResourceInstance `json:"instance"`
+	// Download formats supported for this resource.
+	//
+	// Always includes `json` (the raw payload). Additional formats come from the resource
+	// type's `$md.export` declarations, which can render the payload as YAML or other
+	// templated outputs. Pass a returned format to `downloadArtifact` to retrieve the
+	// rendered content.
+	Formats []string `json:"formats"`
+	// The resource's structured payload. Fields marked `$md.sensitive` in the resource type's
+	// schema are masked as `[SENSITIVE]`. Use `exportResource` to retrieve an unmasked copy —
+	// that operation is recorded in the audit log.
+	Payload map[string]any `json:"-"`
 	// When this resource was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this resource was last modified (UTC).
@@ -4964,11 +5546,155 @@ func (v *getResourceResource) GetResourceType() getResourceResourceResourceType 
 	return v.ResourceType
 }
 
+// GetField returns getResourceResource.Field, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetField() string { return v.Field }
+
+// GetInstance returns getResourceResource.Instance, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetInstance() getResourceResourceInstance { return v.Instance }
+
+// GetFormats returns getResourceResource.Formats, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetFormats() []string { return v.Formats }
+
+// GetPayload returns getResourceResource.Payload, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetPayload() map[string]any { return v.Payload }
+
 // GetCreatedAt returns getResourceResource.CreatedAt, and is useful for accessing the field via an interface.
 func (v *getResourceResource) GetCreatedAt() time.Time { return v.CreatedAt }
 
 // GetUpdatedAt returns getResourceResource.UpdatedAt, and is useful for accessing the field via an interface.
 func (v *getResourceResource) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+func (v *getResourceResource) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getResourceResource
+		Payload json.RawMessage `json:"payload"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getResourceResource = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Payload
+		src := firstPass.Payload
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getResourceResource.Payload: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetResourceResource struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Origin ResourceOrigin `json:"origin"`
+
+	ResourceType getResourceResourceResourceType `json:"resourceType"`
+
+	Field string `json:"field"`
+
+	Instance getResourceResourceInstance `json:"instance"`
+
+	Formats []string `json:"formats"`
+
+	Payload json.RawMessage `json:"payload"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *getResourceResource) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getResourceResource) __premarshalJSON() (*__premarshalgetResourceResource, error) {
+	var retval __premarshalgetResourceResource
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Origin = v.Origin
+	retval.ResourceType = v.ResourceType
+	retval.Field = v.Field
+	retval.Instance = v.Instance
+	retval.Formats = v.Formats
+	{
+
+		dst := &retval.Payload
+		src := v.Payload
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getResourceResource.Payload: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// getResourceResourceInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type getResourceResourceInstance struct {
+	Id string `json:"id"`
+	// Human-readable display name for the instance.
+	Name string `json:"name"`
+}
+
+// GetId returns getResourceResourceInstance.Id, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetId() string { return v.Id }
+
+// GetName returns getResourceResourceInstance.Name, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetName() string { return v.Name }
 
 // getResourceResourceResourceType includes the requested fields of the GraphQL type ResourceType.
 // The GraphQL type's documentation follows.
@@ -5031,6 +5757,13 @@ type getResourceTypeResourceType struct {
 	Icon string `json:"icon"`
 	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
 	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// The full JSON Schema describing the shape of data this resource type exposes to dependents.
+	//
+	// Use this to generate forms, validate inputs, or inspect the fields available on a connection
+	// of this resource type. The schema is returned verbatim, including Massdriver's `$md` extensions
+	// (e.g., `icon`, `ui`). Callers that only want the data contract can read `properties.data` or
+	// strip `$md` themselves.
+	Schema map[string]any `json:"-"`
 	// Timestamp when this resource type was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// Timestamp when this resource type was last modified (UTC).
@@ -5051,11 +5784,95 @@ func (v *getResourceTypeResourceType) GetConnectionOrientation() ConnectionOrien
 	return v.ConnectionOrientation
 }
 
+// GetSchema returns getResourceTypeResourceType.Schema, and is useful for accessing the field via an interface.
+func (v *getResourceTypeResourceType) GetSchema() map[string]any { return v.Schema }
+
 // GetCreatedAt returns getResourceTypeResourceType.CreatedAt, and is useful for accessing the field via an interface.
 func (v *getResourceTypeResourceType) GetCreatedAt() time.Time { return v.CreatedAt }
 
 // GetUpdatedAt returns getResourceTypeResourceType.UpdatedAt, and is useful for accessing the field via an interface.
 func (v *getResourceTypeResourceType) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+func (v *getResourceTypeResourceType) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getResourceTypeResourceType
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getResourceTypeResourceType = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getResourceTypeResourceType.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetResourceTypeResourceType struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Icon string `json:"icon"`
+
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+
+	Schema json.RawMessage `json:"schema"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *getResourceTypeResourceType) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getResourceTypeResourceType) __premarshalJSON() (*__premarshalgetResourceTypeResourceType, error) {
+	var retval __premarshalgetResourceTypeResourceType
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Icon = v.Icon
+	retval.ConnectionOrientation = v.ConnectionOrientation
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getResourceTypeResourceType.Schema: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
 
 // getResourceTypeResponse is returned by getResourceType on success.
 type getResourceTypeResponse struct {
@@ -5255,15 +6072,15 @@ func (v *listBundlesBundlesBundlesPageCursorPaginationCursor) GetPrevious() stri
 //
 // ```mermaid
 // graph TD
-// R[OCI Repository: aws-aurora-postgres] --> T1[Tag: 1.0.0]
-// R --> T2[Tag: 1.1.0]
-// R --> T3[Tag: 1.2.3]
+// R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+// R --> T2["Tag: 1.1.0"]
+// R --> T3["Tag: 1.2.3"]
 // R --> RC1["Channel: ~1 → 1.2.3"]
 // R --> RC2["Channel: latest → 1.2.3"]
 // T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
-// B --> D1[Dependency: aws-iam-role]
-// B --> D2[Dependency: aws-vpc]
-// B --> RES[Resource: aurora-cluster]
+// B --> D1["Dependency: aws-iam-role"]
+// B --> D2["Dependency: aws-vpc"]
+// B --> RES["Resource: aurora-cluster"]
 // ```
 type listBundlesBundlesBundlesPageItemsBundle struct {
 	// Composite identifier in `name@version` format (e.g., `aws-aurora-postgres@1.2.3`). Always contains the fully resolved semver version.
@@ -5401,6 +6218,7 @@ func (v *listDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor) GetPre
 // Use the `status` field to monitor progress and `elapsed_time` to track duration.
 // The `deployed_by` field identifies the user or service account that initiated the operation.
 type listDeploymentsDeploymentsDeploymentsPageItemsDeployment struct {
+	// Unique identifier for this deployment.
 	Id string `json:"id"`
 	// Current lifecycle state of this deployment.
 	Status DeploymentStatus `json:"status"`
@@ -5420,7 +6238,7 @@ type listDeploymentsDeploymentsDeploymentsPageItemsDeployment struct {
 	//
 	// For `RUNNING` deployments, this is a live timer counting from creation.
 	// For terminal states, this is the total time from creation to the final status transition.
-	// Returns `0` for `PENDING` deployments.
+	// Returns `0` for deployments that have not yet executed (`PENDING`, `PROPOSED`, `APPROVED`).
 	ElapsedTime int `json:"elapsedTime"`
 	// The name of the user or service account that initiated this deployment. Null if the initiator has been removed.
 	DeployedBy string `json:"deployedBy"`
@@ -5495,15 +6313,15 @@ func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetInstance()
 //
 // ```mermaid
 // stateDiagram-v2
-// [*] --> INITIALIZED: Component added to environment
-// INITIALIZED --> PROVISIONED: Deployment succeeds
-// INITIALIZED --> FAILED: Deployment fails
-// PROVISIONED --> PROVISIONED: Redeploy / update
-// PROVISIONED --> DECOMMISSIONED: Decommission succeeds
-// PROVISIONED --> FAILED: Deployment fails
-// FAILED --> PROVISIONED: Retry succeeds
-// FAILED --> DECOMMISSIONED: Decommission
-// [*] --> EXTERNAL: Remote reference set
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -5850,12 +6668,12 @@ func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSum
 //
 // ```mermaid
 // graph LR
-// P[Project] --> B[Blueprint]
-// P --> E1[Environment: staging]
-// P --> E2[Environment: production]
-// B --> C1[Component: database]
-// B --> C2[Component: cache]
-// C1 -.->|Link| C2
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
 // ```
 //
 // Tags set on a project are inherited by all environments and instances within it.
@@ -5953,15 +6771,15 @@ func (v *listInstancesInstancesInstancesPageCursorPaginationCursor) GetPrevious(
 //
 // ```mermaid
 // stateDiagram-v2
-// [*] --> INITIALIZED: Component added to environment
-// INITIALIZED --> PROVISIONED: Deployment succeeds
-// INITIALIZED --> FAILED: Deployment fails
-// PROVISIONED --> PROVISIONED: Redeploy / update
-// PROVISIONED --> DECOMMISSIONED: Decommission succeeds
-// PROVISIONED --> FAILED: Deployment fails
-// FAILED --> PROVISIONED: Retry succeeds
-// FAILED --> DECOMMISSIONED: Decommission
-// [*] --> EXTERNAL: Remote reference set
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -6198,15 +7016,15 @@ func (v *listInstancesInstancesInstancesPageItemsInstance) __premarshalJSON() (*
 //
 // ```mermaid
 // graph TD
-// R[OCI Repository: aws-aurora-postgres] --> T1[Tag: 1.0.0]
-// R --> T2[Tag: 1.1.0]
-// R --> T3[Tag: 1.2.3]
+// R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+// R --> T2["Tag: 1.1.0"]
+// R --> T3["Tag: 1.2.3"]
 // R --> RC1["Channel: ~1 → 1.2.3"]
 // R --> RC2["Channel: latest → 1.2.3"]
 // T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
-// B --> D1[Dependency: aws-iam-role]
-// B --> D2[Dependency: aws-vpc]
-// B --> RES[Resource: aurora-cluster]
+// B --> D1["Dependency: aws-iam-role"]
+// B --> D2["Dependency: aws-vpc"]
+// B --> RES["Resource: aurora-cluster"]
 // ```
 type listInstancesInstancesInstancesPageItemsInstanceBundle struct {
 	// Composite identifier in `name@version` format (e.g., `aws-aurora-postgres@1.2.3`). Always contains the fully resolved semver version.
@@ -6388,12 +7206,12 @@ func (v *listInstancesInstancesInstancesPageItemsInstanceEnvironment) GetProject
 //
 // ```mermaid
 // graph LR
-// P[Project] --> B[Blueprint]
-// P --> E1[Environment: staging]
-// P --> E2[Environment: production]
-// B --> C1[Component: database]
-// B --> C2[Component: cache]
-// C1 -.->|Link| C2
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
 // ```
 //
 // Tags set on a project are inherited by all environments and instances within it.
@@ -6509,7 +7327,9 @@ type listOciReposOciReposOciReposPageItemsOciRepo struct {
 	Id string `json:"id"`
 	// Repository name, unique within your organization (e.g., `aws-aurora-postgres`).
 	Name string `json:"name"`
-	// The OCI artifact media type for bundles stored in this repository. Currently always `application/vnd.massdriver.bundle.v1+json`.
+	// The [OCI artifact type](https://github.com/opencontainers/image-spec/blob/main/manifest.md#guidelines-for-artifact-usage)
+	// stored in this repository. Currently always
+	// `application/vnd.massdriver.bundle.v1+json`.
 	ArtifactType string `json:"artifactType"`
 	// Timestamp when this repository was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
@@ -6634,12 +7454,12 @@ func (v *listProjectsProjectsProjectsPage) GetItems() []listProjectsProjectsProj
 //
 // ```mermaid
 // graph LR
-// P[Project] --> B[Blueprint]
-// P --> E1[Environment: staging]
-// P --> E2[Environment: production]
-// B --> C1[Component: database]
-// B --> C2[Component: cache]
-// C1 -.->|Link| C2
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
 // ```
 //
 // Tags set on a project are inherited by all environments and instances within it.
@@ -6932,6 +7752,13 @@ type listResourceTypesResourceTypesResourceTypesPageItemsResourceType struct {
 	Icon string `json:"icon"`
 	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
 	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// The full JSON Schema describing the shape of data this resource type exposes to dependents.
+	//
+	// Use this to generate forms, validate inputs, or inspect the fields available on a connection
+	// of this resource type. The schema is returned verbatim, including Massdriver's `$md` extensions
+	// (e.g., `icon`, `ui`). Callers that only want the data contract can read `properties.data` or
+	// strip `$md` themselves.
+	Schema map[string]any `json:"-"`
 	// Timestamp when this resource type was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// Timestamp when this resource type was last modified (UTC).
@@ -6958,6 +7785,11 @@ func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetCo
 	return v.ConnectionOrientation
 }
 
+// GetSchema returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.Schema, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetSchema() map[string]any {
+	return v.Schema
+}
+
 // GetCreatedAt returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.CreatedAt, and is useful for accessing the field via an interface.
 func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetCreatedAt() time.Time {
 	return v.CreatedAt
@@ -6966,6 +7798,87 @@ func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetCr
 // GetUpdatedAt returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.UpdatedAt, and is useful for accessing the field via an interface.
 func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
+}
+
+func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*listResourceTypesResourceTypesResourceTypesPageItemsResourceType
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.listResourceTypesResourceTypesResourceTypesPageItemsResourceType = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal listResourceTypesResourceTypesResourceTypesPageItemsResourceType.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallistResourceTypesResourceTypesResourceTypesPageItemsResourceType struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Icon string `json:"icon"`
+
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+
+	Schema json.RawMessage `json:"schema"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) __premarshalJSON() (*__premarshallistResourceTypesResourceTypesResourceTypesPageItemsResourceType, error) {
+	var retval __premarshallistResourceTypesResourceTypesResourceTypesPageItemsResourceType
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Icon = v.Icon
+	retval.ConnectionOrientation = v.ConnectionOrientation
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal listResourceTypesResourceTypesResourceTypesPageItemsResourceType.Schema: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
 }
 
 // listResourceTypesResponse is returned by listResourceTypes on success.
@@ -7041,8 +7954,8 @@ func (v *listResourcesResourcesResourcesPageCursorPaginationCursor) GetPrevious(
 // listResourcesResourcesResourcesPageItemsResource includes the requested fields of the GraphQL type Resource.
 // The GraphQL type's documentation follows.
 //
-// An infrastructure artifact such as cloud credentials, a database connection string,
-// a network configuration, or any other output produced by (or imported into) Massdriver.
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
 //
 // Resources are the connective tissue between instances. When an instance is deployed, it
 // produces resources as outputs. Other instances can consume those resources as inputs,
@@ -7062,6 +7975,24 @@ type listResourcesResourcesResourcesPageItemsResource struct {
 	Origin ResourceOrigin `json:"origin"`
 	// The resource type that this resource conforms to, defining its schema and validation rules.
 	ResourceType listResourcesResourcesResourcesPageItemsResourceResourceType `json:"resourceType"`
+	// The bundle output handle that produced this resource (e.g., `authentication`, `database`).
+	//
+	// Set only for **provisioned** resources — it corresponds to a field declared under
+	// `artifacts` in the producing bundle's `massdriver.yaml`. Null for **imported** resources.
+	Field string `json:"field"`
+	// The instance whose deployment produced this resource.
+	//
+	// Null for **imported** resources. For **provisioned** resources, this is the instance
+	// that owns the resource's lifecycle — updating or decommissioning the instance will
+	// update or remove the resource.
+	Instance listResourcesResourcesResourcesPageItemsResourceInstance `json:"instance"`
+	// Download formats supported for this resource.
+	//
+	// Always includes `json` (the raw payload). Additional formats come from the resource
+	// type's `$md.export` declarations, which can render the payload as YAML or other
+	// templated outputs. Pass a returned format to `downloadArtifact` to retrieve the
+	// rendered content.
+	Formats []string `json:"formats"`
 	// When this resource was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this resource was last modified (UTC).
@@ -7084,6 +8015,17 @@ func (v *listResourcesResourcesResourcesPageItemsResource) GetResourceType() lis
 	return v.ResourceType
 }
 
+// GetField returns listResourcesResourcesResourcesPageItemsResource.Field, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetField() string { return v.Field }
+
+// GetInstance returns listResourcesResourcesResourcesPageItemsResource.Instance, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetInstance() listResourcesResourcesResourcesPageItemsResourceInstance {
+	return v.Instance
+}
+
+// GetFormats returns listResourcesResourcesResourcesPageItemsResource.Formats, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetFormats() []string { return v.Formats }
+
 // GetCreatedAt returns listResourcesResourcesResourcesPageItemsResource.CreatedAt, and is useful for accessing the field via an interface.
 func (v *listResourcesResourcesResourcesPageItemsResource) GetCreatedAt() time.Time {
 	return v.CreatedAt
@@ -7093,6 +8035,48 @@ func (v *listResourcesResourcesResourcesPageItemsResource) GetCreatedAt() time.T
 func (v *listResourcesResourcesResourcesPageItemsResource) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
 }
+
+// listResourcesResourcesResourcesPageItemsResourceInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type listResourcesResourcesResourcesPageItemsResourceInstance struct {
+	Id string `json:"id"`
+	// Human-readable display name for the instance.
+	Name string `json:"name"`
+}
+
+// GetId returns listResourcesResourcesResourcesPageItemsResourceInstance.Id, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetId() string { return v.Id }
+
+// GetName returns listResourcesResourcesResourcesPageItemsResourceInstance.Name, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetName() string { return v.Name }
 
 // listResourcesResourcesResourcesPageItemsResourceResourceType includes the requested fields of the GraphQL type ResourceType.
 // The GraphQL type's documentation follows.
@@ -7149,6 +8133,279 @@ type listResourcesResponse struct {
 // GetResources returns listResourcesResponse.Resources, and is useful for accessing the field via an interface.
 func (v *listResourcesResponse) GetResources() listResourcesResourcesResourcesPage {
 	return v.Resources
+}
+
+// publishResourceTypePublishResourceTypeResourceTypePayload includes the requested fields of the GraphQL type ResourceTypePayload.
+type publishResourceTypePublishResourceTypeResourceTypePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns publishResourceTypePublishResourceTypeResourceTypePayload.Result, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayload) GetResult() publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType {
+	return v.Result
+}
+
+// GetSuccessful returns publishResourceTypePublishResourceTypeResourceTypePayload.Successful, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns publishResourceTypePublishResourceTypeResourceTypePayload.Messages, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayload) GetMessages() []publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// The full JSON Schema describing the shape of data this resource type exposes to dependents.
+	//
+	// Use this to generate forms, validate inputs, or inspect the fields available on a connection
+	// of this resource type. The schema is returned verbatim, including Massdriver's `$md` extensions
+	// (e.g., `icon`, `ui`). Callers that only want the data contract can read `properties.data` or
+	// strip `$md` themselves.
+	Schema map[string]any `json:"-"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Id, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetId() string {
+	return v.Id
+}
+
+// GetName returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Name, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetName() string {
+	return v.Name
+}
+
+// GetIcon returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetSchema returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Schema, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetSchema() map[string]any {
+	return v.Schema
+}
+
+// GetCreatedAt returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalpublishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Icon string `json:"icon"`
+
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+
+	Schema json.RawMessage `json:"schema"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) __premarshalJSON() (*__premarshalpublishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType, error) {
+	var retval __premarshalpublishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Icon = v.Icon
+	retval.ConnectionOrientation = v.ConnectionOrientation
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Schema: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// publishResourceTypeResponse is returned by publishResourceType on success.
+type publishResourceTypeResponse struct {
+	// **Deprecated — use at your own risk.** This mutation exists only to bridge V0's
+	// `publishArtifactDefinition` into V1 while resource types are being migrated to OCI.
+	// New integrations should use the OCI-native publishing flow. This mutation may be
+	// removed or change behavior without notice.
+	//
+	// Upsert a resource type from a JSON Schema document. If an existing resource type in
+	// your organization has the same `$md.name`, its schema is replaced; otherwise a new
+	// resource type is created.
+	//
+	// The schema describes the shape of data this resource type exposes to dependents. It
+	// must include a `$md` extension that declares the type's identifier (`$md.name`),
+	// display label, icon, and UI behavior.
+	//
+	// ```graphql
+	// mutation {
+	// publishResourceType(
+	// organizationId: "your-org-id"
+	// input: {
+	// schema: {
+	// "$md": { name: "aws-iam-role", label: "AWS IAM Role" }
+	// type: "object"
+	// properties: { data: { type: "object", required: ["arn"], properties: { arn: { type: "string" } } } }
+	// }
+	// }
+	// ) {
+	// successful
+	// result { id name }
+	// messages { field message }
+	// }
+	// }
+	// ```
+	PublishResourceType publishResourceTypePublishResourceTypeResourceTypePayload `json:"publishResourceType"`
+}
+
+// GetPublishResourceType returns publishResourceTypeResponse.PublishResourceType, and is useful for accessing the field via an interface.
+func (v *publishResourceTypeResponse) GetPublishResourceType() publishResourceTypePublishResourceTypeResourceTypePayload {
+	return v.PublishResourceType
 }
 
 // removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload includes the requested fields of the GraphQL type InstanceSecretPayload.
@@ -7848,15 +9105,15 @@ func (v *updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage) G
 //
 // ```mermaid
 // stateDiagram-v2
-// [*] --> INITIALIZED: Component added to environment
-// INITIALIZED --> PROVISIONED: Deployment succeeds
-// INITIALIZED --> FAILED: Deployment fails
-// PROVISIONED --> PROVISIONED: Redeploy / update
-// PROVISIONED --> DECOMMISSIONED: Decommission succeeds
-// PROVISIONED --> FAILED: Deployment fails
-// FAILED --> PROVISIONED: Retry succeeds
-// FAILED --> DECOMMISSIONED: Decommission
-// [*] --> EXTERNAL: Remote reference set
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -8007,12 +9264,12 @@ func (v *updateProjectUpdateProjectProjectPayloadMessagesValidationMessage) GetM
 //
 // ```mermaid
 // graph LR
-// P[Project] --> B[Blueprint]
-// P --> E1[Environment: staging]
-// P --> E2[Environment: production]
-// B --> C1[Component: database]
-// B --> C2[Component: cache]
-// C1 -.->|Link| C2
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
 // ```
 //
 // Tags set on a project are inherited by all environments and instances within it.
@@ -8131,8 +9388,8 @@ func (v *updateResourceUpdateResourceResourcePayloadMessagesValidationMessage) G
 // updateResourceUpdateResourceResourcePayloadResultResource includes the requested fields of the GraphQL type Resource.
 // The GraphQL type's documentation follows.
 //
-// An infrastructure artifact such as cloud credentials, a database connection string,
-// a network configuration, or any other output produced by (or imported into) Massdriver.
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
 //
 // Resources are the connective tissue between instances. When an instance is deployed, it
 // produces resources as outputs. Other instances can consume those resources as inputs,
@@ -8556,6 +9813,107 @@ func deleteResource(
 	return data_, err_
 }
 
+// The mutation executed by deleteResourceType.
+const deleteResourceType_Operation = `
+mutation deleteResourceType ($organizationId: ID!, $id: ID!) {
+	deleteResourceType(organizationId: $organizationId, id: $id) {
+		result {
+			id
+			name
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func deleteResourceType(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *deleteResourceTypeResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "deleteResourceType",
+		Query:  deleteResourceType_Operation,
+		Variables: &__deleteResourceTypeInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &deleteResourceTypeResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by exportResource.
+const exportResource_Operation = `
+mutation exportResource ($organizationId: ID!, $id: ID!, $format: String) {
+	exportResource(organizationId: $organizationId, id: $id, format: $format) {
+		result {
+			id
+			name
+			origin
+			resourceType {
+				id
+				name
+			}
+			payload
+			rendered
+			createdAt
+			updatedAt
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func exportResource(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	format string,
+) (data_ *exportResourceResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "exportResource",
+		Query:  exportResource_Operation,
+		Variables: &__exportResourceInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Format:         format,
+		},
+	}
+
+	data_ = &exportResourceResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by getBundle.
 const getBundle_Operation = `
 query getBundle ($organizationId: ID!, $id: BundleId!) {
@@ -8956,6 +10314,13 @@ query getResource ($organizationId: ID!, $id: ID!) {
 			id
 			name
 		}
+		field
+		instance {
+			id
+			name
+		}
+		formats
+		payload
 		createdAt
 		updatedAt
 	}
@@ -8997,6 +10362,7 @@ query getResourceType ($organizationId: ID!, $id: ID!) {
 		name
 		icon
 		connectionOrientation
+		schema
 		createdAt
 		updatedAt
 	}
@@ -9453,6 +10819,7 @@ query listResourceTypes ($organizationId: ID!, $filter: ResourceTypesFilter, $so
 			name
 			icon
 			connectionOrientation
+			schema
 			createdAt
 			updatedAt
 		}
@@ -9507,6 +10874,12 @@ query listResources ($organizationId: ID!, $filter: ResourcesFilter, $sort: Reso
 				id
 				name
 			}
+			field
+			instance {
+				id
+				name
+			}
+			formats
 			createdAt
 			updatedAt
 		}
@@ -9534,6 +10907,56 @@ func listResources(
 	}
 
 	data_ = &listResourcesResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by publishResourceType.
+const publishResourceType_Operation = `
+mutation publishResourceType ($organizationId: ID!, $input: PublishResourceTypeInput!) {
+	publishResourceType(organizationId: $organizationId, input: $input) {
+		result {
+			id
+			name
+			icon
+			connectionOrientation
+			schema
+			createdAt
+			updatedAt
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func publishResourceType(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	input PublishResourceTypeInput,
+) (data_ *publishResourceTypeResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "publishResourceType",
+		Query:  publishResourceType_Operation,
+		Variables: &__publishResourceTypeInput{
+			OrganizationId: organizationId,
+			Input:          input,
+		},
+	}
+
+	data_ = &publishResourceTypeResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

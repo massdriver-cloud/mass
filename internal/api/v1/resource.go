@@ -15,12 +15,16 @@ import (
 // or any other output produced by (or imported into) Massdriver.
 // Replaces the v0 concept of "artifact".
 type Resource struct {
-	ID           string        `json:"id" mapstructure:"id"`
-	Name         string        `json:"name" mapstructure:"name"`
-	Origin       string        `json:"origin" mapstructure:"origin"`
-	ResourceType *ResourceType `json:"resourceType,omitempty" mapstructure:"resourceType,omitempty"`
-	CreatedAt    time.Time     `json:"createdAt,omitempty" mapstructure:"createdAt"`
-	UpdatedAt    time.Time     `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+	ID           string         `json:"id" mapstructure:"id"`
+	Name         string         `json:"name" mapstructure:"name"`
+	Origin       string         `json:"origin" mapstructure:"origin"`
+	ResourceType *ResourceType  `json:"resourceType,omitempty" mapstructure:"resourceType,omitempty"`
+	Field        string         `json:"field,omitempty" mapstructure:"field"`
+	Instance     *Instance      `json:"instance,omitempty" mapstructure:"instance,omitempty"`
+	Formats      []string       `json:"formats,omitempty" mapstructure:"formats"`
+	Payload      map[string]any `json:"payload,omitempty" mapstructure:"payload,omitempty"`
+	CreatedAt    time.Time      `json:"createdAt,omitempty" mapstructure:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
 }
 
 // GetResource retrieves a resource by ID.
@@ -105,6 +109,42 @@ func UpdateResource(ctx context.Context, mdClient *client.Client, id string, inp
 	return toResource(response.UpdateResource.Result)
 }
 
+// ResourceWithSensitiveValues is a resource whose `$md.sensitive` payload fields are unmasked.
+// Returned by ExportResource; requesting it is recorded in the audit log.
+type ResourceWithSensitiveValues struct {
+	ID           string         `json:"id" mapstructure:"id"`
+	Name         string         `json:"name" mapstructure:"name"`
+	Origin       string         `json:"origin" mapstructure:"origin"`
+	ResourceType *ResourceType  `json:"resourceType,omitempty" mapstructure:"resourceType,omitempty"`
+	Payload      map[string]any `json:"payload,omitempty" mapstructure:"payload,omitempty"`
+	Rendered     string         `json:"rendered" mapstructure:"rendered"`
+	CreatedAt    time.Time      `json:"createdAt,omitempty" mapstructure:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+}
+
+// ExportResource returns a resource with sensitive payload fields unmasked, along with a `rendered`
+// string in the requested format. An empty format defaults to the API's default (json).
+func ExportResource(ctx context.Context, mdClient *client.Client, id, format string) (*ResourceWithSensitiveValues, error) {
+	response, err := exportResource(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id, format)
+	if err != nil {
+		return nil, err
+	}
+	if !response.ExportResource.Successful {
+		messages := response.ExportResource.GetMessages()
+		if len(messages) > 0 {
+			var sb strings.Builder
+			sb.WriteString("unable to export resource:")
+			for _, msg := range messages {
+				sb.WriteString("\n  - ")
+				sb.WriteString(msg.Message)
+			}
+			return nil, errors.New(sb.String())
+		}
+		return nil, errors.New("unable to export resource")
+	}
+	return toResourceWithSensitiveValues(response.ExportResource.Result)
+}
+
 // DeleteResource deletes an imported resource by ID.
 func DeleteResource(ctx context.Context, mdClient *client.Client, id string) (*Resource, error) {
 	response, err := deleteResource(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
@@ -129,6 +169,14 @@ func DeleteResource(ctx context.Context, mdClient *client.Client, id string) (*R
 
 func toResource(v any) (*Resource, error) {
 	r := Resource{}
+	if err := mapstructure.Decode(v, &r); err != nil {
+		return nil, fmt.Errorf("failed to decode resource: %w", err)
+	}
+	return &r, nil
+}
+
+func toResourceWithSensitiveValues(v any) (*ResourceWithSensitiveValues, error) {
+	r := ResourceWithSensitiveValues{}
 	if err := mapstructure.Decode(v, &r); err != nil {
 		return nil, fmt.Errorf("failed to decode resource: %w", err)
 	}

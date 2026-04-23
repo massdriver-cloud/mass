@@ -25,11 +25,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	instanceParamsPath   = "./params.json"
-	instancePatchQueries []string
-)
-
 //go:embed templates/instance.get.md.tmpl
 var instanceTemplates embed.FS
 
@@ -42,17 +37,6 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 		Long:    helpdocs.MustRender("instance"),
 	}
 
-	instanceConfigureCmd := &cobra.Command{
-		Use:     `configure <project>-<env>-<manifest>`,
-		Short:   "Configure instance",
-		Aliases: []string{"cfg"},
-		Example: `mass instance configure ecomm-prod-vpc --params=params.json`,
-		Long:    helpdocs.MustRender("instance/configure"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceConfigure,
-	}
-	instanceConfigureCmd.Flags().StringVarP(&instanceParamsPath, "params", "p", instanceParamsPath, "Path to params json, tfvars or yaml file. Use '-' to read from stdin. This file supports bash interpolation.")
-
 	instanceDeployCmd := &cobra.Command{
 		Use:     `deploy <project>-<env>-<manifest>`,
 		Short:   "Deploy instances",
@@ -62,6 +46,9 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 		RunE:    runInstanceDeploy,
 	}
 	instanceDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
+	instanceDeployCmd.Flags().StringP("params", "p", "", "Path to params json, tfvars or yaml file. Use '-' to read from stdin. When provided, the full configuration is replaced. Supports bash interpolation.")
+	instanceDeployCmd.Flags().StringArrayP("patch", "P", []string{}, "Patch the last deployed configuration using a JQ expression. Can be specified multiple times.")
+	instanceDeployCmd.MarkFlagsMutuallyExclusive("params", "patch")
 
 	instanceExportCmd := &cobra.Command{
 		Use:     `export <project>-<env>-<manifest>`,
@@ -83,16 +70,6 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 		RunE:    runInstanceGet,
 	}
 	instanceGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
-
-	instancePatchCmd := &cobra.Command{
-		Use:     `patch <project>-<env>-<manifest>`,
-		Short:   "Patch individual instance parameter values",
-		Example: `mass instance patch ecomm-prod-db --set='.version = "13.4"'`,
-		Long:    helpdocs.MustRender("instance/patch"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstancePatch,
-	}
-	instancePatchCmd.Flags().StringArrayVarP(&instancePatchQueries, "set", "s", []string{}, "Sets an instance parameter value using JQ expressions.")
 
 	instanceCreateCmd := &cobra.Command{
 		Use:     `create [slug]`,
@@ -122,9 +99,13 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 		Example: `mass instance destroy api-prod-db --force`,
 		Long:    "Destroy (decommission) an instance. This will permanently delete the instance and all its resources.",
 		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceDestroy,
+		RunE:    runInstanceDeploy,
 	}
+	instanceDestroyCmd.Flags().StringP("message", "m", "", "Add a message when decommissioning")
 	instanceDestroyCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	instanceDestroyCmd.Flags().StringP("params", "p", "", "Path to params json, tfvars or yaml file. Use '-' to read from stdin. When provided, the full configuration is replaced. Supports bash interpolation.")
+	instanceDestroyCmd.Flags().StringArrayP("patch", "P", []string{}, "Patch the last deployed configuration using a JQ expression. Can be specified multiple times.")
+	instanceDestroyCmd.MarkFlagsMutuallyExclusive("params", "patch")
 
 	instanceResetCmd := &cobra.Command{
 		Use:     `reset <project>-<env>-<manifest>`,
@@ -146,12 +127,10 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 		RunE:    runInstanceList,
 	}
 
-	instanceCmd.AddCommand(instanceConfigureCmd)
 	instanceCmd.AddCommand(instanceDeployCmd)
 	instanceCmd.AddCommand(instanceExportCmd)
 	instanceCmd.AddCommand(instanceGetCmd)
 	instanceCmd.AddCommand(instanceListCmd)
-	instanceCmd.AddCommand(instancePatchCmd)
 	instanceCmd.AddCommand(instanceCreateCmd)
 	instanceCmd.AddCommand(instanceVersionCmd)
 	instanceCmd.AddCommand(instanceDestroyCmd)
@@ -242,79 +221,90 @@ func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 
 	name := args[0]
 
+	action := api.DeploymentActionProvision
+	if cmd.Name() == "destroy" {
+		action = api.DeploymentActionDecommission
+	}
+
 	msg, err := cmd.Flags().GetString("message")
 	if err != nil {
 		return err
 	}
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
-	}
-
-	_, err = instance.RunDeploy(ctx, mdClient, name, msg)
-
-	return err
-}
-
-func runInstanceConfigure(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-
-	instanceID := args[0]
-
-	params := map[string]any{}
-	if instanceParamsPath == "-" {
-		// Read from stdin
-		if err := json.NewDecoder(os.Stdin).Decode(&params); err != nil {
-			return fmt.Errorf("failed to decode JSON from stdin: %w", err)
-		}
-	} else {
-		if err := files.Read(instanceParamsPath, &params); err != nil {
-			return err
-		}
-	}
-
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
-	}
-
-	configuredInstance, err := instance.RunConfigure(ctx, mdClient, instanceID, params)
+	paramsPath, err := cmd.Flags().GetString("params")
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("✅ Instance `%s` configured successfully\n", configuredInstance.ID)
+	patchQueries, err := cmd.Flags().GetStringArray("patch")
+	if err != nil {
+		return err
+	}
 
-	// Get instance details to build URL
-	instanceDetails, err := api.GetInstance(ctx, mdClient, configuredInstance.ID)
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(instanceDetails.ID))
+	opts := instance.DeployOptions{
+		Action:       action,
+		Message:      msg,
+		PatchQueries: patchQueries,
+	}
+
+	if paramsPath != "" {
+		params, readErr := readParams(paramsPath)
+		if readErr != nil {
+			return readErr
+		}
+		opts.Params = params
+	}
+
+	if action == api.DeploymentActionDecommission {
+		force, forceErr := cmd.Flags().GetBool("force")
+		if forceErr != nil {
+			return forceErr
+		}
+		if !force {
+			fmt.Printf("WARNING: This will permanently decommission instance `%s` and all its resources.\n", name)
+			fmt.Printf("Type `%s` to confirm decommission: ", name)
+			reader := bufio.NewReader(os.Stdin)
+			answer, _ := reader.ReadString('\n')
+			if strings.TrimSpace(answer) != name {
+				fmt.Println("Decommission cancelled.")
+				return nil
+			}
+		}
+		cmd.SilenceUsage = true
+	}
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	if _, err = instance.RunDeploy(ctx, mdClient, name, opts); err != nil {
+		return err
+	}
+
+	if action == api.DeploymentActionDecommission {
+		fmt.Printf("✅ Instance `%s` decommission started\n", name)
+		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+		if urlErr == nil {
+			fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(name))
+		}
 	}
 
 	return nil
 }
 
-func runInstancePatch(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-
-	instanceID := args[0]
-
-	cmd.SilenceUsage = true
-
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+func readParams(path string) (map[string]any, error) {
+	params := map[string]any{}
+	if path == "-" {
+		if err := json.NewDecoder(os.Stdin).Decode(&params); err != nil {
+			return nil, fmt.Errorf("failed to decode JSON from stdin: %w", err)
+		}
+		return params, nil
 	}
-
-	_, err := instance.RunPatch(ctx, mdClient, instanceID, instancePatchQueries)
-
-	var name = lipgloss.NewStyle().SetString(instanceID).Foreground(lipgloss.Color("#7D56F4"))
-	msg := fmt.Sprintf("Patching: %s", name)
-	fmt.Println(msg)
-
-	return err
+	if err := files.Read(path, &params); err != nil {
+		return nil, err
+	}
+	return params, nil
 }
 
 func runInstanceExport(cmd *cobra.Command, args []string) error {
@@ -435,60 +425,6 @@ func runInstanceVersion(cmd *cobra.Command, args []string) error {
 		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 		if urlErr == nil {
 			fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(instanceDetails.ID))
-		}
-	}
-
-	return nil
-}
-
-func runInstanceDestroy(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-
-	instanceID := args[0]
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return err
-	}
-
-	cmd.SilenceUsage = true
-
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
-	}
-
-	// Get instance details for confirmation and URL
-	instance, err := apiv0.GetPackage(ctx, mdClient, instanceID)
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation - requires typing the instance slug unless --force is used
-	if !force {
-		fmt.Printf("WARNING: This will permanently decommission instance `%s` and all its resources.\n", instance.ID)
-		fmt.Printf("Type `%s` to confirm decommission: ", instance.ID)
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(answer)
-
-		if answer != instance.ID {
-			fmt.Println("Decommission cancelled.")
-			return nil
-		}
-	}
-
-	_, err = apiv0.DecommissionPackage(ctx, mdClient, instance.ID, "")
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("✅ Instance `%s` decommission started\n", instance.ID)
-
-	// Get instance details to build URL
-	if instance.Environment != nil && instance.Environment.Project != nil && instance.Manifest != nil {
-		urlHelper, urlErr := apiv0.NewURLHelper(ctx, mdClient)
-		if urlErr == nil {
-			fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(instance.Environment.Project.ID, instance.Environment.ID, instance.Manifest.ID))
 		}
 	}
 

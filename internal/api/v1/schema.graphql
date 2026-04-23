@@ -561,12 +561,13 @@ type RootQueryType {
     auditLogs(
       organizationId: "my-org"
       filter: {
-        occurredAt: { after: "2025-01-01T00:00:00Z" }
-        type: { startsWith: "project." }
+        occurredAt: { gte: "2025-01-01T00:00:00Z" }
+        type: { eq: "project.created" }
         actorType: { in: [ACCOUNT, SERVICE_ACCOUNT] }
+        actor: { search: "alice" }
       }
     ) {
-      data {
+      items {
         id
         occurredAt
         type
@@ -607,6 +608,21 @@ type RootQueryType {
   ): AuditLog
 
   """
+  Return the complete catalog of audit log event types emitted by Massdriver.
+
+  Event types are dot-notated strings (e.g., `project.created`, `deployment.completed`)
+  that categorize audit log events. This query returns the full static list — not just
+  the types that currently have events in your organization — so it's ideal for
+  populating a filter dropdown or building a dashboard that groups events by category.
+
+  The list is sorted alphabetically and does not require pagination.
+  """
+  auditLogEventTypes(
+    "Your organization's unique identifier."
+    organizationId: ID!
+  ): [String!]!
+
+  """
   List resource types available to your organization.
 
   Returns both public resource types provided by Massdriver and any private
@@ -631,10 +647,10 @@ type RootQueryType {
     "Your organization's unique identifier."
     organizationId: ID!
 
-    "Narrow results by resource type identifier."
+    "Narrow results by resource type identifier or search term."
     filter: ResourceTypesFilter
 
-    "Sort order. Defaults to `name` ascending."
+    "Sort order. Defaults to `name` ascending. When a `search` filter is active and no sort is provided, results are ranked by relevance."
     sort: ResourceTypesSort
 
     "Cursor from a previous page's `cursor.next` or `cursor.previous`."
@@ -693,7 +709,7 @@ type RootQueryType {
     "Optional filters to narrow the results."
     filter: ResourcesFilter
 
-    "Sort order for results. Defaults to alphabetical by name."
+    "Sort order for results. Defaults to alphabetical by name. When a `search` filter is active and no sort is provided, results are ranked by relevance."
     sort: ResourcesSort
 
     "Cursor from a previous page to fetch the next set of results."
@@ -718,20 +734,22 @@ type RootSubscriptionType {
   """
   Subscribe to organization-level events via WebSocket.
 
-  Receives events for all projects and environments within the organization, including
-  project creation/deletion and environment lifecycle changes. Requires organization
-  membership.
+  Receives events for projects created in the organization, OCI repositories
+  created in the bundle catalog, and bundle versions published to those
+  repositories. Requires organization membership.
 
   ```graphql
   subscription {
     organizationEvents(organizationId: "my-org") {
-      action
-      timestamp
+      ... on Event { action timestamp }
       ... on ProjectEvent {
         project { id name }
       }
-      ... on EnvironmentEvent {
-        environment { id name }
+      ... on OciRepoEvent {
+        ociRepo { id name }
+      }
+      ... on BundleEvent {
+        bundle { id name version }
       }
     }
   }
@@ -740,24 +758,29 @@ type RootSubscriptionType {
   organizationEvents(
     "Your organization's unique identifier."
     organizationId: ID!
-  ): Event
+  ): OrganizationEventsPayload
 
   """
   Subscribe to events within a specific project via WebSocket.
 
-  Receives events for the project itself, its environments, and its instances.
-  Requires read access to the project.
+  Receives events for the project itself, its environments, and its blueprint
+  (components and links). Requires read access to the project.
 
   ```graphql
   subscription {
     projectEvents(organizationId: "my-org", projectId: "my-project") {
-      action
-      timestamp
+      ... on Event { action timestamp }
+      ... on ProjectEvent {
+        project { id name }
+      }
       ... on EnvironmentEvent {
         environment { id name }
       }
-      ... on InstanceEvent {
-        instance { id name }
+      ... on ComponentEvent {
+        component { id name }
+      }
+      ... on LinkEvent {
+        link { id fromField toField }
       }
     }
   }
@@ -769,21 +792,65 @@ type RootSubscriptionType {
 
     "The identifier of the project to subscribe to."
     projectId: ID!
-  ): Event
+  ): ProjectEventsPayload
+
+  """
+  Subscribe to events within a specific environment via WebSocket.
+
+  Receives updates and deletions for the environment itself, plus creation,
+  update, and deletion events for every instance, connection, and alarm in
+  that environment (including alarm firing-state transitions). Environment
+  creation events are delivered via `projectEvents` (the environment must
+  exist before you can subscribe to it).
+
+  ```graphql
+  subscription {
+    environmentEvents(organizationId: "my-org", environmentId: "my-project-prod") {
+      ... on Event { action timestamp }
+      ... on EnvironmentEvent {
+        environment { id name }
+      }
+      ... on InstanceEvent {
+        instance { id name status }
+      }
+      ... on ConnectionEvent {
+        connection { id fromField toField }
+      }
+      ... on AlarmEvent {
+        alarm { id displayName currentState { status message } }
+      }
+    }
+  }
+  ```
+  """
+  environmentEvents(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The identifier of the environment to subscribe to."
+    environmentId: ID!
+  ): EnvironmentEventsPayload
 
   """
   Subscribe to events for a specific instance via WebSocket.
 
   Receives events when the instance's configuration changes, a deployment is created,
-  or the instance is deleted. Requires read access to the instance's project.
+  an incoming connection is added or removed, or a cloud metric alarm on the instance
+  is registered, updated, deleted, or changes firing state. Requires read access to
+  the instance's project.
 
   ```graphql
   subscription {
     instanceEvents(organizationId: "my-org", instanceId: "my-database") {
-      action
-      timestamp
+      ... on Event { action timestamp }
       ... on InstanceEvent {
         instance { id name status }
+      }
+      ... on ConnectionEvent {
+        connection { id fromField toField }
+      }
+      ... on AlarmEvent {
+        alarm { id displayName currentState { status message } }
       }
     }
   }
@@ -795,7 +862,7 @@ type RootSubscriptionType {
 
     "The identifier of the instance to subscribe to."
     instanceId: ID!
-  ): Event
+  ): InstanceEventsPayload
 }
 
 type RootMutationType {
@@ -885,6 +952,27 @@ type RootMutationType {
     "Update an existing environment's name and description. The ID cannot be changed after creation."
     input: UpdateEnvironmentInput!
   ): EnvironmentPayload @inputs(name: "updateEnvironment", schema: "\/graphql\/v1\/inputs\/updateEnvironment.json", ui: "\/graphql\/v1\/inputs\/updateEnvironment.ui.json")
+
+  """
+  Create a new environment by forking an existing one.
+
+  The new environment is created empty and linked to the parent via its `parent`
+  field. Instances are initialized from the project's components but start with
+  blank configuration — instance-level state (params, secrets, remote references)
+  is not copied. Use `copyInstance` per instance to seed configuration from the
+  parent. Pass `copyEnvironmentDefaults: true` to also copy the parent's default
+  resource connections.
+  """
+  forkEnvironment(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The identifier of the environment to fork from."
+    parentId: ID!
+
+    "Attributes for the new environment. The fork references the parent via `parentId`, starts with blank instances, and does not copy any instance-level configuration. Use `copyInstance` per-instance if you want to seed configuration from the parent."
+    input: ForkEnvironmentInput!
+  ): EnvironmentPayload @inputs(name: "forkEnvironment", schema: "\/graphql\/v1\/inputs\/forkEnvironment.json", ui: "\/graphql\/v1\/inputs\/forkEnvironment.ui.json")
 
   """
   Delete an environment permanently.
@@ -978,10 +1066,7 @@ type RootMutationType {
     "Your organization's unique identifier."
     organizationId: ID!
 
-    "The project containing the component."
-    projectId: ID!
-
-    "The component ID to remove."
+    "The component ID to remove (e.g., `myproj-database`)."
     id: ID!
   ): ComponentPayload
 
@@ -989,7 +1074,7 @@ type RootMutationType {
   Create a link between two components.
 
   Declares that the `fromField` output of one component should be wired to the
-  `toField` input of another. Massdriver validates that the artifact types are
+  `toField` input of another. Massdriver validates that the resource types are
   compatible before creating the link. When environments are deployed, each link
   becomes a **connection** that carries the actual resource data between instances.
 
@@ -997,12 +1082,11 @@ type RootMutationType {
   mutation {
     linkComponents(
       organizationId: "my-org"
-      projectId: "my-project"
       input: {
-        from: "database"
+        fromComponentId: "my-project-database"
         fromField: "authentication"
         fromVersion: "~1.0"
-        to: "app"
+        toComponentId: "my-project-app"
         toField: "database"
         toVersion: "~2.0"
       }
@@ -1016,9 +1100,6 @@ type RootMutationType {
   linkComponents(
     "Your organization's unique identifier."
     organizationId: ID!
-
-    "The project containing both components."
-    projectId: ID!
 
     "Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources."
     input: LinkComponentsInput!
@@ -1043,10 +1124,7 @@ type RootMutationType {
     "Your organization's unique identifier."
     organizationId: ID!
 
-    "The project containing the component."
-    projectId: ID!
-
-    "The component ID to reposition."
+    "The component ID to reposition (e.g., `myproj-database`)."
     id: ID!
 
     "Set the position of a component on the canvas."
@@ -1507,11 +1585,9 @@ type RootMutationType {
   mutation {
     setRemoteReference(
       organizationId: "my-org"
-      input: {
-        instanceId: "my-app"
-        field: "aws_authentication"
-        resourceId: "shared-creds-abc123"
-      }
+      instanceId: "my-app"
+      resourceId: "shared-creds-abc123"
+      input: { field: "aws_authentication" }
     ) {
       result { id field resource { id name } }
       successful
@@ -1523,6 +1599,12 @@ type RootMutationType {
   setRemoteReference(
     "Your organization's unique identifier."
     organizationId: ID!
+
+    "The instance to set the remote reference on."
+    instanceId: ID!
+
+    "The resource to reference — either a UUID for imported resources or 'instance.field' for provisioned resources."
+    resourceId: ID!
 
     "Link an instance's resource field to a resource from another project or an imported resource. The instance must not be in a provisioned or failed state."
     input: SetRemoteReferenceInput!
@@ -1541,7 +1623,8 @@ type RootMutationType {
   mutation {
     removeRemoteReference(
       organizationId: "my-org"
-      input: { instanceId: "my-app", field: "aws_authentication" }
+      instanceId: "my-app"
+      input: { field: "aws_authentication" }
     ) {
       result { id field }
       successful
@@ -1554,6 +1637,9 @@ type RootMutationType {
     "Your organization's unique identifier."
     organizationId: ID!
 
+    "The instance the reference belongs to."
+    instanceId: ID!
+
     "Remove a remote reference from an instance. The reference can only be removed if no provisioned instances are connected through it."
     input: RemoveRemoteReferenceInput!
   ): RemoteReferencePayload @inputs(name: "removeRemoteReference", schema: "\/graphql\/v1\/inputs\/removeRemoteReference.json", ui: "\/graphql\/v1\/inputs\/removeRemoteReference.ui.json")
@@ -1562,7 +1648,7 @@ type RootMutationType {
   Import a new resource into your organization.
 
   Creates a manually-managed resource (origin: `IMPORTED`) such as cloud credentials,
-  a network configuration, or any other infrastructure artifact. The resource must
+  a network configuration, or any other infrastructure output. The resource must
   conform to the schema defined by the specified resource type.
 
   ```graphql
@@ -1609,6 +1695,28 @@ type RootMutationType {
   ): ResourcePayload @inputs(name: "updateResource", schema: "\/graphql\/v1\/inputs\/updateResource.json", ui: "\/graphql\/v1\/inputs\/updateResource.ui.json")
 
   """
+  Export a resource, returning it along with its unmasked `payload` and a `rendered`
+  copy in the requested `format` (defaults to `json`).
+
+  Exports are recorded in the audit log so that access to sensitive payload data —
+  credentials, connection strings, IaC outputs — is attributable to the actor who
+  performed it. The resource itself is not modified.
+
+  Works for both imported and provisioned resources. The caller must have permission
+  to view the resource.
+  """
+  exportResource(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The resource to export."
+    id: ID!
+
+    "Output format for the `rendered` field. `json` serializes the payload; other values (e.g. `yaml`, `env`) must be declared in the resource type's schema."
+    format: String
+  ): ResourceWithSensitiveValuesPayload
+
+  """
   Delete an imported resource.
 
   Only resources with origin `IMPORTED` can be deleted directly. Provisioned resources
@@ -1624,6 +1732,65 @@ type RootMutationType {
     "The resource to delete."
     id: ID!
   ): ResourcePayload
+
+  """
+  **Deprecated — use at your own risk.** This mutation exists only to bridge V0's
+  `publishArtifactDefinition` into V1 while resource types are being migrated to OCI.
+  New integrations should use the OCI-native publishing flow. This mutation may be
+  removed or change behavior without notice.
+
+  Upsert a resource type from a JSON Schema document. If an existing resource type in
+  your organization has the same `$md.name`, its schema is replaced; otherwise a new
+  resource type is created.
+
+  The schema describes the shape of data this resource type exposes to dependents. It
+  must include a `$md` extension that declares the type's identifier (`$md.name`),
+  display label, icon, and UI behavior.
+
+  ```graphql
+  mutation {
+    publishResourceType(
+      organizationId: "your-org-id"
+      input: {
+        schema: {
+          "$md": { name: "aws-iam-role", label: "AWS IAM Role" }
+          type: "object"
+          properties: { data: { type: "object", required: ["arn"], properties: { arn: { type: "string" } } } }
+        }
+      }
+    ) {
+      successful
+      result { id name }
+      messages { field message }
+    }
+  }
+  ```
+  """
+  publishResourceType(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "Upsert a resource type for your organization from a JSON Schema document. If an existing resource type has the same identifier, its schema is replaced. **Deprecated:** this mutation exists solely to bridge V0 `publishArtifactDefinition` into the V1 API while resource types are being migrated to OCI. New integrations should use the OCI-native publishing flow — this mutation may be removed without notice."
+    input: PublishResourceTypeInput!
+  ): ResourceTypePayload @inputs(name: "publishResourceType", schema: "\/graphql\/v1\/inputs\/publishResourceType.json", ui: "\/graphql\/v1\/inputs\/publishResourceType.ui.json") @deprecated(reason: "Transitional shim from V0 `publishArtifactDefinition` during the migration to OCI-hosted resource types. Prefer the OCI-native publishing flow; this mutation may be removed without notice.")
+
+  """
+  **Deprecated — use at your own risk.** This mutation exists only to bridge V0's
+  `deleteArtifactDefinition` into V1 while resource types are being migrated to OCI.
+  New integrations should use the OCI-native publishing flow. This mutation may be
+  removed or change behavior without notice.
+
+  Delete a resource type. The resource type cannot be deleted while it is still in
+  use — either as a dependency or output in a bundle, or by any existing
+  imported/provisioned resources of this type. Remove those consumers first.
+  """
+  deleteResourceType(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The resource type identifier (e.g., `aws-iam-role`)."
+    id: ID!
+  ): ResourceTypePayload @deprecated(reason: "Transitional shim from V0 `deleteArtifactDefinition` during the migration to OCI-hosted resource types. Prefer the OCI-native publishing flow; this mutation may be removed without notice.")
 
   """
   Update an instance's version constraint or release strategy.
@@ -1655,6 +1822,43 @@ type RootMutationType {
     "Update an instance's version constraint or release strategy. Changes take effect on the next deployment."
     input: UpdateInstanceInput!
   ): InstancePayload @inputs(name: "updateInstance", schema: "\/graphql\/v1\/inputs\/updateInstance.json", ui: "\/graphql\/v1\/inputs\/updateInstance.ui.json")
+
+  """
+  Copy configuration from one instance to another.
+
+  Both instances must be built from the same component. Source params (minus any
+  fields the bundle marks non-copyable) are written to the destination, deep-merged
+  with any `overrides`. A plan deployment is then created on the destination so the
+  caller can review the changes before applying them. `copySecrets` and
+  `copyRemoteReferences` opt in to additional state transfer.
+
+  ```graphql
+  mutation {
+    copyInstance(
+      organizationId: "my-org"
+      sourceId: "ecomm-prod-db"
+      destinationId: "ecomm-staging-db"
+      input: { overrides: { size: "small" }, copySecrets: true, message: "Promote prod config" }
+    ) {
+      result { id params }
+      successful
+    }
+  }
+  ```
+  """
+  copyInstance(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The instance to copy configuration from."
+    sourceId: ID!
+
+    "The instance to copy configuration into. Must be built from the same component as the source."
+    destinationId: ID!
+
+    "Copy configuration from one instance to another. The source and destination must be instances of the same component. Source params (minus any fields marked non-copyable in the bundle) are written to the destination, then a plan deployment is created on the destination so the changes can be reviewed before applying."
+    input: CopyInstanceInput!
+  ): InstancePayload @inputs(name: "copyInstance", schema: "\/graphql\/v1\/inputs\/copyInstance.json", ui: "\/graphql\/v1\/inputs\/copyInstance.ui.json")
 
   """
   Create or update a secret on an instance.
@@ -1729,6 +1933,75 @@ type RootMutationType {
     "Deploy an instance with configuration parameters. Params are validated against the bundle's params schema, cached on the instance, and snapshotted into the deployment."
     input: CreateDeploymentInput!
   ): DeploymentPayload @inputs(name: "createDeployment", schema: "\/graphql\/v1\/inputs\/createDeployment.json", ui: "\/graphql\/v1\/inputs\/createDeployment.ui.json")
+
+  """
+  Propose a deployment for human review.
+
+  Creates a deployment in `PROPOSED` status. Proposed deployments are **not**
+  scheduled and do **not** block the queue — other deployments on the same
+  instance can continue to run while a proposal is outstanding.
+
+  Approve a proposal with `approveDeployment` to release it into the run queue,
+  or discard it with `rejectDeployment`.
+
+  Only `PROVISION` and `DECOMMISSION` actions are proposable — `PLAN` is
+  already a non-destructive preview and needs no approval gate.
+
+  ```graphql
+  mutation {
+    proposeDeployment(
+      organizationId: "my-org"
+      id: "my-database"
+      input: { action: PROVISION, params: { size: "large" }, message: "Scale up for Black Friday" }
+    ) {
+      result { id status action }
+      successful
+      messages { field message }
+    }
+  }
+  ```
+  """
+  proposeDeployment(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The instance to propose a deployment for."
+    id: ID!
+
+    "Propose a deployment for human review. The deployment is created in PROPOSED status and will not execute until it is approved via approveDeployment. Params are validated against the bundle's params schema and snapshotted into the proposal."
+    input: ProposeDeploymentInput!
+  ): DeploymentPayload @inputs(name: "proposeDeployment", schema: "\/graphql\/v1\/inputs\/proposeDeployment.json", ui: "\/graphql\/v1\/inputs\/proposeDeployment.ui.json")
+
+  """
+  Approve a proposed deployment, releasing it into the run queue.
+
+  The deployment transitions from `PROPOSED` to `APPROVED` and will execute
+  as soon as nothing else is running on the instance. Approval is only valid
+  for deployments in `PROPOSED` status; any other status returns a validation
+  error.
+  """
+  approveDeployment(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The proposed deployment's unique identifier."
+    id: ID!
+  ): DeploymentPayload
+
+  """
+  Reject a proposed deployment, discarding it permanently.
+
+  The deployment transitions from `PROPOSED` to `REJECTED`, which is terminal —
+  rejected deployments never run. Rejection is only valid for deployments in
+  `PROPOSED` status; any other status returns a validation error.
+  """
+  rejectDeployment(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The proposed deployment's unique identifier."
+    id: ID!
+  ): DeploymentPayload
 }
 
 """
@@ -1746,27 +2019,29 @@ enum EventAction {
 
   "A resource was permanently removed."
   DELETED
+
+  "A new immutable artifact was published (e.g., a bundle version released to an OCI repository)."
+  PUBLISHED
 }
 
 """
 Base interface implemented by all lifecycle events.
 
 Every event carries an `action` describing what happened and a `timestamp` recording
-when it occurred. Concrete event types add a field for the affected resource
-(`project`, `environment`, or `instance`).
+when it occurred. Concrete event types add a field for the affected resource.
 
-Use inline fragments to access the resource-specific fields:
+Because each subscription returns a union, use an `... on Event` fragment to
+access the shared fields and concrete fragments for the resource payload:
 
 ```graphql
 subscription {
-  organizationEvents(organizationId: "my-org") {
-    action
-    timestamp
-    ... on ProjectEvent {
-      project { id name }
+  projectEvents(organizationId: "my-org", projectId: "my-project") {
+    ... on Event { action timestamp }
+    ... on ComponentEvent {
+      component { id name }
     }
-    ... on EnvironmentEvent {
-      environment { id name }
+    ... on LinkEvent {
+      link { id fromField toField }
     }
   }
 }
@@ -1799,7 +2074,9 @@ type ProjectEvent implements Event {
 A lifecycle event for an environment.
 
 Emitted when an environment is created, updated (renamed, settings changed), or deleted
-within a project. Subscribe via `organizationEvents` or `projectEvents`.
+within a project. Subscribe via `projectEvents` for any environment in the project, or
+via `environmentEvents` for a specific environment (updates and deletes only — the
+environment must exist to subscribe to it).
 """
 type EnvironmentEvent implements Event {
   action: EventAction!
@@ -1824,6 +2101,134 @@ type InstanceEvent implements Event {
   "The instance that was created, updated, or deleted."
   instance: Instance!
 }
+
+"""
+A lifecycle event for a component.
+
+Emitted when a component is added to a blueprint, moved on the canvas, renamed or
+re-tagged, or removed. Subscribe via `projectEvents`.
+"""
+type ComponentEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The component that was created, updated, or deleted."
+  component: Component!
+}
+
+"""
+A lifecycle event for a blueprint link between two components.
+
+Emitted when components are linked or unlinked in a project's blueprint. Links have
+no mutable body, so only `CREATED` and `DELETED` actions are emitted. Subscribe via
+`projectEvents`.
+"""
+type LinkEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The link that was created or deleted."
+  link: Link!
+}
+
+"""
+A lifecycle event for a realized connection between two instances in an environment.
+
+A connection is the runtime materialization of a blueprint link — it wires one
+instance's output artifact into another instance's input field within a single
+environment. Emitted when a connection is established or torn down. Subscribe via
+`environmentEvents` for every connection in an environment, or via `instanceEvents`
+for connections that terminate on a specific instance.
+"""
+type ConnectionEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The connection that was created or deleted."
+  connection: Connection!
+}
+
+"""
+A lifecycle event for a cloud metric alarm attached to an instance.
+
+Emitted when an alarm is registered, reconfigured, removed, or when its
+firing state changes (e.g., `OK` → `ALARM`). State transitions surface as
+`UPDATED` — read the latest status from `alarm.currentState`. Subscribe via
+`environmentEvents` or `instanceEvents`.
+"""
+type AlarmEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The alarm that was created, updated, or deleted."
+  alarm: Alarm!
+}
+
+"""
+A lifecycle event for an OCI repository in the organization's bundle catalog.
+
+Emitted with action `CREATED` the first time a bundle is published under a
+new repository name. The registry is immutable — repositories cannot be
+renamed or deleted through the API today — so subsequent publishes to an
+existing repository fire a `BundleEvent` instead. Subscribe via
+`organizationEvents`.
+"""
+type OciRepoEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The OCI repository that was created."
+  ociRepo: OciRepo!
+}
+
+"""
+A lifecycle event for a published bundle version.
+
+Emitted with action `PUBLISHED` each time a new bundle release is pushed to
+an OCI repository in the organization. Bundle versions are immutable, so
+neither `UPDATED` nor `DELETED` is emitted today. Subscribe via
+`organizationEvents`.
+"""
+type BundleEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The bundle version that was published."
+  bundle: Bundle!
+}
+
+"Events delivered by the `organizationEvents` subscription."
+union OrganizationEventsPayload = ProjectEvent | OciRepoEvent | BundleEvent
+
+"""
+Events delivered by the `projectEvents` subscription.
+
+Covers the project itself plus its blueprint (components, links) and the
+environments provisioned from it.
+"""
+union ProjectEventsPayload = ProjectEvent | EnvironmentEvent | ComponentEvent | LinkEvent
+
+"""
+Events delivered by the `environmentEvents` subscription.
+
+Covers the environment itself, every instance provisioned into it, every
+connection wired within it, and every alarm attached to those instances.
+"""
+union EnvironmentEventsPayload = EnvironmentEvent | InstanceEvent | ConnectionEvent | AlarmEvent
+
+"""
+Events delivered by the `instanceEvents` subscription.
+
+Covers the instance itself, incoming connections that terminate on it, and
+alarms attached to it.
+"""
+union InstanceEventsPayload = InstanceEvent | ConnectionEvent | AlarmEvent
 
 """
 How a resource was created, which determines how it can be managed.
@@ -1871,6 +2276,12 @@ All filters are combined with AND logic. Omit a filter to skip that criterion.
 input ResourcesFilter {
   "Return only resources with the specified origin (IMPORTED or PROVISIONED)."
   origin: ResourceOriginFilter
+
+  "Return only resources of the given resource type, matched by the type's identifier (e.g., `aws-iam-role`, `kubernetes-cluster`)."
+  resourceType: StringFilter
+
+  "Full-text search across the resource name. Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, name-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries."
+  search: String
 }
 
 """
@@ -1905,8 +2316,8 @@ input UpdateResourceInput {
 }
 
 """
-An infrastructure artifact such as cloud credentials, a database connection string,
-a network configuration, or any other output produced by (or imported into) Massdriver.
+A cloud credential, database connection string, network configuration, or other
+infrastructure output produced by (or imported into) Massdriver.
 
 Resources are the connective tissue between instances. When an instance is deployed, it
 produces resources as outputs. Other instances can consume those resources as inputs,
@@ -1939,6 +2350,81 @@ type Resource {
   "The resource type that this resource conforms to, defining its schema and validation rules."
   resourceType: ResourceType
 
+  """
+  The bundle output handle that produced this resource (e.g., `authentication`, `database`).
+
+  Set only for **provisioned** resources — it corresponds to a field declared under
+  `artifacts` in the producing bundle's `massdriver.yaml`. Null for **imported** resources.
+  """
+  field: String
+
+  """
+  The instance whose deployment produced this resource.
+
+  Null for **imported** resources. For **provisioned** resources, this is the instance
+  that owns the resource's lifecycle — updating or decommissioning the instance will
+  update or remove the resource.
+  """
+  instance: Instance
+
+  """
+  Download formats supported for this resource.
+
+  Always includes `json` (the raw payload). Additional formats come from the resource
+  type's `$md.export` declarations, which can render the payload as YAML or other
+  templated outputs. Pass a returned format to `downloadArtifact` to retrieve the
+  rendered content.
+  """
+  formats: [String!]!
+
+  """
+  The resource's structured payload. Fields marked `$md.sensitive` in the resource type's
+  schema are masked as `[SENSITIVE]`. Use `exportResource` to retrieve an unmasked copy —
+  that operation is recorded in the audit log.
+  """
+  payload: Map
+
+  "When this resource was created (UTC)."
+  createdAt: DateTime!
+
+  "When this resource was last modified (UTC)."
+  updatedAt: DateTime!
+}
+
+"""
+A resource with its sensitive payload values revealed, returned by the `exportResource` mutation.
+
+Unlike the regular `Resource` type — where fields marked `$md.sensitive` in the resource
+type's schema are masked — this type exposes the raw values so they can be consumed by
+automation or copied into downstream systems. Requesting this type is recorded in the
+audit log.
+"""
+type ResourceWithSensitiveValues {
+  "Unique identifier for this resource."
+  id: ID!
+
+  "Human-readable display name for this resource."
+  name: String!
+
+  "How this resource was created."
+  origin: ResourceOrigin!
+
+  "The resource type that this resource conforms to, defining its schema and validation rules."
+  resourceType: ResourceType
+
+  """
+  The resource's payload with `$md.sensitive` fields unmasked. The shape is defined by
+  the resource type's schema.
+  """
+  payload: Map
+
+  """
+  The resource rendered in the requested `format`. For `json` this is a stringified JSON
+  document of the payload; for resource-type-specific formats (e.g. `yaml`, `env`) this is
+  the template output defined by the resource type's schema.
+  """
+  rendered: String!
+
   "When this resource was created (UTC)."
   createdAt: DateTime!
 
@@ -1965,6 +2451,17 @@ type ResourcePayload {
   result: Resource
 }
 
+type ResourceWithSensitiveValuesPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: ResourceWithSensitiveValues
+}
+
 "Fields available for ordering the resource types list."
 enum ResourceTypesSortField {
   "Alphabetical order by the resource type's display name."
@@ -1983,10 +2480,19 @@ input ResourceTypesSort {
   order: SortOrder!
 }
 
+"Upsert a resource type for your organization from a JSON Schema document. If an existing resource type has the same identifier, its schema is replaced. **Deprecated:** this mutation exists solely to bridge V0 `publishArtifactDefinition` into the V1 API while resource types are being migrated to OCI. New integrations should use the OCI-native publishing flow — this mutation may be removed without notice."
+input PublishResourceTypeInput {
+  "The full JSON Schema document describing the shape of data this resource type exposes to dependents. Must include `$md.name` (a kebab-case identifier like `aws-iam-role`) and should include `$md.label`, `$md.icon`, and `$md.ui.connectionOrientation`."
+  schema: Map!
+}
+
 "Filters for narrowing the resource types list."
 input ResourceTypesFilter {
   "Filter by resource type identifier (e.g., `aws-iam-role`, `kubernetes-cluster`)."
   id: StringFilter
+
+  "Full-text search across the resource type's display name and identifier (e.g., `\"iam\"` matches `AWS IAM Role` \/ `aws-iam-role`). Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, identifier-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries."
+  search: String
 }
 
 """
@@ -2029,6 +2535,16 @@ type ResourceType {
   "How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults."
   connectionOrientation: ConnectionOrientation!
 
+  """
+  The full JSON Schema describing the shape of data this resource type exposes to dependents.
+
+  Use this to generate forms, validate inputs, or inspect the fields available on a connection
+  of this resource type. The schema is returned verbatim, including Massdriver's `$md` extensions
+  (e.g., `icon`, `ui`). Callers that only want the data contract can read `properties.data` or
+  strip `$md` themselves.
+  """
+  schema: Map!
+
   "Timestamp when this resource type was created (UTC)."
   createdAt: DateTime!
 
@@ -2044,25 +2560,27 @@ type ResourceTypesPage {
   items: [ResourceType]
 }
 
+type ResourceTypePayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: ResourceType
+}
+
 "Link an instance's resource field to a resource from another project or an imported resource. The instance must not be in a provisioned or failed state."
 input SetRemoteReferenceInput {
   "The resource field to assign the reference to"
   field: String!
-
-  "The instance to set the remote reference on"
-  instanceId: ID!
-
-  "The resource to reference — either a UUID for imported resources or 'instance.field' for provisioned resources"
-  resourceId: ID!
 }
 
 "Remove a remote reference from an instance. The reference can only be removed if no provisioned instances are connected through it."
 input RemoveRemoteReferenceInput {
   "The resource field to remove the reference from"
   field: String!
-
-  "The instance the reference belongs to"
-  instanceId: ID!
 }
 
 """
@@ -2364,16 +2882,36 @@ input AuditLogActorTypeFilter {
 }
 
 """
+Case-insensitive substring search across the actor's identifying fields.
+
+Useful for finding every action taken by a specific user or bot without needing to
+know their exact ID. The search is matched against different fields depending on
+actor type:
+
+- **Human users (`ACCOUNT`)** — email, first name, and last name.
+- **Service accounts (`SERVICE_ACCOUNT`)** — service account name.
+- **Deployments (`DEPLOYMENT`)** and **system actions (`SYSTEM`)** — the recorded actor ID.
+
+Matching is case-insensitive and uses substring semantics, so `search: "alice"` will
+match `alice@example.com`, `Alice Wonderland`, and a service account named
+`alice-deploy-bot`.
+"""
+input ActorSearchFilter {
+  "Substring to look for. Blank or missing values skip this filter."
+  search: String
+}
+
+"""
 Filter criteria for narrowing which audit log events are returned.
 
 All filters are combined with AND logic — an event must match every specified filter
 to be included in the results. Omit a filter to not restrict on that field.
 """
 input AuditLogsFilter {
-  "Filter by when the event occurred. Supports `before`, `after`, and range comparisons."
+  "Filter by when the event occurred. Supports `eq` for a point in time, `gt`\/`gte` for lower bounds, and `lt`\/`lte` for upper bounds. Combine `gte` and `lte` for a range."
   occurredAt: DatetimeFilter
 
-  "Filter by event type using dot notation (e.g., `project.created`, `deployment.completed`). Supports `eq`, `in`, `startsWith`, and `contains`."
+  "Filter by event type using dot notation (e.g., `project.created`, `deployment.completed`). Supports `eq` for an exact match and `in` for matching any value in a list."
   type: StringFilter
 
   "Filter by the type of actor that performed the action (e.g., only human users or only deployments)."
@@ -2381,6 +2919,9 @@ input AuditLogsFilter {
 
   "Filter by the specific actor's identifier. Matches across all actor types (account, service account, deployment)."
   actorId: IdFilter
+
+  "Search actors by a substring match across their identifying fields (email and name for users, name for service accounts, ID for deployments and system actions). Useful for finding every action taken by a person or bot without knowing their exact ID."
+  actor: ActorSearchFilter
 }
 
 """
@@ -2521,7 +3062,7 @@ input IntegrationsSort {
   "The field to sort results by."
   field: IntegrationsSortField!
 
-  "The direction to sort: `ASC` or `DESC`."
+  "`ASC` for A-Z \/ oldest first, `DESC` for Z-A \/ newest first."
   order: SortOrder!
 }
 
@@ -2914,14 +3455,14 @@ can see and do.
 
 ```mermaid
 graph TD
-  O[Organization] --> G1[Group: Admins]
-  O --> G2[Group: Developers]
-  O --> G3[Group: Custom]
-  G1 --> U1[User: alice@co.com]
-  G2 --> U2[User: bob@co.com]
-  G2 --> SA1[Service Account: ci-bot]
-  G3 -->|project_admin| P1[Project: backend]
-  G3 -->|project_viewer| P2[Project: frontend]
+  O["Organization"] --> G1["Group: Admins"]
+  O --> G2["Group: Developers"]
+  O --> G3["Group: Custom"]
+  G1 --> U1["User: alice@co.com"]
+  G2 --> U2["User: bob@co.com"]
+  G2 --> SA1["Service Account: ci-bot"]
+  G3 -->|"project_admin"| P1["Project: backend"]
+  G3 -->|"project_viewer"| P2["Project: frontend"]
 ```
 
 **Built-in groups** — Every organization starts with an `Admins` group (`organization_admin` role)
@@ -3037,12 +3578,12 @@ and deploy lives under an organization: **Projects** contain your infrastructure
 
 ```mermaid
 graph TD
-  O[Organization] --> P1[Project]
-  O --> P2[Project]
-  P1 --> E1[Environment: staging]
-  P1 --> E2[Environment: production]
-  E1 --> I1[Instance]
-  E1 --> I2[Instance]
+  O["Organization"] --> P1["Project"]
+  O --> P2["Project"]
+  P1 --> E1["Environment: staging"]
+  P1 --> E2["Environment: production"]
+  E1 --> I1["Instance"]
+  E1 --> I2["Instance"]
 ```
 
 Members access resources through **group memberships** with role-based permissions.
@@ -3120,6 +3661,7 @@ Upload a logo via the `setOrganizationLogo` mutation. Supported formats are
 PNG, JPG, GIF, and WebP with a maximum file size of 1 MB.
 """
 type LogoOrganization {
+  "Unique identifier for this logo."
   id: ID!
 
   "Fully-qualified URL to the logo image. This URL is stable and safe to cache."
@@ -3577,7 +4119,7 @@ input ComponentsSort {
   "The field to sort by."
   field: ComponentsSortField!
 
-  "Ascending or descending."
+  "`ASC` for A-Z \/ oldest first, `DESC` for Z-A \/ newest first."
   order: SortOrder!
 }
 
@@ -3586,13 +4128,13 @@ input LinksSort {
   "The field to sort by."
   field: LinksSortField!
 
-  "Ascending or descending."
+  "`ASC` for A-Z \/ oldest first, `DESC` for Z-A \/ newest first."
   order: SortOrder!
 }
 
 "Filter which components to return."
 input ComponentsFilter {
-  "Match by component ID (e.g., `database`). Supports `eq` and `in`."
+  "Match by component ID (e.g., `myproj-database`). Supports `eq` and `in`."
   id: IdFilter
 
   "Match by the OCI repository name of the underlying bundle."
@@ -3601,10 +4143,10 @@ input ComponentsFilter {
 
 "Filter which links to return."
 input LinksFilter {
-  "Match by the source (from) component's ID."
+  "Match by the source (from) component's ID (e.g., `myproj-database`)."
   fromComponentId: IdFilter
 
-  "Match by the destination (to) component's ID."
+  "Match by the destination (to) component's ID (e.g., `myproj-app`)."
   toComponentId: IdFilter
 }
 
@@ -3625,8 +4167,8 @@ input AddComponentInput {
 
 "Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources."
 input LinkComponentsInput {
-  "Component that produces the artifact (e.g., 'database')"
-  from: ID!
+  "ID of the component that produces the resource (e.g., 'myproj-database')."
+  fromComponentId: ID!
 
   "Output field name on the source component"
   fromField: String!
@@ -3634,8 +4176,8 @@ input LinkComponentsInput {
   "Version constraint for the source component (e.g., '~1.0', '1.2.3', 'latest')"
   fromVersion: VersionConstraint!
 
-  "Component that consumes the artifact (e.g., 'app')"
-  to: ID!
+  "ID of the component that consumes the resource (e.g., 'myproj-app')."
+  toComponentId: ID!
 
   "Input field name on the destination component"
   toField: String!
@@ -3714,6 +4256,7 @@ At deploy time, each link is realized as a **connection** in the environment,
 wiring the actual instance outputs to instance inputs.
 """
 type Link {
+  "Unique identifier for this link."
   id: ID!
 
   "The output field name on the source component (e.g., `authentication`)."
@@ -3749,13 +4292,13 @@ the blueprint is realized as an **environment blueprint** containing live
 ```mermaid
 graph TB
   subgraph "Design Time (Blueprint)"
-    C1[Component: database] ---|Link| C2[Component: cache]
+    C1["Component: database"] ---|"Link"| C2["Component: cache"]
   end
   subgraph "Runtime (Environment Blueprint)"
-    I1[Instance: database] ---|Connection| I2[Instance: cache]
+    I1["Instance: database"] ---|"Connection"| I2["Instance: cache"]
   end
-  C1 -.->|deployed to| I1
-  C2 -.->|deployed to| I2
+  C1 -.->|"deployed to"| I1
+  C2 -.->|"deployed to"| I2
 ```
 """
 type Blueprint {
@@ -3844,24 +4387,51 @@ input CreateDeploymentInput {
   params: Map!
 }
 
+"Propose a deployment for human review. The deployment is created in PROPOSED status and will not execute until it is approved via approveDeployment. Params are validated against the bundle's params schema and snapshotted into the proposal."
+input ProposeDeploymentInput {
+  "The operation that will run once the proposal is approved. PLAN is not proposable — use createDeployment for dry-run previews."
+  action: ProposeDeploymentAction!
+
+  "A short message describing the reason for this proposal"
+  message: String
+
+  "Bundle configuration parameters that should be applied if the proposal is approved. Validated against the bundle's params schema."
+  params: Map!
+}
+
 """
 The current state of a deployment operation.
 
-Every deployment moves through a linear lifecycle:
+Deployments created with `createDeployment` enter the lifecycle at `PENDING`.
+Deployments created with `proposeDeployment` enter at `PROPOSED` and require
+approval before they can run:
 
 ```mermaid
 stateDiagram-v2
-  [*] --> PENDING: Deployment created
-  PENDING --> RUNNING: Execution starts
-  RUNNING --> COMPLETED: Success
-  RUNNING --> FAILED: Error
-  RUNNING --> ABORTED: Manually stopped
+  [*] --> PENDING: "createDeployment"
+  [*] --> PROPOSED: "proposeDeployment"
+  PROPOSED --> APPROVED: "approveDeployment"
+  PROPOSED --> REJECTED: "rejectDeployment"
+  PENDING --> RUNNING: "Execution starts"
+  APPROVED --> RUNNING: "Execution starts"
+  RUNNING --> COMPLETED: "Success"
+  RUNNING --> FAILED: "Error"
+  RUNNING --> ABORTED: "Manually stopped"
 ```
 
-Once a deployment reaches a terminal state (`COMPLETED`, `FAILED`, or `ABORTED`),
-it cannot transition again.
+Once a deployment reaches a terminal state (`COMPLETED`, `FAILED`, `ABORTED`,
+or `REJECTED`), it cannot transition again.
 """
 enum DeploymentStatus {
+  "A proposed deployment awaiting human approval. Proposed deployments are not scheduled and do not block the queue."
+  PROPOSED
+
+  "The proposal was rejected and will never run. Terminal."
+  REJECTED
+
+  "The proposal was approved and is waiting to execute. Approved deployments are drained from the queue alongside PENDING deployments."
+  APPROVED
+
   "The deployment is queued and waiting for execution to begin."
   PENDING
 
@@ -3897,6 +4467,19 @@ enum DeploymentAction {
   PLAN
 }
 
+"""
+Actions that support the propose/approve/reject workflow. `PLAN` is excluded
+because a plan is already a non-destructive preview — gating it behind
+approval adds no value.
+"""
+enum ProposeDeploymentAction {
+  "Propose creating or updating infrastructure. On approval, the deployment runs with the snapshotted params."
+  PROVISION
+
+  "Propose destroying all infrastructure managed by this instance. On approval, the teardown runs."
+  DECOMMISSION
+}
+
 "Available fields for sorting the deployments list."
 enum DeploymentsSortField {
   "Sort by creation timestamp (oldest first when ascending, newest first when descending)."
@@ -3915,7 +4498,7 @@ input DeploymentsSort {
   "The field to sort by."
   field: DeploymentsSortField!
 
-  "Ascending or descending order."
+  "`ASC` for A-Z \/ oldest first, `DESC` for Z-A \/ newest first."
   order: SortOrder!
 }
 
@@ -3946,6 +4529,7 @@ Use the `status` field to monitor progress and `elapsed_time` to track duration.
 The `deployed_by` field identifies the user or service account that initiated the operation.
 """
 type Deployment {
+  "Unique identifier for this deployment."
   id: ID!
 
   "Current lifecycle state of this deployment."
@@ -3974,7 +4558,7 @@ type Deployment {
 
   For `RUNNING` deployments, this is a live timer counting from creation.
   For terminal states, this is the total time from creation to the final status transition.
-  Returns `0` for `PENDING` deployments.
+  Returns `0` for deployments that have not yet executed (`PENDING`, `PROPOSED`, `APPROVED`).
   """
   elapsedTime: Int!
 
@@ -4004,6 +4588,129 @@ type DeploymentPayload {
   result: Deployment
 }
 
+"""
+Current state of a cloud metric alarm.
+
+A `null` `currentState` on an alarm indicates the alarm has been configured
+but no state has been reported yet.
+"""
+enum AlarmStatus {
+  "The metric is within configured thresholds."
+  OK
+
+  "The metric has crossed the configured threshold and the alarm is firing."
+  ALARM
+}
+
+"""
+A key-value pair identifying the specific cloud resource a metric applies to.
+
+Examples: `{ name: "DBInstanceIdentifier", value: "db-abc123" }` for AWS RDS,
+`{ name: "InstanceId", value: "i-0a1b2c3d" }` for AWS EC2.
+"""
+type AlarmMetricDimension {
+  "Dimension name as defined by the cloud provider."
+  name: String!
+
+  "Dimension value identifying the monitored resource."
+  value: String!
+}
+
+"""
+The cloud metric an alarm is evaluating.
+
+Shape and populated fields vary by provider. AWS and Azure populate
+`statistic` (e.g., `Average`, `Sum`, `Maximum`); GCP does not. `dimensions`
+are populated when the provider exposes them as structured key-value pairs.
+"""
+type AlarmMetric {
+  "Cloud service namespace that categorizes the metric. Examples: `AWS\/RDS`, `Microsoft.Cache\/Redis`, `cloudsql_database`."
+  namespace: String
+
+  "Metric name within the namespace. Examples: `CPUUtilization` (AWS), `allpercentprocessortime` (Azure)."
+  name: String
+
+  "Aggregation function applied to metric samples. Examples: `Average`, `Sum`, `Maximum`. May be `null` for providers that don't use this concept (e.g., GCP)."
+  statistic: String
+
+  "Cloud region this metric is scoped to, when provider-reported."
+  region: String
+
+  "Dimensions identifying the specific cloud resource being monitored. Empty list when the provider doesn't report structured dimensions."
+  dimensions: [AlarmMetricDimension!]!
+}
+
+"""
+A single state transition reported for an alarm.
+
+Alarm states are append-only and recorded each time the alarm's status changes
+(duplicate `OK -> OK` or `ALARM -> ALARM` updates are deduplicated at ingest).
+The most recent state is exposed as `alarm.currentState`.
+"""
+type AlarmState {
+  "Unique identifier for this state record."
+  id: ID!
+
+  "Whether the alarm is firing (`ALARM`) or clear (`OK`)."
+  status: AlarmStatus!
+
+  "Provider-supplied human-readable message describing the state change."
+  message: String
+
+  "When the state change occurred in the cloud provider (UTC)."
+  occurredAt: DateTime!
+}
+
+"""
+A cloud metric alarm attached to an instance.
+
+Alarms are provisioned via the Massdriver Terraform/OpenTofu provider and
+receive state updates via webhooks from AWS CloudWatch, Azure Monitor, GCP
+Cloud Monitoring, or Prometheus Alertmanager.
+
+Check `currentState` to see whether the alarm is firing. A `null` `currentState`
+means no state has been reported yet for this alarm.
+"""
+type Alarm {
+  "Unique identifier for this alarm."
+  id: ID!
+
+  "Human-readable name for the alarm, set by the cloud provider when the alarm was registered."
+  displayName: String!
+
+  "The cloud provider's unique identifier for the alarm (e.g., CloudWatch AlarmArn, GCP alert policy name, Azure alert id)."
+  cloudResourceId: String!
+
+  "How the metric is compared against `threshold` (e.g., `GREATER_THAN`, `LESS_THAN`, `GREATER_THAN_OR_EQUAL_TO`, `LESS_THAN_OR_EQUAL_TO`). May be null for Alertmanager and GCP alarms."
+  comparisonOperator: String
+
+  "The value crossed to trigger the alarm, compared using `comparisonOperator`. May be null for Alertmanager alarms and some GCP conditions."
+  threshold: Float
+
+  "Evaluation window in seconds over which the metric is aggregated before the comparison is applied. May be null for alarms ingested from providers that don't expose a period."
+  period: Int
+
+  "The cloud metric this alarm evaluates. May be null for alarms from providers that don't supply structured metric data (e.g., Alertmanager)."
+  metric: AlarmMetric
+
+  "The most recent state reported for this alarm. `null` indicates no state has been recorded yet."
+  currentState: AlarmState
+
+  "When this alarm was registered with Massdriver (UTC)."
+  createdAt: DateTime!
+
+  "When this alarm's configuration last changed (UTC)."
+  updatedAt: DateTime!
+}
+
+type AlarmsPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type alarm."
+  items: [Alarm]
+}
+
 "Available fields for sorting instances."
 enum InstancesSortField {
   "Alphabetical by instance name (A-Z or Z-A)."
@@ -4018,15 +4725,15 @@ The current lifecycle state of an instance.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> INITIALIZED: Component added to environment
-  INITIALIZED --> PROVISIONED: Deployment succeeds
-  INITIALIZED --> FAILED: Deployment fails
-  PROVISIONED --> PROVISIONED: Redeploy / update
-  PROVISIONED --> DECOMMISSIONED: Decommission succeeds
-  PROVISIONED --> FAILED: Deployment fails
-  FAILED --> PROVISIONED: Retry succeeds
-  FAILED --> DECOMMISSIONED: Decommission
-  [*] --> EXTERNAL: Remote reference set
+  [*] --> INITIALIZED: "Component added to environment"
+  INITIALIZED --> PROVISIONED: "Deployment succeeds"
+  INITIALIZED --> FAILED: "Deployment fails"
+  PROVISIONED --> PROVISIONED: "Redeploy / update"
+  PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+  PROVISIONED --> FAILED: "Deployment fails"
+  FAILED --> PROVISIONED: "Retry succeeds"
+  FAILED --> DECOMMISSIONED: "Decommission"
+  [*] --> EXTERNAL: "Remote reference set"
 ```
 """
 enum InstanceStatus {
@@ -4167,6 +4874,21 @@ input SetInstanceSecretInput {
   value: String!
 }
 
+"Copy configuration from one instance to another. The source and destination must be instances of the same component. Source params (minus any fields marked non-copyable in the bundle) are written to the destination, then a plan deployment is created on the destination so the changes can be reviewed before applying."
+input CopyInstanceInput {
+  "When true, copies remote resource references from the source instance to the destination. Defaults to false."
+  copyRemoteReferences: Boolean
+
+  "When true, copies secret values from the source instance to the destination. Defaults to false."
+  copySecrets: Boolean
+
+  "An optional message attached to the plan deployment created on the destination, similar to a commit message."
+  message: String
+
+  "Optional overrides that are deep-merged onto the source params before writing to the destination. Useful for tweaking environment-specific values (e.g., instance sizes)."
+  overrides: Map
+}
+
 """
 Metadata about an encrypted secret attached to an instance.
 
@@ -4209,7 +4931,7 @@ type InstanceSecretPayload {
 """
 An output resource produced by an instance, keyed by the field handle that produced it.
 
-Resources are the artifacts an instance publishes after a successful deployment
+Resources are the outputs an instance publishes after a successful deployment
 (e.g., a database connection string, a Kubernetes cluster endpoint). Other
 instances can consume these resources via connections.
 """
@@ -4217,7 +4939,7 @@ type InstanceResource {
   "The output handle name that produced this resource (e.g., `authentication`)."
   field: String!
 
-  "The resource artifact containing the actual data."
+  "The resource containing the actual data."
   resource: Resource!
 }
 
@@ -4232,7 +4954,7 @@ type InstanceDependency {
   "The input handle name that consumes this resource (e.g., `database`)."
   field: String!
 
-  "The resource artifact containing the actual data."
+  "The resource containing the actual data."
   resource: Resource!
 }
 
@@ -4278,15 +5000,15 @@ configuration, deployment state, costs, and produced resources.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> INITIALIZED: Component added to environment
-  INITIALIZED --> PROVISIONED: Deployment succeeds
-  INITIALIZED --> FAILED: Deployment fails
-  PROVISIONED --> PROVISIONED: Redeploy / update
-  PROVISIONED --> DECOMMISSIONED: Decommission succeeds
-  PROVISIONED --> FAILED: Deployment fails
-  FAILED --> PROVISIONED: Retry succeeds
-  FAILED --> DECOMMISSIONED: Decommission
-  [*] --> EXTERNAL: Remote reference set
+  [*] --> INITIALIZED: "Component added to environment"
+  INITIALIZED --> PROVISIONED: "Deployment succeeds"
+  INITIALIZED --> FAILED: "Deployment fails"
+  PROVISIONED --> PROVISIONED: "Redeploy / update"
+  PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+  PROVISIONED --> FAILED: "Deployment fails"
+  FAILED --> PROVISIONED: "Retry succeeds"
+  FAILED --> DECOMMISSIONED: "Decommission"
+  [*] --> EXTERNAL: "Remote reference set"
 ```
 
 **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -4369,7 +5091,7 @@ type Instance {
   """
   Paginated list of resources produced by this instance.
 
-  Resources are the output artifacts published after a successful deployment
+  Resources are the outputs published after a successful deployment
   (e.g., connection strings, endpoints, credentials). Other instances consume
   these resources via connections.
   """
@@ -4377,6 +5099,20 @@ type Instance {
     "Pagination cursor returned by a previous page."
     cursor: Cursor
   ): InstanceResourcesPage
+
+  """
+  Paginated list of cloud metric alarms configured for this instance.
+
+  Alarms are provisioned by the Massdriver Terraform/OpenTofu provider and
+  receive state updates via webhooks from AWS CloudWatch, Azure Monitor,
+  GCP Cloud Monitoring, or Prometheus Alertmanager. Inspect `currentState`
+  to see whether an alarm is firing; a `null` `currentState` means no state
+  has been reported yet.
+  """
+  alarms(
+    "Pagination cursor returned by a previous page."
+    cursor: Cursor
+  ): AlarmsPage
 
   """
   Paginated list of dependencies consumed by this instance.
@@ -4444,6 +5180,7 @@ Connections are created automatically when instances are deployed and a
 matching blueprint link exists.
 """
 type Connection {
+  "Unique identifier for this connection."
   id: ID!
 
   "The output field name on the source instance that produces the resource."
@@ -4539,7 +5276,7 @@ input EnvironmentsSort {
   "The field to sort by."
   field: EnvironmentsSortField!
 
-  "Sort direction (`ASC` or `DESC`)."
+  "`ASC` for A-Z \/ oldest first, `DESC` for Z-A \/ newest first."
   order: SortOrder!
 }
 
@@ -4574,6 +5311,24 @@ input UpdateEnvironmentInput {
 
   "A human-readable name for the environment"
   name: String
+
+  "Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope."
+  tags: Map
+}
+
+"Attributes for the new environment. The fork references the parent via `parentId`, starts with blank instances, and does not copy any instance-level configuration. Use `copyInstance` per-instance if you want to seed configuration from the parent."
+input ForkEnvironmentInput {
+  "When true, copies the parent environment's default resource connections into the fork. Instance-level configuration is never copied — use `copyInstance` to seed instance params."
+  copyEnvironmentDefaults: Boolean
+
+  "An optional description of the forked environment's purpose"
+  description: String
+
+  "A short, memorable identifier for looking up this environment in the API and CLI. This becomes the second segment of instance identifiers. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation."
+  id: String!
+
+  "A human-readable name for the forked environment"
+  name: String!
 
   "Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope."
   tags: Map
@@ -4782,12 +5537,12 @@ production) where that architecture is actually deployed.
 
 ```mermaid
 graph LR
-  P[Project] --> B[Blueprint]
-  P --> E1[Environment: staging]
-  P --> E2[Environment: production]
-  B --> C1[Component: database]
-  B --> C2[Component: cache]
-  C1 -.->|Link| C2
+  P["Project"] --> B["Blueprint"]
+  P --> E1["Environment: staging"]
+  P --> E2["Environment: production"]
+  B --> C1["Component: database"]
+  B --> C2["Component: cache"]
+  C1 -.->|"Link"| C2
 ```
 
 Tags set on a project are inherited by all environments and instances within it.
@@ -5015,7 +5770,7 @@ type BundleDependency {
 """
 An output that a bundle produces when deployed.
 
-Resources represent the infrastructure artifacts a bundle creates. Other
+Resources represent the infrastructure outputs a bundle creates. Other
 bundles can consume these as dependencies. For example, an Aurora Postgres
 bundle might produce a `database` resource of type `aws-rds-instance` that
 application bundles can connect to.
@@ -5053,15 +5808,15 @@ the platform knows which other components can satisfy its dependencies.
 
 ```mermaid
 graph TD
-  R[OCI Repository: aws-aurora-postgres] --> T1[Tag: 1.0.0]
-  R --> T2[Tag: 1.1.0]
-  R --> T3[Tag: 1.2.3]
+  R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+  R --> T2["Tag: 1.1.0"]
+  R --> T3["Tag: 1.2.3"]
   R --> RC1["Channel: ~1 → 1.2.3"]
   R --> RC2["Channel: latest → 1.2.3"]
   T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
-  B --> D1[Dependency: aws-iam-role]
-  B --> D2[Dependency: aws-vpc]
-  B --> RES[Resource: aurora-cluster]
+  B --> D1["Dependency: aws-iam-role"]
+  B --> D2["Dependency: aws-vpc"]
+  B --> RES["Resource: aurora-cluster"]
 ```
 """
 type Bundle {
@@ -5226,6 +5981,24 @@ type OciRepoTag {
 
   "Timestamp when this version was published (UTC)."
   createdAt: DateTime!
+
+  """
+  The [OCI manifest media type](https://github.com/opencontainers/image-spec/blob/main/manifest.md)
+  wrapping this tag. Currently always
+  `application/vnd.oci.image.manifest.v1+json`. The artifact type the
+  manifest describes is available on `OciRepo.artifactType`.
+  """
+  mediaType: String!
+
+  """
+  Content-addressable digest of this tag's manifest, in the form
+  `sha256:<hex>` (for example, `sha256:e3b0c4...`). Combine with
+  `OciRepo.reference` as `@<digest>` to pin a pull to this exact manifest.
+  """
+  digest: String!
+
+  "Size of the manifest blob in bytes."
+  size: Int!
 }
 
 """
@@ -5250,7 +6023,25 @@ type OciRepo {
   "Repository name, unique within your organization (e.g., `aws-aurora-postgres`)."
   name: OciRepoName!
 
-  "The OCI artifact media type for bundles stored in this repository. Currently always `application\/vnd.massdriver.bundle.v1+json`."
+  """
+  The bare [OCI reference](https://github.com/opencontainers/distribution-spec/blob/main/spec.md#pulling-manifests)
+  for this repository: `<registry>/<org>/<repo>` (for example,
+  `api.massdriver.cloud/acme/aws-aurora-postgres`).
+
+  Append `:<tag>` or `@<digest>` to address a specific manifest and use the
+  result directly with `oras`, `docker`, or any OCI-compliant client:
+
+  ```bash
+  oras pull api.massdriver.cloud/acme/aws-aurora-postgres:1.2.3
+  ```
+  """
+  reference: String!
+
+  """
+  The [OCI artifact type](https://github.com/opencontainers/image-spec/blob/main/manifest.md#guidelines-for-artifact-usage)
+  stored in this repository. Currently always
+  `application/vnd.massdriver.bundle.v1+json`.
+  """
   artifactType: String!
 
   "Timestamp when this repository was created (UTC)."
@@ -5258,6 +6049,48 @@ type OciRepo {
 
   "Timestamp when this repository was last modified (UTC)."
   updatedAt: DateTime!
+
+  """
+  Short summary of what this repository provisions, taken from the latest
+  published release. `null` when the repository has no releases yet or the
+  author omitted the description.
+  """
+  description: String
+
+  """
+  URL to this repository's display icon (SVG), taken from the latest
+  published release. `null` when the repository has no releases yet or the
+  latest release has no icon.
+
+  The URL is **authenticated** — callers must have an active browser session
+  or valid API credentials for the owning organization. Embedding it in an
+  `<img>` tag from the web UI works because the browser sends the session
+  cookie automatically; programmatic clients must include an `Authorization`
+  header.
+  """
+  icon: String
+
+  """
+  URL of the source code this repository is published from (for example, a
+  GitHub link), when the author provides one. Taken from the latest release.
+  """
+  sourceUrl: String
+
+  """
+  Markdown README for this repository. Cached on publish from the latest
+  stable release; falls back to the latest release when the cache is empty.
+  `null` when the repository has no releases or the latest release has no
+  README.
+  """
+  readme: String
+
+  """
+  Markdown changelog for this repository. Cached on publish from the latest
+  stable release; falls back to the latest release when the cache is empty.
+  `null` when the repository has no releases or the latest release has no
+  changelog.
+  """
+  changelog: String
 
   """
   Paginated list of release channels for this repository.

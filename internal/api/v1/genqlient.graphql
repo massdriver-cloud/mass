@@ -720,6 +720,7 @@ query listResourceTypes(
       name
       icon
       connectionOrientation
+      schema
       createdAt
       updatedAt
     }
@@ -732,8 +733,44 @@ query getResourceType($organizationId: ID!, $id: ID!) {
     name
     icon
     connectionOrientation
+    schema
     createdAt
     updatedAt
+  }
+}
+
+mutation publishResourceType($organizationId: ID!, $input: PublishResourceTypeInput!) {
+  publishResourceType(organizationId: $organizationId, input: $input) {
+    result {
+      id
+      name
+      icon
+      connectionOrientation
+      schema
+      createdAt
+      updatedAt
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation deleteResourceType($organizationId: ID!, $id: ID!) {
+  deleteResourceType(organizationId: $organizationId, id: $id) {
+    result {
+      id
+      name
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
   }
 }
 
@@ -768,6 +805,12 @@ query listResources(
         id
         name
       }
+      field
+      instance {
+        id
+        name
+      }
+      formats
       createdAt
       updatedAt
     }
@@ -783,6 +826,13 @@ query getResource($organizationId: ID!, $id: ID!) {
       id
       name
     }
+    field
+    instance {
+      id
+      name
+    }
+    formats
+    payload
     createdAt
     updatedAt
   }
@@ -838,6 +888,35 @@ mutation deleteResource($organizationId: ID!, $id: ID!) {
       id
       name
       origin
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation exportResource(
+  $organizationId: ID!,
+  $id: ID!,
+  # @genqlient(omitempty: true)
+  $format: String
+) {
+  exportResource(organizationId: $organizationId, id: $id, format: $format) {
+    result {
+      id
+      name
+      origin
+      resourceType {
+        id
+        name
+      }
+      payload
+      rendered
+      createdAt
+      updatedAt
     }
     successful
     messages {

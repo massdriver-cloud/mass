@@ -14,11 +14,17 @@ func TestGetResource(t *testing.T) {
 			"resource": map[string]any{
 				"id":     "res-uuid1",
 				"name":   "my-vpc",
-				"origin": "IMPORTED",
+				"origin": "PROVISIONED",
 				"resourceType": map[string]any{
 					"id":   "aws-vpc",
 					"name": "AWS VPC",
 				},
+				"field": "network",
+				"instance": map[string]any{
+					"id":   "ecomm-prod-vpc",
+					"name": "vpc",
+				},
+				"formats": []string{"json", "yaml"},
 			},
 		},
 	})
@@ -35,11 +41,20 @@ func TestGetResource(t *testing.T) {
 	if r.Name != "my-vpc" {
 		t.Errorf("got name %s, wanted my-vpc", r.Name)
 	}
-	if r.Origin != "IMPORTED" {
-		t.Errorf("got origin %s, wanted IMPORTED", r.Origin)
+	if r.Origin != "PROVISIONED" {
+		t.Errorf("got origin %s, wanted PROVISIONED", r.Origin)
 	}
 	if r.ResourceType == nil || r.ResourceType.ID != "aws-vpc" {
 		t.Errorf("expected resource type aws-vpc")
+	}
+	if r.Field != "network" {
+		t.Errorf("got field %s, wanted network", r.Field)
+	}
+	if r.Instance == nil || r.Instance.ID != "ecomm-prod-vpc" {
+		t.Errorf("expected instance ecomm-prod-vpc")
+	}
+	if len(r.Formats) != 2 || r.Formats[0] != "json" || r.Formats[1] != "yaml" {
+		t.Errorf("got formats %v, wanted [json yaml]", r.Formats)
 	}
 }
 
@@ -220,6 +235,67 @@ func TestDeleteResource(t *testing.T) {
 
 	if r.ID != "res-1" {
 		t.Errorf("got ID %s, wanted res-1", r.ID)
+	}
+}
+
+func TestExportResource(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"exportResource": map[string]any{
+				"result": map[string]any{
+					"id":     "res-1",
+					"name":   "db-creds",
+					"origin": "PROVISIONED",
+					"resourceType": map[string]any{
+						"id":   "aws-rds-auth",
+						"name": "AWS RDS Auth",
+					},
+					"payload":  map[string]any{"password": "s3cret"},
+					"rendered": `{"password":"s3cret"}`,
+				},
+				"successful": true,
+			},
+		},
+	})
+	mdClient := client.Client{GQLv1: gqlClient}
+
+	r, err := api.ExportResource(t.Context(), &mdClient, "res-1", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if r.ID != "res-1" {
+		t.Errorf("got ID %s, wanted res-1", r.ID)
+	}
+	if r.Payload["password"] != "s3cret" {
+		t.Errorf("got payload password %v, wanted s3cret", r.Payload["password"])
+	}
+	if r.Rendered != `{"password":"s3cret"}` {
+		t.Errorf("got rendered %s, wanted {\"password\":\"s3cret\"}", r.Rendered)
+	}
+}
+
+func TestExportResourceFailure(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"exportResource": map[string]any{
+				"result":     nil,
+				"successful": false,
+				"messages": []map[string]any{
+					{
+						"code":    "forbidden",
+						"field":   "id",
+						"message": "caller cannot export this resource",
+					},
+				},
+			},
+		},
+	})
+	mdClient := client.Client{GQLv1: gqlClient}
+
+	_, err := api.ExportResource(t.Context(), &mdClient, "res-1", "")
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
 }
 
