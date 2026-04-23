@@ -16,7 +16,7 @@ Deploys a preview environment in your project.
 
 Preview environments can be deployed arbitrarily from the command line or from pull requests and your CI/CD pipeline.
 
-A configuration file with credential details and package parameters is required.
+A configuration file with credential details and instance parameters is required.
 
 **Example:**
 

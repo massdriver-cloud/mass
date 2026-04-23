@@ -27,7 +27,7 @@ The preview environment config file should be checked into your source repositor
 The `preview.json` file serves two purposes in your preview environment:
 
 1. describes which clouds and the authentication to use
-2. sets the input parameters for _each_ of your packages
+2. sets the input parameters for _each_ of your instances
 
 ```js
 {

@@ -10,11 +10,11 @@ Manage instances of IaC deployed in environments.
 
 ### Synopsis
 
-# Packages
+# Instances
 
-[Packages](https://docs.massdriver.cloud/concepts/packages) are instances of infrastructure-as-code modules on your environment canvas.
+[Instances](https://docs.massdriver.cloud/concepts/instances) are deployed instances of infrastructure-as-code modules on your environment canvas.
 
-Packages are used to:
+Instances are used to:
 - Deploy infrastructure components
 - Configure application services
 - Manage environment-specific settings

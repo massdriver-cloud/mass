@@ -48,7 +48,7 @@ func (u *URLHelper) EnvironmentURL(environmentID string) string {
 	return fmt.Sprintf("%s/orgs/%s/projects/%s/environments/%s", u.baseURL, u.orgID, parts[0], parts[1])
 }
 
-// InstanceURL returns the URL for a specific package
+// InstanceURL returns the URL for a specific instance
 func (u *URLHelper) InstanceURL(instanceID string) string {
 	parts := strings.Split(instanceID, "-")
 	return fmt.Sprintf("%s/orgs/%s/projects/%s/environments/%s?package=%s", u.baseURL, u.orgID, parts[0], parts[1], parts[2])

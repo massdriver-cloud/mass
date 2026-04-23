@@ -1,16 +1,16 @@
-# List Packages
+# List Instances
 
-Lists all packages in a Massdriver environment.
+Lists all instances in a Massdriver environment.
 
 ## Usage
 
 ```bash
-mass package list <project>-<env>
+mass instance list <project>-<env>
 ```
 
 ## Examples
 
 ```bash
-# List all packages in the "ecomm" project's "prod" environment
-mass package list ecomm-prod
+# List all instances in the "ecomm" project's "prod" environment
+mass instance list ecomm-prod
 ```

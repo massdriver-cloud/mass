@@ -46,7 +46,7 @@ type InstanceSecret struct {
 	UpdatedAt time.Time `json:"updatedAt" mapstructure:"updatedAt"`
 }
 
-// ParamsJSON returns the package parameters serialized as a pretty-printed JSON string.
+// ParamsJSON returns the instance parameters serialized as a pretty-printed JSON string.
 func (inst *Instance) ParamsJSON() (string, error) {
 	paramsJSON, err := json.MarshalIndent(inst.Params, "", "  ")
 	if err != nil {

@@ -1,4 +1,4 @@
-// Package definition provides utilities for reading, building, and publishing resource types.
+// Package resourcetype provides utilities for reading, building, and publishing resource types.
 package resourcetype
 
 import (

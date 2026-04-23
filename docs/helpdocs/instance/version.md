@@ -1,27 +1,27 @@
-# Set package version
+# Set instance version
 
-Set the version or release channel for a package in Massdriver.
+Set the version or release channel for an instance in Massdriver.
 
 ## Examples
 
-Set the version for a package using the `slug@version` format:
+Set the version for an instance using the `slug@version` format:
 
 ```shell
-mass package version api-prod-db@latest
+mass instance version api-prod-db@latest
 ```
 
 Set the version with a specific release channel:
 
 ```shell
-mass package version api-prod-db@latest --release-channel development
+mass instance version api-prod-db@latest --release-channel development
 ```
 
-The `slug` can be found in the package info panel. The package slug is a combination of the `<project-slug>-<env-slug>-<manifest-slug>`.
+The `slug` can be found in the instance info panel. The instance slug is a combination of the `<project-slug>-<env-slug>-<manifest-slug>`.
 
 ## Release Channels
 
-- `stable` (default): Package receives only stable releases
-- `development`: Package receives both stable and development releases
+- `stable` (default): Instance receives only stable releases
+- `development`: Instance receives both stable and development releases
 
 ## Version Format
 
