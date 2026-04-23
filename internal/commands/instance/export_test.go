@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/commands/instance"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -40,20 +40,30 @@ type MockBundleFetcher struct {
 	FetchedBundles []string
 }
 
-func (mbf *MockBundleFetcher) FetchBundle(ctx context.Context, bundleName string, directory string) error {
-	args := mbf.Called(ctx, bundleName, directory)
+func (mbf *MockBundleFetcher) FetchBundle(ctx context.Context, bundleName, version, directory string) error {
+	args := mbf.Called(ctx, bundleName, version, directory)
 	mbf.FetchedBundles = append(mbf.FetchedBundles, bundleName)
 	return args.Error(0)
 }
 
-type MockArtifactDownloader struct {
+type MockResourceLister struct {
 	mock.Mock
-	DownloadedArtifacts []string
 }
 
-func (mad *MockArtifactDownloader) DownloadArtifact(ctx context.Context, artifactID string) (string, error) {
-	args := mad.Called(ctx, artifactID)
-	mad.DownloadedArtifacts = append(mad.DownloadedArtifacts, artifactID)
+func (mrl *MockResourceLister) ListInstanceResources(ctx context.Context, instanceID string) ([]api.InstanceResource, error) {
+	args := mrl.Called(ctx, instanceID)
+	resources, _ := args.Get(0).([]api.InstanceResource)
+	return resources, args.Error(1)
+}
+
+type MockResourceExporter struct {
+	mock.Mock
+	ExportedResources []string
+}
+
+func (mre *MockResourceExporter) ExportResource(ctx context.Context, resourceID, format string) (string, error) {
+	args := mre.Called(ctx, resourceID, format)
+	mre.ExportedResources = append(mre.ExportedResources, resourceID)
 	return args.String(0), args.Error(1)
 }
 
@@ -62,198 +72,114 @@ type MockStateFetcher struct {
 	FetchedStates []string
 }
 
-func (msf *MockStateFetcher) FetchState(ctx context.Context, packageID string, stepPath string) (any, error) {
-	args := msf.Called(ctx, packageID, stepPath)
-	msf.FetchedStates = append(msf.FetchedStates, packageID+"/"+stepPath)
+func (msf *MockStateFetcher) FetchState(ctx context.Context, stateURL string) (any, error) {
+	args := msf.Called(ctx, stateURL)
+	msf.FetchedStates = append(msf.FetchedStates, stateURL)
 	return args.Get(0), args.Error(1)
 }
 
-func TestExportPackage(t *testing.T) {
+func TestExportInstance(t *testing.T) {
 	tests := []struct {
 		name          string
-		instance      *api.Package
+		instance      *api.Instance
 		baseDir       string
-		setupMocks    func(*MockFileSystem, *MockBundleFetcher, *MockArtifactDownloader, *MockStateFetcher)
+		setupMocks    func(*MockFileSystem, *MockBundleFetcher, *MockResourceLister, *MockResourceExporter, *MockStateFetcher)
 		expectedDirs  []string
 		expectedFiles []string
 		wantErr       bool
 	}{
 		{
-			name: "export provisioned package with all components",
-			instance: &api.Package{
-				ID:     "instance-123",
-				Slug:   "test-package-0001",
-				Status: string(api.PackageStatusProvisioned),
+			name: "export provisioned instance with all components",
+			instance: &api.Instance{
+				ID:              "ecomm-prod-db",
+				Status:          "PROVISIONED",
+				DeployedVersion: "1.2.3",
 				Params: map[string]any{
 					"param1": "value1",
 					"param2": 42,
 				},
-				Artifacts: []api.Artifact{
-					{
-						ID:    "artifact-1",
-						Name:  "test-artifact",
-						Field: "output",
-					},
-				},
-				Bundle: &api.Bundle{
-					Name: "test-bundle",
-					Spec: map[string]any{
-						"steps": []map[string]any{
-							{
-								"path":        "src",
-								"provisioner": "terraform",
-							},
-						},
-					},
-					SpecVersion: "application/vnd.massdriver.bundle.v1+json",
-				},
-				Manifest: &api.Manifest{
-					Slug: "test-manifest",
+				Bundle:    &api.Bundle{Name: "test-bundle"},
+				Component: &api.Component{ID: "db", Name: "Database"},
+				StatePaths: []api.InstanceStatePath{
+					{StepName: "src", StateURL: "https://api.example.com/state/ecomm-prod-db/src"},
 				},
 			},
 			baseDir: "/tmp/export",
-			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mad *MockArtifactDownloader, msf *MockStateFetcher) {
-				// FileSystem expectations
-				mfs.On("MkdirAll", "/tmp/export/test-manifest", os.FileMode(0755)).Return(nil)
-				mfs.On("WriteFile", "/tmp/export/test-manifest/params.json", mock.Anything, os.FileMode(0644)).Return(nil)
+			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mrl *MockResourceLister, mre *MockResourceExporter, msf *MockStateFetcher) {
+				mfs.On("MkdirAll", "/tmp/export/db", os.FileMode(0755)).Return(nil)
+				mfs.On("WriteFile", "/tmp/export/db/params.json", mock.Anything, os.FileMode(0644)).Return(nil)
 
-				// Bundle fetcher expectations
-				mbf.On("FetchBundle", mock.Anything, "test-bundle", "/tmp/export/test-manifest").Return(nil)
+				mbf.On("FetchBundle", mock.Anything, "test-bundle", "1.2.3", "/tmp/export/db").Return(nil)
 
-				// Artifact downloader expectations
-				mad.On("DownloadArtifact", mock.Anything, "artifact-1").Return(`{"data": "test"}`, nil)
-				mfs.On("WriteFile", "/tmp/export/test-manifest/artifact_output.json", mock.Anything, os.FileMode(0644)).Return(nil)
+				mrl.On("ListInstanceResources", mock.Anything, "ecomm-prod-db").Return([]api.InstanceResource{
+					{Field: "output", Resource: api.Resource{ID: "resource-1", Name: "test-resource"}},
+				}, nil)
+				mre.On("ExportResource", mock.Anything, "resource-1", "json").Return(`{"data": "test"}`, nil)
+				mfs.On("WriteFile", "/tmp/export/db/artifact_output.json", mock.Anything, os.FileMode(0644)).Return(nil)
 
-				// State fetcher expectations
-				msf.On("FetchState", mock.Anything, "instance-123", "src").Return(map[string]any{"version": "1.0"}, nil)
-				mfs.On("WriteFile", "/tmp/export/test-manifest/src.tfstate.json", mock.Anything, os.FileMode(0644)).Return(nil)
+				msf.On("FetchState", mock.Anything, "https://api.example.com/state/ecomm-prod-db/src").Return(map[string]any{"version": "1.0"}, nil)
+				mfs.On("WriteFile", "/tmp/export/db/src.tfstate.json", mock.Anything, os.FileMode(0644)).Return(nil)
 			},
-			expectedDirs: []string{"/tmp/export/test-manifest"},
+			expectedDirs: []string{"/tmp/export/db"},
 			expectedFiles: []string{
-				"/tmp/export/test-manifest/params.json",
-				"/tmp/export/test-manifest/artifact_output.json",
+				"/tmp/export/db/params.json",
+				"/tmp/export/db/artifact_output.json",
+				"/tmp/export/db/src.tfstate.json",
 			},
 			wantErr: false,
 		},
 		{
-			name: "skip bundle export if not OCI compliant and skip state if nil",
-			instance: &api.Package{
-				ID:     "instance-123",
-				Slug:   "test-package-0001",
-				Status: string(api.PackageStatusProvisioned),
+			name: "skip state write when no state exists yet",
+			instance: &api.Instance{
+				ID:              "ecomm-prod-cache",
+				Status:          "PROVISIONED",
+				DeployedVersion: "0.1.0",
 				Params: map[string]any{
 					"param1": "value1",
-					"param2": 42,
 				},
-				Artifacts: []api.Artifact{
-					{
-						ID:    "artifact-1",
-						Name:  "test-artifact",
-						Field: "output",
-					},
-				},
-				Bundle: &api.Bundle{
-					Name: "test-bundle",
-					Spec: map[string]any{
-						"steps": []map[string]any{
-							{
-								"path":        "src",
-								"provisioner": "terraform",
-							},
-						},
-					},
-					SpecVersion: "application/vnd.massdriver.bundle.v0+json",
-				},
-				Manifest: &api.Manifest{
-					Slug: "test-manifest",
+				Bundle:    &api.Bundle{Name: "cache-bundle"},
+				Component: &api.Component{ID: "cache"},
+				StatePaths: []api.InstanceStatePath{
+					{StepName: "src", StateURL: "https://api.example.com/state/ecomm-prod-cache/src"},
 				},
 			},
 			baseDir: "/tmp/export",
-			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mad *MockArtifactDownloader, msf *MockStateFetcher) {
-				// FileSystem expectations
-				mfs.On("MkdirAll", "/tmp/export/test-manifest", os.FileMode(0755)).Return(nil)
-				mfs.On("WriteFile", "/tmp/export/test-manifest/params.json", mock.Anything, os.FileMode(0644)).Return(nil)
+			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mrl *MockResourceLister, mre *MockResourceExporter, msf *MockStateFetcher) {
+				mfs.On("MkdirAll", "/tmp/export/cache", os.FileMode(0755)).Return(nil)
+				mfs.On("WriteFile", "/tmp/export/cache/params.json", mock.Anything, os.FileMode(0644)).Return(nil)
 
-				// Bundle fetcher expectations
-				mbf.AssertNumberOfCalls(t, "FetchBundle", 0) // Should not be called since bundle is not OCI compliant
+				mbf.On("FetchBundle", mock.Anything, "cache-bundle", "0.1.0", "/tmp/export/cache").Return(nil)
 
-				// Artifact downloader expectations
-				mad.On("DownloadArtifact", mock.Anything, "artifact-1").Return(`{"data": "test"}`, nil)
-				mfs.On("WriteFile", "/tmp/export/test-manifest/artifact_output.json", mock.Anything, os.FileMode(0644)).Return(nil)
+				mrl.On("ListInstanceResources", mock.Anything, "ecomm-prod-cache").Return([]api.InstanceResource{}, nil)
 
-				// State fetcher expectations
-				msf.On("FetchState", mock.Anything, "instance-123", "src").Return(nil, instance.ErrNoState)
+				msf.On("FetchState", mock.Anything, "https://api.example.com/state/ecomm-prod-cache/src").Return(nil, instance.ErrNoState)
 			},
-			expectedDirs: []string{"/tmp/export/test-manifest"},
+			expectedDirs: []string{"/tmp/export/cache"},
 			expectedFiles: []string{
-				"/tmp/export/test-manifest/params.json",
-				"/tmp/export/test-manifest/artifact_output.json",
+				"/tmp/export/cache/params.json",
 			},
 			wantErr: false,
 		},
 		{
-			name: "export external package with remote references only",
-			instance: &api.Package{
-				ID:     "instance-456",
-				Slug:   "external-package-0001",
-				Status: string(api.PackageStatusExternal),
-				RemoteReferences: []api.RemoteReference{
-					{
-						Artifact: api.Artifact{
-							ID:    "remote-artifact-1",
-							Field: "remote-output",
-						},
-					},
-				},
-				Bundle: &api.Bundle{
-					Name: "external-bundle",
-				},
-				Manifest: &api.Manifest{
-					Slug: "external-manifest",
-				},
+			name: "skip export for non-provisioned instance",
+			instance: &api.Instance{
+				ID:        "ecomm-prod-pending",
+				Status:    "INITIALIZED",
+				Bundle:    &api.Bundle{Name: "pending-bundle"},
+				Component: &api.Component{ID: "pending"},
 			},
 			baseDir: "/tmp/export",
-			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mad *MockArtifactDownloader, msf *MockStateFetcher) {
-				mfs.On("MkdirAll", "/tmp/export/external-manifest", os.FileMode(0755)).Return(nil)
-				mad.On("DownloadArtifact", mock.Anything, "remote-artifact-1").Return(`{"remote": "data"}`, nil)
-				mfs.On("WriteFile", "/tmp/export/external-manifest/artifact_remote-output.json", mock.Anything, os.FileMode(0644)).Return(nil)
-			},
-			expectedDirs: []string{"/tmp/export/external-manifest"},
-			expectedFiles: []string{
-				"/tmp/export/external-manifest/artifact_remote-output.json",
-			},
-			wantErr: false,
-		},
-		{
-			name: "skip export for non-provisioned non-external package",
-			instance: &api.Package{
-				ID:     "instance-789",
-				Slug:   "pending-package-0001",
-				Status: "PENDING",
-				Bundle: &api.Bundle{
-					Name: "pending-bundle",
-				},
-				Manifest: &api.Manifest{
-					Slug: "pending-manifest",
-				},
-			},
-			baseDir: "/tmp/export",
-			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mad *MockArtifactDownloader, msf *MockStateFetcher) {
-				// No expectations - should skip export
+			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mrl *MockResourceLister, mre *MockResourceExporter, msf *MockStateFetcher) {
 			},
 			expectedDirs:  []string{},
 			expectedFiles: []string{},
 			wantErr:       false,
 		},
 		{
-			name: "validation error for invalid package",
-			instance: &api.Package{
-				ID: "invalid-instance",
-				// Missing required fields
-			},
-			baseDir: "/tmp/export",
-			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mad *MockArtifactDownloader, msf *MockStateFetcher) {
-				// No expectations - should fail validation
+			name:     "validation error for invalid instance",
+			instance: &api.Instance{ID: "invalid-instance"},
+			baseDir:  "/tmp/export",
+			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mrl *MockResourceLister, mre *MockResourceExporter, msf *MockStateFetcher) {
 			},
 			expectedDirs:  []string{},
 			expectedFiles: []string{},
@@ -263,45 +189,41 @@ func TestExportPackage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup mocks
 			mockFS := &MockFileSystem{}
 			mockBundleFetcher := &MockBundleFetcher{}
-			mockArtifactDownloader := &MockArtifactDownloader{}
+			mockResourceLister := &MockResourceLister{}
+			mockResourceExporter := &MockResourceExporter{}
 			mockStateFetcher := &MockStateFetcher{}
 
-			tt.setupMocks(mockFS, mockBundleFetcher, mockArtifactDownloader, mockStateFetcher)
+			tt.setupMocks(mockFS, mockBundleFetcher, mockResourceLister, mockResourceExporter, mockStateFetcher)
 
-			// Create config with mocks
-			config := instance.ExportPackageConfig{
-				FileSystem:         mockFS,
-				BundleFetcher:      mockBundleFetcher,
-				ArtifactDownloader: mockArtifactDownloader,
-				StateFetcher:       mockStateFetcher,
+			config := instance.ExportInstanceConfig{
+				FileSystem:       mockFS,
+				BundleFetcher:    mockBundleFetcher,
+				ResourceLister:   mockResourceLister,
+				ResourceExporter: mockResourceExporter,
+				StateFetcher:     mockStateFetcher,
 			}
 
-			// Run the function
 			ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 			defer cancel()
 
-			err := instance.ExportPackageWithConfig(ctx, &config, tt.instance, tt.baseDir)
+			err := instance.ExportInstanceWithConfig(ctx, &config, tt.instance, tt.baseDir)
 
-			// Check error expectation
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
 
-			// Verify mock calls
 			mockFS.AssertExpectations(t)
 			mockBundleFetcher.AssertExpectations(t)
-			mockArtifactDownloader.AssertExpectations(t)
+			mockResourceLister.AssertExpectations(t)
+			mockResourceExporter.AssertExpectations(t)
 			mockStateFetcher.AssertExpectations(t)
 
-			// Verify directories were created
 			assert.ElementsMatch(t, tt.expectedDirs, mockFS.CreatedDirs)
 
-			// Verify files were written
 			for _, expectedFile := range tt.expectedFiles {
 				_, exists := mockFS.WrittenFiles[expectedFile]
 				assert.True(t, exists, "Expected file %s to be written", expectedFile)
@@ -310,32 +232,28 @@ func TestExportPackage(t *testing.T) {
 	}
 }
 
-func TestExportPackage_FileSystemError(t *testing.T) {
-	pack := &api.Package{
-		ID:     "instance-123",
-		Slug:   "test-package-0001",
-		Status: string(api.PackageStatusProvisioned),
-		Bundle: &api.Bundle{
-			Name: "test-bundle",
-			Spec: map[string]any{},
-		},
-		Manifest: &api.Manifest{
-			Slug: "test-manifest",
-		},
+func TestExportInstance_FileSystemError(t *testing.T) {
+	inst := &api.Instance{
+		ID:              "ecomm-prod-db",
+		Status:          "PROVISIONED",
+		DeployedVersion: "1.2.3",
+		Bundle:          &api.Bundle{Name: "test-bundle"},
+		Component:       &api.Component{ID: "db"},
 	}
 
 	mockFS := &MockFileSystem{}
 	mockFS.On("MkdirAll", mock.Anything, mock.Anything).Return(os.ErrPermission)
 
-	config := instance.ExportPackageConfig{
-		FileSystem:         mockFS,
-		BundleFetcher:      &MockBundleFetcher{},
-		ArtifactDownloader: &MockArtifactDownloader{},
-		StateFetcher:       &MockStateFetcher{},
+	config := instance.ExportInstanceConfig{
+		FileSystem:       mockFS,
+		BundleFetcher:    &MockBundleFetcher{},
+		ResourceLister:   &MockResourceLister{},
+		ResourceExporter: &MockResourceExporter{},
+		StateFetcher:     &MockStateFetcher{},
 	}
 
 	ctx := t.Context()
-	err := instance.ExportPackageWithConfig(ctx, &config, pack, "/tmp/export")
+	err := instance.ExportInstanceWithConfig(ctx, &config, inst, "/tmp/export")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create directory")

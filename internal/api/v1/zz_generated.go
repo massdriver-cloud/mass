@@ -1840,6 +1840,22 @@ func (v *__listEnvironmentsInput) GetSort() *EnvironmentsSort { return v.Sort }
 // GetCursor returns __listEnvironmentsInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__listEnvironmentsInput) GetCursor() *Cursor { return v.Cursor }
 
+// __listInstanceResourcesInput is used internally by genqlient
+type __listInstanceResourcesInput struct {
+	OrganizationId string  `json:"organizationId"`
+	InstanceId     string  `json:"instanceId"`
+	Cursor         *Cursor `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listInstanceResourcesInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listInstanceResourcesInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetInstanceId returns __listInstanceResourcesInput.InstanceId, and is useful for accessing the field via an interface.
+func (v *__listInstanceResourcesInput) GetInstanceId() string { return v.InstanceId }
+
+// GetCursor returns __listInstanceResourcesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listInstanceResourcesInput) GetCursor() *Cursor { return v.Cursor }
+
 // __listInstancesInput is used internally by genqlient
 type __listInstancesInput struct {
 	OrganizationId string           `json:"organizationId"`
@@ -6716,6 +6732,168 @@ func (v *listEnvironmentsResponse) GetEnvironments() listEnvironmentsEnvironment
 	return v.Environments
 }
 
+// listInstanceResourcesInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type listInstanceResourcesInstance struct {
+	// Paginated list of resources produced by this instance.
+	//
+	// Resources are the outputs published after a successful deployment
+	// (e.g., connection strings, endpoints, credentials). Other instances consume
+	// these resources via connections.
+	Resources listInstanceResourcesInstanceResourcesInstanceResourcesPage `json:"resources"`
+}
+
+// GetResources returns listInstanceResourcesInstance.Resources, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstance) GetResources() listInstanceResourcesInstanceResourcesInstanceResourcesPage {
+	return v.Resources
+}
+
+// listInstanceResourcesInstanceResourcesInstanceResourcesPage includes the requested fields of the GraphQL type InstanceResourcesPage.
+type listInstanceResourcesInstanceResourcesInstanceResourcesPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor `json:"cursor"`
+	// A list of type instance_resource.
+	Items []listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource `json:"items"`
+}
+
+// GetCursor returns listInstanceResourcesInstanceResourcesInstanceResourcesPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPage) GetCursor() listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listInstanceResourcesInstanceResourcesInstanceResourcesPage.Items, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPage) GetItems() []listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource {
+	return v.Items
+}
+
+// listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
+}
+
+// GetNext returns listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor) GetNext() string {
+	return v.Next
+}
+
+// GetPrevious returns listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
+}
+
+// listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource includes the requested fields of the GraphQL type InstanceResource.
+// The GraphQL type's documentation follows.
+//
+// An output resource produced by an instance, keyed by the field handle that produced it.
+//
+// Resources are the outputs an instance publishes after a successful deployment
+// (e.g., a database connection string, a Kubernetes cluster endpoint). Other
+// instances can consume these resources via connections.
+type listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource struct {
+	// The output handle name that produced this resource (e.g., `authentication`).
+	Field string `json:"field"`
+	// The resource containing the actual data.
+	Resource listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource `json:"resource"`
+}
+
+// GetField returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource.Field, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource) GetField() string {
+	return v.Field
+}
+
+// GetResource returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource.Resource, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource) GetResource() listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource {
+	return v.Resource
+}
+
+// listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource includes the requested fields of the GraphQL type Resource.
+// The GraphQL type's documentation follows.
+//
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
+//
+// Resources are the connective tissue between instances. When an instance is deployed, it
+// produces resources as outputs. Other instances can consume those resources as inputs,
+// creating a dependency graph of your infrastructure.
+//
+// Resources have two origins:
+// - **Imported** — created directly through the API (e.g., uploading existing AWS credentials).
+// You have full CRUD control over these resources.
+// - **Provisioned** — created automatically when an instance is deployed. These are read-only
+// and managed entirely by the owning instance's lifecycle.
+type listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource struct {
+	// Unique identifier for this resource.
+	Id string `json:"id"`
+	// Human-readable display name for this resource.
+	Name string `json:"name"`
+	// How this resource was created. Determines whether it can be modified through the API.
+	Origin ResourceOrigin `json:"origin"`
+}
+
+// GetId returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Id, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetId() string {
+	return v.Id
+}
+
+// GetName returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Name, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetName() string {
+	return v.Name
+}
+
+// GetOrigin returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Origin, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetOrigin() ResourceOrigin {
+	return v.Origin
+}
+
+// listInstanceResourcesResponse is returned by listInstanceResources on success.
+type listInstanceResourcesResponse struct {
+	// Fetch a single instance by its ID. Returns null with a `NOT_FOUND` error if the instance does not exist.
+	Instance listInstanceResourcesInstance `json:"instance"`
+}
+
+// GetInstance returns listInstanceResourcesResponse.Instance, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesResponse) GetInstance() listInstanceResourcesInstance {
+	return v.Instance
+}
+
 // listInstancesInstancesInstancesPage includes the requested fields of the GraphQL type InstancesPage.
 type listInstancesInstancesInstancesPage struct {
 	// Pagination cursors for navigating between pages.
@@ -10604,6 +10782,57 @@ func listEnvironments(
 	}
 
 	data_ = &listEnvironmentsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by listInstanceResources.
+const listInstanceResources_Operation = `
+query listInstanceResources ($organizationId: ID!, $instanceId: ID!, $cursor: Cursor) {
+	instance(organizationId: $organizationId, id: $instanceId) {
+		resources(cursor: $cursor) {
+			cursor {
+				next
+				previous
+			}
+			items {
+				field
+				resource {
+					id
+					name
+					origin
+				}
+			}
+		}
+	}
+}
+`
+
+func listInstanceResources(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	instanceId string,
+	cursor *Cursor,
+) (data_ *listInstanceResourcesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "listInstanceResources",
+		Query:  listInstanceResources_Operation,
+		Variables: &__listInstanceResourcesInput{
+			OrganizationId: organizationId,
+			InstanceId:     instanceId,
+			Cursor:         cursor,
+		},
+	}
+
+	data_ = &listInstanceResourcesResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

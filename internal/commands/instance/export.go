@@ -8,20 +8,18 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/bundle"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	sdkbundle "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/bundle"
-	"github.com/mitchellh/mapstructure"
 	"oras.land/oras-go/v2/content/file"
 )
 
 const emptyStateResponse = `{"version":4}`
-const bundleSpecVersionOCI = "application/vnd.massdriver.bundle.v1+json"
 
-// ErrNoState is returned by FetchState when the package has no state yet.
-var ErrNoState = errors.New("no state found for package step")
+// ErrNoState is returned by FetchState when the instance step has no state yet.
+var ErrNoState = errors.New("no state found for instance step")
 
 // FileSystem is an interface for dependency injection of filesystem operations to enable testing.
 type FileSystem interface {
@@ -29,28 +27,33 @@ type FileSystem interface {
 	WriteFile(filename string, data []byte, perm os.FileMode) error
 }
 
-// BundleFetcher is an interface for downloading a bundle from a registry into a directory.
+// BundleFetcher is an interface for downloading a bundle version from a registry into a directory.
 type BundleFetcher interface {
-	FetchBundle(ctx context.Context, bundleName string, directory string) error
+	FetchBundle(ctx context.Context, bundleName, version, directory string) error
 }
 
-// ArtifactDownloader is an interface for retrieving artifact data by ID.
-type ArtifactDownloader interface {
-	DownloadArtifact(ctx context.Context, artifactID string) (string, error)
+// ResourceLister enumerates the output resources produced by an instance.
+type ResourceLister interface {
+	ListInstanceResources(ctx context.Context, instanceID string) ([]api.InstanceResource, error)
 }
 
-// StateFetcher is an interface for retrieving Terraform state for a given package step.
+// ResourceExporter retrieves a resource's rendered payload in the requested format.
+type ResourceExporter interface {
+	ExportResource(ctx context.Context, resourceID, format string) (string, error)
+}
+
+// StateFetcher retrieves Terraform/OpenTofu state from a full state backend URL.
 type StateFetcher interface {
-	FetchState(ctx context.Context, packageID string, stepPath string) (any, error)
+	FetchState(ctx context.Context, stateURL string) (any, error)
 }
 
-// ExportPackageConfig holds all dependencies needed to export a package.
-type ExportPackageConfig struct {
-	Client             *client.Client
-	FileSystem         FileSystem
-	BundleFetcher      BundleFetcher
-	ArtifactDownloader ArtifactDownloader
-	StateFetcher       StateFetcher
+// ExportInstanceConfig holds the dependencies needed to export an instance.
+type ExportInstanceConfig struct {
+	FileSystem       FileSystem
+	BundleFetcher    BundleFetcher
+	ResourceLister   ResourceLister
+	ResourceExporter ResourceExporter
+	StateFetcher     StateFetcher
 }
 
 // DefaultFileSystem is the production FileSystem implementation backed by the os package.
@@ -71,8 +74,8 @@ type DefaultBundleFetcher struct {
 	Client *client.Client
 }
 
-// FetchBundle downloads the named bundle into directory using OCI pull.
-func (dbf *DefaultBundleFetcher) FetchBundle(ctx context.Context, bundleName string, directory string) error {
+// FetchBundle downloads the named bundle at the given version into directory using OCI pull.
+func (dbf *DefaultBundleFetcher) FetchBundle(ctx context.Context, bundleName, version, directory string) error {
 	repo, repoErr := sdkbundle.GetBundleRepository(dbf.Client, bundleName)
 	if repoErr != nil {
 		return repoErr
@@ -90,32 +93,46 @@ func (dbf *DefaultBundleFetcher) FetchBundle(ctx context.Context, bundleName str
 		Repo:   repo,
 	}
 
-	_, pullErr := puller.PullBundle(ctx, "latest")
+	_, pullErr := puller.PullBundle(ctx, version)
 	return pullErr
 }
 
-// DefaultArtifactDownloader is the production ArtifactDownloader that fetches artifacts from the API.
-type DefaultArtifactDownloader struct {
+// DefaultResourceLister is the production ResourceLister backed by the v1 API.
+type DefaultResourceLister struct {
 	Client *client.Client
 }
 
-// DownloadArtifact retrieves the artifact with the given ID as a JSON string.
-func (dad *DefaultArtifactDownloader) DownloadArtifact(ctx context.Context, artifactID string) (string, error) {
-	return api.DownloadArtifact(ctx, dad.Client, artifactID, "json")
+// ListInstanceResources returns every output resource produced by the named instance.
+func (drl *DefaultResourceLister) ListInstanceResources(ctx context.Context, instanceID string) ([]api.InstanceResource, error) {
+	return api.ListInstanceResources(ctx, drl.Client, instanceID)
 }
 
-// DefaultStateFetcher is the production StateFetcher that retrieves Terraform state from the API.
+// DefaultResourceExporter is the production ResourceExporter backed by the v1 API.
+type DefaultResourceExporter struct {
+	Client *client.Client
+}
+
+// ExportResource returns the resource's payload rendered in the requested format.
+func (dre *DefaultResourceExporter) ExportResource(ctx context.Context, resourceID, format string) (string, error) {
+	result, err := api.ExportResource(ctx, dre.Client, resourceID, format)
+	if err != nil {
+		return "", err
+	}
+	return result.Rendered, nil
+}
+
+// DefaultStateFetcher is the production StateFetcher that retrieves Terraform state by URL.
 type DefaultStateFetcher struct {
 	Client *client.Client
 }
 
-// FetchState retrieves the Terraform state for the given package and step from the API.
-func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, packageID string, stepPath string) (any, error) {
+// FetchState retrieves the Terraform state at the given URL using the Massdriver-authenticated HTTP client.
+func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, stateURL string) (any, error) {
 	var result any
 	resp, requestErr := dsf.Client.HTTP.R().
 		SetContext(ctx).
 		SetResult(&result).
-		Get(fmt.Sprintf("/state/%s/%s", packageID, stepPath))
+		Get(stateURL)
 
 	if requestErr != nil {
 		return nil, requestErr
@@ -131,125 +148,103 @@ func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, packageID string
 	return result, nil
 }
 
-// RunExport fetches a package by slug or ID and exports it to the current directory.
-func RunExport(ctx context.Context, mdClient *client.Client, packageSlugOrID string) error {
-	pkg, err := api.GetPackage(ctx, mdClient, packageSlugOrID)
+// RunExport fetches an instance by slug or ID and exports it to the current directory.
+func RunExport(ctx context.Context, mdClient *client.Client, instanceSlugOrID string) error {
+	inst, err := api.GetInstance(ctx, mdClient, instanceSlugOrID)
 	if err != nil {
-		return fmt.Errorf("failed to get package %s: %w", packageSlugOrID, err)
+		return fmt.Errorf("failed to get instance %s: %w", instanceSlugOrID, err)
 	}
 
-	return ExportPackage(ctx, mdClient, pkg, ".")
+	return ExportInstance(ctx, mdClient, inst, ".")
 }
 
-// ExportPackage exports a package to baseDirectory using default production dependencies.
-func ExportPackage(ctx context.Context, mdClient *client.Client, pkg *api.Package, baseDirectory string) error {
-	config := ExportPackageConfig{
-		FileSystem:         &DefaultFileSystem{},
-		BundleFetcher:      &DefaultBundleFetcher{Client: mdClient},
-		ArtifactDownloader: &DefaultArtifactDownloader{Client: mdClient},
-		StateFetcher:       &DefaultStateFetcher{Client: mdClient},
+// ExportInstance exports an instance to baseDirectory using default production dependencies.
+func ExportInstance(ctx context.Context, mdClient *client.Client, inst *api.Instance, baseDirectory string) error {
+	config := ExportInstanceConfig{
+		FileSystem:       &DefaultFileSystem{},
+		BundleFetcher:    &DefaultBundleFetcher{Client: mdClient},
+		ResourceLister:   &DefaultResourceLister{Client: mdClient},
+		ResourceExporter: &DefaultResourceExporter{Client: mdClient},
+		StateFetcher:     &DefaultStateFetcher{Client: mdClient},
 	}
 
-	return ExportPackageWithConfig(ctx, &config, pkg, baseDirectory)
+	return ExportInstanceWithConfig(ctx, &config, inst, baseDirectory)
 }
 
-// ExportPackageWithConfig exports a package using the provided configuration and dependency overrides.
-//
-//nolint:gocognit // inherently complex due to deep schema validation logic
-func ExportPackageWithConfig(ctx context.Context, config *ExportPackageConfig, pkg *api.Package, baseDirectory string) error {
-	validateErr := validatePackageExport(pkg)
-	if validateErr != nil {
-		return fmt.Errorf("package validation failed: %w", validateErr)
+// ExportInstanceWithConfig exports an instance using the provided configuration and dependency overrides.
+func ExportInstanceWithConfig(ctx context.Context, config *ExportInstanceConfig, inst *api.Instance, baseDirectory string) error {
+	if validateErr := validateInstanceExport(inst); validateErr != nil {
+		return fmt.Errorf("instance validation failed: %w", validateErr)
 	}
 
-	isRemoteReference := pkg.Status == string(api.PackageStatusExternal)
-	isRunning := pkg.Status == string(api.PackageStatusProvisioned)
-
-	if !isRunning && !isRemoteReference {
-		fmt.Printf("Package %s is not 'provisioned' or a remote reference, skipping export.\n", pkg.Slug)
+	if inst.Status != "PROVISIONED" {
+		fmt.Printf("Instance %s is not 'PROVISIONED', skipping export.\n", inst.ID)
 		return nil
 	}
 
-	directory := filepath.Join(baseDirectory, pkg.Manifest.Slug)
+	directory := filepath.Join(baseDirectory, inst.Component.ID)
 	if err := config.FileSystem.MkdirAll(directory, 0755); err != nil {
-		return fmt.Errorf("failed to create directory for package %s: %w", pkg.Slug, err)
+		return fmt.Errorf("failed to create directory for instance %s: %w", inst.ID, err)
 	}
 
-	if isRunning && pkg.Params != nil {
-		paramsErr := writeParamsFileWithConfig(config, pkg.Params, directory)
-		if paramsErr != nil {
-			return fmt.Errorf("failed to write params file for package %s: %w", pkg.Slug, paramsErr)
+	if inst.Params != nil {
+		if paramsErr := writeParamsFileWithConfig(config, inst.Params, directory); paramsErr != nil {
+			return fmt.Errorf("failed to write params file for instance %s: %w", inst.ID, paramsErr)
 		}
 	}
 
-	if isRunning {
-		if err := writeBundleWithConfig(ctx, config, pkg.Bundle, pkg.Slug, directory); err != nil {
-			return fmt.Errorf("failed to write bundle for package %s: %w", pkg.Slug, err)
+	if err := writeBundleWithConfig(ctx, config, inst, directory); err != nil {
+		return fmt.Errorf("failed to write bundle for instance %s: %w", inst.ID, err)
+	}
+
+	resources, listErr := config.ResourceLister.ListInstanceResources(ctx, inst.ID)
+	if listErr != nil {
+		return fmt.Errorf("failed to list resources for instance %s: %w", inst.ID, listErr)
+	}
+	for _, r := range resources {
+		if err := writeResourceWithConfig(ctx, config, &r, directory); err != nil {
+			return fmt.Errorf("failed to write resource %s for instance %s: %w", r.Resource.Name, inst.ID, err)
 		}
 	}
 
-	if isRunning && len(pkg.Artifacts) > 0 {
-		for _, artifact := range pkg.Artifacts {
-			artifactErr := writeArtifactWithConfig(ctx, config, &artifact, directory)
-			if artifactErr != nil {
-				return fmt.Errorf("failed to write artifact %s for package %s: %w", artifact.Name, pkg.Slug, artifactErr)
-			}
-		}
+	if err := writeStateWithConfig(ctx, config, inst, directory); err != nil {
+		return fmt.Errorf("failed to write state for instance %s: %w", inst.ID, err)
 	}
 
-	if isRemoteReference && len(pkg.RemoteReferences) > 0 {
-		for _, ref := range pkg.RemoteReferences {
-			artifactErr := writeArtifactWithConfig(ctx, config, &ref.Artifact, directory)
-			if artifactErr != nil {
-				return fmt.Errorf("failed to write artifact %s for package %s: %w", ref.Artifact.Field, pkg.Slug, artifactErr)
-			}
-		}
+	return nil
+}
+
+func validateInstanceExport(inst *api.Instance) error {
+	if inst == nil {
+		return errors.New("instance is nil")
 	}
 
-	if isRunning {
-		if err := writeStateWithConfig(ctx, config, pkg, directory); err != nil {
-			return fmt.Errorf("failed to write state for package %s: %w", pkg.Slug, err)
+	if inst.Component == nil {
+		return fmt.Errorf("instance %s component is nil", inst.ID)
+	}
+
+	if inst.Component.ID == "" {
+		return fmt.Errorf("instance %s component id is empty", inst.ID)
+	}
+
+	if inst.Status == "PROVISIONED" {
+		if inst.Bundle == nil {
+			return fmt.Errorf("instance %s bundle is nil", inst.ID)
+		}
+
+		if inst.Bundle.Name == "" {
+			return fmt.Errorf("instance %s bundle name is empty", inst.ID)
+		}
+
+		if inst.DeployedVersion == "" {
+			return fmt.Errorf("instance %s has no deployed version", inst.ID)
 		}
 	}
 
 	return nil
 }
 
-func validatePackageExport(pkg *api.Package) error {
-	if pkg == nil {
-		return errors.New("package is nil")
-	}
-
-	if pkg.Manifest == nil {
-		return fmt.Errorf("package %s manifest is nil", pkg.Slug)
-	}
-
-	if pkg.Manifest.Slug == "" {
-		return fmt.Errorf("package %s manifest slug is empty", pkg.Slug)
-	}
-
-	if pkg.Status == string(api.PackageStatusProvisioned) {
-		if pkg.Bundle == nil {
-			return fmt.Errorf("package %s bundle is nil", pkg.Slug)
-		}
-
-		if pkg.Bundle.Spec == nil {
-			return fmt.Errorf("package %s bundle spec is nil", pkg.Slug)
-		}
-
-		if pkg.Bundle.Name == "" {
-			return fmt.Errorf("package %s bundle name is empty", pkg.Slug)
-		}
-	}
-
-	if pkg.Status == string(api.PackageStatusExternal) && len(pkg.RemoteReferences) == 0 {
-		return fmt.Errorf("package %s is remote reference but has no artifacts", pkg.Slug)
-	}
-
-	return nil
-}
-
-func writeParamsFileWithConfig(config *ExportPackageConfig, params map[string]any, dir string) error {
+func writeParamsFileWithConfig(config *ExportInstanceConfig, params map[string]any, dir string) error {
 	paramsFilePath := filepath.Join(dir, "params.json")
 
 	data, err := json.MarshalIndent(params, "", "  ")
@@ -260,60 +255,38 @@ func writeParamsFileWithConfig(config *ExportPackageConfig, params map[string]an
 	return config.FileSystem.WriteFile(paramsFilePath, data, 0644)
 }
 
-func writeBundleWithConfig(ctx context.Context, config *ExportPackageConfig, bun *api.Bundle, pkgSlug string, directory string) error {
-	if bun.SpecVersion != bundleSpecVersionOCI {
-		fmt.Printf("Bundle %s used by package %s not OCI compliant and cannot be downloaded. Please republish the bundle with an updated CLI to enable downloading.\n", bun.Name, pkgSlug)
-		return nil
-	}
-
-	return config.BundleFetcher.FetchBundle(ctx, bun.Name, directory)
+func writeBundleWithConfig(ctx context.Context, config *ExportInstanceConfig, inst *api.Instance, directory string) error {
+	return config.BundleFetcher.FetchBundle(ctx, inst.Bundle.Name, inst.DeployedVersion, directory)
 }
 
-func writeArtifactWithConfig(ctx context.Context, config *ExportPackageConfig, artifact *api.Artifact, directory string) error {
-	fileName := fmt.Sprintf("artifact_%s.json", artifact.Field)
+func writeResourceWithConfig(ctx context.Context, config *ExportInstanceConfig, r *api.InstanceResource, directory string) error {
+	fileName := fmt.Sprintf("artifact_%s.json", r.Field)
 	filePath := filepath.Join(directory, fileName)
 
-	data, err := config.ArtifactDownloader.DownloadArtifact(ctx, artifact.ID)
+	data, err := config.ResourceExporter.ExportResource(ctx, r.Resource.ID, "json")
 	if err != nil {
-		return fmt.Errorf("failed to download artifact %s: %w", artifact.Name, err)
+		return fmt.Errorf("failed to export resource %s: %w", r.Resource.Name, err)
 	}
 
 	if err := config.FileSystem.WriteFile(filePath, []byte(data), 0644); err != nil {
-		return fmt.Errorf("failed to write artifact data for %s: %w", artifact.Name, err)
+		return fmt.Errorf("failed to write resource data for %s: %w", r.Resource.Name, err)
 	}
 
 	return nil
 }
 
-func writeStateWithConfig(ctx context.Context, config *ExportPackageConfig, pkg *api.Package, directory string) error {
-	var unmarshalledBundle bundle.Bundle
-	if err := mapstructure.Decode(pkg.Bundle.Spec, &unmarshalledBundle); err != nil {
-		return fmt.Errorf("failed to decode bundle spec: %w", err)
-	}
-
-	var steps []bundle.Step
-	if unmarshalledBundle.Steps != nil {
-		steps = unmarshalledBundle.Steps
-	} else {
-		steps = []bundle.Step{
-			{
-				Path:        "src",
-				Provisioner: "terraform",
-			},
-		}
-	}
-
-	for _, step := range steps {
-		stateFileName := step.Path + ".tfstate.json"
+func writeStateWithConfig(ctx context.Context, config *ExportInstanceConfig, inst *api.Instance, directory string) error {
+	for _, statePath := range inst.StatePaths {
+		stateFileName := statePath.StepName + ".tfstate.json"
 		stateFilePath := filepath.Join(directory, stateFileName)
 
-		result, err := config.StateFetcher.FetchState(ctx, pkg.ID, step.Path)
+		result, err := config.StateFetcher.FetchState(ctx, statePath.StateURL)
 		if errors.Is(err, ErrNoState) {
 			// no state found, skip writing
 			continue
 		}
 		if err != nil {
-			return fmt.Errorf("failed to fetch state for package %s, step %s: %w", pkg.Slug, step.Path, err)
+			return fmt.Errorf("failed to fetch state for instance %s, step %s: %w", inst.ID, statePath.StepName, err)
 		}
 
 		data, marshalErr := json.MarshalIndent(result, "", "  ")
@@ -321,8 +294,7 @@ func writeStateWithConfig(ctx context.Context, config *ExportPackageConfig, pkg 
 			return fmt.Errorf("failed to marshal terraform state: %w", marshalErr)
 		}
 
-		writeErr := config.FileSystem.WriteFile(stateFilePath, data, 0644)
-		if writeErr != nil {
+		if writeErr := config.FileSystem.WriteFile(stateFilePath, data, 0644); writeErr != nil {
 			return fmt.Errorf("failed to write state data: %w", writeErr)
 		}
 	}

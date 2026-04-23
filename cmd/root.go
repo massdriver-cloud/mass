@@ -34,18 +34,16 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	rootCmd.AddCommand(NewCmdBundle())
-	rootCmd.AddCommand(NewCmdCredential())
 	rootCmd.AddCommand(NewCmdDocs())
 	rootCmd.AddCommand(NewCmdEnvironment())
 	rootCmd.AddCommand(NewCmdLogs())
-	rootCmd.AddCommand(NewCmdPreview())
+	rootCmd.AddCommand(NewCmdInstance())
 	rootCmd.AddCommand(NewCmdProject())
 	rootCmd.AddCommand(NewCmdResource())
 	rootCmd.AddCommand(NewCmdType())
 	rootCmd.AddCommand(NewCmdSchema())
 	rootCmd.AddCommand(NewCmdServer())
 	rootCmd.AddCommand(NewCmdVersion())
-	rootCmd.AddCommand(NewCmdInstance())
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

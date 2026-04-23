@@ -39,6 +39,12 @@ type InstanceStatePath struct {
 	StateURL string `json:"stateUrl" mapstructure:"stateUrl"`
 }
 
+// InstanceResource pairs a bundle output handle (field) with the resource that was produced on that handle.
+type InstanceResource struct {
+	Field    string   `json:"field" mapstructure:"field"`
+	Resource Resource `json:"resource" mapstructure:"resource"`
+}
+
 // InstanceSecret holds metadata for a secret stored on an instance. The value is never returned.
 type InstanceSecret struct {
 	Name      string    `json:"name" mapstructure:"name"`
@@ -63,6 +69,35 @@ func GetInstance(ctx context.Context, mdClient *client.Client, id string) (*Inst
 	}
 
 	return toInstance(response.Instance)
+}
+
+// ListInstanceResources returns every output resource produced by the named instance, following pagination.
+func ListInstanceResources(ctx context.Context, mdClient *client.Client, instanceID string) ([]InstanceResource, error) {
+	var resources []InstanceResource
+	var cursor *Cursor
+
+	for {
+		response, err := listInstanceResources(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, instanceID, cursor)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list instance resources for %s: %w", instanceID, err)
+		}
+
+		for _, item := range response.Instance.Resources.Items {
+			ir := InstanceResource{}
+			if decodeErr := mapstructure.Decode(item, &ir); decodeErr != nil {
+				return nil, fmt.Errorf("failed to decode instance resource: %w", decodeErr)
+			}
+			resources = append(resources, ir)
+		}
+
+		next := response.Instance.Resources.Cursor.Next
+		if next == "" {
+			break
+		}
+		cursor = &Cursor{Next: next}
+	}
+
+	return resources, nil
 }
 
 // ListInstances returns instances, optionally filtered.

@@ -435,6 +435,30 @@ query getInstance($organizationId: ID!, $id: ID!) {
   }
 }
 
+query listInstanceResources(
+  $organizationId: ID!,
+  $instanceId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  instance(organizationId: $organizationId, id: $instanceId) {
+    resources(cursor: $cursor) {
+      cursor {
+        next
+        previous
+      }
+      items {
+        field
+        resource {
+          id
+          name
+          origin
+        }
+      }
+    }
+  }
+}
+
 mutation updateInstance($organizationId: ID!, $id: ID!, $input: UpdateInstanceInput!) {
   updateInstance(organizationId: $organizationId, id: $id, input: $input) {
     result {
