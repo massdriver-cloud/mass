@@ -7,8 +7,8 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/massdriver-cloud/mass/internal/api/v0"
-	"github.com/massdriver-cloud/mass/internal/tui/components/artdeftable"
-	"github.com/massdriver-cloud/mass/internal/tui/components/artifacttable"
+	"github.com/massdriver-cloud/mass/internal/tui/components/resourcetable"
+	"github.com/massdriver-cloud/mass/internal/tui/components/resourcetypetable"
 )
 
 type mode int
@@ -89,11 +89,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.prompts = initArtifactPrompts(m)
 				m.mode = artifactSelection
 			case artifactSelection:
-				currentModel, currentModelOk := m.current.(artifacttable.Model)
+				currentModel, currentModelOk := m.current.(resourcetable.Model)
 				if !currentModelOk {
 					return m, nil // type mismatch — abort this keypress entirely, do not advance cursor
 				}
-				selectedArtifacts := currentModel.SelectedArtifacts
+				selectedArtifacts := currentModel.SelectedResources
 				if len(selectedArtifacts) > 0 {
 					// TODO limit 1 in UI w/ Maximum validation error OR call next automatically
 					// when selecting in an artifact prompt
@@ -159,10 +159,10 @@ func (m Model) View() string {
 func initArtifactPrompts(m Model) []artifactPrompt {
 	prompts := []artifactPrompt{}
 
-	if v, ok := m.current.(artdeftable.Model); ok {
-		for _, artdef := range v.SelectedArtifactDefinitions {
+	if v, ok := m.current.(resourcetypetable.Model); ok {
+		for _, rt := range v.SelectedResourceTypes {
 			prompts = append(prompts, artifactPrompt{
-				artifactDefinitionName: artdef.Name,
+				artifactDefinitionName: rt.Name,
 			})
 		}
 	}
@@ -170,8 +170,8 @@ func initArtifactPrompts(m Model) []artifactPrompt {
 	return prompts
 }
 
-func buildArtifactTable(m Model, artdefName string) artifacttable.Model {
+func buildArtifactTable(m Model, artdefName string) resourcetable.Model {
 	creds, _ := m.listCredentials(artdefName)
-	table := artifacttable.New(creds)
+	table := resourcetable.New(creds)
 	return table
 }

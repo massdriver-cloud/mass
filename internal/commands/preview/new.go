@@ -5,7 +5,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/internal/api/v0"
 	"github.com/massdriver-cloud/mass/internal/debuglog"
-	"github.com/massdriver-cloud/mass/internal/tui/components/artdeftable"
+	"github.com/massdriver-cloud/mass/internal/tui/components/resourcetypetable"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -47,7 +47,7 @@ func RunNew(ctx context.Context, mdClient *client.Client, projectSlug string) (*
 
 	cmdLog.Info().Str("id", project.ID).Msg("Found project.")
 
-	artDefTable := artdeftable.New(api.ListCredentialTypes(ctx, mdClient))
+	artDefTable := resourcetypetable.New(api.ListCredentialTypes(ctx, mdClient))
 
 	keys := KeyMap{
 		Next: key.NewBinding(

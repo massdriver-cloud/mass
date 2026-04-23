@@ -12,7 +12,7 @@ List credentials
 
 # List Credentials
 
-Lists all credential artifacts in your organization.
+Lists all credential resources in your organization.
 
 ## Usage
 
@@ -29,7 +29,7 @@ mass credential list
 
 The output displays a table with:
 - **ID**: Unique identifier for the credential
-- **Name**: Name of the credential artifact
+- **Name**: Name of the credential resource
 - **Updated At**: Last update timestamp
 
 

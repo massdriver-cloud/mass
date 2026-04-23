@@ -1,10 +1,10 @@
-package artdeftable
+package resourcetypetable
 
 import (
 	"github.com/charmbracelet/bubbles/key"
 )
 
-// KeyMap defines the key bindings for navigating the artifact definition table.
+// KeyMap defines the key bindings for navigating the resource type table.
 type KeyMap struct {
 	RowDown         key.Binding
 	RowUp           key.Binding

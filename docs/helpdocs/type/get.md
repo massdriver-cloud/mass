@@ -1,7 +1,7 @@
-# Get Artifact Definition
+# Get Resource Type
 
-Retrieves detailed information about a specific artifact definition, including:
-- Definition name and label
+Retrieves detailed information about a specific resource type, including:
+- Resource type name and label
 - Schema
 - UI configuration
 - Connection settings
@@ -9,14 +9,14 @@ Retrieves detailed information about a specific artifact definition, including:
 ## Usage
 
 ```bash
-mass definition get <definition-name>
+mass resource-type get <resource-type>
 ```
 
 ## Examples
 
 ```bash
-# Get details for the "aws-s3" definition
-mass definition get aws-s3
+# Get details for the "aws-s3" resource type
+mass resource-type get aws-s3
 ```
 
 ## Options

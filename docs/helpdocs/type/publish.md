@@ -1,19 +1,19 @@
-# Publish Artifact Definition
+# Publish Resource Type
 
-Publishes a new or updated artifact definition to Massdriver. Supports JSON or YAML formats.
+Publishes a new or updated resource type to Massdriver. Supports JSON or YAML formats.
 
 ## Usage
 
 ```bash
-mass definition publish <definition-file>
+mass resource-type publish <resource-type-file>
 ```
 
 ## Examples
 
 ```bash
-# Publish a definition from a JSON file
-mass definition publish my-definition.json
+# Publish a resource type from a JSON file
+mass resource-type publish my-resource-type.json
 
-# Publish a definition from a YAML file
-mass definition publish my-definition.yaml
+# Publish a resource type from a YAML file
+mass resource-type publish my-resource-type.yaml
 ```

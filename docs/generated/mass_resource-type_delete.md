@@ -1,3 +1,15 @@
+---
+id: mass_resource-type_delete.md
+slug: /cli/commands/mass_resource-type_delete
+title: Mass Resource-Type Delete
+sidebar_label: Mass Resource-Type Delete
+---
+## mass resource-type delete
+
+Delete a resource type from Massdriver
+
+### Synopsis
+
 # Delete Resource Type
 
 Permanently deletes a resource type from Massdriver. This action cannot be undone.
@@ -38,3 +50,19 @@ mass resource-type delete aws-s3 --force
 - This command will fail if the resource type is in use by any bundles or provisioned resources
 - Administrator permissions are required to delete resource types
 - The resource type name can be specified as a short name (e.g., `aws-s3`) or a full name (e.g., `my-org/aws-s3`)
+
+
+```
+mass resource-type delete [resource-type] [flags]
+```
+
+### Options
+
+```
+  -f, --force   Skip confirmation prompt
+  -h, --help    help for delete
+```
+
+### SEE ALSO
+
+* [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management

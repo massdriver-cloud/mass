@@ -1,5 +1,5 @@
-// Package artdeftable provides a selectable artifact definition table TUI component.
-package artdeftable
+// Package resourcetypetable provides a selectable resource type table TUI component.
+package resourcetypetable
 
 import (
 	"strings"
@@ -13,21 +13,21 @@ import (
 	"golang.org/x/text/language"
 )
 
-// Model is the bubbletea model for the selectable artifact definition table component.
+// Model is the bubbletea model for the selectable resource type table component.
 type Model struct {
-	table                       table.Model
-	help                        help.Model
-	artifactDefinitions         []*api.ArtifactDefinition
-	keys                        KeyMap
-	SelectedArtifactDefinitions []*api.ArtifactDefinition
+	table                 table.Model
+	help                  help.Model
+	resourceTypes         []*api.ArtifactDefinition
+	keys                  KeyMap
+	SelectedResourceTypes []*api.ArtifactDefinition
 }
 
 const (
-	columnKeyLabel      = "label"
-	columnKeyArtDefData = "artDefData"
+	columnKeyLabel            = "label"
+	columnKeyResourceTypeData = "resourceTypeData"
 )
 
-// New creates a new Model pre-populated with the provided artifact definitions.
+// New creates a new Model pre-populated with the provided resource types.
 func New(creds []*api.ArtifactDefinition) Model {
 	columns := []table.Column{
 		table.NewColumn(columnKeyLabel, "Name", 40),
@@ -37,8 +37,8 @@ func New(creds []*api.ArtifactDefinition) Model {
 
 	for _, credentialType := range creds {
 		row := table.NewRow(table.RowData{
-			columnKeyLabel:      humanize(credentialType.Name),
-			columnKeyArtDefData: credentialType,
+			columnKeyLabel:            humanize(credentialType.Name),
+			columnKeyResourceTypeData: credentialType,
 		})
 		rows = append(rows, row)
 	}
@@ -69,19 +69,19 @@ func New(creds []*api.ArtifactDefinition) Model {
 	}
 
 	return Model{
-		table:               t,
-		help:                help.New(),
-		artifactDefinitions: creds,
-		keys:                keys,
+		table:         t,
+		help:          help.New(),
+		resourceTypes: creds,
+		keys:          keys,
 	}
 }
 
-// Init returns the initial command for the artdeftable model (none required).
+// Init returns the initial command for the resourcetypetable model (none required).
 func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-// Update handles incoming messages and updates the artdeftable model state.
+// Update handles incoming messages and updates the resourcetypetable model state.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	//nolint:gocritic // single-case type switch is intentional; msg is reused as typed value below
@@ -92,11 +92,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	m.table, cmd = m.table.Update(msg)
-	m.SelectedArtifactDefinitions = mapRowsToArtDef(m.table.SelectedRows())
+	m.SelectedResourceTypes = mapRowsToResourceType(m.table.SelectedRows())
 	return m, cmd
 }
 
-// View renders the artifact definition table as a string for display.
+// View renders the resource type table as a string for display.
 func (m Model) View() string {
 	body := strings.Builder{}
 	body.WriteString("Select credential types:")
@@ -107,25 +107,25 @@ func (m Model) View() string {
 	return body.String()
 }
 
-func mapRowsToArtDef(rows []table.Row) []*api.ArtifactDefinition {
-	artdefs := []*api.ArtifactDefinition{}
+func mapRowsToResourceType(rows []table.Row) []*api.ArtifactDefinition {
+	resourceTypes := []*api.ArtifactDefinition{}
 
 	for _, row := range rows {
-		if artdef, ok := row.Data[columnKeyArtDefData].(*api.ArtifactDefinition); ok {
-			artdefs = append(artdefs, artdef)
+		if rt, ok := row.Data[columnKeyResourceTypeData].(*api.ArtifactDefinition); ok {
+			resourceTypes = append(resourceTypes, rt)
 		}
 	}
-	return artdefs
+	return resourceTypes
 }
 
-func humanize(artdef string) string {
+func humanize(name string) string {
 	abbrevMap := map[string]string{
 		"iam": "IAM",
 		"gcp": "GCP",
 		"aws": "AWS",
 	}
 
-	components := strings.Split(artdef, "/")
+	components := strings.Split(name, "/")
 	friendlyComponents := strings.Split(components[1], "-")
 
 	titledComponents := []string{}

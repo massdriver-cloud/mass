@@ -1,4 +1,4 @@
-package artifacttable
+package resourcetable
 
 import (
 	"strings"
@@ -10,23 +10,23 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api/v0"
 )
 
-// Model is the Bubble Tea model for the artifact selection table.
+// Model is the Bubble Tea model for the resource selection table.
 type Model struct {
 	table             table.Model
 	help              help.Model
-	artifacts         []*api.Artifact
+	resources         []*api.Artifact
 	keys              KeyMap
-	SelectedArtifacts []*api.Artifact
+	SelectedResources []*api.Artifact
 }
 
 const (
 	columnKeyName         = "name"
 	columnKeyID           = "id"
-	columnKeyArtifactData = "artifactData"
+	columnKeyResourceData = "resourceData"
 )
 
-// New creates an artifact table model populated with the given artifacts.
-func New(artifacts []*api.Artifact) Model {
+// New creates a resource table model populated with the given resources.
+func New(resources []*api.Artifact) Model {
 	columns := []table.Column{
 		table.NewColumn(columnKeyName, "Name", 40),
 		table.NewColumn(columnKeyID, "ID", 40),
@@ -34,11 +34,11 @@ func New(artifacts []*api.Artifact) Model {
 
 	rows := []table.Row{}
 
-	for _, artifact := range artifacts {
+	for _, resource := range resources {
 		row := table.NewRow(table.RowData{
-			columnKeyName:         artifact.Name,
-			columnKeyID:           artifact.ID,
-			columnKeyArtifactData: artifact,
+			columnKeyName:         resource.Name,
+			columnKeyID:           resource.ID,
+			columnKeyResourceData: resource,
 		})
 		rows = append(rows, row)
 	}
@@ -71,7 +71,7 @@ func New(artifacts []*api.Artifact) Model {
 	return Model{
 		table:     t,
 		help:      help.New(),
-		artifacts: artifacts,
+		resources: resources,
 		keys:      keys,
 	}
 }
@@ -92,11 +92,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	m.table, cmd = m.table.Update(msg)
-	m.SelectedArtifacts = mapRowsToArtifact(m.table.SelectedRows())
+	m.SelectedResources = mapRowsToResource(m.table.SelectedRows())
 	return m, cmd
 }
 
-// View renders the artifact table and help text as a string.
+// View renders the resource table and help text as a string.
 func (m Model) View() string {
 	body := strings.Builder{}
 	body.WriteString("Select credentials:")
@@ -107,14 +107,14 @@ func (m Model) View() string {
 	return body.String()
 }
 
-func mapRowsToArtifact(rows []table.Row) []*api.Artifact {
-	artifacts := []*api.Artifact{}
+func mapRowsToResource(rows []table.Row) []*api.Artifact {
+	resources := []*api.Artifact{}
 
 	for _, row := range rows {
-		if artifact, ok := row.Data[columnKeyArtifactData].(*api.Artifact); ok {
-			artifacts = append(artifacts, artifact)
+		if resource, ok := row.Data[columnKeyResourceData].(*api.Artifact); ok {
+			resources = append(resources, resource)
 		}
 	}
 
-	return artifacts
+	return resources
 }

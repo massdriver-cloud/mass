@@ -1,35 +1,35 @@
-# Export Package Details
+# Export Instance Details
 
-Exports a package to the local filesystem. This is useful for backups and migrations.
+Exports an instance to the local filesystem. This is useful for backups and migrations.
 
-Data will be exported into a directory, named via the package slug:
+Data will be exported into a directory, named via the instance slug:
 
 ```bash
-package
+instance
 ├── artifact_<name>.json
 ├── bundle
-│   ├── <data...>
+│   ├── <data...>
 ├── params.json
 ├── <path>.tfstate.json
 ```
 
-The data which will be exported for each package includes:
-- **`artifact_<name>.json`**: Each artifact for the deploy package (if applicable)
+The data which will be exported for each instance includes:
+- **`artifact_<name>.json`**: Each resource for the deployed instance (if applicable)
 - **`bundle`**: Directory containing deployed bundle version
-- **`params.json`**: Current package configuration
+- **`params.json`**: Current instance configuration
 - **`<path>.tfstate.json`**: Terraform/OpenTofu state file for each step (if applicable)
 
-Data will only be exported for packages in the **`RUNNING`** state. Data will NOT be exported for packages in the **`INITIALIZED`**, **`DECOMMISSIONED`** or **`FAILED`** state. Packages which are remote references will only download the artifacts files.
+Data will only be exported for instances in the **`PROVISIONED`** state. Data will NOT be exported for instances in the **`INITIALIZED`**, **`DECOMMISSIONED`** or **`FAILED`** state. Instances which are remote references will only download the resource files.
 
 ## Usage
 
 ```bash
-mass package export <project-slug>-<environment-slug>-<package-slug>
+mass instance export <project-slug>-<environment-slug>-<instance-slug>
 ```
 
 ## Examples
 
 ```bash
-# Export the "app" package in the "prod" environment of the "web" project
-mass package export web-prod-app
+# Export the "app" instance in the "prod" environment of the "web" project
+mass instance export web-prod-app
 ```

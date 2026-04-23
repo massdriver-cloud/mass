@@ -25,8 +25,11 @@ mass instance destroy api-prod-db --force
 ### Options
 
 ```
-  -f, --force   Skip confirmation prompt
-  -h, --help    help for destroy
+  -f, --force               Skip confirmation prompt
+  -h, --help                help for destroy
+  -m, --message string      Add a message when decommissioning
+  -p, --params string       Path to params json, tfvars or yaml file. Use '-' to read from stdin. When provided, the full configuration is replaced. Supports bash interpolation.
+  -P, --patch stringArray   Patch the last deployed configuration using a JQ expression. Can be specified multiple times.
 ```
 
 ### SEE ALSO

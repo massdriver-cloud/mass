@@ -1,3 +1,15 @@
+---
+id: mass_resource_get.md
+slug: /cli/commands/mass_resource_get
+title: Mass Resource Get
+sidebar_label: Mass Resource Get
+---
+## mass resource get
+
+Get an resource from Massdriver
+
+### Synopsis
+
 # Get Resource
 
 Retrieves detailed information about a specific resource, including:
@@ -42,3 +54,30 @@ mass resource get api-prod-grpcapi-host -o json
 
 - **Provisioned resources** (created by bundle deployments) can use either UUID or friendly slug
 - **Imported resources** (created via CLI, API, or UI) must use UUID
+
+
+```
+mass resource get [resource-id] [flags]
+```
+
+### Examples
+
+```
+  # Get resource using UUID (imported resources)
+  mass resource get 12345678-1234-1234-1234-123456789012
+
+  # Get resource using friendly slug (provisioned resources)
+  mass resource get api-prod-database-connection
+  mass resource get api-prod-grpcapi-host -o json
+```
+
+### Options
+
+```
+  -h, --help            help for get
+  -o, --output string   Output format (text or json) (default "text")
+```
+
+### SEE ALSO
+
+* [mass resource](/cli/commands/mass_resource)	 - Manage resources

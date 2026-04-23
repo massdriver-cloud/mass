@@ -1,34 +1,34 @@
-package artdeftable_test
+package resourcetypetable_test
 
 import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/massdriver-cloud/mass/internal/api/v0"
-	"github.com/massdriver-cloud/mass/internal/tui/components/artdeftable"
+	"github.com/massdriver-cloud/mass/internal/tui/components/resourcetypetable"
 	"github.com/massdriver-cloud/mass/internal/tui/teahelper"
 )
 
 func TestViewHumanizes(t *testing.T) {
-	artdefs := []*api.ArtifactDefinition{
+	resourceTypes := []*api.ArtifactDefinition{
 		{Name: "example/password"},
 		{Name: "example/iam-thing"},
 	}
 
-	model := artdeftable.New(artdefs)
+	model := resourcetypetable.New(resourceTypes)
 
 	teahelper.AssertModelViewContains(t, model.View(), "Password")
 	teahelper.AssertModelViewContains(t, model.View(), "IAM Thing")
 }
 
-func TestUpdateSelectsArtifactDefinition(t *testing.T) {
+func TestUpdateSelectsResourceType(t *testing.T) {
 	want := &api.ArtifactDefinition{Name: "example/iam-thing"}
-	artdefs := []*api.ArtifactDefinition{
+	resourceTypes := []*api.ArtifactDefinition{
 		{Name: "example/password"},
 		want,
 	}
 
-	model := artdeftable.New(artdefs)
+	model := resourcetypetable.New(resourceTypes)
 
 	pressDown := tea.KeyMsg{Type: tea.KeyDown}
 	updatedModel, _ := model.Update(pressDown)
@@ -37,9 +37,9 @@ func TestUpdateSelectsArtifactDefinition(t *testing.T) {
 	updatedModel, _ = updatedModel.Update(pressSpace)
 
 	//nolint:errcheck // type assertion to concrete Model is safe in this test context
-	finalModel := (updatedModel).(artdeftable.Model)
+	finalModel := (updatedModel).(resourcetypetable.Model)
 
-	got := finalModel.SelectedArtifactDefinitions
+	got := finalModel.SelectedResourceTypes
 
 	if len(got) != 1 {
 		t.Errorf("Expected exactly one result, got: %v", got)

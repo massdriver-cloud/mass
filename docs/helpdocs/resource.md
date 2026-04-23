@@ -1,3 +1,3 @@
-# Manage Massdriver artifacts
+# Manage Massdriver resources
 
-Artifacts represent infrastructure resources and connections in Massdriver. They can be provisioned by bundles or manually imported.
+Resources represent infrastructure outputs and connections in Massdriver. They can be provisioned by bundles or manually imported.

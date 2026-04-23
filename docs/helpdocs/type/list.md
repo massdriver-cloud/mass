@@ -1,16 +1,16 @@
-# List Artifact Definitions
+# List Resource Types
 
-Lists all available artifact definitions in your organization.
+Lists all available resource types in your organization.
 
 ## Usage
 
 ```bash
-mass definition list
+mass resource-type list
 ```
 
 ## Examples
 
 ```bash
-# List all artifact definitions
-mass definition list
+# List all resource types
+mass resource-type list
 ```

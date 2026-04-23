@@ -1,3 +1,3 @@
 # Credential Management
 
-Manage credential artifacts in your organization.
+Manage credential resources in your organization.

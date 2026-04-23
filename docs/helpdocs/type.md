@@ -1,9 +1,9 @@
-# Artifact Definitions
+# Resource Types
 
-[Artifact Definitions](https://docs.massdriver.cloud/concepts/artifacts) define the schema and behavior of artifacts in Massdriver.
+[Resource Types](https://docs.massdriver.cloud/concepts/resources) define the schema and behavior of resources in Massdriver.
 
-Artifact definitions are used to:
-- Define the schema for artifact data
-- Specify how artifacts are created and managed
-- Control how artifacts are displayed in the UI
-- Define connections between artifacts
+Resource types are used to:
+- Define the schema for resource data
+- Specify how resources are created and managed
+- Control how resources are displayed in the UI
+- Define connections between resources

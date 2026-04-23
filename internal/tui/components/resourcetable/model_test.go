@@ -1,35 +1,35 @@
-package artifacttable_test
+package resourcetable_test
 
 import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/massdriver-cloud/mass/internal/api/v0"
-	"github.com/massdriver-cloud/mass/internal/tui/components/artifacttable"
+	"github.com/massdriver-cloud/mass/internal/tui/components/resourcetable"
 	"github.com/massdriver-cloud/mass/internal/tui/teahelper"
 )
 
 func TestView(t *testing.T) {
-	artifacts := []*api.Artifact{
+	resources := []*api.Artifact{
 		{Name: "aws iam role", ID: "foobar"},
 		{Name: "gcp iam role", ID: "quxqaz"},
 	}
 
-	model := artifacttable.New(artifacts)
+	model := resourcetable.New(resources)
 
 	teahelper.AssertModelViewContains(t, model.View(), "aws iam role")
 	teahelper.AssertModelViewContains(t, model.View(), "quxqaz")
 }
 
-func TestUpdateSelectsArtifactDefinition(t *testing.T) {
+func TestUpdateSelectsResource(t *testing.T) {
 	awsRole := &api.Artifact{Name: "aws iam role", ID: "foobar"}
 	gcpServiceAccount := &api.Artifact{Name: "gcp service account", ID: "quxqaz"}
-	artifacts := []*api.Artifact{
+	resources := []*api.Artifact{
 		awsRole,
 		gcpServiceAccount,
 	}
 
-	model := artifacttable.New(artifacts)
+	model := resourcetable.New(resources)
 
 	pressDown := tea.KeyMsg{Type: tea.KeyDown}
 	updatedModel, _ := model.Update(pressDown)
@@ -41,9 +41,9 @@ func TestUpdateSelectsArtifactDefinition(t *testing.T) {
 	updatedModel, _ = updatedModel.Update(pressEsc)
 
 	//nolint:errcheck // type assertion to concrete Model is safe in this test context
-	finalModel := (updatedModel).(artifacttable.Model)
+	finalModel := (updatedModel).(resourcetable.Model)
 
-	got := finalModel.SelectedArtifacts
+	got := finalModel.SelectedResources
 	want := gcpServiceAccount
 
 	if len(got) != 1 {
