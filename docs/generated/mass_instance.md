@@ -35,5 +35,4 @@ Instances are used to:
 * [mass instance export](/cli/commands/mass_instance_export)	 - Export instances
 * [mass instance get](/cli/commands/mass_instance_get)	 - Get an instance
 * [mass instance list](/cli/commands/mass_instance_list)	 - List instances in an environment
-* [mass instance reset](/cli/commands/mass_instance_reset)	 - Reset instance status to 'Initialized'
 * [mass instance version](/cli/commands/mass_instance_version)	 - Set instance version

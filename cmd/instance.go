@@ -12,15 +12,12 @@ import (
 	"text/template"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	apiv0 "github.com/massdriver-cloud/mass/internal/api/v0"
 	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/instance"
 	"github.com/massdriver-cloud/mass/internal/files"
-	"github.com/massdriver-cloud/mass/internal/prettylogs"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
@@ -95,16 +92,6 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 	instanceDestroyCmd.Flags().StringArrayP("patch", "P", []string{}, "Patch the last deployed configuration using a JQ expression. Can be specified multiple times.")
 	instanceDestroyCmd.MarkFlagsMutuallyExclusive("params", "patch")
 
-	instanceResetCmd := &cobra.Command{
-		Use:     `reset <project>-<env>-<manifest>`,
-		Short:   "Reset instance status to 'Initialized'",
-		Example: `mass instance reset api-prod-db`,
-		Long:    helpdocs.MustRender("instance/reset"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceReset,
-	}
-	instanceResetCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
-
 	instanceListCmd := &cobra.Command{
 		Use:     `list <project>-<env>`,
 		Short:   "List instances in an environment",
@@ -121,7 +108,6 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 	instanceCmd.AddCommand(instanceListCmd)
 	instanceCmd.AddCommand(instanceVersionCmd)
 	instanceCmd.AddCommand(instanceDestroyCmd)
-	instanceCmd.AddCommand(instanceResetCmd)
 
 	return instanceCmd
 }
@@ -363,55 +349,6 @@ func runInstanceVersion(cmd *cobra.Command, args []string) error {
 	if urlErr == nil {
 		fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(updatedInstance.ID))
 	}
-
-	return nil
-}
-
-func runInstanceReset(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-
-	instanceID := args[0]
-
-	force, err := cmd.Flags().GetBool("force")
-	if err != nil {
-		return err
-	}
-
-	cmd.SilenceUsage = true
-
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
-	}
-
-	// Get instance details for confirmation
-	instanceDetails, err := apiv0.GetPackage(ctx, mdClient, instanceID)
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation unless --force is used
-	if !force {
-		fmt.Printf("%s: This will reset instance `%s` to 'Initialized' state and delete deployment history.\n", prettylogs.Orange("WARNING"), instanceDetails.ID)
-		fmt.Printf("Type `%s` to confirm reset: ", instanceDetails.ID)
-		reader := bufio.NewReader(os.Stdin)
-		answer, _ := reader.ReadString('\n')
-		answer = strings.TrimSpace(answer)
-
-		if answer != instanceDetails.ID {
-			fmt.Println("Reset cancelled.")
-			return nil
-		}
-	}
-
-	instance, err := instance.RunReset(ctx, mdClient, instanceID)
-	if err != nil {
-		return err
-	}
-
-	var name = lipgloss.NewStyle().SetString(instance.ID).Foreground(lipgloss.Color("#7D56F4"))
-	msg := fmt.Sprintf("✅ Instance %s reset successfully", name)
-	fmt.Println(msg)
 
 	return nil
 }
