@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Project represents a Massdriver project.
@@ -51,19 +50,19 @@ func ListProjects(ctx context.Context, mdClient *client.Client) ([]Project, erro
 
 func toProject(p any) (*Project, error) {
 	proj := Project{}
-	if err := mapstructure.Decode(p, &proj); err != nil {
+	if err := decode(p, &proj); err != nil {
 		return nil, fmt.Errorf("failed to decode project: %w", err)
 	}
 
 	// Unwrap paginated environments (API returns {items: [...]})
 	type envPage struct {
-		Items []Environment `mapstructure:"items"`
+		Items []Environment `json:"items"`
 	}
 	type hasEnvs struct {
-		Environments envPage `mapstructure:"environments"`
+		Environments envPage `json:"environments"`
 	}
 	var wrapper hasEnvs
-	if err := mapstructure.Decode(p, &wrapper); err == nil && len(wrapper.Environments.Items) > 0 {
+	if err := decode(p, &wrapper); err == nil && len(wrapper.Environments.Items) > 0 {
 		proj.Environments = wrapper.Environments.Items
 	}
 

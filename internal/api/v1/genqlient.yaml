@@ -29,3 +29,5 @@ bindings:
     type: string
   Upload:
     type: string
+  Cursor:
+    type: github.com/massdriver-cloud/mass/internal/api/v1.Cursor

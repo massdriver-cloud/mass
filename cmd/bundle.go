@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	apiv0 "github.com/massdriver-cloud/mass/internal/api/v0"
 	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/cli"
@@ -28,13 +28,6 @@ import (
 
 //go:embed templates/bundle.get.md.tmpl
 var bundleTemplates embed.FS
-
-// hiddenArtifacts are artifact definitions that the API returns that
-// should not be added to bundles
-var hiddenArtifacts = map[string]struct{}{
-	"massdriver/api":        {},
-	"massdriver/draft-node": {},
-}
 
 type bundleNew struct {
 	name         string
@@ -194,9 +187,10 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runBundleNewInteractive(outputDir string) (*templates.TemplateData, error) {
+func runBundleNewInteractive(outputDir string, resourceTypeNames []string) (*templates.TemplateData, error) {
 	templateData := &templates.TemplateData{
-		OutputDir: outputDir,
+		OutputDir:     outputDir,
+		ResourceTypes: resourceTypeNames,
 	}
 
 	err := bundle.RunPromptNew(templateData)
@@ -215,8 +209,8 @@ func runBundleNewFlags(input *bundleNew) (*templates.TemplateData, error) {
 			return nil, fmt.Errorf("invalid connection argument: %s", conn)
 		}
 		connectionData[i] = templates.Connection{
-			ArtifactDefinition: parts[1],
-			Name:               parts[0],
+			ResourceType: parts[1],
+			Name:         parts[0],
 		}
 	}
 
@@ -235,31 +229,29 @@ func runBundleNewFlags(input *bundleNew) (*templates.TemplateData, error) {
 func runBundleNew(input *bundleNew) error {
 	ctx := context.Background()
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
-	}
-
-	artifactDefs, listErr := apiv0.ListArtifactDefinitions(ctx, mdClient)
-	if listErr != nil {
-		return fmt.Errorf("error listing artifact definitions: %w", listErr)
-	}
-
-	artifactDefinitions := map[string]map[string]any{}
-	for _, v := range artifactDefs {
-		if _, ok := hiddenArtifacts[v.Name]; ok {
-			continue
-		}
-		artifactDefinitions[v.Name] = v.Schema
-	}
-
-	bundle.SetMassdriverArtifactDefinitions(artifactDefinitions)
-
 	var templateData *templates.TemplateData
 	var runErr error
 	if input.name == "" || input.templateName == "" {
 		// run the interactive prompt
-		templateData, runErr = runBundleNewInteractive(input.outputDir)
+		mdClient, mdClientErr := client.New()
+		if mdClientErr != nil {
+			return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+		}
+
+		resourceTypes, listErr := api.ListResourceTypes(ctx, mdClient, nil)
+		if listErr != nil {
+			return fmt.Errorf("error fetching resource types: %w", listErr)
+		}
+		resourceTypeNames := make([]string, len(resourceTypes))
+		for i, rt := range resourceTypes {
+			resourceTypeNames[i] = rt.ID
+			if rt.Name != rt.ID {
+				resourceTypeNames[i] += " (" + rt.Name + ")"
+			}
+		}
+		slices.Sort(resourceTypeNames)
+
+		templateData, runErr = runBundleNewInteractive(input.outputDir, resourceTypeNames)
 		if runErr != nil {
 			return fmt.Errorf("error running interactive prompt: %w", runErr)
 		}

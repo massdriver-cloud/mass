@@ -3,11 +3,9 @@ package bundle
 import (
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -26,19 +24,12 @@ var (
 	connNameError   = fmt.Sprintf(baseNameError, "underscores", "_", "_", "_")
 )
 
-var massdriverArtifactDefinitions map[string]map[string]any
-
 var promptsNew = []func(t *templates.TemplateData) error{
 	getName,
 	getDescription,
 	getTemplate,
 	GetConnections,
 	getOutputDir,
-}
-
-// SetMassdriverArtifactDefinitions sets the defs used to specify connections in a bundle
-func SetMassdriverArtifactDefinitions(in map[string]map[string]any) {
-	massdriverArtifactDefinitions = in
 }
 
 // RunPromptNew interactively prompts the user to fill in all fields of a new bundle template.
@@ -168,17 +159,10 @@ func connNameValidate(name string) error {
 func GetConnections(t *templates.TemplateData) error {
 	none := "(None)"
 
-	artifactDefinitionsTypes := []string{}
-	// in 1.23 we can use maps.Keys(), but until then we'll extract the keys manually
-	for adt := range massdriverArtifactDefinitions {
-		artifactDefinitionsTypes = append(artifactDefinitionsTypes, adt)
-	}
-	sort.StringSlice(artifactDefinitionsTypes).Sort()
-
 	var selectedDeps []string
 	multiselect := &survey.MultiSelect{
 		Message: "What connections do you need?\n  If you don't need any, just hit enter or select (None)\n",
-		Options: artifactDefinitionsTypes,
+		Options: t.ResourceTypes,
 	}
 
 	err := survey.AskOne(multiselect, &selectedDeps)
@@ -209,9 +193,7 @@ func GetConnections(t *templates.TemplateData) error {
 			return errName
 		}
 
-		depMap = append(depMap, templates.Connection{Name: result, ArtifactDefinition: currentDep})
-
-		maps.Copy(envs, GetConnectionEnvs(result, massdriverArtifactDefinitions[currentDep]))
+		depMap = append(depMap, templates.Connection{Name: result, ResourceType: currentDep})
 	}
 
 	t.Connections = depMap
@@ -315,32 +297,4 @@ func getExistingParamsPath(templateName string) (string, error) {
 	}
 
 	return prompt.Run()
-}
-
-// GetConnectionEnvs extracts environment variable templates from an artifact definition for the given connection name.
-func GetConnectionEnvs(connectionName string, artifactDefinition map[string]any) map[string]string {
-	envs := map[string]string{}
-
-	mdBlock, mdBlockExists := artifactDefinition["$md"]
-	if mdBlockExists {
-		mdBlockMap, mdBlockMapOk := mdBlock.(map[string]any)
-		if !mdBlockMapOk {
-			return envs
-		}
-		envsBlock, envsBlockExists := mdBlockMap["envTemplates"]
-		if envsBlockExists {
-			envsBlockMap, envsBlockMapOk := envsBlock.(map[string]any)
-			if !envsBlockMapOk {
-				return envs
-			}
-
-			for envName, value := range envsBlockMap {
-				//nolint:errcheck // value type is string as enforced by the surrounding map range
-				envValue := value.(string)
-				envs[envName] = strings.ReplaceAll(envValue, "connection_name", connectionName)
-			}
-		}
-	}
-
-	return envs
 }

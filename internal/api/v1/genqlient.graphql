@@ -163,10 +163,18 @@ query listLinks(
           fromComponent {
             id
             name
+            description
+            tags
+            createdAt
+            updatedAt
           }
           toComponent {
             id
             name
+            description
+            tags
+            createdAt
+            updatedAt
           }
         }
       }
@@ -235,10 +243,18 @@ mutation linkComponents($organizationId: ID!, $input: LinkComponentsInput!) {
       fromComponent {
         id
         name
+        description
+        tags
+        createdAt
+        updatedAt
       }
       toComponent {
         id
         name
+        description
+        tags
+        createdAt
+        updatedAt
       }
     }
     successful
@@ -269,9 +285,6 @@ mutation unlinkComponents($organizationId: ID!, $id: ID!) {
 
 # ENVIRONMENTS
 
-# @genqlient(for: "Cursor.limit", omitempty: true)
-# @genqlient(for: "Cursor.next", omitempty: true)
-# @genqlient(for: "Cursor.previous", omitempty: true)
 # @genqlient(for: "EnvironmentsFilter.projectId", omitempty: true, pointer: true)
 # @genqlient(for: "EnvironmentsFilter.id", omitempty: true, pointer: true)
 # @genqlient(for: "IdFilter.eq", omitempty: true)
@@ -302,6 +315,7 @@ query listEnvironments(
       project {
         id
         name
+        description
       }
       cost {
         monthlyAverage {
@@ -358,10 +372,20 @@ query getEnvironment($organizationId: ID!, $id: ID!) {
             id
             name
             description
+            tags
+            createdAt
+            updatedAt
           }
           bundle {
-            name
             id
+            name
+            version
+            description
+            icon
+            sourceUrl
+            repo
+            createdAt
+            updatedAt
           }
         }
       }
@@ -429,6 +453,10 @@ mutation setEnvironmentDefault($organizationId: ID!, $environmentId: ID!, $resou
         resourceType {
           id
           name
+          icon
+          connectionOrientation
+          createdAt
+          updatedAt
         }
       }
     }
@@ -545,20 +573,31 @@ query getInstance($organizationId: ID!, $id: ID!) {
     environment {
       id
       name
+      description
       project {
         id
         name
+        description
       }
     }
     bundle {
       id
       name
       version
+      description
+      icon
+      sourceUrl
+      repo
+      createdAt
+      updatedAt
     }
     component {
       id
       name
       description
+      tags
+      createdAt
+      updatedAt
     }
     statePaths {
       stepName
@@ -585,6 +624,8 @@ query listInstanceResources(
           id
           name
           origin
+          createdAt
+          updatedAt
         }
       }
     }
@@ -856,7 +897,6 @@ query getOciRepo($organizationId: ID!, $id: ID!) {
 
 # RESOURCE TYPES
 
-# @genqlient(for: "ResourceTypesFilter.id", omitempty: true, pointer: true)
 query listResourceTypes(
   $organizationId: ID!,
   # @genqlient(omitempty: true, pointer: true)
@@ -876,7 +916,6 @@ query listResourceTypes(
       name
       icon
       connectionOrientation
-      schema
       createdAt
       updatedAt
     }
@@ -960,11 +999,20 @@ query listResources(
       resourceType {
         id
         name
+        icon
+        connectionOrientation
+        createdAt
+        updatedAt
       }
       field
       instance {
         id
         name
+        status
+        version
+        releaseStrategy
+        createdAt
+        updatedAt
       }
       formats
       createdAt
@@ -981,11 +1029,20 @@ query getResource($organizationId: ID!, $id: ID!) {
     resourceType {
       id
       name
+      icon
+      connectionOrientation
+      createdAt
+      updatedAt
     }
     field
     instance {
       id
       name
+      status
+      version
+      releaseStrategy
+      createdAt
+      updatedAt
     }
     formats
     payload
@@ -1003,6 +1060,10 @@ mutation createResource($organizationId: ID!, $resourceTypeId: ID!, $input: Crea
       resourceType {
         id
         name
+        icon
+        connectionOrientation
+        createdAt
+        updatedAt
       }
       createdAt
       updatedAt
@@ -1025,6 +1086,10 @@ mutation updateResource($organizationId: ID!, $id: ID!, $input: UpdateResourceIn
       resourceType {
         id
         name
+        icon
+        connectionOrientation
+        createdAt
+        updatedAt
       }
       createdAt
       updatedAt
@@ -1068,6 +1133,10 @@ mutation exportResource(
       resourceType {
         id
         name
+        icon
+        connectionOrientation
+        createdAt
+        updatedAt
       }
       payload
       rendered

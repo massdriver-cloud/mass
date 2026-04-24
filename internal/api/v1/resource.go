@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Resource is an infrastructure artifact such as cloud credentials, a database connection string,
@@ -23,8 +22,8 @@ type Resource struct {
 	Instance     *Instance      `json:"instance,omitempty" mapstructure:"instance,omitempty"`
 	Formats      []string       `json:"formats,omitempty" mapstructure:"formats"`
 	Payload      map[string]any `json:"payload,omitempty" mapstructure:"payload,omitempty"`
-	CreatedAt    time.Time      `json:"createdAt,omitempty" mapstructure:"createdAt"`
-	UpdatedAt    time.Time      `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+	CreatedAt    time.Time      `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
 }
 
 // GetResource retrieves a resource by ID.
@@ -118,8 +117,8 @@ type ResourceWithSensitiveValues struct {
 	ResourceType *ResourceType  `json:"resourceType,omitempty" mapstructure:"resourceType,omitempty"`
 	Payload      map[string]any `json:"payload,omitempty" mapstructure:"payload,omitempty"`
 	Rendered     string         `json:"rendered" mapstructure:"rendered"`
-	CreatedAt    time.Time      `json:"createdAt,omitempty" mapstructure:"createdAt"`
-	UpdatedAt    time.Time      `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+	CreatedAt    time.Time      `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt    time.Time      `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
 }
 
 // ExportResource returns a resource with sensitive payload fields unmasked, along with a `rendered`
@@ -169,7 +168,7 @@ func DeleteResource(ctx context.Context, mdClient *client.Client, id string) (*R
 
 func toResource(v any) (*Resource, error) {
 	r := Resource{}
-	if err := mapstructure.Decode(v, &r); err != nil {
+	if err := decode(v, &r); err != nil {
 		return nil, fmt.Errorf("failed to decode resource: %w", err)
 	}
 	return &r, nil
@@ -177,7 +176,7 @@ func toResource(v any) (*Resource, error) {
 
 func toResourceWithSensitiveValues(v any) (*ResourceWithSensitiveValues, error) {
 	r := ResourceWithSensitiveValues{}
-	if err := mapstructure.Decode(v, &r); err != nil {
+	if err := decode(v, &r); err != nil {
 		return nil, fmt.Errorf("failed to decode resource: %w", err)
 	}
 	return &r, nil

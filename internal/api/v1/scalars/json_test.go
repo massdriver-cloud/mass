@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/api/v0/scalars"
+	"github.com/massdriver-cloud/mass/internal/api/v1/scalars"
 )
 
 func TestMarshalJSON(t *testing.T) {

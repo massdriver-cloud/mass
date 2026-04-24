@@ -353,20 +353,15 @@ func runInstanceVersion(cmd *cobra.Command, args []string) error {
 		ReleaseStrategy: releaseStrategy,
 	}
 
-	updatedPkg, err := api.UpdateInstance(ctx, mdClient, instanceID, input)
+	updatedInstance, err := api.UpdateInstance(ctx, mdClient, instanceID, input)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("✅ Instance `%s` version set successfully\n", updatedPkg.ID)
-
-	// Get instance details to build URL
-	instanceDetails, err := apiv0.GetPackage(ctx, mdClient, updatedPkg.ID)
-	if err == nil && instanceDetails.Environment != nil && instanceDetails.Environment.Project != nil && instanceDetails.Manifest != nil {
-		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-		if urlErr == nil {
-			fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(instanceDetails.ID))
-		}
+	fmt.Printf("✅ Instance `%s` version set successfully\n", updatedInstance.ID)
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	if urlErr == nil {
+		fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(updatedInstance.ID))
 	}
 
 	return nil

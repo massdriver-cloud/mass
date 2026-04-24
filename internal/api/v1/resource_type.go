@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/mitchellh/mapstructure"
 )
 
 // ResourceType defines a category of resource (e.g., "aws-iam-role", "kubernetes-cluster").
@@ -19,8 +18,8 @@ type ResourceType struct {
 	Icon                  string         `json:"icon,omitempty" mapstructure:"icon"`
 	ConnectionOrientation string         `json:"connectionOrientation" mapstructure:"connectionOrientation"`
 	Schema                map[string]any `json:"schema,omitempty" mapstructure:"schema"`
-	CreatedAt             time.Time      `json:"createdAt,omitempty" mapstructure:"createdAt"`
-	UpdatedAt             time.Time      `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+	CreatedAt             time.Time      `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt             time.Time      `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
 }
 
 // GetResourceType retrieves a resource type by ID.
@@ -32,7 +31,7 @@ func GetResourceType(ctx context.Context, mdClient *client.Client, id string) (*
 	return toResourceType(response.ResourceType)
 }
 
-// ListResourceTypes returns resource types, optionally filtered.
+// ListResourceTypes returns resource types, optionally filtered, following pagination.
 func ListResourceTypes(ctx context.Context, mdClient *client.Client, filter *ResourceTypesFilter) ([]ResourceType, error) {
 	var resourceTypes []ResourceType
 	var cursor *Cursor
@@ -113,7 +112,7 @@ func DeleteResourceType(ctx context.Context, mdClient *client.Client, id string)
 
 func toResourceType(v any) (*ResourceType, error) {
 	rt := ResourceType{}
-	if err := mapstructure.Decode(v, &rt); err != nil {
+	if err := decode(v, &rt); err != nil {
 		return nil, fmt.Errorf("failed to decode resource type: %w", err)
 	}
 	return &rt, nil

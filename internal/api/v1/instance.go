@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Instance represents a deployed bundle instance within a Massdriver environment.
@@ -25,8 +24,8 @@ type Instance struct {
 	Params           map[string]any      `json:"params,omitempty" mapstructure:"params"`
 	Tags             map[string]string   `json:"tags,omitempty" mapstructure:"tags"`
 	Cost             CostSummary         `json:"cost" mapstructure:"cost"`
-	CreatedAt        time.Time           `json:"createdAt,omitempty" mapstructure:"createdAt"`
-	UpdatedAt        time.Time           `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+	CreatedAt        time.Time           `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt        time.Time           `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
 	StatePaths       []InstanceStatePath `json:"statePaths,omitempty" mapstructure:"statePaths"`
 	Environment      *Environment        `json:"environment,omitempty" mapstructure:"environment,omitempty"`
 	Bundle           *Bundle             `json:"bundle,omitempty" mapstructure:"bundle,omitempty"`
@@ -48,8 +47,8 @@ type InstanceResource struct {
 // InstanceSecret holds metadata for a secret stored on an instance. The value is never returned.
 type InstanceSecret struct {
 	Name      string    `json:"name" mapstructure:"name"`
-	CreatedAt time.Time `json:"createdAt" mapstructure:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt" mapstructure:"updatedAt"`
+	CreatedAt time.Time `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
 }
 
 // ParamsJSON returns the instance parameters serialized as a pretty-printed JSON string.
@@ -84,7 +83,7 @@ func ListInstanceResources(ctx context.Context, mdClient *client.Client, instanc
 
 		for _, item := range response.Instance.Resources.Items {
 			ir := InstanceResource{}
-			if decodeErr := mapstructure.Decode(item, &ir); decodeErr != nil {
+			if decodeErr := decode(item, &ir); decodeErr != nil {
 				return nil, fmt.Errorf("failed to decode instance resource: %w", decodeErr)
 			}
 			resources = append(resources, ir)
@@ -187,7 +186,7 @@ func RemoveInstanceSecret(ctx context.Context, mdClient *client.Client, id, name
 
 func toInstance(v any) (*Instance, error) {
 	inst := Instance{}
-	if err := mapstructure.Decode(v, &inst); err != nil {
+	if err := decode(v, &inst); err != nil {
 		return nil, fmt.Errorf("failed to decode instance: %w", err)
 	}
 	return &inst, nil
@@ -195,7 +194,7 @@ func toInstance(v any) (*Instance, error) {
 
 func toInstanceSecret(v any) (*InstanceSecret, error) {
 	secret := InstanceSecret{}
-	if err := mapstructure.Decode(v, &secret); err != nil {
+	if err := decode(v, &secret); err != nil {
 		return nil, fmt.Errorf("failed to decode instance secret: %w", err)
 	}
 	return &secret, nil

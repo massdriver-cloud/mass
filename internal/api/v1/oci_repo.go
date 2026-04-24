@@ -13,8 +13,8 @@ type OciRepo struct {
 	ID              string              `json:"id"`
 	Name            string              `json:"name"`
 	ArtifactType    string              `json:"artifactType"`
-	CreatedAt       time.Time           `json:"createdAt,omitempty"`
-	UpdatedAt       time.Time           `json:"updatedAt,omitempty"`
+	CreatedAt       time.Time           `json:"createdAt,omitzero"`
+	UpdatedAt       time.Time           `json:"updatedAt,omitzero"`
 	ReleaseChannels []OciReleaseChannel `json:"releaseChannels,omitempty"`
 	Tags            []OciRepoTag        `json:"tags,omitempty"`
 }
@@ -28,7 +28,7 @@ type OciReleaseChannel struct {
 // OciRepoTag is a published version tag in an OCI repository.
 type OciRepoTag struct {
 	Tag       string    `json:"tag"`
-	CreatedAt time.Time `json:"createdAt,omitempty"`
+	CreatedAt time.Time `json:"createdAt,omitzero"`
 }
 
 // GetOciRepo retrieves an OCI repository by name.

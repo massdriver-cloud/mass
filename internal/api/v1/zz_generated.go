@@ -549,40 +549,6 @@ func (v *CreateResourceInput) __premarshalJSON() (*__premarshalCreateResourceInp
 	return &retval, nil
 }
 
-// Cursor-based pagination input for list queries.
-//
-// Use `limit` to control page size and `next`/`previous` cursors to navigate between
-// pages. Cursors are opaque strings returned in the response's `cursor` field — pass
-// them back exactly as received to fetch the adjacent page.
-//
-// ```graphql
-// # First page (20 items by default)
-// query { instances(organizationId: "my-org") { cursor { next } items { id } } }
-//
-// # Next page
-// query { instances(organizationId: "my-org", cursor: { next: "eyJpZCI6..." }) { cursor { next } items { id } } }
-//
-// # Custom page size
-// query { instances(organizationId: "my-org", cursor: { limit: 50 }) { cursor { next } items { id } } }
-// ```
-type Cursor struct {
-	// Maximum number of items to return per page. Default: **20**. Minimum: **1**. Maximum: **100**.
-	Limit int `json:"limit"`
-	// Forward pagination cursor. Pass the `next` value from a previous response to fetch the next page. Mutually exclusive with `previous`.
-	Next string `json:"next"`
-	// Backward pagination cursor. Pass the `previous` value from a previous response to fetch the preceding page. Mutually exclusive with `next`.
-	Previous string `json:"previous"`
-}
-
-// GetLimit returns Cursor.Limit, and is useful for accessing the field via an interface.
-func (v *Cursor) GetLimit() int { return v.Limit }
-
-// GetNext returns Cursor.Next, and is useful for accessing the field via an interface.
-func (v *Cursor) GetNext() string { return v.Next }
-
-// GetPrevious returns Cursor.Previous, and is useful for accessing the field via an interface.
-func (v *Cursor) GetPrevious() string { return v.Previous }
-
 // The type of infrastructure operation to perform.
 //
 // Each action maps to a distinct phase of the infrastructure lifecycle:
@@ -1266,13 +1232,13 @@ func (v *ResourceOriginFilter) GetIn() []ResourceOrigin { return v.In }
 // Filters for narrowing the resource types list.
 type ResourceTypesFilter struct {
 	// Filter by resource type identifier (e.g., `aws-iam-role`, `kubernetes-cluster`).
-	Id *StringFilter `json:"id,omitempty"`
+	Id StringFilter `json:"id"`
 	// Full-text search across the resource type's display name and identifier (e.g., `"iam"` matches `AWS IAM Role` / `aws-iam-role`). Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, identifier-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries.
 	Search string `json:"search"`
 }
 
 // GetId returns ResourceTypesFilter.Id, and is useful for accessing the field via an interface.
-func (v *ResourceTypesFilter) GetId() *StringFilter { return v.Id }
+func (v *ResourceTypesFilter) GetId() StringFilter { return v.Id }
 
 // GetSearch returns ResourceTypesFilter.Search, and is useful for accessing the field via an interface.
 func (v *ResourceTypesFilter) GetSearch() string { return v.Search }
@@ -3206,6 +3172,14 @@ type createResourceCreateResourceResourcePayloadResultResourceResourceType struc
 	Id string `json:"id"`
 	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
 	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns createResourceCreateResourceResourcePayloadResultResourceResourceType.Id, and is useful for accessing the field via an interface.
@@ -3216,6 +3190,26 @@ func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) 
 // GetName returns createResourceCreateResourceResourcePayloadResultResourceResourceType.Name, and is useful for accessing the field via an interface.
 func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetName() string {
 	return v.Name
+}
+
+// GetIcon returns createResourceCreateResourceResourcePayloadResultResourceResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns createResourceCreateResourceResourcePayloadResultResourceResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns createResourceCreateResourceResourcePayloadResultResourceResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns createResourceCreateResourceResourcePayloadResultResourceResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
 }
 
 // createResourceResponse is returned by createResource on success.
@@ -4023,6 +4017,14 @@ type exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourc
 	Id string `json:"id"`
 	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
 	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.Id, and is useful for accessing the field via an interface.
@@ -4033,6 +4035,26 @@ func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultRes
 // GetName returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.Name, and is useful for accessing the field via an interface.
 func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetName() string {
 	return v.Name
+}
+
+// GetIcon returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
 }
 
 // exportResourceResponse is returned by exportResource on success.
@@ -4709,10 +4731,29 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) 
 // B --> RES["Resource: aurora-cluster"]
 // ```
 type getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle struct {
-	// OCI repository name this bundle belongs to (e.g., `aws-aurora-postgres`).
-	Name string `json:"name"`
 	// Composite identifier in `name@version` format (e.g., `aws-aurora-postgres@1.2.3`). Always contains the fully resolved semver version.
 	Id string `json:"id"`
+	// OCI repository name this bundle belongs to (e.g., `aws-aurora-postgres`).
+	Name string `json:"name"`
+	// Fully resolved semantic version of this bundle (e.g., `1.2.3`).
+	Version string `json:"version"`
+	// Short summary of what this bundle provisions.
+	Description string `json:"description"`
+	// URL to the bundle's display icon.
+	Icon string `json:"icon"`
+	// URL to the bundle's source code repository, if published by the author.
+	SourceUrl string `json:"sourceUrl"`
+	// OCI repository name for this bundle (e.g., `aws-aurora-postgres`). Equivalent to `name`.
+	Repo string `json:"repo"`
+	// Timestamp when this bundle version was first published (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this bundle version was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetId() string {
+	return v.Id
 }
 
 // GetName returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Name, and is useful for accessing the field via an interface.
@@ -4720,9 +4761,39 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBu
 	return v.Name
 }
 
-// GetId returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetId() string {
-	return v.Id
+// GetVersion returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Version, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetVersion() string {
+	return v.Version
+}
+
+// GetDescription returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetDescription() string {
+	return v.Description
+}
+
+// GetIcon returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Icon, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetIcon() string {
+	return v.Icon
+}
+
+// GetSourceUrl returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.SourceUrl, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetSourceUrl() string {
+	return v.SourceUrl
+}
+
+// GetRepo returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Repo, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetRepo() string {
+	return v.Repo
+}
+
+// GetCreatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
 }
 
 // getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent includes the requested fields of the GraphQL type Component.
@@ -4744,6 +4815,12 @@ type getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceCompon
 	Name string `json:"name"`
 	// Optional free-text description of this component's purpose.
 	Description string `json:"description"`
+	// Key-value tags assigned directly to this component.
+	Tags map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Id, and is useful for accessing the field via an interface.
@@ -4759,6 +4836,99 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceCo
 // GetDescription returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Description, and is useful for accessing the field via an interface.
 func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetDescription() string {
 	return v.Description
+}
+
+// GetTags returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Tags, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetTags() map[string]any {
+	return v.Tags
+}
+
+// GetCreatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Tags json.RawMessage `json:"tags"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) __premarshalJSON() (*__premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent, error) {
+	var retval __premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Tags: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
 }
 
 // getEnvironmentEnvironmentCostCostSummary includes the requested fields of the GraphQL type CostSummary.
@@ -5190,6 +5360,18 @@ type getInstanceInstanceBundle struct {
 	Name string `json:"name"`
 	// Fully resolved semantic version of this bundle (e.g., `1.2.3`).
 	Version string `json:"version"`
+	// Short summary of what this bundle provisions.
+	Description string `json:"description"`
+	// URL to the bundle's display icon.
+	Icon string `json:"icon"`
+	// URL to the bundle's source code repository, if published by the author.
+	SourceUrl string `json:"sourceUrl"`
+	// OCI repository name for this bundle (e.g., `aws-aurora-postgres`). Equivalent to `name`.
+	Repo string `json:"repo"`
+	// Timestamp when this bundle version was first published (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this bundle version was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns getInstanceInstanceBundle.Id, and is useful for accessing the field via an interface.
@@ -5200,6 +5382,24 @@ func (v *getInstanceInstanceBundle) GetName() string { return v.Name }
 
 // GetVersion returns getInstanceInstanceBundle.Version, and is useful for accessing the field via an interface.
 func (v *getInstanceInstanceBundle) GetVersion() string { return v.Version }
+
+// GetDescription returns getInstanceInstanceBundle.Description, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetDescription() string { return v.Description }
+
+// GetIcon returns getInstanceInstanceBundle.Icon, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetIcon() string { return v.Icon }
+
+// GetSourceUrl returns getInstanceInstanceBundle.SourceUrl, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetSourceUrl() string { return v.SourceUrl }
+
+// GetRepo returns getInstanceInstanceBundle.Repo, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetRepo() string { return v.Repo }
+
+// GetCreatedAt returns getInstanceInstanceBundle.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getInstanceInstanceBundle.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetUpdatedAt() time.Time { return v.UpdatedAt }
 
 // getInstanceInstanceComponent includes the requested fields of the GraphQL type Component.
 // The GraphQL type's documentation follows.
@@ -5220,6 +5420,12 @@ type getInstanceInstanceComponent struct {
 	Name string `json:"name"`
 	// Optional free-text description of this component's purpose.
 	Description string `json:"description"`
+	// Key-value tags assigned directly to this component.
+	Tags map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns getInstanceInstanceComponent.Id, and is useful for accessing the field via an interface.
@@ -5230,6 +5436,93 @@ func (v *getInstanceInstanceComponent) GetName() string { return v.Name }
 
 // GetDescription returns getInstanceInstanceComponent.Description, and is useful for accessing the field via an interface.
 func (v *getInstanceInstanceComponent) GetDescription() string { return v.Description }
+
+// GetTags returns getInstanceInstanceComponent.Tags, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceComponent) GetTags() map[string]any { return v.Tags }
+
+// GetCreatedAt returns getInstanceInstanceComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceComponent) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getInstanceInstanceComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceComponent) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+func (v *getInstanceInstanceComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getInstanceInstanceComponent
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getInstanceInstanceComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getInstanceInstanceComponent.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetInstanceInstanceComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Tags json.RawMessage `json:"tags"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *getInstanceInstanceComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getInstanceInstanceComponent) __premarshalJSON() (*__premarshalgetInstanceInstanceComponent, error) {
+	var retval __premarshalgetInstanceInstanceComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getInstanceInstanceComponent.Tags: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
 
 // getInstanceInstanceCostCostSummary includes the requested fields of the GraphQL type CostSummary.
 // The GraphQL type's documentation follows.
@@ -5333,6 +5626,8 @@ type getInstanceInstanceEnvironment struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the project.
 	Name string `json:"name"`
+	// Free-text description of what this environment is for.
+	Description string `json:"description"`
 	// The parent project that this environment belongs to.
 	Project getInstanceInstanceEnvironmentProject `json:"project"`
 }
@@ -5342,6 +5637,9 @@ func (v *getInstanceInstanceEnvironment) GetId() string { return v.Id }
 
 // GetName returns getInstanceInstanceEnvironment.Name, and is useful for accessing the field via an interface.
 func (v *getInstanceInstanceEnvironment) GetName() string { return v.Name }
+
+// GetDescription returns getInstanceInstanceEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceEnvironment) GetDescription() string { return v.Description }
 
 // GetProject returns getInstanceInstanceEnvironment.Project, and is useful for accessing the field via an interface.
 func (v *getInstanceInstanceEnvironment) GetProject() getInstanceInstanceEnvironmentProject {
@@ -5372,6 +5670,8 @@ type getInstanceInstanceEnvironmentProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
 	Name string `json:"name"`
+	// Free-text description of what this project is for.
+	Description string `json:"description"`
 }
 
 // GetId returns getInstanceInstanceEnvironmentProject.Id, and is useful for accessing the field via an interface.
@@ -5379,6 +5679,9 @@ func (v *getInstanceInstanceEnvironmentProject) GetId() string { return v.Id }
 
 // GetName returns getInstanceInstanceEnvironmentProject.Name, and is useful for accessing the field via an interface.
 func (v *getInstanceInstanceEnvironmentProject) GetName() string { return v.Name }
+
+// GetDescription returns getInstanceInstanceEnvironmentProject.Description, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceEnvironmentProject) GetDescription() string { return v.Description }
 
 // getInstanceInstanceStatePathsInstanceStatePath includes the requested fields of the GraphQL type InstanceStatePath.
 // The GraphQL type's documentation follows.
@@ -6203,6 +6506,16 @@ type getResourceResourceInstance struct {
 	Id string `json:"id"`
 	// Human-readable display name for the instance.
 	Name string `json:"name"`
+	// Current lifecycle state of the instance.
+	Status InstanceStatus `json:"status"`
+	// Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`.
+	Version string `json:"version"`
+	// Whether to include development (pre-release) builds when resolving the version constraint.
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// When this instance was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this instance was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns getResourceResourceInstance.Id, and is useful for accessing the field via an interface.
@@ -6210,6 +6523,21 @@ func (v *getResourceResourceInstance) GetId() string { return v.Id }
 
 // GetName returns getResourceResourceInstance.Name, and is useful for accessing the field via an interface.
 func (v *getResourceResourceInstance) GetName() string { return v.Name }
+
+// GetStatus returns getResourceResourceInstance.Status, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetStatus() InstanceStatus { return v.Status }
+
+// GetVersion returns getResourceResourceInstance.Version, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetVersion() string { return v.Version }
+
+// GetReleaseStrategy returns getResourceResourceInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetReleaseStrategy() ReleaseStrategy { return v.ReleaseStrategy }
+
+// GetCreatedAt returns getResourceResourceInstance.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getResourceResourceInstance.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetUpdatedAt() time.Time { return v.UpdatedAt }
 
 // getResourceResourceResourceType includes the requested fields of the GraphQL type ResourceType.
 // The GraphQL type's documentation follows.
@@ -6230,6 +6558,14 @@ type getResourceResourceResourceType struct {
 	Id string `json:"id"`
 	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
 	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns getResourceResourceResourceType.Id, and is useful for accessing the field via an interface.
@@ -6237,6 +6573,20 @@ func (v *getResourceResourceResourceType) GetId() string { return v.Id }
 
 // GetName returns getResourceResourceResourceType.Name, and is useful for accessing the field via an interface.
 func (v *getResourceResourceResourceType) GetName() string { return v.Name }
+
+// GetIcon returns getResourceResourceResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *getResourceResourceResourceType) GetIcon() string { return v.Icon }
+
+// GetConnectionOrientation returns getResourceResourceResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *getResourceResourceResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns getResourceResourceResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceResourceResourceType) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getResourceResourceResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceResourceResourceType) GetUpdatedAt() time.Time { return v.UpdatedAt }
 
 // getResourceResponse is returned by getResource on success.
 type getResourceResponse struct {
@@ -6685,6 +7035,14 @@ type linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent struct {
 	Id string `json:"id"`
 	// Human-readable display name shown in the UI.
 	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value tags assigned directly to this component.
+	Tags map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Id, and is useful for accessing the field via an interface.
@@ -6693,6 +7051,104 @@ func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetId()
 // GetName returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Name, and is useful for accessing the field via an interface.
 func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetName() string {
 	return v.Name
+}
+
+// GetDescription returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Description, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetTags returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Tags, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetTags() map[string]any {
+	return v.Tags
+}
+
+// GetCreatedAt returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallinkComponentsLinkComponentsLinkPayloadResultLinkFromComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Tags json.RawMessage `json:"tags"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) __premarshalJSON() (*__premarshallinkComponentsLinkComponentsLinkPayloadResultLinkFromComponent, error) {
+	var retval __premarshallinkComponentsLinkComponentsLinkPayloadResultLinkFromComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Tags: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
 }
 
 // linkComponentsLinkComponentsLinkPayloadResultLinkToComponent includes the requested fields of the GraphQL type Component.
@@ -6712,6 +7168,14 @@ type linkComponentsLinkComponentsLinkPayloadResultLinkToComponent struct {
 	Id string `json:"id"`
 	// Human-readable display name shown in the UI.
 	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value tags assigned directly to this component.
+	Tags map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Id, and is useful for accessing the field via an interface.
@@ -6720,6 +7184,104 @@ func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetId() s
 // GetName returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Name, and is useful for accessing the field via an interface.
 func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetName() string {
 	return v.Name
+}
+
+// GetDescription returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Description, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetTags returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Tags, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetTags() map[string]any {
+	return v.Tags
+}
+
+// GetCreatedAt returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*linkComponentsLinkComponentsLinkPayloadResultLinkToComponent
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.linkComponentsLinkComponentsLinkPayloadResultLinkToComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallinkComponentsLinkComponentsLinkPayloadResultLinkToComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Tags json.RawMessage `json:"tags"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) __premarshalJSON() (*__premarshallinkComponentsLinkComponentsLinkPayloadResultLinkToComponent, error) {
+	var retval __premarshallinkComponentsLinkComponentsLinkPayloadResultLinkToComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Tags: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
 }
 
 // linkComponentsResponse is returned by linkComponents on success.
@@ -7421,6 +7983,8 @@ type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject struct 
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
 	Name string `json:"name"`
+	// Free-text description of what this project is for.
+	Description string `json:"description"`
 }
 
 // GetId returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject.Id, and is useful for accessing the field via an interface.
@@ -7431,6 +7995,11 @@ func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject) Ge
 // GetName returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject.Name, and is useful for accessing the field via an interface.
 func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject) GetName() string {
 	return v.Name
+}
+
+// GetDescription returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject.Description, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject) GetDescription() string {
+	return v.Description
 }
 
 // listEnvironmentsResponse is returned by listEnvironments on success.
@@ -7590,6 +8159,10 @@ type listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceRes
 	Name string `json:"name"`
 	// How this resource was created. Determines whether it can be modified through the API.
 	Origin ResourceOrigin `json:"origin"`
+	// When this resource was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this resource was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Id, and is useful for accessing the field via an interface.
@@ -7605,6 +8178,16 @@ func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanc
 // GetOrigin returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Origin, and is useful for accessing the field via an interface.
 func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetOrigin() ResourceOrigin {
 	return v.Origin
+}
+
+// GetCreatedAt returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
 }
 
 // listInstanceResourcesResponse is returned by listInstanceResources on success.
@@ -8350,6 +8933,14 @@ type listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent struct {
 	Id string `json:"id"`
 	// Human-readable display name shown in the UI.
 	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value tags assigned directly to this component.
+	Tags map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Id, and is useful for accessing the field via an interface.
@@ -8358,6 +8949,104 @@ func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetId() 
 // GetName returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Name, and is useful for accessing the field via an interface.
 func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetName() string {
 	return v.Name
+}
+
+// GetDescription returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Description, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetTags returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Tags, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetTags() map[string]any {
+	return v.Tags
+}
+
+// GetCreatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Tags json.RawMessage `json:"tags"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) __premarshalJSON() (*__premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent, error) {
+	var retval __premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Tags: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
 }
 
 // listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent includes the requested fields of the GraphQL type Component.
@@ -8377,6 +9066,14 @@ type listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent struct {
 	Id string `json:"id"`
 	// Human-readable display name shown in the UI.
 	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value tags assigned directly to this component.
+	Tags map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Id, and is useful for accessing the field via an interface.
@@ -8384,6 +9081,104 @@ func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetId() st
 
 // GetName returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Name, and is useful for accessing the field via an interface.
 func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetName() string { return v.Name }
+
+// GetDescription returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Description, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetTags returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Tags, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetTags() map[string]any {
+	return v.Tags
+}
+
+// GetCreatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkToComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Tags json.RawMessage `json:"tags"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) __premarshalJSON() (*__premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkToComponent, error) {
+	var retval __premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkToComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Tags: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
 
 // listLinksResponse is returned by listLinks on success.
 type listLinksResponse struct {
@@ -8881,13 +9676,6 @@ type listResourceTypesResourceTypesResourceTypesPageItemsResourceType struct {
 	Icon string `json:"icon"`
 	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
 	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
-	// The full JSON Schema describing the shape of data this resource type exposes to dependents.
-	//
-	// Use this to generate forms, validate inputs, or inspect the fields available on a connection
-	// of this resource type. The schema is returned verbatim, including Massdriver's `$md` extensions
-	// (e.g., `icon`, `ui`). Callers that only want the data contract can read `properties.data` or
-	// strip `$md` themselves.
-	Schema map[string]any `json:"-"`
 	// Timestamp when this resource type was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// Timestamp when this resource type was last modified (UTC).
@@ -8914,11 +9702,6 @@ func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetCo
 	return v.ConnectionOrientation
 }
 
-// GetSchema returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.Schema, and is useful for accessing the field via an interface.
-func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetSchema() map[string]any {
-	return v.Schema
-}
-
 // GetCreatedAt returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.CreatedAt, and is useful for accessing the field via an interface.
 func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetCreatedAt() time.Time {
 	return v.CreatedAt
@@ -8927,87 +9710,6 @@ func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetCr
 // GetUpdatedAt returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.UpdatedAt, and is useful for accessing the field via an interface.
 func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
-}
-
-func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*listResourceTypesResourceTypesResourceTypesPageItemsResourceType
-		Schema json.RawMessage `json:"schema"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.listResourceTypesResourceTypesResourceTypesPageItemsResourceType = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Schema
-		src := firstPass.Schema
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal listResourceTypesResourceTypesResourceTypesPageItemsResourceType.Schema: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshallistResourceTypesResourceTypesResourceTypesPageItemsResourceType struct {
-	Id string `json:"id"`
-
-	Name string `json:"name"`
-
-	Icon string `json:"icon"`
-
-	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
-
-	Schema json.RawMessage `json:"schema"`
-
-	CreatedAt time.Time `json:"createdAt"`
-
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) __premarshalJSON() (*__premarshallistResourceTypesResourceTypesResourceTypesPageItemsResourceType, error) {
-	var retval __premarshallistResourceTypesResourceTypesResourceTypesPageItemsResourceType
-
-	retval.Id = v.Id
-	retval.Name = v.Name
-	retval.Icon = v.Icon
-	retval.ConnectionOrientation = v.ConnectionOrientation
-	{
-
-		dst := &retval.Schema
-		src := v.Schema
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal listResourceTypesResourceTypesResourceTypesPageItemsResourceType.Schema: %w", err)
-		}
-	}
-	retval.CreatedAt = v.CreatedAt
-	retval.UpdatedAt = v.UpdatedAt
-	return &retval, nil
 }
 
 // listResourceTypesResponse is returned by listResourceTypes on success.
@@ -9199,6 +9901,16 @@ type listResourcesResourcesResourcesPageItemsResourceInstance struct {
 	Id string `json:"id"`
 	// Human-readable display name for the instance.
 	Name string `json:"name"`
+	// Current lifecycle state of the instance.
+	Status InstanceStatus `json:"status"`
+	// Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`.
+	Version string `json:"version"`
+	// Whether to include development (pre-release) builds when resolving the version constraint.
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// When this instance was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this instance was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns listResourcesResourcesResourcesPageItemsResourceInstance.Id, and is useful for accessing the field via an interface.
@@ -9206,6 +9918,31 @@ func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetId() strin
 
 // GetName returns listResourcesResourcesResourcesPageItemsResourceInstance.Name, and is useful for accessing the field via an interface.
 func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetName() string { return v.Name }
+
+// GetStatus returns listResourcesResourcesResourcesPageItemsResourceInstance.Status, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetStatus() InstanceStatus {
+	return v.Status
+}
+
+// GetVersion returns listResourcesResourcesResourcesPageItemsResourceInstance.Version, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetVersion() string {
+	return v.Version
+}
+
+// GetReleaseStrategy returns listResourcesResourcesResourcesPageItemsResourceInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetReleaseStrategy() ReleaseStrategy {
+	return v.ReleaseStrategy
+}
+
+// GetCreatedAt returns listResourcesResourcesResourcesPageItemsResourceInstance.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listResourcesResourcesResourcesPageItemsResourceInstance.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
 
 // listResourcesResourcesResourcesPageItemsResourceResourceType includes the requested fields of the GraphQL type ResourceType.
 // The GraphQL type's documentation follows.
@@ -9226,6 +9963,14 @@ type listResourcesResourcesResourcesPageItemsResourceResourceType struct {
 	Id string `json:"id"`
 	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
 	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns listResourcesResourcesResourcesPageItemsResourceResourceType.Id, and is useful for accessing the field via an interface.
@@ -9234,6 +9979,26 @@ func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetId() s
 // GetName returns listResourcesResourcesResourcesPageItemsResourceResourceType.Name, and is useful for accessing the field via an interface.
 func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetName() string {
 	return v.Name
+}
+
+// GetIcon returns listResourcesResourcesResourcesPageItemsResourceResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns listResourcesResourcesResourcesPageItemsResourceResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns listResourcesResourcesResourcesPageItemsResourceResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listResourcesResourcesResourcesPageItemsResourceResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
 }
 
 // listResourcesResponse is returned by listResources on success.
@@ -9966,6 +10731,14 @@ type setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEn
 	Id string `json:"id"`
 	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
 	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.Id, and is useful for accessing the field via an interface.
@@ -9976,6 +10749,26 @@ func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResu
 // GetName returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.Name, and is useful for accessing the field via an interface.
 func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetName() string {
 	return v.Name
+}
+
+// GetIcon returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
 }
 
 // setInstanceSecretResponse is returned by setInstanceSecret on success.
@@ -10832,6 +11625,14 @@ type updateResourceUpdateResourceResourcePayloadResultResourceResourceType struc
 	Id string `json:"id"`
 	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
 	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetId returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.Id, and is useful for accessing the field via an interface.
@@ -10842,6 +11643,26 @@ func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) 
 // GetName returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.Name, and is useful for accessing the field via an interface.
 func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetName() string {
 	return v.Name
+}
+
+// GetIcon returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
 }
 
 // The mutation executed by addComponent.
@@ -11061,6 +11882,10 @@ mutation createResource ($organizationId: ID!, $resourceTypeId: ID!, $input: Cre
 			resourceType {
 				id
 				name
+				icon
+				connectionOrientation
+				createdAt
+				updatedAt
 			}
 			createdAt
 			updatedAt
@@ -11298,6 +12123,10 @@ mutation exportResource ($organizationId: ID!, $id: ID!, $format: String) {
 			resourceType {
 				id
 				name
+				icon
+				connectionOrientation
+				createdAt
+				updatedAt
 			}
 			payload
 			rendered
@@ -11488,10 +12317,20 @@ query getEnvironment ($organizationId: ID!, $id: ID!) {
 						id
 						name
 						description
+						tags
+						createdAt
+						updatedAt
 					}
 					bundle {
-						name
 						id
+						name
+						version
+						description
+						icon
+						sourceUrl
+						repo
+						createdAt
+						updatedAt
 					}
 				}
 			}
@@ -11557,20 +12396,31 @@ query getInstance ($organizationId: ID!, $id: ID!) {
 		environment {
 			id
 			name
+			description
 			project {
 				id
 				name
+				description
 			}
 		}
 		bundle {
 			id
 			name
 			version
+			description
+			icon
+			sourceUrl
+			repo
+			createdAt
+			updatedAt
 		}
 		component {
 			id
 			name
 			description
+			tags
+			createdAt
+			updatedAt
 		}
 		statePaths {
 			stepName
@@ -11742,11 +12592,20 @@ query getResource ($organizationId: ID!, $id: ID!) {
 		resourceType {
 			id
 			name
+			icon
+			connectionOrientation
+			createdAt
+			updatedAt
 		}
 		field
 		instance {
 			id
 			name
+			status
+			version
+			releaseStrategy
+			createdAt
+			updatedAt
 		}
 		formats
 		payload
@@ -11879,10 +12738,18 @@ mutation linkComponents ($organizationId: ID!, $input: LinkComponentsInput!) {
 			fromComponent {
 				id
 				name
+				description
+				tags
+				createdAt
+				updatedAt
 			}
 			toComponent {
 				id
 				name
+				description
+				tags
+				createdAt
+				updatedAt
 			}
 		}
 		successful
@@ -12053,6 +12920,7 @@ query listEnvironments ($organizationId: ID!, $filter: EnvironmentsFilter, $sort
 			project {
 				id
 				name
+				description
 			}
 			cost {
 				monthlyAverage {
@@ -12115,6 +12983,8 @@ query listInstanceResources ($organizationId: ID!, $instanceId: ID!, $cursor: Cu
 					id
 					name
 					origin
+					createdAt
+					updatedAt
 				}
 			}
 		}
@@ -12254,10 +13124,18 @@ query listLinks ($organizationId: ID!, $projectId: ID!, $filter: LinksFilter, $c
 					fromComponent {
 						id
 						name
+						description
+						tags
+						createdAt
+						updatedAt
 					}
 					toComponent {
 						id
 						name
+						description
+						tags
+						createdAt
+						updatedAt
 					}
 				}
 			}
@@ -12417,7 +13295,6 @@ query listResourceTypes ($organizationId: ID!, $filter: ResourceTypesFilter, $so
 			name
 			icon
 			connectionOrientation
-			schema
 			createdAt
 			updatedAt
 		}
@@ -12471,11 +13348,20 @@ query listResources ($organizationId: ID!, $filter: ResourcesFilter, $sort: Reso
 			resourceType {
 				id
 				name
+				icon
+				connectionOrientation
+				createdAt
+				updatedAt
 			}
 			field
 			instance {
 				id
 				name
+				status
+				version
+				releaseStrategy
+				createdAt
+				updatedAt
 			}
 			formats
 			createdAt
@@ -12673,6 +13559,10 @@ mutation setEnvironmentDefault ($organizationId: ID!, $environmentId: ID!, $reso
 				resourceType {
 					id
 					name
+					icon
+					connectionOrientation
+					createdAt
+					updatedAt
 				}
 			}
 		}
@@ -12967,6 +13857,10 @@ mutation updateResource ($organizationId: ID!, $id: ID!, $input: UpdateResourceI
 			resourceType {
 				id
 				name
+				icon
+				connectionOrientation
+				createdAt
+				updatedAt
 			}
 			createdAt
 			updatedAt

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Server holds information about a Massdriver server.
@@ -41,7 +40,7 @@ func GetServer(ctx context.Context, mdClient *client.Client) (*Server, error) {
 
 func toServer(v any) (*Server, error) {
 	s := Server{}
-	if err := mapstructure.Decode(v, &s); err != nil {
+	if err := decode(v, &s); err != nil {
 		return nil, fmt.Errorf("failed to decode server: %w", err)
 	}
 	return &s, nil

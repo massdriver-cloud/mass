@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Component represents a slot in a project's blueprint backed by a bundle.
@@ -18,8 +17,8 @@ type Component struct {
 	Description string            `json:"description,omitempty" mapstructure:"description"`
 	Tags        map[string]string `json:"tags,omitempty" mapstructure:"tags"`
 	OciRepo     *OciRepo          `json:"ociRepo,omitempty" mapstructure:"ociRepo,omitempty"`
-	CreatedAt   time.Time         `json:"createdAt,omitempty" mapstructure:"createdAt"`
-	UpdatedAt   time.Time         `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+	CreatedAt   time.Time         `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt   time.Time         `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
 }
 
 // Link represents a design-time wire between two components in a blueprint.
@@ -29,8 +28,8 @@ type Link struct {
 	ToField       string     `json:"toField" mapstructure:"toField"`
 	FromComponent *Component `json:"fromComponent,omitempty" mapstructure:"fromComponent,omitempty"`
 	ToComponent   *Component `json:"toComponent,omitempty" mapstructure:"toComponent,omitempty"`
-	CreatedAt     time.Time  `json:"createdAt,omitempty" mapstructure:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+	CreatedAt     time.Time  `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
 }
 
 // ListLinks returns every link in a project's blueprint, optionally filtered, following pagination.
@@ -128,7 +127,7 @@ func UnlinkComponents(ctx context.Context, mdClient *client.Client, linkID strin
 
 func toComponent(v any) (*Component, error) {
 	c := Component{}
-	if err := mapstructure.Decode(v, &c); err != nil {
+	if err := decode(v, &c); err != nil {
 		return nil, fmt.Errorf("failed to decode component: %w", err)
 	}
 	return &c, nil
@@ -136,7 +135,7 @@ func toComponent(v any) (*Component, error) {
 
 func toLink(v any) (*Link, error) {
 	l := Link{}
-	if err := mapstructure.Decode(v, &l); err != nil {
+	if err := decode(v, &l); err != nil {
 		return nil, fmt.Errorf("failed to decode link: %w", err)
 	}
 	return &l, nil

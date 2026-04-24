@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Bundle represents a Massdriver bundle (IaC module) and its metadata.
@@ -18,8 +17,8 @@ type Bundle struct {
 	Icon        string    `json:"icon,omitempty" mapstructure:"icon"`
 	SourceURL   string    `json:"sourceUrl,omitempty" mapstructure:"sourceUrl"`
 	Repo        string    `json:"repo,omitempty" mapstructure:"repo"`
-	CreatedAt   time.Time `json:"createdAt,omitempty" mapstructure:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+	CreatedAt   time.Time `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
 }
 
 // GetBundle retrieves a bundle by its identifier (e.g., "aws-aurora-postgres@1.2.3" or "aws-aurora-postgres@latest").
@@ -52,7 +51,7 @@ func ListBundles(ctx context.Context, mdClient *client.Client, filter *BundlesFi
 
 func toBundle(v any) (*Bundle, error) {
 	b := Bundle{}
-	if err := mapstructure.Decode(v, &b); err != nil {
+	if err := decode(v, &b); err != nil {
 		return nil, fmt.Errorf("failed to decode bundle: %w", err)
 	}
 	return &b, nil

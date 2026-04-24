@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Environment represents a Massdriver deployment environment within a project.
@@ -53,22 +52,22 @@ func ListEnvironments(ctx context.Context, mdClient *client.Client, filter *Envi
 
 func toEnvironment(v any) (*Environment, error) {
 	env := Environment{}
-	if err := mapstructure.Decode(v, &env); err != nil {
+	if err := decode(v, &env); err != nil {
 		return nil, fmt.Errorf("failed to decode environment: %w", err)
 	}
 
 	// Unwrap paginated blueprint.instances (API returns {blueprint: {instances: {items: [...]}}})
 	type instPage struct {
-		Items []Instance `mapstructure:"items"`
+		Items []Instance `json:"items"`
 	}
 	type blueprint struct {
-		Instances instPage `mapstructure:"instances"`
+		Instances instPage `json:"instances"`
 	}
 	type hasBP struct {
-		Blueprint blueprint `mapstructure:"blueprint"`
+		Blueprint blueprint `json:"blueprint"`
 	}
 	var wrapper hasBP
-	if err := mapstructure.Decode(v, &wrapper); err == nil && len(wrapper.Blueprint.Instances.Items) > 0 {
+	if err := decode(v, &wrapper); err == nil && len(wrapper.Blueprint.Instances.Items) > 0 {
 		env.Blueprint = &Blueprint{
 			Instances: wrapper.Blueprint.Instances.Items,
 		}
@@ -148,8 +147,8 @@ func DeleteEnvironment(ctx context.Context, mdClient *client.Client, id string) 
 type EnvironmentDefault struct {
 	ID        string                     `json:"id" mapstructure:"id"`
 	Resource  EnvironmentDefaultResource `json:"resource" mapstructure:"resource"`
-	CreatedAt time.Time                  `json:"createdAt" mapstructure:"createdAt"`
-	UpdatedAt time.Time                  `json:"updatedAt" mapstructure:"updatedAt"`
+	CreatedAt time.Time                  `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt time.Time                  `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
 }
 
 // EnvironmentDefaultResource is a resource referenced by an environment default.
@@ -185,7 +184,7 @@ func SetEnvironmentDefault(ctx context.Context, mdClient *client.Client, environ
 
 func toEnvironmentDefault(v any) (*EnvironmentDefault, error) {
 	ed := EnvironmentDefault{}
-	if err := mapstructure.Decode(v, &ed); err != nil {
+	if err := decode(v, &ed); err != nil {
 		return nil, fmt.Errorf("failed to decode environment default: %w", err)
 	}
 	return &ed, nil

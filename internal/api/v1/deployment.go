@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Deployment represents a record of an infrastructure provisioning operation.
@@ -20,9 +19,9 @@ type Deployment struct {
 	Message            string    `json:"message,omitempty" mapstructure:"message"`
 	DeployedBy         string    `json:"deployedBy,omitempty" mapstructure:"deployedBy"`
 	ElapsedTime        int       `json:"elapsedTime" mapstructure:"elapsedTime"`
-	CreatedAt          time.Time `json:"createdAt,omitempty" mapstructure:"createdAt"`
-	UpdatedAt          time.Time `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
-	LastTransitionedAt time.Time `json:"lastTransitionedAt,omitempty" mapstructure:"lastTransitionedAt"`
+	CreatedAt          time.Time `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt          time.Time `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
+	LastTransitionedAt time.Time `json:"lastTransitionedAt,omitzero" mapstructure:"lastTransitionedAt"`
 	Instance           *Instance `json:"instance,omitempty" mapstructure:"instance,omitempty"`
 }
 
@@ -79,7 +78,7 @@ func CreateDeployment(ctx context.Context, mdClient *client.Client, instanceID s
 
 func toDeployment(v any) (*Deployment, error) {
 	dep := Deployment{}
-	if err := mapstructure.Decode(v, &dep); err != nil {
+	if err := decode(v, &dep); err != nil {
 		return nil, fmt.Errorf("failed to decode deployment: %w", err)
 	}
 	return &dep, nil

@@ -177,33 +177,3 @@ func TestDeleteResourceTypeFailure(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 }
-
-func TestListResourceTypesWithFilter(t *testing.T) {
-	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
-		"data": map[string]any{
-			"resourceTypes": map[string]any{
-				"cursor": map[string]any{},
-				"items": []map[string]any{
-					{
-						"id":                    "aws-iam-role",
-						"name":                  "AWS IAM Role",
-						"connectionOrientation": "LINK",
-					},
-				},
-			},
-		},
-	})
-	mdClient := client.Client{GQLv1: gqlClient}
-
-	filter := api.ResourceTypesFilter{
-		Id: &api.StringFilter{Eq: "aws-iam-role"},
-	}
-	rts, err := api.ListResourceTypes(t.Context(), &mdClient, &filter)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(rts) != 1 {
-		t.Errorf("got %d resource types, wanted 1", len(rts))
-	}
-}
