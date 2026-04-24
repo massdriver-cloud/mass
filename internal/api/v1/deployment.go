@@ -25,6 +25,13 @@ type Deployment struct {
 	Instance           *Instance `json:"instance,omitempty" mapstructure:"instance,omitempty"`
 }
 
+// DeploymentLog is a single batch of logs emitted by the provisioner during a deployment.
+// The message may span multiple lines separated by "\n".
+type DeploymentLog struct {
+	Timestamp time.Time `json:"timestamp,omitzero" mapstructure:"timestamp"`
+	Message   string    `json:"message" mapstructure:"message"`
+}
+
 // GetDeployment retrieves a deployment by ID from the Massdriver API.
 func GetDeployment(ctx context.Context, mdClient *client.Client, id string) (*Deployment, error) {
 	response, err := getDeployment(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
@@ -52,6 +59,24 @@ func ListDeployments(ctx context.Context, mdClient *client.Client, filter *Deplo
 	}
 
 	return deployments, nil
+}
+
+// GetDeploymentLogs returns all log batches emitted for the given deployment so far, oldest first.
+func GetDeploymentLogs(ctx context.Context, mdClient *client.Client, deploymentID string) ([]DeploymentLog, error) {
+	response, err := getDeploymentLogs(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get logs for deployment %s: %w", deploymentID, err)
+	}
+
+	logs := make([]DeploymentLog, 0, len(response.Deployment.Logs))
+	for _, l := range response.Deployment.Logs {
+		log := DeploymentLog{}
+		if decodeErr := decode(l, &log); decodeErr != nil {
+			return nil, fmt.Errorf("failed to decode deployment log: %w", decodeErr)
+		}
+		logs = append(logs, log)
+	}
+	return logs, nil
 }
 
 // CreateDeployment starts a new deployment for an instance.

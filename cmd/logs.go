@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
@@ -42,9 +42,8 @@ func runLogs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error getting deployment logs: %w", err)
 	}
 
-	// Output logs to stdout
 	for _, log := range logs {
-		fmt.Fprint(os.Stdout, log.Content)
+		fmt.Fprint(os.Stdout, log.Message)
 	}
 
 	return nil

@@ -609,11 +609,10 @@ func (v *DeploymentActionFilter) GetIn() []DeploymentAction { return v.In }
 // APPROVED --> RUNNING: "Execution starts"
 // RUNNING --> COMPLETED: "Success"
 // RUNNING --> FAILED: "Error"
-// RUNNING --> ABORTED: "Manually stopped"
 // ```
 //
-// Once a deployment reaches a terminal state (`COMPLETED`, `FAILED`, `ABORTED`,
-// or `REJECTED`), it cannot transition again.
+// Once a deployment reaches a terminal state (`COMPLETED`, `FAILED`, or
+// `REJECTED`), it cannot transition again.
 type DeploymentStatus string
 
 const (
@@ -631,8 +630,6 @@ const (
 	DeploymentStatusCompleted DeploymentStatus = "COMPLETED"
 	// The deployment encountered an error. Check deployment logs for details.
 	DeploymentStatusFailed DeploymentStatus = "FAILED"
-	// The deployment was manually stopped before it could finish.
-	DeploymentStatusAborted DeploymentStatus = "ABORTED"
 )
 
 var AllDeploymentStatus = []DeploymentStatus{
@@ -643,7 +640,6 @@ var AllDeploymentStatus = []DeploymentStatus{
 	DeploymentStatusRunning,
 	DeploymentStatusCompleted,
 	DeploymentStatusFailed,
-	DeploymentStatusAborted,
 }
 
 // Filter by deployment status.
@@ -1067,7 +1063,7 @@ var AllOciReposSortField = []OciReposSortField{
 // # All instances using "db.r5.xlarge"
 // {
 // "params": {
-// "dimension": "database.instance_type",
+// "dimension": ".database.instance_type",
 // "eq": "db.r5.xlarge"
 // }
 // }
@@ -1075,13 +1071,13 @@ var AllOciReposSortField = []OciReposSortField{
 // # All instances whose region contains "us-east"
 // {
 // "params": {
-// "dimension": "region",
+// "dimension": ".region",
 // "contains": "us-east"
 // }
 // }
 // ```
 type ParamDimensionFilter struct {
-	// Dot-delimited path to the configuration parameter (e.g., `"database.instance_type"`). Use the `paramDimensions` query to discover available paths.
+	// jq-style path to the configuration parameter (e.g., `".database.instance_type"` or `".containers[0].image"`). Use the `paramDimensions` query to discover available paths.
 	Dimension string `json:"dimension"`
 	// Return only instances whose parameter value exactly equals this string.
 	Eq string `json:"eq,omitempty"`
@@ -1837,6 +1833,18 @@ func (v *__getDeploymentInput) GetOrganizationId() string { return v.Organizatio
 
 // GetId returns __getDeploymentInput.Id, and is useful for accessing the field via an interface.
 func (v *__getDeploymentInput) GetId() string { return v.Id }
+
+// __getDeploymentLogsInput is used internally by genqlient
+type __getDeploymentLogsInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getDeploymentLogsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getDeploymentLogsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getDeploymentLogsInput.Id, and is useful for accessing the field via an interface.
+func (v *__getDeploymentLogsInput) GetId() string { return v.Id }
 
 // __getEnvironmentInput is used internally by genqlient
 type __getEnvironmentInput struct {
@@ -4376,6 +4384,68 @@ func (v *getDeploymentDeploymentInstanceEnvironmentProject) GetId() string { ret
 
 // GetName returns getDeploymentDeploymentInstanceEnvironmentProject.Name, and is useful for accessing the field via an interface.
 func (v *getDeploymentDeploymentInstanceEnvironmentProject) GetName() string { return v.Name }
+
+// getDeploymentLogsDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A record of an infrastructure provisioning operation.
+//
+// Each deployment tracks a single action (`PROVISION`, `DECOMMISSION`, or `PLAN`) against
+// an instance. Deployments are immutable once created — you cannot modify a deployment,
+// only create new ones.
+//
+// Use the `status` field to monitor progress and `elapsed_time` to track duration.
+// The `deployed_by` field identifies the user or service account that initiated the operation.
+type getDeploymentLogsDeployment struct {
+	// Unique identifier for this deployment.
+	Id string `json:"id"`
+	// All log batches emitted for this deployment so far, ordered oldest-first.
+	//
+	// Each entry is a single batch (`logset`) as emitted by the provisioner — its
+	// `message` may contain multiple `\n`-separated lines written in the same
+	// flush. For live streaming, open a `deploymentEvents` subscription after
+	// loading this field; the subscription fires on every subsequent append.
+	Logs []getDeploymentLogsDeploymentLogsDeploymentLog `json:"logs"`
+}
+
+// GetId returns getDeploymentLogsDeployment.Id, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogsDeployment) GetId() string { return v.Id }
+
+// GetLogs returns getDeploymentLogsDeployment.Logs, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogsDeployment) GetLogs() []getDeploymentLogsDeploymentLogsDeploymentLog {
+	return v.Logs
+}
+
+// getDeploymentLogsDeploymentLogsDeploymentLog includes the requested fields of the GraphQL type DeploymentLog.
+// The GraphQL type's documentation follows.
+//
+// A single batch of deployment logs emitted by the provisioner.
+//
+// One `DeploymentLog` corresponds to one worker flush, which may contain
+// multiple log lines joined by `\n` in the `message` field.
+type getDeploymentLogsDeploymentLogsDeploymentLog struct {
+	// When the provisioner flushed this batch of logs (UTC).
+	Timestamp time.Time `json:"timestamp"`
+	// Raw log text. May span multiple lines separated by `\n`.
+	Message string `json:"message"`
+}
+
+// GetTimestamp returns getDeploymentLogsDeploymentLogsDeploymentLog.Timestamp, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogsDeploymentLogsDeploymentLog) GetTimestamp() time.Time { return v.Timestamp }
+
+// GetMessage returns getDeploymentLogsDeploymentLogsDeploymentLog.Message, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogsDeploymentLogsDeploymentLog) GetMessage() string { return v.Message }
+
+// getDeploymentLogsResponse is returned by getDeploymentLogs on success.
+type getDeploymentLogsResponse struct {
+	// Fetch a single deployment by its unique identifier.
+	//
+	// Returns the full deployment record including status, timing, and the associated instance.
+	Deployment getDeploymentLogsDeployment `json:"deployment"`
+}
+
+// GetDeployment returns getDeploymentLogsResponse.Deployment, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogsResponse) GetDeployment() getDeploymentLogsDeployment { return v.Deployment }
 
 // getDeploymentResponse is returned by getDeployment on success.
 type getDeploymentResponse struct {
@@ -12263,6 +12333,46 @@ func getDeployment(
 	}
 
 	data_ = &getDeploymentResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by getDeploymentLogs.
+const getDeploymentLogs_Operation = `
+query getDeploymentLogs ($organizationId: ID!, $id: ID!) {
+	deployment(organizationId: $organizationId, id: $id) {
+		id
+		logs {
+			timestamp
+			message
+		}
+	}
+}
+`
+
+func getDeploymentLogs(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *getDeploymentLogsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getDeploymentLogs",
+		Query:  getDeploymentLogs_Operation,
+		Variables: &__getDeploymentLogsInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &getDeploymentLogsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

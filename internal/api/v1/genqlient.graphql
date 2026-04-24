@@ -756,6 +756,16 @@ query getDeployment($organizationId: ID!, $id: ID!) {
   }
 }
 
+query getDeploymentLogs($organizationId: ID!, $id: ID!) {
+  deployment(organizationId: $organizationId, id: $id) {
+    id
+    logs {
+      timestamp
+      message
+    }
+  }
+}
+
 mutation createDeployment($organizationId: ID!, $id: ID!, $input: CreateDeploymentInput!) {
   createDeployment(organizationId: $organizationId, id: $id, input: $input) {
     result {

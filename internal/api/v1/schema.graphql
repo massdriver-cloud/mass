@@ -90,6 +90,44 @@ type RootQueryType {
   ): Environment
 
   """
+  Compare two environments in the same project, instance-by-instance.
+
+  Instances are paired by component. For each component, the result reports
+  the resolved version on each side and a flat, leaf-level diff of the
+  configured params. Environment-level tags and default wiring are not part
+  of the comparison.
+
+  Both environments must belong to the same project; passing environments
+  from different projects returns a `FORBIDDEN` error because components
+  don't cross project boundaries.
+
+  ```graphql
+  query {
+    compareEnvironments(organizationId: "my-org", sourceId: "staging", targetId: "prod") {
+      source { id } target { id }
+      instances {
+        component { id name }
+        source { id } target { id }
+        version { source target equal }
+        params { path equal source { value } target { value } }
+        equal
+      }
+    }
+  }
+  ```
+  """
+  compareEnvironments(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The source environment's identifier."
+    sourceId: ID!
+
+    "The target environment's identifier."
+    targetId: ID!
+  ): EnvironmentComparison
+
+  """
   List all instances you have access to.
 
   Returns a paginated list of deployed infrastructure across all projects
@@ -222,6 +260,40 @@ type RootQueryType {
     "The deployment's unique identifier."
     id: ID!
   ): Deployment
+
+  """
+  Compare two deployments side-by-side.
+
+  Returns the bundle version on each side and a flat, leaf-level diff of
+  the snapshotted params. Useful for auditing what a deploy changed, or
+  for contrasting deploys from different points in time.
+
+  Both deployments must belong to the requesting organization. There is no
+  requirement that they target the same instance — callers can pass any
+  two deployments they have access to, though comparisons across unrelated
+  instances will naturally show every leaf as "only on one side".
+
+  ```graphql
+  query {
+    compareDeployments(organizationId: "my-org", sourceId: "<uuid-a>", targetId: "<uuid-b>") {
+      source { id status version }
+      target { id status version }
+      version { source target equal }
+      params { path source { value } target { value } equal }
+    }
+  }
+  ```
+  """
+  compareDeployments(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The source deployment's unique identifier."
+    sourceId: ID!
+
+    "The target deployment's unique identifier."
+    targetId: ID!
+  ): DeploymentComparison
 
   """
   List published bundle versions in your organization's catalog.
@@ -728,6 +800,42 @@ type RootQueryType {
     "The resource's unique identifier."
     id: ID!
   ): Resource
+
+  """
+  List access tokens you own in an organization.
+
+  Returns only tokens owned by the authenticated caller. Accounts see their own personal
+  tokens; service accounts see tokens issued to themselves. There is no admin view of
+  another user's personal tokens.
+
+  **Example:**
+
+  ```graphql
+  query {
+    accessTokens(
+      organizationId: "my-org"
+      filter: { revoked: false }
+      sort: { field: EXPIRES_AT, order: ASC }
+    ) {
+      items { id name prefix expiresAt }
+      cursor { next }
+    }
+  }
+  ```
+  """
+  accessTokens(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "Optional filters to narrow results."
+    filter: AccessTokensFilter
+
+    "Sort field and direction. Defaults to newest first."
+    sort: AccessTokensSort
+
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): AccessTokensPage
 }
 
 type RootSubscriptionType {
@@ -863,6 +971,68 @@ type RootSubscriptionType {
     "The identifier of the instance to subscribe to."
     instanceId: ID!
   ): InstanceEventsPayload
+
+  """
+  Subscribe to lifecycle events for a single deployment via WebSocket.
+
+  Receives a `DeploymentEvent` when the deployment is created or transitions
+  status (e.g., `PENDING` → `RUNNING` → `COMPLETED`). For log deltas use
+  `deploymentLogs` instead — this subscription does not fire on log appends.
+
+  Re-select whatever fields you need on `deployment` — Apollo will merge the
+  payload into its cache by `Deployment:id`.
+
+  ```graphql
+  subscription {
+    deploymentEvents(organizationId: "my-org", deploymentId: "a1b2c3...") {
+      ... on Event { action timestamp }
+      ... on DeploymentEvent {
+        deployment {
+          id
+          status
+          elapsedTime
+        }
+      }
+    }
+  }
+  ```
+  """
+  deploymentEvents(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The deployment's unique identifier."
+    deploymentId: ID!
+  ): DeploymentEventsPayload
+
+  """
+  Subscribe to a single deployment's logs as they're appended via WebSocket.
+
+  Receives one `DeploymentLog` per worker flush — each flush is a batch of
+  lines written as a single object in storage. Unlike `deploymentEvents`,
+  this subscription does **not** re-send the entire deployment on every
+  message; it streams only the new log batch. Cheap to keep open even for
+  deployments producing logs at high cadence.
+
+  For the initial backfill, query `deployment { logs { ... } }` once and
+  render the result, then open this subscription to stream new batches.
+
+  ```graphql
+  subscription {
+    deploymentLogs(organizationId: "my-org", deploymentId: "a1b2c3...") {
+      timestamp
+      message
+    }
+  }
+  ```
+  """
+  deploymentLogs(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The deployment's unique identifier."
+    deploymentId: ID!
+  ): DeploymentLog!
 }
 
 type RootMutationType {
@@ -956,12 +1126,12 @@ type RootMutationType {
   """
   Create a new environment by forking an existing one.
 
-  The new environment is created empty and linked to the parent via its `parent`
-  field. Instances are initialized from the project's components but start with
-  blank configuration — instance-level state (params, secrets, remote references)
-  is not copied. Use `copyInstance` per instance to seed configuration from the
-  parent. Pass `copyEnvironmentDefaults: true` to also copy the parent's default
-  resource connections.
+  The new environment is linked to the parent via its `parent` field. Instances
+  are initialized from the project's components and seeded with the parent's
+  instance `params`. Secrets and remote references are not copied — use
+  `copyInstance` per instance to carry those over as well. Pass
+  `copyEnvironmentDefaults: true` to also copy the parent's default resource
+  connections.
   """
   forkEnvironment(
     "Your organization's unique identifier."
@@ -1426,9 +1596,9 @@ type RootMutationType {
   """
   Create a scoped, time-limited access token.
 
-  Access tokens provide finer-grained, short-lived credentials compared to the service
-  account's permanent secret. Use them for CI/CD jobs, temporary automation, or any
-  scenario where you want to limit the blast radius of a leaked credential.
+  Accounts create personal access tokens for themselves; service accounts create tokens for
+  their own identity. An organization admin can additionally create a token on behalf of a
+  service account by passing `serviceAccountId` — account-to-account delegation is not supported.
 
   The `token` field in the response contains the full bearer token value — **it is only
   shown once**. Store it securely before navigating away. If you lose it, revoke the
@@ -1436,15 +1606,13 @@ type RootMutationType {
 
   Defaults to a 60-minute expiration if `expiresInMinutes` is not specified.
 
-  Currently, only service accounts can create access tokens.
-
   **Example:**
 
   ```graphql
   mutation {
     createAccessToken(
       organizationId: "my-org"
-      input: { name: "deploy-token", scopes: ["deploy"], expiresInMinutes: 30 }
+      input: { name: "deploy-token", scopes: ["*"], expiresInMinutes: 30 }
     ) {
       result {
         id
@@ -1469,9 +1637,10 @@ type RootMutationType {
   """
   Revoke an access token.
 
-  The token immediately stops working for all API requests. The token record is preserved
-  with a `revokedAt` timestamp for audit purposes. Revoking an already-revoked or expired
-  token is a no-op that returns the existing record.
+  Only the owning subject can revoke a token — organization admins cannot revoke another
+  user's personal tokens. The token immediately stops working for all API requests. The
+  token record is preserved with a `revokedAt` timestamp for audit purposes. Revoking an
+  already-revoked or expired token is a no-op that returns the existing record.
   """
   revokeAccessToken(
     "Your organization's unique identifier."
@@ -2187,6 +2356,30 @@ type OciRepoEvent implements Event {
 }
 
 """
+A lifecycle event for a deployment.
+
+Emitted when a deployment is created (`CREATED`) and each time its status
+transitions (`UPDATED`) — e.g., `PENDING` → `RUNNING` → `COMPLETED`. Log
+deltas are **not** carried on this event; subscribe to `deploymentLogs` for
+streaming log content.
+
+Subscribe via `deploymentEvents` for a single deployment's feed, or via
+`instanceEvents` / `environmentEvents` to see every deployment in an
+instance or environment.
+
+On `UPDATED`, re-select whichever fields you need (typically `status` and
+`elapsedTime`) — Apollo will merge the payload into its cache by `Deployment:id`.
+"""
+type DeploymentEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The deployment that was created or updated."
+  deployment: Deployment!
+}
+
+"""
 A lifecycle event for a published bundle version.
 
 Emitted with action `PUBLISHED` each time a new bundle release is pushed to
@@ -2218,17 +2411,27 @@ union ProjectEventsPayload = ProjectEvent | EnvironmentEvent | ComponentEvent | 
 Events delivered by the `environmentEvents` subscription.
 
 Covers the environment itself, every instance provisioned into it, every
-connection wired within it, and every alarm attached to those instances.
+connection wired within it, every alarm attached to those instances, and
+every deployment run against them.
 """
-union EnvironmentEventsPayload = EnvironmentEvent | InstanceEvent | ConnectionEvent | AlarmEvent
+union EnvironmentEventsPayload = EnvironmentEvent | InstanceEvent | ConnectionEvent | AlarmEvent | DeploymentEvent
 
 """
 Events delivered by the `instanceEvents` subscription.
 
-Covers the instance itself, incoming connections that terminate on it, and
-alarms attached to it.
+Covers the instance itself, incoming connections that terminate on it,
+alarms attached to it, and deployments run against it.
 """
-union InstanceEventsPayload = InstanceEvent | ConnectionEvent | AlarmEvent
+union InstanceEventsPayload = InstanceEvent | ConnectionEvent | AlarmEvent | DeploymentEvent
+
+"""
+Events delivered by the `deploymentEvents` subscription.
+
+A single-deployment feed. Fires on creation and every status transition.
+For log content, subscribe to `deploymentLogs` — log deltas don't travel on
+this feed.
+"""
+union DeploymentEventsPayload = DeploymentEvent
 
 """
 How a resource was created, which determines how it can be managed.
@@ -2813,6 +3016,42 @@ type AccessTokenPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: AccessToken
+}
+
+type AccessTokensPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type access_token."
+  items: [AccessToken]
+}
+
+"Fields by which the access tokens list can be sorted."
+enum AccessTokensSortField {
+  "When the token was created."
+  CREATED_AT
+
+  "When the token expires."
+  EXPIRES_AT
+}
+
+"Sort options for the access tokens list."
+input AccessTokensSort {
+  "Which field to sort by."
+  field: AccessTokensSortField!
+
+  "Ascending (`ASC`) or descending (`DESC`)."
+  order: SortOrder!
+}
+
+"""
+Filters for the access tokens list.
+
+Combine filters with AND logic. Omit a filter to not restrict on that dimension.
+"""
+input AccessTokensFilter {
+  "Narrow by status. `true` returns only revoked tokens, `false` returns only active tokens (not revoked and not expired), omit the field to return all tokens."
+  revoked: Boolean
 }
 
 "Create a scoped, time-limited access token for API authentication."
@@ -4416,11 +4655,10 @@ stateDiagram-v2
   APPROVED --> RUNNING: "Execution starts"
   RUNNING --> COMPLETED: "Success"
   RUNNING --> FAILED: "Error"
-  RUNNING --> ABORTED: "Manually stopped"
 ```
 
-Once a deployment reaches a terminal state (`COMPLETED`, `FAILED`, `ABORTED`,
-or `REJECTED`), it cannot transition again.
+Once a deployment reaches a terminal state (`COMPLETED`, `FAILED`, or
+`REJECTED`), it cannot transition again.
 """
 enum DeploymentStatus {
   "A proposed deployment awaiting human approval. Proposed deployments are not scheduled and do not block the queue."
@@ -4443,9 +4681,6 @@ enum DeploymentStatus {
 
   "The deployment encountered an error. Check deployment logs for details."
   FAILED
-
-  "The deployment was manually stopped before it could finish."
-  ABORTED
 }
 
 """
@@ -4541,6 +4776,9 @@ type Deployment {
   "The bundle version used for this deployment (e.g., `1.2.0`)."
   version: String!
 
+  "Snapshot of the instance configuration at the time this deployment was enqueued. Independent of the instance's current `params` — later edits do not mutate this record."
+  params: Map
+
   "An optional message describing the purpose of this deployment, similar to a commit message."
   message: String
 
@@ -4567,6 +4805,30 @@ type Deployment {
 
   "The instance that this deployment operates on."
   instance: Instance
+
+  """
+  All log batches emitted for this deployment so far, ordered oldest-first.
+
+  Each entry is a single batch (`logset`) as emitted by the provisioner — its
+  `message` may contain multiple `\n`-separated lines written in the same
+  flush. For live streaming, open a `deploymentEvents` subscription after
+  loading this field; the subscription fires on every subsequent append.
+  """
+  logs: [DeploymentLog!]!
+}
+
+"""
+A single batch of deployment logs emitted by the provisioner.
+
+One `DeploymentLog` corresponds to one worker flush, which may contain
+multiple log lines joined by `\n` in the `message` field.
+"""
+type DeploymentLog {
+  "When the provisioner flushed this batch of logs (UTC)."
+  timestamp: DateTime!
+
+  "Raw log text. May span multiple lines separated by `\\n`."
+  message: String!
 }
 
 type DeploymentsPage {
@@ -4586,6 +4848,30 @@ type DeploymentPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: Deployment
+}
+
+"""
+Side-by-side comparison of two deployments.
+
+Returned by `compareDeployments`. Use this to audit what changed between two
+points in an instance's history ("what did this deploy change?") or to
+contrast two different deployments against each other.
+
+The comparison is limited to snapshotted configuration — bundle version and
+params. Runtime state, logs, and produced artifacts are out of scope.
+"""
+type DeploymentComparison {
+  "The deployment on the source side of the comparison."
+  source: Deployment!
+
+  "The deployment on the target side of the comparison."
+  target: Deployment!
+
+  "Bundle version on each side, with an `equal` flag for quick check."
+  version: VersionComparison!
+
+  "Flat, leaf-level diff of the two deployments' snapshotted params. Empty when both snapshots have no values to compare."
+  params: [ParamComparison!]!
 }
 
 """
@@ -4785,7 +5071,7 @@ the `paramDimension` filter on the `instances` query to build infrastructure
 search dashboards.
 """
 type ParamDimension {
-  "Dot-separated path to the field (e.g., `database.instance_type`)."
+  "jq-style path to the field (e.g., `.database.instance_type`). Pass this value unchanged as the `dimension` argument of `paramDimensionFilter`."
   field: String!
 
   "Human-readable field name, sourced from the bundle schema's `title`."
@@ -4989,6 +5275,27 @@ type InstanceDependenciesPage {
 }
 
 """
+A flattened leaf value from one of this instance's resources.
+
+Each entry is a single scalar produced by the instance's deployments (e.g. a
+database hostname, a queue URL). Values are drawn from both the instance's own
+provisioned resources and any remote references wired in.
+
+Sensitive fields (marked `$md.sensitive: true` on the resource type's schema)
+are replaced with `"[SENSITIVE]"`.
+"""
+type InstanceProperty {
+  "Display label built from the resource's title and the field's title (e.g. `Database: Hostname`)."
+  name: String!
+
+  "jq-style path to the value from the instance root. Identifier-safe keys render as `.key`; keys with special characters are quoted (`.\"key.with.dots\"`); array elements use `[n]`. Examples: `.database.port`, `.cluster.nodes[0].host`, `.labels.\"app.kubernetes.io\/name\"`."
+  path: String!
+
+  "Scalar value at this path, serialized as a string. Null if the underlying value is null. Sensitive fields appear as `[SENSITIVE]`."
+  value: String
+}
+
+"""
 A deployed piece of infrastructure in an environment.
 
 An instance is the **runtime representation** of a component. When you add a
@@ -5031,6 +5338,23 @@ type Instance {
 
   "Key-value tags assigned directly to this instance."
   tags: Map!
+
+  """
+  The full tag map the authorization system evaluates policies against for
+  this instance — user tags merged across the hierarchy plus auto-injected
+  `md-*` system tags.
+
+  User-tag merge precedence (higher overrides lower): project > environment > component > instance.
+
+  System tags always present on an instance:
+  - `md-id` — the instance's identifier
+  - `md-project` — the project's identifier
+  - `md-environment` — the environment's local identifier
+  - `md-component` — the component's local identifier
+  - `md-repo` — the bundle's repo name
+  - `md-bundle` — `"{bundle}@{version}"` of the resolved release
+  """
+  effectiveTags: Map!
 
   "Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`."
   version: String!
@@ -5087,6 +5411,20 @@ type Instance {
   `stateUrl` to configure your Terraform backend or inspect state externally.
   """
   statePaths: [InstanceStatePath!]!
+
+  """
+  Flattened list of scalar leaf values published by this instance's resources.
+
+  Each entry corresponds to one scalar in a resource's payload (e.g. a database
+  hostname, a queue URL). Entries are drawn from both provisioned resources and
+  any remote references set on this instance.
+
+  Sensitive fields (marked `$md.sensitive: true` on the resource type's schema)
+  are returned as `"[SENSITIVE]"`. Paths are jq-style — identifier-safe keys as
+  `.key`, non-identifier keys quoted (`."app.kubernetes.io/name"`), array
+  elements as `[n]` (e.g. `.cluster.nodes[0].host`).
+  """
+  properties: [InstanceProperty!]!
 
   """
   Paginated list of resources produced by this instance.
@@ -5466,6 +5804,56 @@ type EnvironmentPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: Environment
+}
+
+"""
+A per-component comparison between two environments.
+
+Instances are paired across environments by their underlying component.
+When only one side has an instance for a given component, the other
+side's `source`/`target` is `null`, and every param appears as present
+on the populated side only.
+"""
+type InstanceComparison {
+  "The component shared (or would-be-shared) by the two instances being compared."
+  component: Component!
+
+  "The instance on the source environment, or `null` if the component is not deployed there."
+  source: Instance
+
+  "The instance on the target environment, or `null` if the component is not deployed there."
+  target: Instance
+
+  "The instance's resolved version on each side, with an `equal` flag."
+  version: VersionComparison!
+
+  "Flat, leaf-level diff of the two instances' configured params."
+  params: [ParamComparison!]!
+
+  "`true` when both instances are present, the versions match, and every param is equal."
+  equal: Boolean!
+}
+
+"""
+Side-by-side comparison of two environments in the same project.
+
+Returned by `compareEnvironments`. The comparison pairs instances by
+component and reports a per-instance diff of the resolved version and
+configured params. Environment-level tags and default resource wiring
+are intentionally out of scope.
+
+Environments must belong to the same project — cross-project comparisons
+are not meaningful because components are project-scoped.
+"""
+type EnvironmentComparison {
+  "The environment on the source side of the comparison."
+  source: Environment!
+
+  "The environment on the target side of the comparison."
+  target: Environment!
+
+  "Per-component diff, sorted by component identifier for a stable output."
+  instances: [InstanceComparison!]!
 }
 
 "Fields available for sorting the projects list."
@@ -6149,6 +6537,66 @@ type OciRepoReleaseChannelsPage {
 }
 
 """
+One leaf value in a params comparison, captured for a single side.
+
+`present` indicates whether the key exists on this side:
+- `present: false` means the key is missing entirely.
+- `present: true, value: null` means the key exists with a JSON `null` value.
+- `present: true, value: "..."` means the key exists with the given value.
+
+`value` is a display string — for non-string leaves (numbers, booleans,
+arrays), the value is rendered as text (`"5432"`, `"true"`, `"[1,2,3]"`).
+Use the corresponding `paramDimensions` entry or the bundle schema for
+the original type.
+"""
+type ParamValue {
+  "Whether a value exists at this path on this side of the comparison."
+  present: Boolean!
+
+  "Display-ready string form of the leaf value. `null` when the key is missing or its value is JSON `null` — disambiguate with `present`."
+  value: String
+}
+
+"""
+A single leaf-level comparison between two params maps.
+
+The list of `ParamComparison` entries returned by a comparison query is flat:
+every entry is a terminal leaf (maps and arrays are walked to the bottom).
+Use `equal` to filter to only the entries that differ.
+"""
+type ParamComparison {
+  "jq-style path to this leaf value, e.g. `.database.port` or `.containers[0].image`. Paths are stable across both sides of the comparison."
+  path: String!
+
+  "The value (or absence) on the source side of the comparison."
+  source: ParamValue!
+
+  "The value (or absence) on the target side of the comparison."
+  target: ParamValue!
+
+  "`true` when both sides have the same presence and the same value. `false` when either the key is only on one side or the values differ."
+  equal: Boolean!
+}
+
+"""
+A comparison of a single version string between two sides.
+
+`source` and `target` may each be `null` when the corresponding side has no
+version to report (e.g., an instance that exists on one side of an
+environment comparison but not the other).
+"""
+type VersionComparison {
+  "The version on the source side, or `null` if no version applies."
+  source: String
+
+  "The version on the target side, or `null` if no version applies."
+  target: String
+
+  "`true` when both sides have the same version string (including both being `null`)."
+  equal: Boolean!
+}
+
+"""
 A single cost data point containing an amount and its currency.
 
 Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
@@ -6419,7 +6867,7 @@ instances.
 # All instances using "db.r5.xlarge"
 {
   "params": {
-    "dimension": "database.instance_type",
+    "dimension": ".database.instance_type",
     "eq": "db.r5.xlarge"
   }
 }
@@ -6427,14 +6875,14 @@ instances.
 # All instances whose region contains "us-east"
 {
   "params": {
-    "dimension": "region",
+    "dimension": ".region",
     "contains": "us-east"
   }
 }
 ```
 """
 input ParamDimensionFilter {
-  "Dot-delimited path to the configuration parameter (e.g., `\"database.instance_type\"`). Use the `paramDimensions` query to discover available paths."
+  "jq-style path to the configuration parameter (e.g., `\".database.instance_type\"` or `\".containers[0].image\"`). Use the `paramDimensions` query to discover available paths."
   dimension: String!
 
   "Return only instances whose parameter value exactly equals this string."
