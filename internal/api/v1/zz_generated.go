@@ -12,6 +12,102 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api/v1/scalars"
 )
 
+// Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application.
+type AddComponentInput struct {
+	// Optional description of this component's purpose
+	Description string `json:"description,omitempty"`
+	// A short, memorable identifier for this component. This becomes the final segment of package identifiers. For example, project 'ecomm' with environment 'prod' and component 'db' creates 'ecomm-prod-db'. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation.
+	Id string `json:"id"`
+	// Display name for this component (e.g., 'Billing Database')
+	Name string `json:"name"`
+	// Key-value tags for this component. Keys and values must be strings. Must conform to the organization's tag constraints for the component scope.
+	Tags map[string]any `json:"-"`
+}
+
+// GetDescription returns AddComponentInput.Description, and is useful for accessing the field via an interface.
+func (v *AddComponentInput) GetDescription() string { return v.Description }
+
+// GetId returns AddComponentInput.Id, and is useful for accessing the field via an interface.
+func (v *AddComponentInput) GetId() string { return v.Id }
+
+// GetName returns AddComponentInput.Name, and is useful for accessing the field via an interface.
+func (v *AddComponentInput) GetName() string { return v.Name }
+
+// GetTags returns AddComponentInput.Tags, and is useful for accessing the field via an interface.
+func (v *AddComponentInput) GetTags() map[string]any { return v.Tags }
+
+func (v *AddComponentInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*AddComponentInput
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.AddComponentInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal AddComponentInput.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalAddComponentInput struct {
+	Description string `json:"description,omitempty"`
+
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Tags json.RawMessage `json:"tags,omitempty"`
+}
+
+func (v *AddComponentInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *AddComponentInput) __premarshalJSON() (*__premarshalAddComponentInput, error) {
+	var retval __premarshalAddComponentInput
+
+	retval.Description = v.Description
+	retval.Id = v.Id
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal AddComponentInput.Tags: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
 // Filters for narrowing the bundles list.
 //
 // All filters are combined with AND logic. For example, setting both `ociRepo`
@@ -471,11 +567,11 @@ func (v *CreateResourceInput) __premarshalJSON() (*__premarshalCreateResourceInp
 // ```
 type Cursor struct {
 	// Maximum number of items to return per page. Default: **20**. Minimum: **1**. Maximum: **100**.
-	Limit int `json:"limit,omitempty"`
+	Limit int `json:"limit"`
 	// Forward pagination cursor. Pass the `next` value from a previous response to fetch the next page. Mutually exclusive with `previous`.
-	Next string `json:"next,omitempty"`
+	Next string `json:"next"`
 	// Backward pagination cursor. Pass the `previous` value from a previous response to fetch the preceding page. Mutually exclusive with `next`.
-	Previous string `json:"previous,omitempty"`
+	Previous string `json:"previous"`
 }
 
 // GetLimit returns Cursor.Limit, and is useful for accessing the field via an interface.
@@ -726,9 +822,9 @@ var AllEnvironmentsSortField = []EnvironmentsSortField{
 // ```
 type IdFilter struct {
 	// Return only results whose ID exactly equals this value.
-	Eq string `json:"eq,omitempty"`
+	Eq string `json:"eq"`
 	// Return results whose ID matches any value in this list.
-	In []string `json:"in,omitempty"`
+	In []string `json:"in"`
 }
 
 // GetEq returns IdFilter.Eq, and is useful for accessing the field via an interface.
@@ -859,6 +955,54 @@ var AllInstancesSortField = []InstancesSortField{
 	InstancesSortFieldName,
 	InstancesSortFieldCreatedAt,
 }
+
+// Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources.
+type LinkComponentsInput struct {
+	// ID of the component that produces the resource (e.g., 'myproj-database').
+	FromComponentId string `json:"fromComponentId"`
+	// Output field name on the source component
+	FromField string `json:"fromField"`
+	// Version constraint for the source component (e.g., '~1.0', '1.2.3', 'latest')
+	FromVersion string `json:"fromVersion"`
+	// ID of the component that consumes the resource (e.g., 'myproj-app').
+	ToComponentId string `json:"toComponentId"`
+	// Input field name on the destination component
+	ToField string `json:"toField"`
+	// Version constraint for the destination component (e.g., '~1.0', '1.2.3', 'latest')
+	ToVersion string `json:"toVersion"`
+}
+
+// GetFromComponentId returns LinkComponentsInput.FromComponentId, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetFromComponentId() string { return v.FromComponentId }
+
+// GetFromField returns LinkComponentsInput.FromField, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetFromField() string { return v.FromField }
+
+// GetFromVersion returns LinkComponentsInput.FromVersion, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetFromVersion() string { return v.FromVersion }
+
+// GetToComponentId returns LinkComponentsInput.ToComponentId, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetToComponentId() string { return v.ToComponentId }
+
+// GetToField returns LinkComponentsInput.ToField, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetToField() string { return v.ToField }
+
+// GetToVersion returns LinkComponentsInput.ToVersion, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetToVersion() string { return v.ToVersion }
+
+// Filter which links to return.
+type LinksFilter struct {
+	// Match by the source (from) component's ID (e.g., `myproj-database`).
+	FromComponentId *IdFilter `json:"fromComponentId,omitempty"`
+	// Match by the destination (to) component's ID (e.g., `myproj-app`).
+	ToComponentId *IdFilter `json:"toComponentId,omitempty"`
+}
+
+// GetFromComponentId returns LinksFilter.FromComponentId, and is useful for accessing the field via an interface.
+func (v *LinksFilter) GetFromComponentId() *IdFilter { return v.FromComponentId }
+
+// GetToComponentId returns LinksFilter.ToComponentId, and is useful for accessing the field via an interface.
+func (v *LinksFilter) GetToComponentId() *IdFilter { return v.ToComponentId }
 
 // Filter by OCI repository name (the bundle's package identifier).
 //
@@ -1560,6 +1704,26 @@ func (v *UpdateResourceInput) __premarshalJSON() (*__premarshalUpdateResourceInp
 	return &retval, nil
 }
 
+// __addComponentInput is used internally by genqlient
+type __addComponentInput struct {
+	OrganizationId string            `json:"organizationId"`
+	ProjectId      string            `json:"projectId"`
+	OciRepoName    string            `json:"ociRepoName"`
+	Input          AddComponentInput `json:"input"`
+}
+
+// GetOrganizationId returns __addComponentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__addComponentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetProjectId returns __addComponentInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__addComponentInput) GetProjectId() string { return v.ProjectId }
+
+// GetOciRepoName returns __addComponentInput.OciRepoName, and is useful for accessing the field via an interface.
+func (v *__addComponentInput) GetOciRepoName() string { return v.OciRepoName }
+
+// GetInput returns __addComponentInput.Input, and is useful for accessing the field via an interface.
+func (v *__addComponentInput) GetInput() AddComponentInput { return v.Input }
+
 // __createDeploymentInput is used internally by genqlient
 type __createDeploymentInput struct {
 	OrganizationId string                `json:"organizationId"`
@@ -1780,6 +1944,18 @@ func (v *__getResourceTypeInput) GetOrganizationId() string { return v.Organizat
 // GetId returns __getResourceTypeInput.Id, and is useful for accessing the field via an interface.
 func (v *__getResourceTypeInput) GetId() string { return v.Id }
 
+// __linkComponentsInput is used internally by genqlient
+type __linkComponentsInput struct {
+	OrganizationId string              `json:"organizationId"`
+	Input          LinkComponentsInput `json:"input"`
+}
+
+// GetOrganizationId returns __linkComponentsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__linkComponentsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetInput returns __linkComponentsInput.Input, and is useful for accessing the field via an interface.
+func (v *__linkComponentsInput) GetInput() LinkComponentsInput { return v.Input }
+
 // __listBundlesInput is used internally by genqlient
 type __listBundlesInput struct {
 	OrganizationId string         `json:"organizationId"`
@@ -1876,6 +2052,26 @@ func (v *__listInstancesInput) GetSort() *InstancesSort { return v.Sort }
 // GetCursor returns __listInstancesInput.Cursor, and is useful for accessing the field via an interface.
 func (v *__listInstancesInput) GetCursor() *Cursor { return v.Cursor }
 
+// __listLinksInput is used internally by genqlient
+type __listLinksInput struct {
+	OrganizationId string       `json:"organizationId"`
+	ProjectId      string       `json:"projectId"`
+	Filter         *LinksFilter `json:"filter,omitempty"`
+	Cursor         *Cursor      `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listLinksInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listLinksInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetProjectId returns __listLinksInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__listLinksInput) GetProjectId() string { return v.ProjectId }
+
+// GetFilter returns __listLinksInput.Filter, and is useful for accessing the field via an interface.
+func (v *__listLinksInput) GetFilter() *LinksFilter { return v.Filter }
+
+// GetCursor returns __listLinksInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listLinksInput) GetCursor() *Cursor { return v.Cursor }
+
 // __listOciReposInput is used internally by genqlient
 type __listOciReposInput struct {
 	OrganizationId string          `json:"organizationId"`
@@ -1956,6 +2152,18 @@ func (v *__publishResourceTypeInput) GetOrganizationId() string { return v.Organ
 // GetInput returns __publishResourceTypeInput.Input, and is useful for accessing the field via an interface.
 func (v *__publishResourceTypeInput) GetInput() PublishResourceTypeInput { return v.Input }
 
+// __removeComponentInput is used internally by genqlient
+type __removeComponentInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __removeComponentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__removeComponentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __removeComponentInput.Id, and is useful for accessing the field via an interface.
+func (v *__removeComponentInput) GetId() string { return v.Id }
+
 // __removeInstanceSecretInput is used internally by genqlient
 type __removeInstanceSecretInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -2003,6 +2211,18 @@ func (v *__setInstanceSecretInput) GetId() string { return v.Id }
 
 // GetInput returns __setInstanceSecretInput.Input, and is useful for accessing the field via an interface.
 func (v *__setInstanceSecretInput) GetInput() SetInstanceSecretInput { return v.Input }
+
+// __unlinkComponentsInput is used internally by genqlient
+type __unlinkComponentsInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __unlinkComponentsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__unlinkComponentsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __unlinkComponentsInput.Id, and is useful for accessing the field via an interface.
+func (v *__unlinkComponentsInput) GetId() string { return v.Id }
 
 // __updateEnvironmentInput is used internally by genqlient
 type __updateEnvironmentInput struct {
@@ -2067,6 +2287,285 @@ func (v *__updateResourceInput) GetId() string { return v.Id }
 
 // GetInput returns __updateResourceInput.Input, and is useful for accessing the field via an interface.
 func (v *__updateResourceInput) GetInput() UpdateResourceInput { return v.Input }
+
+// addComponentAddComponentComponentPayload includes the requested fields of the GraphQL type ComponentPayload.
+type addComponentAddComponentComponentPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result addComponentAddComponentComponentPayloadResultComponent `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []addComponentAddComponentComponentPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns addComponentAddComponentComponentPayload.Result, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayload) GetResult() addComponentAddComponentComponentPayloadResultComponent {
+	return v.Result
+}
+
+// GetSuccessful returns addComponentAddComponentComponentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns addComponentAddComponentComponentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayload) GetMessages() []addComponentAddComponentComponentPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// addComponentAddComponentComponentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type addComponentAddComponentComponentPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns addComponentAddComponentComponentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns addComponentAddComponentComponentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns addComponentAddComponentComponentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// addComponentAddComponentComponentPayloadResultComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type addComponentAddComponentComponentPayloadResultComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value tags assigned directly to this component.
+	Tags map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// The OCI repository (bundle) this component is based on.
+	OciRepo addComponentAddComponentComponentPayloadResultComponentOciRepo `json:"ociRepo"`
+}
+
+// GetId returns addComponentAddComponentComponentPayloadResultComponent.Id, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetId() string { return v.Id }
+
+// GetName returns addComponentAddComponentComponentPayloadResultComponent.Name, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetName() string { return v.Name }
+
+// GetDescription returns addComponentAddComponentComponentPayloadResultComponent.Description, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetTags returns addComponentAddComponentComponentPayloadResultComponent.Tags, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetTags() map[string]any {
+	return v.Tags
+}
+
+// GetCreatedAt returns addComponentAddComponentComponentPayloadResultComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns addComponentAddComponentComponentPayloadResultComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetOciRepo returns addComponentAddComponentComponentPayloadResultComponent.OciRepo, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetOciRepo() addComponentAddComponentComponentPayloadResultComponentOciRepo {
+	return v.OciRepo
+}
+
+func (v *addComponentAddComponentComponentPayloadResultComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*addComponentAddComponentComponentPayloadResultComponent
+		Tags json.RawMessage `json:"tags"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.addComponentAddComponentComponentPayloadResultComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Tags
+		src := firstPass.Tags
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal addComponentAddComponentComponentPayloadResultComponent.Tags: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshaladdComponentAddComponentComponentPayloadResultComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Tags json.RawMessage `json:"tags"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	OciRepo addComponentAddComponentComponentPayloadResultComponentOciRepo `json:"ociRepo"`
+}
+
+func (v *addComponentAddComponentComponentPayloadResultComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *addComponentAddComponentComponentPayloadResultComponent) __premarshalJSON() (*__premarshaladdComponentAddComponentComponentPayloadResultComponent, error) {
+	var retval __premarshaladdComponentAddComponentComponentPayloadResultComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Tags
+		src := v.Tags
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal addComponentAddComponentComponentPayloadResultComponent.Tags: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.OciRepo = v.OciRepo
+	return &retval, nil
+}
+
+// addComponentAddComponentComponentPayloadResultComponentOciRepo includes the requested fields of the GraphQL type OciRepo.
+// The GraphQL type's documentation follows.
+//
+// An OCI repository in your organization's bundle catalog.
+//
+// An OCI repository is the container for all published versions of a single
+// infrastructure-as-code package. It is analogous to a Docker image repository
+// but for Massdriver bundles.
+//
+// Each repository has a unique `name` (e.g., `aws-aurora-postgres`) and contains:
+//
+// - **Tags** -- the individual published versions (`1.0.0`, `1.1.0`, `1.2.3`, etc.)
+// - **Release channels** -- auto-resolving version constraints (`latest`, `~1`, `~1.2`)
+// that always point to the newest matching tag
+//
+// To fetch a specific bundle version from a repository, use the `bundle` query
+// with a `BundleId` like `aws-aurora-postgres@1.2.3` or `aws-aurora-postgres@~1`.
+type addComponentAddComponentComponentPayloadResultComponentOciRepo struct {
+	Id string `json:"id"`
+	// Repository name, unique within your organization (e.g., `aws-aurora-postgres`).
+	Name string `json:"name"`
+}
+
+// GetId returns addComponentAddComponentComponentPayloadResultComponentOciRepo.Id, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponentOciRepo) GetId() string { return v.Id }
+
+// GetName returns addComponentAddComponentComponentPayloadResultComponentOciRepo.Name, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponentOciRepo) GetName() string {
+	return v.Name
+}
+
+// addComponentResponse is returned by addComponent on success.
+type addComponentResponse struct {
+	// Add a component to a project's blueprint.
+	//
+	// Creates a new slot in the blueprint for the specified bundle. The component
+	// does not deploy anything on its own -- it defines *what* can be deployed.
+	// Instances are created in each environment when you deploy.
+	//
+	// ```graphql
+	// mutation {
+	// addComponent(
+	// organizationId: "my-org"
+	// projectId: "my-project"
+	// ociRepoName: "aws-aurora-postgres"
+	// input: { id: "database", name: "Primary Database" }
+	// ) {
+	// result { id name }
+	// successful
+	// }
+	// }
+	// ```
+	AddComponent addComponentAddComponentComponentPayload `json:"addComponent"`
+}
+
+// GetAddComponent returns addComponentResponse.AddComponent, and is useful for accessing the field via an interface.
+func (v *addComponentResponse) GetAddComponent() addComponentAddComponentComponentPayload {
+	return v.AddComponent
+}
 
 // createDeploymentCreateDeploymentDeploymentPayload includes the requested fields of the GraphQL type DeploymentPayload.
 type createDeploymentCreateDeploymentDeploymentPayload struct {
@@ -6033,6 +6532,231 @@ func (v *getServerServerSsoProvidersSsoProvider) GetUiIconUrl() string { return 
 // GetUiLabel returns getServerServerSsoProvidersSsoProvider.UiLabel, and is useful for accessing the field via an interface.
 func (v *getServerServerSsoProvidersSsoProvider) GetUiLabel() string { return v.UiLabel }
 
+// linkComponentsLinkComponentsLinkPayload includes the requested fields of the GraphQL type LinkPayload.
+type linkComponentsLinkComponentsLinkPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result linkComponentsLinkComponentsLinkPayloadResultLink `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns linkComponentsLinkComponentsLinkPayload.Result, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayload) GetResult() linkComponentsLinkComponentsLinkPayloadResultLink {
+	return v.Result
+}
+
+// GetSuccessful returns linkComponentsLinkComponentsLinkPayload.Successful, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns linkComponentsLinkComponentsLinkPayload.Messages, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayload) GetMessages() []linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// linkComponentsLinkComponentsLinkPayloadResultLink includes the requested fields of the GraphQL type Link.
+// The GraphQL type's documentation follows.
+//
+// A design-time dependency between two components in a blueprint.
+//
+// A link declares that one component's output should be wired into another
+// component's input. For example, a link from a database component's
+// `authentication` output to an application component's `database` input
+// ensures the app receives the database connection string.
+//
+// At deploy time, each link is realized as a **connection** in the environment,
+// wiring the actual instance outputs to instance inputs.
+type linkComponentsLinkComponentsLinkPayloadResultLink struct {
+	// Unique identifier for this link.
+	Id string `json:"id"`
+	// The output field name on the source component (e.g., `authentication`).
+	FromField string `json:"fromField"`
+	// The input field name on the destination component (e.g., `database`).
+	ToField string `json:"toField"`
+	// When this link was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this link was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// The source component that produces the output.
+	FromComponent linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent `json:"fromComponent"`
+	// The destination component that consumes the input.
+	ToComponent linkComponentsLinkComponentsLinkPayloadResultLinkToComponent `json:"toComponent"`
+}
+
+// GetId returns linkComponentsLinkComponentsLinkPayloadResultLink.Id, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetId() string { return v.Id }
+
+// GetFromField returns linkComponentsLinkComponentsLinkPayloadResultLink.FromField, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetFromField() string { return v.FromField }
+
+// GetToField returns linkComponentsLinkComponentsLinkPayloadResultLink.ToField, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetToField() string { return v.ToField }
+
+// GetCreatedAt returns linkComponentsLinkComponentsLinkPayloadResultLink.CreatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns linkComponentsLinkComponentsLinkPayloadResultLink.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetFromComponent returns linkComponentsLinkComponentsLinkPayloadResultLink.FromComponent, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetFromComponent() linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent {
+	return v.FromComponent
+}
+
+// GetToComponent returns linkComponentsLinkComponentsLinkPayloadResultLink.ToComponent, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetToComponent() linkComponentsLinkComponentsLinkPayloadResultLinkToComponent {
+	return v.ToComponent
+}
+
+// linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+}
+
+// GetId returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Id, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetId() string { return v.Id }
+
+// GetName returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Name, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetName() string {
+	return v.Name
+}
+
+// linkComponentsLinkComponentsLinkPayloadResultLinkToComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type linkComponentsLinkComponentsLinkPayloadResultLinkToComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+}
+
+// GetId returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Id, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetId() string { return v.Id }
+
+// GetName returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Name, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetName() string {
+	return v.Name
+}
+
+// linkComponentsResponse is returned by linkComponents on success.
+type linkComponentsResponse struct {
+	// Create a link between two components.
+	//
+	// Declares that the `fromField` output of one component should be wired to the
+	// `toField` input of another. Massdriver validates that the resource types are
+	// compatible before creating the link. When environments are deployed, each link
+	// becomes a **connection** that carries the actual resource data between instances.
+	//
+	// ```graphql
+	// mutation {
+	// linkComponents(
+	// organizationId: "my-org"
+	// input: {
+	// fromComponentId: "my-project-database"
+	// fromField: "authentication"
+	// fromVersion: "~1.0"
+	// toComponentId: "my-project-app"
+	// toField: "database"
+	// toVersion: "~2.0"
+	// }
+	// ) {
+	// result { id fromField toField }
+	// successful
+	// }
+	// }
+	// ```
+	LinkComponents linkComponentsLinkComponentsLinkPayload `json:"linkComponents"`
+}
+
+// GetLinkComponents returns linkComponentsResponse.LinkComponents, and is useful for accessing the field via an interface.
+func (v *linkComponentsResponse) GetLinkComponents() linkComponentsLinkComponentsLinkPayload {
+	return v.LinkComponents
+}
+
 // listBundlesBundlesBundlesPage includes the requested fields of the GraphQL type BundlesPage.
 type listBundlesBundlesBundlesPage struct {
 	// Pagination cursors for navigating between pages.
@@ -7443,6 +8167,233 @@ func (v *listInstancesResponse) GetInstances() listInstancesInstancesInstancesPa
 	return v.Instances
 }
 
+// listLinksProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project organizes related infrastructure under a single blueprint.
+//
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Tags set on a project are inherited by all environments and instances within it.
+type listLinksProject struct {
+	// The infrastructure blueprint defining this project's components and their connections.
+	Blueprint listLinksProjectBlueprint `json:"blueprint"`
+}
+
+// GetBlueprint returns listLinksProject.Blueprint, and is useful for accessing the field via an interface.
+func (v *listLinksProject) GetBlueprint() listLinksProjectBlueprint { return v.Blueprint }
+
+// listLinksProjectBlueprint includes the requested fields of the GraphQL type Blueprint.
+// The GraphQL type's documentation follows.
+//
+// A project's infrastructure blueprint -- the design-time architecture.
+//
+// The blueprint is the canonical description of how your infrastructure fits
+// together. It contains **components** (the bundles you want to deploy) and
+// **links** (the wiring between them).
+//
+// Every project has exactly one blueprint. When you deploy to an environment,
+// the blueprint is realized as an **environment blueprint** containing live
+// **instances** and **connections**.
+//
+// ```mermaid
+// graph TB
+// subgraph "Design Time (Blueprint)"
+// C1["Component: database"] ---|"Link"| C2["Component: cache"]
+// end
+// subgraph "Runtime (Environment Blueprint)"
+// I1["Instance: database"] ---|"Connection"| I2["Instance: cache"]
+// end
+// C1 -.->|"deployed to"| I1
+// C2 -.->|"deployed to"| I2
+// ```
+type listLinksProjectBlueprint struct {
+	// Paginated list of links between components in this blueprint.
+	//
+	// Each link declares a dependency from one component's output to another's input.
+	// Defaults to chronological order by creation time.
+	Links listLinksProjectBlueprintLinksLinksPage `json:"links"`
+}
+
+// GetLinks returns listLinksProjectBlueprint.Links, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprint) GetLinks() listLinksProjectBlueprintLinksLinksPage {
+	return v.Links
+}
+
+// listLinksProjectBlueprintLinksLinksPage includes the requested fields of the GraphQL type LinksPage.
+type listLinksProjectBlueprintLinksLinksPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor `json:"cursor"`
+	// A list of type link.
+	Items []listLinksProjectBlueprintLinksLinksPageItemsLink `json:"items"`
+}
+
+// GetCursor returns listLinksProjectBlueprintLinksLinksPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPage) GetCursor() listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listLinksProjectBlueprintLinksLinksPage.Items, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPage) GetItems() []listLinksProjectBlueprintLinksLinksPageItemsLink {
+	return v.Items
+}
+
+// listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
+}
+
+// GetNext returns listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor) GetNext() string {
+	return v.Next
+}
+
+// GetPrevious returns listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
+}
+
+// listLinksProjectBlueprintLinksLinksPageItemsLink includes the requested fields of the GraphQL type Link.
+// The GraphQL type's documentation follows.
+//
+// A design-time dependency between two components in a blueprint.
+//
+// A link declares that one component's output should be wired into another
+// component's input. For example, a link from a database component's
+// `authentication` output to an application component's `database` input
+// ensures the app receives the database connection string.
+//
+// At deploy time, each link is realized as a **connection** in the environment,
+// wiring the actual instance outputs to instance inputs.
+type listLinksProjectBlueprintLinksLinksPageItemsLink struct {
+	// Unique identifier for this link.
+	Id string `json:"id"`
+	// The output field name on the source component (e.g., `authentication`).
+	FromField string `json:"fromField"`
+	// The input field name on the destination component (e.g., `database`).
+	ToField string `json:"toField"`
+	// When this link was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this link was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// The source component that produces the output.
+	FromComponent listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent `json:"fromComponent"`
+	// The destination component that consumes the input.
+	ToComponent listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent `json:"toComponent"`
+}
+
+// GetId returns listLinksProjectBlueprintLinksLinksPageItemsLink.Id, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetId() string { return v.Id }
+
+// GetFromField returns listLinksProjectBlueprintLinksLinksPageItemsLink.FromField, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetFromField() string { return v.FromField }
+
+// GetToField returns listLinksProjectBlueprintLinksLinksPageItemsLink.ToField, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetToField() string { return v.ToField }
+
+// GetCreatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLink.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLink.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetFromComponent returns listLinksProjectBlueprintLinksLinksPageItemsLink.FromComponent, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetFromComponent() listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent {
+	return v.FromComponent
+}
+
+// GetToComponent returns listLinksProjectBlueprintLinksLinksPageItemsLink.ToComponent, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetToComponent() listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent {
+	return v.ToComponent
+}
+
+// listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+}
+
+// GetId returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Id, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetId() string { return v.Id }
+
+// GetName returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Name, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetName() string {
+	return v.Name
+}
+
+// listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+}
+
+// GetId returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Id, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetId() string { return v.Id }
+
+// GetName returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Name, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetName() string { return v.Name }
+
+// listLinksResponse is returned by listLinks on success.
+type listLinksResponse struct {
+	// Fetch a single project by its identifier.
+	Project listLinksProject `json:"project"`
+}
+
+// GetProject returns listLinksResponse.Project, and is useful for accessing the field via an interface.
+func (v *listLinksResponse) GetProject() listLinksProject { return v.Project }
+
 // listOciReposOciReposOciReposPage includes the requested fields of the GraphQL type OciReposPage.
 type listOciReposOciReposOciReposPage struct {
 	// Pagination cursors for navigating between pages.
@@ -8586,6 +9537,125 @@ func (v *publishResourceTypeResponse) GetPublishResourceType() publishResourceTy
 	return v.PublishResourceType
 }
 
+// removeComponentRemoveComponentComponentPayload includes the requested fields of the GraphQL type ComponentPayload.
+type removeComponentRemoveComponentComponentPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result removeComponentRemoveComponentComponentPayloadResultComponent `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []removeComponentRemoveComponentComponentPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns removeComponentRemoveComponentComponentPayload.Result, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayload) GetResult() removeComponentRemoveComponentComponentPayloadResultComponent {
+	return v.Result
+}
+
+// GetSuccessful returns removeComponentRemoveComponentComponentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns removeComponentRemoveComponentComponentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayload) GetMessages() []removeComponentRemoveComponentComponentPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// removeComponentRemoveComponentComponentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type removeComponentRemoveComponentComponentPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns removeComponentRemoveComponentComponentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns removeComponentRemoveComponentComponentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns removeComponentRemoveComponentComponentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// removeComponentRemoveComponentComponentPayloadResultComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type removeComponentRemoveComponentComponentPayloadResultComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+}
+
+// GetId returns removeComponentRemoveComponentComponentPayloadResultComponent.Id, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayloadResultComponent) GetId() string { return v.Id }
+
+// GetName returns removeComponentRemoveComponentComponentPayloadResultComponent.Name, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayloadResultComponent) GetName() string {
+	return v.Name
+}
+
+// removeComponentResponse is returned by removeComponent on success.
+type removeComponentResponse struct {
+	// Remove a component from a project's blueprint.
+	//
+	// Deletes the component and all of its links. Any instances deployed from
+	// this component must be decommissioned first.
+	RemoveComponent removeComponentRemoveComponentComponentPayload `json:"removeComponent"`
+}
+
+// GetRemoveComponent returns removeComponentResponse.RemoveComponent, and is useful for accessing the field via an interface.
+func (v *removeComponentResponse) GetRemoveComponent() removeComponentRemoveComponentComponentPayload {
+	return v.RemoveComponent
+}
+
 // removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload includes the requested fields of the GraphQL type InstanceSecretPayload.
 type removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -9033,6 +10103,130 @@ func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSe
 func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
 }
+
+// unlinkComponentsResponse is returned by unlinkComponents on success.
+type unlinkComponentsResponse struct {
+	// Remove a link between two components.
+	//
+	// Deletes the design-time dependency. Existing connections in deployed
+	// environments are not affected until the next deployment.
+	UnlinkComponents unlinkComponentsUnlinkComponentsLinkPayload `json:"unlinkComponents"`
+}
+
+// GetUnlinkComponents returns unlinkComponentsResponse.UnlinkComponents, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsResponse) GetUnlinkComponents() unlinkComponentsUnlinkComponentsLinkPayload {
+	return v.UnlinkComponents
+}
+
+// unlinkComponentsUnlinkComponentsLinkPayload includes the requested fields of the GraphQL type LinkPayload.
+type unlinkComponentsUnlinkComponentsLinkPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result unlinkComponentsUnlinkComponentsLinkPayloadResultLink `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns unlinkComponentsUnlinkComponentsLinkPayload.Result, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayload) GetResult() unlinkComponentsUnlinkComponentsLinkPayloadResultLink {
+	return v.Result
+}
+
+// GetSuccessful returns unlinkComponentsUnlinkComponentsLinkPayload.Successful, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns unlinkComponentsUnlinkComponentsLinkPayload.Messages, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayload) GetMessages() []unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// unlinkComponentsUnlinkComponentsLinkPayloadResultLink includes the requested fields of the GraphQL type Link.
+// The GraphQL type's documentation follows.
+//
+// A design-time dependency between two components in a blueprint.
+//
+// A link declares that one component's output should be wired into another
+// component's input. For example, a link from a database component's
+// `authentication` output to an application component's `database` input
+// ensures the app receives the database connection string.
+//
+// At deploy time, each link is realized as a **connection** in the environment,
+// wiring the actual instance outputs to instance inputs.
+type unlinkComponentsUnlinkComponentsLinkPayloadResultLink struct {
+	// Unique identifier for this link.
+	Id string `json:"id"`
+	// The output field name on the source component (e.g., `authentication`).
+	FromField string `json:"fromField"`
+	// The input field name on the destination component (e.g., `database`).
+	ToField string `json:"toField"`
+}
+
+// GetId returns unlinkComponentsUnlinkComponentsLinkPayloadResultLink.Id, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadResultLink) GetId() string { return v.Id }
+
+// GetFromField returns unlinkComponentsUnlinkComponentsLinkPayloadResultLink.FromField, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadResultLink) GetFromField() string {
+	return v.FromField
+}
+
+// GetToField returns unlinkComponentsUnlinkComponentsLinkPayloadResultLink.ToField, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadResultLink) GetToField() string { return v.ToField }
 
 // updateEnvironmentResponse is returned by updateEnvironment on success.
 type updateEnvironmentResponse struct {
@@ -9648,6 +10842,63 @@ func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) 
 // GetName returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.Name, and is useful for accessing the field via an interface.
 func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetName() string {
 	return v.Name
+}
+
+// The mutation executed by addComponent.
+const addComponent_Operation = `
+mutation addComponent ($organizationId: ID!, $projectId: ID!, $ociRepoName: OciRepoName!, $input: AddComponentInput!) {
+	addComponent(organizationId: $organizationId, projectId: $projectId, ociRepoName: $ociRepoName, input: $input) {
+		result {
+			id
+			name
+			description
+			tags
+			createdAt
+			updatedAt
+			ociRepo {
+				id
+				name
+			}
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func addComponent(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	projectId string,
+	ociRepoName string,
+	input AddComponentInput,
+) (data_ *addComponentResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "addComponent",
+		Query:  addComponent_Operation,
+		Variables: &__addComponentInput{
+			OrganizationId: organizationId,
+			ProjectId:      projectId,
+			OciRepoName:    ociRepoName,
+			Input:          input,
+		},
+	}
+
+	data_ = &addComponentResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
 }
 
 // The mutation executed by createDeployment.
@@ -10615,6 +11866,62 @@ func getServer(
 	return data_, err_
 }
 
+// The mutation executed by linkComponents.
+const linkComponents_Operation = `
+mutation linkComponents ($organizationId: ID!, $input: LinkComponentsInput!) {
+	linkComponents(organizationId: $organizationId, input: $input) {
+		result {
+			id
+			fromField
+			toField
+			createdAt
+			updatedAt
+			fromComponent {
+				id
+				name
+			}
+			toComponent {
+				id
+				name
+			}
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func linkComponents(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	input LinkComponentsInput,
+) (data_ *linkComponentsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "linkComponents",
+		Query:  linkComponents_Operation,
+		Variables: &__linkComponentsInput{
+			OrganizationId: organizationId,
+			Input:          input,
+		},
+	}
+
+	data_ = &linkComponentsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by listBundles.
 const listBundles_Operation = `
 query listBundles ($organizationId: ID!, $filter: BundlesFilter, $sort: BundlesSort, $cursor: Cursor) {
@@ -10928,6 +12235,68 @@ func listInstances(
 	return data_, err_
 }
 
+// The query executed by listLinks.
+const listLinks_Operation = `
+query listLinks ($organizationId: ID!, $projectId: ID!, $filter: LinksFilter, $cursor: Cursor) {
+	project(organizationId: $organizationId, id: $projectId) {
+		blueprint {
+			links(filter: $filter, cursor: $cursor) {
+				cursor {
+					next
+					previous
+				}
+				items {
+					id
+					fromField
+					toField
+					createdAt
+					updatedAt
+					fromComponent {
+						id
+						name
+					}
+					toComponent {
+						id
+						name
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func listLinks(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	projectId string,
+	filter *LinksFilter,
+	cursor *Cursor,
+) (data_ *listLinksResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "listLinks",
+		Query:  listLinks_Operation,
+		Variables: &__listLinksInput{
+			OrganizationId: organizationId,
+			ProjectId:      projectId,
+			Filter:         filter,
+			Cursor:         cursor,
+		},
+	}
+
+	data_ = &listLinksResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The query executed by listOciRepos.
 const listOciRepos_Operation = `
 query listOciRepos ($organizationId: ID!, $filter: OciReposFilter, $sort: OciReposSort, $cursor: Cursor) {
@@ -11197,6 +12566,51 @@ func publishResourceType(
 	return data_, err_
 }
 
+// The mutation executed by removeComponent.
+const removeComponent_Operation = `
+mutation removeComponent ($organizationId: ID!, $id: ID!) {
+	removeComponent(organizationId: $organizationId, id: $id) {
+		result {
+			id
+			name
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func removeComponent(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *removeComponentResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "removeComponent",
+		Query:  removeComponent_Operation,
+		Variables: &__removeComponentInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &removeComponentResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
 // The mutation executed by removeInstanceSecret.
 const removeInstanceSecret_Operation = `
 mutation removeInstanceSecret ($organizationId: ID!, $id: ID!, $name: String!) {
@@ -11338,6 +12752,52 @@ func setInstanceSecret(
 	}
 
 	data_ = &setInstanceSecretResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by unlinkComponents.
+const unlinkComponents_Operation = `
+mutation unlinkComponents ($organizationId: ID!, $id: ID!) {
+	unlinkComponents(organizationId: $organizationId, id: $id) {
+		result {
+			id
+			fromField
+			toField
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func unlinkComponents(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *unlinkComponentsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "unlinkComponents",
+		Query:  unlinkComponents_Operation,
+		Variables: &__unlinkComponentsInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &unlinkComponentsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

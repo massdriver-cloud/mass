@@ -71,18 +71,6 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 	}
 	instanceGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
-	instanceCreateCmd := &cobra.Command{
-		Use:     `create [slug]`,
-		Short:   "Create a manifest (add bundle to project)",
-		Example: `mass instance create dbbundle-test-serverless --bundle aws-rds-cluster`,
-		Long:    helpdocs.MustRender("instance/create"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceCreate,
-	}
-	instanceCreateCmd.Flags().StringP("name", "n", "", "Manifest name (defaults to slug if not provided)")
-	instanceCreateCmd.Flags().StringP("bundle", "b", "", "Bundle ID or name (required)")
-	_ = instanceCreateCmd.MarkFlagRequired("bundle")
-
 	instanceVersionCmd := &cobra.Command{
 		Use:     `version <instance-id>@<version>`,
 		Short:   "Set instance version",
@@ -131,7 +119,6 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 	instanceCmd.AddCommand(instanceExportCmd)
 	instanceCmd.AddCommand(instanceGetCmd)
 	instanceCmd.AddCommand(instanceListCmd)
-	instanceCmd.AddCommand(instanceCreateCmd)
 	instanceCmd.AddCommand(instanceVersionCmd)
 	instanceCmd.AddCommand(instanceDestroyCmd)
 	instanceCmd.AddCommand(instanceResetCmd)
@@ -324,52 +311,6 @@ func runInstanceExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to export instance: %w", exportErr)
 	}
 
-	return nil
-}
-
-func runInstanceCreate(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-
-	fullID := args[0]
-	name, err := cmd.Flags().GetString("name")
-	if err != nil {
-		return err
-	}
-
-	bundleIDOrName, err := cmd.Flags().GetString("bundle")
-	if err != nil {
-		return err
-	}
-
-	// Parse project-env-manifest format: extract project (first), env (second), and manifest (third)
-	// Format is $proj-$env-$manifest where each part has no hyphens
-	parts := strings.Split(fullID, "-")
-	if len(parts) != 3 {
-		return fmt.Errorf("unable to determine project, environment, and manifest from slug %s (expected format: project-env-manifest)", fullID)
-	}
-	projectIDOrID := parts[0]
-	environmentID := parts[1]
-	manifestID := parts[2]
-
-	if name == "" {
-		name = manifestID
-	}
-
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
-	}
-
-	_, err = apiv0.CreateManifest(ctx, mdClient, bundleIDOrName, projectIDOrID, name, manifestID, "")
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("✅ Instance `%s` created successfully\n", fullID)
-	urlHelper, urlErr := apiv0.NewURLHelper(ctx, mdClient)
-	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(projectIDOrID, environmentID, manifestID))
-	}
 	return nil
 }
 

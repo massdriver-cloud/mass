@@ -135,6 +135,138 @@ mutation deleteProject($organizationId: ID!, $id: ID!) {
 }
 
 
+# COMPONENTS
+
+# @genqlient(for: "LinksFilter.fromComponentId", omitempty: true, pointer: true)
+# @genqlient(for: "LinksFilter.toComponentId", omitempty: true, pointer: true)
+query listLinks(
+  $organizationId: ID!,
+  $projectId: ID!,
+  # @genqlient(omitempty: true, pointer: true)
+  $filter: LinksFilter,
+  # @genqlient(omitempty: true, pointer: true)
+  $cursor: Cursor
+) {
+  project(organizationId: $organizationId, id: $projectId) {
+    blueprint {
+      links(filter: $filter, cursor: $cursor) {
+        cursor {
+          next
+          previous
+        }
+        items {
+          id
+          fromField
+          toField
+          createdAt
+          updatedAt
+          fromComponent {
+            id
+            name
+          }
+          toComponent {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+}
+
+# @genqlient(for: "AddComponentInput.description", omitempty: true)
+# @genqlient(for: "AddComponentInput.tags", omitempty: true)
+mutation addComponent(
+  $organizationId: ID!,
+  $projectId: ID!,
+  $ociRepoName: OciRepoName!,
+  $input: AddComponentInput!
+) {
+  addComponent(
+    organizationId: $organizationId,
+    projectId: $projectId,
+    ociRepoName: $ociRepoName,
+    input: $input
+  ) {
+    result {
+      id
+      name
+      description
+      tags
+      createdAt
+      updatedAt
+      ociRepo {
+        id
+        name
+      }
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation removeComponent($organizationId: ID!, $id: ID!) {
+  removeComponent(organizationId: $organizationId, id: $id) {
+    result {
+      id
+      name
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation linkComponents($organizationId: ID!, $input: LinkComponentsInput!) {
+  linkComponents(organizationId: $organizationId, input: $input) {
+    result {
+      id
+      fromField
+      toField
+      createdAt
+      updatedAt
+      fromComponent {
+        id
+        name
+      }
+      toComponent {
+        id
+        name
+      }
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation unlinkComponents($organizationId: ID!, $id: ID!) {
+  unlinkComponents(organizationId: $organizationId, id: $id) {
+    result {
+      id
+      fromField
+      toField
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+
 # ENVIRONMENTS
 
 # @genqlient(for: "Cursor.limit", omitempty: true)
