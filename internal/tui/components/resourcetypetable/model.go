@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/evertras/bubble-table/table"
-	"github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -17,9 +17,9 @@ import (
 type Model struct {
 	table                 table.Model
 	help                  help.Model
-	resourceTypes         []*api.ArtifactDefinition
+	resourceTypes         []*api.ResourceType
 	keys                  KeyMap
-	SelectedResourceTypes []*api.ArtifactDefinition
+	SelectedResourceTypes []*api.ResourceType
 }
 
 const (
@@ -28,17 +28,17 @@ const (
 )
 
 // New creates a new Model pre-populated with the provided resource types.
-func New(creds []*api.ArtifactDefinition) Model {
+func New(resourceTypes []*api.ResourceType) Model {
 	columns := []table.Column{
 		table.NewColumn(columnKeyLabel, "Name", 40),
 	}
 
 	rows := []table.Row{}
 
-	for _, credentialType := range creds {
+	for _, resourceType := range resourceTypes {
 		row := table.NewRow(table.RowData{
-			columnKeyLabel:            humanize(credentialType.Name),
-			columnKeyResourceTypeData: credentialType,
+			columnKeyLabel:            humanize(resourceType.Name),
+			columnKeyResourceTypeData: resourceType,
 		})
 		rows = append(rows, row)
 	}
@@ -71,7 +71,7 @@ func New(creds []*api.ArtifactDefinition) Model {
 	return Model{
 		table:         t,
 		help:          help.New(),
-		resourceTypes: creds,
+		resourceTypes: resourceTypes,
 		keys:          keys,
 	}
 }
@@ -99,7 +99,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View renders the resource type table as a string for display.
 func (m Model) View() string {
 	body := strings.Builder{}
-	body.WriteString("Select credential types:")
+	body.WriteString("Select resource types:")
 	body.WriteString("\n")
 	body.WriteString(m.table.View())
 	body.WriteString("\n")
@@ -107,11 +107,11 @@ func (m Model) View() string {
 	return body.String()
 }
 
-func mapRowsToResourceType(rows []table.Row) []*api.ArtifactDefinition {
-	resourceTypes := []*api.ArtifactDefinition{}
+func mapRowsToResourceType(rows []table.Row) []*api.ResourceType {
+	resourceTypes := []*api.ResourceType{}
 
 	for _, row := range rows {
-		if rt, ok := row.Data[columnKeyResourceTypeData].(*api.ArtifactDefinition); ok {
+		if rt, ok := row.Data[columnKeyResourceTypeData].(*api.ResourceType); ok {
 			resourceTypes = append(resourceTypes, rt)
 		}
 	}

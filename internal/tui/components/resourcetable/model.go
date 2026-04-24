@@ -7,16 +7,16 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/evertras/bubble-table/table"
-	"github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 )
 
 // Model is the Bubble Tea model for the resource selection table.
 type Model struct {
 	table             table.Model
 	help              help.Model
-	resources         []*api.Artifact
+	resources         []*api.Resource
 	keys              KeyMap
-	SelectedResources []*api.Artifact
+	SelectedResources []*api.Resource
 }
 
 const (
@@ -26,7 +26,7 @@ const (
 )
 
 // New creates a resource table model populated with the given resources.
-func New(resources []*api.Artifact) Model {
+func New(resources []*api.Resource) Model {
 	columns := []table.Column{
 		table.NewColumn(columnKeyName, "Name", 40),
 		table.NewColumn(columnKeyID, "ID", 40),
@@ -107,11 +107,11 @@ func (m Model) View() string {
 	return body.String()
 }
 
-func mapRowsToResource(rows []table.Row) []*api.Artifact {
-	resources := []*api.Artifact{}
+func mapRowsToResource(rows []table.Row) []*api.Resource {
+	resources := []*api.Resource{}
 
 	for _, row := range rows {
-		if resource, ok := row.Data[columnKeyResourceData].(*api.Artifact); ok {
+		if resource, ok := row.Data[columnKeyResourceData].(*api.Resource); ok {
 			resources = append(resources, resource)
 		}
 	}

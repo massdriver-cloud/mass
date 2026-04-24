@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/tui/components/resourcetable"
 	"github.com/massdriver-cloud/mass/internal/tui/teahelper"
 )
 
 func TestView(t *testing.T) {
-	resources := []*api.Artifact{
+	resources := []*api.Resource{
 		{Name: "aws iam role", ID: "foobar"},
 		{Name: "gcp iam role", ID: "quxqaz"},
 	}
@@ -22,9 +22,9 @@ func TestView(t *testing.T) {
 }
 
 func TestUpdateSelectsResource(t *testing.T) {
-	awsRole := &api.Artifact{Name: "aws iam role", ID: "foobar"}
-	gcpServiceAccount := &api.Artifact{Name: "gcp service account", ID: "quxqaz"}
-	resources := []*api.Artifact{
+	awsRole := &api.Resource{Name: "aws iam role", ID: "foobar"}
+	gcpServiceAccount := &api.Resource{Name: "gcp service account", ID: "quxqaz"}
+	resources := []*api.Resource{
 		awsRole,
 		gcpServiceAccount,
 	}

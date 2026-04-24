@@ -1,6 +1,6 @@
 # Instances
 
-[Instances](https://docs.massdriver.cloud/concepts/instances) are deployed instances of infrastructure-as-code modules on your environment canvas.
+[Instances](https://docs.massdriver.cloud/concepts/instances) are deployment of infrastructure-as-code modules on your environment canvas.
 
 Instances are used to:
 - Deploy infrastructure components

@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/massdriver-cloud/mass/internal/api/v0"
+	"github.com/massdriver-cloud/mass/internal/api/v1"
 	"github.com/massdriver-cloud/mass/internal/tui/components/resourcetypetable"
 	"github.com/massdriver-cloud/mass/internal/tui/teahelper"
 )
 
 func TestViewHumanizes(t *testing.T) {
-	resourceTypes := []*api.ArtifactDefinition{
+	resourceTypes := []*api.ResourceType{
 		{Name: "example/password"},
 		{Name: "example/iam-thing"},
 	}
@@ -22,8 +22,8 @@ func TestViewHumanizes(t *testing.T) {
 }
 
 func TestUpdateSelectsResourceType(t *testing.T) {
-	want := &api.ArtifactDefinition{Name: "example/iam-thing"}
-	resourceTypes := []*api.ArtifactDefinition{
+	want := &api.ResourceType{Name: "example/iam-thing"}
+	resourceTypes := []*api.ResourceType{
 		{Name: "example/password"},
 		want,
 	}
