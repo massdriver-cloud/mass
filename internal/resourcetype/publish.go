@@ -23,7 +23,7 @@ func Publish(ctx context.Context, mdClient *client.Client, path string) (*api.Re
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct resource type schema URL: %w", err)
 	}
-	err = validateArtifactDefinition(rt, rtSchemaURL)
+	err = validateResourceType(rt, rtSchemaURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate resource type schema: %w", err)
 	}
@@ -31,7 +31,7 @@ func Publish(ctx context.Context, mdClient *client.Client, path string) (*api.Re
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct meta schema URL: %w", err)
 	}
-	err = validateArtifactDefinition(rt, metaSchemaURL)
+	err = validateResourceType(rt, metaSchemaURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate resource type against meta schema: %w", err)
 	}
@@ -43,10 +43,10 @@ func Publish(ctx context.Context, mdClient *client.Client, path string) (*api.Re
 	return api.PublishResourceType(ctx, mdClient, input)
 }
 
-func validateArtifactDefinition(artDef map[string]any, schemaURL string) error {
+func validateResourceType(rt map[string]any, schemaURL string) error {
 	sch, loadErr := jsonschema.LoadSchemaFromURL(schemaURL)
 	if loadErr != nil {
 		return loadErr
 	}
-	return jsonschema.ValidateGo(sch, artDef)
+	return jsonschema.ValidateGo(sch, rt)
 }

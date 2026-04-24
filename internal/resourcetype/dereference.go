@@ -24,7 +24,7 @@ type DereferenceOptions struct {
 
 // relativeFilePathPattern only accepts relative file path prefixes "./" and "../"
 var relativeFilePathPattern = regexp.MustCompile(`^(\.\/|\.\.\/)`)
-var massdriverDefinitionPattern = regexp.MustCompile(`^[a-zA-Z0-9-]+(\/[a-zA-Z0-9-]+)?$`)
+var massdriverResourceTypePattern = regexp.MustCompile(`^[a-zA-Z0-9-]+(\/[a-zA-Z0-9-]+)?$`)
 var httpPattern = regexp.MustCompile(`^(http|https)://`)
 var fragmentPattern = regexp.MustCompile(`^#`)
 
@@ -60,7 +60,7 @@ func DereferenceSchema(anyVal any, opts DereferenceOptions) (any, error) {
 			} else if httpPattern.MatchString(schemaRefValue) {
 				// HTTP ref. Pull the schema down via HTTP GET and hydrate
 				hydratedSchema, err = dereferenceHTTPRef(hydratedSchema, schema, schemaRefValue, opts)
-			} else if massdriverDefinitionPattern.MatchString(schemaRefValue) {
+			} else if massdriverResourceTypePattern.MatchString(schemaRefValue) {
 				// this must be a published schema, so fetch from massdriver
 				hydratedSchema, err = dereferenceMassdriverRef(hydratedSchema, schema, schemaRefValue, opts)
 			} else if fragmentPattern.MatchString(schemaRefValue) { //nolint:revive // fragment refs are intentionally left as-is
@@ -116,7 +116,7 @@ func dereferenceMassdriverRef(hydratedSchema map[string]any, schema map[string]a
 	}
 
 	// This is a hack to get around the issue of the UI choking if the params schema has 2 or more of the same $id in it.
-	// We need the "$id" in artifacts and connections, but we need to strip it out of params and ui schemas, hence the conditional.
+	// We need the "$id" in resources and connections, but we need to strip it out of params and ui schemas, hence the conditional.
 	// This logic should be removed when we have a better solution for this in the UI/API - probably after resource types are in OCI
 	if opts.StripID {
 		delete(referencedSchema, "$id")

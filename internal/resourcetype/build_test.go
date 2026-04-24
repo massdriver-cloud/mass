@@ -7,7 +7,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
 )
 
-func TestIsMassdriverYAMLArtifactDefinition(t *testing.T) {
+func TestIsMassdriverYAMLResourceType(t *testing.T) {
 	tests := []struct {
 		name string
 		path string
@@ -24,7 +24,7 @@ func TestIsMassdriverYAMLArtifactDefinition(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "json resource definition",
+			name: "json resource type",
 			path: "some/path/resource.json",
 			want: false,
 		},

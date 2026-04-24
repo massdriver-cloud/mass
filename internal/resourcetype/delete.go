@@ -15,13 +15,13 @@ import (
 
 // Delete removes a resource type by name, prompting for confirmation unless force is set.
 func Delete(ctx context.Context, mdClient *client.Client, name string, force bool) error {
-	// Get definition details for confirmation
+	// Get resource type details for confirmation
 	rt, getErr := Get(ctx, mdClient, name)
 	if getErr != nil {
 		return fmt.Errorf("error getting resource type: %w", getErr)
 	}
 
-	// Prompt for confirmation - requires typing the definition name unless --force is used
+	// Prompt for confirmation - requires typing the resource type name unless --force is used
 	if !force {
 		fmt.Printf("WARNING: This will permanently delete resource type `%s`.\n", rt.Name)
 		fmt.Printf("Type `%s` to confirm deletion: ", rt.Name)
@@ -35,11 +35,11 @@ func Delete(ctx context.Context, mdClient *client.Client, name string, force boo
 		}
 	}
 
-	deletedDef, deleteErr := api.DeleteResourceType(ctx, mdClient, name)
+	deletedRT, deleteErr := api.DeleteResourceType(ctx, mdClient, name)
 	if deleteErr != nil {
 		return fmt.Errorf("error deleting resource type: %w", deleteErr)
 	}
 
-	fmt.Printf("Resource type %s deleted successfully!\n", prettylogs.Underline(deletedDef.Name))
+	fmt.Printf("Resource type %s deleted successfully!\n", prettylogs.Underline(deletedRT.Name))
 	return nil
 }

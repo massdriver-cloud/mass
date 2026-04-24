@@ -14,13 +14,13 @@ import (
 func TestGet(t *testing.T) {
 	type test struct {
 		name       string
-		definition map[string]any
+		resourceType map[string]any
 		want       api.ResourceType
 	}
 	tests := []test{
 		{
 			name: "simple",
-			definition: map[string]any{
+			resourceType: map[string]any{
 				"id":   "123-456",
 				"name": "massdriver/test-schema",
 				"schema": map[string]any{
@@ -44,7 +44,7 @@ func TestGet(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			responses := []any{
-				gqlmock.MockQueryResponse("resourceType", tc.definition),
+				gqlmock.MockQueryResponse("resourceType", tc.resourceType),
 			}
 
 			mdClient := client.Client{
