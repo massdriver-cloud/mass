@@ -735,6 +735,7 @@ query getDeployment($organizationId: ID!, $id: ID!) {
     action
     version
     message
+    params
     createdAt
     updatedAt
     lastTransitionedAt

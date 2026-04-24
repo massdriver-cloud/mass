@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -12,17 +13,30 @@ import (
 
 // Deployment represents a record of an infrastructure provisioning operation.
 type Deployment struct {
-	ID                 string    `json:"id" mapstructure:"id"`
-	Status             string    `json:"status" mapstructure:"status"`
-	Action             string    `json:"action" mapstructure:"action"`
-	Version            string    `json:"version" mapstructure:"version"`
-	Message            string    `json:"message,omitempty" mapstructure:"message"`
-	DeployedBy         string    `json:"deployedBy,omitempty" mapstructure:"deployedBy"`
-	ElapsedTime        int       `json:"elapsedTime" mapstructure:"elapsedTime"`
-	CreatedAt          time.Time `json:"createdAt,omitzero" mapstructure:"createdAt"`
-	UpdatedAt          time.Time `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
-	LastTransitionedAt time.Time `json:"lastTransitionedAt,omitzero" mapstructure:"lastTransitionedAt"`
-	Instance           *Instance `json:"instance,omitempty" mapstructure:"instance,omitempty"`
+	ID                 string         `json:"id" mapstructure:"id"`
+	Status             string         `json:"status" mapstructure:"status"`
+	Action             string         `json:"action" mapstructure:"action"`
+	Version            string         `json:"version" mapstructure:"version"`
+	Message            string         `json:"message,omitempty" mapstructure:"message"`
+	Params             map[string]any `json:"params,omitempty" mapstructure:"params"`
+	DeployedBy         string         `json:"deployedBy,omitempty" mapstructure:"deployedBy"`
+	ElapsedTime        int            `json:"elapsedTime" mapstructure:"elapsedTime"`
+	CreatedAt          time.Time      `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt          time.Time      `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
+	LastTransitionedAt time.Time      `json:"lastTransitionedAt,omitzero" mapstructure:"lastTransitionedAt"`
+	Instance           *Instance      `json:"instance,omitempty" mapstructure:"instance,omitempty"`
+}
+
+// ParamsJSON returns the deployment's snapshot parameters as pretty-printed JSON.
+func (d *Deployment) ParamsJSON() (string, error) {
+	if d.Params == nil {
+		return "{}", nil
+	}
+	b, err := json.MarshalIndent(d.Params, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal params to JSON: %w", err)
+	}
+	return string(b), nil
 }
 
 // DeploymentLog is a single batch of logs emitted by the provisioner during a deployment.
@@ -42,9 +56,14 @@ func GetDeployment(ctx context.Context, mdClient *client.Client, id string) (*De
 	return toDeployment(response.Deployment)
 }
 
-// ListDeployments returns deployments, optionally filtered.
-func ListDeployments(ctx context.Context, mdClient *client.Client, filter *DeploymentsFilter) ([]Deployment, error) {
-	response, err := listDeployments(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, nil, nil)
+// ListDeployments returns deployments, optionally filtered and sorted. If limit > 0, at most
+// that many records are returned (capped by the server's cursor max, currently 100).
+func ListDeployments(ctx context.Context, mdClient *client.Client, filter *DeploymentsFilter, sort *DeploymentsSort, limit int) ([]Deployment, error) {
+	var cursor *Cursor
+	if limit > 0 {
+		cursor = &Cursor{Limit: limit}
+	}
+	response, err := listDeployments(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, sort, cursor)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list deployments: %w", err)
 	}

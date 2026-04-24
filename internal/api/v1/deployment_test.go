@@ -55,7 +55,7 @@ func TestListDeployments(t *testing.T) {
 	})
 	mdClient := client.Client{GQLv1: gqlClient}
 
-	deployments, err := api.ListDeployments(t.Context(), &mdClient, nil)
+	deployments, err := api.ListDeployments(t.Context(), &mdClient, nil, nil, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4214,6 +4214,8 @@ type getDeploymentDeployment struct {
 	Version string `json:"version"`
 	// An optional message describing the purpose of this deployment, similar to a commit message.
 	Message string `json:"message"`
+	// Snapshot of the instance configuration at the time this deployment was enqueued. Independent of the instance's current `params` — later edits do not mutate this record.
+	Params map[string]any `json:"-"`
 	// When this deployment was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this deployment record was last updated (UTC).
@@ -4247,6 +4249,9 @@ func (v *getDeploymentDeployment) GetVersion() string { return v.Version }
 // GetMessage returns getDeploymentDeployment.Message, and is useful for accessing the field via an interface.
 func (v *getDeploymentDeployment) GetMessage() string { return v.Message }
 
+// GetParams returns getDeploymentDeployment.Params, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetParams() map[string]any { return v.Params }
+
 // GetCreatedAt returns getDeploymentDeployment.CreatedAt, and is useful for accessing the field via an interface.
 func (v *getDeploymentDeployment) GetCreatedAt() time.Time { return v.CreatedAt }
 
@@ -4264,6 +4269,102 @@ func (v *getDeploymentDeployment) GetDeployedBy() string { return v.DeployedBy }
 
 // GetInstance returns getDeploymentDeployment.Instance, and is useful for accessing the field via an interface.
 func (v *getDeploymentDeployment) GetInstance() getDeploymentDeploymentInstance { return v.Instance }
+
+func (v *getDeploymentDeployment) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getDeploymentDeployment
+		Params json.RawMessage `json:"params"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getDeploymentDeployment = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Params
+		src := firstPass.Params
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getDeploymentDeployment.Params: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetDeploymentDeployment struct {
+	Id string `json:"id"`
+
+	Status DeploymentStatus `json:"status"`
+
+	Action DeploymentAction `json:"action"`
+
+	Version string `json:"version"`
+
+	Message string `json:"message"`
+
+	Params json.RawMessage `json:"params"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	LastTransitionedAt time.Time `json:"lastTransitionedAt"`
+
+	ElapsedTime int `json:"elapsedTime"`
+
+	DeployedBy string `json:"deployedBy"`
+
+	Instance getDeploymentDeploymentInstance `json:"instance"`
+}
+
+func (v *getDeploymentDeployment) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getDeploymentDeployment) __premarshalJSON() (*__premarshalgetDeploymentDeployment, error) {
+	var retval __premarshalgetDeploymentDeployment
+
+	retval.Id = v.Id
+	retval.Status = v.Status
+	retval.Action = v.Action
+	retval.Version = v.Version
+	retval.Message = v.Message
+	{
+
+		dst := &retval.Params
+		src := v.Params
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getDeploymentDeployment.Params: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.LastTransitionedAt = v.LastTransitionedAt
+	retval.ElapsedTime = v.ElapsedTime
+	retval.DeployedBy = v.DeployedBy
+	retval.Instance = v.Instance
+	return &retval, nil
+}
 
 // getDeploymentDeploymentInstance includes the requested fields of the GraphQL type Instance.
 // The GraphQL type's documentation follows.
@@ -12295,6 +12396,7 @@ query getDeployment ($organizationId: ID!, $id: ID!) {
 		action
 		version
 		message
+		params
 		createdAt
 		updatedAt
 		lastTransitionedAt

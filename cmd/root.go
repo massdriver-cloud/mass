@@ -35,9 +35,9 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	rootCmd.AddCommand(NewCmdBundle())
 	rootCmd.AddCommand(NewCmdComponent())
+	rootCmd.AddCommand(NewCmdDeployment())
 	rootCmd.AddCommand(NewCmdDocs())
 	rootCmd.AddCommand(NewCmdEnvironment())
-	rootCmd.AddCommand(NewCmdLogs())
 	rootCmd.AddCommand(NewCmdInstance())
 	rootCmd.AddCommand(NewCmdProject())
 	rootCmd.AddCommand(NewCmdResource())
