@@ -15,7 +15,7 @@ type Component struct {
 	ID          string            `json:"id" mapstructure:"id"`
 	Name        string            `json:"name" mapstructure:"name"`
 	Description string            `json:"description,omitempty" mapstructure:"description"`
-	Tags        map[string]string `json:"tags,omitempty" mapstructure:"tags"`
+	Attributes  map[string]string `json:"attributes,omitempty" mapstructure:"attributes"`
 	OciRepo     *OciRepo          `json:"ociRepo,omitempty" mapstructure:"ociRepo,omitempty"`
 	CreatedAt   time.Time         `json:"createdAt,omitzero" mapstructure:"createdAt"`
 	UpdatedAt   time.Time         `json:"updatedAt,omitzero" mapstructure:"updatedAt"`

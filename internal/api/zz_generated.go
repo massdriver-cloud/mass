@@ -14,15 +14,18 @@ import (
 
 // Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application.
 type AddComponentInput struct {
+	// Key-value attributes for this component. Keys and values must be strings. Must conform to the organization's custom attributes for the component scope.
+	Attributes map[string]any `json:"-"`
 	// Optional description of this component's purpose
 	Description string `json:"description,omitempty"`
 	// A short, memorable identifier for this component. This becomes the final segment of package identifiers. For example, project 'ecomm' with environment 'prod' and component 'db' creates 'ecomm-prod-db'. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation.
 	Id string `json:"id"`
 	// Display name for this component (e.g., 'Billing Database')
 	Name string `json:"name"`
-	// Key-value tags for this component. Keys and values must be strings. Must conform to the organization's tag constraints for the component scope.
-	Tags map[string]any `json:"-"`
 }
+
+// GetAttributes returns AddComponentInput.Attributes, and is useful for accessing the field via an interface.
+func (v *AddComponentInput) GetAttributes() map[string]any { return v.Attributes }
 
 // GetDescription returns AddComponentInput.Description, and is useful for accessing the field via an interface.
 func (v *AddComponentInput) GetDescription() string { return v.Description }
@@ -33,9 +36,6 @@ func (v *AddComponentInput) GetId() string { return v.Id }
 // GetName returns AddComponentInput.Name, and is useful for accessing the field via an interface.
 func (v *AddComponentInput) GetName() string { return v.Name }
 
-// GetTags returns AddComponentInput.Tags, and is useful for accessing the field via an interface.
-func (v *AddComponentInput) GetTags() map[string]any { return v.Tags }
-
 func (v *AddComponentInput) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -44,7 +44,7 @@ func (v *AddComponentInput) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*AddComponentInput
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.AddComponentInput = v
@@ -55,14 +55,14 @@ func (v *AddComponentInput) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal AddComponentInput.Tags: %w", err)
+					"unable to unmarshal AddComponentInput.Attributes: %w", err)
 			}
 		}
 	}
@@ -70,13 +70,13 @@ func (v *AddComponentInput) UnmarshalJSON(b []byte) error {
 }
 
 type __premarshalAddComponentInput struct {
+	Attributes json.RawMessage `json:"attributes,omitempty"`
+
 	Description string `json:"description,omitempty"`
 
 	Id string `json:"id"`
 
 	Name string `json:"name"`
-
-	Tags json.RawMessage `json:"tags,omitempty"`
 }
 
 func (v *AddComponentInput) MarshalJSON() ([]byte, error) {
@@ -90,21 +90,21 @@ func (v *AddComponentInput) MarshalJSON() ([]byte, error) {
 func (v *AddComponentInput) __premarshalJSON() (*__premarshalAddComponentInput, error) {
 	var retval __premarshalAddComponentInput
 
-	retval.Description = v.Description
-	retval.Id = v.Id
-	retval.Name = v.Name
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal AddComponentInput.Tags: %w", err)
+				"unable to marshal AddComponentInput.Attributes: %w", err)
 		}
 	}
+	retval.Description = v.Description
+	retval.Id = v.Id
+	retval.Name = v.Name
 	return &retval, nil
 }
 
@@ -279,15 +279,18 @@ func (v *CreateDeploymentInput) __premarshalJSON() (*__premarshalCreateDeploymen
 
 // Create a new environment. Environments are isolated deployment contexts like production, staging, or development, each with independent secrets and configurations.
 type CreateEnvironmentInput struct {
+	// Key-value attributes for this environment. Keys and values must be strings. Must conform to the organization's custom attributes for the environment scope.
+	Attributes map[string]any `json:"-"`
 	// An optional description of the environment's purpose
 	Description string `json:"description"`
 	// A short, memorable identifier for looking up this environment in the API and CLI. This becomes the second segment of package identifiers. For example, project 'ecomm' with environment 'prod' and component 'db' creates 'ecomm-prod-db'. Use familiar names like 'prod', 'staging', 'dev'—human-readable, not a UUID. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation.
 	Id string `json:"id"`
 	// A human-readable name for the environment
 	Name string `json:"name"`
-	// Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope.
-	Tags map[string]any `json:"-"`
 }
+
+// GetAttributes returns CreateEnvironmentInput.Attributes, and is useful for accessing the field via an interface.
+func (v *CreateEnvironmentInput) GetAttributes() map[string]any { return v.Attributes }
 
 // GetDescription returns CreateEnvironmentInput.Description, and is useful for accessing the field via an interface.
 func (v *CreateEnvironmentInput) GetDescription() string { return v.Description }
@@ -298,9 +301,6 @@ func (v *CreateEnvironmentInput) GetId() string { return v.Id }
 // GetName returns CreateEnvironmentInput.Name, and is useful for accessing the field via an interface.
 func (v *CreateEnvironmentInput) GetName() string { return v.Name }
 
-// GetTags returns CreateEnvironmentInput.Tags, and is useful for accessing the field via an interface.
-func (v *CreateEnvironmentInput) GetTags() map[string]any { return v.Tags }
-
 func (v *CreateEnvironmentInput) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -309,7 +309,7 @@ func (v *CreateEnvironmentInput) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*CreateEnvironmentInput
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.CreateEnvironmentInput = v
@@ -320,14 +320,14 @@ func (v *CreateEnvironmentInput) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal CreateEnvironmentInput.Tags: %w", err)
+					"unable to unmarshal CreateEnvironmentInput.Attributes: %w", err)
 			}
 		}
 	}
@@ -335,13 +335,13 @@ func (v *CreateEnvironmentInput) UnmarshalJSON(b []byte) error {
 }
 
 type __premarshalCreateEnvironmentInput struct {
+	Attributes json.RawMessage `json:"attributes"`
+
 	Description string `json:"description"`
 
 	Id string `json:"id"`
 
 	Name string `json:"name"`
-
-	Tags json.RawMessage `json:"tags"`
 }
 
 func (v *CreateEnvironmentInput) MarshalJSON() ([]byte, error) {
@@ -355,35 +355,38 @@ func (v *CreateEnvironmentInput) MarshalJSON() ([]byte, error) {
 func (v *CreateEnvironmentInput) __premarshalJSON() (*__premarshalCreateEnvironmentInput, error) {
 	var retval __premarshalCreateEnvironmentInput
 
-	retval.Description = v.Description
-	retval.Id = v.Id
-	retval.Name = v.Name
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal CreateEnvironmentInput.Tags: %w", err)
+				"unable to marshal CreateEnvironmentInput.Attributes: %w", err)
 		}
 	}
+	retval.Description = v.Description
+	retval.Id = v.Id
+	retval.Name = v.Name
 	return &retval, nil
 }
 
 // Create a new project. A project is the complete model of your application—its infrastructure, architecture, configurations, and environments.
 type CreateProjectInput struct {
+	// Key-value attributes for this project. Keys and values must be strings. Must conform to the organization's custom attributes for the project scope.
+	Attributes map[string]any `json:"-"`
 	// An optional description of the project's purpose or contents
 	Description string `json:"description"`
 	// A short, memorable identifier for looking up this project in the API and CLI. This becomes the first segment of all resource identifiers within the project. For example, a project 'ecomm' with environment 'prod' and component 'db' creates the package identifier 'ecomm-prod-db'. Choose something concise and meaningful—human-readable, not a UUID. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation.
 	Id string `json:"id"`
 	// A human-readable name for the project
 	Name string `json:"name"`
-	// Key-value tags for this project. Keys and values must be strings. Must conform to the organization's tag constraints for the project scope.
-	Tags map[string]any `json:"-"`
 }
+
+// GetAttributes returns CreateProjectInput.Attributes, and is useful for accessing the field via an interface.
+func (v *CreateProjectInput) GetAttributes() map[string]any { return v.Attributes }
 
 // GetDescription returns CreateProjectInput.Description, and is useful for accessing the field via an interface.
 func (v *CreateProjectInput) GetDescription() string { return v.Description }
@@ -394,9 +397,6 @@ func (v *CreateProjectInput) GetId() string { return v.Id }
 // GetName returns CreateProjectInput.Name, and is useful for accessing the field via an interface.
 func (v *CreateProjectInput) GetName() string { return v.Name }
 
-// GetTags returns CreateProjectInput.Tags, and is useful for accessing the field via an interface.
-func (v *CreateProjectInput) GetTags() map[string]any { return v.Tags }
-
 func (v *CreateProjectInput) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
@@ -405,7 +405,7 @@ func (v *CreateProjectInput) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*CreateProjectInput
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.CreateProjectInput = v
@@ -416,14 +416,14 @@ func (v *CreateProjectInput) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal CreateProjectInput.Tags: %w", err)
+					"unable to unmarshal CreateProjectInput.Attributes: %w", err)
 			}
 		}
 	}
@@ -431,13 +431,13 @@ func (v *CreateProjectInput) UnmarshalJSON(b []byte) error {
 }
 
 type __premarshalCreateProjectInput struct {
+	Attributes json.RawMessage `json:"attributes"`
+
 	Description string `json:"description"`
 
 	Id string `json:"id"`
 
 	Name string `json:"name"`
-
-	Tags json.RawMessage `json:"tags"`
 }
 
 func (v *CreateProjectInput) MarshalJSON() ([]byte, error) {
@@ -451,21 +451,21 @@ func (v *CreateProjectInput) MarshalJSON() ([]byte, error) {
 func (v *CreateProjectInput) __premarshalJSON() (*__premarshalCreateProjectInput, error) {
 	var retval __premarshalCreateProjectInput
 
-	retval.Description = v.Description
-	retval.Id = v.Id
-	retval.Name = v.Name
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal CreateProjectInput.Tags: %w", err)
+				"unable to marshal CreateProjectInput.Attributes: %w", err)
 		}
 	}
+	retval.Description = v.Description
+	retval.Id = v.Id
+	retval.Name = v.Name
 	return &retval, nil
 }
 
@@ -1398,22 +1398,22 @@ func (v *StringFilter) GetIn() []string { return v.In }
 
 // Update an existing environment's name and description. The ID cannot be changed after creation.
 type UpdateEnvironmentInput struct {
+	// Key-value attributes for this environment. Keys and values must be strings. Must conform to the organization's custom attributes for the environment scope.
+	Attributes map[string]any `json:"-"`
 	// An optional description of the environment's purpose
 	Description string `json:"description"`
 	// A human-readable name for the environment
 	Name string `json:"name"`
-	// Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope.
-	Tags map[string]any `json:"-"`
 }
+
+// GetAttributes returns UpdateEnvironmentInput.Attributes, and is useful for accessing the field via an interface.
+func (v *UpdateEnvironmentInput) GetAttributes() map[string]any { return v.Attributes }
 
 // GetDescription returns UpdateEnvironmentInput.Description, and is useful for accessing the field via an interface.
 func (v *UpdateEnvironmentInput) GetDescription() string { return v.Description }
 
 // GetName returns UpdateEnvironmentInput.Name, and is useful for accessing the field via an interface.
 func (v *UpdateEnvironmentInput) GetName() string { return v.Name }
-
-// GetTags returns UpdateEnvironmentInput.Tags, and is useful for accessing the field via an interface.
-func (v *UpdateEnvironmentInput) GetTags() map[string]any { return v.Tags }
 
 func (v *UpdateEnvironmentInput) UnmarshalJSON(b []byte) error {
 
@@ -1423,7 +1423,7 @@ func (v *UpdateEnvironmentInput) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*UpdateEnvironmentInput
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.UpdateEnvironmentInput = v
@@ -1434,14 +1434,14 @@ func (v *UpdateEnvironmentInput) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal UpdateEnvironmentInput.Tags: %w", err)
+					"unable to unmarshal UpdateEnvironmentInput.Attributes: %w", err)
 			}
 		}
 	}
@@ -1449,11 +1449,11 @@ func (v *UpdateEnvironmentInput) UnmarshalJSON(b []byte) error {
 }
 
 type __premarshalUpdateEnvironmentInput struct {
+	Attributes json.RawMessage `json:"attributes"`
+
 	Description string `json:"description"`
 
 	Name string `json:"name"`
-
-	Tags json.RawMessage `json:"tags"`
 }
 
 func (v *UpdateEnvironmentInput) MarshalJSON() ([]byte, error) {
@@ -1467,20 +1467,20 @@ func (v *UpdateEnvironmentInput) MarshalJSON() ([]byte, error) {
 func (v *UpdateEnvironmentInput) __premarshalJSON() (*__premarshalUpdateEnvironmentInput, error) {
 	var retval __premarshalUpdateEnvironmentInput
 
-	retval.Description = v.Description
-	retval.Name = v.Name
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal UpdateEnvironmentInput.Tags: %w", err)
+				"unable to marshal UpdateEnvironmentInput.Attributes: %w", err)
 		}
 	}
+	retval.Description = v.Description
+	retval.Name = v.Name
 	return &retval, nil
 }
 
@@ -1500,22 +1500,22 @@ func (v *UpdateInstanceInput) GetVersion() string { return v.Version }
 
 // Update an existing project's name and description. The ID cannot be changed after creation.
 type UpdateProjectInput struct {
+	// Key-value attributes for this project. Keys and values must be strings. Must conform to the organization's custom attributes for the project scope.
+	Attributes map[string]any `json:"-"`
 	// An optional description of the project's purpose or contents
 	Description string `json:"description"`
 	// A human-readable name for the project
 	Name string `json:"name"`
-	// Key-value tags for this project. Keys and values must be strings. Must conform to the organization's tag constraints for the project scope.
-	Tags map[string]any `json:"-"`
 }
+
+// GetAttributes returns UpdateProjectInput.Attributes, and is useful for accessing the field via an interface.
+func (v *UpdateProjectInput) GetAttributes() map[string]any { return v.Attributes }
 
 // GetDescription returns UpdateProjectInput.Description, and is useful for accessing the field via an interface.
 func (v *UpdateProjectInput) GetDescription() string { return v.Description }
 
 // GetName returns UpdateProjectInput.Name, and is useful for accessing the field via an interface.
 func (v *UpdateProjectInput) GetName() string { return v.Name }
-
-// GetTags returns UpdateProjectInput.Tags, and is useful for accessing the field via an interface.
-func (v *UpdateProjectInput) GetTags() map[string]any { return v.Tags }
 
 func (v *UpdateProjectInput) UnmarshalJSON(b []byte) error {
 
@@ -1525,7 +1525,7 @@ func (v *UpdateProjectInput) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*UpdateProjectInput
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.UpdateProjectInput = v
@@ -1536,14 +1536,14 @@ func (v *UpdateProjectInput) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal UpdateProjectInput.Tags: %w", err)
+					"unable to unmarshal UpdateProjectInput.Attributes: %w", err)
 			}
 		}
 	}
@@ -1551,11 +1551,11 @@ func (v *UpdateProjectInput) UnmarshalJSON(b []byte) error {
 }
 
 type __premarshalUpdateProjectInput struct {
+	Attributes json.RawMessage `json:"attributes"`
+
 	Description string `json:"description"`
 
 	Name string `json:"name"`
-
-	Tags json.RawMessage `json:"tags"`
 }
 
 func (v *UpdateProjectInput) MarshalJSON() ([]byte, error) {
@@ -1569,20 +1569,20 @@ func (v *UpdateProjectInput) MarshalJSON() ([]byte, error) {
 func (v *UpdateProjectInput) __premarshalJSON() (*__premarshalUpdateProjectInput, error) {
 	var retval __premarshalUpdateProjectInput
 
-	retval.Description = v.Description
-	retval.Name = v.Name
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal UpdateProjectInput.Tags: %w", err)
+				"unable to marshal UpdateProjectInput.Attributes: %w", err)
 		}
 	}
+	retval.Description = v.Description
+	retval.Name = v.Name
 	return &retval, nil
 }
 
@@ -2359,8 +2359,8 @@ type addComponentAddComponentComponentPayloadResultComponent struct {
 	Name string `json:"name"`
 	// Optional free-text description of this component's purpose.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this component.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
 	// When this component was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this component was last modified (UTC).
@@ -2380,9 +2380,9 @@ func (v *addComponentAddComponentComponentPayloadResultComponent) GetDescription
 	return v.Description
 }
 
-// GetTags returns addComponentAddComponentComponentPayloadResultComponent.Tags, and is useful for accessing the field via an interface.
-func (v *addComponentAddComponentComponentPayloadResultComponent) GetTags() map[string]any {
-	return v.Tags
+// GetAttributes returns addComponentAddComponentComponentPayloadResultComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetAttributes() map[string]any {
+	return v.Attributes
 }
 
 // GetCreatedAt returns addComponentAddComponentComponentPayloadResultComponent.CreatedAt, and is useful for accessing the field via an interface.
@@ -2408,7 +2408,7 @@ func (v *addComponentAddComponentComponentPayloadResultComponent) UnmarshalJSON(
 
 	var firstPass struct {
 		*addComponentAddComponentComponentPayloadResultComponent
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.addComponentAddComponentComponentPayloadResultComponent = v
@@ -2419,14 +2419,14 @@ func (v *addComponentAddComponentComponentPayloadResultComponent) UnmarshalJSON(
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal addComponentAddComponentComponentPayloadResultComponent.Tags: %w", err)
+					"unable to unmarshal addComponentAddComponentComponentPayloadResultComponent.Attributes: %w", err)
 			}
 		}
 	}
@@ -2440,7 +2440,7 @@ type __premarshaladdComponentAddComponentComponentPayloadResultComponent struct 
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -2465,14 +2465,14 @@ func (v *addComponentAddComponentComponentPayloadResultComponent) __premarshalJS
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal addComponentAddComponentComponentPayloadResultComponent.Tags: %w", err)
+				"unable to marshal addComponentAddComponentComponentPayloadResultComponent.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -2853,7 +2853,7 @@ func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationM
 // to an environment, every component in the project's blueprint is realized as an **Instance** --
 // a running piece of cloud infrastructure with its own configuration, state, and cost data.
 //
-// Environments inherit tags from their parent project. You can also set environment-scoped tags
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
 // that cascade down to all instances within the environment. **Defaults** let you pre-assign
 // resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
 //
@@ -2993,7 +2993,7 @@ func (v *createProjectCreateProjectProjectPayloadMessagesValidationMessage) GetM
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type createProjectCreateProjectProjectPayloadResultProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
@@ -3338,7 +3338,7 @@ func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationM
 // to an environment, every component in the project's blueprint is realized as an **Instance** --
 // a running piece of cloud infrastructure with its own configuration, state, and cost data.
 //
-// Environments inherit tags from their parent project. You can also set environment-scoped tags
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
 // that cascade down to all instances within the environment. **Defaults** let you pre-assign
 // resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
 //
@@ -3478,7 +3478,7 @@ func (v *deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage) GetM
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type deleteProjectDeleteProjectProjectPayloadResultProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
@@ -4429,7 +4429,7 @@ func (v *getDeploymentDeploymentInstance) GetEnvironment() getDeploymentDeployme
 // to an environment, every component in the project's blueprint is realized as an **Instance** --
 // a running piece of cloud infrastructure with its own configuration, state, and cost data.
 //
-// Environments inherit tags from their parent project. You can also set environment-scoped tags
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
 // that cascade down to all instances within the environment. **Defaults** let you pre-assign
 // resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
 //
@@ -4473,7 +4473,7 @@ func (v *getDeploymentDeploymentInstanceEnvironment) GetProject() getDeploymentD
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type getDeploymentDeploymentInstanceEnvironmentProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
@@ -4568,7 +4568,7 @@ func (v *getDeploymentResponse) GetDeployment() getDeploymentDeployment { return
 // to an environment, every component in the project's blueprint is realized as an **Instance** --
 // a running piece of cloud infrastructure with its own configuration, state, and cost data.
 //
-// Environments inherit tags from their parent project. You can also set environment-scoped tags
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
 // that cascade down to all instances within the environment. **Defaults** let you pre-assign
 // resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
 //
@@ -4580,8 +4580,8 @@ type getEnvironmentEnvironment struct {
 	Name string `json:"name"`
 	// Free-text description of what this environment is for.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this environment. Tags cascade to instances. Must conform to your organization's tag constraints for the `ENVIRONMENT` scope.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this environment. Attributes cascade to instances. Must conform to your organization's custom attributes for the `ENVIRONMENT` scope.
+	Attributes map[string]any `json:"-"`
 	// When this environment was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this environment was last modified (UTC).
@@ -4603,8 +4603,8 @@ func (v *getEnvironmentEnvironment) GetName() string { return v.Name }
 // GetDescription returns getEnvironmentEnvironment.Description, and is useful for accessing the field via an interface.
 func (v *getEnvironmentEnvironment) GetDescription() string { return v.Description }
 
-// GetTags returns getEnvironmentEnvironment.Tags, and is useful for accessing the field via an interface.
-func (v *getEnvironmentEnvironment) GetTags() map[string]any { return v.Tags }
+// GetAttributes returns getEnvironmentEnvironment.Attributes, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetAttributes() map[string]any { return v.Attributes }
 
 // GetCreatedAt returns getEnvironmentEnvironment.CreatedAt, and is useful for accessing the field via an interface.
 func (v *getEnvironmentEnvironment) GetCreatedAt() time.Time { return v.CreatedAt }
@@ -4631,7 +4631,7 @@ func (v *getEnvironmentEnvironment) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*getEnvironmentEnvironment
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.getEnvironmentEnvironment = v
@@ -4642,14 +4642,14 @@ func (v *getEnvironmentEnvironment) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getEnvironmentEnvironment.Tags: %w", err)
+					"unable to unmarshal getEnvironmentEnvironment.Attributes: %w", err)
 			}
 		}
 	}
@@ -4663,7 +4663,7 @@ type __premarshalgetEnvironmentEnvironment struct {
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -4692,14 +4692,14 @@ func (v *getEnvironmentEnvironment) __premarshalJSON() (*__premarshalgetEnvironm
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getEnvironmentEnvironment.Tags: %w", err)
+				"unable to marshal getEnvironmentEnvironment.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -4820,6 +4820,8 @@ type getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance struc
 	Version string `json:"version"`
 	// Whether to include development (pre-release) builds when resolving the version constraint.
 	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// Key-value attributes assigned directly to this instance.
+	Attributes map[string]any `json:"-"`
 	// When this instance was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this instance was last modified (UTC).
@@ -4855,6 +4857,11 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) 
 	return v.ReleaseStrategy
 }
 
+// GetAttributes returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Attributes, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
 // GetCreatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.CreatedAt, and is useful for accessing the field via an interface.
 func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetCreatedAt() time.Time {
 	return v.CreatedAt
@@ -4873,6 +4880,96 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) 
 // GetBundle returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Bundle, and is useful for accessing the field via an interface.
 func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetBundle() getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle {
 	return v.Bundle
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Status InstanceStatus `json:"status"`
+
+	Version string `json:"version"`
+
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Component getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent `json:"component"`
+
+	Bundle getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle `json:"bundle"`
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) __premarshalJSON() (*__premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance, error) {
+	var retval __premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Status = v.Status
+	retval.Version = v.Version
+	retval.ReleaseStrategy = v.ReleaseStrategy
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Component = v.Component
+	retval.Bundle = v.Bundle
+	return &retval, nil
 }
 
 // getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle includes the requested fields of the GraphQL type Bundle.
@@ -4986,8 +5083,8 @@ type getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceCompon
 	Name string `json:"name"`
 	// Optional free-text description of this component's purpose.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this component.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
 	// When this component was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this component was last modified (UTC).
@@ -5009,9 +5106,9 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceCo
 	return v.Description
 }
 
-// GetTags returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Tags, and is useful for accessing the field via an interface.
-func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetTags() map[string]any {
-	return v.Tags
+// GetAttributes returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetAttributes() map[string]any {
+	return v.Attributes
 }
 
 // GetCreatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.CreatedAt, and is useful for accessing the field via an interface.
@@ -5032,7 +5129,7 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceCo
 
 	var firstPass struct {
 		*getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent = v
@@ -5043,14 +5140,14 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceCo
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Tags: %w", err)
+					"unable to unmarshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Attributes: %w", err)
 			}
 		}
 	}
@@ -5064,7 +5161,7 @@ type __premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsIn
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -5087,14 +5184,14 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceCo
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Tags: %w", err)
+				"unable to marshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -5204,7 +5301,7 @@ func (v *getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample) GetCu
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type getEnvironmentEnvironmentProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
@@ -5269,8 +5366,8 @@ type getInstanceInstance struct {
 	Status InstanceStatus `json:"status"`
 	// Cached configuration parameters from the most recent deployment. Null if the instance has never been deployed.
 	Params map[string]any `json:"-"`
-	// Key-value tags assigned directly to this instance.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this instance.
+	Attributes map[string]any `json:"-"`
 	// Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`.
 	Version string `json:"version"`
 	// Whether to include development (pre-release) builds when resolving the version constraint.
@@ -5321,8 +5418,8 @@ func (v *getInstanceInstance) GetStatus() InstanceStatus { return v.Status }
 // GetParams returns getInstanceInstance.Params, and is useful for accessing the field via an interface.
 func (v *getInstanceInstance) GetParams() map[string]any { return v.Params }
 
-// GetTags returns getInstanceInstance.Tags, and is useful for accessing the field via an interface.
-func (v *getInstanceInstance) GetTags() map[string]any { return v.Tags }
+// GetAttributes returns getInstanceInstance.Attributes, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetAttributes() map[string]any { return v.Attributes }
 
 // GetVersion returns getInstanceInstance.Version, and is useful for accessing the field via an interface.
 func (v *getInstanceInstance) GetVersion() string { return v.Version }
@@ -5370,8 +5467,8 @@ func (v *getInstanceInstance) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*getInstanceInstance
-		Params json.RawMessage `json:"params"`
-		Tags   json.RawMessage `json:"tags"`
+		Params     json.RawMessage `json:"params"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.getInstanceInstance = v
@@ -5395,14 +5492,14 @@ func (v *getInstanceInstance) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getInstanceInstance.Tags: %w", err)
+					"unable to unmarshal getInstanceInstance.Attributes: %w", err)
 			}
 		}
 	}
@@ -5418,7 +5515,7 @@ type __premarshalgetInstanceInstance struct {
 
 	Params json.RawMessage `json:"params"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	Version string `json:"version"`
 
@@ -5473,14 +5570,14 @@ func (v *getInstanceInstance) __premarshalJSON() (*__premarshalgetInstanceInstan
 	}
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getInstanceInstance.Tags: %w", err)
+				"unable to marshal getInstanceInstance.Attributes: %w", err)
 		}
 	}
 	retval.Version = v.Version
@@ -5591,8 +5688,8 @@ type getInstanceInstanceComponent struct {
 	Name string `json:"name"`
 	// Optional free-text description of this component's purpose.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this component.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
 	// When this component was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this component was last modified (UTC).
@@ -5608,8 +5705,8 @@ func (v *getInstanceInstanceComponent) GetName() string { return v.Name }
 // GetDescription returns getInstanceInstanceComponent.Description, and is useful for accessing the field via an interface.
 func (v *getInstanceInstanceComponent) GetDescription() string { return v.Description }
 
-// GetTags returns getInstanceInstanceComponent.Tags, and is useful for accessing the field via an interface.
-func (v *getInstanceInstanceComponent) GetTags() map[string]any { return v.Tags }
+// GetAttributes returns getInstanceInstanceComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceComponent) GetAttributes() map[string]any { return v.Attributes }
 
 // GetCreatedAt returns getInstanceInstanceComponent.CreatedAt, and is useful for accessing the field via an interface.
 func (v *getInstanceInstanceComponent) GetCreatedAt() time.Time { return v.CreatedAt }
@@ -5625,7 +5722,7 @@ func (v *getInstanceInstanceComponent) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*getInstanceInstanceComponent
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.getInstanceInstanceComponent = v
@@ -5636,14 +5733,14 @@ func (v *getInstanceInstanceComponent) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getInstanceInstanceComponent.Tags: %w", err)
+					"unable to unmarshal getInstanceInstanceComponent.Attributes: %w", err)
 			}
 		}
 	}
@@ -5657,7 +5754,7 @@ type __premarshalgetInstanceInstanceComponent struct {
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -5680,14 +5777,14 @@ func (v *getInstanceInstanceComponent) __premarshalJSON() (*__premarshalgetInsta
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getInstanceInstanceComponent.Tags: %w", err)
+				"unable to marshal getInstanceInstanceComponent.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -5787,7 +5884,7 @@ func (v *getInstanceInstanceCostCostSummaryMonthlyAverageCostSample) GetCurrency
 // to an environment, every component in the project's blueprint is realized as an **Instance** --
 // a running piece of cloud infrastructure with its own configuration, state, and cost data.
 //
-// Environments inherit tags from their parent project. You can also set environment-scoped tags
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
 // that cascade down to all instances within the environment. **Defaults** let you pre-assign
 // resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
 //
@@ -5836,7 +5933,7 @@ func (v *getInstanceInstanceEnvironment) GetProject() getInstanceInstanceEnviron
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type getInstanceInstanceEnvironmentProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
@@ -6070,15 +6167,15 @@ func (v *getOciRepoResponse) GetOciRepo() getOciRepoOciRepo { return v.OciRepo }
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type getProjectProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
 	Name string `json:"name"`
 	// Free-text description of what this project is for.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this project. Tags cascade to environments and instances. Must conform to your organization's tag constraints for the `PROJECT` scope.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this project. Attributes cascade to environments and instances. Must conform to your organization's custom attributes for the `PROJECT` scope.
+	Attributes map[string]any `json:"-"`
 	// Paginated list of environments in this project (e.g., staging, production).
 	Environments getProjectProjectEnvironmentsEnvironmentsPage `json:"environments"`
 	// When this project was created (UTC).
@@ -6100,8 +6197,8 @@ func (v *getProjectProject) GetName() string { return v.Name }
 // GetDescription returns getProjectProject.Description, and is useful for accessing the field via an interface.
 func (v *getProjectProject) GetDescription() string { return v.Description }
 
-// GetTags returns getProjectProject.Tags, and is useful for accessing the field via an interface.
-func (v *getProjectProject) GetTags() map[string]any { return v.Tags }
+// GetAttributes returns getProjectProject.Attributes, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetAttributes() map[string]any { return v.Attributes }
 
 // GetEnvironments returns getProjectProject.Environments, and is useful for accessing the field via an interface.
 func (v *getProjectProject) GetEnvironments() getProjectProjectEnvironmentsEnvironmentsPage {
@@ -6128,7 +6225,7 @@ func (v *getProjectProject) UnmarshalJSON(b []byte) error {
 
 	var firstPass struct {
 		*getProjectProject
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.getProjectProject = v
@@ -6139,14 +6236,14 @@ func (v *getProjectProject) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getProjectProject.Tags: %w", err)
+					"unable to unmarshal getProjectProject.Attributes: %w", err)
 			}
 		}
 	}
@@ -6160,7 +6257,7 @@ type __premarshalgetProjectProject struct {
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	Environments getProjectProjectEnvironmentsEnvironmentsPage `json:"environments"`
 
@@ -6189,14 +6286,14 @@ func (v *getProjectProject) __premarshalJSON() (*__premarshalgetProjectProject, 
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getProjectProject.Tags: %w", err)
+				"unable to marshal getProjectProject.Attributes: %w", err)
 		}
 	}
 	retval.Environments = v.Environments
@@ -6329,7 +6426,7 @@ func (v *getProjectProjectEnvironmentsEnvironmentsPage) GetItems() []getProjectP
 // to an environment, every component in the project's blueprint is realized as an **Instance** --
 // a running piece of cloud infrastructure with its own configuration, state, and cost data.
 //
-// Environments inherit tags from their parent project. You can also set environment-scoped tags
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
 // that cascade down to all instances within the environment. **Defaults** let you pre-assign
 // resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
 //
@@ -7208,8 +7305,8 @@ type linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent struct {
 	Name string `json:"name"`
 	// Optional free-text description of this component's purpose.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this component.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
 	// When this component was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this component was last modified (UTC).
@@ -7229,9 +7326,9 @@ func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetDesc
 	return v.Description
 }
 
-// GetTags returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Tags, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetTags() map[string]any {
-	return v.Tags
+// GetAttributes returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetAttributes() map[string]any {
+	return v.Attributes
 }
 
 // GetCreatedAt returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.CreatedAt, and is useful for accessing the field via an interface.
@@ -7252,7 +7349,7 @@ func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) Unmarsh
 
 	var firstPass struct {
 		*linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent = v
@@ -7263,14 +7360,14 @@ func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) Unmarsh
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Tags: %w", err)
+					"unable to unmarshal linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Attributes: %w", err)
 			}
 		}
 	}
@@ -7284,7 +7381,7 @@ type __premarshallinkComponentsLinkComponentsLinkPayloadResultLinkFromComponent 
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -7307,14 +7404,14 @@ func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) __prema
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Tags: %w", err)
+				"unable to marshal linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -7341,8 +7438,8 @@ type linkComponentsLinkComponentsLinkPayloadResultLinkToComponent struct {
 	Name string `json:"name"`
 	// Optional free-text description of this component's purpose.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this component.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
 	// When this component was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this component was last modified (UTC).
@@ -7362,9 +7459,9 @@ func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetDescri
 	return v.Description
 }
 
-// GetTags returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Tags, and is useful for accessing the field via an interface.
-func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetTags() map[string]any {
-	return v.Tags
+// GetAttributes returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetAttributes() map[string]any {
+	return v.Attributes
 }
 
 // GetCreatedAt returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.CreatedAt, and is useful for accessing the field via an interface.
@@ -7385,7 +7482,7 @@ func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) Unmarshal
 
 	var firstPass struct {
 		*linkComponentsLinkComponentsLinkPayloadResultLinkToComponent
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.linkComponentsLinkComponentsLinkPayloadResultLinkToComponent = v
@@ -7396,14 +7493,14 @@ func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) Unmarshal
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Tags: %w", err)
+					"unable to unmarshal linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Attributes: %w", err)
 			}
 		}
 	}
@@ -7417,7 +7514,7 @@ type __premarshallinkComponentsLinkComponentsLinkPayloadResultLinkToComponent st
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -7440,14 +7537,14 @@ func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) __premars
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Tags: %w", err)
+				"unable to marshal linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -7901,7 +7998,7 @@ func (v *listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor) Get
 // to an environment, every component in the project's blueprint is realized as an **Instance** --
 // a running piece of cloud infrastructure with its own configuration, state, and cost data.
 //
-// Environments inherit tags from their parent project. You can also set environment-scoped tags
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
 // that cascade down to all instances within the environment. **Defaults** let you pre-assign
 // resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
 //
@@ -7913,8 +8010,8 @@ type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment struct {
 	Name string `json:"name"`
 	// Free-text description of what this environment is for.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this environment. Tags cascade to instances. Must conform to your organization's tag constraints for the `ENVIRONMENT` scope.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this environment. Attributes cascade to instances. Must conform to your organization's custom attributes for the `ENVIRONMENT` scope.
+	Attributes map[string]any `json:"-"`
 	// When this environment was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this environment was last modified (UTC).
@@ -7938,9 +8035,9 @@ func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetDescri
 	return v.Description
 }
 
-// GetTags returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Tags, and is useful for accessing the field via an interface.
-func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetTags() map[string]any {
-	return v.Tags
+// GetAttributes returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Attributes, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetAttributes() map[string]any {
+	return v.Attributes
 }
 
 // GetCreatedAt returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.CreatedAt, and is useful for accessing the field via an interface.
@@ -7971,7 +8068,7 @@ func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) Unmarshal
 
 	var firstPass struct {
 		*listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment = v
@@ -7982,14 +8079,14 @@ func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) Unmarshal
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Tags: %w", err)
+					"unable to unmarshal listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Attributes: %w", err)
 			}
 		}
 	}
@@ -8003,7 +8100,7 @@ type __premarshallistEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment st
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -8030,14 +8127,14 @@ func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) __premars
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Tags: %w", err)
+				"unable to marshal listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -8149,7 +8246,7 @@ func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSum
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
@@ -8468,8 +8565,8 @@ type listInstancesInstancesInstancesPageItemsInstance struct {
 	// Returns null if the instance is already on the latest matching version.
 	// Use this field to detect when an upgrade is available.
 	AvailableUpgrade string `json:"availableUpgrade"`
-	// Key-value tags assigned directly to this instance.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this instance.
+	Attributes map[string]any `json:"-"`
 	// When this instance was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this instance was last modified (UTC).
@@ -8518,8 +8615,10 @@ func (v *listInstancesInstancesInstancesPageItemsInstance) GetAvailableUpgrade()
 	return v.AvailableUpgrade
 }
 
-// GetTags returns listInstancesInstancesInstancesPageItemsInstance.Tags, and is useful for accessing the field via an interface.
-func (v *listInstancesInstancesInstancesPageItemsInstance) GetTags() map[string]any { return v.Tags }
+// GetAttributes returns listInstancesInstancesInstancesPageItemsInstance.Attributes, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetAttributes() map[string]any {
+	return v.Attributes
+}
 
 // GetCreatedAt returns listInstancesInstancesInstancesPageItemsInstance.CreatedAt, and is useful for accessing the field via an interface.
 func (v *listInstancesInstancesInstancesPageItemsInstance) GetCreatedAt() time.Time {
@@ -8559,7 +8658,7 @@ func (v *listInstancesInstancesInstancesPageItemsInstance) UnmarshalJSON(b []byt
 
 	var firstPass struct {
 		*listInstancesInstancesInstancesPageItemsInstance
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.listInstancesInstancesInstancesPageItemsInstance = v
@@ -8570,14 +8669,14 @@ func (v *listInstancesInstancesInstancesPageItemsInstance) UnmarshalJSON(b []byt
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal listInstancesInstancesInstancesPageItemsInstance.Tags: %w", err)
+					"unable to unmarshal listInstancesInstancesInstancesPageItemsInstance.Attributes: %w", err)
 			}
 		}
 	}
@@ -8601,7 +8700,7 @@ type __premarshallistInstancesInstancesInstancesPageItemsInstance struct {
 
 	AvailableUpgrade string `json:"availableUpgrade"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -8637,14 +8736,14 @@ func (v *listInstancesInstancesInstancesPageItemsInstance) __premarshalJSON() (*
 	retval.AvailableUpgrade = v.AvailableUpgrade
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal listInstancesInstancesInstancesPageItemsInstance.Tags: %w", err)
+				"unable to marshal listInstancesInstancesInstancesPageItemsInstance.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -8826,7 +8925,7 @@ func (v *listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryMonthlyA
 // to an environment, every component in the project's blueprint is realized as an **Instance** --
 // a running piece of cloud infrastructure with its own configuration, state, and cost data.
 //
-// Environments inherit tags from their parent project. You can also set environment-scoped tags
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
 // that cascade down to all instances within the environment. **Defaults** let you pre-assign
 // resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
 //
@@ -8870,7 +8969,7 @@ func (v *listInstancesInstancesInstancesPageItemsInstanceEnvironment) GetProject
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type listInstancesInstancesInstancesPageItemsInstanceEnvironmentProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
@@ -8940,7 +9039,7 @@ func (v *listInstancesResponse) GetInstances() listInstancesInstancesInstancesPa
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type listLinksProject struct {
 	// The infrastructure blueprint defining this project's components and their connections.
 	Blueprint listLinksProjectBlueprint `json:"blueprint"`
@@ -9106,8 +9205,8 @@ type listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent struct {
 	Name string `json:"name"`
 	// Optional free-text description of this component's purpose.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this component.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
 	// When this component was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this component was last modified (UTC).
@@ -9127,9 +9226,9 @@ func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetDescr
 	return v.Description
 }
 
-// GetTags returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Tags, and is useful for accessing the field via an interface.
-func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetTags() map[string]any {
-	return v.Tags
+// GetAttributes returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetAttributes() map[string]any {
+	return v.Attributes
 }
 
 // GetCreatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.CreatedAt, and is useful for accessing the field via an interface.
@@ -9150,7 +9249,7 @@ func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) Unmarsha
 
 	var firstPass struct {
 		*listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent = v
@@ -9161,14 +9260,14 @@ func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) Unmarsha
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Tags: %w", err)
+					"unable to unmarshal listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Attributes: %w", err)
 			}
 		}
 	}
@@ -9182,7 +9281,7 @@ type __premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent s
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -9205,14 +9304,14 @@ func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) __premar
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Tags: %w", err)
+				"unable to marshal listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -9239,8 +9338,8 @@ type listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent struct {
 	Name string `json:"name"`
 	// Optional free-text description of this component's purpose.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this component.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
 	// When this component was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this component was last modified (UTC).
@@ -9258,9 +9357,9 @@ func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetDescrip
 	return v.Description
 }
 
-// GetTags returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Tags, and is useful for accessing the field via an interface.
-func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetTags() map[string]any {
-	return v.Tags
+// GetAttributes returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetAttributes() map[string]any {
+	return v.Attributes
 }
 
 // GetCreatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.CreatedAt, and is useful for accessing the field via an interface.
@@ -9281,7 +9380,7 @@ func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) UnmarshalJ
 
 	var firstPass struct {
 		*listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent = v
@@ -9292,14 +9391,14 @@ func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) UnmarshalJ
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Tags: %w", err)
+					"unable to unmarshal listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Attributes: %w", err)
 			}
 		}
 	}
@@ -9313,7 +9412,7 @@ type __premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkToComponent str
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -9336,14 +9435,14 @@ func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) __premarsh
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Tags: %w", err)
+				"unable to marshal listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -9557,15 +9656,15 @@ func (v *listProjectsProjectsProjectsPage) GetItems() []listProjectsProjectsProj
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type listProjectsProjectsProjectsPageItemsProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
 	Name string `json:"name"`
 	// Free-text description of what this project is for.
 	Description string `json:"description"`
-	// Key-value tags assigned directly to this project. Tags cascade to environments and instances. Must conform to your organization's tag constraints for the `PROJECT` scope.
-	Tags map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this project. Attributes cascade to environments and instances. Must conform to your organization's custom attributes for the `PROJECT` scope.
+	Attributes map[string]any `json:"-"`
 	// When this project was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this project was last modified (UTC).
@@ -9583,8 +9682,10 @@ func (v *listProjectsProjectsProjectsPageItemsProject) GetName() string { return
 // GetDescription returns listProjectsProjectsProjectsPageItemsProject.Description, and is useful for accessing the field via an interface.
 func (v *listProjectsProjectsProjectsPageItemsProject) GetDescription() string { return v.Description }
 
-// GetTags returns listProjectsProjectsProjectsPageItemsProject.Tags, and is useful for accessing the field via an interface.
-func (v *listProjectsProjectsProjectsPageItemsProject) GetTags() map[string]any { return v.Tags }
+// GetAttributes returns listProjectsProjectsProjectsPageItemsProject.Attributes, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetAttributes() map[string]any {
+	return v.Attributes
+}
 
 // GetCreatedAt returns listProjectsProjectsProjectsPageItemsProject.CreatedAt, and is useful for accessing the field via an interface.
 func (v *listProjectsProjectsProjectsPageItemsProject) GetCreatedAt() time.Time { return v.CreatedAt }
@@ -9605,7 +9706,7 @@ func (v *listProjectsProjectsProjectsPageItemsProject) UnmarshalJSON(b []byte) e
 
 	var firstPass struct {
 		*listProjectsProjectsProjectsPageItemsProject
-		Tags json.RawMessage `json:"tags"`
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
 	firstPass.listProjectsProjectsProjectsPageItemsProject = v
@@ -9616,14 +9717,14 @@ func (v *listProjectsProjectsProjectsPageItemsProject) UnmarshalJSON(b []byte) e
 	}
 
 	{
-		dst := &v.Tags
-		src := firstPass.Tags
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal listProjectsProjectsProjectsPageItemsProject.Tags: %w", err)
+					"unable to unmarshal listProjectsProjectsProjectsPageItemsProject.Attributes: %w", err)
 			}
 		}
 	}
@@ -9637,7 +9738,7 @@ type __premarshallistProjectsProjectsProjectsPageItemsProject struct {
 
 	Description string `json:"description"`
 
-	Tags json.RawMessage `json:"tags"`
+	Attributes json.RawMessage `json:"attributes"`
 
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -9662,14 +9763,14 @@ func (v *listProjectsProjectsProjectsPageItemsProject) __premarshalJSON() (*__pr
 	retval.Description = v.Description
 	{
 
-		dst := &retval.Tags
-		src := v.Tags
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal listProjectsProjectsProjectsPageItemsProject.Tags: %w", err)
+				"unable to marshal listProjectsProjectsProjectsPageItemsProject.Attributes: %w", err)
 		}
 	}
 	retval.CreatedAt = v.CreatedAt
@@ -9770,7 +9871,7 @@ type listProjectsResponse struct {
 	// ```graphql
 	// query {
 	// projects(organizationId: "my-org") {
-	// items { id name description tags }
+	// items { id name description attributes }
 	// cursor { next }
 	// }
 	// }
@@ -11194,7 +11295,7 @@ func (v *unlinkComponentsUnlinkComponentsLinkPayloadResultLink) GetToField() str
 
 // updateEnvironmentResponse is returned by updateEnvironment on success.
 type updateEnvironmentResponse struct {
-	// Update an environment's mutable fields (name, description, tags).
+	// Update an environment's mutable fields (name, description, attributes).
 	UpdateEnvironment updateEnvironmentUpdateEnvironmentEnvironmentPayload `json:"updateEnvironment"`
 }
 
@@ -11292,7 +11393,7 @@ func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationM
 // to an environment, every component in the project's blueprint is realized as an **Instance** --
 // a running piece of cloud infrastructure with its own configuration, state, and cost data.
 //
-// Environments inherit tags from their parent project. You can also set environment-scoped tags
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
 // that cascade down to all instances within the environment. **Defaults** let you pre-assign
 // resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
 //
@@ -11502,7 +11603,7 @@ func (v *updateInstanceUpdateInstanceInstancePayloadResultInstance) GetResolvedV
 
 // updateProjectResponse is returned by updateProject on success.
 type updateProjectResponse struct {
-	// Update a project's mutable fields (name, description, tags).
+	// Update a project's mutable fields (name, description, attributes).
 	UpdateProject updateProjectUpdateProjectProjectPayload `json:"updateProject"`
 }
 
@@ -11608,7 +11709,7 @@ func (v *updateProjectUpdateProjectProjectPayloadMessagesValidationMessage) GetM
 // C1 -.->|"Link"| C2
 // ```
 //
-// Tags set on a project are inherited by all environments and instances within it.
+// Attributes set on a project are inherited by all environments and instances within it.
 type updateProjectUpdateProjectProjectPayloadResultProject struct {
 	Id string `json:"id"`
 	// Display name shown in the UI and CLI. Must be unique within the organization.
@@ -11844,7 +11945,7 @@ mutation addComponent ($organizationId: ID!, $projectId: ID!, $ociRepoName: OciR
 			id
 			name
 			description
-			tags
+			attributes
 			createdAt
 			updatedAt
 			ociRepo {
@@ -12493,7 +12594,7 @@ query getEnvironment ($organizationId: ID!, $id: ID!) {
 		id
 		name
 		description
-		tags
+		attributes
 		createdAt
 		updatedAt
 		cost {
@@ -12523,13 +12624,14 @@ query getEnvironment ($organizationId: ID!, $id: ID!) {
 					status
 					version
 					releaseStrategy
+					attributes
 					createdAt
 					updatedAt
 					component {
 						id
 						name
 						description
-						tags
+						attributes
 						createdAt
 						updatedAt
 					}
@@ -12586,13 +12688,12 @@ query getInstance ($organizationId: ID!, $id: ID!) {
 		name
 		status
 		params
-		tags
+		attributes
 		version
 		releaseStrategy
 		resolvedVersion
 		deployedVersion
 		availableUpgrade
-		tags
 		createdAt
 		updatedAt
 		cost {
@@ -12630,7 +12731,7 @@ query getInstance ($organizationId: ID!, $id: ID!) {
 			id
 			name
 			description
-			tags
+			attributes
 			createdAt
 			updatedAt
 		}
@@ -12728,7 +12829,7 @@ query getProject ($organizationId: ID!, $id: ID!) {
 		id
 		name
 		description
-		tags
+		attributes
 		environments {
 			items {
 				id
@@ -12951,7 +13052,7 @@ mutation linkComponents ($organizationId: ID!, $input: LinkComponentsInput!) {
 				id
 				name
 				description
-				tags
+				attributes
 				createdAt
 				updatedAt
 			}
@@ -12959,7 +13060,7 @@ mutation linkComponents ($organizationId: ID!, $input: LinkComponentsInput!) {
 				id
 				name
 				description
-				tags
+				attributes
 				createdAt
 				updatedAt
 			}
@@ -13126,7 +13227,7 @@ query listEnvironments ($organizationId: ID!, $filter: EnvironmentsFilter, $sort
 			id
 			name
 			description
-			tags
+			attributes
 			createdAt
 			updatedAt
 			project {
@@ -13250,7 +13351,7 @@ query listInstances ($organizationId: ID!, $filter: InstancesFilter, $sort: Inst
 			resolvedVersion
 			deployedVersion
 			availableUpgrade
-			tags
+			attributes
 			createdAt
 			updatedAt
 			cost {
@@ -13337,7 +13438,7 @@ query listLinks ($organizationId: ID!, $projectId: ID!, $filter: LinksFilter, $c
 						id
 						name
 						description
-						tags
+						attributes
 						createdAt
 						updatedAt
 					}
@@ -13345,7 +13446,7 @@ query listLinks ($organizationId: ID!, $projectId: ID!, $filter: LinksFilter, $c
 						id
 						name
 						description
-						tags
+						attributes
 						createdAt
 						updatedAt
 					}
@@ -13451,7 +13552,7 @@ query listProjects ($organizationId: ID!) {
 			id
 			name
 			description
-			tags
+			attributes
 			createdAt
 			updatedAt
 			cost {

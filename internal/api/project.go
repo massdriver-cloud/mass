@@ -15,7 +15,7 @@ type Project struct {
 	Name         string            `json:"name" mapstructure:"name"`
 	Description  string            `json:"description" mapstructure:"description"`
 	Cost         CostSummary       `json:"cost" mapstructure:"cost"`
-	Tags         map[string]string `json:"tags,omitempty" mapstructure:"tags"`
+	Attributes   map[string]string `json:"attributes,omitempty" mapstructure:"attributes"`
 	Environments []Environment     `json:"environments,omitempty" mapstructure:"-"`
 }
 

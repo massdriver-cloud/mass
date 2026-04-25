@@ -8,13 +8,13 @@
 
 **Deployed Version:** {{if .DeployedVersion}}`{{deref .DeployedVersion}}`{{else}}N/A{{end}}
 
-**Tags:**
-{{- if .Tags}}
-{{- range $key, $value := .Tags}}
+**Attributes:**
+{{- if .Attributes}}
+{{- range $key, $value := .Attributes}}
 - **{{$key}}:** {{$value}}
 {{- end}}
 {{- else}}
-No tags
+No attributes
 {{- end}}
 
 **Parameters:**

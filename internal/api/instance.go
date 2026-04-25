@@ -22,7 +22,7 @@ type Instance struct {
 	DeployedVersion  string              `json:"deployedVersion,omitempty" mapstructure:"deployedVersion"`
 	AvailableUpgrade string              `json:"availableUpgrade,omitempty" mapstructure:"availableUpgrade"`
 	Params           map[string]any      `json:"params,omitempty" mapstructure:"params"`
-	Tags             map[string]string   `json:"tags,omitempty" mapstructure:"tags"`
+	Attributes       map[string]string   `json:"attributes,omitempty" mapstructure:"attributes"`
 	Cost             CostSummary         `json:"cost" mapstructure:"cost"`
 	CreatedAt        time.Time           `json:"createdAt,omitzero" mapstructure:"createdAt"`
 	UpdatedAt        time.Time           `json:"updatedAt,omitzero" mapstructure:"updatedAt"`

@@ -4,6 +4,15 @@
 
 **Description:** {{.Description}}
 
+**Attributes:**
+{{- if .Attributes}}
+{{- range $key, $value := .Attributes}}
+- **{{$key}}:** {{$value}}
+{{- end}}
+{{- else}}
+No attributes
+{{- end}}
+
 ## Environments
 {{range .Environments}}
 - **{{.Name}}** ({{.ID}})

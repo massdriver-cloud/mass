@@ -26,7 +26,7 @@ query listProjects($organizationId: ID!) {
       id
       name
       description
-      tags
+      attributes
       createdAt
       updatedAt
       cost {
@@ -48,7 +48,7 @@ query getProject($organizationId: ID!, $id: ID!) {
     id
     name
     description
-    tags
+    attributes
     environments {
       items {
         id
@@ -164,7 +164,7 @@ query listLinks(
             id
             name
             description
-            tags
+            attributes
             createdAt
             updatedAt
           }
@@ -172,7 +172,7 @@ query listLinks(
             id
             name
             description
-            tags
+            attributes
             createdAt
             updatedAt
           }
@@ -183,7 +183,7 @@ query listLinks(
 }
 
 # @genqlient(for: "AddComponentInput.description", omitempty: true)
-# @genqlient(for: "AddComponentInput.tags", omitempty: true)
+# @genqlient(for: "AddComponentInput.attributes", omitempty: true)
 mutation addComponent(
   $organizationId: ID!,
   $projectId: ID!,
@@ -200,7 +200,7 @@ mutation addComponent(
       id
       name
       description
-      tags
+      attributes
       createdAt
       updatedAt
       ociRepo {
@@ -244,7 +244,7 @@ mutation linkComponents($organizationId: ID!, $input: LinkComponentsInput!) {
         id
         name
         description
-        tags
+        attributes
         createdAt
         updatedAt
       }
@@ -252,7 +252,7 @@ mutation linkComponents($organizationId: ID!, $input: LinkComponentsInput!) {
         id
         name
         description
-        tags
+        attributes
         createdAt
         updatedAt
       }
@@ -309,7 +309,7 @@ query listEnvironments(
       id
       name
       description
-      tags
+      attributes
       createdAt
       updatedAt
       project {
@@ -336,7 +336,7 @@ query getEnvironment($organizationId: ID!, $id: ID!) {
     id
     name
     description
-    tags
+    attributes
     createdAt
     updatedAt
     cost {
@@ -366,13 +366,14 @@ query getEnvironment($organizationId: ID!, $id: ID!) {
           status
           version
           releaseStrategy
+          attributes
           createdAt
           updatedAt
           component {
             id
             name
             description
-            tags
+            attributes
             createdAt
             updatedAt
           }
@@ -510,7 +511,7 @@ query listInstances(
       resolvedVersion
       deployedVersion
       availableUpgrade
-      tags
+      attributes
       createdAt
       updatedAt
       cost {
@@ -551,13 +552,12 @@ query getInstance($organizationId: ID!, $id: ID!) {
     name
     status
     params
-    tags
+    attributes
     version
     releaseStrategy
     resolvedVersion
     deployedVersion
     availableUpgrade
-    tags
     createdAt
     updatedAt
     cost {
@@ -595,7 +595,7 @@ query getInstance($organizationId: ID!, $id: ID!) {
       id
       name
       description
-      tags
+      attributes
       createdAt
       updatedAt
     }

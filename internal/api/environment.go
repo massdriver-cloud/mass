@@ -16,7 +16,7 @@ type Environment struct {
 	Name        string            `json:"name" mapstructure:"name"`
 	Description string            `json:"description,omitempty" mapstructure:"description"`
 	Cost        CostSummary       `json:"cost" mapstructure:"cost"`
-	Tags        map[string]string `json:"tags,omitempty" mapstructure:"tags"`
+	Attributes  map[string]string `json:"attributes,omitempty" mapstructure:"attributes"`
 	Project     *Project          `json:"project,omitempty" mapstructure:"project,omitempty"`
 	Blueprint   *Blueprint        `json:"blueprint,omitempty" mapstructure:"-"`
 }

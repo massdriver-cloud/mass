@@ -25,7 +25,7 @@ type RootQueryType {
   ```graphql
   query {
     projects(organizationId: "my-org") {
-      items { id name description tags }
+      items { id name description attributes }
       cursor { next }
     }
   }
@@ -94,7 +94,7 @@ type RootQueryType {
 
   Instances are paired by component. For each component, the result reports
   the resolved version on each side and a flat, leaf-level diff of the
-  configured params. Environment-level tags and default wiring are not part
+  configured params. Environment-level attributes and default wiring are not part
   of the comparison.
 
   Both environments must belong to the same project; passing environments
@@ -488,14 +488,14 @@ type RootQueryType {
   ): Group
 
   """
-  Fetch your organization's details, including tag constraints and logo.
+  Fetch your organization's details, including custom attributes and logo.
 
   ```graphql
   query {
     organization(organizationId: "my-org") {
       id
       name
-      tagConstraints { items { key scope required } }
+      customAttributes { items { key scope required } }
     }
   }
   ```
@@ -836,6 +836,86 @@ type RootQueryType {
     "Cursor from a previous page to fetch the next set of results."
     cursor: Cursor
   ): AccessTokensPage
+
+  """
+  Return the complete catalog of ABAC actions available in Massdriver.
+
+  Actions are the building blocks of policies. Each action has an id in
+  `{entity}:{verb}` form (for example `project:view`, `instance:deploy`) and
+  a human-readable description. The full list is small and static, so this
+  query returns every action in a single response — no pagination.
+
+  Results are sorted alphabetically by id.
+
+  **Visibility model:** if you can view a project, you can see every
+  environment and instance within it. There is no `environment:view` or
+  `instance:view` primitive. Sensitive payloads are protected by
+  `resource:export` and `repo:pull` (both audit-logged), not by hiding
+  topology.
+
+  **Example:**
+
+  ```graphql
+  query PolicyActions {
+    policyActions(organizationId: "my-org") {
+      id
+      verb
+      description
+      entity { id description }
+    }
+  }
+  ```
+  """
+  policyActions(
+    "Your organization's unique identifier."
+    organizationId: ID!
+  ): [PolicyAction!]!
+
+  """
+  Return the complete catalog of ABAC entities — the kinds of things an
+  action can apply to.
+
+  An entity is the `{entity}` portion of an action id. Use this alongside
+  `policyActions` when you want to group actions by what they apply to
+  (for example rendering a UI that collapses all `project:*` actions under a
+  single "Projects" header).
+
+  Results are sorted alphabetically by id.
+  """
+  policyEntities(
+    "Your organization's unique identifier."
+    organizationId: ID!
+  ): [PolicyEntity!]!
+
+  """
+  Return the catalog of V1 event types.
+
+  Filter by `entity` to narrow the list.
+
+  **Example:**
+
+  ```graphql
+  query {
+    eventTypes(organizationId: "my-org") {
+      id
+      description
+      entity
+      action
+      changeType
+    }
+  }
+  ```
+  """
+  eventTypes(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "Optional filter criteria to narrow results."
+    filter: EventTypesFilter
+
+    "Sort field and direction. Defaults to alphabetical by id."
+    sort: EventTypesSort
+  ): [EventType!]!
 }
 
 type RootSubscriptionType {
@@ -1050,7 +1130,7 @@ type RootMutationType {
     input: CreateProjectInput!
   ): ProjectPayload @inputs(name: "createProject", schema: "\/graphql\/v1\/inputs\/createProject.json", ui: "\/graphql\/v1\/inputs\/createProject.ui.json")
 
-  "Update a project's mutable fields (name, description, tags)."
+  "Update a project's mutable fields (name, description, attributes)."
   updateProject(
     "Your organization's unique identifier."
     organizationId: ID!
@@ -1111,7 +1191,7 @@ type RootMutationType {
     input: CreateEnvironmentInput!
   ): EnvironmentPayload @inputs(name: "createEnvironment", schema: "\/graphql\/v1\/inputs\/createEnvironment.json", ui: "\/graphql\/v1\/inputs\/createEnvironment.ui.json")
 
-  "Update an environment's mutable fields (name, description, tags)."
+  "Update an environment's mutable fields (name, description, attributes)."
   updateEnvironment(
     "Your organization's unique identifier."
     organizationId: ID!
@@ -1434,32 +1514,32 @@ type RootMutationType {
   ): GroupMemberPayload
 
   """
-  Create a new tag constraint in your organization.
+  Declare a new custom attribute in your organization.
 
-  Once created, the constraint immediately applies to new resources at the specified scope.
+  Once declared, the attribute immediately applies to new resources at the specified scope.
   Existing resources are not retroactively validated.
   """
-  createOrganizationTagConstraint(
+  createCustomAttribute(
     "Your organization's unique identifier."
     organizationId: ID!
 
-    "Define a structural tag constraint for your organization. Tag constraints control which tags can be set on resources at each level of the hierarchy."
-    input: CreateOrganizationTagConstraintInput!
-  ): OrganizationTagConstraintPayload @inputs(name: "createOrganizationTagConstraint", schema: "\/graphql\/v1\/inputs\/createOrganizationTagConstraint.json", ui: "\/graphql\/v1\/inputs\/createOrganizationTagConstraint.ui.json")
+    "Declare a custom attribute key for your organization. Custom attributes control which user-defined attribute keys can be set on resources at each level of the hierarchy. System attributes (md-*) are auto-injected by Massdriver and do not need to be declared."
+    input: CreateCustomAttributeInput!
+  ): CustomAttributePayload @inputs(name: "createCustomAttribute", schema: "\/graphql\/v1\/inputs\/createCustomAttribute.json", ui: "\/graphql\/v1\/inputs\/createCustomAttribute.ui.json")
 
   """
-  Delete a tag constraint from your organization.
+  Delete a custom attribute from your organization.
 
-  Removing a constraint stops enforcing the rule for future resources. Existing tags
-  on resources are not removed.
+  Removing a custom attribute stops enforcing the rule for future resources.
+  Existing attributes on resources are not removed.
   """
-  deleteOrganizationTagConstraint(
+  deleteCustomAttribute(
     "Your organization's unique identifier."
     organizationId: ID!
 
-    "The identifier of the tag constraint to delete."
+    "The identifier of the custom attribute to delete."
     id: ID!
-  ): OrganizationTagConstraintPayload
+  ): CustomAttributePayload
 
   """
   Create a new organization. You become the owner and first admin automatically.
@@ -2171,6 +2251,123 @@ type RootMutationType {
     "The proposed deployment's unique identifier."
     id: ID!
   ): DeploymentPayload
+
+  """
+  Attach an ABAC policy to a group.
+
+  Group policies control what users and service accounts who are members of
+  the group can do. Pair with `policyActions` to enumerate the catalog of
+  available actions, and the access-control guide for common patterns.
+  """
+  createGroupPolicy(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The group to attach the policy to."
+    groupId: ID!
+
+    "Attach an ABAC policy to a group. The policy grants or denies the action on resources whose attributes satisfy the conditions."
+    input: CreateGroupPolicyInput!
+  ): PolicyPayload @inputs(name: "createGroupPolicy", schema: "\/graphql\/v1\/inputs\/createGroupPolicy.json", ui: "\/graphql\/v1\/inputs\/createGroupPolicy.ui.json")
+
+  """
+  Attach an ABAC policy to a project — sometimes called "bundle sharing"
+  because the typical use is granting `repo:*` actions so the project can
+  pull a specific bundle from the catalog.
+
+  The project itself is the principal: instances within the project inherit
+  the policy when consuming bundles.
+  """
+  createProjectPolicy(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The project to attach the policy to."
+    projectId: ID!
+
+    "Attach an ABAC policy to a project — the project becomes the principal. Used to control which bundles a project may pull (commonly called \"bundle sharing\")."
+    input: CreateProjectPolicyInput!
+  ): PolicyPayload @inputs(name: "createProjectPolicy", schema: "\/graphql\/v1\/inputs\/createProjectPolicy.json", ui: "\/graphql\/v1\/inputs\/createProjectPolicy.ui.json")
+
+  """
+  Attach an ABAC policy to an environment — sometimes called "resource
+  sharing" because the typical use is granting `resource:view` so the
+  environment can consume external resources as remote references or defaults.
+
+  The environment is the principal: instances within the environment inherit
+  the policy when consuming resources.
+  """
+  createEnvironmentPolicy(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The environment to attach the policy to."
+    environmentId: ID!
+
+    "Attach an ABAC policy to an environment — the environment becomes the principal. Used to control which external resources an environment may consume as remote references or defaults (commonly called \"resource sharing\")."
+    input: CreateEnvironmentPolicyInput!
+  ): PolicyPayload @inputs(name: "createEnvironmentPolicy", schema: "\/graphql\/v1\/inputs\/createEnvironmentPolicy.json", ui: "\/graphql\/v1\/inputs\/createEnvironmentPolicy.ui.json")
+
+  """
+  Delete a policy by its id. Removes the policy regardless of its principal
+  type — group, project, or environment.
+  """
+  deletePolicy(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The policy's unique identifier."
+    id: ID!
+  ): PolicyPayload
+}
+
+"Available fields for sorting the event type catalog."
+enum EventTypesSortField {
+  "Sort alphabetically by event id (e.g., `deployment.completed`, `project.created`)."
+  ID
+}
+
+"""
+Filter criteria for narrowing the event type catalog.
+
+All filters are combined with AND logic. Omit a filter to not restrict on
+that field.
+"""
+input EventTypesFilter {
+  "Filter by the entity the event applies to (e.g., `\"environment\"`, `\"deployment\"`). Use this to scope a subscription to a specific part of the platform."
+  entity: StringFilter
+}
+
+"Sort order for the event type catalog."
+input EventTypesSort {
+  "The field to sort by."
+  field: EventTypesSortField!
+
+  "`ASC` for A-Z, `DESC` for Z-A."
+  order: SortOrder!
+}
+
+"""
+A single event type in the Massdriver event catalog.
+
+The `id` field follows dotted `entity.action` notation in past tense
+(e.g., `project.cloned`, `deployment.completed`).
+"""
+type EventType {
+  "Dotted, past-tense event id, e.g., `\"environment.deployed\"` or `\"deployment.completed\"`."
+  id: ID!
+
+  "Human-readable summary of when this event fires and what its payload contains."
+  description: String!
+
+  "The entity this event applies to (e.g., `\"environment\"`, `\"deployment\"`, `\"instance\"`)."
+  entity: String!
+
+  "Past-tense verb describing what happened to the entity (e.g., `\"created\"`, `\"deployed\"`). Distinct from `PolicyAction.verb`, which is present-tense and describes what a principal may do."
+  action: String!
+
+  "How the entity was modified. Consumers use this for cache invalidation — `CREATED` \/ `UPDATED` \/ `DELETED` maps cleanly onto an in-memory cache's add \/ replace \/ remove."
+  changeType: EventAction!
 }
 
 """
@@ -2188,9 +2385,6 @@ enum EventAction {
 
   "A resource was permanently removed."
   DELETED
-
-  "A new immutable artifact was published (e.g., a bundle version released to an OCI repository)."
-  PUBLISHED
 }
 
 """
@@ -2382,7 +2576,7 @@ type DeploymentEvent implements Event {
 """
 A lifecycle event for a published bundle version.
 
-Emitted with action `PUBLISHED` each time a new bundle release is pushed to
+Emitted with action `CREATED` each time a new bundle release is pushed to
 an OCI repository in the organization. Bundle versions are immutable, so
 neither `UPDATED` nor `DELETED` is emitted today. Subscribe via
 `organizationEvents`.
@@ -2432,6 +2626,145 @@ For log content, subscribe to `deploymentLogs` — log deltas don't travel on
 this feed.
 """
 union DeploymentEventsPayload = DeploymentEvent
+
+"""
+Whether a policy grants or blocks the action.
+
+`DENY` always wins over `ALLOW` — if any deny policy matches a resource, the
+action is blocked even if other allow policies also match.
+"""
+enum PolicyEffect {
+  "Grant the action when the conditions match."
+  ALLOW
+
+  "Block the action when the conditions match. Deny policies override every matching allow policy."
+  DENY
+}
+
+"""
+A kind of thing an ABAC policy can be attached to — a *project*, an
+*environment*, a *resource*, and so on.
+
+Every action in the policy catalog acts on exactly one entity, encoded as the
+prefix of the action id (`project` in `project:view`). Use `policyEntities`
+to enumerate every entity with its description when building a
+policy-authoring UI.
+"""
+type PolicyEntity {
+  "Stable identifier for the entity, matching the prefix of action ids (for example `project`, `environment`, `resource_type`)."
+  id: ID!
+
+  "Human-readable description of what this entity represents in Massdriver."
+  description: String!
+}
+
+"""
+A single action a policy can allow or deny. Actions follow the format
+`{entity}:{verb}` — for example `project:view` or `instance:deploy`.
+
+Use `policyActions` to enumerate the complete catalog when building a
+policy-authoring UI. Descriptions are written for end users and explain what
+the action permits, what it does **not** permit, and how it relates to other
+actions (especially around the project-as-view-boundary model).
+"""
+type PolicyAction {
+  "Canonical action identifier in `{entity}:{verb}` format (for example `project:view`)."
+  id: ID!
+
+  "Action verb portion of the id (for example `view`, `deploy`, `configure`)."
+  verb: String!
+
+  "The entity this action applies to."
+  entity: PolicyEntity!
+
+  "Human-readable description of what this action permits."
+  description: String!
+}
+
+"""
+The thing a policy is attached to. Exactly one of `Group`, `Project`, or
+`Environment` is returned per policy, matching how the policy was created.
+"""
+union PolicyPrincipal = Group | Project | Environment
+
+"""
+A single ABAC policy: an effect (`ALLOW`/`DENY`), an action, optional attribute
+conditions, and the principal the policy is attached to.
+
+Conditions are evaluated AND within a policy and OR across policies of the
+same principal. A policy with no conditions is a wildcard — it matches any
+resource of the action's entity. Deny policies win over allow policies. See
+`docs/guides/abac.md` for the full evaluation model.
+"""
+type Policy {
+  "Unique identifier for this policy."
+  id: ID!
+
+  "Whether this policy grants (`ALLOW`) or blocks (`DENY`) the action."
+  effect: PolicyEffect!
+
+  "The action this policy applies to, in `{entity}:{verb}` form (for example `repo:pull`)."
+  action: String!
+
+  "Attribute conditions a resource must match for the policy to apply. Keys are attribute names; values are a string or list of strings. `null` means wildcard — the policy matches any resource of the entity."
+  conditions: Map
+
+  "The thing this policy is attached to: a group, project, or environment."
+  principal: PolicyPrincipal!
+
+  "When this policy was created."
+  createdAt: DateTime!
+
+  "When this policy was last updated."
+  updatedAt: DateTime!
+}
+
+type PolicyPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Policy
+}
+
+"Attach an ABAC policy to a group. The policy grants or denies the action on resources whose attributes satisfy the conditions."
+input CreateGroupPolicyInput {
+  "Action id in `entity:verb` form (for example `project:view`, `repo:pull`). Query `policyActions` for the full catalog."
+  action: String!
+
+  "Attribute conditions a resource must match. Keys are attribute names; values are a string or list of strings. Omit for a wildcard policy that matches any resource of the action's entity."
+  conditions: Map
+
+  "`ALLOW` grants the action; `DENY` blocks it (and wins over allow)."
+  effect: PolicyEffect!
+}
+
+"Attach an ABAC policy to a project — the project becomes the principal. Used to control which bundles a project may pull (commonly called \"bundle sharing\")."
+input CreateProjectPolicyInput {
+  "Action id in `entity:verb` form. Project-as-principal is typically used with `repo:*` actions (for example `repo:pull`, `repo:view`)."
+  action: String!
+
+  "Attribute conditions a resource must match. Use `md-repo` or `md-bundle` to target specific bundles, or any custom attribute for tag-based selection. Omit for a wildcard."
+  conditions: Map
+
+  "`ALLOW` grants the action to the project; `DENY` blocks it (and wins over allow)."
+  effect: PolicyEffect!
+}
+
+"Attach an ABAC policy to an environment — the environment becomes the principal. Used to control which external resources an environment may consume as remote references or defaults (commonly called \"resource sharing\")."
+input CreateEnvironmentPolicyInput {
+  "Action id in `entity:verb` form. Environment-as-principal is typically used with `resource:*` actions (for example `resource:view`)."
+  action: String!
+
+  "Attribute conditions a resource must match. Use custom attributes (for example `TEAM`) or system attributes (for example `md-resource-type`) to target which resources the environment can consume. Omit for a wildcard."
+  conditions: Map
+
+  "`ALLOW` grants the action to the environment; `DENY` blocks it (and wins over allow)."
+  effect: PolicyEffect!
+}
 
 """
 How a resource was created, which determines how it can be managed.
@@ -3520,31 +3853,28 @@ type Server {
 }
 
 """
-The resource level in the hierarchy where a tag constraint applies.
+The resource level in the hierarchy where a custom attribute applies.
 
-Tags are set at the specified scope and cascade downward. For example, a tag set at
-the `PROJECT` scope is inherited by all environments and instances in that project.
+Attributes are set at the specified scope and cascade downward. For example, an attribute
+set at the `PROJECT` scope is inherited by all environments and instances in that project.
 """
-enum TagConstraintScope {
-  "Tag is set on the organization itself."
-  ORGANIZATION
-
-  "Tag is set on individual projects."
+enum AttributeScope {
+  "Attribute is set on individual projects."
   PROJECT
 
-  "Tag is set on individual environments."
+  "Attribute is set on individual environments."
   ENVIRONMENT
 
-  "Tag is set on blueprint components (design-time)."
+  "Attribute is set on blueprint components (design-time)."
   COMPONENT
 
-  "Tag is set on deployed instances (run-time)."
+  "Attribute is set on deployed instances (run-time)."
   INSTANCE
 }
 
-"Fields available for sorting the tag constraints list."
-enum OrganizationTagConstraintsSortField {
-  "Sort alphabetically by tag key name (A-Z or Z-A)."
+"Fields available for sorting the custom attributes list."
+enum CustomAttributesSortField {
+  "Sort alphabetically by attribute key name (A-Z or Z-A)."
   KEY
 
   "Sort by resource scope level."
@@ -3554,70 +3884,73 @@ enum OrganizationTagConstraintsSortField {
   CREATED_AT
 }
 
-"Sorting options for the tag constraints list. Specify a field and direction."
-input OrganizationTagConstraintsSort {
+"Sorting options for the custom attributes list. Specify a field and direction."
+input CustomAttributesSort {
   "The field to sort by."
-  field: OrganizationTagConstraintsSortField!
+  field: CustomAttributesSortField!
 
   "Sort direction (`ASC` or `DESC`)."
   order: SortOrder!
 }
 
-"Define a structural tag constraint for your organization. Tag constraints control which tags can be set on resources at each level of the hierarchy."
-input CreateOrganizationTagConstraintInput {
-  "The tag key name. Must start with a letter. Keys starting with MD_ are reserved."
+"Declare a custom attribute key for your organization. Custom attributes control which user-defined attribute keys can be set on resources at each level of the hierarchy. System attributes (md-*) are auto-injected by Massdriver and do not need to be declared."
+input CreateCustomAttributeInput {
+  "1-64 characters, identifier-like: starts with a letter or underscore; letters, digits, and underscores only. Case-insensitive (TEAM and team are the same key). Keys starting with md- are reserved for system use."
   key: String!
 
-  "Whether this tag must be set when creating a resource at the specified scope."
+  "Whether this attribute must be set when creating a resource at the specified scope."
   required: Boolean
 
-  "The resource level where this tag is set. Values cascade to child resources."
-  scope: TagConstraintScope!
+  "The resource level where this attribute is set. Values cascade to child resources."
+  scope: AttributeScope!
 }
 
 """
-A governance rule that defines an allowed tag key, the resource scope where it applies,
-and whether it is required.
+A user-declared attribute key, the resource scope where it applies, and whether it is required.
 
-Tag constraints enforce consistent metadata across your organization. When a constraint
-is marked as **required**, any resource created at the specified scope must include the
-tag key. Optional constraints define allowed keys without mandating them.
+Custom attributes enforce consistent metadata across your organization. When a custom
+attribute is marked as **required**, any resource created at the specified scope must
+include the attribute key. Optional custom attributes define allowed keys without
+mandating them.
 
-Use the `tagSchema` field on the Organization type to generate a JSON Schema document
-from these constraints for client-side validation.
+System attributes (`md-*`) are auto-injected by Massdriver and are not declared here —
+only user-defined keys live in this list.
 
-**Example:** A constraint with `key: "TEAM"`, `scope: PROJECT`, `required: true` means
-every project must have a `TEAM` tag set at creation time.
+Use the `attributeSchema` field on the Organization type to generate a JSON Schema
+document from your custom attributes for client-side validation.
+
+**Example:** A custom attribute with `key: "TEAM"`, `scope: PROJECT`, `required: true`
+means every project must have a `TEAM` attribute set at creation time.
 """
-type OrganizationTagConstraint {
-  "Unique identifier for this constraint."
+type CustomAttribute {
+  "Unique identifier for this custom attribute."
   id: ID!
 
-  "The tag key name (e.g., `TEAM`, `COST_CENTER`, `DOMAIN`). Case-sensitive."
+  "The attribute key name (e.g., `TEAM`, `COST_CENTER`, `DOMAIN`). Case-sensitive."
   key: String!
 
-  "The resource level where this tag must or may be set."
-  scope: TagConstraintScope!
+  "The resource level where this attribute must or may be set."
+  scope: AttributeScope!
 
-  "When `true`, resources created at the specified scope must include this tag. When `false`, the tag is allowed but optional."
+  "When `true`, resources created at the specified scope must include this attribute. When `false`, the attribute is allowed but optional."
   required: Boolean!
 
-  "When this constraint was created (UTC)."
+  "When this custom attribute was created (UTC)."
   createdAt: DateTime!
 
-  "When this constraint was last modified (UTC)."
+  "When this custom attribute was last modified (UTC)."
   updatedAt: DateTime!
 }
 
-type OrganizationTagConstraintsPage {
+type CustomAttributesPage {
   "Pagination cursors for navigating between pages."
   cursor: PaginationCursor!
 
-  "A list of type organization_tag_constraint."
-  items: [OrganizationTagConstraint]
+  "A list of type custom_attribute."
+  items: [CustomAttribute]
 }
 
-type OrganizationTagConstraintPayload {
+type CustomAttributePayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
 
@@ -3625,7 +3958,7 @@ type OrganizationTagConstraintPayload {
   messages: [ValidationMessage]
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: OrganizationTagConstraint
+  result: CustomAttribute
 }
 
 """
@@ -3826,7 +4159,7 @@ graph TD
 ```
 
 Members access resources through **group memberships** with role-based permissions.
-Tag constraints defined at the organization level govern tagging across all child resources.
+Custom attributes defined at the organization level govern attribute metadata across all child resources.
 """
 type Organization {
   id: ID!
@@ -3843,25 +4176,25 @@ type Organization {
   "The organization's logo image, or `null` if no logo has been uploaded."
   logo: LogoOrganization
 
-  "Paginated list of tag constraints that govern tagging rules across this organization."
-  tagConstraints(
+  "Paginated list of custom attributes that govern attribute metadata across this organization."
+  customAttributes(
     "How to sort results. Defaults to alphabetical by key."
-    sort: OrganizationTagConstraintsSort
+    sort: CustomAttributesSort
 
     "Cursor from a previous page to fetch the next set of results."
     cursor: Cursor
-  ): OrganizationTagConstraintsPage
+  ): CustomAttributesPage
 
   """
-  Returns a JSON Schema document you can use to validate tags for a given resource scope.
+  Returns a JSON Schema document you can use to validate attributes for a given resource scope.
 
-  The schema is derived from this organization's tag constraints. It includes
-  `properties` for each allowed tag key and a `required` array for mandatory tags.
-  If no constraints exist for the scope, returns `{"type": "object"}`.
+  The schema is derived from this organization's custom attributes. It includes
+  `properties` for each allowed attribute key and a `required` array for mandatory attributes.
+  If no custom attributes exist for the scope, returns `{"type": "object"}`.
   """
-  tagSchema(
+  attributeSchema(
     "The resource scope to generate the schema for (e.g., `PROJECT`, `ENVIRONMENT`)."
-    scope: TagConstraintScope!
+    scope: AttributeScope!
   ): Map!
 }
 
@@ -4391,6 +4724,9 @@ input LinksFilter {
 
 "Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application."
 input AddComponentInput {
+  "Key-value attributes for this component. Keys and values must be strings. Must conform to the organization's custom attributes for the component scope."
+  attributes: Map
+
   "Optional description of this component's purpose"
   description: String
 
@@ -4399,9 +4735,6 @@ input AddComponentInput {
 
   "Display name for this component (e.g., 'Billing Database')"
   name: String!
-
-  "Key-value tags for this component. Keys and values must be strings. Must conform to the organization's tag constraints for the component scope."
-  tags: Map
 }
 
 "Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources."
@@ -4464,8 +4797,20 @@ type Component {
   "Optional free-text description of this component's purpose."
   description: String
 
-  "Key-value tags assigned directly to this component."
-  tags: Map!
+  "Key-value attributes assigned directly to this component."
+  attributes: Map!
+
+  """
+  The full attribute map the authorization system evaluates policies against for
+  this component — user attributes merged with the parent project (project wins on
+  conflict) plus auto-injected `md-*` system attributes.
+
+  System attributes always present on a component:
+  - `md-id` — the component's identifier
+  - `md-project` — the project's identifier
+  - `md-component` — the component's local identifier
+  """
+  effectiveAttributes: Map!
 
   "Position on the visual canvas. Null if never placed."
   position: ComponentPosition
@@ -5336,17 +5681,17 @@ type Instance {
   "Cached configuration parameters from the most recent deployment. Null if the instance has never been deployed."
   params: Map
 
-  "Key-value tags assigned directly to this instance."
-  tags: Map!
+  "Key-value attributes assigned directly to this instance."
+  attributes: Map!
 
   """
-  The full tag map the authorization system evaluates policies against for
-  this instance — user tags merged across the hierarchy plus auto-injected
-  `md-*` system tags.
+  The full attribute map the authorization system evaluates policies against for
+  this instance — user attributes merged across the hierarchy plus auto-injected
+  `md-*` system attributes.
 
-  User-tag merge precedence (higher overrides lower): project > environment > component > instance.
+  User-attribute merge precedence (higher overrides lower): project > environment > component > instance.
 
-  System tags always present on an instance:
+  System attributes always present on an instance:
   - `md-id` — the instance's identifier
   - `md-project` — the project's identifier
   - `md-environment` — the environment's local identifier
@@ -5354,7 +5699,7 @@ type Instance {
   - `md-repo` — the bundle's repo name
   - `md-bundle` — `"{bundle}@{version}"` of the resolved release
   """
-  effectiveTags: Map!
+  effectiveAttributes: Map!
 
   "Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`."
   version: String!
@@ -5629,6 +5974,9 @@ input EnvironmentsFilter {
 
 "Create a new environment. Environments are isolated deployment contexts like production, staging, or development, each with independent secrets and configurations."
 input CreateEnvironmentInput {
+  "Key-value attributes for this environment. Keys and values must be strings. Must conform to the organization's custom attributes for the environment scope."
+  attributes: Map
+
   "An optional description of the environment's purpose"
   description: String
 
@@ -5637,25 +5985,25 @@ input CreateEnvironmentInput {
 
   "A human-readable name for the environment"
   name: String!
-
-  "Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope."
-  tags: Map
 }
 
 "Update an existing environment's name and description. The ID cannot be changed after creation."
 input UpdateEnvironmentInput {
+  "Key-value attributes for this environment. Keys and values must be strings. Must conform to the organization's custom attributes for the environment scope."
+  attributes: Map
+
   "An optional description of the environment's purpose"
   description: String
 
   "A human-readable name for the environment"
   name: String
-
-  "Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope."
-  tags: Map
 }
 
 "Attributes for the new environment. The fork references the parent via `parentId`, starts with blank instances, and does not copy any instance-level configuration. Use `copyInstance` per-instance if you want to seed configuration from the parent."
 input ForkEnvironmentInput {
+  "Key-value attributes for this environment. Keys and values must be strings. Must conform to the organization's custom attributes for the environment scope."
+  attributes: Map
+
   "When true, copies the parent environment's default resource connections into the fork. Instance-level configuration is never copied — use `copyInstance` to seed instance params."
   copyEnvironmentDefaults: Boolean
 
@@ -5667,9 +6015,6 @@ input ForkEnvironmentInput {
 
   "A human-readable name for the forked environment"
   name: String!
-
-  "Key-value tags for this environment. Keys and values must be strings. Must conform to the organization's tag constraints for the environment scope."
-  tags: Map
 }
 
 """
@@ -5679,7 +6024,7 @@ Each project can have multiple environments (e.g., `staging`, `production`). Whe
 to an environment, every component in the project's blueprint is realized as an **Instance** --
 a running piece of cloud infrastructure with its own configuration, state, and cost data.
 
-Environments inherit tags from their parent project. You can also set environment-scoped tags
+Environments inherit attributes from their parent project. You can also set environment-scoped attributes
 that cascade down to all instances within the environment. **Defaults** let you pre-assign
 resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
 
@@ -5695,8 +6040,20 @@ type Environment {
   "Free-text description of what this environment is for."
   description: String
 
-  "Key-value tags assigned directly to this environment. Tags cascade to instances. Must conform to your organization's tag constraints for the `ENVIRONMENT` scope."
-  tags: Map!
+  "Key-value attributes assigned directly to this environment. Attributes cascade to instances. Must conform to your organization's custom attributes for the `ENVIRONMENT` scope."
+  attributes: Map!
+
+  """
+  The full attribute map the authorization system evaluates policies against for
+  this environment — user attributes merged with the parent project (project wins on
+  conflict) plus auto-injected `md-*` system attributes.
+
+  System attributes always present on an environment:
+  - `md-id` — the environment's identifier
+  - `md-project` — the project's identifier
+  - `md-environment` — the environment's local identifier
+  """
+  effectiveAttributes: Map!
 
   "When this environment was created (UTC)."
   createdAt: DateTime!
@@ -5839,7 +6196,7 @@ Side-by-side comparison of two environments in the same project.
 
 Returned by `compareEnvironments`. The comparison pairs instances by
 component and reports a per-instance diff of the resolved version and
-configured params. Environment-level tags and default resource wiring
+configured params. Environment-level attributes and default resource wiring
 are intentionally out of scope.
 
 Environments must belong to the same project — cross-project comparisons
@@ -5876,6 +6233,9 @@ input ProjectsSort {
 
 "Create a new project. A project is the complete model of your application—its infrastructure, architecture, configurations, and environments."
 input CreateProjectInput {
+  "Key-value attributes for this project. Keys and values must be strings. Must conform to the organization's custom attributes for the project scope."
+  attributes: Map
+
   "An optional description of the project's purpose or contents"
   description: String
 
@@ -5884,25 +6244,25 @@ input CreateProjectInput {
 
   "A human-readable name for the project"
   name: String!
-
-  "Key-value tags for this project. Keys and values must be strings. Must conform to the organization's tag constraints for the project scope."
-  tags: Map
 }
 
 "Update an existing project's name and description. The ID cannot be changed after creation."
 input UpdateProjectInput {
+  "Key-value attributes for this project. Keys and values must be strings. Must conform to the organization's custom attributes for the project scope."
+  attributes: Map
+
   "An optional description of the project's purpose or contents"
   description: String
 
   "A human-readable name for the project"
   name: String
-
-  "Key-value tags for this project. Keys and values must be strings. Must conform to the organization's tag constraints for the project scope."
-  tags: Map
 }
 
 "Attributes for the new project."
 input CloneProjectInput {
+  "Key-value attributes for this project. Keys and values must be strings. Must conform to the organization's custom attributes for the project scope."
+  attributes: Map
+
   "An optional description of the project's purpose or contents"
   description: String
 
@@ -5911,9 +6271,6 @@ input CloneProjectInput {
 
   "A human-readable name for the new project"
   name: String!
-
-  "Key-value tags for this project. Keys and values must be strings. Must conform to the organization's tag constraints for the project scope."
-  tags: Map
 }
 
 """
@@ -5933,7 +6290,7 @@ graph LR
   C1 -.->|"Link"| C2
 ```
 
-Tags set on a project are inherited by all environments and instances within it.
+Attributes set on a project are inherited by all environments and instances within it.
 """
 type Project {
   id: ID!
@@ -5944,8 +6301,18 @@ type Project {
   "Free-text description of what this project is for."
   description: String
 
-  "Key-value tags assigned directly to this project. Tags cascade to environments and instances. Must conform to your organization's tag constraints for the `PROJECT` scope."
-  tags: Map!
+  "Key-value attributes assigned directly to this project. Attributes cascade to environments and instances. Must conform to your organization's custom attributes for the `PROJECT` scope."
+  attributes: Map!
+
+  """
+  The full attribute map the authorization system evaluates policies against for
+  this project — the project's own user attributes plus auto-injected `md-*` system attributes.
+
+  System attributes always present on a project:
+  - `md-id` — the project's identifier
+  - `md-project` — the project's identifier
+  """
+  effectiveAttributes: Map!
 
   "When this project was created (UTC)."
   createdAt: DateTime!
