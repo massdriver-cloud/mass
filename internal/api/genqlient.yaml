@@ -9,12 +9,12 @@ package: api
 bindings:
   JSON:
     type: map[string]any
-    marshaler: github.com/massdriver-cloud/mass/internal/api/v1/scalars.MarshalJSON
-    unmarshaler: github.com/massdriver-cloud/mass/internal/api/v1/scalars.UnmarshalJSON
+    marshaler: github.com/massdriver-cloud/mass/internal/api/scalars.MarshalJSON
+    unmarshaler: github.com/massdriver-cloud/mass/internal/api/scalars.UnmarshalJSON
   Map:
     type: map[string]any
-    marshaler: github.com/massdriver-cloud/mass/internal/api/v1/scalars.MarshalJSON
-    unmarshaler: github.com/massdriver-cloud/mass/internal/api/v1/scalars.UnmarshalJSON
+    marshaler: github.com/massdriver-cloud/mass/internal/api/scalars.MarshalJSON
+    unmarshaler: github.com/massdriver-cloud/mass/internal/api/scalars.UnmarshalJSON
   DateTime:
     type: time.Time
   VersionConstraint:
@@ -30,4 +30,4 @@ bindings:
   Upload:
     type: string
   Cursor:
-    type: github.com/massdriver-cloud/mass/internal/api/v1.Cursor
+    type: github.com/massdriver-cloud/mass/internal/api.Cursor

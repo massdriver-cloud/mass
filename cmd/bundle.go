@@ -15,7 +15,7 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api/v1"
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	cmdbundle "github.com/massdriver-cloud/mass/internal/commands/bundle"

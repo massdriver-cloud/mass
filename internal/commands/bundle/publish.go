@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/massdriver-cloud/mass/internal/api/v1"
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/massdriver-cloud/mass/internal/api/v1/scalars"
+	"github.com/massdriver-cloud/mass/internal/api/scalars"
 )
 
 // Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application.

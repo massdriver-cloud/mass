@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	api "github.com/massdriver-cloud/mass/internal/api/v1"
+	"github.com/massdriver-cloud/mass/internal/api"
 )
 
 // SplitComponentID splits a full component ID (e.g., "ecomm-db") into its project and short ID.

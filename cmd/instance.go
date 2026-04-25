@@ -12,7 +12,7 @@ import (
 	"text/template"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api/v1"
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/instance"
 	"github.com/massdriver-cloud/mass/internal/files"

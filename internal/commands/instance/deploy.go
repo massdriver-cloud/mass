@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/itchyny/gojq"
-	api "github.com/massdriver-cloud/mass/internal/api/v1"
+	api "github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 

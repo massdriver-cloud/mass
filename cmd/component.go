@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	api "github.com/massdriver-cloud/mass/internal/api/v1"
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands/component"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"

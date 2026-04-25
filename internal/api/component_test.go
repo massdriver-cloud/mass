@@ -3,7 +3,7 @@ package api_test
 import (
 	"testing"
 
-	api "github.com/massdriver-cloud/mass/internal/api/v1"
+	api "github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )

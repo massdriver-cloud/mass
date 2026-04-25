@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/api/v1"
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
 

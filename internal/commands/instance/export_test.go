@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/massdriver-cloud/mass/internal/api/v1"
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands/instance"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/api/v1"
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
 
@@ -13,9 +13,9 @@ import (
 
 func TestGet(t *testing.T) {
 	type test struct {
-		name       string
+		name         string
 		resourceType map[string]any
-		want       api.ResourceType
+		want         api.ResourceType
 	}
 	tests := []test{
 		{

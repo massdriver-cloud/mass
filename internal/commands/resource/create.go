@@ -12,7 +12,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/manifoldco/promptui"
-	"github.com/massdriver-cloud/mass/internal/api/v1"
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/jsonschema"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
