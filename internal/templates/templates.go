@@ -29,12 +29,13 @@ type TemplateData struct {
 	CloudAbbreviation  string            `json:"cloudAbbreviation"`
 	RepoName           string            `json:"repoName"`
 	RepoNameEncoded    string            `json:"repoNameEncoded"`
+	ResourceTypes      []string          `json:"resourceTypes"`
 }
 
 // Connection represents a bundle connection with a name and artifact definition reference.
 type Connection struct {
-	Name               string `json:"name"`
-	ArtifactDefinition string `json:"artifact_definition"`
+	Name         string `json:"name"`
+	ResourceType string `json:"resourceType"`
 }
 
 func getPath() (string, error) {

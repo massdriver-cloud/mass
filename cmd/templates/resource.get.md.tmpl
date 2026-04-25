@@ -1,0 +1,25 @@
+# Resource: {{.Name}}
+
+**ID:** {{.ID}}
+
+**Type:** {{.Type}}
+
+{{if .Field}}**Field:** {{.Field}}{{end}}
+
+{{if .ResourceType}}**Type:** {{.ResourceType.Label}} ({{.ResourceType.Name}}){{end}}
+
+{{if .Instance}}**Instance:** {{.Instance.ID}}{{end}}
+
+{{if .Origin}}**Origin:** {{.Origin}}{{end}}
+
+**Created:** {{.CreatedAt}}
+
+**Updated:** {{.UpdatedAt}}
+
+{{if .Formats}}**Available Formats:** {{range $i, $f := .Formats}}{{if $i}}, {{end}}{{$f}}{{end}}{{end}}
+
+{{if ne .Payload "{}"}}## Payload
+```json
+{{.Payload}}
+```
+{{end}}

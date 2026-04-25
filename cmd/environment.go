@@ -57,16 +57,16 @@ func NewCmdEnvironment() *cobra.Command {
 	}
 
 	environmentCreateCmd := &cobra.Command{
-		Use:   "create [slug]",
+		Use:   "create [ID]",
 		Short: "Create an environment",
 		Long:  helpdocs.MustRender("environment/create"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEnvironmentCreate,
 	}
-	environmentCreateCmd.Flags().StringP("name", "n", "", "Environment name (defaults to slug if not provided)")
+	environmentCreateCmd.Flags().StringP("name", "n", "", "Environment name (defaults to ID if not provided)")
 
 	environmentDefaultCmd := &cobra.Command{
-		Use:   "default [environment] [artifact-id]",
+		Use:   "default [environment] [resource-id]",
 		Short: "Set an environment default connection",
 		Long:  helpdocs.MustRender("environment/default"),
 		Args:  cobra.ExactArgs(2),
@@ -149,24 +149,28 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	environments, err := api.GetEnvironmentsByProject(ctx, mdClient, projectID)
+	filter := api.EnvironmentsFilter{
+		ProjectId: &api.IdFilter{Eq: projectID},
+	}
+
+	environments, err := api.ListEnvironments(ctx, mdClient, &filter)
 	if err != nil {
 		return err
 	}
 
-	tbl := cli.NewTable("ID/Slug", "Name", "Description", "Monthly $", "Daily $")
+	tbl := cli.NewTable("ID", "Name", "Description", "Monthly $", "Daily $")
 
 	for _, env := range environments {
 		monthly := ""
 		daily := ""
-		if env.Cost.Monthly.Average.Amount != nil {
-			monthly = fmt.Sprintf("%v", *env.Cost.Monthly.Average.Amount)
+		if env.Cost.MonthlyAverage.Amount != nil {
+			monthly = fmt.Sprintf("%v", *env.Cost.MonthlyAverage.Amount)
 		}
-		if env.Cost.Daily.Average.Amount != nil {
-			daily = fmt.Sprintf("%v", *env.Cost.Daily.Average.Amount)
+		if env.Cost.DailyAverage.Amount != nil {
+			daily = fmt.Sprintf("%v", *env.Cost.DailyAverage.Amount)
 		}
 		description := cli.TruncateString(env.Description, 60)
-		tbl.AddRow(env.Slug, env.Name, description, monthly, daily)
+		tbl.AddRow(env.ID, env.Name, description, monthly, daily)
 	}
 
 	tbl.Print()
@@ -207,22 +211,22 @@ func renderEnvironment(environment *api.Environment) error {
 func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	fullSlug := args[0]
+	fullID := args[0]
 	name, err := cmd.Flags().GetString("name")
 	if err != nil {
 		return err
 	}
 
-	// Parse project-env format: extract project and env slugs separately
-	parts := strings.Split(fullSlug, "-")
+	// Parse project-env format: extract project and env IDs separately
+	parts := strings.Split(fullID, "-")
 	if len(parts) < 2 {
-		return fmt.Errorf("unable to determine project from slug %s (expected format: project-env)", fullSlug)
+		return fmt.Errorf("unable to determine project from ID %s (expected format: project-env)", fullID)
 	}
-	projectIDOrSlug := parts[0]
-	envSlug := strings.Join(parts[1:], "-")
+	projectID := parts[0]
+	envID := strings.Join(parts[1:], "-")
 
 	if name == "" {
-		name = envSlug
+		name = envID
 	}
 
 	mdClient, mdClientErr := client.New()
@@ -230,15 +234,20 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	env, err := api.CreateEnvironment(ctx, mdClient, projectIDOrSlug, name, envSlug, "")
+	input := api.CreateEnvironmentInput{
+		Id:   envID,
+		Name: name,
+	}
+
+	env, err := api.CreateEnvironment(ctx, mdClient, projectID, input)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("✅ Environment `%s` created successfully\n", fullSlug)
+	fmt.Printf("✅ Environment `%s` created successfully\n", fullID)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(projectIDOrSlug, env.Slug))
+		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(env.ID))
 	}
 	return nil
 }
@@ -247,7 +256,7 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	environmentID := args[0]
-	artifactID := args[1]
+	resourceID := args[1]
 
 	cmd.SilenceUsage = true
 
@@ -256,7 +265,7 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	err := api.SetEnvironmentDefault(ctx, mdClient, environmentID, artifactID)
+	_, err := api.SetEnvironmentDefault(ctx, mdClient, environmentID, resourceID)
 	if err != nil {
 		return err
 	}
@@ -266,11 +275,10 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get environment: %w", err)
 	}
 
-	fullEnvSlug := fmt.Sprintf("%s-%s", environment.Project.Slug, environment.Slug)
-	fmt.Printf("✅ Environment `%s` default connection set successfully\n", fullEnvSlug)
+	fmt.Printf("✅ Environment `%s` default connection set successfully\n", environment.ID)
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(environment.Project.Slug, environment.Slug))
+		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(environment.ID))
 	}
 
 	return nil

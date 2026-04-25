@@ -3,124 +3,122 @@ package api_test
 import (
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/api"
+	api "github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
 )
 
 func TestGetDeployment(t *testing.T) {
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
 			"deployment": map[string]any{
-				"id":     "uuid1",
-				"status": "PROVISIONING",
+				"id":      "dep-uuid1",
+				"status":  "COMPLETED",
+				"action":  "PROVISION",
+				"version": "1.2.3",
+				"instance": map[string]any{
+					"id":   "inst-1",
+					"name": "db",
+				},
 			},
 		},
 	})
-	mdClient := client.Client{
-		GQL: gqlClient,
-	}
+	mdClient := client.Client{GQLv1: gqlClient}
 
-	deployment, err := api.GetDeployment(t.Context(), &mdClient, "uuid1")
-
+	dep, err := api.GetDeployment(t.Context(), &mdClient, "dep-uuid1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	got := deployment.Status
-	want := "PROVISIONING"
-
-	if got != want {
-		t.Errorf("got %s, wanted %s", got, want)
+	if dep.ID != "dep-uuid1" {
+		t.Errorf("got %s, wanted dep-uuid1", dep.ID)
+	}
+	if dep.Status != "COMPLETED" {
+		t.Errorf("got %s, wanted COMPLETED", dep.Status)
+	}
+	if dep.Instance == nil || dep.Instance.ID != "inst-1" {
+		t.Errorf("expected instance inst-1")
 	}
 }
 
-func TestDeployPackage(t *testing.T) {
-	want := "deployment-uuid1"
+func TestListDeployments(t *testing.T) {
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
-			"deployPackage": map[string]any{
+			"deployments": map[string]any{
+				"cursor": map[string]any{},
+				"items": []map[string]any{
+					{"id": "dep-1", "status": "COMPLETED", "action": "PROVISION"},
+					{"id": "dep-2", "status": "RUNNING", "action": "PROVISION"},
+				},
+			},
+		},
+	})
+	mdClient := client.Client{GQLv1: gqlClient}
+
+	deployments, err := api.ListDeployments(t.Context(), &mdClient, nil, nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(deployments) != 2 {
+		t.Errorf("got %d deployments, wanted 2", len(deployments))
+	}
+}
+
+func TestCreateDeployment(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"createDeployment": map[string]any{
 				"result": map[string]any{
-					"id": want,
+					"id":      "dep-new",
+					"status":  "PENDING",
+					"action":  "PROVISION",
+					"version": "1.2.3",
+					"message": "Initial deployment",
 				},
 				"successful": true,
 			},
 		},
 	})
-	mdClient := client.Client{
-		GQL: gqlClient,
-	}
+	mdClient := client.Client{GQLv1: gqlClient}
 
-	deployment, err := api.DeployPackage(t.Context(), &mdClient, "target-id", "manifest-id", "foo")
-
+	dep, err := api.CreateDeployment(t.Context(), &mdClient, "inst-1", api.CreateDeploymentInput{
+		Action:  api.DeploymentActionProvision,
+		Message: "Initial deployment",
+		Params:  map[string]any{},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	got := deployment.ID
-
-	if got != want {
-		t.Errorf("got %s , wanted %s", got, want)
+	if dep.ID != "dep-new" {
+		t.Errorf("got %s, wanted dep-new", dep.ID)
 	}
 }
 
-func TestGetDeploymentLogs(t *testing.T) {
+func TestCreateDeploymentFailure(t *testing.T) {
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
-			"deploymentLogStream": map[string]any{
-				"id": "log-stream-1",
-				"logs": []map[string]any{
+			"createDeployment": map[string]any{
+				"result":     nil,
+				"successful": false,
+				"messages": []map[string]any{
 					{
-						"content": "Starting deployment...\n",
-						"metadata": map[string]any{
-							"step":      "provision",
-							"timestamp": "2024-01-01T00:00:00Z",
-							"index":     0,
-						},
-					},
-					{
-						"content": "Deployment completed successfully\n",
-						"metadata": map[string]any{
-							"step":      "complete",
-							"timestamp": "2024-01-01T00:05:00Z",
-							"index":     1,
-						},
+						"code":    "invalid",
+						"field":   "params",
+						"message": "params failed validation",
 					},
 				},
 			},
 		},
 	})
-	mdClient := client.Client{
-		GQL: gqlClient,
-		Config: config.Config{
-			OrganizationID: "org-1",
-		},
-	}
+	mdClient := client.Client{GQLv1: gqlClient}
 
-	logs, err := api.GetDeploymentLogs(t.Context(), &mdClient, "deployment-1")
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(logs) != 2 {
-		t.Fatalf("got %d logs, wanted 2", len(logs))
-	}
-
-	if logs[0].Content != "Starting deployment...\n" {
-		t.Errorf("got %s, wanted 'Starting deployment...\\n'", logs[0].Content)
-	}
-
-	if logs[0].Step != "provision" {
-		t.Errorf("got %s, wanted 'provision'", logs[0].Step)
-	}
-
-	if logs[1].Content != "Deployment completed successfully\n" {
-		t.Errorf("got %s, wanted 'Deployment completed successfully\\n'", logs[1].Content)
-	}
-
-	if logs[1].Step != "complete" {
-		t.Errorf("got %s, wanted 'complete'", logs[1].Step)
+	_, err := api.CreateDeployment(t.Context(), &mdClient, "inst-1", api.CreateDeploymentInput{
+		Action: api.DeploymentActionProvision,
+		Params: map[string]any{},
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
 }

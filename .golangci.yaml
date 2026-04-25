@@ -419,7 +419,7 @@ linters:
     # 'api' is a domain-appropriate package name for this layer; revive flags it as "meaningless"
     - linters: [revive]
       text: "var-naming: avoid meaningless package names"
-      path: "pkg/api/"
+      path: "internal/api/"
     # cmd/ uses "json"/"text" as CLI output-format literals; extracting them as constants adds no value
     - linters: [goconst]
       path: "^cmd/"

@@ -1,17 +1,26 @@
 # Environment: {{.Name}}
 
-**Slug:** {{.Slug}}
+**ID:** {{.ID}}
 
 **Description:** {{.Description}}
 
-## Packages
+**Attributes:**
+{{- if .Attributes}}
+{{- range $key, $value := .Attributes}}
+- **{{$key}}:** {{$value}}
+{{- end}}
+{{- else}}
+No attributes
+{{- end}}
+
+## Instances
 | Name | Bundle | Status |
 | ---- | ------ | ------ |
-{{- range .Packages}}
-| **{{.Manifest.Name}}** | {{.Bundle.Name}} | {{.Status}} |
+{{- range .Blueprint.Instances}}
+| **{{.Name}}** | {{.Bundle.Name}} | {{.Status}} |
 {{- end}}
 
 ## Cost
-**Monthly Average:** {{with .Cost.Monthly.Average.Amount}}${{.}}{{end}}
+**Monthly Average:** {{with .Cost.MonthlyAverage.Amount}}${{.}}{{end}}
 
-**Daily Average:** {{with .Cost.Daily.Average.Amount}}${{.}}{{end}}
+**Daily Average:** {{with .Cost.DailyAverage.Amount}}${{.}}{{end}}

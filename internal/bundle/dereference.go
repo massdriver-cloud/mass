@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/massdriver-cloud/mass/internal/definition"
+	"github.com/massdriver-cloud/mass/internal/resourcetype"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
@@ -34,7 +34,7 @@ func (b *Bundle) DereferenceSchemas(path string, mdClient *client.Client) error 
 			}
 		}
 
-		dereferencedSchema, err := definition.DereferenceSchema(*task.schema, definition.DereferenceOptions{Client: mdClient, Cwd: cwd, StripID: task.stripID})
+		dereferencedSchema, err := resourcetype.DereferenceSchema(*task.schema, resourcetype.DereferenceOptions{Client: mdClient, Cwd: cwd, StripID: task.stripID})
 
 		if err != nil {
 			return err

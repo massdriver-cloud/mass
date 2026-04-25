@@ -38,18 +38,20 @@ func (u *URLHelper) ProjectsURL() string {
 }
 
 // ProjectURL returns the URL for a specific project
-func (u *URLHelper) ProjectURL(projectSlug string) string {
-	return fmt.Sprintf("%s/orgs/%s/projects/%s/", u.baseURL, u.orgID, projectSlug)
+func (u *URLHelper) ProjectURL(projectID string) string {
+	return fmt.Sprintf("%s/orgs/%s/projects/%s/", u.baseURL, u.orgID, projectID)
 }
 
 // EnvironmentURL returns the URL for a specific environment
-func (u *URLHelper) EnvironmentURL(projectSlug, environmentSlug string) string {
-	return fmt.Sprintf("%s/orgs/%s/projects/%s/environments/%s", u.baseURL, u.orgID, projectSlug, environmentSlug)
+func (u *URLHelper) EnvironmentURL(environmentID string) string {
+	parts := strings.Split(environmentID, "-")
+	return fmt.Sprintf("%s/orgs/%s/projects/%s/environments/%s", u.baseURL, u.orgID, parts[0], parts[1])
 }
 
-// PackageURL returns the URL for a specific package
-func (u *URLHelper) PackageURL(projectSlug, environmentSlug, packageSlug string) string {
-	return fmt.Sprintf("%s/orgs/%s/projects/%s/environments/%s?package=%s", u.baseURL, u.orgID, projectSlug, environmentSlug, packageSlug)
+// InstanceURL returns the URL for a specific instance
+func (u *URLHelper) InstanceURL(instanceID string) string {
+	parts := strings.Split(instanceID, "-")
+	return fmt.Sprintf("%s/orgs/%s/projects/%s/environments/%s?package=%s", u.baseURL, u.orgID, parts[0], parts[1], parts[2])
 }
 
 // BundleURL returns the URL for a specific bundle version

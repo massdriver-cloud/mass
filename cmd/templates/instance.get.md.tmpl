@@ -1,0 +1,23 @@
+# Instance: {{.ID}}
+
+**Bundle:** {{.Bundle.Name}}
+
+**Environment:** {{.Environment.ID}}
+
+**Status:** {{.Status}}
+
+**Deployed Version:** {{if .DeployedVersion}}`{{deref .DeployedVersion}}`{{else}}N/A{{end}}
+
+**Attributes:**
+{{- if .Attributes}}
+{{- range $key, $value := .Attributes}}
+- **{{$key}}:** {{$value}}
+{{- end}}
+{{- else}}
+No attributes
+{{- end}}
+
+**Parameters:**
+```json
+{{.ParamsJSON}}
+```
