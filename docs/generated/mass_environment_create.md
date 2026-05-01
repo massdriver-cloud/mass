@@ -36,14 +36,14 @@ mass environment create dbbundle-test --name "Database Test Environment"
 
 
 ```
-mass environment create [slug] [flags]
+mass environment create [ID] [flags]
 ```
 
 ### Options
 
 ```
   -h, --help          help for create
-  -n, --name string   Environment name (defaults to slug if not provided)
+  -n, --name string   Environment name (defaults to ID if not provided)
 ```
 
 ### SEE ALSO

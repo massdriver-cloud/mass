@@ -1,12 +1,12 @@
 INSTALL_PATH ?= ~/bin
 GIT_SHA := $(shell git log -1 --pretty=format:"%H")
-LD_FLAGS := "-X github.com/massdriver-cloud/mass/pkg/version.version=dev -X github.com/massdriver-cloud/mass/pkg/version.gitSHA=local-dev-${GIT_SHA}"
+LD_FLAGS := "-X github.com/massdriver-cloud/mass/internal/version.version=dev -X github.com/massdriver-cloud/mass/internal/version.gitSHA=local-dev-${GIT_SHA}"
 
 MASSDRIVER_PATH?=../massdriver
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(dir $(MKFILE_PATH))
-API_DIR := pkg/api
-SCHEMA_URL ?= https://api.massdriver.cloud/graphql/schema.graphql
+API_DIR := internal/api/v1
+SCHEMA_URL ?= https://api.massdriver.cloud/graphql/v1/schema.graphql
 
 .DEFAULT_GOAL := install
 

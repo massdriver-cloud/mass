@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/definition"
 	"github.com/massdriver-cloud/mass/internal/jsonschema"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
+	"github.com/massdriver-cloud/mass/internal/resourcetype"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
@@ -69,11 +69,11 @@ func runSchemaDereference(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	derefOpts := definition.DereferenceOptions{
+	derefOpts := resourcetype.DereferenceOptions{
 		Client: mdClient,
 		Cwd:    basePath,
 	}
-	dereferencedSchema, derefErr := definition.DereferenceSchema(rawSchema, derefOpts)
+	dereferencedSchema, derefErr := resourcetype.DereferenceSchema(rawSchema, derefOpts)
 	if derefErr != nil {
 		return fmt.Errorf("failed to dereference schema: %w", derefErr)
 	}

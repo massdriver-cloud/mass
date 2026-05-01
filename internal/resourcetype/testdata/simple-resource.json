@@ -1,0 +1,16 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$md": {
+        "name": "foo"
+    },
+    "type": "object",
+    "title": "Test Resource Type",
+    "properties": {
+        "foo": {
+            "type": "object"
+        },
+        "bar": {
+            "type": "object"
+        }
+    }
+}

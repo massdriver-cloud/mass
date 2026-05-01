@@ -12,29 +12,29 @@ Set an environment default connection
 
 # Set Environment Default
 
-Sets an artifact as the default connection for an environment.
+Sets a resource as the default connection for an environment.
 
 ## Usage
 
 ```bash
-mass environment default [environment] [artifact-id]
+mass environment default [environment] [resource-id]
 ```
 
 ## Arguments
 
 - `environment`: Environment ID or slug
-- `artifact-id`: Artifact ID to set as default
+- `resource-id`: Resource ID to set as default
 
 ## Examples
 
 ```bash
-# Set an artifact as default for an environment
+# Set a resource as default for an environment
 mass env default api-prod abc123-def456
 ```
 
 
 ```
-mass environment default [environment] [artifact-id] [flags]
+mass environment default [environment] [resource-id] [flags]
 ```
 
 ### Options

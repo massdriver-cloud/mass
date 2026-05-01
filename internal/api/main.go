@@ -1,3 +1,3 @@
 package api
 
-//go:generate genqlient
+//go:generate go run github.com/Khan/genqlient

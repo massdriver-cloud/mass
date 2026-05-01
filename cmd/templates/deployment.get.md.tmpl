@@ -1,0 +1,33 @@
+# Deployment: {{.ID}}
+
+**Action:** {{.Action}}
+
+**Status:** {{.Status}}
+
+**Version:** `{{.Version}}`
+
+{{- if .Message}}
+
+**Message:** {{.Message}}
+{{- end}}
+{{- if .DeployedBy}}
+
+**Deployed By:** {{.DeployedBy}}
+{{- end}}
+{{- if .Instance}}
+
+**Instance:** `{{.Instance.ID}}`
+{{- end}}
+
+**Created At:** {{.CreatedAt}}
+{{- if not .LastTransitionedAt.IsZero}}
+
+**Last Transitioned:** {{.LastTransitionedAt}}
+{{- end}}
+
+**Elapsed:** {{.ElapsedTime}}s
+
+**Parameters:**
+```json
+{{.ParamsJSON}}
+```

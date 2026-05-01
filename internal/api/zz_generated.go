@@ -12,185 +12,42 @@ import (
 	"github.com/massdriver-cloud/mass/internal/api/scalars"
 )
 
-// How connecting this type works on the diagram.
-type ArtifactDefinitionUiConnectionOrientation string
-
-const (
-	// Artifacts of this type are connected via lines on the graph.
-	ArtifactDefinitionUiConnectionOrientationLink ArtifactDefinitionUiConnectionOrientation = "LINK"
-	// Artifacts of this type are connected by setting environment defaults in the top left corner.
-	ArtifactDefinitionUiConnectionOrientationEnvironmentDefault ArtifactDefinitionUiConnectionOrientation = "ENVIRONMENT_DEFAULT"
-)
-
-var AllArtifactDefinitionUiConnectionOrientation = []ArtifactDefinitionUiConnectionOrientation{
-	ArtifactDefinitionUiConnectionOrientationLink,
-	ArtifactDefinitionUiConnectionOrientationEnvironmentDefault,
+// Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application.
+type AddComponentInput struct {
+	// Key-value attributes for this component. Keys and values must be strings. Must conform to the organization's custom attributes for the component scope.
+	Attributes map[string]any `json:"-"`
+	// Optional description of this component's purpose
+	Description string `json:"description,omitempty"`
+	// A short, memorable identifier for this component. This becomes the final segment of package identifiers. For example, project 'ecomm' with environment 'prod' and component 'db' creates 'ecomm-prod-db'. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation.
+	Id string `json:"id"`
+	// Display name for this component (e.g., 'Billing Database')
+	Name string `json:"name"`
 }
 
-type ArtifactOrigin string
+// GetAttributes returns AddComponentInput.Attributes, and is useful for accessing the field via an interface.
+func (v *AddComponentInput) GetAttributes() map[string]any { return v.Attributes }
 
-const (
-	ArtifactOriginImported    ArtifactOrigin = "IMPORTED"
-	ArtifactOriginProvisioned ArtifactOrigin = "PROVISIONED"
-)
+// GetDescription returns AddComponentInput.Description, and is useful for accessing the field via an interface.
+func (v *AddComponentInput) GetDescription() string { return v.Description }
 
-var AllArtifactOrigin = []ArtifactOrigin{
-	ArtifactOriginImported,
-	ArtifactOriginProvisioned,
-}
+// GetId returns AddComponentInput.Id, and is useful for accessing the field via an interface.
+func (v *AddComponentInput) GetId() string { return v.Id }
 
-// Arguments required to get container repositories
-type ContainerRepositoryInput struct {
-	Location  string `json:"location"`
-	ImageName string `json:"imageName"`
-}
+// GetName returns AddComponentInput.Name, and is useful for accessing the field via an interface.
+func (v *AddComponentInput) GetName() string { return v.Name }
 
-// GetLocation returns ContainerRepositoryInput.Location, and is useful for accessing the field via an interface.
-func (v *ContainerRepositoryInput) GetLocation() string { return v.Location }
-
-// GetImageName returns ContainerRepositoryInput.ImageName, and is useful for accessing the field via an interface.
-func (v *ContainerRepositoryInput) GetImageName() string { return v.ImageName }
-
-type Credential struct {
-	ArtifactDefinitionType string `json:"artifactDefinitionType"`
-	ArtifactId             string `json:"artifactId"`
-}
-
-// GetArtifactDefinitionType returns Credential.ArtifactDefinitionType, and is useful for accessing the field via an interface.
-func (v *Credential) GetArtifactDefinitionType() string { return v.ArtifactDefinitionType }
-
-// GetArtifactId returns Credential.ArtifactId, and is useful for accessing the field via an interface.
-func (v *Credential) GetArtifactId() string { return v.ArtifactId }
-
-// Action type of a deployment
-type DeploymentAction string
-
-const (
-	// Provision new infrastructure
-	DeploymentActionProvision DeploymentAction = "PROVISION"
-	// Decommission existing infrastructure
-	DeploymentActionDecommission DeploymentAction = "DECOMMISSION"
-	// Plan deployment without executing
-	DeploymentActionPlan DeploymentAction = "PLAN"
-)
-
-var AllDeploymentAction = []DeploymentAction{
-	DeploymentActionProvision,
-	DeploymentActionDecommission,
-	DeploymentActionPlan,
-}
-
-// Status of a deployment
-type DeploymentStatus string
-
-const (
-	// Deployment is pending execution
-	DeploymentStatusPending DeploymentStatus = "PENDING"
-	// Deployment is currently running
-	DeploymentStatusRunning DeploymentStatus = "RUNNING"
-	// Deployment completed successfully
-	DeploymentStatusCompleted DeploymentStatus = "COMPLETED"
-	// Deployment failed
-	DeploymentStatusFailed DeploymentStatus = "FAILED"
-	// Deployment was aborted
-	DeploymentStatusAborted DeploymentStatus = "ABORTED"
-)
-
-var AllDeploymentStatus = []DeploymentStatus{
-	DeploymentStatusPending,
-	DeploymentStatusRunning,
-	DeploymentStatusCompleted,
-	DeploymentStatusFailed,
-	DeploymentStatusAborted,
-}
-
-// MutationValidationError includes the requested fields of the GraphQL type ValidationMessage.
-// The GraphQL type's documentation follows.
-//
-// Validation messages are returned when mutation input does not meet the requirements.
-// While client-side validation is highly recommended to provide the best User Experience,
-// All inputs will always be validated server-side.
-//
-// Some examples of validations are:
-//
-// * Username must be at least 10 characters
-// * Email field does not contain an email address
-// * Birth Date is required
-//
-// While GraphQL has support for required values, mutation data fields are always
-// set to optional in our API. This allows 'required field' messages
-// to be returned in the same manner as other validations. The only exceptions
-// are id fields, which may be required to perform updates or deletes.
-type MutationValidationError struct {
-	// A friendly error message, appropriate for display to the end user.
-	//
-	// The message is interpolated to include the appropriate variables.
-	//
-	// Example: `Username must be at least 10 characters`
-	//
-	// This message may change without notice, so we do not recommend you match against the text.
-	// Instead, use the *code* field for matching.
-	Message string `json:"message"`
-}
-
-// GetMessage returns MutationValidationError.Message, and is useful for accessing the field via an interface.
-func (v *MutationValidationError) GetMessage() string { return v.Message }
-
-// Status of a package
-type PackageStatus string
-
-const (
-	// Package has been created but not yet provisioned
-	PackageStatusInitialized PackageStatus = "INITIALIZED"
-	// Package has been successfully provisioned
-	PackageStatusProvisioned PackageStatus = "PROVISIONED"
-	// Package has been decommissioned
-	PackageStatusDecommissioned PackageStatus = "DECOMMISSIONED"
-	// Package provisioning failed
-	PackageStatusFailed PackageStatus = "FAILED"
-	// Package exists externally
-	PackageStatusExternal PackageStatus = "EXTERNAL"
-)
-
-var AllPackageStatus = []PackageStatus{
-	PackageStatusInitialized,
-	PackageStatusProvisioned,
-	PackageStatusDecommissioned,
-	PackageStatusFailed,
-	PackageStatusExternal,
-}
-
-type PreviewEnvironmentInput struct {
-	Credentials           []Credential   `json:"credentials"`
-	PackageConfigurations map[string]any `json:"-"`
-	// CI/CD event information (e.g.: GitHub Action Pull Request Event)
-	CiContext map[string]any `json:"-"`
-}
-
-// GetCredentials returns PreviewEnvironmentInput.Credentials, and is useful for accessing the field via an interface.
-func (v *PreviewEnvironmentInput) GetCredentials() []Credential { return v.Credentials }
-
-// GetPackageConfigurations returns PreviewEnvironmentInput.PackageConfigurations, and is useful for accessing the field via an interface.
-func (v *PreviewEnvironmentInput) GetPackageConfigurations() map[string]any {
-	return v.PackageConfigurations
-}
-
-// GetCiContext returns PreviewEnvironmentInput.CiContext, and is useful for accessing the field via an interface.
-func (v *PreviewEnvironmentInput) GetCiContext() map[string]any { return v.CiContext }
-
-func (v *PreviewEnvironmentInput) UnmarshalJSON(b []byte) error {
+func (v *AddComponentInput) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*PreviewEnvironmentInput
-		PackageConfigurations json.RawMessage `json:"packageConfigurations"`
-		CiContext             json.RawMessage `json:"ciContext"`
+		*AddComponentInput
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.PreviewEnvironmentInput = v
+	firstPass.AddComponentInput = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -198,42 +55,31 @@ func (v *PreviewEnvironmentInput) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.PackageConfigurations
-		src := firstPass.PackageConfigurations
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal PreviewEnvironmentInput.PackageConfigurations: %w", err)
-			}
-		}
-	}
-
-	{
-		dst := &v.CiContext
-		src := firstPass.CiContext
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal PreviewEnvironmentInput.CiContext: %w", err)
+					"unable to unmarshal AddComponentInput.Attributes: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-type __premarshalPreviewEnvironmentInput struct {
-	Credentials []Credential `json:"credentials"`
+type __premarshalAddComponentInput struct {
+	Attributes json.RawMessage `json:"attributes,omitempty"`
 
-	PackageConfigurations json.RawMessage `json:"packageConfigurations"`
+	Description string `json:"description,omitempty"`
 
-	CiContext json.RawMessage `json:"ciContext"`
+	Id string `json:"id"`
+
+	Name string `json:"name"`
 }
 
-func (v *PreviewEnvironmentInput) MarshalJSON() ([]byte, error) {
+func (v *AddComponentInput) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -241,1897 +87,414 @@ func (v *PreviewEnvironmentInput) MarshalJSON() ([]byte, error) {
 	return json.Marshal(premarshaled)
 }
 
-func (v *PreviewEnvironmentInput) __premarshalJSON() (*__premarshalPreviewEnvironmentInput, error) {
-	var retval __premarshalPreviewEnvironmentInput
+func (v *AddComponentInput) __premarshalJSON() (*__premarshalAddComponentInput, error) {
+	var retval __premarshalAddComponentInput
 
-	retval.Credentials = v.Credentials
 	{
 
-		dst := &retval.PackageConfigurations
-		src := v.PackageConfigurations
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal PreviewEnvironmentInput.PackageConfigurations: %w", err)
+				"unable to marshal AddComponentInput.Attributes: %w", err)
 		}
 	}
-	{
-
-		dst := &retval.CiContext
-		src := v.CiContext
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal PreviewEnvironmentInput.CiContext: %w", err)
-		}
-	}
+	retval.Description = v.Description
+	retval.Id = v.Id
+	retval.Name = v.Name
 	return &retval, nil
 }
 
-// Release strategy for a package
-type ReleaseStrategy string
-
-const (
-	// Package receives only stable releases
-	ReleaseStrategyStable ReleaseStrategy = "STABLE"
-	// Package receives both stable and development releases
-	ReleaseStrategyDevelopment ReleaseStrategy = "DEVELOPMENT"
-)
-
-var AllReleaseStrategy = []ReleaseStrategy{
-	ReleaseStrategyStable,
-	ReleaseStrategyDevelopment,
+// Filters for narrowing the bundles list.
+//
+// All filters are combined with AND logic. For example, setting both `ociRepo`
+// and `resourceType` returns only bundles in the specified repository that also
+// produce the given resource type.
+type BundlesFilter struct {
+	// Restrict results to bundles published under a specific OCI repository name.
+	OciRepo *OciRepoNameFilter `json:"ociRepo,omitempty"`
+	// Return only bundles that **produce** a resource of the given type (e.g., `dynamodb-table`, `aws-iam-role`).
+	ResourceType *StringFilter `json:"resourceType,omitempty"`
+	// Return only bundles that **require** a dependency of the given type (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	DependencyType *StringFilter `json:"dependencyType,omitempty"`
+	// Full-text search across the bundle's name, description, operator guide, and readme. Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, name-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries.
+	Search string `json:"search,omitempty"`
 }
 
-type ReposSort struct {
-	// Field to sort by
-	Field ReposSortField `json:"field"`
-	// Sort order
+// GetOciRepo returns BundlesFilter.OciRepo, and is useful for accessing the field via an interface.
+func (v *BundlesFilter) GetOciRepo() *OciRepoNameFilter { return v.OciRepo }
+
+// GetResourceType returns BundlesFilter.ResourceType, and is useful for accessing the field via an interface.
+func (v *BundlesFilter) GetResourceType() *StringFilter { return v.ResourceType }
+
+// GetDependencyType returns BundlesFilter.DependencyType, and is useful for accessing the field via an interface.
+func (v *BundlesFilter) GetDependencyType() *StringFilter { return v.DependencyType }
+
+// GetSearch returns BundlesFilter.Search, and is useful for accessing the field via an interface.
+func (v *BundlesFilter) GetSearch() string { return v.Search }
+
+// Controls the sort order of the bundles list.
+//
+// When a `search` filter is active and no sort is provided, results are ranked by
+// relevance. Providing an explicit sort overrides relevance ranking.
+type BundlesSort struct {
+	// The field to order results by.
+	Field BundlesSortField `json:"field"`
+	// Ascending (`ASC`) or descending (`DESC`).
 	Order SortOrder `json:"order"`
 }
 
-// GetField returns ReposSort.Field, and is useful for accessing the field via an interface.
-func (v *ReposSort) GetField() ReposSortField { return v.Field }
+// GetField returns BundlesSort.Field, and is useful for accessing the field via an interface.
+func (v *BundlesSort) GetField() BundlesSortField { return v.Field }
 
-// GetOrder returns ReposSort.Order, and is useful for accessing the field via an interface.
-func (v *ReposSort) GetOrder() SortOrder { return v.Order }
+// GetOrder returns BundlesSort.Order, and is useful for accessing the field via an interface.
+func (v *BundlesSort) GetOrder() SortOrder { return v.Order }
 
-type ReposSortField string
+// Fields available for ordering the bundles list.
+//
+// When a `search` filter is active and no explicit sort is provided, results are
+// ranked by relevance instead of these fields.
+type BundlesSortField string
 
 const (
-	// Sort repositories by name
-	ReposSortFieldName ReposSortField = "NAME"
-	// Sort by creation timestamp
-	ReposSortFieldCreatedAt ReposSortField = "CREATED_AT"
+	// Alphabetical order by the bundle's OCI repository name (e.g., `aws-aurora-postgres`).
+	BundlesSortFieldName BundlesSortField = "NAME"
+	// Chronological order by the date this bundle version was published.
+	BundlesSortFieldCreatedAt BundlesSortField = "CREATED_AT"
 )
 
-var AllReposSortField = []ReposSortField{
-	ReposSortFieldName,
-	ReposSortFieldCreatedAt,
+var AllBundlesSortField = []BundlesSortField{
+	BundlesSortFieldName,
+	BundlesSortFieldCreatedAt,
 }
 
-type ServerMode string
+// Determines how instances receive a dependency of this resource type.
+//
+// When a bundle declares a dependency, the connection orientation of the
+// dependency's resource type controls how it gets satisfied at deploy time.
+type ConnectionOrientation string
 
 const (
-	ServerModeSelfHosted ServerMode = "SELF_HOSTED"
-	ServerModeManaged    ServerMode = "MANAGED"
+	// The dependency is wired explicitly by drawing a connection between two instances on the canvas. The user chooses which specific instance provides the resource.
+	ConnectionOrientationLink ConnectionOrientation = "LINK"
+	// The dependency is satisfied automatically by an environment-level default. The resource is shared across all instances in the environment without explicit wiring.
+	ConnectionOrientationEnvironmentDefault ConnectionOrientation = "ENVIRONMENT_DEFAULT"
 )
 
-var AllServerMode = []ServerMode{
-	ServerModeSelfHosted,
-	ServerModeManaged,
-}
-
-type SortOrder string
-
-const (
-	// Ascending order
-	SortOrderAsc SortOrder = "ASC"
-	// Descending order
-	SortOrderDesc SortOrder = "DESC"
-)
-
-var AllSortOrder = []SortOrder{
-	SortOrderAsc,
-	SortOrderDesc,
-}
-
-// __configurePackageInput is used internally by genqlient
-type __configurePackageInput struct {
-	OrganizationId string         `json:"organizationId"`
-	Id             string         `json:"id"`
-	Params         map[string]any `json:"-"`
-}
-
-// GetOrganizationId returns __configurePackageInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__configurePackageInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __configurePackageInput.Id, and is useful for accessing the field via an interface.
-func (v *__configurePackageInput) GetId() string { return v.Id }
-
-// GetParams returns __configurePackageInput.Params, and is useful for accessing the field via an interface.
-func (v *__configurePackageInput) GetParams() map[string]any { return v.Params }
-
-func (v *__configurePackageInput) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*__configurePackageInput
-		Params json.RawMessage `json:"params"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.__configurePackageInput = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Params
-		src := firstPass.Params
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal __configurePackageInput.Params: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshal__configurePackageInput struct {
-	OrganizationId string `json:"organizationId"`
-
-	Id string `json:"id"`
-
-	Params json.RawMessage `json:"params"`
-}
-
-func (v *__configurePackageInput) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *__configurePackageInput) __premarshalJSON() (*__premarshal__configurePackageInput, error) {
-	var retval __premarshal__configurePackageInput
-
-	retval.OrganizationId = v.OrganizationId
-	retval.Id = v.Id
-	{
-
-		dst := &retval.Params
-		src := v.Params
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal __configurePackageInput.Params: %w", err)
-		}
-	}
-	return &retval, nil
-}
-
-// __containerRepositoryInput is used internally by genqlient
-type __containerRepositoryInput struct {
-	OrgId      string                   `json:"orgId"`
-	ArtifactId string                   `json:"artifactId"`
-	Input      ContainerRepositoryInput `json:"input"`
-}
-
-// GetOrgId returns __containerRepositoryInput.OrgId, and is useful for accessing the field via an interface.
-func (v *__containerRepositoryInput) GetOrgId() string { return v.OrgId }
-
-// GetArtifactId returns __containerRepositoryInput.ArtifactId, and is useful for accessing the field via an interface.
-func (v *__containerRepositoryInput) GetArtifactId() string { return v.ArtifactId }
-
-// GetInput returns __containerRepositoryInput.Input, and is useful for accessing the field via an interface.
-func (v *__containerRepositoryInput) GetInput() ContainerRepositoryInput { return v.Input }
-
-// __createArtifactInput is used internally by genqlient
-type __createArtifactInput struct {
-	OrganizationId  string         `json:"organizationId"`
-	ArtifactName    string         `json:"artifactName"`
-	ArtifactType    string         `json:"artifactType"`
-	ArtifactPayload map[string]any `json:"-"`
-}
-
-// GetOrganizationId returns __createArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__createArtifactInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetArtifactName returns __createArtifactInput.ArtifactName, and is useful for accessing the field via an interface.
-func (v *__createArtifactInput) GetArtifactName() string { return v.ArtifactName }
-
-// GetArtifactType returns __createArtifactInput.ArtifactType, and is useful for accessing the field via an interface.
-func (v *__createArtifactInput) GetArtifactType() string { return v.ArtifactType }
-
-// GetArtifactPayload returns __createArtifactInput.ArtifactPayload, and is useful for accessing the field via an interface.
-func (v *__createArtifactInput) GetArtifactPayload() map[string]any { return v.ArtifactPayload }
-
-func (v *__createArtifactInput) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*__createArtifactInput
-		ArtifactPayload json.RawMessage `json:"artifactPayload"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.__createArtifactInput = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.ArtifactPayload
-		src := firstPass.ArtifactPayload
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal __createArtifactInput.ArtifactPayload: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshal__createArtifactInput struct {
-	OrganizationId string `json:"organizationId"`
-
-	ArtifactName string `json:"artifactName"`
-
-	ArtifactType string `json:"artifactType"`
-
-	ArtifactPayload json.RawMessage `json:"artifactPayload"`
-}
-
-func (v *__createArtifactInput) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *__createArtifactInput) __premarshalJSON() (*__premarshal__createArtifactInput, error) {
-	var retval __premarshal__createArtifactInput
-
-	retval.OrganizationId = v.OrganizationId
-	retval.ArtifactName = v.ArtifactName
-	retval.ArtifactType = v.ArtifactType
-	{
-
-		dst := &retval.ArtifactPayload
-		src := v.ArtifactPayload
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal __createArtifactInput.ArtifactPayload: %w", err)
-		}
-	}
-	return &retval, nil
-}
-
-// __createEnvironmentConnectionInput is used internally by genqlient
-type __createEnvironmentConnectionInput struct {
-	OrganizationId string `json:"organizationId"`
-	ArtifactId     string `json:"artifactId"`
-	EnvironmentId  string `json:"environmentId"`
-}
-
-// GetOrganizationId returns __createEnvironmentConnectionInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__createEnvironmentConnectionInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetArtifactId returns __createEnvironmentConnectionInput.ArtifactId, and is useful for accessing the field via an interface.
-func (v *__createEnvironmentConnectionInput) GetArtifactId() string { return v.ArtifactId }
-
-// GetEnvironmentId returns __createEnvironmentConnectionInput.EnvironmentId, and is useful for accessing the field via an interface.
-func (v *__createEnvironmentConnectionInput) GetEnvironmentId() string { return v.EnvironmentId }
-
-// __createEnvironmentInput is used internally by genqlient
-type __createEnvironmentInput struct {
-	OrganizationId string `json:"organizationId"`
-	ProjectId      string `json:"projectId"`
-	Name           string `json:"name"`
-	Slug           string `json:"slug"`
-	Description    string `json:"description"`
-}
-
-// GetOrganizationId returns __createEnvironmentInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__createEnvironmentInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetProjectId returns __createEnvironmentInput.ProjectId, and is useful for accessing the field via an interface.
-func (v *__createEnvironmentInput) GetProjectId() string { return v.ProjectId }
-
-// GetName returns __createEnvironmentInput.Name, and is useful for accessing the field via an interface.
-func (v *__createEnvironmentInput) GetName() string { return v.Name }
-
-// GetSlug returns __createEnvironmentInput.Slug, and is useful for accessing the field via an interface.
-func (v *__createEnvironmentInput) GetSlug() string { return v.Slug }
-
-// GetDescription returns __createEnvironmentInput.Description, and is useful for accessing the field via an interface.
-func (v *__createEnvironmentInput) GetDescription() string { return v.Description }
-
-// __createManifestInput is used internally by genqlient
-type __createManifestInput struct {
-	OrganizationId string `json:"organizationId"`
-	BundleId       string `json:"bundleId"`
-	ProjectId      string `json:"projectId"`
-	Name           string `json:"name"`
-	Slug           string `json:"slug"`
-	Description    string `json:"description"`
-}
-
-// GetOrganizationId returns __createManifestInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__createManifestInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetBundleId returns __createManifestInput.BundleId, and is useful for accessing the field via an interface.
-func (v *__createManifestInput) GetBundleId() string { return v.BundleId }
-
-// GetProjectId returns __createManifestInput.ProjectId, and is useful for accessing the field via an interface.
-func (v *__createManifestInput) GetProjectId() string { return v.ProjectId }
-
-// GetName returns __createManifestInput.Name, and is useful for accessing the field via an interface.
-func (v *__createManifestInput) GetName() string { return v.Name }
-
-// GetSlug returns __createManifestInput.Slug, and is useful for accessing the field via an interface.
-func (v *__createManifestInput) GetSlug() string { return v.Slug }
-
-// GetDescription returns __createManifestInput.Description, and is useful for accessing the field via an interface.
-func (v *__createManifestInput) GetDescription() string { return v.Description }
-
-// __createProjectInput is used internally by genqlient
-type __createProjectInput struct {
-	OrganizationId string `json:"organizationId"`
-	Name           string `json:"name"`
-	Slug           string `json:"slug"`
-	Description    string `json:"description"`
-}
-
-// GetOrganizationId returns __createProjectInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__createProjectInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetName returns __createProjectInput.Name, and is useful for accessing the field via an interface.
-func (v *__createProjectInput) GetName() string { return v.Name }
-
-// GetSlug returns __createProjectInput.Slug, and is useful for accessing the field via an interface.
-func (v *__createProjectInput) GetSlug() string { return v.Slug }
-
-// GetDescription returns __createProjectInput.Description, and is useful for accessing the field via an interface.
-func (v *__createProjectInput) GetDescription() string { return v.Description }
-
-// __decommissionPackageInput is used internally by genqlient
-type __decommissionPackageInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-	Message        string `json:"message"`
-}
-
-// GetOrganizationId returns __decommissionPackageInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__decommissionPackageInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __decommissionPackageInput.Id, and is useful for accessing the field via an interface.
-func (v *__decommissionPackageInput) GetId() string { return v.Id }
-
-// GetMessage returns __decommissionPackageInput.Message, and is useful for accessing the field via an interface.
-func (v *__decommissionPackageInput) GetMessage() string { return v.Message }
-
-// __decommissionPreviewEnvironmentInput is used internally by genqlient
-type __decommissionPreviewEnvironmentInput struct {
-	OrgId    string `json:"orgId"`
-	TargetId string `json:"targetId"`
-}
-
-// GetOrgId returns __decommissionPreviewEnvironmentInput.OrgId, and is useful for accessing the field via an interface.
-func (v *__decommissionPreviewEnvironmentInput) GetOrgId() string { return v.OrgId }
-
-// GetTargetId returns __decommissionPreviewEnvironmentInput.TargetId, and is useful for accessing the field via an interface.
-func (v *__decommissionPreviewEnvironmentInput) GetTargetId() string { return v.TargetId }
-
-// __deleteArtifactDefinitionInput is used internally by genqlient
-type __deleteArtifactDefinitionInput struct {
-	OrganizationId string `json:"organizationId"`
-	Name           string `json:"name"`
-}
-
-// GetOrganizationId returns __deleteArtifactDefinitionInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__deleteArtifactDefinitionInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetName returns __deleteArtifactDefinitionInput.Name, and is useful for accessing the field via an interface.
-func (v *__deleteArtifactDefinitionInput) GetName() string { return v.Name }
-
-// __deleteArtifactInput is used internally by genqlient
-type __deleteArtifactInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __deleteArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__deleteArtifactInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __deleteArtifactInput.Id, and is useful for accessing the field via an interface.
-func (v *__deleteArtifactInput) GetId() string { return v.Id }
-
-// __deleteProjectInput is used internally by genqlient
-type __deleteProjectInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __deleteProjectInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__deleteProjectInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __deleteProjectInput.Id, and is useful for accessing the field via an interface.
-func (v *__deleteProjectInput) GetId() string { return v.Id }
-
-// __deployPackageInput is used internally by genqlient
-type __deployPackageInput struct {
-	OrganizationId string `json:"organizationId"`
-	TargetId       string `json:"targetId"`
-	ManifestId     string `json:"manifestId"`
-	Message        string `json:"message"`
-}
-
-// GetOrganizationId returns __deployPackageInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__deployPackageInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetTargetId returns __deployPackageInput.TargetId, and is useful for accessing the field via an interface.
-func (v *__deployPackageInput) GetTargetId() string { return v.TargetId }
-
-// GetManifestId returns __deployPackageInput.ManifestId, and is useful for accessing the field via an interface.
-func (v *__deployPackageInput) GetManifestId() string { return v.ManifestId }
-
-// GetMessage returns __deployPackageInput.Message, and is useful for accessing the field via an interface.
-func (v *__deployPackageInput) GetMessage() string { return v.Message }
-
-// __deployPreviewEnvironmentInput is used internally by genqlient
-type __deployPreviewEnvironmentInput struct {
-	OrganizationId string                  `json:"organizationId"`
-	ProjectId      string                  `json:"projectId"`
-	Input          PreviewEnvironmentInput `json:"input"`
-}
-
-// GetOrganizationId returns __deployPreviewEnvironmentInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__deployPreviewEnvironmentInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetProjectId returns __deployPreviewEnvironmentInput.ProjectId, and is useful for accessing the field via an interface.
-func (v *__deployPreviewEnvironmentInput) GetProjectId() string { return v.ProjectId }
-
-// GetInput returns __deployPreviewEnvironmentInput.Input, and is useful for accessing the field via an interface.
-func (v *__deployPreviewEnvironmentInput) GetInput() PreviewEnvironmentInput { return v.Input }
-
-// __downloadArtifactInput is used internally by genqlient
-type __downloadArtifactInput struct {
-	OrganizationId string `json:"organizationId"`
-	ArtifactId     string `json:"artifactId"`
-	Format         string `json:"format"`
-}
-
-// GetOrganizationId returns __downloadArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__downloadArtifactInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetArtifactId returns __downloadArtifactInput.ArtifactId, and is useful for accessing the field via an interface.
-func (v *__downloadArtifactInput) GetArtifactId() string { return v.ArtifactId }
-
-// GetFormat returns __downloadArtifactInput.Format, and is useful for accessing the field via an interface.
-func (v *__downloadArtifactInput) GetFormat() string { return v.Format }
-
-// __getArtifactDefinitionInput is used internally by genqlient
-type __getArtifactDefinitionInput struct {
-	OrganizationId string `json:"organizationId"`
-	Name           string `json:"name"`
-}
-
-// GetOrganizationId returns __getArtifactDefinitionInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getArtifactDefinitionInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetName returns __getArtifactDefinitionInput.Name, and is useful for accessing the field via an interface.
-func (v *__getArtifactDefinitionInput) GetName() string { return v.Name }
-
-// __getArtifactInput is used internally by genqlient
-type __getArtifactInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __getArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getArtifactInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getArtifactInput.Id, and is useful for accessing the field via an interface.
-func (v *__getArtifactInput) GetId() string { return v.Id }
-
-// __getArtifactsByTypeInput is used internally by genqlient
-type __getArtifactsByTypeInput struct {
-	OrganizationId string `json:"organizationId"`
-	ArtifactType   string `json:"artifactType"`
-}
-
-// GetOrganizationId returns __getArtifactsByTypeInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getArtifactsByTypeInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetArtifactType returns __getArtifactsByTypeInput.ArtifactType, and is useful for accessing the field via an interface.
-func (v *__getArtifactsByTypeInput) GetArtifactType() string { return v.ArtifactType }
-
-// __getBundleInput is used internally by genqlient
-type __getBundleInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-	Version        string `json:"version"`
-}
-
-// GetOrganizationId returns __getBundleInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getBundleInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getBundleInput.Id, and is useful for accessing the field via an interface.
-func (v *__getBundleInput) GetId() string { return v.Id }
-
-// GetVersion returns __getBundleInput.Version, and is useful for accessing the field via an interface.
-func (v *__getBundleInput) GetVersion() string { return v.Version }
-
-// __getDeploymentByIdInput is used internally by genqlient
-type __getDeploymentByIdInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __getDeploymentByIdInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getDeploymentByIdInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getDeploymentByIdInput.Id, and is useful for accessing the field via an interface.
-func (v *__getDeploymentByIdInput) GetId() string { return v.Id }
-
-// __getDeploymentLogStreamInput is used internally by genqlient
-type __getDeploymentLogStreamInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __getDeploymentLogStreamInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getDeploymentLogStreamInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getDeploymentLogStreamInput.Id, and is useful for accessing the field via an interface.
-func (v *__getDeploymentLogStreamInput) GetId() string { return v.Id }
-
-// __getEnvironmentByIdInput is used internally by genqlient
-type __getEnvironmentByIdInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __getEnvironmentByIdInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getEnvironmentByIdInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getEnvironmentByIdInput.Id, and is useful for accessing the field via an interface.
-func (v *__getEnvironmentByIdInput) GetId() string { return v.Id }
-
-// __getEnvironmentsByProjectInput is used internally by genqlient
-type __getEnvironmentsByProjectInput struct {
-	OrganizationId string `json:"organizationId"`
-	ProjectId      string `json:"projectId"`
-}
-
-// GetOrganizationId returns __getEnvironmentsByProjectInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getEnvironmentsByProjectInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetProjectId returns __getEnvironmentsByProjectInput.ProjectId, and is useful for accessing the field via an interface.
-func (v *__getEnvironmentsByProjectInput) GetProjectId() string { return v.ProjectId }
-
-// __getOciRepoInput is used internally by genqlient
-type __getOciRepoInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __getOciRepoInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getOciRepoInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getOciRepoInput.Id, and is useful for accessing the field via an interface.
-func (v *__getOciRepoInput) GetId() string { return v.Id }
-
-// __getPackageInput is used internally by genqlient
-type __getPackageInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __getPackageInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getPackageInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getPackageInput.Id, and is useful for accessing the field via an interface.
-func (v *__getPackageInput) GetId() string { return v.Id }
-
-// __getProjectByIdInput is used internally by genqlient
-type __getProjectByIdInput struct {
-	OrganizationId string `json:"organizationId"`
-	Id             string `json:"id"`
-}
-
-// GetOrganizationId returns __getProjectByIdInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getProjectByIdInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __getProjectByIdInput.Id, and is useful for accessing the field via an interface.
-func (v *__getProjectByIdInput) GetId() string { return v.Id }
-
-// __getProjectsInput is used internally by genqlient
-type __getProjectsInput struct {
-	OrganizationId string `json:"organizationId"`
-}
-
-// GetOrganizationId returns __getProjectsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__getProjectsInput) GetOrganizationId() string { return v.OrganizationId }
-
-// __listArtifactDefinitionsInput is used internally by genqlient
-type __listArtifactDefinitionsInput struct {
-	OrganizationId string `json:"organizationId"`
-}
-
-// GetOrganizationId returns __listArtifactDefinitionsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__listArtifactDefinitionsInput) GetOrganizationId() string { return v.OrganizationId }
-
-// __listCredentialArtifactDefinitionsInput is used internally by genqlient
-type __listCredentialArtifactDefinitionsInput struct {
-	OrganizationId string `json:"organizationId"`
-}
-
-// GetOrganizationId returns __listCredentialArtifactDefinitionsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__listCredentialArtifactDefinitionsInput) GetOrganizationId() string {
-	return v.OrganizationId
-}
-
-// __listCredentialsInput is used internally by genqlient
-type __listCredentialsInput struct {
-	OrganizationId string `json:"organizationId"`
-}
-
-// GetOrganizationId returns __listCredentialsInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__listCredentialsInput) GetOrganizationId() string { return v.OrganizationId }
-
-// __listReposInput is used internally by genqlient
-type __listReposInput struct {
-	OrganizationId string          `json:"organizationId"`
-	Sort           *ReposSort      `json:"sort,omitempty"`
-	Cursor         *scalars.Cursor `json:"cursor,omitempty"`
-	Search         *string         `json:"search,omitempty"`
-}
-
-// GetOrganizationId returns __listReposInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__listReposInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetSort returns __listReposInput.Sort, and is useful for accessing the field via an interface.
-func (v *__listReposInput) GetSort() *ReposSort { return v.Sort }
-
-// GetCursor returns __listReposInput.Cursor, and is useful for accessing the field via an interface.
-func (v *__listReposInput) GetCursor() *scalars.Cursor { return v.Cursor }
-
-// GetSearch returns __listReposInput.Search, and is useful for accessing the field via an interface.
-func (v *__listReposInput) GetSearch() *string { return v.Search }
-
-// __publishArtifactDefinitionInput is used internally by genqlient
-type __publishArtifactDefinitionInput struct {
-	OrganizationId string         `json:"organizationId"`
-	Schema         map[string]any `json:"-"`
-}
-
-// GetOrganizationId returns __publishArtifactDefinitionInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__publishArtifactDefinitionInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetSchema returns __publishArtifactDefinitionInput.Schema, and is useful for accessing the field via an interface.
-func (v *__publishArtifactDefinitionInput) GetSchema() map[string]any { return v.Schema }
-
-func (v *__publishArtifactDefinitionInput) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*__publishArtifactDefinitionInput
-		Schema json.RawMessage `json:"schema"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.__publishArtifactDefinitionInput = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Schema
-		src := firstPass.Schema
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal __publishArtifactDefinitionInput.Schema: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshal__publishArtifactDefinitionInput struct {
-	OrganizationId string `json:"organizationId"`
-
-	Schema json.RawMessage `json:"schema"`
-}
-
-func (v *__publishArtifactDefinitionInput) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *__publishArtifactDefinitionInput) __premarshalJSON() (*__premarshal__publishArtifactDefinitionInput, error) {
-	var retval __premarshal__publishArtifactDefinitionInput
-
-	retval.OrganizationId = v.OrganizationId
-	{
-
-		dst := &retval.Schema
-		src := v.Schema
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal __publishArtifactDefinitionInput.Schema: %w", err)
-		}
-	}
-	return &retval, nil
-}
-
-// __resetPackageInput is used internally by genqlient
-type __resetPackageInput struct {
-	OrganizationId    string `json:"organizationId"`
-	Id                string `json:"id"`
-	DeleteState       bool   `json:"deleteState"`
-	DeleteParams      bool   `json:"deleteParams"`
-	DeleteDeployments bool   `json:"deleteDeployments"`
-}
-
-// GetOrganizationId returns __resetPackageInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__resetPackageInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __resetPackageInput.Id, and is useful for accessing the field via an interface.
-func (v *__resetPackageInput) GetId() string { return v.Id }
-
-// GetDeleteState returns __resetPackageInput.DeleteState, and is useful for accessing the field via an interface.
-func (v *__resetPackageInput) GetDeleteState() bool { return v.DeleteState }
-
-// GetDeleteParams returns __resetPackageInput.DeleteParams, and is useful for accessing the field via an interface.
-func (v *__resetPackageInput) GetDeleteParams() bool { return v.DeleteParams }
-
-// GetDeleteDeployments returns __resetPackageInput.DeleteDeployments, and is useful for accessing the field via an interface.
-func (v *__resetPackageInput) GetDeleteDeployments() bool { return v.DeleteDeployments }
-
-// __setPackageVersionInput is used internally by genqlient
-type __setPackageVersionInput struct {
-	OrganizationId  string          `json:"organizationId"`
-	Id              string          `json:"id"`
-	Version         string          `json:"version"`
-	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
-}
-
-// GetOrganizationId returns __setPackageVersionInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__setPackageVersionInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetId returns __setPackageVersionInput.Id, and is useful for accessing the field via an interface.
-func (v *__setPackageVersionInput) GetId() string { return v.Id }
-
-// GetVersion returns __setPackageVersionInput.Version, and is useful for accessing the field via an interface.
-func (v *__setPackageVersionInput) GetVersion() string { return v.Version }
-
-// GetReleaseStrategy returns __setPackageVersionInput.ReleaseStrategy, and is useful for accessing the field via an interface.
-func (v *__setPackageVersionInput) GetReleaseStrategy() ReleaseStrategy { return v.ReleaseStrategy }
-
-// __updateArtifactInput is used internally by genqlient
-type __updateArtifactInput struct {
-	OrganizationId  string         `json:"organizationId"`
-	ArtifactId      string         `json:"artifactId"`
-	ArtifactName    string         `json:"artifactName"`
-	ArtifactPayload map[string]any `json:"-"`
-}
-
-// GetOrganizationId returns __updateArtifactInput.OrganizationId, and is useful for accessing the field via an interface.
-func (v *__updateArtifactInput) GetOrganizationId() string { return v.OrganizationId }
-
-// GetArtifactId returns __updateArtifactInput.ArtifactId, and is useful for accessing the field via an interface.
-func (v *__updateArtifactInput) GetArtifactId() string { return v.ArtifactId }
-
-// GetArtifactName returns __updateArtifactInput.ArtifactName, and is useful for accessing the field via an interface.
-func (v *__updateArtifactInput) GetArtifactName() string { return v.ArtifactName }
-
-// GetArtifactPayload returns __updateArtifactInput.ArtifactPayload, and is useful for accessing the field via an interface.
-func (v *__updateArtifactInput) GetArtifactPayload() map[string]any { return v.ArtifactPayload }
-
-func (v *__updateArtifactInput) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*__updateArtifactInput
-		ArtifactPayload json.RawMessage `json:"artifactPayload"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.__updateArtifactInput = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.ArtifactPayload
-		src := firstPass.ArtifactPayload
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal __updateArtifactInput.ArtifactPayload: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshal__updateArtifactInput struct {
-	OrganizationId string `json:"organizationId"`
-
-	ArtifactId string `json:"artifactId"`
-
-	ArtifactName string `json:"artifactName"`
-
-	ArtifactPayload json.RawMessage `json:"artifactPayload"`
-}
-
-func (v *__updateArtifactInput) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *__updateArtifactInput) __premarshalJSON() (*__premarshal__updateArtifactInput, error) {
-	var retval __premarshal__updateArtifactInput
-
-	retval.OrganizationId = v.OrganizationId
-	retval.ArtifactId = v.ArtifactId
-	retval.ArtifactName = v.ArtifactName
-	{
-
-		dst := &retval.ArtifactPayload
-		src := v.ArtifactPayload
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal __updateArtifactInput.ArtifactPayload: %w", err)
-		}
-	}
-	return &retval, nil
-}
-
-// configurePackageConfigurePackagePackagePayload includes the requested fields of the GraphQL type PackagePayload.
-type configurePackageConfigurePackagePackagePayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result configurePackageConfigurePackagePackagePayloadResultPackage `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetResult returns configurePackageConfigurePackagePackagePayload.Result, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayload) GetResult() configurePackageConfigurePackagePackagePayloadResultPackage {
-	return v.Result
-}
-
-// GetSuccessful returns configurePackageConfigurePackagePackagePayload.Successful, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns configurePackageConfigurePackagePackagePayload.Messages, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// configurePackageConfigurePackagePackagePayloadResultPackage includes the requested fields of the GraphQL type Package.
-// The GraphQL type's documentation follows.
-//
-// A deployed instance of a bundle in the context of its manifest
-type configurePackageConfigurePackagePackagePayloadResultPackage struct {
-	// Unique identifier
-	Id string `json:"id"`
-	// Package configuration parameters
-	Params map[string]any `json:"-"`
-	// Unique identifier for the package
-	Slug string `json:"slug"`
-}
-
-// GetId returns configurePackageConfigurePackagePackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetId() string { return v.Id }
-
-// GetParams returns configurePackageConfigurePackagePackagePayloadResultPackage.Params, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetParams() map[string]any {
-	return v.Params
-}
-
-// GetSlug returns configurePackageConfigurePackagePackagePayloadResultPackage.Slug, and is useful for accessing the field via an interface.
-func (v *configurePackageConfigurePackagePackagePayloadResultPackage) GetSlug() string { return v.Slug }
-
-func (v *configurePackageConfigurePackagePackagePayloadResultPackage) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*configurePackageConfigurePackagePackagePayloadResultPackage
-		Params json.RawMessage `json:"params"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.configurePackageConfigurePackagePackagePayloadResultPackage = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Params
-		src := firstPass.Params
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal configurePackageConfigurePackagePackagePayloadResultPackage.Params: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalconfigurePackageConfigurePackagePackagePayloadResultPackage struct {
-	Id string `json:"id"`
-
-	Params json.RawMessage `json:"params"`
-
-	Slug string `json:"slug"`
-}
-
-func (v *configurePackageConfigurePackagePackagePayloadResultPackage) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *configurePackageConfigurePackagePackagePayloadResultPackage) __premarshalJSON() (*__premarshalconfigurePackageConfigurePackagePackagePayloadResultPackage, error) {
-	var retval __premarshalconfigurePackageConfigurePackagePackagePayloadResultPackage
-
-	retval.Id = v.Id
-	{
-
-		dst := &retval.Params
-		src := v.Params
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal configurePackageConfigurePackagePackagePayloadResultPackage.Params: %w", err)
-		}
-	}
-	retval.Slug = v.Slug
-	return &retval, nil
-}
-
-// configurePackageResponse is returned by configurePackage on success.
-type configurePackageResponse struct {
-	// Update a Package's parameters
-	ConfigurePackage configurePackageConfigurePackagePackagePayload `json:"configurePackage"`
-}
-
-// GetConfigurePackage returns configurePackageResponse.ConfigurePackage, and is useful for accessing the field via an interface.
-func (v *configurePackageResponse) GetConfigurePackage() configurePackageConfigurePackagePackagePayload {
-	return v.ConfigurePackage
-}
-
-// containerRepositoryContainerRepositoryContainerRepositoryAuth includes the requested fields of the GraphQL type ContainerRepositoryAuth.
-type containerRepositoryContainerRepositoryContainerRepositoryAuth struct {
-	Token   string `json:"token"`
-	RepoUri string `json:"repoUri"`
-}
-
-// GetToken returns containerRepositoryContainerRepositoryContainerRepositoryAuth.Token, and is useful for accessing the field via an interface.
-func (v *containerRepositoryContainerRepositoryContainerRepositoryAuth) GetToken() string {
-	return v.Token
-}
-
-// GetRepoUri returns containerRepositoryContainerRepositoryContainerRepositoryAuth.RepoUri, and is useful for accessing the field via an interface.
-func (v *containerRepositoryContainerRepositoryContainerRepositoryAuth) GetRepoUri() string {
-	return v.RepoUri
-}
-
-// containerRepositoryResponse is returned by containerRepository on success.
-type containerRepositoryResponse struct {
-	ContainerRepository containerRepositoryContainerRepositoryContainerRepositoryAuth `json:"containerRepository"`
-}
-
-// GetContainerRepository returns containerRepositoryResponse.ContainerRepository, and is useful for accessing the field via an interface.
-func (v *containerRepositoryResponse) GetContainerRepository() containerRepositoryContainerRepositoryContainerRepositoryAuth {
-	return v.ContainerRepository
-}
-
-// createArtifactCreateArtifactArtifactPayload includes the requested fields of the GraphQL type ArtifactPayload.
-type createArtifactCreateArtifactArtifactPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result createArtifactCreateArtifactArtifactPayloadResultArtifact `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetResult returns createArtifactCreateArtifactArtifactPayload.Result, and is useful for accessing the field via an interface.
-func (v *createArtifactCreateArtifactArtifactPayload) GetResult() createArtifactCreateArtifactArtifactPayloadResultArtifact {
-	return v.Result
-}
-
-// GetSuccessful returns createArtifactCreateArtifactArtifactPayload.Successful, and is useful for accessing the field via an interface.
-func (v *createArtifactCreateArtifactArtifactPayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns createArtifactCreateArtifactArtifactPayload.Messages, and is useful for accessing the field via an interface.
-func (v *createArtifactCreateArtifactArtifactPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// createArtifactCreateArtifactArtifactPayloadResultArtifact includes the requested fields of the GraphQL type Artifact.
-type createArtifactCreateArtifactArtifactPayloadResultArtifact struct {
-	Name string `json:"name"`
-	Id   string `json:"id"`
-}
-
-// GetName returns createArtifactCreateArtifactArtifactPayloadResultArtifact.Name, and is useful for accessing the field via an interface.
-func (v *createArtifactCreateArtifactArtifactPayloadResultArtifact) GetName() string { return v.Name }
-
-// GetId returns createArtifactCreateArtifactArtifactPayloadResultArtifact.Id, and is useful for accessing the field via an interface.
-func (v *createArtifactCreateArtifactArtifactPayloadResultArtifact) GetId() string { return v.Id }
-
-// createArtifactResponse is returned by createArtifact on success.
-type createArtifactResponse struct {
-	// Create an artifact
-	CreateArtifact createArtifactCreateArtifactArtifactPayload `json:"createArtifact"`
-}
-
-// GetCreateArtifact returns createArtifactResponse.CreateArtifact, and is useful for accessing the field via an interface.
-func (v *createArtifactResponse) GetCreateArtifact() createArtifactCreateArtifactArtifactPayload {
-	return v.CreateArtifact
-}
-
-// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload includes the requested fields of the GraphQL type EnvironmentConnectionPayload.
-type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload struct {
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage `json:"messages"`
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection `json:"result"`
-}
-
-// GetSuccessful returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload.Successful, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload) GetSuccessful() bool {
-	return v.Successful
-}
-
-// GetMessages returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload.Messages, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload) GetMessages() []createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage {
-	return v.Messages
-}
-
-// GetResult returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload.Result, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload) GetResult() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection {
-	return v.Result
-}
-
-// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
-// The GraphQL type's documentation follows.
-//
-// Validation messages are returned when mutation input does not meet the requirements.
-// While client-side validation is highly recommended to provide the best User Experience,
-// All inputs will always be validated server-side.
-//
-// Some examples of validations are:
-//
-// * Username must be at least 10 characters
-// * Email field does not contain an email address
-// * Birth Date is required
-//
-// While GraphQL has support for required values, mutation data fields are always
-// set to optional in our API. This allows 'required field' messages
-// to be returned in the same manner as other validations. The only exceptions
-// are id fields, which may be required to perform updates or deletes.
-type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage struct {
-	// A friendly error message, appropriate for display to the end user.
-	//
-	// The message is interpolated to include the appropriate variables.
-	//
-	// Example: `Username must be at least 10 characters`
-	//
-	// This message may change without notice, so we do not recommend you match against the text.
-	// Instead, use the *code* field for matching.
+var AllConnectionOrientation = []ConnectionOrientation{
+	ConnectionOrientationLink,
+	ConnectionOrientationEnvironmentDefault,
+}
+
+// Deploy an instance with configuration parameters. Params are validated against the bundle's params schema, cached on the instance, and snapshotted into the deployment.
+type CreateDeploymentInput struct {
+	// The operation to perform: PROVISION to apply changes, PLAN to preview them, or DECOMMISSION to tear down infrastructure
+	Action DeploymentAction `json:"action"`
+	// A short message describing the reason for this deployment
 	Message string `json:"message"`
+	// Bundle configuration parameters. Validated against the bundle's params schema.
+	Params map[string]any `json:"-"`
 }
 
-// GetMessage returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadMessagesValidationMessage) GetMessage() string {
-	return v.Message
-}
-
-// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection includes the requested fields of the GraphQL type EnvironmentConnection.
-type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection struct {
-	Id          string                                                                                                                   `json:"id"`
-	Artifact    createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact    `json:"artifact"`
-	Environment createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment `json:"environment"`
-}
-
-// GetId returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection.Id, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection) GetId() string {
-	return v.Id
-}
-
-// GetArtifact returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection.Artifact, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection) GetArtifact() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact {
-	return v.Artifact
-}
-
-// GetEnvironment returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection.Environment, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnection) GetEnvironment() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment {
-	return v.Environment
-}
-
-// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact includes the requested fields of the GraphQL type Artifact.
-type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-}
-
-// GetId returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact.Id, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact) GetId() string {
-	return v.Id
-}
-
-// GetName returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact.Name, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionArtifact) GetName() string {
-	return v.Name
-}
-
-// createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment includes the requested fields of the GraphQL type Environment.
-type createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment struct {
-	Id   string `json:"id"`
-	Slug string `json:"slug"`
-}
-
-// GetId returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment) GetId() string {
-	return v.Id
-}
-
-// GetSlug returns createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment.Slug, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayloadResultEnvironmentConnectionEnvironment) GetSlug() string {
-	return v.Slug
-}
-
-// createEnvironmentConnectionResponse is returned by createEnvironmentConnection on success.
-type createEnvironmentConnectionResponse struct {
-	// Connect an environment as the default environment type for a given environment
-	CreateEnvironmentConnection createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload `json:"createEnvironmentConnection"`
-}
-
-// GetCreateEnvironmentConnection returns createEnvironmentConnectionResponse.CreateEnvironmentConnection, and is useful for accessing the field via an interface.
-func (v *createEnvironmentConnectionResponse) GetCreateEnvironmentConnection() createEnvironmentConnectionCreateEnvironmentConnectionEnvironmentConnectionPayload {
-	return v.CreateEnvironmentConnection
-}
-
-// createEnvironmentCreateEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
-type createEnvironmentCreateEnvironmentEnvironmentPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetResult returns createEnvironmentCreateEnvironmentEnvironmentPayload.Result, and is useful for accessing the field via an interface.
-func (v *createEnvironmentCreateEnvironmentEnvironmentPayload) GetResult() createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment {
-	return v.Result
-}
-
-// GetSuccessful returns createEnvironmentCreateEnvironmentEnvironmentPayload.Successful, and is useful for accessing the field via an interface.
-func (v *createEnvironmentCreateEnvironmentEnvironmentPayload) GetSuccessful() bool {
-	return v.Successful
-}
-
-// GetMessages returns createEnvironmentCreateEnvironmentEnvironmentPayload.Messages, and is useful for accessing the field via an interface.
-func (v *createEnvironmentCreateEnvironmentEnvironmentPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
-type createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Description string `json:"description"`
-}
-
-// GetId returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetId() string {
-	return v.Id
-}
-
-// GetName returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Name, and is useful for accessing the field via an interface.
-func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetName() string {
-	return v.Name
-}
-
-// GetSlug returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Slug, and is useful for accessing the field via an interface.
-func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetSlug() string {
-	return v.Slug
-}
-
-// GetDescription returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Description, and is useful for accessing the field via an interface.
-func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetDescription() string {
-	return v.Description
-}
-
-// createEnvironmentResponse is returned by createEnvironment on success.
-type createEnvironmentResponse struct {
-	// Create an environment
-	CreateEnvironment createEnvironmentCreateEnvironmentEnvironmentPayload `json:"createEnvironment"`
-}
-
-// GetCreateEnvironment returns createEnvironmentResponse.CreateEnvironment, and is useful for accessing the field via an interface.
-func (v *createEnvironmentResponse) GetCreateEnvironment() createEnvironmentCreateEnvironmentEnvironmentPayload {
-	return v.CreateEnvironment
-}
-
-// createManifestCreateManifestManifestPayload includes the requested fields of the GraphQL type ManifestPayload.
-type createManifestCreateManifestManifestPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result createManifestCreateManifestManifestPayloadResultManifest `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetResult returns createManifestCreateManifestManifestPayload.Result, and is useful for accessing the field via an interface.
-func (v *createManifestCreateManifestManifestPayload) GetResult() createManifestCreateManifestManifestPayloadResultManifest {
-	return v.Result
-}
-
-// GetSuccessful returns createManifestCreateManifestManifestPayload.Successful, and is useful for accessing the field via an interface.
-func (v *createManifestCreateManifestManifestPayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns createManifestCreateManifestManifestPayload.Messages, and is useful for accessing the field via an interface.
-func (v *createManifestCreateManifestManifestPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// createManifestCreateManifestManifestPayloadResultManifest includes the requested fields of the GraphQL type Manifest.
-// The GraphQL type's documentation follows.
-//
-// A bundle used in a project with a specific context (e.g. redis 'cache' vs 'sessions' instance)
-type createManifestCreateManifestManifestPayloadResultManifest struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Description string `json:"description"`
-}
-
-// GetId returns createManifestCreateManifestManifestPayloadResultManifest.Id, and is useful for accessing the field via an interface.
-func (v *createManifestCreateManifestManifestPayloadResultManifest) GetId() string { return v.Id }
-
-// GetName returns createManifestCreateManifestManifestPayloadResultManifest.Name, and is useful for accessing the field via an interface.
-func (v *createManifestCreateManifestManifestPayloadResultManifest) GetName() string { return v.Name }
-
-// GetSlug returns createManifestCreateManifestManifestPayloadResultManifest.Slug, and is useful for accessing the field via an interface.
-func (v *createManifestCreateManifestManifestPayloadResultManifest) GetSlug() string { return v.Slug }
-
-// GetDescription returns createManifestCreateManifestManifestPayloadResultManifest.Description, and is useful for accessing the field via an interface.
-func (v *createManifestCreateManifestManifestPayloadResultManifest) GetDescription() string {
-	return v.Description
-}
-
-// createManifestResponse is returned by createManifest on success.
-type createManifestResponse struct {
-	// Adds a bundle to a project
-	CreateManifest createManifestCreateManifestManifestPayload `json:"createManifest"`
-}
-
-// GetCreateManifest returns createManifestResponse.CreateManifest, and is useful for accessing the field via an interface.
-func (v *createManifestResponse) GetCreateManifest() createManifestCreateManifestManifestPayload {
-	return v.CreateManifest
-}
-
-// createProjectCreateProjectProjectPayload includes the requested fields of the GraphQL type ProjectPayload.
-type createProjectCreateProjectProjectPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result createProjectCreateProjectProjectPayloadResultProject `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetResult returns createProjectCreateProjectProjectPayload.Result, and is useful for accessing the field via an interface.
-func (v *createProjectCreateProjectProjectPayload) GetResult() createProjectCreateProjectProjectPayloadResultProject {
-	return v.Result
-}
-
-// GetSuccessful returns createProjectCreateProjectProjectPayload.Successful, and is useful for accessing the field via an interface.
-func (v *createProjectCreateProjectProjectPayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns createProjectCreateProjectProjectPayload.Messages, and is useful for accessing the field via an interface.
-func (v *createProjectCreateProjectProjectPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// createProjectCreateProjectProjectPayloadResultProject includes the requested fields of the GraphQL type Project.
-type createProjectCreateProjectProjectPayloadResultProject struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Description string `json:"description"`
-}
-
-// GetId returns createProjectCreateProjectProjectPayloadResultProject.Id, and is useful for accessing the field via an interface.
-func (v *createProjectCreateProjectProjectPayloadResultProject) GetId() string { return v.Id }
-
-// GetName returns createProjectCreateProjectProjectPayloadResultProject.Name, and is useful for accessing the field via an interface.
-func (v *createProjectCreateProjectProjectPayloadResultProject) GetName() string { return v.Name }
-
-// GetSlug returns createProjectCreateProjectProjectPayloadResultProject.Slug, and is useful for accessing the field via an interface.
-func (v *createProjectCreateProjectProjectPayloadResultProject) GetSlug() string { return v.Slug }
-
-// GetDescription returns createProjectCreateProjectProjectPayloadResultProject.Description, and is useful for accessing the field via an interface.
-func (v *createProjectCreateProjectProjectPayloadResultProject) GetDescription() string {
-	return v.Description
-}
-
-// createProjectResponse is returned by createProject on success.
-type createProjectResponse struct {
-	// Create a project
-	CreateProject createProjectCreateProjectProjectPayload `json:"createProject"`
-}
-
-// GetCreateProject returns createProjectResponse.CreateProject, and is useful for accessing the field via an interface.
-func (v *createProjectResponse) GetCreateProject() createProjectCreateProjectProjectPayload {
-	return v.CreateProject
-}
-
-// decommissionPackageDecommissionPackageDeploymentPayload includes the requested fields of the GraphQL type DeploymentPayload.
-type decommissionPackageDecommissionPackageDeploymentPayload struct {
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment `json:"result"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetSuccessful returns decommissionPackageDecommissionPackageDeploymentPayload.Successful, and is useful for accessing the field via an interface.
-func (v *decommissionPackageDecommissionPackageDeploymentPayload) GetSuccessful() bool {
-	return v.Successful
-}
-
-// GetResult returns decommissionPackageDecommissionPackageDeploymentPayload.Result, and is useful for accessing the field via an interface.
-func (v *decommissionPackageDecommissionPackageDeploymentPayload) GetResult() decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment {
-	return v.Result
-}
-
-// GetMessages returns decommissionPackageDecommissionPackageDeploymentPayload.Messages, and is useful for accessing the field via an interface.
-func (v *decommissionPackageDecommissionPackageDeploymentPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment includes the requested fields of the GraphQL type Deployment.
-// The GraphQL type's documentation follows.
-//
-// A deployment represents an instance of a bundle being deployed to a target environment
-type decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment struct {
-	Id string `json:"id"`
-}
-
-// GetId returns decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment.Id, and is useful for accessing the field via an interface.
-func (v *decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment) GetId() string {
-	return v.Id
-}
-
-// decommissionPackageResponse is returned by decommissionPackage on success.
-type decommissionPackageResponse struct {
-	// Enqueues a package for decommissioning
-	DecommissionPackage decommissionPackageDecommissionPackageDeploymentPayload `json:"decommissionPackage"`
-}
-
-// GetDecommissionPackage returns decommissionPackageResponse.DecommissionPackage, and is useful for accessing the field via an interface.
-func (v *decommissionPackageResponse) GetDecommissionPackage() decommissionPackageDecommissionPackageDeploymentPayload {
-	return v.DecommissionPackage
-}
-
-// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
-type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetResult returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload.Result, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload) GetResult() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment {
-	return v.Result
-}
-
-// GetSuccessful returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload.Successful, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload) GetSuccessful() bool {
-	return v.Successful
-}
-
-// GetMessages returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload.Messages, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
-type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment struct {
-	Id      string                                                                                                 `json:"id"`
-	Slug    string                                                                                                 `json:"slug"`
-	Project decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject `json:"project"`
-}
-
-// GetId returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetId() string {
-	return v.Id
-}
-
-// GetSlug returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment.Slug, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetSlug() string {
-	return v.Slug
-}
-
-// GetProject returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment.Project, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetProject() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject {
-	return v.Project
-}
-
-// decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject includes the requested fields of the GraphQL type Project.
-type decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject struct {
-	Id   string `json:"id"`
-	Slug string `json:"slug"`
-}
-
-// GetId returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject.Id, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject) GetId() string {
-	return v.Id
-}
-
-// GetSlug returns decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject.Slug, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject) GetSlug() string {
-	return v.Slug
-}
-
-// decommissionPreviewEnvironmentResponse is returned by decommissionPreviewEnvironment on success.
-type decommissionPreviewEnvironmentResponse struct {
-	DecommissionPreviewEnvironment decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload `json:"decommissionPreviewEnvironment"`
-}
-
-// GetDecommissionPreviewEnvironment returns decommissionPreviewEnvironmentResponse.DecommissionPreviewEnvironment, and is useful for accessing the field via an interface.
-func (v *decommissionPreviewEnvironmentResponse) GetDecommissionPreviewEnvironment() decommissionPreviewEnvironmentDecommissionPreviewEnvironmentEnvironmentPayload {
-	return v.DecommissionPreviewEnvironment
-}
-
-// deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload includes the requested fields of the GraphQL type ArtifactDefinitionPayload.
-type deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload struct {
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition `json:"result"`
-}
-
-// GetSuccessful returns deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload.Successful, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload) GetSuccessful() bool {
-	return v.Successful
-}
-
-// GetMessages returns deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload.Messages, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// GetResult returns deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload.Result, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload) GetResult() deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition {
-	return v.Result
-}
-
-// deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
-// The GraphQL type's documentation follows.
-//
-// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
-type deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition struct {
-	// The name of this type. Organization scoped: my-org/aws-iam-role
-	Name string `json:"name"`
-	Id   string `json:"id"`
-}
-
-// GetName returns deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition.Name, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition) GetName() string {
-	return v.Name
-}
-
-// GetId returns deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition.Id, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition) GetId() string {
-	return v.Id
-}
-
-// deleteArtifactDefinitionResponse is returned by deleteArtifactDefinition on success.
-type deleteArtifactDefinitionResponse struct {
-	// Delete an artifact definition. Requires administrator permissions and ensures the definition is not in use by any bundles or provisioned artifacts
-	DeleteArtifactDefinition deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload `json:"deleteArtifactDefinition"`
-}
-
-// GetDeleteArtifactDefinition returns deleteArtifactDefinitionResponse.DeleteArtifactDefinition, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDefinitionResponse) GetDeleteArtifactDefinition() deleteArtifactDefinitionDeleteArtifactDefinitionArtifactDefinitionPayload {
-	return v.DeleteArtifactDefinition
-}
-
-// deleteArtifactDeleteArtifactArtifactPayload includes the requested fields of the GraphQL type ArtifactPayload.
-type deleteArtifactDeleteArtifactArtifactPayload struct {
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result deleteArtifactDeleteArtifactArtifactPayloadResultArtifact `json:"result"`
-}
-
-// GetSuccessful returns deleteArtifactDeleteArtifactArtifactPayload.Successful, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDeleteArtifactArtifactPayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns deleteArtifactDeleteArtifactArtifactPayload.Messages, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDeleteArtifactArtifactPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// GetResult returns deleteArtifactDeleteArtifactArtifactPayload.Result, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDeleteArtifactArtifactPayload) GetResult() deleteArtifactDeleteArtifactArtifactPayloadResultArtifact {
-	return v.Result
-}
-
-// deleteArtifactDeleteArtifactArtifactPayloadResultArtifact includes the requested fields of the GraphQL type Artifact.
-type deleteArtifactDeleteArtifactArtifactPayloadResultArtifact struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-}
-
-// GetId returns deleteArtifactDeleteArtifactArtifactPayloadResultArtifact.Id, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDeleteArtifactArtifactPayloadResultArtifact) GetId() string { return v.Id }
-
-// GetName returns deleteArtifactDeleteArtifactArtifactPayloadResultArtifact.Name, and is useful for accessing the field via an interface.
-func (v *deleteArtifactDeleteArtifactArtifactPayloadResultArtifact) GetName() string { return v.Name }
-
-// deleteArtifactResponse is returned by deleteArtifact on success.
-type deleteArtifactResponse struct {
-	// Delete an artifact.
-	//
-	// Artifacts cannot be deleted if provisioned by Massdriver.
-	DeleteArtifact deleteArtifactDeleteArtifactArtifactPayload `json:"deleteArtifact"`
-}
-
-// GetDeleteArtifact returns deleteArtifactResponse.DeleteArtifact, and is useful for accessing the field via an interface.
-func (v *deleteArtifactResponse) GetDeleteArtifact() deleteArtifactDeleteArtifactArtifactPayload {
-	return v.DeleteArtifact
-}
-
-// deleteProjectDeleteProjectProjectPayload includes the requested fields of the GraphQL type ProjectPayload.
-type deleteProjectDeleteProjectProjectPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result deleteProjectDeleteProjectProjectPayloadResultProject `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetResult returns deleteProjectDeleteProjectProjectPayload.Result, and is useful for accessing the field via an interface.
-func (v *deleteProjectDeleteProjectProjectPayload) GetResult() deleteProjectDeleteProjectProjectPayloadResultProject {
-	return v.Result
-}
-
-// GetSuccessful returns deleteProjectDeleteProjectProjectPayload.Successful, and is useful for accessing the field via an interface.
-func (v *deleteProjectDeleteProjectProjectPayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns deleteProjectDeleteProjectProjectPayload.Messages, and is useful for accessing the field via an interface.
-func (v *deleteProjectDeleteProjectProjectPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// deleteProjectDeleteProjectProjectPayloadResultProject includes the requested fields of the GraphQL type Project.
-type deleteProjectDeleteProjectProjectPayloadResultProject struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Description string `json:"description"`
-}
-
-// GetId returns deleteProjectDeleteProjectProjectPayloadResultProject.Id, and is useful for accessing the field via an interface.
-func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetId() string { return v.Id }
-
-// GetName returns deleteProjectDeleteProjectProjectPayloadResultProject.Name, and is useful for accessing the field via an interface.
-func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetName() string { return v.Name }
-
-// GetSlug returns deleteProjectDeleteProjectProjectPayloadResultProject.Slug, and is useful for accessing the field via an interface.
-func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetSlug() string { return v.Slug }
-
-// GetDescription returns deleteProjectDeleteProjectProjectPayloadResultProject.Description, and is useful for accessing the field via an interface.
-func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetDescription() string {
-	return v.Description
-}
-
-// deleteProjectResponse is returned by deleteProject on success.
-type deleteProjectResponse struct {
-	DeleteProject deleteProjectDeleteProjectProjectPayload `json:"deleteProject"`
-}
-
-// GetDeleteProject returns deleteProjectResponse.DeleteProject, and is useful for accessing the field via an interface.
-func (v *deleteProjectResponse) GetDeleteProject() deleteProjectDeleteProjectProjectPayload {
-	return v.DeleteProject
-}
-
-// deployPackageDeployPackageDeploymentPayload includes the requested fields of the GraphQL type DeploymentPayload.
-type deployPackageDeployPackageDeploymentPayload struct {
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result deployPackageDeployPackageDeploymentPayloadResultDeployment `json:"result"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetSuccessful returns deployPackageDeployPackageDeploymentPayload.Successful, and is useful for accessing the field via an interface.
-func (v *deployPackageDeployPackageDeploymentPayload) GetSuccessful() bool { return v.Successful }
-
-// GetResult returns deployPackageDeployPackageDeploymentPayload.Result, and is useful for accessing the field via an interface.
-func (v *deployPackageDeployPackageDeploymentPayload) GetResult() deployPackageDeployPackageDeploymentPayloadResultDeployment {
-	return v.Result
-}
-
-// GetMessages returns deployPackageDeployPackageDeploymentPayload.Messages, and is useful for accessing the field via an interface.
-func (v *deployPackageDeployPackageDeploymentPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// deployPackageDeployPackageDeploymentPayloadResultDeployment includes the requested fields of the GraphQL type Deployment.
-// The GraphQL type's documentation follows.
-//
-// A deployment represents an instance of a bundle being deployed to a target environment
-type deployPackageDeployPackageDeploymentPayloadResultDeployment struct {
-	Id string `json:"id"`
-}
-
-// GetId returns deployPackageDeployPackageDeploymentPayloadResultDeployment.Id, and is useful for accessing the field via an interface.
-func (v *deployPackageDeployPackageDeploymentPayloadResultDeployment) GetId() string { return v.Id }
-
-// deployPackageResponse is returned by deployPackage on success.
-type deployPackageResponse struct {
-	// Enqueues a package for deployment
-	DeployPackage deployPackageDeployPackageDeploymentPayload `json:"deployPackage"`
-}
-
-// GetDeployPackage returns deployPackageResponse.DeployPackage, and is useful for accessing the field via an interface.
-func (v *deployPackageResponse) GetDeployPackage() deployPackageDeployPackageDeploymentPayload {
-	return v.DeployPackage
-}
-
-// deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
-type deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload struct {
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment `json:"result"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetSuccessful returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload.Successful, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload) GetSuccessful() bool {
-	return v.Successful
-}
-
-// GetResult returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload.Result, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload) GetResult() deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment {
-	return v.Result
-}
-
-// GetMessages returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload.Messages, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
-type deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment struct {
-	Id      string                                                                                     `json:"id"`
-	Slug    string                                                                                     `json:"slug"`
-	Project deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject `json:"project"`
-}
-
-// GetId returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetId() string {
-	return v.Id
-}
-
-// GetSlug returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment.Slug, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetSlug() string {
-	return v.Slug
-}
-
-// GetProject returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment.Project, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironment) GetProject() deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject {
-	return v.Project
-}
-
-// deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject includes the requested fields of the GraphQL type Project.
-type deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject struct {
-	Id   string `json:"id"`
-	Slug string `json:"slug"`
-}
-
-// GetId returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject.Id, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject) GetId() string {
-	return v.Id
-}
-
-// GetSlug returns deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject.Slug, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayloadResultEnvironmentProject) GetSlug() string {
-	return v.Slug
-}
-
-// deployPreviewEnvironmentResponse is returned by deployPreviewEnvironment on success.
-type deployPreviewEnvironmentResponse struct {
-	// Deploy a Preview Environment
-	DeployPreviewEnvironment deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload `json:"deployPreviewEnvironment"`
-}
-
-// GetDeployPreviewEnvironment returns deployPreviewEnvironmentResponse.DeployPreviewEnvironment, and is useful for accessing the field via an interface.
-func (v *deployPreviewEnvironmentResponse) GetDeployPreviewEnvironment() deployPreviewEnvironmentDeployPreviewEnvironmentEnvironmentPayload {
-	return v.DeployPreviewEnvironment
-}
-
-// downloadArtifactDownloadArtifactRenderedArtifact includes the requested fields of the GraphQL type RenderedArtifact.
-type downloadArtifactDownloadArtifactRenderedArtifact struct {
-	RenderedArtifact string `json:"renderedArtifact"`
-}
-
-// GetRenderedArtifact returns downloadArtifactDownloadArtifactRenderedArtifact.RenderedArtifact, and is useful for accessing the field via an interface.
-func (v *downloadArtifactDownloadArtifactRenderedArtifact) GetRenderedArtifact() string {
-	return v.RenderedArtifact
-}
-
-// downloadArtifactResponse is returned by downloadArtifact on success.
-type downloadArtifactResponse struct {
-	// Connection data for an artifact rendered in requested format
-	DownloadArtifact downloadArtifactDownloadArtifactRenderedArtifact `json:"downloadArtifact"`
-}
-
-// GetDownloadArtifact returns downloadArtifactResponse.DownloadArtifact, and is useful for accessing the field via an interface.
-func (v *downloadArtifactResponse) GetDownloadArtifact() downloadArtifactDownloadArtifactRenderedArtifact {
-	return v.DownloadArtifact
-}
-
-// getArtifactArtifact includes the requested fields of the GraphQL type Artifact.
-type getArtifactArtifact struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-	Type string `json:"type"`
-	// The bundle's artifact field (output field) that produced this artifact.
-	Field string `json:"field"`
-	// Complete artifact payload containing all artifact data. Fields marked with $md.sensitive in the artifact definition will be masked as [SENSITIVE]. Use downloadArtifact to retrieve unmasked values. See https://docs.massdriver.cloud/json-schema-cheat-sheet/massdriver-annotations for more details.
-	Payload map[string]any `json:"-"`
-	// Download formats supported for this artifact
-	Formats   []string  `json:"formats"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	// The type of artifact
-	ArtifactDefinition getArtifactArtifactArtifactDefinition `json:"artifactDefinition"`
-	// The package that provisioned this artifact
-	Package getArtifactArtifactPackage `json:"package"`
-	// How the artifact was created, manually imported or provisioned by Massdriver
-	Origin ArtifactOrigin `json:"origin"`
-}
-
-// GetId returns getArtifactArtifact.Id, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetId() string { return v.Id }
-
-// GetName returns getArtifactArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetName() string { return v.Name }
-
-// GetType returns getArtifactArtifact.Type, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetType() string { return v.Type }
-
-// GetField returns getArtifactArtifact.Field, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetField() string { return v.Field }
-
-// GetPayload returns getArtifactArtifact.Payload, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetPayload() map[string]any { return v.Payload }
-
-// GetFormats returns getArtifactArtifact.Formats, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetFormats() []string { return v.Formats }
-
-// GetCreatedAt returns getArtifactArtifact.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// GetUpdatedAt returns getArtifactArtifact.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// GetArtifactDefinition returns getArtifactArtifact.ArtifactDefinition, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetArtifactDefinition() getArtifactArtifactArtifactDefinition {
-	return v.ArtifactDefinition
-}
+// GetAction returns CreateDeploymentInput.Action, and is useful for accessing the field via an interface.
+func (v *CreateDeploymentInput) GetAction() DeploymentAction { return v.Action }
 
-// GetPackage returns getArtifactArtifact.Package, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetPackage() getArtifactArtifactPackage { return v.Package }
+// GetMessage returns CreateDeploymentInput.Message, and is useful for accessing the field via an interface.
+func (v *CreateDeploymentInput) GetMessage() string { return v.Message }
 
-// GetOrigin returns getArtifactArtifact.Origin, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifact) GetOrigin() ArtifactOrigin { return v.Origin }
+// GetParams returns CreateDeploymentInput.Params, and is useful for accessing the field via an interface.
+func (v *CreateDeploymentInput) GetParams() map[string]any { return v.Params }
 
-func (v *getArtifactArtifact) UnmarshalJSON(b []byte) error {
+func (v *CreateDeploymentInput) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*getArtifactArtifact
+		*CreateDeploymentInput
+		Params json.RawMessage `json:"params"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.CreateDeploymentInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Params
+		src := firstPass.Params
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal CreateDeploymentInput.Params: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalCreateDeploymentInput struct {
+	Action DeploymentAction `json:"action"`
+
+	Message string `json:"message"`
+
+	Params json.RawMessage `json:"params"`
+}
+
+func (v *CreateDeploymentInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *CreateDeploymentInput) __premarshalJSON() (*__premarshalCreateDeploymentInput, error) {
+	var retval __premarshalCreateDeploymentInput
+
+	retval.Action = v.Action
+	retval.Message = v.Message
+	{
+
+		dst := &retval.Params
+		src := v.Params
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal CreateDeploymentInput.Params: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// Create a new environment. Environments are isolated deployment contexts like production, staging, or development, each with independent secrets and configurations.
+type CreateEnvironmentInput struct {
+	// Key-value attributes for this environment. Keys and values must be strings. Must conform to the organization's custom attributes for the environment scope.
+	Attributes map[string]any `json:"-"`
+	// An optional description of the environment's purpose
+	Description string `json:"description"`
+	// A short, memorable identifier for looking up this environment in the API and CLI. This becomes the second segment of package identifiers. For example, project 'ecomm' with environment 'prod' and component 'db' creates 'ecomm-prod-db'. Use familiar names like 'prod', 'staging', 'dev'—human-readable, not a UUID. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation.
+	Id string `json:"id"`
+	// A human-readable name for the environment
+	Name string `json:"name"`
+}
+
+// GetAttributes returns CreateEnvironmentInput.Attributes, and is useful for accessing the field via an interface.
+func (v *CreateEnvironmentInput) GetAttributes() map[string]any { return v.Attributes }
+
+// GetDescription returns CreateEnvironmentInput.Description, and is useful for accessing the field via an interface.
+func (v *CreateEnvironmentInput) GetDescription() string { return v.Description }
+
+// GetId returns CreateEnvironmentInput.Id, and is useful for accessing the field via an interface.
+func (v *CreateEnvironmentInput) GetId() string { return v.Id }
+
+// GetName returns CreateEnvironmentInput.Name, and is useful for accessing the field via an interface.
+func (v *CreateEnvironmentInput) GetName() string { return v.Name }
+
+func (v *CreateEnvironmentInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*CreateEnvironmentInput
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.CreateEnvironmentInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal CreateEnvironmentInput.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalCreateEnvironmentInput struct {
+	Attributes json.RawMessage `json:"attributes"`
+
+	Description string `json:"description"`
+
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+}
+
+func (v *CreateEnvironmentInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *CreateEnvironmentInput) __premarshalJSON() (*__premarshalCreateEnvironmentInput, error) {
+	var retval __premarshalCreateEnvironmentInput
+
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal CreateEnvironmentInput.Attributes: %w", err)
+		}
+	}
+	retval.Description = v.Description
+	retval.Id = v.Id
+	retval.Name = v.Name
+	return &retval, nil
+}
+
+// Create a new project. A project is the complete model of your application—its infrastructure, architecture, configurations, and environments.
+type CreateProjectInput struct {
+	// Key-value attributes for this project. Keys and values must be strings. Must conform to the organization's custom attributes for the project scope.
+	Attributes map[string]any `json:"-"`
+	// An optional description of the project's purpose or contents
+	Description string `json:"description"`
+	// A short, memorable identifier for looking up this project in the API and CLI. This becomes the first segment of all resource identifiers within the project. For example, a project 'ecomm' with environment 'prod' and component 'db' creates the package identifier 'ecomm-prod-db'. Choose something concise and meaningful—human-readable, not a UUID. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation.
+	Id string `json:"id"`
+	// A human-readable name for the project
+	Name string `json:"name"`
+}
+
+// GetAttributes returns CreateProjectInput.Attributes, and is useful for accessing the field via an interface.
+func (v *CreateProjectInput) GetAttributes() map[string]any { return v.Attributes }
+
+// GetDescription returns CreateProjectInput.Description, and is useful for accessing the field via an interface.
+func (v *CreateProjectInput) GetDescription() string { return v.Description }
+
+// GetId returns CreateProjectInput.Id, and is useful for accessing the field via an interface.
+func (v *CreateProjectInput) GetId() string { return v.Id }
+
+// GetName returns CreateProjectInput.Name, and is useful for accessing the field via an interface.
+func (v *CreateProjectInput) GetName() string { return v.Name }
+
+func (v *CreateProjectInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*CreateProjectInput
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.CreateProjectInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal CreateProjectInput.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalCreateProjectInput struct {
+	Attributes json.RawMessage `json:"attributes"`
+
+	Description string `json:"description"`
+
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+}
+
+func (v *CreateProjectInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *CreateProjectInput) __premarshalJSON() (*__premarshalCreateProjectInput, error) {
+	var retval __premarshalCreateProjectInput
+
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal CreateProjectInput.Attributes: %w", err)
+		}
+	}
+	retval.Description = v.Description
+	retval.Id = v.Id
+	retval.Name = v.Name
+	return &retval, nil
+}
+
+// Import a new resource with a name and optional payload conforming to the resource type's schema.
+type CreateResourceInput struct {
+	// A human-readable name for this resource
+	Name string `json:"name"`
+	// Resource data conforming to the resource type's schema. Structure varies by type.
+	Payload map[string]any `json:"-"`
+}
+
+// GetName returns CreateResourceInput.Name, and is useful for accessing the field via an interface.
+func (v *CreateResourceInput) GetName() string { return v.Name }
+
+// GetPayload returns CreateResourceInput.Payload, and is useful for accessing the field via an interface.
+func (v *CreateResourceInput) GetPayload() map[string]any { return v.Payload }
+
+func (v *CreateResourceInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*CreateResourceInput
 		Payload json.RawMessage `json:"payload"`
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.getArtifactArtifact = v
+	firstPass.CreateResourceInput = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -2146,38 +509,20 @@ func (v *getArtifactArtifact) UnmarshalJSON(b []byte) error {
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getArtifactArtifact.Payload: %w", err)
+					"unable to unmarshal CreateResourceInput.Payload: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-type __premarshalgetArtifactArtifact struct {
-	Id string `json:"id"`
-
+type __premarshalCreateResourceInput struct {
 	Name string `json:"name"`
 
-	Type string `json:"type"`
-
-	Field string `json:"field"`
-
 	Payload json.RawMessage `json:"payload"`
-
-	Formats []string `json:"formats"`
-
-	CreatedAt time.Time `json:"createdAt"`
-
-	UpdatedAt time.Time `json:"updatedAt"`
-
-	ArtifactDefinition getArtifactArtifactArtifactDefinition `json:"artifactDefinition"`
-
-	Package getArtifactArtifactPackage `json:"package"`
-
-	Origin ArtifactOrigin `json:"origin"`
 }
 
-func (v *getArtifactArtifact) MarshalJSON() ([]byte, error) {
+func (v *CreateResourceInput) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -2185,13 +530,10 @@ func (v *getArtifactArtifact) MarshalJSON() ([]byte, error) {
 	return json.Marshal(premarshaled)
 }
 
-func (v *getArtifactArtifact) __premarshalJSON() (*__premarshalgetArtifactArtifact, error) {
-	var retval __premarshalgetArtifactArtifact
+func (v *CreateResourceInput) __premarshalJSON() (*__premarshalCreateResourceInput, error) {
+	var retval __premarshalCreateResourceInput
 
-	retval.Id = v.Id
 	retval.Name = v.Name
-	retval.Type = v.Type
-	retval.Field = v.Field
 	{
 
 		dst := &retval.Payload
@@ -2201,109 +543,583 @@ func (v *getArtifactArtifact) __premarshalJSON() (*__premarshalgetArtifactArtifa
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getArtifactArtifact.Payload: %w", err)
+				"unable to marshal CreateResourceInput.Payload: %w", err)
 		}
 	}
-	retval.Formats = v.Formats
-	retval.CreatedAt = v.CreatedAt
-	retval.UpdatedAt = v.UpdatedAt
-	retval.ArtifactDefinition = v.ArtifactDefinition
-	retval.Package = v.Package
-	retval.Origin = v.Origin
 	return &retval, nil
 }
 
-// getArtifactArtifactArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
-// The GraphQL type's documentation follows.
+// The type of infrastructure operation to perform.
 //
-// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
-type getArtifactArtifactArtifactDefinition struct {
-	Id string `json:"id"`
-	// The name of this type. Organization scoped: my-org/aws-iam-role
-	Name  string `json:"name"`
-	Label string `json:"label"`
+// Each action maps to a distinct phase of the infrastructure lifecycle:
+// - **PROVISION** creates new infrastructure or updates existing infrastructure to match the desired configuration.
+// - **DECOMMISSION** tears down all infrastructure managed by the instance.
+// - **PLAN** generates a dry-run preview showing what changes _would_ be made, without actually applying them.
+type DeploymentAction string
+
+const (
+	// Create new infrastructure or update existing infrastructure to match the instance's current configuration.
+	DeploymentActionProvision DeploymentAction = "PROVISION"
+	// Destroy all infrastructure managed by this instance. This action cannot be undone.
+	DeploymentActionDecommission DeploymentAction = "DECOMMISSION"
+	// Generate a dry-run preview of what changes would be made, without applying them. Useful for reviewing infrastructure changes before committing.
+	DeploymentActionPlan DeploymentAction = "PLAN"
+)
+
+var AllDeploymentAction = []DeploymentAction{
+	DeploymentActionProvision,
+	DeploymentActionDecommission,
+	DeploymentActionPlan,
 }
 
-// GetId returns getArtifactArtifactArtifactDefinition.Id, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifactArtifactDefinition) GetId() string { return v.Id }
-
-// GetName returns getArtifactArtifactArtifactDefinition.Name, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifactArtifactDefinition) GetName() string { return v.Name }
-
-// GetLabel returns getArtifactArtifactArtifactDefinition.Label, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifactArtifactDefinition) GetLabel() string { return v.Label }
-
-// getArtifactArtifactPackage includes the requested fields of the GraphQL type Package.
-// The GraphQL type's documentation follows.
+// Filter by deployment action.
 //
-// A deployed instance of a bundle in the context of its manifest
-type getArtifactArtifactPackage struct {
-	// Unique identifier
-	Id string `json:"id"`
-	// Unique identifier for the package
-	Slug string `json:"slug"`
+// All operators within a single filter are combined with **AND**. Use `in` to match
+// deployments triggered by any of several actions.
+//
+// ```graphql
+// { "action": { "in": ["PROVISION", "DECOMMISSION"] } }
+// ```
+type DeploymentActionFilter struct {
+	// Return only deployments whose action exactly equals this value.
+	Eq DeploymentAction `json:"eq,omitempty"`
+	// Return deployments whose action matches any value in this list.
+	In []DeploymentAction `json:"in,omitempty"`
 }
 
-// GetId returns getArtifactArtifactPackage.Id, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifactPackage) GetId() string { return v.Id }
+// GetEq returns DeploymentActionFilter.Eq, and is useful for accessing the field via an interface.
+func (v *DeploymentActionFilter) GetEq() DeploymentAction { return v.Eq }
 
-// GetSlug returns getArtifactArtifactPackage.Slug, and is useful for accessing the field via an interface.
-func (v *getArtifactArtifactPackage) GetSlug() string { return v.Slug }
+// GetIn returns DeploymentActionFilter.In, and is useful for accessing the field via an interface.
+func (v *DeploymentActionFilter) GetIn() []DeploymentAction { return v.In }
 
-// getArtifactDefinitionArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
-// The GraphQL type's documentation follows.
+// The current state of a deployment operation.
 //
-// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
-type getArtifactDefinitionArtifactDefinition struct {
-	Id     string         `json:"id"`
+// Deployments created with `createDeployment` enter the lifecycle at `PENDING`.
+// Deployments created with `proposeDeployment` enter at `PROPOSED` and require
+// approval before they can run:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> PENDING: "createDeployment"
+// [*] --> PROPOSED: "proposeDeployment"
+// PROPOSED --> APPROVED: "approveDeployment"
+// PROPOSED --> REJECTED: "rejectDeployment"
+// PENDING --> RUNNING: "Execution starts"
+// APPROVED --> RUNNING: "Execution starts"
+// RUNNING --> COMPLETED: "Success"
+// RUNNING --> FAILED: "Error"
+// ```
+//
+// Once a deployment reaches a terminal state (`COMPLETED`, `FAILED`, or
+// `REJECTED`), it cannot transition again.
+type DeploymentStatus string
+
+const (
+	// A proposed deployment awaiting human approval. Proposed deployments are not scheduled and do not block the queue.
+	DeploymentStatusProposed DeploymentStatus = "PROPOSED"
+	// The proposal was rejected and will never run. Terminal.
+	DeploymentStatusRejected DeploymentStatus = "REJECTED"
+	// The proposal was approved and is waiting to execute. Approved deployments are drained from the queue alongside PENDING deployments.
+	DeploymentStatusApproved DeploymentStatus = "APPROVED"
+	// The deployment is queued and waiting for execution to begin.
+	DeploymentStatusPending DeploymentStatus = "PENDING"
+	// Infrastructure changes are actively being applied.
+	DeploymentStatusRunning DeploymentStatus = "RUNNING"
+	// All infrastructure changes were applied successfully.
+	DeploymentStatusCompleted DeploymentStatus = "COMPLETED"
+	// The deployment encountered an error. Check deployment logs for details.
+	DeploymentStatusFailed DeploymentStatus = "FAILED"
+)
+
+var AllDeploymentStatus = []DeploymentStatus{
+	DeploymentStatusProposed,
+	DeploymentStatusRejected,
+	DeploymentStatusApproved,
+	DeploymentStatusPending,
+	DeploymentStatusRunning,
+	DeploymentStatusCompleted,
+	DeploymentStatusFailed,
+}
+
+// Filter by deployment status.
+//
+// All operators within a single filter are combined with **AND**. Use `in` to match
+// deployments in any of several statuses.
+//
+// ```graphql
+// { "status": { "in": ["COMPLETED", "FAILED"] } }
+// ```
+type DeploymentStatusFilter struct {
+	// Return only deployments whose status exactly equals this value.
+	Eq DeploymentStatus `json:"eq,omitempty"`
+	// Return deployments whose status matches any value in this list.
+	In []DeploymentStatus `json:"in,omitempty"`
+}
+
+// GetEq returns DeploymentStatusFilter.Eq, and is useful for accessing the field via an interface.
+func (v *DeploymentStatusFilter) GetEq() DeploymentStatus { return v.Eq }
+
+// GetIn returns DeploymentStatusFilter.In, and is useful for accessing the field via an interface.
+func (v *DeploymentStatusFilter) GetIn() []DeploymentStatus { return v.In }
+
+// Narrows the deployments list to only matching records.
+//
+// All filters are combined with AND logic. Omit a filter to skip that criterion.
+type DeploymentsFilter struct {
+	// Return only deployments for the specified instance(s).
+	InstanceId *IdFilter `json:"instanceId,omitempty"`
+	// Return only deployments in the specified status(es).
+	Status *DeploymentStatusFilter `json:"status,omitempty"`
+	// Return only deployments with the specified action type(s).
+	Action *DeploymentActionFilter `json:"action,omitempty"`
+}
+
+// GetInstanceId returns DeploymentsFilter.InstanceId, and is useful for accessing the field via an interface.
+func (v *DeploymentsFilter) GetInstanceId() *IdFilter { return v.InstanceId }
+
+// GetStatus returns DeploymentsFilter.Status, and is useful for accessing the field via an interface.
+func (v *DeploymentsFilter) GetStatus() *DeploymentStatusFilter { return v.Status }
+
+// GetAction returns DeploymentsFilter.Action, and is useful for accessing the field via an interface.
+func (v *DeploymentsFilter) GetAction() *DeploymentActionFilter { return v.Action }
+
+// Controls the sort order of the deployments list.
+//
+// Defaults to newest first (`created_at` descending) when not specified.
+type DeploymentsSort struct {
+	// The field to sort by.
+	Field DeploymentsSortField `json:"field"`
+	// `ASC` for A-Z / oldest first, `DESC` for Z-A / newest first.
+	Order SortOrder `json:"order"`
+}
+
+// GetField returns DeploymentsSort.Field, and is useful for accessing the field via an interface.
+func (v *DeploymentsSort) GetField() DeploymentsSortField { return v.Field }
+
+// GetOrder returns DeploymentsSort.Order, and is useful for accessing the field via an interface.
+func (v *DeploymentsSort) GetOrder() SortOrder { return v.Order }
+
+// Available fields for sorting the deployments list.
+type DeploymentsSortField string
+
+const (
+	// Sort by creation timestamp (oldest first when ascending, newest first when descending).
+	DeploymentsSortFieldCreatedAt DeploymentsSortField = "CREATED_AT"
+	// Sort alphabetically by status name. Deployments with the same status are sub-sorted by newest first.
+	DeploymentsSortFieldStatus DeploymentsSortField = "STATUS"
+)
+
+var AllDeploymentsSortField = []DeploymentsSortField{
+	DeploymentsSortFieldCreatedAt,
+	DeploymentsSortFieldStatus,
+}
+
+// The type of email-based (non-SSO) authentication available on this server.
+type EmailAuthMethodType string
+
+const (
+	// Passwordless authentication using passkeys (WebAuthn/FIDO2). The browser prompts for a biometric or security key.
+	EmailAuthMethodTypePasskey EmailAuthMethodType = "PASSKEY"
+)
+
+var AllEmailAuthMethodType = []EmailAuthMethodType{
+	EmailAuthMethodTypePasskey,
+}
+
+// Filters for narrowing the environments list. All filters are optional and combine with AND logic.
+type EnvironmentsFilter struct {
+	// Filter to environments belonging to a specific project.
+	ProjectId *IdFilter `json:"projectId,omitempty"`
+	// Filter by environment identifier (supports exact match and `in` list).
+	Id *StringFilter `json:"id,omitempty"`
+}
+
+// GetProjectId returns EnvironmentsFilter.ProjectId, and is useful for accessing the field via an interface.
+func (v *EnvironmentsFilter) GetProjectId() *IdFilter { return v.ProjectId }
+
+// GetId returns EnvironmentsFilter.Id, and is useful for accessing the field via an interface.
+func (v *EnvironmentsFilter) GetId() *StringFilter { return v.Id }
+
+// Sorting options for the environments list. Specify a field and direction.
+type EnvironmentsSort struct {
+	// The field to sort by.
+	Field EnvironmentsSortField `json:"field"`
+	// `ASC` for A-Z / oldest first, `DESC` for Z-A / newest first.
+	Order SortOrder `json:"order"`
+}
+
+// GetField returns EnvironmentsSort.Field, and is useful for accessing the field via an interface.
+func (v *EnvironmentsSort) GetField() EnvironmentsSortField { return v.Field }
+
+// GetOrder returns EnvironmentsSort.Order, and is useful for accessing the field via an interface.
+func (v *EnvironmentsSort) GetOrder() SortOrder { return v.Order }
+
+// Fields available for sorting the environments list.
+type EnvironmentsSortField string
+
+const (
+	// Sort alphabetically by environment name (A-Z or Z-A).
+	EnvironmentsSortFieldName EnvironmentsSortField = "NAME"
+	// Sort by creation date (oldest first or newest first).
+	EnvironmentsSortFieldCreatedAt EnvironmentsSortField = "CREATED_AT"
+)
+
+var AllEnvironmentsSortField = []EnvironmentsSortField{
+	EnvironmentsSortFieldName,
+	EnvironmentsSortFieldCreatedAt,
+}
+
+// Filter by an identifier field.
+//
+// All operators within a single filter are combined with **AND**. To match any of
+// several values, use the `in` operator rather than multiple `eq` filters.
+//
+// ```graphql
+// # Exact match
+// { "id": { "eq": "my-resource" } }
+//
+// # Match several IDs (logical OR between values)
+// { "id": { "in": ["resource-a", "resource-b"] } }
+// ```
+type IdFilter struct {
+	// Return only results whose ID exactly equals this value.
+	Eq string `json:"eq"`
+	// Return results whose ID matches any value in this list.
+	In []string `json:"in"`
+}
+
+// GetEq returns IdFilter.Eq, and is useful for accessing the field via an interface.
+func (v *IdFilter) GetEq() string { return v.Eq }
+
+// GetIn returns IdFilter.In, and is useful for accessing the field via an interface.
+func (v *IdFilter) GetIn() []string { return v.In }
+
+// The current lifecycle state of an instance.
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+type InstanceStatus string
+
+const (
+	// The instance has been created but no deployment has started yet.
+	InstanceStatusInitialized InstanceStatus = "INITIALIZED"
+	// Infrastructure is successfully deployed and running.
+	InstanceStatusProvisioned InstanceStatus = "PROVISIONED"
+	// Infrastructure has been torn down. The instance record is retained for audit purposes.
+	InstanceStatusDecommissioned InstanceStatus = "DECOMMISSIONED"
+	// The most recent deployment failed. Check deployment logs for details. Can be retried.
+	InstanceStatusFailed InstanceStatus = "FAILED"
+	// Imported infrastructure managed outside Massdriver. Not deployed by Massdriver but tracked for wiring.
+	InstanceStatusExternal InstanceStatus = "EXTERNAL"
+)
+
+var AllInstanceStatus = []InstanceStatus{
+	InstanceStatusInitialized,
+	InstanceStatusProvisioned,
+	InstanceStatusDecommissioned,
+	InstanceStatusFailed,
+	InstanceStatusExternal,
+}
+
+// Filter by instance status.
+//
+// All operators within a single filter are combined with **AND**. Use `in` to match
+// instances in any of several statuses.
+//
+// ```graphql
+// # All provisioned instances
+// { "status": { "eq": "PROVISIONED" } }
+//
+// # Instances that are provisioning or provisioned
+// { "status": { "in": ["PROVISIONING", "PROVISIONED"] } }
+// ```
+type InstanceStatusFilter struct {
+	// Return only instances whose status exactly equals this value.
+	Eq InstanceStatus `json:"eq,omitempty"`
+	// Return instances whose status matches any value in this list.
+	In []InstanceStatus `json:"in,omitempty"`
+}
+
+// GetEq returns InstanceStatusFilter.Eq, and is useful for accessing the field via an interface.
+func (v *InstanceStatusFilter) GetEq() InstanceStatus { return v.Eq }
+
+// GetIn returns InstanceStatusFilter.In, and is useful for accessing the field via an interface.
+func (v *InstanceStatusFilter) GetIn() []InstanceStatus { return v.In }
+
+// Filter which instances to return.
+//
+// All filters are combined with AND. For example, setting both `status` and
+// `ociRepoName` returns only instances that match both criteria.
+type InstancesFilter struct {
+	// Match by the owning project's ID.
+	ProjectId *IdFilter `json:"projectId,omitempty"`
+	// Match by the environment's ID.
+	EnvironmentId *IdFilter `json:"environmentId,omitempty"`
+	// Match by lifecycle status (e.g., `PROVISIONED`, `FAILED`).
+	Status *InstanceStatusFilter `json:"status,omitempty"`
+	// Match by the OCI repository name of the underlying bundle.
+	OciRepoName *OciRepoNameFilter `json:"ociRepoName,omitempty"`
+	// Filter by configuration parameter values. Each entry targets a specific param field; multiple entries are combined with AND.
+	ParamDimension []ParamDimensionFilter `json:"paramDimension,omitempty"`
+}
+
+// GetProjectId returns InstancesFilter.ProjectId, and is useful for accessing the field via an interface.
+func (v *InstancesFilter) GetProjectId() *IdFilter { return v.ProjectId }
+
+// GetEnvironmentId returns InstancesFilter.EnvironmentId, and is useful for accessing the field via an interface.
+func (v *InstancesFilter) GetEnvironmentId() *IdFilter { return v.EnvironmentId }
+
+// GetStatus returns InstancesFilter.Status, and is useful for accessing the field via an interface.
+func (v *InstancesFilter) GetStatus() *InstanceStatusFilter { return v.Status }
+
+// GetOciRepoName returns InstancesFilter.OciRepoName, and is useful for accessing the field via an interface.
+func (v *InstancesFilter) GetOciRepoName() *OciRepoNameFilter { return v.OciRepoName }
+
+// GetParamDimension returns InstancesFilter.ParamDimension, and is useful for accessing the field via an interface.
+func (v *InstancesFilter) GetParamDimension() []ParamDimensionFilter { return v.ParamDimension }
+
+// Sorting options for the instances list.
+type InstancesSort struct {
+	// The field to sort by.
+	Field InstancesSortField `json:"field"`
+	// Ascending or descending.
+	Order SortOrder `json:"order"`
+}
+
+// GetField returns InstancesSort.Field, and is useful for accessing the field via an interface.
+func (v *InstancesSort) GetField() InstancesSortField { return v.Field }
+
+// GetOrder returns InstancesSort.Order, and is useful for accessing the field via an interface.
+func (v *InstancesSort) GetOrder() SortOrder { return v.Order }
+
+// Available fields for sorting instances.
+type InstancesSortField string
+
+const (
+	// Alphabetical by instance name (A-Z or Z-A).
+	InstancesSortFieldName InstancesSortField = "NAME"
+	// Chronological by creation time (oldest or newest first).
+	InstancesSortFieldCreatedAt InstancesSortField = "CREATED_AT"
+)
+
+var AllInstancesSortField = []InstancesSortField{
+	InstancesSortFieldName,
+	InstancesSortFieldCreatedAt,
+}
+
+// Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources.
+type LinkComponentsInput struct {
+	// ID of the component that produces the resource (e.g., 'myproj-database').
+	FromComponentId string `json:"fromComponentId"`
+	// Output field name on the source component
+	FromField string `json:"fromField"`
+	// Version constraint for the source component (e.g., '~1.0', '1.2.3', 'latest')
+	FromVersion string `json:"fromVersion"`
+	// ID of the component that consumes the resource (e.g., 'myproj-app').
+	ToComponentId string `json:"toComponentId"`
+	// Input field name on the destination component
+	ToField string `json:"toField"`
+	// Version constraint for the destination component (e.g., '~1.0', '1.2.3', 'latest')
+	ToVersion string `json:"toVersion"`
+}
+
+// GetFromComponentId returns LinkComponentsInput.FromComponentId, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetFromComponentId() string { return v.FromComponentId }
+
+// GetFromField returns LinkComponentsInput.FromField, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetFromField() string { return v.FromField }
+
+// GetFromVersion returns LinkComponentsInput.FromVersion, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetFromVersion() string { return v.FromVersion }
+
+// GetToComponentId returns LinkComponentsInput.ToComponentId, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetToComponentId() string { return v.ToComponentId }
+
+// GetToField returns LinkComponentsInput.ToField, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetToField() string { return v.ToField }
+
+// GetToVersion returns LinkComponentsInput.ToVersion, and is useful for accessing the field via an interface.
+func (v *LinkComponentsInput) GetToVersion() string { return v.ToVersion }
+
+// Filter which links to return.
+type LinksFilter struct {
+	// Match by the source (from) component's ID (e.g., `myproj-database`).
+	FromComponentId *IdFilter `json:"fromComponentId,omitempty"`
+	// Match by the destination (to) component's ID (e.g., `myproj-app`).
+	ToComponentId *IdFilter `json:"toComponentId,omitempty"`
+}
+
+// GetFromComponentId returns LinksFilter.FromComponentId, and is useful for accessing the field via an interface.
+func (v *LinksFilter) GetFromComponentId() *IdFilter { return v.FromComponentId }
+
+// GetToComponentId returns LinksFilter.ToComponentId, and is useful for accessing the field via an interface.
+func (v *LinksFilter) GetToComponentId() *IdFilter { return v.ToComponentId }
+
+// Filter by OCI repository name (the bundle's package identifier).
+//
+// Supports exact match, set membership, and prefix matching. Prefix matching is
+// useful for filtering by cloud provider (e.g., `"aws-"`) or category.
+//
+// ```graphql
+// # All AWS bundles
+// { "ociRepoName": { "startsWith": "aws-" } }
+//
+// # Specific bundles
+// { "ociRepoName": { "in": ["aws-aurora-postgres", "gcp-cloud-sql"] } }
+// ```
+type OciRepoNameFilter struct {
+	// Return only results whose OCI repository name exactly equals this value.
+	Eq string `json:"eq,omitempty"`
+	// Return results whose OCI repository name matches any value in this list.
+	In []string `json:"in,omitempty"`
+	// Return results whose OCI repository name begins with this prefix, e.g. `"aws-"` matches `"aws-aurora-postgres"`.
+	StartsWith string `json:"startsWith,omitempty"`
+}
+
+// GetEq returns OciRepoNameFilter.Eq, and is useful for accessing the field via an interface.
+func (v *OciRepoNameFilter) GetEq() string { return v.Eq }
+
+// GetIn returns OciRepoNameFilter.In, and is useful for accessing the field via an interface.
+func (v *OciRepoNameFilter) GetIn() []string { return v.In }
+
+// GetStartsWith returns OciRepoNameFilter.StartsWith, and is useful for accessing the field via an interface.
+func (v *OciRepoNameFilter) GetStartsWith() string { return v.StartsWith }
+
+// Filters for narrowing the OCI repositories list.
+//
+// All filters are combined with AND logic.
+type OciReposFilter struct {
+	// Filter by OCI artifact media type. Currently the only supported type is `application/vnd.massdriver.bundle.v1+json`. Passing an unsupported type returns an empty list.
+	ArtifactType string `json:"artifactType,omitempty"`
+	// Filter repositories by name using exact match, prefix, or set membership.
+	Name *OciRepoNameFilter `json:"name,omitempty"`
+	// Full-text search across the repository name, readme, and changelog. Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, name-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries.
+	Search string `json:"search,omitempty"`
+}
+
+// GetArtifactType returns OciReposFilter.ArtifactType, and is useful for accessing the field via an interface.
+func (v *OciReposFilter) GetArtifactType() string { return v.ArtifactType }
+
+// GetName returns OciReposFilter.Name, and is useful for accessing the field via an interface.
+func (v *OciReposFilter) GetName() *OciRepoNameFilter { return v.Name }
+
+// GetSearch returns OciReposFilter.Search, and is useful for accessing the field via an interface.
+func (v *OciReposFilter) GetSearch() string { return v.Search }
+
+// Controls the sort order of the OCI repositories list.
+//
+// When a `search` filter is active and no sort is provided, results are ranked by
+// relevance. Providing an explicit sort overrides relevance ranking.
+type OciReposSort struct {
+	// The field to order results by.
+	Field OciReposSortField `json:"field"`
+	// Ascending (`ASC`) or descending (`DESC`).
+	Order SortOrder `json:"order"`
+}
+
+// GetField returns OciReposSort.Field, and is useful for accessing the field via an interface.
+func (v *OciReposSort) GetField() OciReposSortField { return v.Field }
+
+// GetOrder returns OciReposSort.Order, and is useful for accessing the field via an interface.
+func (v *OciReposSort) GetOrder() SortOrder { return v.Order }
+
+// Fields available for ordering the OCI repositories list.
+//
+// When a `search` filter is active and no explicit sort is provided, results are
+// ranked by relevance instead of these fields.
+type OciReposSortField string
+
+const (
+	// Alphabetical order by repository name (e.g., `aws-aurora-postgres`).
+	OciReposSortFieldName OciReposSortField = "NAME"
+	// Chronological order by the date the repository was created.
+	OciReposSortFieldCreatedAt OciReposSortField = "CREATED_AT"
+)
+
+var AllOciReposSortField = []OciReposSortField{
+	OciReposSortFieldName,
+	OciReposSortFieldCreatedAt,
+}
+
+// Filter instances by the value of a configuration parameter at a specific JSON path.
+//
+// Parameter dimensions let you slice your infrastructure by any value in an instance's
+// configuration — for example, filtering by database engine, instance size, or region.
+// Use the `paramDimensions` query to discover which dimensions are available for your
+// instances.
+//
+// ```graphql
+// # All instances using "db.r5.xlarge"
+// {
+// "params": {
+// "dimension": ".database.instance_type",
+// "eq": "db.r5.xlarge"
+// }
+// }
+//
+// # All instances whose region contains "us-east"
+// {
+// "params": {
+// "dimension": ".region",
+// "contains": "us-east"
+// }
+// }
+// ```
+type ParamDimensionFilter struct {
+	// jq-style path to the configuration parameter (e.g., `".database.instance_type"` or `".containers[0].image"`). Use the `paramDimensions` query to discover available paths.
+	Dimension string `json:"dimension"`
+	// Return only instances whose parameter value exactly equals this string.
+	Eq string `json:"eq,omitempty"`
+	// Return instances whose parameter value matches any string in this list.
+	In []string `json:"in,omitempty"`
+	// Return instances whose parameter value contains this substring (case-insensitive).
+	Contains string `json:"contains,omitempty"`
+}
+
+// GetDimension returns ParamDimensionFilter.Dimension, and is useful for accessing the field via an interface.
+func (v *ParamDimensionFilter) GetDimension() string { return v.Dimension }
+
+// GetEq returns ParamDimensionFilter.Eq, and is useful for accessing the field via an interface.
+func (v *ParamDimensionFilter) GetEq() string { return v.Eq }
+
+// GetIn returns ParamDimensionFilter.In, and is useful for accessing the field via an interface.
+func (v *ParamDimensionFilter) GetIn() []string { return v.In }
+
+// GetContains returns ParamDimensionFilter.Contains, and is useful for accessing the field via an interface.
+func (v *ParamDimensionFilter) GetContains() string { return v.Contains }
+
+// Upsert a resource type for your organization from a JSON Schema document. If an existing resource type has the same identifier, its schema is replaced. **Deprecated:** this mutation exists solely to bridge V0 `publishArtifactDefinition` into the V1 API while resource types are being migrated to OCI. New integrations should use the OCI-native publishing flow — this mutation may be removed without notice.
+type PublishResourceTypeInput struct {
+	// The full JSON Schema document describing the shape of data this resource type exposes to dependents. Must include `$md.name` (a kebab-case identifier like `aws-iam-role`) and should include `$md.label`, `$md.icon`, and `$md.ui.connectionOrientation`.
 	Schema map[string]any `json:"-"`
-	// The name of this type. Organization scoped: my-org/aws-iam-role
-	Name      string                                    `json:"name"`
-	Icon      string                                    `json:"icon"`
-	Label     string                                    `json:"label"`
-	UpdatedAt time.Time                                 `json:"updatedAt"`
-	Url       string                                    `json:"url"`
-	Ui        getArtifactDefinitionArtifactDefinitionUi `json:"ui"`
 }
 
-// GetId returns getArtifactDefinitionArtifactDefinition.Id, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinition) GetId() string { return v.Id }
+// GetSchema returns PublishResourceTypeInput.Schema, and is useful for accessing the field via an interface.
+func (v *PublishResourceTypeInput) GetSchema() map[string]any { return v.Schema }
 
-// GetSchema returns getArtifactDefinitionArtifactDefinition.Schema, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinition) GetSchema() map[string]any { return v.Schema }
-
-// GetName returns getArtifactDefinitionArtifactDefinition.Name, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinition) GetName() string { return v.Name }
-
-// GetIcon returns getArtifactDefinitionArtifactDefinition.Icon, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinition) GetIcon() string { return v.Icon }
-
-// GetLabel returns getArtifactDefinitionArtifactDefinition.Label, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinition) GetLabel() string { return v.Label }
-
-// GetUpdatedAt returns getArtifactDefinitionArtifactDefinition.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinition) GetUpdatedAt() time.Time { return v.UpdatedAt }
-
-// GetUrl returns getArtifactDefinitionArtifactDefinition.Url, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinition) GetUrl() string { return v.Url }
-
-// GetUi returns getArtifactDefinitionArtifactDefinition.Ui, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinition) GetUi() getArtifactDefinitionArtifactDefinitionUi {
-	return v.Ui
-}
-
-func (v *getArtifactDefinitionArtifactDefinition) UnmarshalJSON(b []byte) error {
+func (v *PublishResourceTypeInput) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*getArtifactDefinitionArtifactDefinition
+		*PublishResourceTypeInput
 		Schema json.RawMessage `json:"schema"`
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.getArtifactDefinitionArtifactDefinition = v
+	firstPass.PublishResourceTypeInput = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -2318,32 +1134,18 @@ func (v *getArtifactDefinitionArtifactDefinition) UnmarshalJSON(b []byte) error 
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getArtifactDefinitionArtifactDefinition.Schema: %w", err)
+					"unable to unmarshal PublishResourceTypeInput.Schema: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-type __premarshalgetArtifactDefinitionArtifactDefinition struct {
-	Id string `json:"id"`
-
+type __premarshalPublishResourceTypeInput struct {
 	Schema json.RawMessage `json:"schema"`
-
-	Name string `json:"name"`
-
-	Icon string `json:"icon"`
-
-	Label string `json:"label"`
-
-	UpdatedAt time.Time `json:"updatedAt"`
-
-	Url string `json:"url"`
-
-	Ui getArtifactDefinitionArtifactDefinitionUi `json:"ui"`
 }
 
-func (v *getArtifactDefinitionArtifactDefinition) MarshalJSON() ([]byte, error) {
+func (v *PublishResourceTypeInput) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -2351,10 +1153,9 @@ func (v *getArtifactDefinitionArtifactDefinition) MarshalJSON() ([]byte, error) 
 	return json.Marshal(premarshaled)
 }
 
-func (v *getArtifactDefinitionArtifactDefinition) __premarshalJSON() (*__premarshalgetArtifactDefinitionArtifactDefinition, error) {
-	var retval __premarshalgetArtifactDefinitionArtifactDefinition
+func (v *PublishResourceTypeInput) __premarshalJSON() (*__premarshalPublishResourceTypeInput, error) {
+	var retval __premarshalPublishResourceTypeInput
 
-	retval.Id = v.Id
 	{
 
 		dst := &retval.Schema
@@ -2364,131 +1165,2969 @@ func (v *getArtifactDefinitionArtifactDefinition) __premarshalJSON() (*__premars
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getArtifactDefinitionArtifactDefinition.Schema: %w", err)
+				"unable to marshal PublishResourceTypeInput.Schema: %w", err)
 		}
 	}
-	retval.Name = v.Name
-	retval.Icon = v.Icon
-	retval.Label = v.Label
-	retval.UpdatedAt = v.UpdatedAt
-	retval.Url = v.Url
-	retval.Ui = v.Ui
 	return &retval, nil
 }
 
-// getArtifactDefinitionArtifactDefinitionUi includes the requested fields of the GraphQL type ArtifactDefinitionUi.
-type getArtifactDefinitionArtifactDefinitionUi struct {
-	ConnectionOrientation   ArtifactDefinitionUiConnectionOrientation `json:"connectionOrientation"`
-	EnvironmentDefaultGroup string                                    `json:"environmentDefaultGroup"`
+// Controls which bundle releases are eligible for deployment.
+//
+// The release strategy works in conjunction with the version constraint to
+// determine which bundle version is resolved for deployment.
+type ReleaseStrategy string
+
+const (
+	// Only use stable, published releases. Recommended for production environments.
+	ReleaseStrategyStable ReleaseStrategy = "STABLE"
+	// Include pre-release/development builds. Useful for testing unreleased bundle changes.
+	ReleaseStrategyDevelopment ReleaseStrategy = "DEVELOPMENT"
+)
+
+var AllReleaseStrategy = []ReleaseStrategy{
+	ReleaseStrategyStable,
+	ReleaseStrategyDevelopment,
 }
 
-// GetConnectionOrientation returns getArtifactDefinitionArtifactDefinitionUi.ConnectionOrientation, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinitionUi) GetConnectionOrientation() ArtifactDefinitionUiConnectionOrientation {
-	return v.ConnectionOrientation
+// How a resource was created, which determines how it can be managed.
+//
+// - **IMPORTED** resources are created and managed directly through the API.
+// You can update their name, payload, and delete them at any time.
+// - **PROVISIONED** resources are created automatically when an instance is deployed.
+// They are managed by their owning instance and cannot be modified or deleted through the API.
+type ResourceOrigin string
+
+const (
+	// Created manually via the API. Can be updated and deleted directly.
+	ResourceOriginImported ResourceOrigin = "IMPORTED"
+	// Created automatically by deploying an instance. Managed by the owning instance's lifecycle.
+	ResourceOriginProvisioned ResourceOrigin = "PROVISIONED"
+)
+
+var AllResourceOrigin = []ResourceOrigin{
+	ResourceOriginImported,
+	ResourceOriginProvisioned,
 }
 
-// GetEnvironmentDefaultGroup returns getArtifactDefinitionArtifactDefinitionUi.EnvironmentDefaultGroup, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionArtifactDefinitionUi) GetEnvironmentDefaultGroup() string {
-	return v.EnvironmentDefaultGroup
+// Filter resources by their origin.
+//
+// Provide either `eq` for an exact match or `in` for matching any of several origins.
+type ResourceOriginFilter struct {
+	// Return resources with exactly this origin.
+	Eq ResourceOrigin `json:"eq,omitempty"`
+	// Return resources matching any of the listed origins.
+	In []ResourceOrigin `json:"in,omitempty"`
 }
 
-// getArtifactDefinitionResponse is returned by getArtifactDefinition on success.
-type getArtifactDefinitionResponse struct {
-	ArtifactDefinition getArtifactDefinitionArtifactDefinition `json:"artifactDefinition"`
+// GetEq returns ResourceOriginFilter.Eq, and is useful for accessing the field via an interface.
+func (v *ResourceOriginFilter) GetEq() ResourceOrigin { return v.Eq }
+
+// GetIn returns ResourceOriginFilter.In, and is useful for accessing the field via an interface.
+func (v *ResourceOriginFilter) GetIn() []ResourceOrigin { return v.In }
+
+// Filters for narrowing the resource types list.
+type ResourceTypesFilter struct {
+	// Filter by resource type identifier (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id StringFilter `json:"id"`
+	// Full-text search across the resource type's display name and identifier (e.g., `"iam"` matches `AWS IAM Role` / `aws-iam-role`). Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, identifier-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries.
+	Search string `json:"search"`
 }
 
-// GetArtifactDefinition returns getArtifactDefinitionResponse.ArtifactDefinition, and is useful for accessing the field via an interface.
-func (v *getArtifactDefinitionResponse) GetArtifactDefinition() getArtifactDefinitionArtifactDefinition {
-	return v.ArtifactDefinition
+// GetId returns ResourceTypesFilter.Id, and is useful for accessing the field via an interface.
+func (v *ResourceTypesFilter) GetId() StringFilter { return v.Id }
+
+// GetSearch returns ResourceTypesFilter.Search, and is useful for accessing the field via an interface.
+func (v *ResourceTypesFilter) GetSearch() string { return v.Search }
+
+// Controls the sort order of the resource types list.
+type ResourceTypesSort struct {
+	// The field to order results by.
+	Field ResourceTypesSortField `json:"field"`
+	// Ascending (`ASC`) or descending (`DESC`).
+	Order SortOrder `json:"order"`
 }
 
-// getArtifactResponse is returned by getArtifact on success.
-type getArtifactResponse struct {
-	// Get an artifact by ID
-	Artifact getArtifactArtifact `json:"artifact"`
+// GetField returns ResourceTypesSort.Field, and is useful for accessing the field via an interface.
+func (v *ResourceTypesSort) GetField() ResourceTypesSortField { return v.Field }
+
+// GetOrder returns ResourceTypesSort.Order, and is useful for accessing the field via an interface.
+func (v *ResourceTypesSort) GetOrder() SortOrder { return v.Order }
+
+// Fields available for ordering the resource types list.
+type ResourceTypesSortField string
+
+const (
+	// Alphabetical order by the resource type's display name.
+	ResourceTypesSortFieldName ResourceTypesSortField = "NAME"
+	// Chronological order by the date the resource type was created.
+	ResourceTypesSortFieldCreatedAt ResourceTypesSortField = "CREATED_AT"
+)
+
+var AllResourceTypesSortField = []ResourceTypesSortField{
+	ResourceTypesSortFieldName,
+	ResourceTypesSortFieldCreatedAt,
 }
 
-// GetArtifact returns getArtifactResponse.Artifact, and is useful for accessing the field via an interface.
-func (v *getArtifactResponse) GetArtifact() getArtifactArtifact { return v.Artifact }
-
-// getArtifactsByTypeArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
-type getArtifactsByTypeArtifactsPaginatedArtifacts struct {
-	// A list of type artifact.
-	Items []getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact `json:"items"`
+// Narrows the resources list to only matching records.
+//
+// All filters are combined with AND logic. Omit a filter to skip that criterion.
+type ResourcesFilter struct {
+	// Return only resources with the specified origin (IMPORTED or PROVISIONED).
+	Origin *ResourceOriginFilter `json:"origin,omitempty"`
+	// Return only resources of the given resource type, matched by the type's identifier (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	ResourceType StringFilter `json:"resourceType"`
+	// Full-text search across the resource name. Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, name-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries.
+	Search string `json:"search"`
 }
 
-// GetItems returns getArtifactsByTypeArtifactsPaginatedArtifacts.Items, and is useful for accessing the field via an interface.
-func (v *getArtifactsByTypeArtifactsPaginatedArtifacts) GetItems() []getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact {
-	return v.Items
+// GetOrigin returns ResourcesFilter.Origin, and is useful for accessing the field via an interface.
+func (v *ResourcesFilter) GetOrigin() *ResourceOriginFilter { return v.Origin }
+
+// GetResourceType returns ResourcesFilter.ResourceType, and is useful for accessing the field via an interface.
+func (v *ResourcesFilter) GetResourceType() StringFilter { return v.ResourceType }
+
+// GetSearch returns ResourcesFilter.Search, and is useful for accessing the field via an interface.
+func (v *ResourcesFilter) GetSearch() string { return v.Search }
+
+// Controls the sort order of the resources list.
+//
+// Defaults to alphabetical by name (ascending) when not specified.
+type ResourcesSort struct {
+	// The field to sort by.
+	Field ResourcesSortField `json:"field"`
+	// Ascending or descending order.
+	Order SortOrder `json:"order"`
 }
 
-// getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact includes the requested fields of the GraphQL type Artifact.
-type getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact struct {
-	Id        string    `json:"id"`
-	Name      string    `json:"name"`
-	Type      string    `json:"type"`
+// GetField returns ResourcesSort.Field, and is useful for accessing the field via an interface.
+func (v *ResourcesSort) GetField() ResourcesSortField { return v.Field }
+
+// GetOrder returns ResourcesSort.Order, and is useful for accessing the field via an interface.
+func (v *ResourcesSort) GetOrder() SortOrder { return v.Order }
+
+// Available fields for sorting the resources list.
+type ResourcesSortField string
+
+const (
+	// Sort alphabetically by resource name (A-Z when ascending).
+	ResourcesSortFieldName ResourcesSortField = "NAME"
+	// Sort by creation timestamp (oldest first when ascending, newest first when descending).
+	ResourcesSortFieldCreatedAt ResourcesSortField = "CREATED_AT"
+)
+
+var AllResourcesSortField = []ResourcesSortField{
+	ResourcesSortFieldName,
+	ResourcesSortFieldCreatedAt,
+}
+
+// The deployment mode of this Massdriver server.
+//
+// Determines whether you are connecting to a self-managed installation or to
+// Massdriver's managed cloud service. This affects available features, authentication
+// options, and upgrade procedures.
+type ServerMode string
+
+const (
+	// A self-hosted Massdriver installation running in your own infrastructure.
+	ServerModeSelfHosted ServerMode = "SELF_HOSTED"
+	// Massdriver Cloud, the fully managed SaaS service operated by Massdriver.
+	ServerModeManaged ServerMode = "MANAGED"
+)
+
+var AllServerMode = []ServerMode{
+	ServerModeSelfHosted,
+	ServerModeManaged,
+}
+
+// Create or update a secret on an instance. The secret value is encrypted at rest and never returned in API responses.
+type SetInstanceSecretInput struct {
+	// The secret name, as defined in the bundle's massdriver.yaml
+	Name string `json:"name"`
+	// The secret value. Will be encrypted at rest.
+	Value string `json:"value"`
+}
+
+// GetName returns SetInstanceSecretInput.Name, and is useful for accessing the field via an interface.
+func (v *SetInstanceSecretInput) GetName() string { return v.Name }
+
+// GetValue returns SetInstanceSecretInput.Value, and is useful for accessing the field via an interface.
+func (v *SetInstanceSecretInput) GetValue() string { return v.Value }
+
+// Sort direction for ordering paginated results.
+//
+// Applied via the `sort` argument on any list query. When combined with a sort field,
+// controls the ordering of returned items.
+type SortOrder string
+
+const (
+	// Ascending order (A-Z, oldest first, lowest first)
+	SortOrderAsc SortOrder = "ASC"
+	// Descending order (Z-A, newest first, highest first)
+	SortOrderDesc SortOrder = "DESC"
+)
+
+var AllSortOrder = []SortOrder{
+	SortOrderAsc,
+	SortOrderDesc,
+}
+
+// Filter by a string field.
+//
+// All operators within a single filter are combined with **AND**. To match any of
+// several values, use the `in` operator rather than multiple `eq` filters.
+//
+// ```graphql
+// # Exact match
+// { "name": { "eq": "production" } }
+//
+// # Match several values (logical OR between values)
+// { "name": { "in": ["production", "staging"] } }
+// ```
+type StringFilter struct {
+	// Return only results whose value exactly equals this string.
+	Eq string `json:"eq,omitempty"`
+	// Return results whose value matches any string in this list.
+	In []string `json:"in,omitempty"`
+}
+
+// GetEq returns StringFilter.Eq, and is useful for accessing the field via an interface.
+func (v *StringFilter) GetEq() string { return v.Eq }
+
+// GetIn returns StringFilter.In, and is useful for accessing the field via an interface.
+func (v *StringFilter) GetIn() []string { return v.In }
+
+// Update an existing environment's name and description. The ID cannot be changed after creation.
+type UpdateEnvironmentInput struct {
+	// Key-value attributes for this environment. Keys and values must be strings. Must conform to the organization's custom attributes for the environment scope.
+	Attributes map[string]any `json:"-"`
+	// An optional description of the environment's purpose
+	Description string `json:"description"`
+	// A human-readable name for the environment
+	Name string `json:"name"`
+}
+
+// GetAttributes returns UpdateEnvironmentInput.Attributes, and is useful for accessing the field via an interface.
+func (v *UpdateEnvironmentInput) GetAttributes() map[string]any { return v.Attributes }
+
+// GetDescription returns UpdateEnvironmentInput.Description, and is useful for accessing the field via an interface.
+func (v *UpdateEnvironmentInput) GetDescription() string { return v.Description }
+
+// GetName returns UpdateEnvironmentInput.Name, and is useful for accessing the field via an interface.
+func (v *UpdateEnvironmentInput) GetName() string { return v.Name }
+
+func (v *UpdateEnvironmentInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UpdateEnvironmentInput
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UpdateEnvironmentInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal UpdateEnvironmentInput.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalUpdateEnvironmentInput struct {
+	Attributes json.RawMessage `json:"attributes"`
+
+	Description string `json:"description"`
+
+	Name string `json:"name"`
+}
+
+func (v *UpdateEnvironmentInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UpdateEnvironmentInput) __premarshalJSON() (*__premarshalUpdateEnvironmentInput, error) {
+	var retval __premarshalUpdateEnvironmentInput
+
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal UpdateEnvironmentInput.Attributes: %w", err)
+		}
+	}
+	retval.Description = v.Description
+	retval.Name = v.Name
+	return &retval, nil
+}
+
+// Update an instance's version constraint or release strategy. Changes take effect on the next deployment.
+type UpdateInstanceInput struct {
+	// Whether to use stable or development releases
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// Version constraint for the bundle (e.g., '~1.0', '1.2.3', 'latest'). Resolved against available releases.
+	Version string `json:"version"`
+}
+
+// GetReleaseStrategy returns UpdateInstanceInput.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *UpdateInstanceInput) GetReleaseStrategy() ReleaseStrategy { return v.ReleaseStrategy }
+
+// GetVersion returns UpdateInstanceInput.Version, and is useful for accessing the field via an interface.
+func (v *UpdateInstanceInput) GetVersion() string { return v.Version }
+
+// Update an existing project's name and description. The ID cannot be changed after creation.
+type UpdateProjectInput struct {
+	// Key-value attributes for this project. Keys and values must be strings. Must conform to the organization's custom attributes for the project scope.
+	Attributes map[string]any `json:"-"`
+	// An optional description of the project's purpose or contents
+	Description string `json:"description"`
+	// A human-readable name for the project
+	Name string `json:"name"`
+}
+
+// GetAttributes returns UpdateProjectInput.Attributes, and is useful for accessing the field via an interface.
+func (v *UpdateProjectInput) GetAttributes() map[string]any { return v.Attributes }
+
+// GetDescription returns UpdateProjectInput.Description, and is useful for accessing the field via an interface.
+func (v *UpdateProjectInput) GetDescription() string { return v.Description }
+
+// GetName returns UpdateProjectInput.Name, and is useful for accessing the field via an interface.
+func (v *UpdateProjectInput) GetName() string { return v.Name }
+
+func (v *UpdateProjectInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UpdateProjectInput
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UpdateProjectInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal UpdateProjectInput.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalUpdateProjectInput struct {
+	Attributes json.RawMessage `json:"attributes"`
+
+	Description string `json:"description"`
+
+	Name string `json:"name"`
+}
+
+func (v *UpdateProjectInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UpdateProjectInput) __premarshalJSON() (*__premarshalUpdateProjectInput, error) {
+	var retval __premarshalUpdateProjectInput
+
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal UpdateProjectInput.Attributes: %w", err)
+		}
+	}
+	retval.Description = v.Description
+	retval.Name = v.Name
+	return &retval, nil
+}
+
+// Update a resource's name or payload. Provisioned resources can only have their name updated. Imported resources can also update their payload.
+type UpdateResourceInput struct {
+	// A new human-readable name for this resource
+	Name string `json:"name"`
+	// Updated resource data. Only applicable to imported resources.
+	Payload map[string]any `json:"-"`
+}
+
+// GetName returns UpdateResourceInput.Name, and is useful for accessing the field via an interface.
+func (v *UpdateResourceInput) GetName() string { return v.Name }
+
+// GetPayload returns UpdateResourceInput.Payload, and is useful for accessing the field via an interface.
+func (v *UpdateResourceInput) GetPayload() map[string]any { return v.Payload }
+
+func (v *UpdateResourceInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UpdateResourceInput
+		Payload json.RawMessage `json:"payload"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UpdateResourceInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Payload
+		src := firstPass.Payload
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal UpdateResourceInput.Payload: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalUpdateResourceInput struct {
+	Name string `json:"name"`
+
+	Payload json.RawMessage `json:"payload"`
+}
+
+func (v *UpdateResourceInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UpdateResourceInput) __premarshalJSON() (*__premarshalUpdateResourceInput, error) {
+	var retval __premarshalUpdateResourceInput
+
+	retval.Name = v.Name
+	{
+
+		dst := &retval.Payload
+		src := v.Payload
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal UpdateResourceInput.Payload: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// __addComponentInput is used internally by genqlient
+type __addComponentInput struct {
+	OrganizationId string            `json:"organizationId"`
+	ProjectId      string            `json:"projectId"`
+	OciRepoName    string            `json:"ociRepoName"`
+	Input          AddComponentInput `json:"input"`
+}
+
+// GetOrganizationId returns __addComponentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__addComponentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetProjectId returns __addComponentInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__addComponentInput) GetProjectId() string { return v.ProjectId }
+
+// GetOciRepoName returns __addComponentInput.OciRepoName, and is useful for accessing the field via an interface.
+func (v *__addComponentInput) GetOciRepoName() string { return v.OciRepoName }
+
+// GetInput returns __addComponentInput.Input, and is useful for accessing the field via an interface.
+func (v *__addComponentInput) GetInput() AddComponentInput { return v.Input }
+
+// __createDeploymentInput is used internally by genqlient
+type __createDeploymentInput struct {
+	OrganizationId string                `json:"organizationId"`
+	Id             string                `json:"id"`
+	Input          CreateDeploymentInput `json:"input"`
+}
+
+// GetOrganizationId returns __createDeploymentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createDeploymentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __createDeploymentInput.Id, and is useful for accessing the field via an interface.
+func (v *__createDeploymentInput) GetId() string { return v.Id }
+
+// GetInput returns __createDeploymentInput.Input, and is useful for accessing the field via an interface.
+func (v *__createDeploymentInput) GetInput() CreateDeploymentInput { return v.Input }
+
+// __createEnvironmentInput is used internally by genqlient
+type __createEnvironmentInput struct {
+	OrganizationId string                 `json:"organizationId"`
+	ProjectId      string                 `json:"projectId"`
+	Input          CreateEnvironmentInput `json:"input"`
+}
+
+// GetOrganizationId returns __createEnvironmentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetProjectId returns __createEnvironmentInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentInput) GetProjectId() string { return v.ProjectId }
+
+// GetInput returns __createEnvironmentInput.Input, and is useful for accessing the field via an interface.
+func (v *__createEnvironmentInput) GetInput() CreateEnvironmentInput { return v.Input }
+
+// __createProjectInput is used internally by genqlient
+type __createProjectInput struct {
+	OrganizationId string             `json:"organizationId"`
+	Input          CreateProjectInput `json:"input"`
+}
+
+// GetOrganizationId returns __createProjectInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createProjectInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetInput returns __createProjectInput.Input, and is useful for accessing the field via an interface.
+func (v *__createProjectInput) GetInput() CreateProjectInput { return v.Input }
+
+// __createResourceInput is used internally by genqlient
+type __createResourceInput struct {
+	OrganizationId string              `json:"organizationId"`
+	ResourceTypeId string              `json:"resourceTypeId"`
+	Input          CreateResourceInput `json:"input"`
+}
+
+// GetOrganizationId returns __createResourceInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__createResourceInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetResourceTypeId returns __createResourceInput.ResourceTypeId, and is useful for accessing the field via an interface.
+func (v *__createResourceInput) GetResourceTypeId() string { return v.ResourceTypeId }
+
+// GetInput returns __createResourceInput.Input, and is useful for accessing the field via an interface.
+func (v *__createResourceInput) GetInput() CreateResourceInput { return v.Input }
+
+// __deleteEnvironmentInput is used internally by genqlient
+type __deleteEnvironmentInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteEnvironmentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteEnvironmentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteEnvironmentInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteEnvironmentInput) GetId() string { return v.Id }
+
+// __deleteProjectInput is used internally by genqlient
+type __deleteProjectInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteProjectInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteProjectInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteProjectInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteProjectInput) GetId() string { return v.Id }
+
+// __deleteResourceInput is used internally by genqlient
+type __deleteResourceInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteResourceInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteResourceInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteResourceInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteResourceInput) GetId() string { return v.Id }
+
+// __deleteResourceTypeInput is used internally by genqlient
+type __deleteResourceTypeInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __deleteResourceTypeInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__deleteResourceTypeInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __deleteResourceTypeInput.Id, and is useful for accessing the field via an interface.
+func (v *__deleteResourceTypeInput) GetId() string { return v.Id }
+
+// __exportResourceInput is used internally by genqlient
+type __exportResourceInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+	Format         string `json:"format,omitempty"`
+}
+
+// GetOrganizationId returns __exportResourceInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__exportResourceInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __exportResourceInput.Id, and is useful for accessing the field via an interface.
+func (v *__exportResourceInput) GetId() string { return v.Id }
+
+// GetFormat returns __exportResourceInput.Format, and is useful for accessing the field via an interface.
+func (v *__exportResourceInput) GetFormat() string { return v.Format }
+
+// __getBundleInput is used internally by genqlient
+type __getBundleInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getBundleInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getBundleInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getBundleInput.Id, and is useful for accessing the field via an interface.
+func (v *__getBundleInput) GetId() string { return v.Id }
+
+// __getDeploymentInput is used internally by genqlient
+type __getDeploymentInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getDeploymentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getDeploymentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getDeploymentInput.Id, and is useful for accessing the field via an interface.
+func (v *__getDeploymentInput) GetId() string { return v.Id }
+
+// __getDeploymentLogsInput is used internally by genqlient
+type __getDeploymentLogsInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getDeploymentLogsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getDeploymentLogsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getDeploymentLogsInput.Id, and is useful for accessing the field via an interface.
+func (v *__getDeploymentLogsInput) GetId() string { return v.Id }
+
+// __getEnvironmentInput is used internally by genqlient
+type __getEnvironmentInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getEnvironmentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getEnvironmentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getEnvironmentInput.Id, and is useful for accessing the field via an interface.
+func (v *__getEnvironmentInput) GetId() string { return v.Id }
+
+// __getInstanceInput is used internally by genqlient
+type __getInstanceInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getInstanceInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getInstanceInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getInstanceInput.Id, and is useful for accessing the field via an interface.
+func (v *__getInstanceInput) GetId() string { return v.Id }
+
+// __getOciRepoInput is used internally by genqlient
+type __getOciRepoInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getOciRepoInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getOciRepoInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getOciRepoInput.Id, and is useful for accessing the field via an interface.
+func (v *__getOciRepoInput) GetId() string { return v.Id }
+
+// __getProjectInput is used internally by genqlient
+type __getProjectInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getProjectInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getProjectInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getProjectInput.Id, and is useful for accessing the field via an interface.
+func (v *__getProjectInput) GetId() string { return v.Id }
+
+// __getResourceInput is used internally by genqlient
+type __getResourceInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getResourceInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getResourceInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getResourceInput.Id, and is useful for accessing the field via an interface.
+func (v *__getResourceInput) GetId() string { return v.Id }
+
+// __getResourceTypeInput is used internally by genqlient
+type __getResourceTypeInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getResourceTypeInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getResourceTypeInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getResourceTypeInput.Id, and is useful for accessing the field via an interface.
+func (v *__getResourceTypeInput) GetId() string { return v.Id }
+
+// __linkComponentsInput is used internally by genqlient
+type __linkComponentsInput struct {
+	OrganizationId string              `json:"organizationId"`
+	Input          LinkComponentsInput `json:"input"`
+}
+
+// GetOrganizationId returns __linkComponentsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__linkComponentsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetInput returns __linkComponentsInput.Input, and is useful for accessing the field via an interface.
+func (v *__linkComponentsInput) GetInput() LinkComponentsInput { return v.Input }
+
+// __listBundlesInput is used internally by genqlient
+type __listBundlesInput struct {
+	OrganizationId string         `json:"organizationId"`
+	Filter         *BundlesFilter `json:"filter,omitempty"`
+	Sort           *BundlesSort   `json:"sort,omitempty"`
+	Cursor         *Cursor        `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listBundlesInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listBundlesInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetFilter returns __listBundlesInput.Filter, and is useful for accessing the field via an interface.
+func (v *__listBundlesInput) GetFilter() *BundlesFilter { return v.Filter }
+
+// GetSort returns __listBundlesInput.Sort, and is useful for accessing the field via an interface.
+func (v *__listBundlesInput) GetSort() *BundlesSort { return v.Sort }
+
+// GetCursor returns __listBundlesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listBundlesInput) GetCursor() *Cursor { return v.Cursor }
+
+// __listDeploymentsInput is used internally by genqlient
+type __listDeploymentsInput struct {
+	OrganizationId string             `json:"organizationId"`
+	Filter         *DeploymentsFilter `json:"filter,omitempty"`
+	Sort           *DeploymentsSort   `json:"sort,omitempty"`
+	Cursor         *Cursor            `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listDeploymentsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listDeploymentsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetFilter returns __listDeploymentsInput.Filter, and is useful for accessing the field via an interface.
+func (v *__listDeploymentsInput) GetFilter() *DeploymentsFilter { return v.Filter }
+
+// GetSort returns __listDeploymentsInput.Sort, and is useful for accessing the field via an interface.
+func (v *__listDeploymentsInput) GetSort() *DeploymentsSort { return v.Sort }
+
+// GetCursor returns __listDeploymentsInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listDeploymentsInput) GetCursor() *Cursor { return v.Cursor }
+
+// __listEnvironmentsInput is used internally by genqlient
+type __listEnvironmentsInput struct {
+	OrganizationId string              `json:"organizationId"`
+	Filter         *EnvironmentsFilter `json:"filter,omitempty"`
+	Sort           *EnvironmentsSort   `json:"sort,omitempty"`
+	Cursor         *Cursor             `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listEnvironmentsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listEnvironmentsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetFilter returns __listEnvironmentsInput.Filter, and is useful for accessing the field via an interface.
+func (v *__listEnvironmentsInput) GetFilter() *EnvironmentsFilter { return v.Filter }
+
+// GetSort returns __listEnvironmentsInput.Sort, and is useful for accessing the field via an interface.
+func (v *__listEnvironmentsInput) GetSort() *EnvironmentsSort { return v.Sort }
+
+// GetCursor returns __listEnvironmentsInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listEnvironmentsInput) GetCursor() *Cursor { return v.Cursor }
+
+// __listInstanceResourcesInput is used internally by genqlient
+type __listInstanceResourcesInput struct {
+	OrganizationId string  `json:"organizationId"`
+	InstanceId     string  `json:"instanceId"`
+	Cursor         *Cursor `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listInstanceResourcesInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listInstanceResourcesInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetInstanceId returns __listInstanceResourcesInput.InstanceId, and is useful for accessing the field via an interface.
+func (v *__listInstanceResourcesInput) GetInstanceId() string { return v.InstanceId }
+
+// GetCursor returns __listInstanceResourcesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listInstanceResourcesInput) GetCursor() *Cursor { return v.Cursor }
+
+// __listInstancesInput is used internally by genqlient
+type __listInstancesInput struct {
+	OrganizationId string           `json:"organizationId"`
+	Filter         *InstancesFilter `json:"filter,omitempty"`
+	Sort           *InstancesSort   `json:"sort,omitempty"`
+	Cursor         *Cursor          `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listInstancesInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listInstancesInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetFilter returns __listInstancesInput.Filter, and is useful for accessing the field via an interface.
+func (v *__listInstancesInput) GetFilter() *InstancesFilter { return v.Filter }
+
+// GetSort returns __listInstancesInput.Sort, and is useful for accessing the field via an interface.
+func (v *__listInstancesInput) GetSort() *InstancesSort { return v.Sort }
+
+// GetCursor returns __listInstancesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listInstancesInput) GetCursor() *Cursor { return v.Cursor }
+
+// __listLinksInput is used internally by genqlient
+type __listLinksInput struct {
+	OrganizationId string       `json:"organizationId"`
+	ProjectId      string       `json:"projectId"`
+	Filter         *LinksFilter `json:"filter,omitempty"`
+	Cursor         *Cursor      `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listLinksInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listLinksInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetProjectId returns __listLinksInput.ProjectId, and is useful for accessing the field via an interface.
+func (v *__listLinksInput) GetProjectId() string { return v.ProjectId }
+
+// GetFilter returns __listLinksInput.Filter, and is useful for accessing the field via an interface.
+func (v *__listLinksInput) GetFilter() *LinksFilter { return v.Filter }
+
+// GetCursor returns __listLinksInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listLinksInput) GetCursor() *Cursor { return v.Cursor }
+
+// __listOciReposInput is used internally by genqlient
+type __listOciReposInput struct {
+	OrganizationId string          `json:"organizationId"`
+	Filter         *OciReposFilter `json:"filter,omitempty"`
+	Sort           *OciReposSort   `json:"sort,omitempty"`
+	Cursor         *Cursor         `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listOciReposInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listOciReposInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetFilter returns __listOciReposInput.Filter, and is useful for accessing the field via an interface.
+func (v *__listOciReposInput) GetFilter() *OciReposFilter { return v.Filter }
+
+// GetSort returns __listOciReposInput.Sort, and is useful for accessing the field via an interface.
+func (v *__listOciReposInput) GetSort() *OciReposSort { return v.Sort }
+
+// GetCursor returns __listOciReposInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listOciReposInput) GetCursor() *Cursor { return v.Cursor }
+
+// __listProjectsInput is used internally by genqlient
+type __listProjectsInput struct {
+	OrganizationId string `json:"organizationId"`
+}
+
+// GetOrganizationId returns __listProjectsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listProjectsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// __listResourceTypesInput is used internally by genqlient
+type __listResourceTypesInput struct {
+	OrganizationId string               `json:"organizationId"`
+	Filter         *ResourceTypesFilter `json:"filter,omitempty"`
+	Sort           *ResourceTypesSort   `json:"sort,omitempty"`
+	Cursor         *Cursor              `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listResourceTypesInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listResourceTypesInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetFilter returns __listResourceTypesInput.Filter, and is useful for accessing the field via an interface.
+func (v *__listResourceTypesInput) GetFilter() *ResourceTypesFilter { return v.Filter }
+
+// GetSort returns __listResourceTypesInput.Sort, and is useful for accessing the field via an interface.
+func (v *__listResourceTypesInput) GetSort() *ResourceTypesSort { return v.Sort }
+
+// GetCursor returns __listResourceTypesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listResourceTypesInput) GetCursor() *Cursor { return v.Cursor }
+
+// __listResourcesInput is used internally by genqlient
+type __listResourcesInput struct {
+	OrganizationId string           `json:"organizationId"`
+	Filter         *ResourcesFilter `json:"filter,omitempty"`
+	Sort           *ResourcesSort   `json:"sort,omitempty"`
+	Cursor         *Cursor          `json:"cursor,omitempty"`
+}
+
+// GetOrganizationId returns __listResourcesInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__listResourcesInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetFilter returns __listResourcesInput.Filter, and is useful for accessing the field via an interface.
+func (v *__listResourcesInput) GetFilter() *ResourcesFilter { return v.Filter }
+
+// GetSort returns __listResourcesInput.Sort, and is useful for accessing the field via an interface.
+func (v *__listResourcesInput) GetSort() *ResourcesSort { return v.Sort }
+
+// GetCursor returns __listResourcesInput.Cursor, and is useful for accessing the field via an interface.
+func (v *__listResourcesInput) GetCursor() *Cursor { return v.Cursor }
+
+// __publishResourceTypeInput is used internally by genqlient
+type __publishResourceTypeInput struct {
+	OrganizationId string                   `json:"organizationId"`
+	Input          PublishResourceTypeInput `json:"input"`
+}
+
+// GetOrganizationId returns __publishResourceTypeInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__publishResourceTypeInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetInput returns __publishResourceTypeInput.Input, and is useful for accessing the field via an interface.
+func (v *__publishResourceTypeInput) GetInput() PublishResourceTypeInput { return v.Input }
+
+// __removeComponentInput is used internally by genqlient
+type __removeComponentInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __removeComponentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__removeComponentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __removeComponentInput.Id, and is useful for accessing the field via an interface.
+func (v *__removeComponentInput) GetId() string { return v.Id }
+
+// __removeInstanceSecretInput is used internally by genqlient
+type __removeInstanceSecretInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+	Name           string `json:"name"`
+}
+
+// GetOrganizationId returns __removeInstanceSecretInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__removeInstanceSecretInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __removeInstanceSecretInput.Id, and is useful for accessing the field via an interface.
+func (v *__removeInstanceSecretInput) GetId() string { return v.Id }
+
+// GetName returns __removeInstanceSecretInput.Name, and is useful for accessing the field via an interface.
+func (v *__removeInstanceSecretInput) GetName() string { return v.Name }
+
+// __setEnvironmentDefaultInput is used internally by genqlient
+type __setEnvironmentDefaultInput struct {
+	OrganizationId string `json:"organizationId"`
+	EnvironmentId  string `json:"environmentId"`
+	ResourceId     string `json:"resourceId"`
+}
+
+// GetOrganizationId returns __setEnvironmentDefaultInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__setEnvironmentDefaultInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetEnvironmentId returns __setEnvironmentDefaultInput.EnvironmentId, and is useful for accessing the field via an interface.
+func (v *__setEnvironmentDefaultInput) GetEnvironmentId() string { return v.EnvironmentId }
+
+// GetResourceId returns __setEnvironmentDefaultInput.ResourceId, and is useful for accessing the field via an interface.
+func (v *__setEnvironmentDefaultInput) GetResourceId() string { return v.ResourceId }
+
+// __setInstanceSecretInput is used internally by genqlient
+type __setInstanceSecretInput struct {
+	OrganizationId string                 `json:"organizationId"`
+	Id             string                 `json:"id"`
+	Input          SetInstanceSecretInput `json:"input"`
+}
+
+// GetOrganizationId returns __setInstanceSecretInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__setInstanceSecretInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __setInstanceSecretInput.Id, and is useful for accessing the field via an interface.
+func (v *__setInstanceSecretInput) GetId() string { return v.Id }
+
+// GetInput returns __setInstanceSecretInput.Input, and is useful for accessing the field via an interface.
+func (v *__setInstanceSecretInput) GetInput() SetInstanceSecretInput { return v.Input }
+
+// __unlinkComponentsInput is used internally by genqlient
+type __unlinkComponentsInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __unlinkComponentsInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__unlinkComponentsInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __unlinkComponentsInput.Id, and is useful for accessing the field via an interface.
+func (v *__unlinkComponentsInput) GetId() string { return v.Id }
+
+// __updateEnvironmentInput is used internally by genqlient
+type __updateEnvironmentInput struct {
+	OrganizationId string                 `json:"organizationId"`
+	Id             string                 `json:"id"`
+	Input          UpdateEnvironmentInput `json:"input"`
+}
+
+// GetOrganizationId returns __updateEnvironmentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateEnvironmentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __updateEnvironmentInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateEnvironmentInput) GetId() string { return v.Id }
+
+// GetInput returns __updateEnvironmentInput.Input, and is useful for accessing the field via an interface.
+func (v *__updateEnvironmentInput) GetInput() UpdateEnvironmentInput { return v.Input }
+
+// __updateInstanceInput is used internally by genqlient
+type __updateInstanceInput struct {
+	OrganizationId string              `json:"organizationId"`
+	Id             string              `json:"id"`
+	Input          UpdateInstanceInput `json:"input"`
+}
+
+// GetOrganizationId returns __updateInstanceInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateInstanceInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __updateInstanceInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateInstanceInput) GetId() string { return v.Id }
+
+// GetInput returns __updateInstanceInput.Input, and is useful for accessing the field via an interface.
+func (v *__updateInstanceInput) GetInput() UpdateInstanceInput { return v.Input }
+
+// __updateProjectInput is used internally by genqlient
+type __updateProjectInput struct {
+	OrganizationId string             `json:"organizationId"`
+	Id             string             `json:"id"`
+	Input          UpdateProjectInput `json:"input"`
+}
+
+// GetOrganizationId returns __updateProjectInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateProjectInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __updateProjectInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateProjectInput) GetId() string { return v.Id }
+
+// GetInput returns __updateProjectInput.Input, and is useful for accessing the field via an interface.
+func (v *__updateProjectInput) GetInput() UpdateProjectInput { return v.Input }
+
+// __updateResourceInput is used internally by genqlient
+type __updateResourceInput struct {
+	OrganizationId string              `json:"organizationId"`
+	Id             string              `json:"id"`
+	Input          UpdateResourceInput `json:"input"`
+}
+
+// GetOrganizationId returns __updateResourceInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateResourceInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __updateResourceInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateResourceInput) GetId() string { return v.Id }
+
+// GetInput returns __updateResourceInput.Input, and is useful for accessing the field via an interface.
+func (v *__updateResourceInput) GetInput() UpdateResourceInput { return v.Input }
+
+// addComponentAddComponentComponentPayload includes the requested fields of the GraphQL type ComponentPayload.
+type addComponentAddComponentComponentPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result addComponentAddComponentComponentPayloadResultComponent `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []addComponentAddComponentComponentPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns addComponentAddComponentComponentPayload.Result, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayload) GetResult() addComponentAddComponentComponentPayloadResultComponent {
+	return v.Result
+}
+
+// GetSuccessful returns addComponentAddComponentComponentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns addComponentAddComponentComponentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayload) GetMessages() []addComponentAddComponentComponentPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// addComponentAddComponentComponentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type addComponentAddComponentComponentPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns addComponentAddComponentComponentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns addComponentAddComponentComponentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns addComponentAddComponentComponentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// addComponentAddComponentComponentPayloadResultComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type addComponentAddComponentComponentPayloadResultComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
 	UpdatedAt time.Time `json:"updatedAt"`
+	// The OCI repository (bundle) this component is based on.
+	OciRepo addComponentAddComponentComponentPayloadResultComponentOciRepo `json:"ociRepo"`
 }
 
-// GetId returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Id, and is useful for accessing the field via an interface.
-func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetId() string { return v.Id }
+// GetId returns addComponentAddComponentComponentPayloadResultComponent.Id, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetId() string { return v.Id }
 
-// GetName returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
+// GetName returns addComponentAddComponentComponentPayloadResultComponent.Name, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetName() string { return v.Name }
 
-// GetType returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.Type, and is useful for accessing the field via an interface.
-func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetType() string { return v.Type }
+// GetDescription returns addComponentAddComponentComponentPayloadResultComponent.Description, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetDescription() string {
+	return v.Description
+}
 
-// GetUpdatedAt returns getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *getArtifactsByTypeArtifactsPaginatedArtifactsItemsArtifact) GetUpdatedAt() time.Time {
+// GetAttributes returns addComponentAddComponentComponentPayloadResultComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns addComponentAddComponentComponentPayloadResultComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns addComponentAddComponentComponentPayloadResultComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
 }
 
-// getArtifactsByTypeResponse is returned by getArtifactsByType on success.
-type getArtifactsByTypeResponse struct {
-	// List all artifacts
-	Artifacts getArtifactsByTypeArtifactsPaginatedArtifacts `json:"artifacts"`
+// GetOciRepo returns addComponentAddComponentComponentPayloadResultComponent.OciRepo, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponent) GetOciRepo() addComponentAddComponentComponentPayloadResultComponentOciRepo {
+	return v.OciRepo
 }
 
-// GetArtifacts returns getArtifactsByTypeResponse.Artifacts, and is useful for accessing the field via an interface.
-func (v *getArtifactsByTypeResponse) GetArtifacts() getArtifactsByTypeArtifactsPaginatedArtifacts {
-	return v.Artifacts
+func (v *addComponentAddComponentComponentPayloadResultComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*addComponentAddComponentComponentPayloadResultComponent
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.addComponentAddComponentComponentPayloadResultComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal addComponentAddComponentComponentPayloadResultComponent.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshaladdComponentAddComponentComponentPayloadResultComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	OciRepo addComponentAddComponentComponentPayloadResultComponentOciRepo `json:"ociRepo"`
+}
+
+func (v *addComponentAddComponentComponentPayloadResultComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *addComponentAddComponentComponentPayloadResultComponent) __premarshalJSON() (*__premarshaladdComponentAddComponentComponentPayloadResultComponent, error) {
+	var retval __premarshaladdComponentAddComponentComponentPayloadResultComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal addComponentAddComponentComponentPayloadResultComponent.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.OciRepo = v.OciRepo
+	return &retval, nil
+}
+
+// addComponentAddComponentComponentPayloadResultComponentOciRepo includes the requested fields of the GraphQL type OciRepo.
+// The GraphQL type's documentation follows.
+//
+// An OCI repository in your organization's bundle catalog.
+//
+// An OCI repository is the container for all published versions of a single
+// infrastructure-as-code package. It is analogous to a Docker image repository
+// but for Massdriver bundles.
+//
+// Each repository has a unique `name` (e.g., `aws-aurora-postgres`) and contains:
+//
+// - **Tags** -- the individual published versions (`1.0.0`, `1.1.0`, `1.2.3`, etc.)
+// - **Release channels** -- auto-resolving version constraints (`latest`, `~1`, `~1.2`)
+// that always point to the newest matching tag
+//
+// To fetch a specific bundle version from a repository, use the `bundle` query
+// with a `BundleId` like `aws-aurora-postgres@1.2.3` or `aws-aurora-postgres@~1`.
+type addComponentAddComponentComponentPayloadResultComponentOciRepo struct {
+	Id string `json:"id"`
+	// Repository name, unique within your organization (e.g., `aws-aurora-postgres`).
+	Name string `json:"name"`
+}
+
+// GetId returns addComponentAddComponentComponentPayloadResultComponentOciRepo.Id, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponentOciRepo) GetId() string { return v.Id }
+
+// GetName returns addComponentAddComponentComponentPayloadResultComponentOciRepo.Name, and is useful for accessing the field via an interface.
+func (v *addComponentAddComponentComponentPayloadResultComponentOciRepo) GetName() string {
+	return v.Name
+}
+
+// addComponentResponse is returned by addComponent on success.
+type addComponentResponse struct {
+	// Add a component to a project's blueprint.
+	//
+	// Creates a new slot in the blueprint for the specified bundle. The component
+	// does not deploy anything on its own -- it defines *what* can be deployed.
+	// Instances are created in each environment when you deploy.
+	//
+	// ```graphql
+	// mutation {
+	// addComponent(
+	// organizationId: "my-org"
+	// projectId: "my-project"
+	// ociRepoName: "aws-aurora-postgres"
+	// input: { id: "database", name: "Primary Database" }
+	// ) {
+	// result { id name }
+	// successful
+	// }
+	// }
+	// ```
+	AddComponent addComponentAddComponentComponentPayload `json:"addComponent"`
+}
+
+// GetAddComponent returns addComponentResponse.AddComponent, and is useful for accessing the field via an interface.
+func (v *addComponentResponse) GetAddComponent() addComponentAddComponentComponentPayload {
+	return v.AddComponent
+}
+
+// createDeploymentCreateDeploymentDeploymentPayload includes the requested fields of the GraphQL type DeploymentPayload.
+type createDeploymentCreateDeploymentDeploymentPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result createDeploymentCreateDeploymentDeploymentPayloadResultDeployment `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns createDeploymentCreateDeploymentDeploymentPayload.Result, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayload) GetResult() createDeploymentCreateDeploymentDeploymentPayloadResultDeployment {
+	return v.Result
+}
+
+// GetSuccessful returns createDeploymentCreateDeploymentDeploymentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns createDeploymentCreateDeploymentDeploymentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayload) GetMessages() []createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// createDeploymentCreateDeploymentDeploymentPayloadResultDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A record of an infrastructure provisioning operation.
+//
+// Each deployment tracks a single action (`PROVISION`, `DECOMMISSION`, or `PLAN`) against
+// an instance. Deployments are immutable once created — you cannot modify a deployment,
+// only create new ones.
+//
+// Use the `status` field to monitor progress and `elapsed_time` to track duration.
+// The `deployed_by` field identifies the user or service account that initiated the operation.
+type createDeploymentCreateDeploymentDeploymentPayloadResultDeployment struct {
+	// Unique identifier for this deployment.
+	Id string `json:"id"`
+	// Current lifecycle state of this deployment.
+	Status DeploymentStatus `json:"status"`
+	// The infrastructure operation this deployment performs.
+	Action DeploymentAction `json:"action"`
+	// The bundle version used for this deployment (e.g., `1.2.0`).
+	Version string `json:"version"`
+	// An optional message describing the purpose of this deployment, similar to a commit message.
+	Message string `json:"message"`
+	// When this deployment was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// The instance that this deployment operates on.
+	Instance createDeploymentCreateDeploymentDeploymentPayloadResultDeploymentInstance `json:"instance"`
+}
+
+// GetId returns createDeploymentCreateDeploymentDeploymentPayloadResultDeployment.Id, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeployment) GetId() string {
+	return v.Id
+}
+
+// GetStatus returns createDeploymentCreateDeploymentDeploymentPayloadResultDeployment.Status, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeployment) GetStatus() DeploymentStatus {
+	return v.Status
+}
+
+// GetAction returns createDeploymentCreateDeploymentDeploymentPayloadResultDeployment.Action, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeployment) GetAction() DeploymentAction {
+	return v.Action
+}
+
+// GetVersion returns createDeploymentCreateDeploymentDeploymentPayloadResultDeployment.Version, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeployment) GetVersion() string {
+	return v.Version
+}
+
+// GetMessage returns createDeploymentCreateDeploymentDeploymentPayloadResultDeployment.Message, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeployment) GetMessage() string {
+	return v.Message
+}
+
+// GetCreatedAt returns createDeploymentCreateDeploymentDeploymentPayloadResultDeployment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeployment) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetInstance returns createDeploymentCreateDeploymentDeploymentPayloadResultDeployment.Instance, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeployment) GetInstance() createDeploymentCreateDeploymentDeploymentPayloadResultDeploymentInstance {
+	return v.Instance
+}
+
+// createDeploymentCreateDeploymentDeploymentPayloadResultDeploymentInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type createDeploymentCreateDeploymentDeploymentPayloadResultDeploymentInstance struct {
+	Id string `json:"id"`
+	// Human-readable display name for the instance.
+	Name string `json:"name"`
+}
+
+// GetId returns createDeploymentCreateDeploymentDeploymentPayloadResultDeploymentInstance.Id, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeploymentInstance) GetId() string {
+	return v.Id
+}
+
+// GetName returns createDeploymentCreateDeploymentDeploymentPayloadResultDeploymentInstance.Name, and is useful for accessing the field via an interface.
+func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeploymentInstance) GetName() string {
+	return v.Name
+}
+
+// createDeploymentResponse is returned by createDeployment on success.
+type createDeploymentResponse struct {
+	// Create a new deployment for an instance.
+	//
+	// Saves the provided `params` as the instance's configuration, then initiates the
+	// specified action:
+	//
+	// - **PROVISION** — apply the configuration to create or update infrastructure.
+	// - **PLAN** — generate a dry-run preview without making changes.
+	// - **DECOMMISSION** — destroy all infrastructure managed by the instance.
+	//
+	// The returned deployment starts in `PENDING` status and transitions to `RUNNING`
+	// once execution begins. Poll the `deployment` query or use the `status` field
+	// to monitor progress.
+	//
+	// ```graphql
+	// mutation {
+	// createDeployment(
+	// organizationId: "my-org"
+	// id: "my-database"
+	// input: { action: PROVISION, params: { size: "large" }, message: "Scale up" }
+	// ) {
+	// result { id status action }
+	// successful
+	// messages { field message }
+	// }
+	// }
+	// ```
+	CreateDeployment createDeploymentCreateDeploymentDeploymentPayload `json:"createDeployment"`
+}
+
+// GetCreateDeployment returns createDeploymentResponse.CreateDeployment, and is useful for accessing the field via an interface.
+func (v *createDeploymentResponse) GetCreateDeployment() createDeploymentCreateDeploymentDeploymentPayload {
+	return v.CreateDeployment
+}
+
+// createEnvironmentCreateEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
+type createEnvironmentCreateEnvironmentEnvironmentPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns createEnvironmentCreateEnvironmentEnvironmentPayload.Result, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayload) GetResult() createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment {
+	return v.Result
+}
+
+// GetSuccessful returns createEnvironmentCreateEnvironmentEnvironmentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns createEnvironmentCreateEnvironmentEnvironmentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayload) GetMessages() []createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
+// The GraphQL type's documentation follows.
+//
+// A deployment target within a project where blueprint components become live infrastructure.
+//
+// Each project can have multiple environments (e.g., `staging`, `production`). When you deploy
+// to an environment, every component in the project's blueprint is realized as an **Instance** --
+// a running piece of cloud infrastructure with its own configuration, state, and cost data.
+//
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
+// that cascade down to all instances within the environment. **Defaults** let you pre-assign
+// resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
+//
+// Before deleting an environment, all instances must be decommissioned. Use the `deletable`
+// field to check for blocking constraints.
+type createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the project.
+	Name string `json:"name"`
+	// Free-text description of what this environment is for.
+	Description string `json:"description"`
+}
+
+// GetId returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetId() string {
+	return v.Id
+}
+
+// GetName returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *createEnvironmentCreateEnvironmentEnvironmentPayloadResultEnvironment) GetDescription() string {
+	return v.Description
+}
+
+// createEnvironmentResponse is returned by createEnvironment on success.
+type createEnvironmentResponse struct {
+	// Create a new environment in a project.
+	//
+	// The `id` in the input becomes the environment's permanent identifier and cannot be
+	// changed after creation. The new environment starts empty with no deployed instances.
+	CreateEnvironment createEnvironmentCreateEnvironmentEnvironmentPayload `json:"createEnvironment"`
+}
+
+// GetCreateEnvironment returns createEnvironmentResponse.CreateEnvironment, and is useful for accessing the field via an interface.
+func (v *createEnvironmentResponse) GetCreateEnvironment() createEnvironmentCreateEnvironmentEnvironmentPayload {
+	return v.CreateEnvironment
+}
+
+// createProjectCreateProjectProjectPayload includes the requested fields of the GraphQL type ProjectPayload.
+type createProjectCreateProjectProjectPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result createProjectCreateProjectProjectPayloadResultProject `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []createProjectCreateProjectProjectPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns createProjectCreateProjectProjectPayload.Result, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayload) GetResult() createProjectCreateProjectProjectPayloadResultProject {
+	return v.Result
+}
+
+// GetSuccessful returns createProjectCreateProjectProjectPayload.Successful, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns createProjectCreateProjectProjectPayload.Messages, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayload) GetMessages() []createProjectCreateProjectProjectPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// createProjectCreateProjectProjectPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type createProjectCreateProjectProjectPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns createProjectCreateProjectProjectPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns createProjectCreateProjectProjectPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns createProjectCreateProjectProjectPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// createProjectCreateProjectProjectPayloadResultProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project organizes related infrastructure under a single blueprint.
+//
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Attributes set on a project are inherited by all environments and instances within it.
+type createProjectCreateProjectProjectPayloadResultProject struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the organization.
+	Name string `json:"name"`
+	// Free-text description of what this project is for.
+	Description string `json:"description"`
+}
+
+// GetId returns createProjectCreateProjectProjectPayloadResultProject.Id, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayloadResultProject) GetId() string { return v.Id }
+
+// GetName returns createProjectCreateProjectProjectPayloadResultProject.Name, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayloadResultProject) GetName() string { return v.Name }
+
+// GetDescription returns createProjectCreateProjectProjectPayloadResultProject.Description, and is useful for accessing the field via an interface.
+func (v *createProjectCreateProjectProjectPayloadResultProject) GetDescription() string {
+	return v.Description
+}
+
+// createProjectResponse is returned by createProject on success.
+type createProjectResponse struct {
+	// Create a new project in your organization.
+	//
+	// The `id` in the input becomes the project's permanent identifier and cannot be
+	// changed after creation. An empty blueprint is created automatically.
+	CreateProject createProjectCreateProjectProjectPayload `json:"createProject"`
+}
+
+// GetCreateProject returns createProjectResponse.CreateProject, and is useful for accessing the field via an interface.
+func (v *createProjectResponse) GetCreateProject() createProjectCreateProjectProjectPayload {
+	return v.CreateProject
+}
+
+// createResourceCreateResourceResourcePayload includes the requested fields of the GraphQL type ResourcePayload.
+type createResourceCreateResourceResourcePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result createResourceCreateResourceResourcePayloadResultResource `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []createResourceCreateResourceResourcePayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns createResourceCreateResourceResourcePayload.Result, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayload) GetResult() createResourceCreateResourceResourcePayloadResultResource {
+	return v.Result
+}
+
+// GetSuccessful returns createResourceCreateResourceResourcePayload.Successful, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns createResourceCreateResourceResourcePayload.Messages, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayload) GetMessages() []createResourceCreateResourceResourcePayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// createResourceCreateResourceResourcePayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type createResourceCreateResourceResourcePayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns createResourceCreateResourceResourcePayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns createResourceCreateResourceResourcePayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns createResourceCreateResourceResourcePayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// createResourceCreateResourceResourcePayloadResultResource includes the requested fields of the GraphQL type Resource.
+// The GraphQL type's documentation follows.
+//
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
+//
+// Resources are the connective tissue between instances. When an instance is deployed, it
+// produces resources as outputs. Other instances can consume those resources as inputs,
+// creating a dependency graph of your infrastructure.
+//
+// Resources have two origins:
+// - **Imported** — created directly through the API (e.g., uploading existing AWS credentials).
+// You have full CRUD control over these resources.
+// - **Provisioned** — created automatically when an instance is deployed. These are read-only
+// and managed entirely by the owning instance's lifecycle.
+type createResourceCreateResourceResourcePayloadResultResource struct {
+	// Unique identifier for this resource.
+	Id string `json:"id"`
+	// Human-readable display name for this resource.
+	Name string `json:"name"`
+	// How this resource was created. Determines whether it can be modified through the API.
+	Origin ResourceOrigin `json:"origin"`
+	// The resource type that this resource conforms to, defining its schema and validation rules.
+	ResourceType createResourceCreateResourceResourcePayloadResultResourceResourceType `json:"resourceType"`
+	// When this resource was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this resource was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns createResourceCreateResourceResourcePayloadResultResource.Id, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResource) GetId() string { return v.Id }
+
+// GetName returns createResourceCreateResourceResourcePayloadResultResource.Name, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResource) GetName() string { return v.Name }
+
+// GetOrigin returns createResourceCreateResourceResourcePayloadResultResource.Origin, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResource) GetOrigin() ResourceOrigin {
+	return v.Origin
+}
+
+// GetResourceType returns createResourceCreateResourceResourcePayloadResultResource.ResourceType, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResource) GetResourceType() createResourceCreateResourceResourcePayloadResultResourceResourceType {
+	return v.ResourceType
+}
+
+// GetCreatedAt returns createResourceCreateResourceResourcePayloadResultResource.CreatedAt, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResource) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns createResourceCreateResourceResourcePayloadResultResource.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResource) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// createResourceCreateResourceResourcePayloadResultResourceResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type createResourceCreateResourceResourcePayloadResultResourceResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns createResourceCreateResourceResourcePayloadResultResourceResourceType.Id, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetId() string {
+	return v.Id
+}
+
+// GetName returns createResourceCreateResourceResourcePayloadResultResourceResourceType.Name, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetName() string {
+	return v.Name
+}
+
+// GetIcon returns createResourceCreateResourceResourcePayloadResultResourceResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns createResourceCreateResourceResourcePayloadResultResourceResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns createResourceCreateResourceResourcePayloadResultResourceResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns createResourceCreateResourceResourcePayloadResultResourceResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *createResourceCreateResourceResourcePayloadResultResourceResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// createResourceResponse is returned by createResource on success.
+type createResourceResponse struct {
+	// Import a new resource into your organization.
+	//
+	// Creates a manually-managed resource (origin: `IMPORTED`) such as cloud credentials,
+	// a network configuration, or any other infrastructure output. The resource must
+	// conform to the schema defined by the specified resource type.
+	//
+	// ```graphql
+	// mutation {
+	// createResource(
+	// organizationId: "my-org"
+	// resourceTypeId: "aws-iam-role"
+	// input: { name: "CI/CD Role", payload: { arn: "arn:aws:iam::123:role/ci" } }
+	// ) {
+	// result { id name origin }
+	// successful
+	// messages { field message }
+	// }
+	// }
+	// ```
+	CreateResource createResourceCreateResourceResourcePayload `json:"createResource"`
+}
+
+// GetCreateResource returns createResourceResponse.CreateResource, and is useful for accessing the field via an interface.
+func (v *createResourceResponse) GetCreateResource() createResourceCreateResourceResourcePayload {
+	return v.CreateResource
+}
+
+// deleteEnvironmentDeleteEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
+type deleteEnvironmentDeleteEnvironmentEnvironmentPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns deleteEnvironmentDeleteEnvironmentEnvironmentPayload.Result, and is useful for accessing the field via an interface.
+func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayload) GetResult() deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment {
+	return v.Result
+}
+
+// GetSuccessful returns deleteEnvironmentDeleteEnvironmentEnvironmentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns deleteEnvironmentDeleteEnvironmentEnvironmentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayload) GetMessages() []deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
+// The GraphQL type's documentation follows.
+//
+// A deployment target within a project where blueprint components become live infrastructure.
+//
+// Each project can have multiple environments (e.g., `staging`, `production`). When you deploy
+// to an environment, every component in the project's blueprint is realized as an **Instance** --
+// a running piece of cloud infrastructure with its own configuration, state, and cost data.
+//
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
+// that cascade down to all instances within the environment. **Defaults** let you pre-assign
+// resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
+//
+// Before deleting an environment, all instances must be decommissioned. Use the `deletable`
+// field to check for blocking constraints.
+type deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the project.
+	Name string `json:"name"`
+	// Free-text description of what this environment is for.
+	Description string `json:"description"`
+}
+
+// GetId returns deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment) GetId() string {
+	return v.Id
+}
+
+// GetName returns deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *deleteEnvironmentDeleteEnvironmentEnvironmentPayloadResultEnvironment) GetDescription() string {
+	return v.Description
+}
+
+// deleteEnvironmentResponse is returned by deleteEnvironment on success.
+type deleteEnvironmentResponse struct {
+	// Delete an environment permanently.
+	//
+	// All instances must be decommissioned first. Query the environment's `deletable`
+	// field to check for blocking constraints before calling this mutation.
+	DeleteEnvironment deleteEnvironmentDeleteEnvironmentEnvironmentPayload `json:"deleteEnvironment"`
+}
+
+// GetDeleteEnvironment returns deleteEnvironmentResponse.DeleteEnvironment, and is useful for accessing the field via an interface.
+func (v *deleteEnvironmentResponse) GetDeleteEnvironment() deleteEnvironmentDeleteEnvironmentEnvironmentPayload {
+	return v.DeleteEnvironment
+}
+
+// deleteProjectDeleteProjectProjectPayload includes the requested fields of the GraphQL type ProjectPayload.
+type deleteProjectDeleteProjectProjectPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result deleteProjectDeleteProjectProjectPayloadResultProject `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns deleteProjectDeleteProjectProjectPayload.Result, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayload) GetResult() deleteProjectDeleteProjectProjectPayloadResultProject {
+	return v.Result
+}
+
+// GetSuccessful returns deleteProjectDeleteProjectProjectPayload.Successful, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns deleteProjectDeleteProjectProjectPayload.Messages, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayload) GetMessages() []deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// deleteProjectDeleteProjectProjectPayloadResultProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project organizes related infrastructure under a single blueprint.
+//
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Attributes set on a project are inherited by all environments and instances within it.
+type deleteProjectDeleteProjectProjectPayloadResultProject struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the organization.
+	Name string `json:"name"`
+	// Free-text description of what this project is for.
+	Description string `json:"description"`
+}
+
+// GetId returns deleteProjectDeleteProjectProjectPayloadResultProject.Id, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetId() string { return v.Id }
+
+// GetName returns deleteProjectDeleteProjectProjectPayloadResultProject.Name, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetName() string { return v.Name }
+
+// GetDescription returns deleteProjectDeleteProjectProjectPayloadResultProject.Description, and is useful for accessing the field via an interface.
+func (v *deleteProjectDeleteProjectProjectPayloadResultProject) GetDescription() string {
+	return v.Description
+}
+
+// deleteProjectResponse is returned by deleteProject on success.
+type deleteProjectResponse struct {
+	// Delete a project permanently.
+	//
+	// All environments must be deleted first. Query the project's `deletable` field
+	// to check for blocking constraints before calling this mutation.
+	DeleteProject deleteProjectDeleteProjectProjectPayload `json:"deleteProject"`
+}
+
+// GetDeleteProject returns deleteProjectResponse.DeleteProject, and is useful for accessing the field via an interface.
+func (v *deleteProjectResponse) GetDeleteProject() deleteProjectDeleteProjectProjectPayload {
+	return v.DeleteProject
+}
+
+// deleteResourceDeleteResourceResourcePayload includes the requested fields of the GraphQL type ResourcePayload.
+type deleteResourceDeleteResourceResourcePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result deleteResourceDeleteResourceResourcePayloadResultResource `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns deleteResourceDeleteResourceResourcePayload.Result, and is useful for accessing the field via an interface.
+func (v *deleteResourceDeleteResourceResourcePayload) GetResult() deleteResourceDeleteResourceResourcePayloadResultResource {
+	return v.Result
+}
+
+// GetSuccessful returns deleteResourceDeleteResourceResourcePayload.Successful, and is useful for accessing the field via an interface.
+func (v *deleteResourceDeleteResourceResourcePayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns deleteResourceDeleteResourceResourcePayload.Messages, and is useful for accessing the field via an interface.
+func (v *deleteResourceDeleteResourceResourcePayload) GetMessages() []deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *deleteResourceDeleteResourceResourcePayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// deleteResourceDeleteResourceResourcePayloadResultResource includes the requested fields of the GraphQL type Resource.
+// The GraphQL type's documentation follows.
+//
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
+//
+// Resources are the connective tissue between instances. When an instance is deployed, it
+// produces resources as outputs. Other instances can consume those resources as inputs,
+// creating a dependency graph of your infrastructure.
+//
+// Resources have two origins:
+// - **Imported** — created directly through the API (e.g., uploading existing AWS credentials).
+// You have full CRUD control over these resources.
+// - **Provisioned** — created automatically when an instance is deployed. These are read-only
+// and managed entirely by the owning instance's lifecycle.
+type deleteResourceDeleteResourceResourcePayloadResultResource struct {
+	// Unique identifier for this resource.
+	Id string `json:"id"`
+	// Human-readable display name for this resource.
+	Name string `json:"name"`
+	// How this resource was created. Determines whether it can be modified through the API.
+	Origin ResourceOrigin `json:"origin"`
+}
+
+// GetId returns deleteResourceDeleteResourceResourcePayloadResultResource.Id, and is useful for accessing the field via an interface.
+func (v *deleteResourceDeleteResourceResourcePayloadResultResource) GetId() string { return v.Id }
+
+// GetName returns deleteResourceDeleteResourceResourcePayloadResultResource.Name, and is useful for accessing the field via an interface.
+func (v *deleteResourceDeleteResourceResourcePayloadResultResource) GetName() string { return v.Name }
+
+// GetOrigin returns deleteResourceDeleteResourceResourcePayloadResultResource.Origin, and is useful for accessing the field via an interface.
+func (v *deleteResourceDeleteResourceResourcePayloadResultResource) GetOrigin() ResourceOrigin {
+	return v.Origin
+}
+
+// deleteResourceResponse is returned by deleteResource on success.
+type deleteResourceResponse struct {
+	// Delete an imported resource.
+	//
+	// Only resources with origin `IMPORTED` can be deleted directly. Provisioned resources
+	// are automatically removed when their owning instance is decommissioned.
+	//
+	// The resource cannot be deleted if it is currently referenced by any active connections.
+	// Disconnect all consumers before deleting.
+	DeleteResource deleteResourceDeleteResourceResourcePayload `json:"deleteResource"`
+}
+
+// GetDeleteResource returns deleteResourceResponse.DeleteResource, and is useful for accessing the field via an interface.
+func (v *deleteResourceResponse) GetDeleteResource() deleteResourceDeleteResourceResourcePayload {
+	return v.DeleteResource
+}
+
+// deleteResourceTypeDeleteResourceTypeResourceTypePayload includes the requested fields of the GraphQL type ResourceTypePayload.
+type deleteResourceTypeDeleteResourceTypeResourceTypePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns deleteResourceTypeDeleteResourceTypeResourceTypePayload.Result, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayload) GetResult() deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType {
+	return v.Result
+}
+
+// GetSuccessful returns deleteResourceTypeDeleteResourceTypeResourceTypePayload.Successful, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns deleteResourceTypeDeleteResourceTypeResourceTypePayload.Messages, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayload) GetMessages() []deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+}
+
+// GetId returns deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType.Id, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType) GetId() string {
+	return v.Id
+}
+
+// GetName returns deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType.Name, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeDeleteResourceTypeResourceTypePayloadResultResourceType) GetName() string {
+	return v.Name
+}
+
+// deleteResourceTypeResponse is returned by deleteResourceType on success.
+type deleteResourceTypeResponse struct {
+	// **Deprecated — use at your own risk.** This mutation exists only to bridge V0's
+	// `deleteArtifactDefinition` into V1 while resource types are being migrated to OCI.
+	// New integrations should use the OCI-native publishing flow. This mutation may be
+	// removed or change behavior without notice.
+	//
+	// Delete a resource type. The resource type cannot be deleted while it is still in
+	// use — either as a dependency or output in a bundle, or by any existing
+	// imported/provisioned resources of this type. Remove those consumers first.
+	DeleteResourceType deleteResourceTypeDeleteResourceTypeResourceTypePayload `json:"deleteResourceType"`
+}
+
+// GetDeleteResourceType returns deleteResourceTypeResponse.DeleteResourceType, and is useful for accessing the field via an interface.
+func (v *deleteResourceTypeResponse) GetDeleteResourceType() deleteResourceTypeDeleteResourceTypeResourceTypePayload {
+	return v.DeleteResourceType
+}
+
+// exportResourceExportResourceResourceWithSensitiveValuesPayload includes the requested fields of the GraphQL type ResourceWithSensitiveValuesPayload.
+type exportResourceExportResourceResourceWithSensitiveValuesPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns exportResourceExportResourceResourceWithSensitiveValuesPayload.Result, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayload) GetResult() exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues {
+	return v.Result
+}
+
+// GetSuccessful returns exportResourceExportResourceResourceWithSensitiveValuesPayload.Successful, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns exportResourceExportResourceResourceWithSensitiveValuesPayload.Messages, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayload) GetMessages() []exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues includes the requested fields of the GraphQL type ResourceWithSensitiveValues.
+// The GraphQL type's documentation follows.
+//
+// A resource with its sensitive payload values revealed, returned by the `exportResource` mutation.
+//
+// Unlike the regular `Resource` type — where fields marked `$md.sensitive` in the resource
+// type's schema are masked — this type exposes the raw values so they can be consumed by
+// automation or copied into downstream systems. Requesting this type is recorded in the
+// audit log.
+type exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues struct {
+	// Unique identifier for this resource.
+	Id string `json:"id"`
+	// Human-readable display name for this resource.
+	Name string `json:"name"`
+	// How this resource was created.
+	Origin ResourceOrigin `json:"origin"`
+	// The resource type that this resource conforms to, defining its schema and validation rules.
+	ResourceType exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType `json:"resourceType"`
+	// The resource's payload with `$md.sensitive` fields unmasked. The shape is defined by
+	// the resource type's schema.
+	Payload map[string]any `json:"-"`
+	// The resource rendered in the requested `format`. For `json` this is a stringified JSON
+	// document of the payload; for resource-type-specific formats (e.g. `yaml`, `env`) this is
+	// the template output defined by the resource type's schema.
+	Rendered string `json:"rendered"`
+	// When this resource was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this resource was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Id, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetId() string {
+	return v.Id
+}
+
+// GetName returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Name, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetName() string {
+	return v.Name
+}
+
+// GetOrigin returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Origin, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetOrigin() ResourceOrigin {
+	return v.Origin
+}
+
+// GetResourceType returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.ResourceType, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetResourceType() exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType {
+	return v.ResourceType
+}
+
+// GetPayload returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Payload, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetPayload() map[string]any {
+	return v.Payload
+}
+
+// GetRendered returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Rendered, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetRendered() string {
+	return v.Rendered
+}
+
+// GetCreatedAt returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.CreatedAt, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues
+		Payload json.RawMessage `json:"payload"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Payload
+		src := firstPass.Payload
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Payload: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalexportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Origin ResourceOrigin `json:"origin"`
+
+	ResourceType exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType `json:"resourceType"`
+
+	Payload json.RawMessage `json:"payload"`
+
+	Rendered string `json:"rendered"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues) __premarshalJSON() (*__premarshalexportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues, error) {
+	var retval __premarshalexportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Origin = v.Origin
+	retval.ResourceType = v.ResourceType
+	{
+
+		dst := &retval.Payload
+		src := v.Payload
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValues.Payload: %w", err)
+		}
+	}
+	retval.Rendered = v.Rendered
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.Id, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetId() string {
+	return v.Id
+}
+
+// GetName returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.Name, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetName() string {
+	return v.Name
+}
+
+// GetIcon returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *exportResourceExportResourceResourceWithSensitiveValuesPayloadResultResourceWithSensitiveValuesResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// exportResourceResponse is returned by exportResource on success.
+type exportResourceResponse struct {
+	// Export a resource, returning it along with its unmasked `payload` and a `rendered`
+	// copy in the requested `format` (defaults to `json`).
+	//
+	// Exports are recorded in the audit log so that access to sensitive payload data —
+	// credentials, connection strings, IaC outputs — is attributable to the actor who
+	// performed it. The resource itself is not modified.
+	//
+	// Works for both imported and provisioned resources. The caller must have permission
+	// to view the resource.
+	ExportResource exportResourceExportResourceResourceWithSensitiveValuesPayload `json:"exportResource"`
+}
+
+// GetExportResource returns exportResourceResponse.ExportResource, and is useful for accessing the field via an interface.
+func (v *exportResourceResponse) GetExportResource() exportResourceExportResourceResourceWithSensitiveValuesPayload {
+	return v.ExportResource
 }
 
 // getBundleBundle includes the requested fields of the GraphQL type Bundle.
 // The GraphQL type's documentation follows.
 //
-// A specific version of a bundle
+// A versioned infrastructure-as-code package.
+//
+// A bundle is a single published version of an IaC package in your organization's
+// catalog. Each bundle belongs to an OCI repository and is identified by a composite
+// `name@version` string (e.g., `aws-aurora-postgres@1.2.3`).
+//
+// Bundles declare **dependencies** (inputs they require from other bundles) and
+// **resources** (outputs they produce). These declarations drive the connection
+// system on the Massdriver canvas -- when you add a component to a blueprint,
+// the platform knows which other components can satisfy its dependencies.
+//
+// ```mermaid
+// graph TD
+// R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+// R --> T2["Tag: 1.1.0"]
+// R --> T3["Tag: 1.2.3"]
+// R --> RC1["Channel: ~1 → 1.2.3"]
+// R --> RC2["Channel: latest → 1.2.3"]
+// T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
+// B --> D1["Dependency: aws-iam-role"]
+// B --> D2["Dependency: aws-vpc"]
+// B --> RES["Resource: aurora-cluster"]
+// ```
 type getBundleBundle struct {
-	// Unique identifier
+	// Composite identifier in `name@version` format (e.g., `aws-aurora-postgres@1.2.3`). Always contains the fully resolved semver version.
 	Id string `json:"id"`
-	// Name of the bundle
+	// OCI repository name this bundle belongs to (e.g., `aws-aurora-postgres`).
 	Name string `json:"name"`
-	// Semantic version of this bundle release
+	// Fully resolved semantic version of this bundle (e.g., `1.2.3`).
 	Version string `json:"version"`
-	// Description of the bundle
+	// Short summary of what this bundle provisions.
 	Description string `json:"description"`
-	// Raw massdriver.yaml spec
-	Spec map[string]any `json:"-"`
-	// Version of the bundle specification
-	SpecVersion string `json:"specVersion"`
-	// Icon SVG
+	// URL to the bundle's display icon.
 	Icon string `json:"icon"`
-	// URL to the source code repository
+	// URL to the bundle's source code repository, if published by the author.
 	SourceUrl string `json:"sourceUrl"`
-	// JSON schema for bundle parameters
-	ParamsSchema map[string]any `json:"-"`
-	// JSON schema for bundle connections
-	ConnectionsSchema map[string]any `json:"-"`
-	// JSON schema for bundle artifacts
-	ArtifactsSchema map[string]any `json:"-"`
-	// JSON schema for bundle UI configuration
-	UiSchema map[string]any `json:"-"`
-	// The operator guide for the bundle in markdown.
-	OperatorGuide string `json:"operatorGuide"`
-	// When the bundle was created
+	// OCI repository name for this bundle (e.g., `aws-aurora-postgres`). Equivalent to `name`.
+	Repo string `json:"repo"`
+	// Timestamp when this bundle version was first published (UTC).
 	CreatedAt time.Time `json:"createdAt"`
-	// When the bundle was last updated
+	// Timestamp when this bundle version was last modified (UTC).
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
@@ -2504,32 +4143,14 @@ func (v *getBundleBundle) GetVersion() string { return v.Version }
 // GetDescription returns getBundleBundle.Description, and is useful for accessing the field via an interface.
 func (v *getBundleBundle) GetDescription() string { return v.Description }
 
-// GetSpec returns getBundleBundle.Spec, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetSpec() map[string]any { return v.Spec }
-
-// GetSpecVersion returns getBundleBundle.SpecVersion, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetSpecVersion() string { return v.SpecVersion }
-
 // GetIcon returns getBundleBundle.Icon, and is useful for accessing the field via an interface.
 func (v *getBundleBundle) GetIcon() string { return v.Icon }
 
 // GetSourceUrl returns getBundleBundle.SourceUrl, and is useful for accessing the field via an interface.
 func (v *getBundleBundle) GetSourceUrl() string { return v.SourceUrl }
 
-// GetParamsSchema returns getBundleBundle.ParamsSchema, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetParamsSchema() map[string]any { return v.ParamsSchema }
-
-// GetConnectionsSchema returns getBundleBundle.ConnectionsSchema, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetConnectionsSchema() map[string]any { return v.ConnectionsSchema }
-
-// GetArtifactsSchema returns getBundleBundle.ArtifactsSchema, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetArtifactsSchema() map[string]any { return v.ArtifactsSchema }
-
-// GetUiSchema returns getBundleBundle.UiSchema, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetUiSchema() map[string]any { return v.UiSchema }
-
-// GetOperatorGuide returns getBundleBundle.OperatorGuide, and is useful for accessing the field via an interface.
-func (v *getBundleBundle) GetOperatorGuide() string { return v.OperatorGuide }
+// GetRepo returns getBundleBundle.Repo, and is useful for accessing the field via an interface.
+func (v *getBundleBundle) GetRepo() string { return v.Repo }
 
 // GetCreatedAt returns getBundleBundle.CreatedAt, and is useful for accessing the field via an interface.
 func (v *getBundleBundle) GetCreatedAt() time.Time { return v.CreatedAt }
@@ -2537,493 +4158,130 @@ func (v *getBundleBundle) GetCreatedAt() time.Time { return v.CreatedAt }
 // GetUpdatedAt returns getBundleBundle.UpdatedAt, and is useful for accessing the field via an interface.
 func (v *getBundleBundle) GetUpdatedAt() time.Time { return v.UpdatedAt }
 
-func (v *getBundleBundle) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getBundleBundle
-		Spec              json.RawMessage `json:"spec"`
-		ParamsSchema      json.RawMessage `json:"paramsSchema"`
-		ConnectionsSchema json.RawMessage `json:"connectionsSchema"`
-		ArtifactsSchema   json.RawMessage `json:"artifactsSchema"`
-		UiSchema          json.RawMessage `json:"uiSchema"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getBundleBundle = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Spec
-		src := firstPass.Spec
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getBundleBundle.Spec: %w", err)
-			}
-		}
-	}
-
-	{
-		dst := &v.ParamsSchema
-		src := firstPass.ParamsSchema
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getBundleBundle.ParamsSchema: %w", err)
-			}
-		}
-	}
-
-	{
-		dst := &v.ConnectionsSchema
-		src := firstPass.ConnectionsSchema
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getBundleBundle.ConnectionsSchema: %w", err)
-			}
-		}
-	}
-
-	{
-		dst := &v.ArtifactsSchema
-		src := firstPass.ArtifactsSchema
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getBundleBundle.ArtifactsSchema: %w", err)
-			}
-		}
-	}
-
-	{
-		dst := &v.UiSchema
-		src := firstPass.UiSchema
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getBundleBundle.UiSchema: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalgetBundleBundle struct {
-	Id string `json:"id"`
-
-	Name string `json:"name"`
-
-	Version string `json:"version"`
-
-	Description string `json:"description"`
-
-	Spec json.RawMessage `json:"spec"`
-
-	SpecVersion string `json:"specVersion"`
-
-	Icon string `json:"icon"`
-
-	SourceUrl string `json:"sourceUrl"`
-
-	ParamsSchema json.RawMessage `json:"paramsSchema"`
-
-	ConnectionsSchema json.RawMessage `json:"connectionsSchema"`
-
-	ArtifactsSchema json.RawMessage `json:"artifactsSchema"`
-
-	UiSchema json.RawMessage `json:"uiSchema"`
-
-	OperatorGuide string `json:"operatorGuide"`
-
-	CreatedAt time.Time `json:"createdAt"`
-
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-func (v *getBundleBundle) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getBundleBundle) __premarshalJSON() (*__premarshalgetBundleBundle, error) {
-	var retval __premarshalgetBundleBundle
-
-	retval.Id = v.Id
-	retval.Name = v.Name
-	retval.Version = v.Version
-	retval.Description = v.Description
-	{
-
-		dst := &retval.Spec
-		src := v.Spec
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getBundleBundle.Spec: %w", err)
-		}
-	}
-	retval.SpecVersion = v.SpecVersion
-	retval.Icon = v.Icon
-	retval.SourceUrl = v.SourceUrl
-	{
-
-		dst := &retval.ParamsSchema
-		src := v.ParamsSchema
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getBundleBundle.ParamsSchema: %w", err)
-		}
-	}
-	{
-
-		dst := &retval.ConnectionsSchema
-		src := v.ConnectionsSchema
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getBundleBundle.ConnectionsSchema: %w", err)
-		}
-	}
-	{
-
-		dst := &retval.ArtifactsSchema
-		src := v.ArtifactsSchema
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getBundleBundle.ArtifactsSchema: %w", err)
-		}
-	}
-	{
-
-		dst := &retval.UiSchema
-		src := v.UiSchema
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getBundleBundle.UiSchema: %w", err)
-		}
-	}
-	retval.OperatorGuide = v.OperatorGuide
-	retval.CreatedAt = v.CreatedAt
-	retval.UpdatedAt = v.UpdatedAt
-	return &retval, nil
-}
-
 // getBundleResponse is returned by getBundle on success.
 type getBundleResponse struct {
-	// Get a specific bundle
+	// Fetch a single bundle by its composite identifier.
+	//
+	// The `id` accepts a `name@version` string where the version portion can be an
+	// exact semver, a release channel, or omitted entirely:
+	//
+	// | Input | Resolves to |
+	// |-------|-------------|
+	// | `aws-aurora-postgres@1.2.3` | Exact version `1.2.3` |
+	// | `aws-aurora-postgres@~1.2` | Latest patch in `1.2.x` |
+	// | `aws-aurora-postgres@~1` | Latest minor in `1.x.x` |
+	// | `aws-aurora-postgres@latest` | Newest stable release |
+	// | `aws-aurora-postgres@latest+dev` | Newest release including dev builds |
+	// | `aws-aurora-postgres` | Shorthand for `latest` (falls back to `latest+dev` if no stable exists) |
+	//
+	// Returns `null` with a `NOT_FOUND` error if no matching version exists.
+	//
+	// ```graphql
+	// query {
+	// bundle(organizationId: "your-org-id", id: "aws-aurora-postgres@~1") {
+	// id
+	// version
+	// dependencies { name required resourceType { id name } }
+	// resources { name required resourceType { id name } }
+	// }
+	// }
+	// ```
 	Bundle getBundleBundle `json:"bundle"`
 }
 
 // GetBundle returns getBundleResponse.Bundle, and is useful for accessing the field via an interface.
 func (v *getBundleResponse) GetBundle() getBundleBundle { return v.Bundle }
 
-// getDeploymentByIdDeployment includes the requested fields of the GraphQL type Deployment.
+// getDeploymentDeployment includes the requested fields of the GraphQL type Deployment.
 // The GraphQL type's documentation follows.
 //
-// A deployment represents an instance of a bundle being deployed to a target environment
-type getDeploymentByIdDeployment struct {
-	Id     string           `json:"id"`
-	Status DeploymentStatus `json:"status"`
-}
-
-// GetId returns getDeploymentByIdDeployment.Id, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetId() string { return v.Id }
-
-// GetStatus returns getDeploymentByIdDeployment.Status, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdDeployment) GetStatus() DeploymentStatus { return v.Status }
-
-// getDeploymentByIdResponse is returned by getDeploymentById on success.
-type getDeploymentByIdResponse struct {
-	Deployment getDeploymentByIdDeployment `json:"deployment"`
-}
-
-// GetDeployment returns getDeploymentByIdResponse.Deployment, and is useful for accessing the field via an interface.
-func (v *getDeploymentByIdResponse) GetDeployment() getDeploymentByIdDeployment { return v.Deployment }
-
-// getDeploymentLogStreamDeploymentLogStream includes the requested fields of the GraphQL type DeploymentLogStream.
-// The GraphQL type's documentation follows.
+// A record of an infrastructure provisioning operation.
 //
-// A stream of logs associated with a deployment
-type getDeploymentLogStreamDeploymentLogStream struct {
-	Id   string                                                                `json:"id"`
-	Logs []getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog `json:"logs"`
-}
-
-// GetId returns getDeploymentLogStreamDeploymentLogStream.Id, and is useful for accessing the field via an interface.
-func (v *getDeploymentLogStreamDeploymentLogStream) GetId() string { return v.Id }
-
-// GetLogs returns getDeploymentLogStreamDeploymentLogStream.Logs, and is useful for accessing the field via an interface.
-func (v *getDeploymentLogStreamDeploymentLogStream) GetLogs() []getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog {
-	return v.Logs
-}
-
-// getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog includes the requested fields of the GraphQL type DeploymentLogStreamLog.
-// The GraphQL type's documentation follows.
+// Each deployment tracks a single action (`PROVISION`, `DECOMMISSION`, or `PLAN`) against
+// an instance. Deployments are immutable once created — you cannot modify a deployment,
+// only create new ones.
 //
-// A single log entry in a deployment log stream
-type getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog struct {
-	Content  string                                                                      `json:"content"`
-	Metadata getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata `json:"metadata"`
-}
-
-// GetContent returns getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog.Content, and is useful for accessing the field via an interface.
-func (v *getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog) GetContent() string {
-	return v.Content
-}
-
-// GetMetadata returns getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog.Metadata, and is useful for accessing the field via an interface.
-func (v *getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLog) GetMetadata() getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata {
-	return v.Metadata
-}
-
-// getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata includes the requested fields of the GraphQL type DeploymentLogStreamLogMetadata.
-// The GraphQL type's documentation follows.
-//
-// Metadata associated with a deployment log entry
-type getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata struct {
-	Step      string    `json:"step"`
-	Timestamp time.Time `json:"timestamp"`
-	Index     int       `json:"index"`
-}
-
-// GetStep returns getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata.Step, and is useful for accessing the field via an interface.
-func (v *getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata) GetStep() string {
-	return v.Step
-}
-
-// GetTimestamp returns getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata.Timestamp, and is useful for accessing the field via an interface.
-func (v *getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata) GetTimestamp() time.Time {
-	return v.Timestamp
-}
-
-// GetIndex returns getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata.Index, and is useful for accessing the field via an interface.
-func (v *getDeploymentLogStreamDeploymentLogStreamLogsDeploymentLogStreamLogMetadata) GetIndex() int {
-	return v.Index
-}
-
-// getDeploymentLogStreamResponse is returned by getDeploymentLogStream on success.
-type getDeploymentLogStreamResponse struct {
-	DeploymentLogStream getDeploymentLogStreamDeploymentLogStream `json:"deploymentLogStream"`
-}
-
-// GetDeploymentLogStream returns getDeploymentLogStreamResponse.DeploymentLogStream, and is useful for accessing the field via an interface.
-func (v *getDeploymentLogStreamResponse) GetDeploymentLogStream() getDeploymentLogStreamDeploymentLogStream {
-	return v.DeploymentLogStream
-}
-
-// getEnvironmentByIdEnvironment includes the requested fields of the GraphQL type Environment.
-type getEnvironmentByIdEnvironment struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Description string `json:"description"`
-	// Cloud provider costs for this environment
-	Cost     getEnvironmentByIdEnvironmentCost              `json:"cost"`
-	Packages []getEnvironmentByIdEnvironmentPackagesPackage `json:"packages"`
-	Project  getEnvironmentByIdEnvironmentProject           `json:"project"`
-}
-
-// GetId returns getEnvironmentByIdEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetId() string { return v.Id }
-
-// GetName returns getEnvironmentByIdEnvironment.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetName() string { return v.Name }
-
-// GetSlug returns getEnvironmentByIdEnvironment.Slug, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetSlug() string { return v.Slug }
-
-// GetDescription returns getEnvironmentByIdEnvironment.Description, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetDescription() string { return v.Description }
-
-// GetCost returns getEnvironmentByIdEnvironment.Cost, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetCost() getEnvironmentByIdEnvironmentCost { return v.Cost }
-
-// GetPackages returns getEnvironmentByIdEnvironment.Packages, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetPackages() []getEnvironmentByIdEnvironmentPackagesPackage {
-	return v.Packages
-}
-
-// GetProject returns getEnvironmentByIdEnvironment.Project, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironment) GetProject() getEnvironmentByIdEnvironmentProject {
-	return v.Project
-}
-
-// getEnvironmentByIdEnvironmentCost includes the requested fields of the GraphQL type Cost.
-// The GraphQL type's documentation follows.
-//
-// Cost information for a resource
-type getEnvironmentByIdEnvironmentCost struct {
-	// Monthly cost summary
-	Monthly getEnvironmentByIdEnvironmentCostMonthlySummary `json:"monthly"`
-	// Daily cost summary
-	Daily getEnvironmentByIdEnvironmentCostDailySummary `json:"daily"`
-}
-
-// GetMonthly returns getEnvironmentByIdEnvironmentCost.Monthly, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentCost) GetMonthly() getEnvironmentByIdEnvironmentCostMonthlySummary {
-	return v.Monthly
-}
-
-// GetDaily returns getEnvironmentByIdEnvironmentCost.Daily, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentCost) GetDaily() getEnvironmentByIdEnvironmentCostDailySummary {
-	return v.Daily
-}
-
-// getEnvironmentByIdEnvironmentCostDailySummary includes the requested fields of the GraphQL type Summary.
-// The GraphQL type's documentation follows.
-//
-// Summary of costs over a time period
-type getEnvironmentByIdEnvironmentCostDailySummary struct {
-	// Average cost sample for the period (amount/currency may be null)
-	Average getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample `json:"average"`
-}
-
-// GetAverage returns getEnvironmentByIdEnvironmentCostDailySummary.Average, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentCostDailySummary) GetAverage() getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample {
-	return v.Average
-}
-
-// getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
-// The GraphQL type's documentation follows.
-//
-// A single cost measurement
-type getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample struct {
-	// The cost amount (null if no data available)
-	Amount *float64 `json:"amount"`
-}
-
-// GetAmount returns getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentCostDailySummaryAverageCostSample) GetAmount() *float64 {
-	return v.Amount
-}
-
-// getEnvironmentByIdEnvironmentCostMonthlySummary includes the requested fields of the GraphQL type Summary.
-// The GraphQL type's documentation follows.
-//
-// Summary of costs over a time period
-type getEnvironmentByIdEnvironmentCostMonthlySummary struct {
-	// Average cost sample for the period (amount/currency may be null)
-	Average getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample `json:"average"`
-}
-
-// GetAverage returns getEnvironmentByIdEnvironmentCostMonthlySummary.Average, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentCostMonthlySummary) GetAverage() getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample {
-	return v.Average
-}
-
-// getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
-// The GraphQL type's documentation follows.
-//
-// A single cost measurement
-type getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample struct {
-	// The cost amount (null if no data available)
-	Amount *float64 `json:"amount"`
-}
-
-// GetAmount returns getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentCostMonthlySummaryAverageCostSample) GetAmount() *float64 {
-	return v.Amount
-}
-
-// getEnvironmentByIdEnvironmentPackagesPackage includes the requested fields of the GraphQL type Package.
-// The GraphQL type's documentation follows.
-//
-// A deployed instance of a bundle in the context of its manifest
-type getEnvironmentByIdEnvironmentPackagesPackage struct {
-	// Unique identifier
+// Use the `status` field to monitor progress and `elapsed_time` to track duration.
+// The `deployed_by` field identifies the user or service account that initiated the operation.
+type getDeploymentDeployment struct {
+	// Unique identifier for this deployment.
 	Id string `json:"id"`
-	// Unique identifier for the package
-	Slug string `json:"slug"`
-	// Package configuration parameters
+	// Current lifecycle state of this deployment.
+	Status DeploymentStatus `json:"status"`
+	// The infrastructure operation this deployment performs.
+	Action DeploymentAction `json:"action"`
+	// The bundle version used for this deployment (e.g., `1.2.0`).
+	Version string `json:"version"`
+	// An optional message describing the purpose of this deployment, similar to a commit message.
+	Message string `json:"message"`
+	// Snapshot of the instance configuration at the time this deployment was enqueued. Independent of the instance's current `params` — later edits do not mutate this record.
 	Params map[string]any `json:"-"`
-	// Artifacts provisioned by this package
-	Artifacts []getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
-	// Artifacts from a remote source like another project or a resource not managed by massdriver
-	RemoteReferences []getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
-	Bundle           getEnvironmentByIdEnvironmentPackagesPackageBundle                            `json:"bundle"`
-	// Current status of the package
-	Status   PackageStatus                                        `json:"status"`
-	Manifest getEnvironmentByIdEnvironmentPackagesPackageManifest `json:"manifest"`
+	// When this deployment was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this deployment record was last updated (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// When the deployment last changed status (UTC). Null if the deployment is still `PENDING`.
+	LastTransitionedAt time.Time `json:"lastTransitionedAt"`
+	// Wall-clock duration of the deployment in seconds.
+	//
+	// For `RUNNING` deployments, this is a live timer counting from creation.
+	// For terminal states, this is the total time from creation to the final status transition.
+	// Returns `0` for deployments that have not yet executed (`PENDING`, `PROPOSED`, `APPROVED`).
+	ElapsedTime int `json:"elapsedTime"`
+	// The name of the user or service account that initiated this deployment. Null if the initiator has been removed.
+	DeployedBy string `json:"deployedBy"`
+	// The instance that this deployment operates on.
+	Instance getDeploymentDeploymentInstance `json:"instance"`
 }
 
-// GetId returns getEnvironmentByIdEnvironmentPackagesPackage.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetId() string { return v.Id }
+// GetId returns getDeploymentDeployment.Id, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetId() string { return v.Id }
 
-// GetSlug returns getEnvironmentByIdEnvironmentPackagesPackage.Slug, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetSlug() string { return v.Slug }
+// GetStatus returns getDeploymentDeployment.Status, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetStatus() DeploymentStatus { return v.Status }
 
-// GetParams returns getEnvironmentByIdEnvironmentPackagesPackage.Params, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetParams() map[string]any { return v.Params }
+// GetAction returns getDeploymentDeployment.Action, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetAction() DeploymentAction { return v.Action }
 
-// GetArtifacts returns getEnvironmentByIdEnvironmentPackagesPackage.Artifacts, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetArtifacts() []getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact {
-	return v.Artifacts
-}
+// GetVersion returns getDeploymentDeployment.Version, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetVersion() string { return v.Version }
 
-// GetRemoteReferences returns getEnvironmentByIdEnvironmentPackagesPackage.RemoteReferences, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetRemoteReferences() []getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference {
-	return v.RemoteReferences
-}
+// GetMessage returns getDeploymentDeployment.Message, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetMessage() string { return v.Message }
 
-// GetBundle returns getEnvironmentByIdEnvironmentPackagesPackage.Bundle, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetBundle() getEnvironmentByIdEnvironmentPackagesPackageBundle {
-	return v.Bundle
-}
+// GetParams returns getDeploymentDeployment.Params, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetParams() map[string]any { return v.Params }
 
-// GetStatus returns getEnvironmentByIdEnvironmentPackagesPackage.Status, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetStatus() PackageStatus { return v.Status }
+// GetCreatedAt returns getDeploymentDeployment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetCreatedAt() time.Time { return v.CreatedAt }
 
-// GetManifest returns getEnvironmentByIdEnvironmentPackagesPackage.Manifest, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) GetManifest() getEnvironmentByIdEnvironmentPackagesPackageManifest {
-	return v.Manifest
-}
+// GetUpdatedAt returns getDeploymentDeployment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetUpdatedAt() time.Time { return v.UpdatedAt }
 
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) UnmarshalJSON(b []byte) error {
+// GetLastTransitionedAt returns getDeploymentDeployment.LastTransitionedAt, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetLastTransitionedAt() time.Time { return v.LastTransitionedAt }
+
+// GetElapsedTime returns getDeploymentDeployment.ElapsedTime, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetElapsedTime() int { return v.ElapsedTime }
+
+// GetDeployedBy returns getDeploymentDeployment.DeployedBy, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetDeployedBy() string { return v.DeployedBy }
+
+// GetInstance returns getDeploymentDeployment.Instance, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeployment) GetInstance() getDeploymentDeploymentInstance { return v.Instance }
+
+func (v *getDeploymentDeployment) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*getEnvironmentByIdEnvironmentPackagesPackage
+		*getDeploymentDeployment
 		Params json.RawMessage `json:"params"`
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.getEnvironmentByIdEnvironmentPackagesPackage = v
+	firstPass.getDeploymentDeployment = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -3038,32 +4296,40 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackage) UnmarshalJSON(b []byte) e
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getEnvironmentByIdEnvironmentPackagesPackage.Params: %w", err)
+					"unable to unmarshal getDeploymentDeployment.Params: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-type __premarshalgetEnvironmentByIdEnvironmentPackagesPackage struct {
+type __premarshalgetDeploymentDeployment struct {
 	Id string `json:"id"`
 
-	Slug string `json:"slug"`
+	Status DeploymentStatus `json:"status"`
+
+	Action DeploymentAction `json:"action"`
+
+	Version string `json:"version"`
+
+	Message string `json:"message"`
 
 	Params json.RawMessage `json:"params"`
 
-	Artifacts []getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
+	CreatedAt time.Time `json:"createdAt"`
 
-	RemoteReferences []getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	UpdatedAt time.Time `json:"updatedAt"`
 
-	Bundle getEnvironmentByIdEnvironmentPackagesPackageBundle `json:"bundle"`
+	LastTransitionedAt time.Time `json:"lastTransitionedAt"`
 
-	Status PackageStatus `json:"status"`
+	ElapsedTime int `json:"elapsedTime"`
 
-	Manifest getEnvironmentByIdEnvironmentPackagesPackageManifest `json:"manifest"`
+	DeployedBy string `json:"deployedBy"`
+
+	Instance getDeploymentDeploymentInstance `json:"instance"`
 }
 
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) MarshalJSON() ([]byte, error) {
+func (v *getDeploymentDeployment) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -3071,11 +4337,14 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackage) MarshalJSON() ([]byte, er
 	return json.Marshal(premarshaled)
 }
 
-func (v *getEnvironmentByIdEnvironmentPackagesPackage) __premarshalJSON() (*__premarshalgetEnvironmentByIdEnvironmentPackagesPackage, error) {
-	var retval __premarshalgetEnvironmentByIdEnvironmentPackagesPackage
+func (v *getDeploymentDeployment) __premarshalJSON() (*__premarshalgetDeploymentDeployment, error) {
+	var retval __premarshalgetDeploymentDeployment
 
 	retval.Id = v.Id
-	retval.Slug = v.Slug
+	retval.Status = v.Status
+	retval.Action = v.Action
+	retval.Version = v.Version
+	retval.Message = v.Message
 	{
 
 		dst := &retval.Params
@@ -3085,424 +4354,1124 @@ func (v *getEnvironmentByIdEnvironmentPackagesPackage) __premarshalJSON() (*__pr
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getEnvironmentByIdEnvironmentPackagesPackage.Params: %w", err)
+				"unable to marshal getDeploymentDeployment.Params: %w", err)
 		}
 	}
-	retval.Artifacts = v.Artifacts
-	retval.RemoteReferences = v.RemoteReferences
-	retval.Bundle = v.Bundle
-	retval.Status = v.Status
-	retval.Manifest = v.Manifest
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.LastTransitionedAt = v.LastTransitionedAt
+	retval.ElapsedTime = v.ElapsedTime
+	retval.DeployedBy = v.DeployedBy
+	retval.Instance = v.Instance
 	return &retval, nil
 }
 
-// getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact includes the requested fields of the GraphQL type Artifact.
-type getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-	// The bundle's artifact field (output field) that produced this artifact.
-	Field string `json:"field"`
-}
-
-// GetId returns getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact) GetId() string { return v.Id }
-
-// GetName returns getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact) GetName() string {
-	return v.Name
-}
-
-// GetField returns getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact.Field, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageArtifactsArtifact) GetField() string {
-	return v.Field
-}
-
-// getEnvironmentByIdEnvironmentPackagesPackageBundle includes the requested fields of the GraphQL type Bundle.
+// getDeploymentDeploymentInstance includes the requested fields of the GraphQL type Instance.
 // The GraphQL type's documentation follows.
 //
-// A specific version of a bundle
-type getEnvironmentByIdEnvironmentPackagesPackageBundle struct {
-	// Unique identifier
-	Id string `json:"id"`
-	// Name of the bundle
-	Name string `json:"name"`
-	// Raw massdriver.yaml spec
-	Spec map[string]any `json:"-"`
-	// Version of the bundle specification
-	SpecVersion string `json:"specVersion"`
-}
-
-// GetId returns getEnvironmentByIdEnvironmentPackagesPackageBundle.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) GetId() string { return v.Id }
-
-// GetName returns getEnvironmentByIdEnvironmentPackagesPackageBundle.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) GetName() string { return v.Name }
-
-// GetSpec returns getEnvironmentByIdEnvironmentPackagesPackageBundle.Spec, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) GetSpec() map[string]any { return v.Spec }
-
-// GetSpecVersion returns getEnvironmentByIdEnvironmentPackagesPackageBundle.SpecVersion, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) GetSpecVersion() string {
-	return v.SpecVersion
-}
-
-func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getEnvironmentByIdEnvironmentPackagesPackageBundle
-		Spec json.RawMessage `json:"spec"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getEnvironmentByIdEnvironmentPackagesPackageBundle = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Spec
-		src := firstPass.Spec
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getEnvironmentByIdEnvironmentPackagesPackageBundle.Spec: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalgetEnvironmentByIdEnvironmentPackagesPackageBundle struct {
-	Id string `json:"id"`
-
-	Name string `json:"name"`
-
-	Spec json.RawMessage `json:"spec"`
-
-	SpecVersion string `json:"specVersion"`
-}
-
-func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getEnvironmentByIdEnvironmentPackagesPackageBundle) __premarshalJSON() (*__premarshalgetEnvironmentByIdEnvironmentPackagesPackageBundle, error) {
-	var retval __premarshalgetEnvironmentByIdEnvironmentPackagesPackageBundle
-
-	retval.Id = v.Id
-	retval.Name = v.Name
-	{
-
-		dst := &retval.Spec
-		src := v.Spec
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getEnvironmentByIdEnvironmentPackagesPackageBundle.Spec: %w", err)
-		}
-	}
-	retval.SpecVersion = v.SpecVersion
-	return &retval, nil
-}
-
-// getEnvironmentByIdEnvironmentPackagesPackageManifest includes the requested fields of the GraphQL type Manifest.
-// The GraphQL type's documentation follows.
+// A deployed piece of infrastructure in an environment.
 //
-// A bundle used in a project with a specific context (e.g. redis 'cache' vs 'sessions' instance)
-type getEnvironmentByIdEnvironmentPackagesPackageManifest struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Suffix      string `json:"suffix"`
-	Description string `json:"description"`
-}
-
-// GetId returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetId() string { return v.Id }
-
-// GetName returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetName() string { return v.Name }
-
-// GetSlug returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Slug, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetSlug() string { return v.Slug }
-
-// GetSuffix returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Suffix, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetSuffix() string { return v.Suffix }
-
-// GetDescription returns getEnvironmentByIdEnvironmentPackagesPackageManifest.Description, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageManifest) GetDescription() string {
-	return v.Description
-}
-
-// getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
-type getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference struct {
-	Artifact getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact `json:"artifact"`
-}
-
-// GetArtifact returns getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference.Artifact, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReference) GetArtifact() getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact {
-	return v.Artifact
-}
-
-// getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact includes the requested fields of the GraphQL type Artifact.
-type getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact struct {
-	Id   string `json:"id"`
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type getDeploymentDeploymentInstance struct {
+	Id string `json:"id"`
+	// Human-readable display name for the instance.
 	Name string `json:"name"`
-	// The bundle's artifact field (output field) that produced this artifact.
-	Field string `json:"field"`
+	// Current lifecycle state of the instance.
+	Status InstanceStatus `json:"status"`
+	// The environment this instance is deployed in.
+	Environment getDeploymentDeploymentInstanceEnvironment `json:"environment"`
 }
 
-// GetId returns getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetId() string {
-	return v.Id
-}
+// GetId returns getDeploymentDeploymentInstance.Id, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeploymentInstance) GetId() string { return v.Id }
 
-// GetName returns getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetName() string {
-	return v.Name
-}
+// GetName returns getDeploymentDeploymentInstance.Name, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeploymentInstance) GetName() string { return v.Name }
 
-// GetField returns getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Field, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetField() string {
-	return v.Field
-}
+// GetStatus returns getDeploymentDeploymentInstance.Status, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeploymentInstance) GetStatus() InstanceStatus { return v.Status }
 
-// getEnvironmentByIdEnvironmentProject includes the requested fields of the GraphQL type Project.
-type getEnvironmentByIdEnvironmentProject struct {
-	Id   string `json:"id"`
-	Slug string `json:"slug"`
-}
-
-// GetId returns getEnvironmentByIdEnvironmentProject.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentProject) GetId() string { return v.Id }
-
-// GetSlug returns getEnvironmentByIdEnvironmentProject.Slug, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdEnvironmentProject) GetSlug() string { return v.Slug }
-
-// getEnvironmentByIdResponse is returned by getEnvironmentById on success.
-type getEnvironmentByIdResponse struct {
-	Environment getEnvironmentByIdEnvironment `json:"environment"`
-}
-
-// GetEnvironment returns getEnvironmentByIdResponse.Environment, and is useful for accessing the field via an interface.
-func (v *getEnvironmentByIdResponse) GetEnvironment() getEnvironmentByIdEnvironment {
+// GetEnvironment returns getDeploymentDeploymentInstance.Environment, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeploymentInstance) GetEnvironment() getDeploymentDeploymentInstanceEnvironment {
 	return v.Environment
 }
 
-// getEnvironmentsByProjectProject includes the requested fields of the GraphQL type Project.
-type getEnvironmentsByProjectProject struct {
-	Environments []getEnvironmentsByProjectProjectEnvironmentsEnvironment `json:"environments"`
+// getDeploymentDeploymentInstanceEnvironment includes the requested fields of the GraphQL type Environment.
+// The GraphQL type's documentation follows.
+//
+// A deployment target within a project where blueprint components become live infrastructure.
+//
+// Each project can have multiple environments (e.g., `staging`, `production`). When you deploy
+// to an environment, every component in the project's blueprint is realized as an **Instance** --
+// a running piece of cloud infrastructure with its own configuration, state, and cost data.
+//
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
+// that cascade down to all instances within the environment. **Defaults** let you pre-assign
+// resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
+//
+// Before deleting an environment, all instances must be decommissioned. Use the `deletable`
+// field to check for blocking constraints.
+type getDeploymentDeploymentInstanceEnvironment struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the project.
+	Name string `json:"name"`
+	// The parent project that this environment belongs to.
+	Project getDeploymentDeploymentInstanceEnvironmentProject `json:"project"`
 }
 
-// GetEnvironments returns getEnvironmentsByProjectProject.Environments, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProject) GetEnvironments() []getEnvironmentsByProjectProjectEnvironmentsEnvironment {
-	return v.Environments
-}
+// GetId returns getDeploymentDeploymentInstanceEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeploymentInstanceEnvironment) GetId() string { return v.Id }
 
-// getEnvironmentsByProjectProjectEnvironmentsEnvironment includes the requested fields of the GraphQL type Environment.
-type getEnvironmentsByProjectProjectEnvironmentsEnvironment struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Description string `json:"description"`
-	// Cloud provider costs for this environment
-	Cost     getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost              `json:"cost"`
-	Packages []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage `json:"packages"`
-	Project  getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject           `json:"project"`
-}
+// GetName returns getDeploymentDeploymentInstanceEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeploymentInstanceEnvironment) GetName() string { return v.Name }
 
-// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetId() string { return v.Id }
-
-// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetName() string { return v.Name }
-
-// GetSlug returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Slug, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetSlug() string { return v.Slug }
-
-// GetDescription returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Description, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetDescription() string {
-	return v.Description
-}
-
-// GetCost returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Cost, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetCost() getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost {
-	return v.Cost
-}
-
-// GetPackages returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Packages, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetPackages() []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage {
-	return v.Packages
-}
-
-// GetProject returns getEnvironmentsByProjectProjectEnvironmentsEnvironment.Project, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironment) GetProject() getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject {
+// GetProject returns getDeploymentDeploymentInstanceEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeploymentInstanceEnvironment) GetProject() getDeploymentDeploymentInstanceEnvironmentProject {
 	return v.Project
 }
 
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost includes the requested fields of the GraphQL type Cost.
+// getDeploymentDeploymentInstanceEnvironmentProject includes the requested fields of the GraphQL type Project.
 // The GraphQL type's documentation follows.
 //
-// Cost information for a resource
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost struct {
-	// Monthly cost summary
-	Monthly getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary `json:"monthly"`
-	// Daily cost summary
-	Daily getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary `json:"daily"`
-}
-
-// GetMonthly returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost.Monthly, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost) GetMonthly() getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary {
-	return v.Monthly
-}
-
-// GetDaily returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost.Daily, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCost) GetDaily() getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary {
-	return v.Daily
-}
-
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary includes the requested fields of the GraphQL type Summary.
-// The GraphQL type's documentation follows.
+// A project organizes related infrastructure under a single blueprint.
 //
-// Summary of costs over a time period
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary struct {
-	// Average cost sample for the period (amount/currency may be null)
-	Average getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample `json:"average"`
-}
-
-// GetAverage returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary.Average, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummary) GetAverage() getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample {
-	return v.Average
-}
-
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
-// The GraphQL type's documentation follows.
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
 //
-// A single cost measurement
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample struct {
-	// The cost amount (null if no data available)
-	Amount *float64 `json:"amount"`
-}
-
-// GetAmount returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostDailySummaryAverageCostSample) GetAmount() *float64 {
-	return v.Amount
-}
-
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary includes the requested fields of the GraphQL type Summary.
-// The GraphQL type's documentation follows.
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
 //
-// Summary of costs over a time period
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary struct {
-	// Average cost sample for the period (amount/currency may be null)
-	Average getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample `json:"average"`
-}
-
-// GetAverage returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary.Average, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummary) GetAverage() getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample {
-	return v.Average
-}
-
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
-// The GraphQL type's documentation follows.
-//
-// A single cost measurement
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample struct {
-	// The cost amount (null if no data available)
-	Amount *float64 `json:"amount"`
-}
-
-// GetAmount returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentCostMonthlySummaryAverageCostSample) GetAmount() *float64 {
-	return v.Amount
-}
-
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage includes the requested fields of the GraphQL type Package.
-// The GraphQL type's documentation follows.
-//
-// A deployed instance of a bundle in the context of its manifest
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage struct {
-	// Unique identifier
+// Attributes set on a project are inherited by all environments and instances within it.
+type getDeploymentDeploymentInstanceEnvironmentProject struct {
 	Id string `json:"id"`
-	// Unique identifier for the package
-	Slug string `json:"slug"`
-	// Current status of the package
-	Status PackageStatus `json:"status"`
-	// Package configuration parameters
-	Params map[string]any `json:"-"`
-	// Artifacts provisioned by this package
-	Artifacts []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
-	// Artifacts from a remote source like another project or a resource not managed by massdriver
-	RemoteReferences []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
-	Bundle           getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle                            `json:"bundle"`
-	Manifest         getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest                          `json:"manifest"`
+	// Display name shown in the UI and CLI. Must be unique within the organization.
+	Name string `json:"name"`
 }
 
-// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetId() string {
-	return v.Id
+// GetId returns getDeploymentDeploymentInstanceEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeploymentInstanceEnvironmentProject) GetId() string { return v.Id }
+
+// GetName returns getDeploymentDeploymentInstanceEnvironmentProject.Name, and is useful for accessing the field via an interface.
+func (v *getDeploymentDeploymentInstanceEnvironmentProject) GetName() string { return v.Name }
+
+// getDeploymentLogsDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// A record of an infrastructure provisioning operation.
+//
+// Each deployment tracks a single action (`PROVISION`, `DECOMMISSION`, or `PLAN`) against
+// an instance. Deployments are immutable once created — you cannot modify a deployment,
+// only create new ones.
+//
+// Use the `status` field to monitor progress and `elapsed_time` to track duration.
+// The `deployed_by` field identifies the user or service account that initiated the operation.
+type getDeploymentLogsDeployment struct {
+	// Unique identifier for this deployment.
+	Id string `json:"id"`
+	// All log batches emitted for this deployment so far, ordered oldest-first.
+	//
+	// Each entry is a single batch (`logset`) as emitted by the provisioner — its
+	// `message` may contain multiple `\n`-separated lines written in the same
+	// flush. For live streaming, open a `deploymentEvents` subscription after
+	// loading this field; the subscription fires on every subsequent append.
+	Logs []getDeploymentLogsDeploymentLogsDeploymentLog `json:"logs"`
 }
 
-// GetSlug returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Slug, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetSlug() string {
-	return v.Slug
+// GetId returns getDeploymentLogsDeployment.Id, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogsDeployment) GetId() string { return v.Id }
+
+// GetLogs returns getDeploymentLogsDeployment.Logs, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogsDeployment) GetLogs() []getDeploymentLogsDeploymentLogsDeploymentLog {
+	return v.Logs
 }
 
-// GetStatus returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Status, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetStatus() PackageStatus {
-	return v.Status
+// getDeploymentLogsDeploymentLogsDeploymentLog includes the requested fields of the GraphQL type DeploymentLog.
+// The GraphQL type's documentation follows.
+//
+// A single batch of deployment logs emitted by the provisioner.
+//
+// One `DeploymentLog` corresponds to one worker flush, which may contain
+// multiple log lines joined by `\n` in the `message` field.
+type getDeploymentLogsDeploymentLogsDeploymentLog struct {
+	// When the provisioner flushed this batch of logs (UTC).
+	Timestamp time.Time `json:"timestamp"`
+	// Raw log text. May span multiple lines separated by `\n`.
+	Message string `json:"message"`
 }
 
-// GetParams returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Params, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetParams() map[string]any {
-	return v.Params
+// GetTimestamp returns getDeploymentLogsDeploymentLogsDeploymentLog.Timestamp, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogsDeploymentLogsDeploymentLog) GetTimestamp() time.Time { return v.Timestamp }
+
+// GetMessage returns getDeploymentLogsDeploymentLogsDeploymentLog.Message, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogsDeploymentLogsDeploymentLog) GetMessage() string { return v.Message }
+
+// getDeploymentLogsResponse is returned by getDeploymentLogs on success.
+type getDeploymentLogsResponse struct {
+	// Fetch a single deployment by its unique identifier.
+	//
+	// Returns the full deployment record including status, timing, and the associated instance.
+	Deployment getDeploymentLogsDeployment `json:"deployment"`
 }
 
-// GetArtifacts returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Artifacts, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetArtifacts() []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact {
-	return v.Artifacts
+// GetDeployment returns getDeploymentLogsResponse.Deployment, and is useful for accessing the field via an interface.
+func (v *getDeploymentLogsResponse) GetDeployment() getDeploymentLogsDeployment { return v.Deployment }
+
+// getDeploymentResponse is returned by getDeployment on success.
+type getDeploymentResponse struct {
+	// Fetch a single deployment by its unique identifier.
+	//
+	// Returns the full deployment record including status, timing, and the associated instance.
+	Deployment getDeploymentDeployment `json:"deployment"`
 }
 
-// GetRemoteReferences returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.RemoteReferences, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetRemoteReferences() []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference {
-	return v.RemoteReferences
+// GetDeployment returns getDeploymentResponse.Deployment, and is useful for accessing the field via an interface.
+func (v *getDeploymentResponse) GetDeployment() getDeploymentDeployment { return v.Deployment }
+
+// getEnvironmentEnvironment includes the requested fields of the GraphQL type Environment.
+// The GraphQL type's documentation follows.
+//
+// A deployment target within a project where blueprint components become live infrastructure.
+//
+// Each project can have multiple environments (e.g., `staging`, `production`). When you deploy
+// to an environment, every component in the project's blueprint is realized as an **Instance** --
+// a running piece of cloud infrastructure with its own configuration, state, and cost data.
+//
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
+// that cascade down to all instances within the environment. **Defaults** let you pre-assign
+// resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
+//
+// Before deleting an environment, all instances must be decommissioned. Use the `deletable`
+// field to check for blocking constraints.
+type getEnvironmentEnvironment struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the project.
+	Name string `json:"name"`
+	// Free-text description of what this environment is for.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this environment. Attributes cascade to instances. Must conform to your organization's custom attributes for the `ENVIRONMENT` scope.
+	Attributes map[string]any `json:"-"`
+	// When this environment was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this environment was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Aggregated cloud-provider cost metrics for all instances in this environment.
+	Cost getEnvironmentEnvironmentCostCostSummary `json:"cost"`
+	// The parent project that this environment belongs to.
+	Project getEnvironmentEnvironmentProject `json:"project"`
+	// The realized infrastructure blueprint showing deployed instances and their connections in this environment.
+	Blueprint getEnvironmentEnvironmentBlueprint `json:"blueprint"`
 }
 
-// GetBundle returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Bundle, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetBundle() getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle {
-	return v.Bundle
+// GetId returns getEnvironmentEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetId() string { return v.Id }
+
+// GetName returns getEnvironmentEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetName() string { return v.Name }
+
+// GetDescription returns getEnvironmentEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetDescription() string { return v.Description }
+
+// GetAttributes returns getEnvironmentEnvironment.Attributes, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetAttributes() map[string]any { return v.Attributes }
+
+// GetCreatedAt returns getEnvironmentEnvironment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getEnvironmentEnvironment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetCost returns getEnvironmentEnvironment.Cost, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetCost() getEnvironmentEnvironmentCostCostSummary { return v.Cost }
+
+// GetProject returns getEnvironmentEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetProject() getEnvironmentEnvironmentProject { return v.Project }
+
+// GetBlueprint returns getEnvironmentEnvironment.Blueprint, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironment) GetBlueprint() getEnvironmentEnvironmentBlueprint {
+	return v.Blueprint
 }
 
-// GetManifest returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Manifest, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) GetManifest() getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest {
-	return v.Manifest
-}
-
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) UnmarshalJSON(b []byte) error {
+func (v *getEnvironmentEnvironment) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage
-		Params json.RawMessage `json:"params"`
+		*getEnvironmentEnvironment
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage = v
+	firstPass.getEnvironmentEnvironment = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentEnvironment.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentEnvironment struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Cost getEnvironmentEnvironmentCostCostSummary `json:"cost"`
+
+	Project getEnvironmentEnvironmentProject `json:"project"`
+
+	Blueprint getEnvironmentEnvironmentBlueprint `json:"blueprint"`
+}
+
+func (v *getEnvironmentEnvironment) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentEnvironment) __premarshalJSON() (*__premarshalgetEnvironmentEnvironment, error) {
+	var retval __premarshalgetEnvironmentEnvironment
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentEnvironment.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Cost = v.Cost
+	retval.Project = v.Project
+	retval.Blueprint = v.Blueprint
+	return &retval, nil
+}
+
+// getEnvironmentEnvironmentBlueprint includes the requested fields of the GraphQL type EnvironmentBlueprint.
+// The GraphQL type's documentation follows.
+//
+// An environment's realized infrastructure graph.
+//
+// The environment blueprint is the **runtime counterpart** of the project's
+// design-time blueprint. It contains the **instances** (deployed infrastructure)
+// and **connections** (runtime wiring) that show exactly how your infrastructure
+// is running in this environment.
+//
+// While the project blueprint defines the architecture once, each environment
+// has its own environment blueprint with independent instances and connections.
+// This means `staging` and `production` can run different versions, different
+// configurations, or even different subsets of the full blueprint.
+type getEnvironmentEnvironmentBlueprint struct {
+	// Paginated list of instances deployed in this environment.
+	//
+	// Returns all deployed infrastructure for the environment. Filter by status,
+	// bundle name, or configuration parameters. Defaults to alphabetical order by name.
+	Instances getEnvironmentEnvironmentBlueprintInstancesInstancesPage `json:"instances"`
+}
+
+// GetInstances returns getEnvironmentEnvironmentBlueprint.Instances, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprint) GetInstances() getEnvironmentEnvironmentBlueprintInstancesInstancesPage {
+	return v.Instances
+}
+
+// getEnvironmentEnvironmentBlueprintInstancesInstancesPage includes the requested fields of the GraphQL type InstancesPage.
+type getEnvironmentEnvironmentBlueprintInstancesInstancesPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor `json:"cursor"`
+	// A list of type instance.
+	Items []getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance `json:"items"`
+}
+
+// GetCursor returns getEnvironmentEnvironmentBlueprintInstancesInstancesPage.Cursor, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPage) GetCursor() getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns getEnvironmentEnvironmentBlueprintInstancesInstancesPage.Items, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPage) GetItems() []getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance {
+	return v.Items
+}
+
+// getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
+}
+
+// GetNext returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor) GetNext() string {
+	return v.Next
+}
+
+// GetPrevious returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
+}
+
+// getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance struct {
+	Id string `json:"id"`
+	// Human-readable display name for the instance.
+	Name string `json:"name"`
+	// Current lifecycle state of the instance.
+	Status InstanceStatus `json:"status"`
+	// Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`.
+	Version string `json:"version"`
+	// Whether to include development (pre-release) builds when resolving the version constraint.
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// Key-value attributes assigned directly to this instance.
+	Attributes map[string]any `json:"-"`
+	// When this instance was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this instance was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// The component this instance was deployed from.
+	Component getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent `json:"component"`
+	// The bundle release currently resolved for this instance.
+	Bundle getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle `json:"bundle"`
+}
+
+// GetId returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetId() string {
+	return v.Id
+}
+
+// GetName returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetName() string {
+	return v.Name
+}
+
+// GetStatus returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Status, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetStatus() InstanceStatus {
+	return v.Status
+}
+
+// GetVersion returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Version, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetVersion() string {
+	return v.Version
+}
+
+// GetReleaseStrategy returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetReleaseStrategy() ReleaseStrategy {
+	return v.ReleaseStrategy
+}
+
+// GetAttributes returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Attributes, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetComponent returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Component, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetComponent() getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent {
+	return v.Component
+}
+
+// GetBundle returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Bundle, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) GetBundle() getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle {
+	return v.Bundle
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Status InstanceStatus `json:"status"`
+
+	Version string `json:"version"`
+
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Component getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent `json:"component"`
+
+	Bundle getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle `json:"bundle"`
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance) __premarshalJSON() (*__premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance, error) {
+	var retval __premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Status = v.Status
+	retval.Version = v.Version
+	retval.ReleaseStrategy = v.ReleaseStrategy
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstance.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Component = v.Component
+	retval.Bundle = v.Bundle
+	return &retval, nil
+}
+
+// getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle includes the requested fields of the GraphQL type Bundle.
+// The GraphQL type's documentation follows.
+//
+// A versioned infrastructure-as-code package.
+//
+// A bundle is a single published version of an IaC package in your organization's
+// catalog. Each bundle belongs to an OCI repository and is identified by a composite
+// `name@version` string (e.g., `aws-aurora-postgres@1.2.3`).
+//
+// Bundles declare **dependencies** (inputs they require from other bundles) and
+// **resources** (outputs they produce). These declarations drive the connection
+// system on the Massdriver canvas -- when you add a component to a blueprint,
+// the platform knows which other components can satisfy its dependencies.
+//
+// ```mermaid
+// graph TD
+// R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+// R --> T2["Tag: 1.1.0"]
+// R --> T3["Tag: 1.2.3"]
+// R --> RC1["Channel: ~1 → 1.2.3"]
+// R --> RC2["Channel: latest → 1.2.3"]
+// T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
+// B --> D1["Dependency: aws-iam-role"]
+// B --> D2["Dependency: aws-vpc"]
+// B --> RES["Resource: aurora-cluster"]
+// ```
+type getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle struct {
+	// Composite identifier in `name@version` format (e.g., `aws-aurora-postgres@1.2.3`). Always contains the fully resolved semver version.
+	Id string `json:"id"`
+	// OCI repository name this bundle belongs to (e.g., `aws-aurora-postgres`).
+	Name string `json:"name"`
+	// Fully resolved semantic version of this bundle (e.g., `1.2.3`).
+	Version string `json:"version"`
+	// Short summary of what this bundle provisions.
+	Description string `json:"description"`
+	// URL to the bundle's display icon.
+	Icon string `json:"icon"`
+	// URL to the bundle's source code repository, if published by the author.
+	SourceUrl string `json:"sourceUrl"`
+	// OCI repository name for this bundle (e.g., `aws-aurora-postgres`). Equivalent to `name`.
+	Repo string `json:"repo"`
+	// Timestamp when this bundle version was first published (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this bundle version was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetId() string {
+	return v.Id
+}
+
+// GetName returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetName() string {
+	return v.Name
+}
+
+// GetVersion returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Version, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetVersion() string {
+	return v.Version
+}
+
+// GetDescription returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetDescription() string {
+	return v.Description
+}
+
+// GetIcon returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Icon, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetIcon() string {
+	return v.Icon
+}
+
+// GetSourceUrl returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.SourceUrl, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetSourceUrl() string {
+	return v.SourceUrl
+}
+
+// GetRepo returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.Repo, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetRepo() string {
+	return v.Repo
+}
+
+// GetCreatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceBundle) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetId() string {
+	return v.Id
+}
+
+// GetName returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetAttributes returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent) __premarshalJSON() (*__premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent, error) {
+	var retval __premarshalgetEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getEnvironmentEnvironmentBlueprintInstancesInstancesPageItemsInstanceComponent.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// getEnvironmentEnvironmentCostCostSummary includes the requested fields of the GraphQL type CostSummary.
+// The GraphQL type's documentation follows.
+//
+// Aggregated cloud-provider cost metrics for a project or environment.
+//
+// Cost data is sourced from your cloud provider's billing APIs and refreshed periodically.
+// Each metric is a `CostSample` containing an amount and currency. All four metrics are
+// always present, but their inner `amount` and `currency` may be null if billing data has
+// not yet been ingested.
+//
+// - **last_month** -- Total spend for the most recent complete billing cycle.
+// - **monthly_average** -- Average monthly spend across all available billing cycles.
+// - **last_day** -- Total spend for the most recent 24-hour period.
+// - **daily_average** -- Average daily spend over the last 7 days.
+type getEnvironmentEnvironmentCostCostSummary struct {
+	// Average monthly cost across all available billing cycles.
+	MonthlyAverage getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	// Average daily cost over the last 7 days.
+	DailyAverage getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+}
+
+// GetMonthlyAverage returns getEnvironmentEnvironmentCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummary) GetMonthlyAverage() getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample {
+	return v.MonthlyAverage
+}
+
+// GetDailyAverage returns getEnvironmentEnvironmentCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummary) GetDailyAverage() getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample {
+	return v.DailyAverage
+}
+
+// getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getEnvironmentEnvironmentProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project organizes related infrastructure under a single blueprint.
+//
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Attributes set on a project are inherited by all environments and instances within it.
+type getEnvironmentEnvironmentProject struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the organization.
+	Name string `json:"name"`
+	// Free-text description of what this project is for.
+	Description string `json:"description"`
+}
+
+// GetId returns getEnvironmentEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentProject) GetId() string { return v.Id }
+
+// GetName returns getEnvironmentEnvironmentProject.Name, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentProject) GetName() string { return v.Name }
+
+// GetDescription returns getEnvironmentEnvironmentProject.Description, and is useful for accessing the field via an interface.
+func (v *getEnvironmentEnvironmentProject) GetDescription() string { return v.Description }
+
+// getEnvironmentResponse is returned by getEnvironment on success.
+type getEnvironmentResponse struct {
+	// Fetch a single environment by its identifier.
+	Environment getEnvironmentEnvironment `json:"environment"`
+}
+
+// GetEnvironment returns getEnvironmentResponse.Environment, and is useful for accessing the field via an interface.
+func (v *getEnvironmentResponse) GetEnvironment() getEnvironmentEnvironment { return v.Environment }
+
+// getInstanceInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type getInstanceInstance struct {
+	Id string `json:"id"`
+	// Human-readable display name for the instance.
+	Name string `json:"name"`
+	// Current lifecycle state of the instance.
+	Status InstanceStatus `json:"status"`
+	// Cached configuration parameters from the most recent deployment. Null if the instance has never been deployed.
+	Params map[string]any `json:"-"`
+	// Key-value attributes assigned directly to this instance.
+	Attributes map[string]any `json:"-"`
+	// Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`.
+	Version string `json:"version"`
+	// Whether to include development (pre-release) builds when resolving the version constraint.
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// The concrete bundle version resolved from the version constraint and release strategy.
+	//
+	// This is the version that will be used on the **next** deployment. Compare
+	// with `deployedVersion` to determine if a redeployment would change anything.
+	ResolvedVersion string `json:"resolvedVersion"`
+	// The bundle version that was last successfully deployed to infrastructure.
+	//
+	// May differ from `resolvedVersion` if the version constraint has been updated
+	// but no deployment has occurred yet. Null if the instance has never been deployed.
+	DeployedVersion string `json:"deployedVersion"`
+	// The newest bundle version available that satisfies the version constraint.
+	//
+	// Returns null if the instance is already on the latest matching version.
+	// Use this field to detect when an upgrade is available.
+	AvailableUpgrade string `json:"availableUpgrade"`
+	// When this instance was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this instance was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Cloud provider cost summary for this instance, including daily and monthly breakdowns.
+	Cost getInstanceInstanceCostCostSummary `json:"cost"`
+	// The environment this instance is deployed in.
+	Environment getInstanceInstanceEnvironment `json:"environment"`
+	// The bundle release currently resolved for this instance.
+	Bundle getInstanceInstanceBundle `json:"bundle"`
+	// The component this instance was deployed from.
+	Component getInstanceInstanceComponent `json:"component"`
+	// Terraform/OpenTofu state paths for each provisioning step, ordered by the bundle's step definition.
+	//
+	// Each bundle can define multiple steps (e.g., `core`, `iam`, `monitoring`). Use the
+	// `stateUrl` to configure your Terraform backend or inspect state externally.
+	StatePaths []getInstanceInstanceStatePathsInstanceStatePath `json:"statePaths"`
+}
+
+// GetId returns getInstanceInstance.Id, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetId() string { return v.Id }
+
+// GetName returns getInstanceInstance.Name, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetName() string { return v.Name }
+
+// GetStatus returns getInstanceInstance.Status, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetStatus() InstanceStatus { return v.Status }
+
+// GetParams returns getInstanceInstance.Params, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetParams() map[string]any { return v.Params }
+
+// GetAttributes returns getInstanceInstance.Attributes, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetAttributes() map[string]any { return v.Attributes }
+
+// GetVersion returns getInstanceInstance.Version, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetVersion() string { return v.Version }
+
+// GetReleaseStrategy returns getInstanceInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetReleaseStrategy() ReleaseStrategy { return v.ReleaseStrategy }
+
+// GetResolvedVersion returns getInstanceInstance.ResolvedVersion, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetResolvedVersion() string { return v.ResolvedVersion }
+
+// GetDeployedVersion returns getInstanceInstance.DeployedVersion, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetDeployedVersion() string { return v.DeployedVersion }
+
+// GetAvailableUpgrade returns getInstanceInstance.AvailableUpgrade, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetAvailableUpgrade() string { return v.AvailableUpgrade }
+
+// GetCreatedAt returns getInstanceInstance.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getInstanceInstance.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetCost returns getInstanceInstance.Cost, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetCost() getInstanceInstanceCostCostSummary { return v.Cost }
+
+// GetEnvironment returns getInstanceInstance.Environment, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetEnvironment() getInstanceInstanceEnvironment { return v.Environment }
+
+// GetBundle returns getInstanceInstance.Bundle, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetBundle() getInstanceInstanceBundle { return v.Bundle }
+
+// GetComponent returns getInstanceInstance.Component, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetComponent() getInstanceInstanceComponent { return v.Component }
+
+// GetStatePaths returns getInstanceInstance.StatePaths, and is useful for accessing the field via an interface.
+func (v *getInstanceInstance) GetStatePaths() []getInstanceInstanceStatePathsInstanceStatePath {
+	return v.StatePaths
+}
+
+func (v *getInstanceInstance) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getInstanceInstance
+		Params     json.RawMessage `json:"params"`
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getInstanceInstance = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -3517,32 +5486,63 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Params: %w", err)
+					"unable to unmarshal getInstanceInstance.Params: %w", err)
+			}
+		}
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getInstanceInstance.Attributes: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage struct {
+type __premarshalgetInstanceInstance struct {
 	Id string `json:"id"`
 
-	Slug string `json:"slug"`
+	Name string `json:"name"`
 
-	Status PackageStatus `json:"status"`
+	Status InstanceStatus `json:"status"`
 
 	Params json.RawMessage `json:"params"`
 
-	Artifacts []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact `json:"artifacts"`
+	Attributes json.RawMessage `json:"attributes"`
 
-	RemoteReferences []getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference `json:"remoteReferences"`
+	Version string `json:"version"`
 
-	Bundle getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle `json:"bundle"`
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
 
-	Manifest getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest `json:"manifest"`
+	ResolvedVersion string `json:"resolvedVersion"`
+
+	DeployedVersion string `json:"deployedVersion"`
+
+	AvailableUpgrade string `json:"availableUpgrade"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Cost getInstanceInstanceCostCostSummary `json:"cost"`
+
+	Environment getInstanceInstanceEnvironment `json:"environment"`
+
+	Bundle getInstanceInstanceBundle `json:"bundle"`
+
+	Component getInstanceInstanceComponent `json:"component"`
+
+	StatePaths []getInstanceInstanceStatePathsInstanceStatePath `json:"statePaths"`
 }
 
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) MarshalJSON() ([]byte, error) {
+func (v *getInstanceInstance) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -3550,11 +5550,11 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 	return json.Marshal(premarshaled)
 }
 
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) __premarshalJSON() (*__premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage, error) {
-	var retval __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage
+func (v *getInstanceInstance) __premarshalJSON() (*__premarshalgetInstanceInstance, error) {
+	var retval __premarshalgetInstanceInstance
 
 	retval.Id = v.Id
-	retval.Slug = v.Slug
+	retval.Name = v.Name
 	retval.Status = v.Status
 	{
 
@@ -3565,86 +5565,167 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage) 
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackage.Params: %w", err)
+				"unable to marshal getInstanceInstance.Params: %w", err)
 		}
 	}
-	retval.Artifacts = v.Artifacts
-	retval.RemoteReferences = v.RemoteReferences
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getInstanceInstance.Attributes: %w", err)
+		}
+	}
+	retval.Version = v.Version
+	retval.ReleaseStrategy = v.ReleaseStrategy
+	retval.ResolvedVersion = v.ResolvedVersion
+	retval.DeployedVersion = v.DeployedVersion
+	retval.AvailableUpgrade = v.AvailableUpgrade
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Cost = v.Cost
+	retval.Environment = v.Environment
 	retval.Bundle = v.Bundle
-	retval.Manifest = v.Manifest
+	retval.Component = v.Component
+	retval.StatePaths = v.StatePaths
 	return &retval, nil
 }
 
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact includes the requested fields of the GraphQL type Artifact.
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-	// The bundle's artifact field (output field) that produced this artifact.
-	Field string `json:"field"`
-}
-
-// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact) GetId() string {
-	return v.Id
-}
-
-// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact) GetName() string {
-	return v.Name
-}
-
-// GetField returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact.Field, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageArtifactsArtifact) GetField() string {
-	return v.Field
-}
-
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle includes the requested fields of the GraphQL type Bundle.
+// getInstanceInstanceBundle includes the requested fields of the GraphQL type Bundle.
 // The GraphQL type's documentation follows.
 //
-// A specific version of a bundle
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle struct {
-	// Unique identifier
+// A versioned infrastructure-as-code package.
+//
+// A bundle is a single published version of an IaC package in your organization's
+// catalog. Each bundle belongs to an OCI repository and is identified by a composite
+// `name@version` string (e.g., `aws-aurora-postgres@1.2.3`).
+//
+// Bundles declare **dependencies** (inputs they require from other bundles) and
+// **resources** (outputs they produce). These declarations drive the connection
+// system on the Massdriver canvas -- when you add a component to a blueprint,
+// the platform knows which other components can satisfy its dependencies.
+//
+// ```mermaid
+// graph TD
+// R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+// R --> T2["Tag: 1.1.0"]
+// R --> T3["Tag: 1.2.3"]
+// R --> RC1["Channel: ~1 → 1.2.3"]
+// R --> RC2["Channel: latest → 1.2.3"]
+// T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
+// B --> D1["Dependency: aws-iam-role"]
+// B --> D2["Dependency: aws-vpc"]
+// B --> RES["Resource: aurora-cluster"]
+// ```
+type getInstanceInstanceBundle struct {
+	// Composite identifier in `name@version` format (e.g., `aws-aurora-postgres@1.2.3`). Always contains the fully resolved semver version.
 	Id string `json:"id"`
-	// Name of the bundle
+	// OCI repository name this bundle belongs to (e.g., `aws-aurora-postgres`).
 	Name string `json:"name"`
-	// Raw massdriver.yaml spec
-	Spec map[string]any `json:"-"`
-	// Version of the bundle specification
-	SpecVersion string `json:"specVersion"`
+	// Fully resolved semantic version of this bundle (e.g., `1.2.3`).
+	Version string `json:"version"`
+	// Short summary of what this bundle provisions.
+	Description string `json:"description"`
+	// URL to the bundle's display icon.
+	Icon string `json:"icon"`
+	// URL to the bundle's source code repository, if published by the author.
+	SourceUrl string `json:"sourceUrl"`
+	// OCI repository name for this bundle (e.g., `aws-aurora-postgres`). Equivalent to `name`.
+	Repo string `json:"repo"`
+	// Timestamp when this bundle version was first published (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this bundle version was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) GetId() string {
-	return v.Id
+// GetId returns getInstanceInstanceBundle.Id, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetId() string { return v.Id }
+
+// GetName returns getInstanceInstanceBundle.Name, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetName() string { return v.Name }
+
+// GetVersion returns getInstanceInstanceBundle.Version, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetVersion() string { return v.Version }
+
+// GetDescription returns getInstanceInstanceBundle.Description, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetDescription() string { return v.Description }
+
+// GetIcon returns getInstanceInstanceBundle.Icon, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetIcon() string { return v.Icon }
+
+// GetSourceUrl returns getInstanceInstanceBundle.SourceUrl, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetSourceUrl() string { return v.SourceUrl }
+
+// GetRepo returns getInstanceInstanceBundle.Repo, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetRepo() string { return v.Repo }
+
+// GetCreatedAt returns getInstanceInstanceBundle.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getInstanceInstanceBundle.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceBundle) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// getInstanceInstanceComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type getInstanceInstanceComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) GetName() string {
-	return v.Name
-}
+// GetId returns getInstanceInstanceComponent.Id, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceComponent) GetId() string { return v.Id }
 
-// GetSpec returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.Spec, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) GetSpec() map[string]any {
-	return v.Spec
-}
+// GetName returns getInstanceInstanceComponent.Name, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceComponent) GetName() string { return v.Name }
 
-// GetSpecVersion returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.SpecVersion, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) GetSpecVersion() string {
-	return v.SpecVersion
-}
+// GetDescription returns getInstanceInstanceComponent.Description, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceComponent) GetDescription() string { return v.Description }
 
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) UnmarshalJSON(b []byte) error {
+// GetAttributes returns getInstanceInstanceComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceComponent) GetAttributes() map[string]any { return v.Attributes }
+
+// GetCreatedAt returns getInstanceInstanceComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceComponent) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getInstanceInstanceComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceComponent) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+func (v *getInstanceInstanceComponent) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle
-		Spec json.RawMessage `json:"spec"`
+		*getInstanceInstanceComponent
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle = v
+	firstPass.getInstanceInstanceComponent = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -3652,31 +5733,35 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBu
 	}
 
 	{
-		dst := &v.Spec
-		src := firstPass.Spec
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.Spec: %w", err)
+					"unable to unmarshal getInstanceInstanceComponent.Attributes: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-type __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle struct {
+type __premarshalgetInstanceInstanceComponent struct {
 	Id string `json:"id"`
 
 	Name string `json:"name"`
 
-	Spec json.RawMessage `json:"spec"`
+	Description string `json:"description"`
 
-	SpecVersion string `json:"specVersion"`
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) MarshalJSON() ([]byte, error) {
+func (v *getInstanceInstanceComponent) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -3684,768 +5769,466 @@ func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBu
 	return json.Marshal(premarshaled)
 }
 
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle) __premarshalJSON() (*__premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle, error) {
-	var retval __premarshalgetEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle
+func (v *getInstanceInstanceComponent) __premarshalJSON() (*__premarshalgetInstanceInstanceComponent, error) {
+	var retval __premarshalgetInstanceInstanceComponent
 
 	retval.Id = v.Id
 	retval.Name = v.Name
+	retval.Description = v.Description
 	{
 
-		dst := &retval.Spec
-		src := v.Spec
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageBundle.Spec: %w", err)
+				"unable to marshal getInstanceInstanceComponent.Attributes: %w", err)
 		}
 	}
-	retval.SpecVersion = v.SpecVersion
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
 	return &retval, nil
 }
 
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest includes the requested fields of the GraphQL type Manifest.
+// getInstanceInstanceCostCostSummary includes the requested fields of the GraphQL type CostSummary.
 // The GraphQL type's documentation follows.
 //
-// A bundle used in a project with a specific context (e.g. redis 'cache' vs 'sessions' instance)
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Suffix      string `json:"suffix"`
+// Aggregated cloud-provider cost metrics for a project or environment.
+//
+// Cost data is sourced from your cloud provider's billing APIs and refreshed periodically.
+// Each metric is a `CostSample` containing an amount and currency. All four metrics are
+// always present, but their inner `amount` and `currency` may be null if billing data has
+// not yet been ingested.
+//
+// - **last_month** -- Total spend for the most recent complete billing cycle.
+// - **monthly_average** -- Average monthly spend across all available billing cycles.
+// - **last_day** -- Total spend for the most recent 24-hour period.
+// - **daily_average** -- Average daily spend over the last 7 days.
+type getInstanceInstanceCostCostSummary struct {
+	// Average monthly cost across all available billing cycles.
+	MonthlyAverage getInstanceInstanceCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	// Average daily cost over the last 7 days.
+	DailyAverage getInstanceInstanceCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+}
+
+// GetMonthlyAverage returns getInstanceInstanceCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceCostCostSummary) GetMonthlyAverage() getInstanceInstanceCostCostSummaryMonthlyAverageCostSample {
+	return v.MonthlyAverage
+}
+
+// GetDailyAverage returns getInstanceInstanceCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceCostCostSummary) GetDailyAverage() getInstanceInstanceCostCostSummaryDailyAverageCostSample {
+	return v.DailyAverage
+}
+
+// getInstanceInstanceCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type getInstanceInstanceCostCostSummaryDailyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getInstanceInstanceCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns getInstanceInstanceCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getInstanceInstanceCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type getInstanceInstanceCostCostSummaryMonthlyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getInstanceInstanceCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns getInstanceInstanceCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getInstanceInstanceEnvironment includes the requested fields of the GraphQL type Environment.
+// The GraphQL type's documentation follows.
+//
+// A deployment target within a project where blueprint components become live infrastructure.
+//
+// Each project can have multiple environments (e.g., `staging`, `production`). When you deploy
+// to an environment, every component in the project's blueprint is realized as an **Instance** --
+// a running piece of cloud infrastructure with its own configuration, state, and cost data.
+//
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
+// that cascade down to all instances within the environment. **Defaults** let you pre-assign
+// resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
+//
+// Before deleting an environment, all instances must be decommissioned. Use the `deletable`
+// field to check for blocking constraints.
+type getInstanceInstanceEnvironment struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the project.
+	Name string `json:"name"`
+	// Free-text description of what this environment is for.
+	Description string `json:"description"`
+	// The parent project that this environment belongs to.
+	Project getInstanceInstanceEnvironmentProject `json:"project"`
+}
+
+// GetId returns getInstanceInstanceEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceEnvironment) GetId() string { return v.Id }
+
+// GetName returns getInstanceInstanceEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceEnvironment) GetName() string { return v.Name }
+
+// GetDescription returns getInstanceInstanceEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceEnvironment) GetDescription() string { return v.Description }
+
+// GetProject returns getInstanceInstanceEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceEnvironment) GetProject() getInstanceInstanceEnvironmentProject {
+	return v.Project
+}
+
+// getInstanceInstanceEnvironmentProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project organizes related infrastructure under a single blueprint.
+//
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Attributes set on a project are inherited by all environments and instances within it.
+type getInstanceInstanceEnvironmentProject struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the organization.
+	Name string `json:"name"`
+	// Free-text description of what this project is for.
 	Description string `json:"description"`
 }
 
-// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetId() string {
-	return v.Id
+// GetId returns getInstanceInstanceEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceEnvironmentProject) GetId() string { return v.Id }
+
+// GetName returns getInstanceInstanceEnvironmentProject.Name, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceEnvironmentProject) GetName() string { return v.Name }
+
+// GetDescription returns getInstanceInstanceEnvironmentProject.Description, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceEnvironmentProject) GetDescription() string { return v.Description }
+
+// getInstanceInstanceStatePathsInstanceStatePath includes the requested fields of the GraphQL type InstanceStatePath.
+// The GraphQL type's documentation follows.
+//
+// A Terraform/OpenTofu state path for a single deployment step.
+//
+// Bundles can define multiple provisioning steps (e.g., `core`, `iam`, `monitoring`).
+// Each step has its own state file managed by the Massdriver HTTP state backend.
+type getInstanceInstanceStatePathsInstanceStatePath struct {
+	// The step's path identifier as defined in the bundle's `massdriver.yaml`.
+	StepName string `json:"stepName"`
+	// Full URL for this step's state file on the Massdriver HTTP state backend.
+	StateUrl string `json:"stateUrl"`
 }
 
-// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetName() string {
-	return v.Name
+// GetStepName returns getInstanceInstanceStatePathsInstanceStatePath.StepName, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceStatePathsInstanceStatePath) GetStepName() string { return v.StepName }
+
+// GetStateUrl returns getInstanceInstanceStatePathsInstanceStatePath.StateUrl, and is useful for accessing the field via an interface.
+func (v *getInstanceInstanceStatePathsInstanceStatePath) GetStateUrl() string { return v.StateUrl }
+
+// getInstanceResponse is returned by getInstance on success.
+type getInstanceResponse struct {
+	// Fetch a single instance by its ID. Returns null with a `NOT_FOUND` error if the instance does not exist.
+	Instance getInstanceInstance `json:"instance"`
 }
 
-// GetSlug returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Slug, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetSlug() string {
-	return v.Slug
-}
-
-// GetSuffix returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Suffix, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetSuffix() string {
-	return v.Suffix
-}
-
-// GetDescription returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest.Description, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageManifest) GetDescription() string {
-	return v.Description
-}
-
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference struct {
-	Artifact getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact `json:"artifact"`
-}
-
-// GetArtifact returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference.Artifact, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReference) GetArtifact() getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact {
-	return v.Artifact
-}
-
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact includes the requested fields of the GraphQL type Artifact.
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-	// The bundle's artifact field (output field) that produced this artifact.
-	Field string `json:"field"`
-}
-
-// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetId() string {
-	return v.Id
-}
-
-// GetName returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetName() string {
-	return v.Name
-}
-
-// GetField returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact.Field, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentPackagesPackageRemoteReferencesRemoteReferenceArtifact) GetField() string {
-	return v.Field
-}
-
-// getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject includes the requested fields of the GraphQL type Project.
-type getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject struct {
-	Id   string `json:"id"`
-	Slug string `json:"slug"`
-}
-
-// GetId returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject.Id, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject) GetId() string { return v.Id }
-
-// GetSlug returns getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject.Slug, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectProjectEnvironmentsEnvironmentProject) GetSlug() string {
-	return v.Slug
-}
-
-// getEnvironmentsByProjectResponse is returned by getEnvironmentsByProject on success.
-type getEnvironmentsByProjectResponse struct {
-	Project getEnvironmentsByProjectProject `json:"project"`
-}
-
-// GetProject returns getEnvironmentsByProjectResponse.Project, and is useful for accessing the field via an interface.
-func (v *getEnvironmentsByProjectResponse) GetProject() getEnvironmentsByProjectProject {
-	return v.Project
-}
+// GetInstance returns getInstanceResponse.Instance, and is useful for accessing the field via an interface.
+func (v *getInstanceResponse) GetInstance() getInstanceInstance { return v.Instance }
 
 // getOciRepoOciRepo includes the requested fields of the GraphQL type OciRepo.
 // The GraphQL type's documentation follows.
 //
-// A namespace for storing related container images and artifacts
+// An OCI repository in your organization's bundle catalog.
+//
+// An OCI repository is the container for all published versions of a single
+// infrastructure-as-code package. It is analogous to a Docker image repository
+// but for Massdriver bundles.
+//
+// Each repository has a unique `name` (e.g., `aws-aurora-postgres`) and contains:
+//
+// - **Tags** -- the individual published versions (`1.0.0`, `1.1.0`, `1.2.3`, etc.)
+// - **Release channels** -- auto-resolving version constraints (`latest`, `~1`, `~1.2`)
+// that always point to the newest matching tag
+//
+// To fetch a specific bundle version from a repository, use the `bundle` query
+// with a `BundleId` like `aws-aurora-postgres@1.2.3` or `aws-aurora-postgres@~1`.
 type getOciRepoOciRepo struct {
-	// The repository name within the registry
+	Id string `json:"id"`
+	// Repository name, unique within your organization (e.g., `aws-aurora-postgres`).
 	Name string `json:"name"`
-	// Distribution channels for artifact releases
-	ReleaseChannels []getOciRepoOciRepoReleaseChannelsOciReleaseChannel `json:"releaseChannels"`
-	// Human-readable references to manifests in this repository
-	Tags []getOciRepoOciRepoTagsOciTag `json:"tags"`
+	// The [OCI artifact type](https://github.com/opencontainers/image-spec/blob/main/manifest.md#guidelines-for-artifact-usage)
+	// stored in this repository. Currently always
+	// `application/vnd.massdriver.bundle.v1+json`.
+	ArtifactType string `json:"artifactType"`
+	// Timestamp when this repository was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this repository was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Paginated list of release channels for this repository.
+	//
+	// Each channel is a version constraint that auto-resolves to the latest matching
+	// tag. Use the `stable` filter to show only stable or only development channels.
+	ReleaseChannels getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPage `json:"releaseChannels"`
+	// Paginated list of published version tags in this repository.
+	//
+	// Each tag represents a single immutable bundle release. Defaults to newest
+	// version first (`version` descending).
+	Tags getOciRepoOciRepoTagsOciRepoTagsPage `json:"tags"`
 }
+
+// GetId returns getOciRepoOciRepo.Id, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepo) GetId() string { return v.Id }
 
 // GetName returns getOciRepoOciRepo.Name, and is useful for accessing the field via an interface.
 func (v *getOciRepoOciRepo) GetName() string { return v.Name }
 
+// GetArtifactType returns getOciRepoOciRepo.ArtifactType, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepo) GetArtifactType() string { return v.ArtifactType }
+
+// GetCreatedAt returns getOciRepoOciRepo.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepo) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getOciRepoOciRepo.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepo) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
 // GetReleaseChannels returns getOciRepoOciRepo.ReleaseChannels, and is useful for accessing the field via an interface.
-func (v *getOciRepoOciRepo) GetReleaseChannels() []getOciRepoOciRepoReleaseChannelsOciReleaseChannel {
+func (v *getOciRepoOciRepo) GetReleaseChannels() getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPage {
 	return v.ReleaseChannels
 }
 
 // GetTags returns getOciRepoOciRepo.Tags, and is useful for accessing the field via an interface.
-func (v *getOciRepoOciRepo) GetTags() []getOciRepoOciRepoTagsOciTag { return v.Tags }
+func (v *getOciRepoOciRepo) GetTags() getOciRepoOciRepoTagsOciRepoTagsPage { return v.Tags }
 
-// getOciRepoOciRepoReleaseChannelsOciReleaseChannel includes the requested fields of the GraphQL type OciReleaseChannel.
+// getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPage includes the requested fields of the GraphQL type OciRepoReleaseChannelsPage.
+type getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPage struct {
+	// A list of type oci_repo_release_channel.
+	Items []getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel `json:"items"`
+}
+
+// GetItems returns getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPage.Items, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPage) GetItems() []getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel {
+	return v.Items
+}
+
+// getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel includes the requested fields of the GraphQL type OciRepoReleaseChannel.
 // The GraphQL type's documentation follows.
 //
-// A release channel that resolves to a specific tag
-type getOciRepoOciRepoReleaseChannelsOciReleaseChannel struct {
-	// The channel name (e.g., 'latest', '1.x', '0.x')
+// A release channel within an OCI repository.
+//
+// Release channels are auto-resolving version constraints. Each channel points to
+// the latest published tag that matches its constraint. As new versions are
+// published, channels automatically update to point to the newest match.
+//
+// For example, channel `~1` always resolves to the highest `1.x.x` stable tag.
+// If `1.2.3` is the latest, the channel points there. When `1.3.0` is published,
+// the channel automatically advances.
+type getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel struct {
+	// The channel constraint expression (e.g., `~1`, `~1.2`, `latest`, `latest+dev`).
 	Name string `json:"name"`
-	// The tag this channel resolves to (e.g., '1.0.0')
+	// The fully resolved semver version this channel currently points to.
 	Tag string `json:"tag"`
 }
 
-// GetName returns getOciRepoOciRepoReleaseChannelsOciReleaseChannel.Name, and is useful for accessing the field via an interface.
-func (v *getOciRepoOciRepoReleaseChannelsOciReleaseChannel) GetName() string { return v.Name }
+// GetName returns getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel.Name, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel) GetName() string {
+	return v.Name
+}
 
-// GetTag returns getOciRepoOciRepoReleaseChannelsOciReleaseChannel.Tag, and is useful for accessing the field via an interface.
-func (v *getOciRepoOciRepoReleaseChannelsOciReleaseChannel) GetTag() string { return v.Tag }
+// GetTag returns getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel.Tag, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel) GetTag() string {
+	return v.Tag
+}
 
-// getOciRepoOciRepoTagsOciTag includes the requested fields of the GraphQL type OciTag.
+// getOciRepoOciRepoTagsOciRepoTagsPage includes the requested fields of the GraphQL type OciRepoTagsPage.
+type getOciRepoOciRepoTagsOciRepoTagsPage struct {
+	// A list of type oci_repo_tag.
+	Items []getOciRepoOciRepoTagsOciRepoTagsPageItemsOciRepoTag `json:"items"`
+}
+
+// GetItems returns getOciRepoOciRepoTagsOciRepoTagsPage.Items, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepoTagsOciRepoTagsPage) GetItems() []getOciRepoOciRepoTagsOciRepoTagsPageItemsOciRepoTag {
+	return v.Items
+}
+
+// getOciRepoOciRepoTagsOciRepoTagsPageItemsOciRepoTag includes the requested fields of the GraphQL type OciRepoTag.
 // The GraphQL type's documentation follows.
 //
-// A human-readable reference name that points to a specific OCI manifest
-type getOciRepoOciRepoTagsOciTag struct {
-	// The tag name/label (e.g., 'latest', 'v1.0.0')
+// A published version tag in an OCI repository.
+//
+// Each tag corresponds to a single bundle release. Tags are immutable -- once
+// a version is published, its contents cannot change. Development tags use
+// a `-dev.TIMESTAMP` suffix (e.g., `1.2.3-dev.20060102T150405Z`).
+type getOciRepoOciRepoTagsOciRepoTagsPageItemsOciRepoTag struct {
+	// The semantic version string (e.g., `1.2.3` or `1.2.3-dev.20060102T150405Z`).
 	Tag string `json:"tag"`
+	// Timestamp when this version was published (UTC).
+	CreatedAt time.Time `json:"createdAt"`
 }
 
-// GetTag returns getOciRepoOciRepoTagsOciTag.Tag, and is useful for accessing the field via an interface.
-func (v *getOciRepoOciRepoTagsOciTag) GetTag() string { return v.Tag }
+// GetTag returns getOciRepoOciRepoTagsOciRepoTagsPageItemsOciRepoTag.Tag, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepoTagsOciRepoTagsPageItemsOciRepoTag) GetTag() string { return v.Tag }
+
+// GetCreatedAt returns getOciRepoOciRepoTagsOciRepoTagsPageItemsOciRepoTag.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getOciRepoOciRepoTagsOciRepoTagsPageItemsOciRepoTag) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
 
 // getOciRepoResponse is returned by getOciRepo on success.
 type getOciRepoResponse struct {
-	// Get an OCI repository
+	// Fetch a single OCI repository by name.
+	//
+	// Returns the repository along with its nested `tags` and `releaseChannels`
+	// collections. Returns `null` with a `NOT_FOUND` error if the repository
+	// does not exist in your organization.
+	//
+	// ```graphql
+	// query {
+	// ociRepo(organizationId: "your-org-id", id: "aws-aurora-postgres") {
+	// id
+	// name
+	// artifactType
+	// tags(sort: { field: VERSION, order: DESC }) {
+	// items { tag createdAt }
+	// cursor { next }
+	// }
+	// releaseChannels(filter: { stable: true }) {
+	// items { name tag }
+	// }
+	// }
+	// }
+	// ```
 	OciRepo getOciRepoOciRepo `json:"ociRepo"`
 }
 
 // GetOciRepo returns getOciRepoResponse.OciRepo, and is useful for accessing the field via an interface.
 func (v *getOciRepoResponse) GetOciRepo() getOciRepoOciRepo { return v.OciRepo }
 
-// getPackagePackage includes the requested fields of the GraphQL type Package.
+// getProjectProject includes the requested fields of the GraphQL type Project.
 // The GraphQL type's documentation follows.
 //
-// A deployed instance of a bundle in the context of its manifest
-type getPackagePackage struct {
-	// Unique identifier
-	Id string `json:"id"`
-	// Unique identifier for the package
-	Slug string `json:"slug"`
-	// Current status of the package
-	Status PackageStatus `json:"status"`
-	// The semantic version that was last executed.
-	// This reflects what has been provisioned to infrastructure, which may differ from `resolvedVersion`
-	// if the package hasn't been deployed since the version was changed. Returns nil if never deployed.
-	DeployedVersion string `json:"deployedVersion"`
-	// Package configuration parameters
-	Params map[string]any `json:"-"`
-	// The latest deployment for this package
-	LatestDeployment getPackagePackageLatestDeployment `json:"latestDeployment"`
-	// Currently active deployment for this package
-	ActiveDeployment getPackagePackageActiveDeployment `json:"activeDeployment"`
-	// Artifacts provisioned by this package
-	Artifacts []getPackagePackageArtifactsArtifact `json:"artifacts"`
-	// Artifacts from a remote source like another project or a resource not managed by massdriver
-	RemoteReferences []getPackagePackageRemoteReferencesRemoteReference `json:"remoteReferences"`
-	Bundle           getPackagePackageBundle                            `json:"bundle"`
-	Manifest         getPackagePackageManifest                          `json:"manifest"`
-	// The environment this package will be deployed to
-	Environment getPackagePackageEnvironment `json:"environment"`
-}
-
-// GetId returns getPackagePackage.Id, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetId() string { return v.Id }
-
-// GetSlug returns getPackagePackage.Slug, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetSlug() string { return v.Slug }
-
-// GetStatus returns getPackagePackage.Status, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetStatus() PackageStatus { return v.Status }
-
-// GetDeployedVersion returns getPackagePackage.DeployedVersion, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetDeployedVersion() string { return v.DeployedVersion }
-
-// GetParams returns getPackagePackage.Params, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetParams() map[string]any { return v.Params }
-
-// GetLatestDeployment returns getPackagePackage.LatestDeployment, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetLatestDeployment() getPackagePackageLatestDeployment {
-	return v.LatestDeployment
-}
-
-// GetActiveDeployment returns getPackagePackage.ActiveDeployment, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetActiveDeployment() getPackagePackageActiveDeployment {
-	return v.ActiveDeployment
-}
-
-// GetArtifacts returns getPackagePackage.Artifacts, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetArtifacts() []getPackagePackageArtifactsArtifact { return v.Artifacts }
-
-// GetRemoteReferences returns getPackagePackage.RemoteReferences, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetRemoteReferences() []getPackagePackageRemoteReferencesRemoteReference {
-	return v.RemoteReferences
-}
-
-// GetBundle returns getPackagePackage.Bundle, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetBundle() getPackagePackageBundle { return v.Bundle }
-
-// GetManifest returns getPackagePackage.Manifest, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetManifest() getPackagePackageManifest { return v.Manifest }
-
-// GetEnvironment returns getPackagePackage.Environment, and is useful for accessing the field via an interface.
-func (v *getPackagePackage) GetEnvironment() getPackagePackageEnvironment { return v.Environment }
-
-func (v *getPackagePackage) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getPackagePackage
-		Params json.RawMessage `json:"params"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getPackagePackage = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Params
-		src := firstPass.Params
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getPackagePackage.Params: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalgetPackagePackage struct {
-	Id string `json:"id"`
-
-	Slug string `json:"slug"`
-
-	Status PackageStatus `json:"status"`
-
-	DeployedVersion string `json:"deployedVersion"`
-
-	Params json.RawMessage `json:"params"`
-
-	LatestDeployment getPackagePackageLatestDeployment `json:"latestDeployment"`
-
-	ActiveDeployment getPackagePackageActiveDeployment `json:"activeDeployment"`
-
-	Artifacts []getPackagePackageArtifactsArtifact `json:"artifacts"`
-
-	RemoteReferences []getPackagePackageRemoteReferencesRemoteReference `json:"remoteReferences"`
-
-	Bundle getPackagePackageBundle `json:"bundle"`
-
-	Manifest getPackagePackageManifest `json:"manifest"`
-
-	Environment getPackagePackageEnvironment `json:"environment"`
-}
-
-func (v *getPackagePackage) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getPackagePackage) __premarshalJSON() (*__premarshalgetPackagePackage, error) {
-	var retval __premarshalgetPackagePackage
-
-	retval.Id = v.Id
-	retval.Slug = v.Slug
-	retval.Status = v.Status
-	retval.DeployedVersion = v.DeployedVersion
-	{
-
-		dst := &retval.Params
-		src := v.Params
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getPackagePackage.Params: %w", err)
-		}
-	}
-	retval.LatestDeployment = v.LatestDeployment
-	retval.ActiveDeployment = v.ActiveDeployment
-	retval.Artifacts = v.Artifacts
-	retval.RemoteReferences = v.RemoteReferences
-	retval.Bundle = v.Bundle
-	retval.Manifest = v.Manifest
-	retval.Environment = v.Environment
-	return &retval, nil
-}
-
-// getPackagePackageActiveDeployment includes the requested fields of the GraphQL type Deployment.
-// The GraphQL type's documentation follows.
+// A project organizes related infrastructure under a single blueprint.
 //
-// A deployment represents an instance of a bundle being deployed to a target environment
-type getPackagePackageActiveDeployment struct {
-	Id        string           `json:"id"`
-	Status    DeploymentStatus `json:"status"`
-	Action    DeploymentAction `json:"action"`
-	Version   string           `json:"version"`
-	CreatedAt time.Time        `json:"createdAt"`
-}
-
-// GetId returns getPackagePackageActiveDeployment.Id, and is useful for accessing the field via an interface.
-func (v *getPackagePackageActiveDeployment) GetId() string { return v.Id }
-
-// GetStatus returns getPackagePackageActiveDeployment.Status, and is useful for accessing the field via an interface.
-func (v *getPackagePackageActiveDeployment) GetStatus() DeploymentStatus { return v.Status }
-
-// GetAction returns getPackagePackageActiveDeployment.Action, and is useful for accessing the field via an interface.
-func (v *getPackagePackageActiveDeployment) GetAction() DeploymentAction { return v.Action }
-
-// GetVersion returns getPackagePackageActiveDeployment.Version, and is useful for accessing the field via an interface.
-func (v *getPackagePackageActiveDeployment) GetVersion() string { return v.Version }
-
-// GetCreatedAt returns getPackagePackageActiveDeployment.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getPackagePackageActiveDeployment) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// getPackagePackageArtifactsArtifact includes the requested fields of the GraphQL type Artifact.
-type getPackagePackageArtifactsArtifact struct {
-	Id   string `json:"id"`
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Attributes set on a project are inherited by all environments and instances within it.
+type getProjectProject struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the organization.
 	Name string `json:"name"`
-	// The bundle's artifact field (output field) that produced this artifact.
-	Field string `json:"field"`
-}
-
-// GetId returns getPackagePackageArtifactsArtifact.Id, and is useful for accessing the field via an interface.
-func (v *getPackagePackageArtifactsArtifact) GetId() string { return v.Id }
-
-// GetName returns getPackagePackageArtifactsArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getPackagePackageArtifactsArtifact) GetName() string { return v.Name }
-
-// GetField returns getPackagePackageArtifactsArtifact.Field, and is useful for accessing the field via an interface.
-func (v *getPackagePackageArtifactsArtifact) GetField() string { return v.Field }
-
-// getPackagePackageBundle includes the requested fields of the GraphQL type Bundle.
-// The GraphQL type's documentation follows.
-//
-// A specific version of a bundle
-type getPackagePackageBundle struct {
-	// Unique identifier
-	Id string `json:"id"`
-	// Name of the bundle
-	Name string `json:"name"`
-	// Raw massdriver.yaml spec
-	Spec map[string]any `json:"-"`
-	// Version of the bundle specification
-	SpecVersion string `json:"specVersion"`
-}
-
-// GetId returns getPackagePackageBundle.Id, and is useful for accessing the field via an interface.
-func (v *getPackagePackageBundle) GetId() string { return v.Id }
-
-// GetName returns getPackagePackageBundle.Name, and is useful for accessing the field via an interface.
-func (v *getPackagePackageBundle) GetName() string { return v.Name }
-
-// GetSpec returns getPackagePackageBundle.Spec, and is useful for accessing the field via an interface.
-func (v *getPackagePackageBundle) GetSpec() map[string]any { return v.Spec }
-
-// GetSpecVersion returns getPackagePackageBundle.SpecVersion, and is useful for accessing the field via an interface.
-func (v *getPackagePackageBundle) GetSpecVersion() string { return v.SpecVersion }
-
-func (v *getPackagePackageBundle) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getPackagePackageBundle
-		Spec json.RawMessage `json:"spec"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getPackagePackageBundle = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Spec
-		src := firstPass.Spec
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getPackagePackageBundle.Spec: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalgetPackagePackageBundle struct {
-	Id string `json:"id"`
-
-	Name string `json:"name"`
-
-	Spec json.RawMessage `json:"spec"`
-
-	SpecVersion string `json:"specVersion"`
-}
-
-func (v *getPackagePackageBundle) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getPackagePackageBundle) __premarshalJSON() (*__premarshalgetPackagePackageBundle, error) {
-	var retval __premarshalgetPackagePackageBundle
-
-	retval.Id = v.Id
-	retval.Name = v.Name
-	{
-
-		dst := &retval.Spec
-		src := v.Spec
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getPackagePackageBundle.Spec: %w", err)
-		}
-	}
-	retval.SpecVersion = v.SpecVersion
-	return &retval, nil
-}
-
-// getPackagePackageEnvironment includes the requested fields of the GraphQL type Environment.
-type getPackagePackageEnvironment struct {
-	Id      string                              `json:"id"`
-	Slug    string                              `json:"slug"`
-	Project getPackagePackageEnvironmentProject `json:"project"`
-}
-
-// GetId returns getPackagePackageEnvironment.Id, and is useful for accessing the field via an interface.
-func (v *getPackagePackageEnvironment) GetId() string { return v.Id }
-
-// GetSlug returns getPackagePackageEnvironment.Slug, and is useful for accessing the field via an interface.
-func (v *getPackagePackageEnvironment) GetSlug() string { return v.Slug }
-
-// GetProject returns getPackagePackageEnvironment.Project, and is useful for accessing the field via an interface.
-func (v *getPackagePackageEnvironment) GetProject() getPackagePackageEnvironmentProject {
-	return v.Project
-}
-
-// getPackagePackageEnvironmentProject includes the requested fields of the GraphQL type Project.
-type getPackagePackageEnvironmentProject struct {
-	Id   string `json:"id"`
-	Slug string `json:"slug"`
-}
-
-// GetId returns getPackagePackageEnvironmentProject.Id, and is useful for accessing the field via an interface.
-func (v *getPackagePackageEnvironmentProject) GetId() string { return v.Id }
-
-// GetSlug returns getPackagePackageEnvironmentProject.Slug, and is useful for accessing the field via an interface.
-func (v *getPackagePackageEnvironmentProject) GetSlug() string { return v.Slug }
-
-// getPackagePackageLatestDeployment includes the requested fields of the GraphQL type Deployment.
-// The GraphQL type's documentation follows.
-//
-// A deployment represents an instance of a bundle being deployed to a target environment
-type getPackagePackageLatestDeployment struct {
-	Id        string           `json:"id"`
-	Status    DeploymentStatus `json:"status"`
-	Action    DeploymentAction `json:"action"`
-	Version   string           `json:"version"`
-	CreatedAt time.Time        `json:"createdAt"`
-}
-
-// GetId returns getPackagePackageLatestDeployment.Id, and is useful for accessing the field via an interface.
-func (v *getPackagePackageLatestDeployment) GetId() string { return v.Id }
-
-// GetStatus returns getPackagePackageLatestDeployment.Status, and is useful for accessing the field via an interface.
-func (v *getPackagePackageLatestDeployment) GetStatus() DeploymentStatus { return v.Status }
-
-// GetAction returns getPackagePackageLatestDeployment.Action, and is useful for accessing the field via an interface.
-func (v *getPackagePackageLatestDeployment) GetAction() DeploymentAction { return v.Action }
-
-// GetVersion returns getPackagePackageLatestDeployment.Version, and is useful for accessing the field via an interface.
-func (v *getPackagePackageLatestDeployment) GetVersion() string { return v.Version }
-
-// GetCreatedAt returns getPackagePackageLatestDeployment.CreatedAt, and is useful for accessing the field via an interface.
-func (v *getPackagePackageLatestDeployment) GetCreatedAt() time.Time { return v.CreatedAt }
-
-// getPackagePackageManifest includes the requested fields of the GraphQL type Manifest.
-// The GraphQL type's documentation follows.
-//
-// A bundle used in a project with a specific context (e.g. redis 'cache' vs 'sessions' instance)
-type getPackagePackageManifest struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Suffix      string `json:"suffix"`
+	// Free-text description of what this project is for.
 	Description string `json:"description"`
+	// Key-value attributes assigned directly to this project. Attributes cascade to environments and instances. Must conform to your organization's custom attributes for the `PROJECT` scope.
+	Attributes map[string]any `json:"-"`
+	// Paginated list of environments in this project (e.g., staging, production).
+	Environments getProjectProjectEnvironmentsEnvironmentsPage `json:"environments"`
+	// When this project was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this project was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Whether this project can be safely deleted. Check `constraints` for blocking conditions.
+	Deletable getProjectProjectDeletable `json:"deletable"`
+	// Aggregated cloud-provider cost metrics for all instances in this project.
+	Cost getProjectProjectCostCostSummary `json:"cost"`
 }
 
-// GetId returns getPackagePackageManifest.Id, and is useful for accessing the field via an interface.
-func (v *getPackagePackageManifest) GetId() string { return v.Id }
+// GetId returns getProjectProject.Id, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetId() string { return v.Id }
 
-// GetName returns getPackagePackageManifest.Name, and is useful for accessing the field via an interface.
-func (v *getPackagePackageManifest) GetName() string { return v.Name }
+// GetName returns getProjectProject.Name, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetName() string { return v.Name }
 
-// GetSlug returns getPackagePackageManifest.Slug, and is useful for accessing the field via an interface.
-func (v *getPackagePackageManifest) GetSlug() string { return v.Slug }
+// GetDescription returns getProjectProject.Description, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetDescription() string { return v.Description }
 
-// GetSuffix returns getPackagePackageManifest.Suffix, and is useful for accessing the field via an interface.
-func (v *getPackagePackageManifest) GetSuffix() string { return v.Suffix }
+// GetAttributes returns getProjectProject.Attributes, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetAttributes() map[string]any { return v.Attributes }
 
-// GetDescription returns getPackagePackageManifest.Description, and is useful for accessing the field via an interface.
-func (v *getPackagePackageManifest) GetDescription() string { return v.Description }
-
-// getPackagePackageRemoteReferencesRemoteReference includes the requested fields of the GraphQL type RemoteReference.
-type getPackagePackageRemoteReferencesRemoteReference struct {
-	Artifact getPackagePackageRemoteReferencesRemoteReferenceArtifact `json:"artifact"`
-}
-
-// GetArtifact returns getPackagePackageRemoteReferencesRemoteReference.Artifact, and is useful for accessing the field via an interface.
-func (v *getPackagePackageRemoteReferencesRemoteReference) GetArtifact() getPackagePackageRemoteReferencesRemoteReferenceArtifact {
-	return v.Artifact
-}
-
-// getPackagePackageRemoteReferencesRemoteReferenceArtifact includes the requested fields of the GraphQL type Artifact.
-type getPackagePackageRemoteReferencesRemoteReferenceArtifact struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-	// The bundle's artifact field (output field) that produced this artifact.
-	Field string `json:"field"`
-}
-
-// GetId returns getPackagePackageRemoteReferencesRemoteReferenceArtifact.Id, and is useful for accessing the field via an interface.
-func (v *getPackagePackageRemoteReferencesRemoteReferenceArtifact) GetId() string { return v.Id }
-
-// GetName returns getPackagePackageRemoteReferencesRemoteReferenceArtifact.Name, and is useful for accessing the field via an interface.
-func (v *getPackagePackageRemoteReferencesRemoteReferenceArtifact) GetName() string { return v.Name }
-
-// GetField returns getPackagePackageRemoteReferencesRemoteReferenceArtifact.Field, and is useful for accessing the field via an interface.
-func (v *getPackagePackageRemoteReferencesRemoteReferenceArtifact) GetField() string { return v.Field }
-
-// getPackageResponse is returned by getPackage on success.
-type getPackageResponse struct {
-	Package getPackagePackage `json:"package"`
-}
-
-// GetPackage returns getPackageResponse.Package, and is useful for accessing the field via an interface.
-func (v *getPackageResponse) GetPackage() getPackagePackage { return v.Package }
-
-// getProjectByIdProject includes the requested fields of the GraphQL type Project.
-type getProjectByIdProject struct {
-	Id            string         `json:"id"`
-	Name          string         `json:"name"`
-	DefaultParams map[string]any `json:"-"`
-	Slug          string         `json:"slug"`
-	Description   string         `json:"description"`
-}
-
-// GetId returns getProjectByIdProject.Id, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetId() string { return v.Id }
-
-// GetName returns getProjectByIdProject.Name, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetName() string { return v.Name }
-
-// GetDefaultParams returns getProjectByIdProject.DefaultParams, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetDefaultParams() map[string]any { return v.DefaultParams }
-
-// GetSlug returns getProjectByIdProject.Slug, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetSlug() string { return v.Slug }
-
-// GetDescription returns getProjectByIdProject.Description, and is useful for accessing the field via an interface.
-func (v *getProjectByIdProject) GetDescription() string { return v.Description }
-
-func (v *getProjectByIdProject) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*getProjectByIdProject
-		DefaultParams json.RawMessage `json:"defaultParams"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.getProjectByIdProject = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.DefaultParams
-		src := firstPass.DefaultParams
-		if len(src) != 0 && string(src) != "null" {
-			err = scalars.UnmarshalJSON(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal getProjectByIdProject.DefaultParams: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalgetProjectByIdProject struct {
-	Id string `json:"id"`
-
-	Name string `json:"name"`
-
-	DefaultParams json.RawMessage `json:"defaultParams"`
-
-	Slug string `json:"slug"`
-
-	Description string `json:"description"`
-}
-
-func (v *getProjectByIdProject) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *getProjectByIdProject) __premarshalJSON() (*__premarshalgetProjectByIdProject, error) {
-	var retval __premarshalgetProjectByIdProject
-
-	retval.Id = v.Id
-	retval.Name = v.Name
-	{
-
-		dst := &retval.DefaultParams
-		src := v.DefaultParams
-		var err error
-		*dst, err = scalars.MarshalJSON(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal getProjectByIdProject.DefaultParams: %w", err)
-		}
-	}
-	retval.Slug = v.Slug
-	retval.Description = v.Description
-	return &retval, nil
-}
-
-// getProjectByIdResponse is returned by getProjectById on success.
-type getProjectByIdResponse struct {
-	Project getProjectByIdProject `json:"project"`
-}
-
-// GetProject returns getProjectByIdResponse.Project, and is useful for accessing the field via an interface.
-func (v *getProjectByIdResponse) GetProject() getProjectByIdProject { return v.Project }
-
-// getProjectsProjectsProject includes the requested fields of the GraphQL type Project.
-type getProjectsProjectsProject struct {
-	Name          string                                              `json:"name"`
-	Id            string                                              `json:"id"`
-	Slug          string                                              `json:"slug"`
-	Description   string                                              `json:"description"`
-	DefaultParams map[string]any                                      `json:"-"`
-	Environments  []getProjectsProjectsProjectEnvironmentsEnvironment `json:"environments"`
-	// Cloud provider costs for this project
-	Cost getProjectsProjectsProjectCost `json:"cost"`
-}
-
-// GetName returns getProjectsProjectsProject.Name, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProject) GetName() string { return v.Name }
-
-// GetId returns getProjectsProjectsProject.Id, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProject) GetId() string { return v.Id }
-
-// GetSlug returns getProjectsProjectsProject.Slug, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProject) GetSlug() string { return v.Slug }
-
-// GetDescription returns getProjectsProjectsProject.Description, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProject) GetDescription() string { return v.Description }
-
-// GetDefaultParams returns getProjectsProjectsProject.DefaultParams, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProject) GetDefaultParams() map[string]any { return v.DefaultParams }
-
-// GetEnvironments returns getProjectsProjectsProject.Environments, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProject) GetEnvironments() []getProjectsProjectsProjectEnvironmentsEnvironment {
+// GetEnvironments returns getProjectProject.Environments, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetEnvironments() getProjectProjectEnvironmentsEnvironmentsPage {
 	return v.Environments
 }
 
-// GetCost returns getProjectsProjectsProject.Cost, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProject) GetCost() getProjectsProjectsProjectCost { return v.Cost }
+// GetCreatedAt returns getProjectProject.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetCreatedAt() time.Time { return v.CreatedAt }
 
-func (v *getProjectsProjectsProject) UnmarshalJSON(b []byte) error {
+// GetUpdatedAt returns getProjectProject.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetDeletable returns getProjectProject.Deletable, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetDeletable() getProjectProjectDeletable { return v.Deletable }
+
+// GetCost returns getProjectProject.Cost, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetCost() getProjectProjectCostCostSummary { return v.Cost }
+
+func (v *getProjectProject) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*getProjectsProjectsProject
-		DefaultParams json.RawMessage `json:"defaultParams"`
+		*getProjectProject
+		Attributes json.RawMessage `json:"attributes"`
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.getProjectsProjectsProject = v
+	firstPass.getProjectProject = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -4453,37 +6236,41 @@ func (v *getProjectsProjectsProject) UnmarshalJSON(b []byte) error {
 	}
 
 	{
-		dst := &v.DefaultParams
-		src := firstPass.DefaultParams
+		dst := &v.Attributes
+		src := firstPass.Attributes
 		if len(src) != 0 && string(src) != "null" {
 			err = scalars.UnmarshalJSON(
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal getProjectsProjectsProject.DefaultParams: %w", err)
+					"unable to unmarshal getProjectProject.Attributes: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-type __premarshalgetProjectsProjectsProject struct {
-	Name string `json:"name"`
-
+type __premarshalgetProjectProject struct {
 	Id string `json:"id"`
 
-	Slug string `json:"slug"`
+	Name string `json:"name"`
 
 	Description string `json:"description"`
 
-	DefaultParams json.RawMessage `json:"defaultParams"`
+	Attributes json.RawMessage `json:"attributes"`
 
-	Environments []getProjectsProjectsProjectEnvironmentsEnvironment `json:"environments"`
+	Environments getProjectProjectEnvironmentsEnvironmentsPage `json:"environments"`
 
-	Cost getProjectsProjectsProjectCost `json:"cost"`
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Deletable getProjectProjectDeletable `json:"deletable"`
+
+	Cost getProjectProjectCostCostSummary `json:"cost"`
 }
 
-func (v *getProjectsProjectsProject) MarshalJSON() ([]byte, error) {
+func (v *getProjectProject) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -4491,215 +6278,666 @@ func (v *getProjectsProjectsProject) MarshalJSON() ([]byte, error) {
 	return json.Marshal(premarshaled)
 }
 
-func (v *getProjectsProjectsProject) __premarshalJSON() (*__premarshalgetProjectsProjectsProject, error) {
-	var retval __premarshalgetProjectsProjectsProject
+func (v *getProjectProject) __premarshalJSON() (*__premarshalgetProjectProject, error) {
+	var retval __premarshalgetProjectProject
 
-	retval.Name = v.Name
 	retval.Id = v.Id
-	retval.Slug = v.Slug
+	retval.Name = v.Name
 	retval.Description = v.Description
 	{
 
-		dst := &retval.DefaultParams
-		src := v.DefaultParams
+		dst := &retval.Attributes
+		src := v.Attributes
 		var err error
 		*dst, err = scalars.MarshalJSON(
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal getProjectsProjectsProject.DefaultParams: %w", err)
+				"unable to marshal getProjectProject.Attributes: %w", err)
 		}
 	}
 	retval.Environments = v.Environments
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Deletable = v.Deletable
 	retval.Cost = v.Cost
 	return &retval, nil
 }
 
-// getProjectsProjectsProjectCost includes the requested fields of the GraphQL type Cost.
+// getProjectProjectCostCostSummary includes the requested fields of the GraphQL type CostSummary.
 // The GraphQL type's documentation follows.
 //
-// Cost information for a resource
-type getProjectsProjectsProjectCost struct {
-	// Monthly cost summary
-	Monthly getProjectsProjectsProjectCostMonthlySummary `json:"monthly"`
-	// Daily cost summary
-	Daily getProjectsProjectsProjectCostDailySummary `json:"daily"`
+// Aggregated cloud-provider cost metrics for a project or environment.
+//
+// Cost data is sourced from your cloud provider's billing APIs and refreshed periodically.
+// Each metric is a `CostSample` containing an amount and currency. All four metrics are
+// always present, but their inner `amount` and `currency` may be null if billing data has
+// not yet been ingested.
+//
+// - **last_month** -- Total spend for the most recent complete billing cycle.
+// - **monthly_average** -- Average monthly spend across all available billing cycles.
+// - **last_day** -- Total spend for the most recent 24-hour period.
+// - **daily_average** -- Average daily spend over the last 7 days.
+type getProjectProjectCostCostSummary struct {
+	// Average monthly cost across all available billing cycles.
+	MonthlyAverage getProjectProjectCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	// Average daily cost over the last 7 days.
+	DailyAverage getProjectProjectCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
 }
 
-// GetMonthly returns getProjectsProjectsProjectCost.Monthly, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectCost) GetMonthly() getProjectsProjectsProjectCostMonthlySummary {
-	return v.Monthly
+// GetMonthlyAverage returns getProjectProjectCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummary) GetMonthlyAverage() getProjectProjectCostCostSummaryMonthlyAverageCostSample {
+	return v.MonthlyAverage
 }
 
-// GetDaily returns getProjectsProjectsProjectCost.Daily, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectCost) GetDaily() getProjectsProjectsProjectCostDailySummary {
-	return v.Daily
+// GetDailyAverage returns getProjectProjectCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummary) GetDailyAverage() getProjectProjectCostCostSummaryDailyAverageCostSample {
+	return v.DailyAverage
 }
 
-// getProjectsProjectsProjectCostDailySummary includes the requested fields of the GraphQL type Summary.
+// getProjectProjectCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
 // The GraphQL type's documentation follows.
 //
-// Summary of costs over a time period
-type getProjectsProjectsProjectCostDailySummary struct {
-	// Average cost sample for the period (amount/currency may be null)
-	Average getProjectsProjectsProjectCostDailySummaryAverageCostSample `json:"average"`
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type getProjectProjectCostCostSummaryDailyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
 }
 
-// GetAverage returns getProjectsProjectsProjectCostDailySummary.Average, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectCostDailySummary) GetAverage() getProjectsProjectsProjectCostDailySummaryAverageCostSample {
-	return v.Average
+// GetAmount returns getProjectProjectCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummaryDailyAverageCostSample) GetAmount() float64 { return v.Amount }
+
+// GetCurrency returns getProjectProjectCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+	return v.Currency
 }
 
-// getProjectsProjectsProjectCostDailySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// getProjectProjectCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
 // The GraphQL type's documentation follows.
 //
-// A single cost measurement
-type getProjectsProjectsProjectCostDailySummaryAverageCostSample struct {
-	// The cost amount (null if no data available)
-	Amount *float64 `json:"amount"`
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type getProjectProjectCostCostSummaryMonthlyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
 }
 
-// GetAmount returns getProjectsProjectsProjectCostDailySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectCostDailySummaryAverageCostSample) GetAmount() *float64 {
+// GetAmount returns getProjectProjectCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
 	return v.Amount
 }
 
-// getProjectsProjectsProjectCostMonthlySummary includes the requested fields of the GraphQL type Summary.
+// GetCurrency returns getProjectProjectCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getProjectProjectCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getProjectProjectDeletable includes the requested fields of the GraphQL type Deletable.
 // The GraphQL type's documentation follows.
 //
-// Summary of costs over a time period
-type getProjectsProjectsProjectCostMonthlySummary struct {
-	// Average cost sample for the period (amount/currency may be null)
-	Average getProjectsProjectsProjectCostMonthlySummaryAverageCostSample `json:"average"`
+// Lifecycle check indicating whether a resource can safely be deleted.
+//
+// Before deleting a project or environment, query this field to determine if deletion is
+// allowed. When `result` is `false`, the `constraints` list explains exactly what is
+// blocking deletion and which resources need to be resolved first.
+//
+// A resource is deletable only when **all** of the following are true:
+// - No child instances are provisioned or in a failed state
+// - No deployments are currently pending or running
+// - No dependent child resources exist (e.g., environments in a project, forks of an environment)
+type getProjectProjectDeletable struct {
+	// Whether the resource can be safely deleted right now.
+	Result bool `json:"result"`
 }
 
-// GetAverage returns getProjectsProjectsProjectCostMonthlySummary.Average, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectCostMonthlySummary) GetAverage() getProjectsProjectsProjectCostMonthlySummaryAverageCostSample {
-	return v.Average
+// GetResult returns getProjectProjectDeletable.Result, and is useful for accessing the field via an interface.
+func (v *getProjectProjectDeletable) GetResult() bool { return v.Result }
+
+// getProjectProjectEnvironmentsEnvironmentsPage includes the requested fields of the GraphQL type EnvironmentsPage.
+type getProjectProjectEnvironmentsEnvironmentsPage struct {
+	// A list of type environment.
+	Items []getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment `json:"items"`
 }
 
-// getProjectsProjectsProjectCostMonthlySummaryAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// GetItems returns getProjectProjectEnvironmentsEnvironmentsPage.Items, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPage) GetItems() []getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment {
+	return v.Items
+}
+
+// getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment includes the requested fields of the GraphQL type Environment.
 // The GraphQL type's documentation follows.
 //
-// A single cost measurement
-type getProjectsProjectsProjectCostMonthlySummaryAverageCostSample struct {
-	// The cost amount (null if no data available)
-	Amount *float64 `json:"amount"`
-}
-
-// GetAmount returns getProjectsProjectsProjectCostMonthlySummaryAverageCostSample.Amount, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectCostMonthlySummaryAverageCostSample) GetAmount() *float64 {
-	return v.Amount
-}
-
-// getProjectsProjectsProjectEnvironmentsEnvironment includes the requested fields of the GraphQL type Environment.
-type getProjectsProjectsProjectEnvironmentsEnvironment struct {
+// A deployment target within a project where blueprint components become live infrastructure.
+//
+// Each project can have multiple environments (e.g., `staging`, `production`). When you deploy
+// to an environment, every component in the project's blueprint is realized as an **Instance** --
+// a running piece of cloud infrastructure with its own configuration, state, and cost data.
+//
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
+// that cascade down to all instances within the environment. **Defaults** let you pre-assign
+// resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
+//
+// Before deleting an environment, all instances must be decommissioned. Use the `deletable`
+// field to check for blocking constraints.
+type getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the project.
 	Name string `json:"name"`
-	Slug string `json:"slug"`
+	// Free-text description of what this environment is for.
+	Description string `json:"description"`
+	// When this environment was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this environment was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Aggregated cloud-provider cost metrics for all instances in this environment.
+	Cost getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary `json:"cost"`
 }
 
-// GetName returns getProjectsProjectsProjectEnvironmentsEnvironment.Name, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectEnvironmentsEnvironment) GetName() string { return v.Name }
+// GetId returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetId() string { return v.Id }
 
-// GetSlug returns getProjectsProjectsProjectEnvironmentsEnvironment.Slug, and is useful for accessing the field via an interface.
-func (v *getProjectsProjectsProjectEnvironmentsEnvironment) GetSlug() string { return v.Slug }
-
-// getProjectsResponse is returned by getProjects on success.
-type getProjectsResponse struct {
-	Projects []getProjectsProjectsProject `json:"projects"`
-}
-
-// GetProjects returns getProjectsResponse.Projects, and is useful for accessing the field via an interface.
-func (v *getProjectsResponse) GetProjects() []getProjectsProjectsProject { return v.Projects }
-
-// getServerResponse is returned by getServer on success.
-type getServerResponse struct {
-	Server getServerServer `json:"server"`
-}
-
-// GetServer returns getServerResponse.Server, and is useful for accessing the field via an interface.
-func (v *getServerResponse) GetServer() getServerServer { return v.Server }
-
-// getServerServer includes the requested fields of the GraphQL type Server.
-type getServerServer struct {
-	AppUrl  string     `json:"appUrl"`
-	Mode    ServerMode `json:"mode"`
-	Version string     `json:"version"`
-}
-
-// GetAppUrl returns getServerServer.AppUrl, and is useful for accessing the field via an interface.
-func (v *getServerServer) GetAppUrl() string { return v.AppUrl }
-
-// GetMode returns getServerServer.Mode, and is useful for accessing the field via an interface.
-func (v *getServerServer) GetMode() ServerMode { return v.Mode }
-
-// GetVersion returns getServerServer.Version, and is useful for accessing the field via an interface.
-func (v *getServerServer) GetVersion() string { return v.Version }
-
-// listArtifactDefinitionsArtifactDefinitionsArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
-// The GraphQL type's documentation follows.
-//
-// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
-type listArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
-	Id     string         `json:"id"`
-	Schema map[string]any `json:"-"`
-	// The name of this type. Organization scoped: my-org/aws-iam-role
-	Name      string                                                         `json:"name"`
-	Icon      string                                                         `json:"icon"`
-	Label     string                                                         `json:"label"`
-	UpdatedAt time.Time                                                      `json:"updatedAt"`
-	Url       string                                                         `json:"url"`
-	Ui        listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi `json:"ui"`
-}
-
-// GetId returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Id, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetId() string { return v.Id }
-
-// GetSchema returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetSchema() map[string]any {
-	return v.Schema
-}
-
-// GetName returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Name, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetName() string {
+// GetName returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetName() string {
 	return v.Name
 }
 
-// GetIcon returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Icon, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetIcon() string {
-	return v.Icon
+// GetDescription returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetDescription() string {
+	return v.Description
 }
 
-// GetLabel returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Label, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetLabel() string {
-	return v.Label
+// GetCreatedAt returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetCreatedAt() time.Time {
+	return v.CreatedAt
 }
 
-// GetUpdatedAt returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetUpdatedAt() time.Time {
+// GetUpdatedAt returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
 }
 
-// GetUrl returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Url, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetUrl() string { return v.Url }
-
-// GetUi returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Ui, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetUi() listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi {
-	return v.Ui
+// GetCost returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment.Cost, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironment) GetCost() getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary {
+	return v.Cost
 }
 
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) UnmarshalJSON(b []byte) error {
+// getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary includes the requested fields of the GraphQL type CostSummary.
+// The GraphQL type's documentation follows.
+//
+// Aggregated cloud-provider cost metrics for a project or environment.
+//
+// Cost data is sourced from your cloud provider's billing APIs and refreshed periodically.
+// Each metric is a `CostSample` containing an amount and currency. All four metrics are
+// always present, but their inner `amount` and `currency` may be null if billing data has
+// not yet been ingested.
+//
+// - **last_month** -- Total spend for the most recent complete billing cycle.
+// - **monthly_average** -- Average monthly spend across all available billing cycles.
+// - **last_day** -- Total spend for the most recent 24-hour period.
+// - **daily_average** -- Average daily spend over the last 7 days.
+type getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary struct {
+	// Average monthly cost across all available billing cycles.
+	MonthlyAverage getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	// Average daily cost over the last 7 days.
+	DailyAverage getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+}
+
+// GetMonthlyAverage returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary) GetMonthlyAverage() getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample {
+	return v.MonthlyAverage
+}
+
+// GetDailyAverage returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary) GetDailyAverage() getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample {
+	return v.DailyAverage
+}
+
+// getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *getProjectProjectEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// getProjectResponse is returned by getProject on success.
+type getProjectResponse struct {
+	// Fetch a single project by its identifier.
+	Project getProjectProject `json:"project"`
+}
+
+// GetProject returns getProjectResponse.Project, and is useful for accessing the field via an interface.
+func (v *getProjectResponse) GetProject() getProjectProject { return v.Project }
+
+// getResourceResource includes the requested fields of the GraphQL type Resource.
+// The GraphQL type's documentation follows.
+//
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
+//
+// Resources are the connective tissue between instances. When an instance is deployed, it
+// produces resources as outputs. Other instances can consume those resources as inputs,
+// creating a dependency graph of your infrastructure.
+//
+// Resources have two origins:
+// - **Imported** — created directly through the API (e.g., uploading existing AWS credentials).
+// You have full CRUD control over these resources.
+// - **Provisioned** — created automatically when an instance is deployed. These are read-only
+// and managed entirely by the owning instance's lifecycle.
+type getResourceResource struct {
+	// Unique identifier for this resource.
+	Id string `json:"id"`
+	// Human-readable display name for this resource.
+	Name string `json:"name"`
+	// How this resource was created. Determines whether it can be modified through the API.
+	Origin ResourceOrigin `json:"origin"`
+	// The resource type that this resource conforms to, defining its schema and validation rules.
+	ResourceType getResourceResourceResourceType `json:"resourceType"`
+	// The bundle output handle that produced this resource (e.g., `authentication`, `database`).
+	//
+	// Set only for **provisioned** resources — it corresponds to a field declared under
+	// `artifacts` in the producing bundle's `massdriver.yaml`. Null for **imported** resources.
+	Field string `json:"field"`
+	// The instance whose deployment produced this resource.
+	//
+	// Null for **imported** resources. For **provisioned** resources, this is the instance
+	// that owns the resource's lifecycle — updating or decommissioning the instance will
+	// update or remove the resource.
+	Instance getResourceResourceInstance `json:"instance"`
+	// Download formats supported for this resource.
+	//
+	// Always includes `json` (the raw payload). Additional formats come from the resource
+	// type's `$md.export` declarations, which can render the payload as YAML or other
+	// templated outputs. Pass a returned format to `downloadArtifact` to retrieve the
+	// rendered content.
+	Formats []string `json:"formats"`
+	// The resource's structured payload. Fields marked `$md.sensitive` in the resource type's
+	// schema are masked as `[SENSITIVE]`. Use `exportResource` to retrieve an unmasked copy —
+	// that operation is recorded in the audit log.
+	Payload map[string]any `json:"-"`
+	// When this resource was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this resource was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns getResourceResource.Id, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetId() string { return v.Id }
+
+// GetName returns getResourceResource.Name, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetName() string { return v.Name }
+
+// GetOrigin returns getResourceResource.Origin, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetOrigin() ResourceOrigin { return v.Origin }
+
+// GetResourceType returns getResourceResource.ResourceType, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetResourceType() getResourceResourceResourceType {
+	return v.ResourceType
+}
+
+// GetField returns getResourceResource.Field, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetField() string { return v.Field }
+
+// GetInstance returns getResourceResource.Instance, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetInstance() getResourceResourceInstance { return v.Instance }
+
+// GetFormats returns getResourceResource.Formats, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetFormats() []string { return v.Formats }
+
+// GetPayload returns getResourceResource.Payload, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetPayload() map[string]any { return v.Payload }
+
+// GetCreatedAt returns getResourceResource.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getResourceResource.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceResource) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+func (v *getResourceResource) UnmarshalJSON(b []byte) error {
 
 	if string(b) == "null" {
 		return nil
 	}
 
 	var firstPass struct {
-		*listArtifactDefinitionsArtifactDefinitionsArtifactDefinition
+		*getResourceResource
+		Payload json.RawMessage `json:"payload"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getResourceResource = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Payload
+		src := firstPass.Payload
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getResourceResource.Payload: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetResourceResource struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Origin ResourceOrigin `json:"origin"`
+
+	ResourceType getResourceResourceResourceType `json:"resourceType"`
+
+	Field string `json:"field"`
+
+	Instance getResourceResourceInstance `json:"instance"`
+
+	Formats []string `json:"formats"`
+
+	Payload json.RawMessage `json:"payload"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *getResourceResource) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getResourceResource) __premarshalJSON() (*__premarshalgetResourceResource, error) {
+	var retval __premarshalgetResourceResource
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Origin = v.Origin
+	retval.ResourceType = v.ResourceType
+	retval.Field = v.Field
+	retval.Instance = v.Instance
+	retval.Formats = v.Formats
+	{
+
+		dst := &retval.Payload
+		src := v.Payload
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getResourceResource.Payload: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// getResourceResourceInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type getResourceResourceInstance struct {
+	Id string `json:"id"`
+	// Human-readable display name for the instance.
+	Name string `json:"name"`
+	// Current lifecycle state of the instance.
+	Status InstanceStatus `json:"status"`
+	// Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`.
+	Version string `json:"version"`
+	// Whether to include development (pre-release) builds when resolving the version constraint.
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// When this instance was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this instance was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns getResourceResourceInstance.Id, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetId() string { return v.Id }
+
+// GetName returns getResourceResourceInstance.Name, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetName() string { return v.Name }
+
+// GetStatus returns getResourceResourceInstance.Status, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetStatus() InstanceStatus { return v.Status }
+
+// GetVersion returns getResourceResourceInstance.Version, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetVersion() string { return v.Version }
+
+// GetReleaseStrategy returns getResourceResourceInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetReleaseStrategy() ReleaseStrategy { return v.ReleaseStrategy }
+
+// GetCreatedAt returns getResourceResourceInstance.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getResourceResourceInstance.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceResourceInstance) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// getResourceResourceResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type getResourceResourceResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns getResourceResourceResourceType.Id, and is useful for accessing the field via an interface.
+func (v *getResourceResourceResourceType) GetId() string { return v.Id }
+
+// GetName returns getResourceResourceResourceType.Name, and is useful for accessing the field via an interface.
+func (v *getResourceResourceResourceType) GetName() string { return v.Name }
+
+// GetIcon returns getResourceResourceResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *getResourceResourceResourceType) GetIcon() string { return v.Icon }
+
+// GetConnectionOrientation returns getResourceResourceResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *getResourceResourceResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns getResourceResourceResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceResourceResourceType) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getResourceResourceResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceResourceResourceType) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// getResourceResponse is returned by getResource on success.
+type getResourceResponse struct {
+	// Fetch a single resource by its unique identifier.
+	//
+	// Returns the full resource record including its origin, resource type, and timestamps.
+	Resource getResourceResource `json:"resource"`
+}
+
+// GetResource returns getResourceResponse.Resource, and is useful for accessing the field via an interface.
+func (v *getResourceResponse) GetResource() getResourceResource { return v.Resource }
+
+// getResourceTypeResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type getResourceTypeResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// The full JSON Schema describing the shape of data this resource type exposes to dependents.
+	//
+	// Use this to generate forms, validate inputs, or inspect the fields available on a connection
+	// of this resource type. The schema is returned verbatim, including Massdriver's `$md` extensions
+	// (e.g., `icon`, `ui`). Callers that only want the data contract can read `properties.data` or
+	// strip `$md` themselves.
+	Schema map[string]any `json:"-"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns getResourceTypeResourceType.Id, and is useful for accessing the field via an interface.
+func (v *getResourceTypeResourceType) GetId() string { return v.Id }
+
+// GetName returns getResourceTypeResourceType.Name, and is useful for accessing the field via an interface.
+func (v *getResourceTypeResourceType) GetName() string { return v.Name }
+
+// GetIcon returns getResourceTypeResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *getResourceTypeResourceType) GetIcon() string { return v.Icon }
+
+// GetConnectionOrientation returns getResourceTypeResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *getResourceTypeResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetSchema returns getResourceTypeResourceType.Schema, and is useful for accessing the field via an interface.
+func (v *getResourceTypeResourceType) GetSchema() map[string]any { return v.Schema }
+
+// GetCreatedAt returns getResourceTypeResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceTypeResourceType) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getResourceTypeResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getResourceTypeResourceType) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+func (v *getResourceTypeResourceType) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getResourceTypeResourceType
 		Schema json.RawMessage `json:"schema"`
 		graphql.NoUnmarshalJSON
 	}
-	firstPass.listArtifactDefinitionsArtifactDefinitionsArtifactDefinition = v
+	firstPass.getResourceTypeResourceType = v
 
 	err := json.Unmarshal(b, &firstPass)
 	if err != nil {
@@ -4714,32 +6952,30 @@ func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) Unmarshal
 				src, dst)
 			if err != nil {
 				return fmt.Errorf(
-					"unable to unmarshal listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema: %w", err)
+					"unable to unmarshal getResourceTypeResourceType.Schema: %w", err)
 			}
 		}
 	}
 	return nil
 }
 
-type __premarshallistArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
+type __premarshalgetResourceTypeResourceType struct {
 	Id string `json:"id"`
-
-	Schema json.RawMessage `json:"schema"`
 
 	Name string `json:"name"`
 
 	Icon string `json:"icon"`
 
-	Label string `json:"label"`
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+
+	Schema json.RawMessage `json:"schema"`
+
+	CreatedAt time.Time `json:"createdAt"`
 
 	UpdatedAt time.Time `json:"updatedAt"`
-
-	Url string `json:"url"`
-
-	Ui listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi `json:"ui"`
 }
 
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) MarshalJSON() ([]byte, error) {
+func (v *getResourceTypeResourceType) MarshalJSON() ([]byte, error) {
 	premarshaled, err := v.__premarshalJSON()
 	if err != nil {
 		return nil, err
@@ -4747,10 +6983,13 @@ func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) MarshalJS
 	return json.Marshal(premarshaled)
 }
 
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) __premarshalJSON() (*__premarshallistArtifactDefinitionsArtifactDefinitionsArtifactDefinition, error) {
-	var retval __premarshallistArtifactDefinitionsArtifactDefinitionsArtifactDefinition
+func (v *getResourceTypeResourceType) __premarshalJSON() (*__premarshalgetResourceTypeResourceType, error) {
+	var retval __premarshalgetResourceTypeResourceType
 
 	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Icon = v.Icon
+	retval.ConnectionOrientation = v.ConnectionOrientation
 	{
 
 		dst := &retval.Schema
@@ -4760,559 +6999,5045 @@ func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinition) __premars
 			&src)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"unable to marshal listArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Schema: %w", err)
+				"unable to marshal getResourceTypeResourceType.Schema: %w", err)
 		}
 	}
-	retval.Name = v.Name
-	retval.Icon = v.Icon
-	retval.Label = v.Label
+	retval.CreatedAt = v.CreatedAt
 	retval.UpdatedAt = v.UpdatedAt
-	retval.Url = v.Url
-	retval.Ui = v.Ui
 	return &retval, nil
 }
 
-// listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi includes the requested fields of the GraphQL type ArtifactDefinitionUi.
-type listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi struct {
-	ConnectionOrientation   ArtifactDefinitionUiConnectionOrientation `json:"connectionOrientation"`
-	EnvironmentDefaultGroup string                                    `json:"environmentDefaultGroup"`
+// getResourceTypeResponse is returned by getResourceType on success.
+type getResourceTypeResponse struct {
+	// Fetch a single resource type by its identifier.
+	//
+	// Returns `null` with a `NOT_FOUND` error if the resource type does not exist
+	// or is not accessible to your organization.
+	//
+	// ```graphql
+	// query {
+	// resourceType(organizationId: "your-org-id", id: "aws-iam-role") {
+	// id
+	// name
+	// connectionOrientation
+	// icon
+	// }
+	// }
+	// ```
+	ResourceType getResourceTypeResourceType `json:"resourceType"`
 }
 
-// GetConnectionOrientation returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi.ConnectionOrientation, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi) GetConnectionOrientation() ArtifactDefinitionUiConnectionOrientation {
-	return v.ConnectionOrientation
+// GetResourceType returns getResourceTypeResponse.ResourceType, and is useful for accessing the field via an interface.
+func (v *getResourceTypeResponse) GetResourceType() getResourceTypeResourceType {
+	return v.ResourceType
 }
 
-// GetEnvironmentDefaultGroup returns listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi.EnvironmentDefaultGroup, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsArtifactDefinitionsArtifactDefinitionUi) GetEnvironmentDefaultGroup() string {
-	return v.EnvironmentDefaultGroup
+// getServerResponse is returned by getServer on success.
+type getServerResponse struct {
+	// Get server metadata and available authentication methods.
+	//
+	// This query does **not** require authentication and is intended to be the first
+	// call a client makes. Use the response to determine which login methods to present
+	// and to verify API compatibility via the server version.
+	//
+	// ```graphql
+	// query {
+	// server {
+	// version
+	// mode
+	// appUrl
+	// ssoProviders {
+	// name
+	// loginUrl
+	// uiLabel
+	// uiIconUrl
+	// }
+	// emailAuthMethods {
+	// name
+	// }
+	// }
+	// }
+	// ```
+	Server getServerServer `json:"server"`
 }
 
-// listArtifactDefinitionsResponse is returned by listArtifactDefinitions on success.
-type listArtifactDefinitionsResponse struct {
-	ArtifactDefinitions []listArtifactDefinitionsArtifactDefinitionsArtifactDefinition `json:"artifactDefinitions"`
-}
+// GetServer returns getServerResponse.Server, and is useful for accessing the field via an interface.
+func (v *getServerResponse) GetServer() getServerServer { return v.Server }
 
-// GetArtifactDefinitions returns listArtifactDefinitionsResponse.ArtifactDefinitions, and is useful for accessing the field via an interface.
-func (v *listArtifactDefinitionsResponse) GetArtifactDefinitions() []listArtifactDefinitionsArtifactDefinitionsArtifactDefinition {
-	return v.ArtifactDefinitions
-}
-
-// listCredentialArtifactDefinitionsArtifactDefinitionsArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+// getServerServer includes the requested fields of the GraphQL type Server.
 // The GraphQL type's documentation follows.
 //
-// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
-type listCredentialArtifactDefinitionsArtifactDefinitionsArtifactDefinition struct {
-	// The name of this type. Organization scoped: my-org/aws-iam-role
+// Information about the Massdriver server you are connected to.
+//
+// Use this to discover the server's version, deployment mode, and available
+// authentication methods. This is typically the first query a client makes
+// to determine how to render the login screen and check API compatibility.
+type getServerServer struct {
+	// The base URL of the Massdriver web application (e.g., `"https://app.massdriver.cloud"`).
+	AppUrl string `json:"appUrl"`
+	// The server's semantic version (e.g., `"1.2.3"`).
+	Version string `json:"version"`
+	// Whether this is a self-hosted installation or Massdriver Cloud.
+	Mode ServerMode `json:"mode"`
+	// SSO identity providers available for authentication. Empty if no SSO is configured.
+	SsoProviders []getServerServerSsoProvidersSsoProvider `json:"ssoProviders"`
+	// Email-based authentication methods available (e.g., passkeys). Empty if only SSO is available.
+	EmailAuthMethods []getServerServerEmailAuthMethodsEmailAuthMethod `json:"emailAuthMethods"`
+}
+
+// GetAppUrl returns getServerServer.AppUrl, and is useful for accessing the field via an interface.
+func (v *getServerServer) GetAppUrl() string { return v.AppUrl }
+
+// GetVersion returns getServerServer.Version, and is useful for accessing the field via an interface.
+func (v *getServerServer) GetVersion() string { return v.Version }
+
+// GetMode returns getServerServer.Mode, and is useful for accessing the field via an interface.
+func (v *getServerServer) GetMode() ServerMode { return v.Mode }
+
+// GetSsoProviders returns getServerServer.SsoProviders, and is useful for accessing the field via an interface.
+func (v *getServerServer) GetSsoProviders() []getServerServerSsoProvidersSsoProvider {
+	return v.SsoProviders
+}
+
+// GetEmailAuthMethods returns getServerServer.EmailAuthMethods, and is useful for accessing the field via an interface.
+func (v *getServerServer) GetEmailAuthMethods() []getServerServerEmailAuthMethodsEmailAuthMethod {
+	return v.EmailAuthMethods
+}
+
+// getServerServerEmailAuthMethodsEmailAuthMethod includes the requested fields of the GraphQL type EmailAuthMethod.
+// The GraphQL type's documentation follows.
+//
+// An email-based authentication method available on this server.
+//
+// Email auth methods do not require an external identity provider. They are
+// configured at the server level and available to all users.
+type getServerServerEmailAuthMethodsEmailAuthMethod struct {
+	// The authentication mechanism type (e.g., `PASSKEY`).
+	Name EmailAuthMethodType `json:"name"`
+}
+
+// GetName returns getServerServerEmailAuthMethodsEmailAuthMethod.Name, and is useful for accessing the field via an interface.
+func (v *getServerServerEmailAuthMethodsEmailAuthMethod) GetName() EmailAuthMethodType { return v.Name }
+
+// getServerServerSsoProvidersSsoProvider includes the requested fields of the GraphQL type SsoProvider.
+// The GraphQL type's documentation follows.
+//
+// An SSO (Single Sign-On) provider configured for this Massdriver server.
+//
+// Each provider represents an OAuth 2.0 or OpenID Connect identity provider that
+// users can authenticate with. Use the `loginUrl` to redirect users to the
+// provider's login page.
+type getServerServerSsoProvidersSsoProvider struct {
+	// The provider's identifier (e.g., `"google"`, `"okta"`, `"azure-ad"`).
 	Name string `json:"name"`
+	// The URL to redirect the user to in order to start the SSO login flow.
+	LoginUrl string `json:"loginUrl"`
+	// URL of the provider's icon, for rendering on login buttons.
+	UiIconUrl string `json:"uiIconUrl"`
+	// Display label for the provider (e.g., `"Sign in with Google"`).
+	UiLabel string `json:"uiLabel"`
 }
 
-// GetName returns listCredentialArtifactDefinitionsArtifactDefinitionsArtifactDefinition.Name, and is useful for accessing the field via an interface.
-func (v *listCredentialArtifactDefinitionsArtifactDefinitionsArtifactDefinition) GetName() string {
-	return v.Name
+// GetName returns getServerServerSsoProvidersSsoProvider.Name, and is useful for accessing the field via an interface.
+func (v *getServerServerSsoProvidersSsoProvider) GetName() string { return v.Name }
+
+// GetLoginUrl returns getServerServerSsoProvidersSsoProvider.LoginUrl, and is useful for accessing the field via an interface.
+func (v *getServerServerSsoProvidersSsoProvider) GetLoginUrl() string { return v.LoginUrl }
+
+// GetUiIconUrl returns getServerServerSsoProvidersSsoProvider.UiIconUrl, and is useful for accessing the field via an interface.
+func (v *getServerServerSsoProvidersSsoProvider) GetUiIconUrl() string { return v.UiIconUrl }
+
+// GetUiLabel returns getServerServerSsoProvidersSsoProvider.UiLabel, and is useful for accessing the field via an interface.
+func (v *getServerServerSsoProvidersSsoProvider) GetUiLabel() string { return v.UiLabel }
+
+// linkComponentsLinkComponentsLinkPayload includes the requested fields of the GraphQL type LinkPayload.
+type linkComponentsLinkComponentsLinkPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result linkComponentsLinkComponentsLinkPayloadResultLink `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage `json:"messages"`
 }
 
-// listCredentialArtifactDefinitionsResponse is returned by listCredentialArtifactDefinitions on success.
-type listCredentialArtifactDefinitionsResponse struct {
-	ArtifactDefinitions []listCredentialArtifactDefinitionsArtifactDefinitionsArtifactDefinition `json:"artifactDefinitions"`
+// GetResult returns linkComponentsLinkComponentsLinkPayload.Result, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayload) GetResult() linkComponentsLinkComponentsLinkPayloadResultLink {
+	return v.Result
 }
 
-// GetArtifactDefinitions returns listCredentialArtifactDefinitionsResponse.ArtifactDefinitions, and is useful for accessing the field via an interface.
-func (v *listCredentialArtifactDefinitionsResponse) GetArtifactDefinitions() []listCredentialArtifactDefinitionsArtifactDefinitionsArtifactDefinition {
-	return v.ArtifactDefinitions
+// GetSuccessful returns linkComponentsLinkComponentsLinkPayload.Successful, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns linkComponentsLinkComponentsLinkPayload.Messages, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayload) GetMessages() []linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage {
+	return v.Messages
 }
 
-// listCredentialsArtifactsPaginatedArtifacts includes the requested fields of the GraphQL type PaginatedArtifacts.
-type listCredentialsArtifactsPaginatedArtifacts struct {
-	// A list of type artifact.
-	Items []listCredentialsArtifactsPaginatedArtifactsItemsArtifact `json:"items"`
+// linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
 }
 
-// GetItems returns listCredentialsArtifactsPaginatedArtifacts.Items, and is useful for accessing the field via an interface.
-func (v *listCredentialsArtifactsPaginatedArtifacts) GetItems() []listCredentialsArtifactsPaginatedArtifactsItemsArtifact {
-	return v.Items
+// GetCode returns linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
 }
 
-// listCredentialsArtifactsPaginatedArtifactsItemsArtifact includes the requested fields of the GraphQL type Artifact.
-type listCredentialsArtifactsPaginatedArtifactsItemsArtifact struct {
-	Id        string    `json:"id"`
-	Name      string    `json:"name"`
-	Type      string    `json:"type"`
+// GetField returns linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// linkComponentsLinkComponentsLinkPayloadResultLink includes the requested fields of the GraphQL type Link.
+// The GraphQL type's documentation follows.
+//
+// A design-time dependency between two components in a blueprint.
+//
+// A link declares that one component's output should be wired into another
+// component's input. For example, a link from a database component's
+// `authentication` output to an application component's `database` input
+// ensures the app receives the database connection string.
+//
+// At deploy time, each link is realized as a **connection** in the environment,
+// wiring the actual instance outputs to instance inputs.
+type linkComponentsLinkComponentsLinkPayloadResultLink struct {
+	// Unique identifier for this link.
+	Id string `json:"id"`
+	// The output field name on the source component (e.g., `authentication`).
+	FromField string `json:"fromField"`
+	// The input field name on the destination component (e.g., `database`).
+	ToField string `json:"toField"`
+	// When this link was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this link was last modified (UTC).
 	UpdatedAt time.Time `json:"updatedAt"`
+	// The source component that produces the output.
+	FromComponent linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent `json:"fromComponent"`
+	// The destination component that consumes the input.
+	ToComponent linkComponentsLinkComponentsLinkPayloadResultLinkToComponent `json:"toComponent"`
 }
 
-// GetId returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.Id, and is useful for accessing the field via an interface.
-func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetId() string { return v.Id }
+// GetId returns linkComponentsLinkComponentsLinkPayloadResultLink.Id, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetId() string { return v.Id }
 
-// GetName returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.Name, and is useful for accessing the field via an interface.
-func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetName() string { return v.Name }
+// GetFromField returns linkComponentsLinkComponentsLinkPayloadResultLink.FromField, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetFromField() string { return v.FromField }
 
-// GetType returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.Type, and is useful for accessing the field via an interface.
-func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetType() string { return v.Type }
+// GetToField returns linkComponentsLinkComponentsLinkPayloadResultLink.ToField, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetToField() string { return v.ToField }
 
-// GetUpdatedAt returns listCredentialsArtifactsPaginatedArtifactsItemsArtifact.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *listCredentialsArtifactsPaginatedArtifactsItemsArtifact) GetUpdatedAt() time.Time {
+// GetCreatedAt returns linkComponentsLinkComponentsLinkPayloadResultLink.CreatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns linkComponentsLinkComponentsLinkPayloadResultLink.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
 }
 
-// listCredentialsResponse is returned by listCredentials on success.
-type listCredentialsResponse struct {
-	// List all artifacts
-	Artifacts listCredentialsArtifactsPaginatedArtifacts `json:"artifacts"`
+// GetFromComponent returns linkComponentsLinkComponentsLinkPayloadResultLink.FromComponent, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetFromComponent() linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent {
+	return v.FromComponent
 }
 
-// GetArtifacts returns listCredentialsResponse.Artifacts, and is useful for accessing the field via an interface.
-func (v *listCredentialsResponse) GetArtifacts() listCredentialsArtifactsPaginatedArtifacts {
-	return v.Artifacts
+// GetToComponent returns linkComponentsLinkComponentsLinkPayloadResultLink.ToComponent, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLink) GetToComponent() linkComponentsLinkComponentsLinkPayloadResultLinkToComponent {
+	return v.ToComponent
 }
 
-// listReposReposReposPage includes the requested fields of the GraphQL type ReposPage.
-type listReposReposReposPage struct {
-	// Pagination cursors
-	Cursor listReposReposReposPageCursorPaginationCursor `json:"cursor"`
-	// A list of type repo.
-	Items []listReposReposReposPageItemsRepo `json:"items"`
+// linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// GetCursor returns listReposReposReposPage.Cursor, and is useful for accessing the field via an interface.
-func (v *listReposReposReposPage) GetCursor() listReposReposReposPageCursorPaginationCursor {
+// GetId returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Id, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetId() string { return v.Id }
+
+// GetName returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Name, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Description, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetAttributes returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallinkComponentsLinkComponentsLinkPayloadResultLinkFromComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent) __premarshalJSON() (*__premarshallinkComponentsLinkComponentsLinkPayloadResultLinkFromComponent, error) {
+	var retval __premarshallinkComponentsLinkComponentsLinkPayloadResultLinkFromComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal linkComponentsLinkComponentsLinkPayloadResultLinkFromComponent.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// linkComponentsLinkComponentsLinkPayloadResultLinkToComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type linkComponentsLinkComponentsLinkPayloadResultLinkToComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Id, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetId() string { return v.Id }
+
+// GetName returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Name, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Description, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetAttributes returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*linkComponentsLinkComponentsLinkPayloadResultLinkToComponent
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.linkComponentsLinkComponentsLinkPayloadResultLinkToComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallinkComponentsLinkComponentsLinkPayloadResultLinkToComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *linkComponentsLinkComponentsLinkPayloadResultLinkToComponent) __premarshalJSON() (*__premarshallinkComponentsLinkComponentsLinkPayloadResultLinkToComponent, error) {
+	var retval __premarshallinkComponentsLinkComponentsLinkPayloadResultLinkToComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal linkComponentsLinkComponentsLinkPayloadResultLinkToComponent.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// linkComponentsResponse is returned by linkComponents on success.
+type linkComponentsResponse struct {
+	// Create a link between two components.
+	//
+	// Declares that the `fromField` output of one component should be wired to the
+	// `toField` input of another. Massdriver validates that the resource types are
+	// compatible before creating the link. When environments are deployed, each link
+	// becomes a **connection** that carries the actual resource data between instances.
+	//
+	// ```graphql
+	// mutation {
+	// linkComponents(
+	// organizationId: "my-org"
+	// input: {
+	// fromComponentId: "my-project-database"
+	// fromField: "authentication"
+	// fromVersion: "~1.0"
+	// toComponentId: "my-project-app"
+	// toField: "database"
+	// toVersion: "~2.0"
+	// }
+	// ) {
+	// result { id fromField toField }
+	// successful
+	// }
+	// }
+	// ```
+	LinkComponents linkComponentsLinkComponentsLinkPayload `json:"linkComponents"`
+}
+
+// GetLinkComponents returns linkComponentsResponse.LinkComponents, and is useful for accessing the field via an interface.
+func (v *linkComponentsResponse) GetLinkComponents() linkComponentsLinkComponentsLinkPayload {
+	return v.LinkComponents
+}
+
+// listBundlesBundlesBundlesPage includes the requested fields of the GraphQL type BundlesPage.
+type listBundlesBundlesBundlesPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listBundlesBundlesBundlesPageCursorPaginationCursor `json:"cursor"`
+	// A list of type bundle.
+	Items []listBundlesBundlesBundlesPageItemsBundle `json:"items"`
+}
+
+// GetCursor returns listBundlesBundlesBundlesPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPage) GetCursor() listBundlesBundlesBundlesPageCursorPaginationCursor {
 	return v.Cursor
 }
 
-// GetItems returns listReposReposReposPage.Items, and is useful for accessing the field via an interface.
-func (v *listReposReposReposPage) GetItems() []listReposReposReposPageItemsRepo { return v.Items }
+// GetItems returns listBundlesBundlesBundlesPage.Items, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPage) GetItems() []listBundlesBundlesBundlesPageItemsBundle {
+	return v.Items
+}
 
-// listReposReposReposPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
-type listReposReposReposPageCursorPaginationCursor struct {
-	// Cursor to the next page
+// listBundlesBundlesBundlesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listBundlesBundlesBundlesPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
 	Next string `json:"next"`
-	// Cursor to the previous page
+	// Cursor for the previous page. `null` if this is the first page.
 	Previous string `json:"previous"`
 }
 
-// GetNext returns listReposReposReposPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
-func (v *listReposReposReposPageCursorPaginationCursor) GetNext() string { return v.Next }
+// GetNext returns listBundlesBundlesBundlesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageCursorPaginationCursor) GetNext() string { return v.Next }
 
-// GetPrevious returns listReposReposReposPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
-func (v *listReposReposReposPageCursorPaginationCursor) GetPrevious() string { return v.Previous }
+// GetPrevious returns listBundlesBundlesBundlesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageCursorPaginationCursor) GetPrevious() string { return v.Previous }
 
-// listReposReposReposPageItemsRepo includes the requested fields of the GraphQL type Repo.
+// listBundlesBundlesBundlesPageItemsBundle includes the requested fields of the GraphQL type Bundle.
 // The GraphQL type's documentation follows.
 //
-// An IaC bundle repository
-type listReposReposReposPageItemsRepo struct {
-	// Unique identifier
+// A versioned infrastructure-as-code package.
+//
+// A bundle is a single published version of an IaC package in your organization's
+// catalog. Each bundle belongs to an OCI repository and is identified by a composite
+// `name@version` string (e.g., `aws-aurora-postgres@1.2.3`).
+//
+// Bundles declare **dependencies** (inputs they require from other bundles) and
+// **resources** (outputs they produce). These declarations drive the connection
+// system on the Massdriver canvas -- when you add a component to a blueprint,
+// the platform knows which other components can satisfy its dependencies.
+//
+// ```mermaid
+// graph TD
+// R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+// R --> T2["Tag: 1.1.0"]
+// R --> T3["Tag: 1.2.3"]
+// R --> RC1["Channel: ~1 → 1.2.3"]
+// R --> RC2["Channel: latest → 1.2.3"]
+// T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
+// B --> D1["Dependency: aws-iam-role"]
+// B --> D2["Dependency: aws-vpc"]
+// B --> RES["Resource: aurora-cluster"]
+// ```
+type listBundlesBundlesBundlesPageItemsBundle struct {
+	// Composite identifier in `name@version` format (e.g., `aws-aurora-postgres@1.2.3`). Always contains the fully resolved semver version.
 	Id string `json:"id"`
-	// Name of the repository
+	// OCI repository name this bundle belongs to (e.g., `aws-aurora-postgres`).
 	Name string `json:"name"`
-	// When the repository was created
+	// Fully resolved semantic version of this bundle (e.g., `1.2.3`).
+	Version string `json:"version"`
+	// Short summary of what this bundle provisions.
+	Description string `json:"description"`
+	// URL to the bundle's display icon.
+	Icon string `json:"icon"`
+	// URL to the bundle's source code repository, if published by the author.
+	SourceUrl string `json:"sourceUrl"`
+	// OCI repository name for this bundle (e.g., `aws-aurora-postgres`). Equivalent to `name`.
+	Repo string `json:"repo"`
+	// Timestamp when this bundle version was first published (UTC).
 	CreatedAt time.Time `json:"createdAt"`
-	// Distribution channels for artifact releases
-	ReleaseChannels []listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel `json:"releaseChannels"`
+	// Timestamp when this bundle version was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// GetId returns listReposReposReposPageItemsRepo.Id, and is useful for accessing the field via an interface.
-func (v *listReposReposReposPageItemsRepo) GetId() string { return v.Id }
+// GetId returns listBundlesBundlesBundlesPageItemsBundle.Id, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageItemsBundle) GetId() string { return v.Id }
 
-// GetName returns listReposReposReposPageItemsRepo.Name, and is useful for accessing the field via an interface.
-func (v *listReposReposReposPageItemsRepo) GetName() string { return v.Name }
+// GetName returns listBundlesBundlesBundlesPageItemsBundle.Name, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageItemsBundle) GetName() string { return v.Name }
 
-// GetCreatedAt returns listReposReposReposPageItemsRepo.CreatedAt, and is useful for accessing the field via an interface.
-func (v *listReposReposReposPageItemsRepo) GetCreatedAt() time.Time { return v.CreatedAt }
+// GetVersion returns listBundlesBundlesBundlesPageItemsBundle.Version, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageItemsBundle) GetVersion() string { return v.Version }
 
-// GetReleaseChannels returns listReposReposReposPageItemsRepo.ReleaseChannels, and is useful for accessing the field via an interface.
-func (v *listReposReposReposPageItemsRepo) GetReleaseChannels() []listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel {
-	return v.ReleaseChannels
-}
+// GetDescription returns listBundlesBundlesBundlesPageItemsBundle.Description, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageItemsBundle) GetDescription() string { return v.Description }
 
-// listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel includes the requested fields of the GraphQL type ReleaseChannel.
-// The GraphQL type's documentation follows.
-//
-// A release channel that resolves to a specific tag
-type listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel struct {
-	// The channel name (e.g., 'latest', '1.x', '0.x')
-	Name string `json:"name"`
-	// The tag this channel resolves to (e.g., '1.0.0')
-	Tag string `json:"tag"`
-}
+// GetIcon returns listBundlesBundlesBundlesPageItemsBundle.Icon, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageItemsBundle) GetIcon() string { return v.Icon }
 
-// GetName returns listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel.Name, and is useful for accessing the field via an interface.
-func (v *listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel) GetName() string {
-	return v.Name
-}
+// GetSourceUrl returns listBundlesBundlesBundlesPageItemsBundle.SourceUrl, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageItemsBundle) GetSourceUrl() string { return v.SourceUrl }
 
-// GetTag returns listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel.Tag, and is useful for accessing the field via an interface.
-func (v *listReposReposReposPageItemsRepoReleaseChannelsReleaseChannel) GetTag() string { return v.Tag }
+// GetRepo returns listBundlesBundlesBundlesPageItemsBundle.Repo, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageItemsBundle) GetRepo() string { return v.Repo }
 
-// listReposResponse is returned by listRepos on success.
-type listReposResponse struct {
-	// List all bundle repositories with pagination, sorting, and search capabilities.
+// GetCreatedAt returns listBundlesBundlesBundlesPageItemsBundle.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageItemsBundle) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns listBundlesBundlesBundlesPageItemsBundle.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listBundlesBundlesBundlesPageItemsBundle) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// listBundlesResponse is returned by listBundles on success.
+type listBundlesResponse struct {
+	// List published bundle versions in your organization's catalog.
 	//
-	// Returns a paginated list of repositories (bundles) that the authenticated user has access to
-	// within the specified organization. Each repository can contain multiple releases with
-	// different version strategies (stable vs development).
-	Repos listReposReposReposPage `json:"repos"`
+	// Returns a paginated list of all bundle releases across all OCI repositories.
+	// Each item is a specific version (e.g., `aws-aurora-postgres@1.2.3`), not just
+	// the repository.
+	//
+	// Use `filter` to narrow results by repository name, resource type produced,
+	// dependency type consumed, or full-text search. When `search` is active, results
+	// are ranked by relevance unless an explicit `sort` is provided.
+	//
+	// ```graphql
+	// query {
+	// bundles(organizationId: "your-org-id", filter: { resourceType: { eq: "aws-iam-role" } }) {
+	// items {
+	// id
+	// name
+	// version
+	// description
+	// dependencies { name resourceType { id } }
+	// resources { name resourceType { id } }
+	// }
+	// cursor { next }
+	// }
+	// }
+	// ```
+	Bundles listBundlesBundlesBundlesPage `json:"bundles"`
 }
 
-// GetRepos returns listReposResponse.Repos, and is useful for accessing the field via an interface.
-func (v *listReposResponse) GetRepos() listReposReposReposPage { return v.Repos }
+// GetBundles returns listBundlesResponse.Bundles, and is useful for accessing the field via an interface.
+func (v *listBundlesResponse) GetBundles() listBundlesBundlesBundlesPage { return v.Bundles }
 
-// publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload includes the requested fields of the GraphQL type ArtifactDefinitionPayload.
-type publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
+// listDeploymentsDeploymentsDeploymentsPage includes the requested fields of the GraphQL type DeploymentsPage.
+type listDeploymentsDeploymentsDeploymentsPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor `json:"cursor"`
+	// A list of type deployment.
+	Items []listDeploymentsDeploymentsDeploymentsPageItemsDeployment `json:"items"`
 }
 
-// GetResult returns publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload.Result, and is useful for accessing the field via an interface.
-func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload) GetResult() publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition {
-	return v.Result
+// GetCursor returns listDeploymentsDeploymentsDeploymentsPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPage) GetCursor() listDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor {
+	return v.Cursor
 }
 
-// GetSuccessful returns publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload.Successful, and is useful for accessing the field via an interface.
-func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload) GetSuccessful() bool {
-	return v.Successful
+// GetItems returns listDeploymentsDeploymentsDeploymentsPage.Items, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPage) GetItems() []listDeploymentsDeploymentsDeploymentsPageItemsDeployment {
+	return v.Items
 }
 
-// GetMessages returns publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload.Messages, and is useful for accessing the field via an interface.
-func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition includes the requested fields of the GraphQL type ArtifactDefinition.
+// listDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
 // The GraphQL type's documentation follows.
 //
-// A standardized contract for passing state between infrastructure modules, enabling cross-tool connectivity (e.g. Terraform outputs to Helm values) and automatic resource configuration (e.g. IAM policies, secrets, credentials)
-type publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition struct {
-	// The name of this type. Organization scoped: my-org/aws-iam-role
-	Name string `json:"name"`
-	Id   string `json:"id"`
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
 }
 
-// GetName returns publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition.Name, and is useful for accessing the field via an interface.
-func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition) GetName() string {
-	return v.Name
+// GetNext returns listDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor) GetNext() string {
+	return v.Next
 }
 
-// GetId returns publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition.Id, and is useful for accessing the field via an interface.
-func (v *publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayloadResultArtifactDefinition) GetId() string {
-	return v.Id
+// GetPrevious returns listDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
 }
 
-// publishArtifactDefinitionResponse is returned by publishArtifactDefinition on success.
-type publishArtifactDefinitionResponse struct {
-	// Publish a new artifact definition or update an existing one
-	PublishArtifactDefinition publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload `json:"publishArtifactDefinition"`
-}
-
-// GetPublishArtifactDefinition returns publishArtifactDefinitionResponse.PublishArtifactDefinition, and is useful for accessing the field via an interface.
-func (v *publishArtifactDefinitionResponse) GetPublishArtifactDefinition() publishArtifactDefinitionPublishArtifactDefinitionArtifactDefinitionPayload {
-	return v.PublishArtifactDefinition
-}
-
-// resetPackageResetPackagePackagePayload includes the requested fields of the GraphQL type PackagePayload.
-type resetPackageResetPackagePackagePayload struct {
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result resetPackageResetPackagePackagePayloadResultPackage `json:"result"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetSuccessful returns resetPackageResetPackagePackagePayload.Successful, and is useful for accessing the field via an interface.
-func (v *resetPackageResetPackagePackagePayload) GetSuccessful() bool { return v.Successful }
-
-// GetResult returns resetPackageResetPackagePackagePayload.Result, and is useful for accessing the field via an interface.
-func (v *resetPackageResetPackagePackagePayload) GetResult() resetPackageResetPackagePackagePayloadResultPackage {
-	return v.Result
-}
-
-// GetMessages returns resetPackageResetPackagePackagePayload.Messages, and is useful for accessing the field via an interface.
-func (v *resetPackageResetPackagePackagePayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// resetPackageResetPackagePackagePayloadResultPackage includes the requested fields of the GraphQL type Package.
+// listDeploymentsDeploymentsDeploymentsPageItemsDeployment includes the requested fields of the GraphQL type Deployment.
 // The GraphQL type's documentation follows.
 //
-// A deployed instance of a bundle in the context of its manifest
-type resetPackageResetPackagePackagePayloadResultPackage struct {
-	// Unique identifier
+// A record of an infrastructure provisioning operation.
+//
+// Each deployment tracks a single action (`PROVISION`, `DECOMMISSION`, or `PLAN`) against
+// an instance. Deployments are immutable once created — you cannot modify a deployment,
+// only create new ones.
+//
+// Use the `status` field to monitor progress and `elapsed_time` to track duration.
+// The `deployed_by` field identifies the user or service account that initiated the operation.
+type listDeploymentsDeploymentsDeploymentsPageItemsDeployment struct {
+	// Unique identifier for this deployment.
 	Id string `json:"id"`
-	// Unique identifier for the package
-	Slug string `json:"slug"`
-	// Current status of the package
-	Status PackageStatus `json:"status"`
+	// Current lifecycle state of this deployment.
+	Status DeploymentStatus `json:"status"`
+	// The infrastructure operation this deployment performs.
+	Action DeploymentAction `json:"action"`
+	// The bundle version used for this deployment (e.g., `1.2.0`).
+	Version string `json:"version"`
+	// An optional message describing the purpose of this deployment, similar to a commit message.
+	Message string `json:"message"`
+	// When this deployment was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this deployment record was last updated (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// When the deployment last changed status (UTC). Null if the deployment is still `PENDING`.
+	LastTransitionedAt time.Time `json:"lastTransitionedAt"`
+	// Wall-clock duration of the deployment in seconds.
+	//
+	// For `RUNNING` deployments, this is a live timer counting from creation.
+	// For terminal states, this is the total time from creation to the final status transition.
+	// Returns `0` for deployments that have not yet executed (`PENDING`, `PROPOSED`, `APPROVED`).
+	ElapsedTime int `json:"elapsedTime"`
+	// The name of the user or service account that initiated this deployment. Null if the initiator has been removed.
+	DeployedBy string `json:"deployedBy"`
+	// The instance that this deployment operates on.
+	Instance listDeploymentsDeploymentsDeploymentsPageItemsDeploymentInstance `json:"instance"`
 }
 
-// GetId returns resetPackageResetPackagePackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
-func (v *resetPackageResetPackagePackagePayloadResultPackage) GetId() string { return v.Id }
+// GetId returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.Id, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetId() string { return v.Id }
 
-// GetSlug returns resetPackageResetPackagePackagePayloadResultPackage.Slug, and is useful for accessing the field via an interface.
-func (v *resetPackageResetPackagePackagePayloadResultPackage) GetSlug() string { return v.Slug }
-
-// GetStatus returns resetPackageResetPackagePackagePayloadResultPackage.Status, and is useful for accessing the field via an interface.
-func (v *resetPackageResetPackagePackagePayloadResultPackage) GetStatus() PackageStatus {
+// GetStatus returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.Status, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetStatus() DeploymentStatus {
 	return v.Status
 }
 
-// resetPackageResponse is returned by resetPackage on success.
-type resetPackageResponse struct {
-	// Reset a package to its initialized state. This is useful for:
-	// - Forcing a stuck bundle off the canvas
-	// - Redeploying a package from scratch
-	// - Clearing state when delete_state is true
-	//
-	// The package's status _will_ be set to INITIALIZED.
-	//
-	// By default, the state will not be destroyed. If you want to destroy the state, set delete_state to true.
-	// By default, the params will not be cleared. If you want to clear the params, set delete_params to true.
-	// By default, the deployments will not be deleted. If you want to delete the deployments, set delete_deployments to true.
-	//
-	// This mutation is an escape hatch and can lose data.
-	//
-	// Please make sure to pull any state first.
-	//
-	// [Read our manage state guide](https://docs.massdriver.cloud/guides/managing-state#3-pull-existing-state) on setting up your state backend.
-	//
-	// ## OpenTofu
-	//
-	// > tofu state pull > /somewhere/safe.tfstate
-	//
-	// ## Terraform
-	//
-	// > terraform state pull > /somewhere/safe.tfstate
-	ResetPackage resetPackageResetPackagePackagePayload `json:"resetPackage"`
+// GetAction returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.Action, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetAction() DeploymentAction {
+	return v.Action
 }
 
-// GetResetPackage returns resetPackageResponse.ResetPackage, and is useful for accessing the field via an interface.
-func (v *resetPackageResponse) GetResetPackage() resetPackageResetPackagePackagePayload {
-	return v.ResetPackage
+// GetVersion returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.Version, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetVersion() string {
+	return v.Version
 }
 
-// setPackageVersionResponse is returned by setPackageVersion on success.
-type setPackageVersionResponse struct {
-	SetPackageVersion setPackageVersionSetPackageVersionPackagePayload `json:"setPackageVersion"`
+// GetMessage returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.Message, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetMessage() string {
+	return v.Message
 }
 
-// GetSetPackageVersion returns setPackageVersionResponse.SetPackageVersion, and is useful for accessing the field via an interface.
-func (v *setPackageVersionResponse) GetSetPackageVersion() setPackageVersionSetPackageVersionPackagePayload {
-	return v.SetPackageVersion
+// GetCreatedAt returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetCreatedAt() time.Time {
+	return v.CreatedAt
 }
 
-// setPackageVersionSetPackageVersionPackagePayload includes the requested fields of the GraphQL type PackagePayload.
-type setPackageVersionSetPackageVersionPackagePayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result setPackageVersionSetPackageVersionPackagePayloadResultPackage `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
+// GetUpdatedAt returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
 }
 
-// GetResult returns setPackageVersionSetPackageVersionPackagePayload.Result, and is useful for accessing the field via an interface.
-func (v *setPackageVersionSetPackageVersionPackagePayload) GetResult() setPackageVersionSetPackageVersionPackagePayloadResultPackage {
-	return v.Result
+// GetLastTransitionedAt returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.LastTransitionedAt, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetLastTransitionedAt() time.Time {
+	return v.LastTransitionedAt
 }
 
-// GetSuccessful returns setPackageVersionSetPackageVersionPackagePayload.Successful, and is useful for accessing the field via an interface.
-func (v *setPackageVersionSetPackageVersionPackagePayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns setPackageVersionSetPackageVersionPackagePayload.Messages, and is useful for accessing the field via an interface.
-func (v *setPackageVersionSetPackageVersionPackagePayload) GetMessages() []MutationValidationError {
-	return v.Messages
+// GetElapsedTime returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.ElapsedTime, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetElapsedTime() int {
+	return v.ElapsedTime
 }
 
-// setPackageVersionSetPackageVersionPackagePayloadResultPackage includes the requested fields of the GraphQL type Package.
+// GetDeployedBy returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.DeployedBy, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetDeployedBy() string {
+	return v.DeployedBy
+}
+
+// GetInstance returns listDeploymentsDeploymentsDeploymentsPageItemsDeployment.Instance, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetInstance() listDeploymentsDeploymentsDeploymentsPageItemsDeploymentInstance {
+	return v.Instance
+}
+
+// listDeploymentsDeploymentsDeploymentsPageItemsDeploymentInstance includes the requested fields of the GraphQL type Instance.
 // The GraphQL type's documentation follows.
 //
-// A deployed instance of a bundle in the context of its manifest
-type setPackageVersionSetPackageVersionPackagePayloadResultPackage struct {
-	// Unique identifier
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type listDeploymentsDeploymentsDeploymentsPageItemsDeploymentInstance struct {
 	Id string `json:"id"`
-	// Unique identifier for the package
-	Slug string `json:"slug"`
-}
-
-// GetId returns setPackageVersionSetPackageVersionPackagePayloadResultPackage.Id, and is useful for accessing the field via an interface.
-func (v *setPackageVersionSetPackageVersionPackagePayloadResultPackage) GetId() string { return v.Id }
-
-// GetSlug returns setPackageVersionSetPackageVersionPackagePayloadResultPackage.Slug, and is useful for accessing the field via an interface.
-func (v *setPackageVersionSetPackageVersionPackagePayloadResultPackage) GetSlug() string {
-	return v.Slug
-}
-
-// updateArtifactResponse is returned by updateArtifact on success.
-type updateArtifactResponse struct {
-	// Update an artifact
-	UpdateArtifact updateArtifactUpdateArtifactArtifactPayload `json:"updateArtifact"`
-}
-
-// GetUpdateArtifact returns updateArtifactResponse.UpdateArtifact, and is useful for accessing the field via an interface.
-func (v *updateArtifactResponse) GetUpdateArtifact() updateArtifactUpdateArtifactArtifactPayload {
-	return v.UpdateArtifact
-}
-
-// updateArtifactUpdateArtifactArtifactPayload includes the requested fields of the GraphQL type ArtifactPayload.
-type updateArtifactUpdateArtifactArtifactPayload struct {
-	// The object created/updated/deleted by the mutation. May be null if mutation failed.
-	Result updateArtifactUpdateArtifactArtifactPayloadResultArtifact `json:"result"`
-	// Indicates if the mutation completed successfully or not.
-	Successful bool `json:"successful"`
-	// A list of failed validations. May be blank or null if mutation succeeded.
-	Messages []MutationValidationError `json:"messages"`
-}
-
-// GetResult returns updateArtifactUpdateArtifactArtifactPayload.Result, and is useful for accessing the field via an interface.
-func (v *updateArtifactUpdateArtifactArtifactPayload) GetResult() updateArtifactUpdateArtifactArtifactPayloadResultArtifact {
-	return v.Result
-}
-
-// GetSuccessful returns updateArtifactUpdateArtifactArtifactPayload.Successful, and is useful for accessing the field via an interface.
-func (v *updateArtifactUpdateArtifactArtifactPayload) GetSuccessful() bool { return v.Successful }
-
-// GetMessages returns updateArtifactUpdateArtifactArtifactPayload.Messages, and is useful for accessing the field via an interface.
-func (v *updateArtifactUpdateArtifactArtifactPayload) GetMessages() []MutationValidationError {
-	return v.Messages
-}
-
-// updateArtifactUpdateArtifactArtifactPayloadResultArtifact includes the requested fields of the GraphQL type Artifact.
-type updateArtifactUpdateArtifactArtifactPayloadResultArtifact struct {
-	Id   string `json:"id"`
+	// Human-readable display name for the instance.
 	Name string `json:"name"`
 }
 
-// GetId returns updateArtifactUpdateArtifactArtifactPayloadResultArtifact.Id, and is useful for accessing the field via an interface.
-func (v *updateArtifactUpdateArtifactArtifactPayloadResultArtifact) GetId() string { return v.Id }
+// GetId returns listDeploymentsDeploymentsDeploymentsPageItemsDeploymentInstance.Id, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeploymentInstance) GetId() string {
+	return v.Id
+}
 
-// GetName returns updateArtifactUpdateArtifactArtifactPayloadResultArtifact.Name, and is useful for accessing the field via an interface.
-func (v *updateArtifactUpdateArtifactArtifactPayloadResultArtifact) GetName() string { return v.Name }
+// GetName returns listDeploymentsDeploymentsDeploymentsPageItemsDeploymentInstance.Name, and is useful for accessing the field via an interface.
+func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeploymentInstance) GetName() string {
+	return v.Name
+}
 
-// The mutation executed by configurePackage.
-const configurePackage_Operation = `
-mutation configurePackage ($organizationId: ID!, $id: ID!, $params: JSON!) {
-	configurePackage(organizationId: $organizationId, id: $id, params: $params) {
+// listDeploymentsResponse is returned by listDeployments on success.
+type listDeploymentsResponse struct {
+	// List deployments across all projects and environments you have access to.
+	//
+	// Returns a cursor-paginated list, sorted by newest first by default. Use `filter`
+	// to narrow results by instance, status, or action type.
+	//
+	// ```graphql
+	// query {
+	// deployments(organizationId: "my-org", filter: { status: { eq: RUNNING } }) {
+	// items {
+	// id
+	// status
+	// action
+	// version
+	// elapsedTime
+	// deployedBy
+	// instance { id }
+	// }
+	// cursor { next }
+	// }
+	// }
+	// ```
+	Deployments listDeploymentsDeploymentsDeploymentsPage `json:"deployments"`
+}
+
+// GetDeployments returns listDeploymentsResponse.Deployments, and is useful for accessing the field via an interface.
+func (v *listDeploymentsResponse) GetDeployments() listDeploymentsDeploymentsDeploymentsPage {
+	return v.Deployments
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPage includes the requested fields of the GraphQL type EnvironmentsPage.
+type listEnvironmentsEnvironmentsEnvironmentsPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor `json:"cursor"`
+	// A list of type environment.
+	Items []listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment `json:"items"`
+}
+
+// GetCursor returns listEnvironmentsEnvironmentsEnvironmentsPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPage) GetCursor() listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listEnvironmentsEnvironmentsEnvironmentsPage.Items, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPage) GetItems() []listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment {
+	return v.Items
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
+}
+
+// GetNext returns listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor) GetNext() string {
+	return v.Next
+}
+
+// GetPrevious returns listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment includes the requested fields of the GraphQL type Environment.
+// The GraphQL type's documentation follows.
+//
+// A deployment target within a project where blueprint components become live infrastructure.
+//
+// Each project can have multiple environments (e.g., `staging`, `production`). When you deploy
+// to an environment, every component in the project's blueprint is realized as an **Instance** --
+// a running piece of cloud infrastructure with its own configuration, state, and cost data.
+//
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
+// that cascade down to all instances within the environment. **Defaults** let you pre-assign
+// resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
+//
+// Before deleting an environment, all instances must be decommissioned. Use the `deletable`
+// field to check for blocking constraints.
+type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the project.
+	Name string `json:"name"`
+	// Free-text description of what this environment is for.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this environment. Attributes cascade to instances. Must conform to your organization's custom attributes for the `ENVIRONMENT` scope.
+	Attributes map[string]any `json:"-"`
+	// When this environment was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this environment was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// The parent project that this environment belongs to.
+	Project listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject `json:"project"`
+	// Aggregated cloud-provider cost metrics for all instances in this environment.
+	Cost listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary `json:"cost"`
+}
+
+// GetId returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetId() string { return v.Id }
+
+// GetName returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetDescription() string {
+	return v.Description
+}
+
+// GetAttributes returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Attributes, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetProject returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetProject() listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject {
+	return v.Project
+}
+
+// GetCost returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Cost, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) GetCost() listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary {
+	return v.Cost
+}
+
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallistEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Project listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject `json:"project"`
+
+	Cost listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary `json:"cost"`
+}
+
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment) __premarshalJSON() (*__premarshallistEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment, error) {
+	var retval __premarshallistEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironment.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Project = v.Project
+	retval.Cost = v.Cost
+	return &retval, nil
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary includes the requested fields of the GraphQL type CostSummary.
+// The GraphQL type's documentation follows.
+//
+// Aggregated cloud-provider cost metrics for a project or environment.
+//
+// Cost data is sourced from your cloud provider's billing APIs and refreshed periodically.
+// Each metric is a `CostSample` containing an amount and currency. All four metrics are
+// always present, but their inner `amount` and `currency` may be null if billing data has
+// not yet been ingested.
+//
+// - **last_month** -- Total spend for the most recent complete billing cycle.
+// - **monthly_average** -- Average monthly spend across all available billing cycles.
+// - **last_day** -- Total spend for the most recent 24-hour period.
+// - **daily_average** -- Average daily spend over the last 7 days.
+type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary struct {
+	// Average monthly cost across all available billing cycles.
+	MonthlyAverage listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	// Average daily cost over the last 7 days.
+	DailyAverage listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+}
+
+// GetMonthlyAverage returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary) GetMonthlyAverage() listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample {
+	return v.MonthlyAverage
+}
+
+// GetDailyAverage returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummary) GetDailyAverage() listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample {
+	return v.DailyAverage
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project organizes related infrastructure under a single blueprint.
+//
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Attributes set on a project are inherited by all environments and instances within it.
+type listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the organization.
+	Name string `json:"name"`
+	// Free-text description of what this project is for.
+	Description string `json:"description"`
+}
+
+// GetId returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject) GetId() string {
+	return v.Id
+}
+
+// GetName returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject.Name, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject.Description, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsEnvironmentsEnvironmentsPageItemsEnvironmentProject) GetDescription() string {
+	return v.Description
+}
+
+// listEnvironmentsResponse is returned by listEnvironments on success.
+type listEnvironmentsResponse struct {
+	// List all environments you have access to across all projects.
+	//
+	// Returns a cursor-paginated list. Use `filter` to narrow by project or environment ID,
+	// and `sort` to control ordering (defaults to name ascending).
+	//
+	// ```graphql
+	// query {
+	// environments(organizationId: "my-org", filter: { projectId: { eq: "my-project" } }) {
+	// items { id name project { id } }
+	// cursor { next }
+	// }
+	// }
+	// ```
+	Environments listEnvironmentsEnvironmentsEnvironmentsPage `json:"environments"`
+}
+
+// GetEnvironments returns listEnvironmentsResponse.Environments, and is useful for accessing the field via an interface.
+func (v *listEnvironmentsResponse) GetEnvironments() listEnvironmentsEnvironmentsEnvironmentsPage {
+	return v.Environments
+}
+
+// listInstanceResourcesInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type listInstanceResourcesInstance struct {
+	// Paginated list of resources produced by this instance.
+	//
+	// Resources are the outputs published after a successful deployment
+	// (e.g., connection strings, endpoints, credentials). Other instances consume
+	// these resources via connections.
+	Resources listInstanceResourcesInstanceResourcesInstanceResourcesPage `json:"resources"`
+}
+
+// GetResources returns listInstanceResourcesInstance.Resources, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstance) GetResources() listInstanceResourcesInstanceResourcesInstanceResourcesPage {
+	return v.Resources
+}
+
+// listInstanceResourcesInstanceResourcesInstanceResourcesPage includes the requested fields of the GraphQL type InstanceResourcesPage.
+type listInstanceResourcesInstanceResourcesInstanceResourcesPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor `json:"cursor"`
+	// A list of type instance_resource.
+	Items []listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource `json:"items"`
+}
+
+// GetCursor returns listInstanceResourcesInstanceResourcesInstanceResourcesPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPage) GetCursor() listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listInstanceResourcesInstanceResourcesInstanceResourcesPage.Items, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPage) GetItems() []listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource {
+	return v.Items
+}
+
+// listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
+}
+
+// GetNext returns listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor) GetNext() string {
+	return v.Next
+}
+
+// GetPrevious returns listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
+}
+
+// listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource includes the requested fields of the GraphQL type InstanceResource.
+// The GraphQL type's documentation follows.
+//
+// An output resource produced by an instance, keyed by the field handle that produced it.
+//
+// Resources are the outputs an instance publishes after a successful deployment
+// (e.g., a database connection string, a Kubernetes cluster endpoint). Other
+// instances can consume these resources via connections.
+type listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource struct {
+	// The output handle name that produced this resource (e.g., `authentication`).
+	Field string `json:"field"`
+	// The resource containing the actual data.
+	Resource listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource `json:"resource"`
+}
+
+// GetField returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource.Field, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource) GetField() string {
+	return v.Field
+}
+
+// GetResource returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource.Resource, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource) GetResource() listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource {
+	return v.Resource
+}
+
+// listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource includes the requested fields of the GraphQL type Resource.
+// The GraphQL type's documentation follows.
+//
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
+//
+// Resources are the connective tissue between instances. When an instance is deployed, it
+// produces resources as outputs. Other instances can consume those resources as inputs,
+// creating a dependency graph of your infrastructure.
+//
+// Resources have two origins:
+// - **Imported** — created directly through the API (e.g., uploading existing AWS credentials).
+// You have full CRUD control over these resources.
+// - **Provisioned** — created automatically when an instance is deployed. These are read-only
+// and managed entirely by the owning instance's lifecycle.
+type listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource struct {
+	// Unique identifier for this resource.
+	Id string `json:"id"`
+	// Human-readable display name for this resource.
+	Name string `json:"name"`
+	// How this resource was created. Determines whether it can be modified through the API.
+	Origin ResourceOrigin `json:"origin"`
+	// When this resource was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this resource was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Id, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetId() string {
+	return v.Id
+}
+
+// GetName returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Name, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetName() string {
+	return v.Name
+}
+
+// GetOrigin returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Origin, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetOrigin() ResourceOrigin {
+	return v.Origin
+}
+
+// GetCreatedAt returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// listInstanceResourcesResponse is returned by listInstanceResources on success.
+type listInstanceResourcesResponse struct {
+	// Fetch a single instance by its ID. Returns null with a `NOT_FOUND` error if the instance does not exist.
+	Instance listInstanceResourcesInstance `json:"instance"`
+}
+
+// GetInstance returns listInstanceResourcesResponse.Instance, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesResponse) GetInstance() listInstanceResourcesInstance {
+	return v.Instance
+}
+
+// listInstancesInstancesInstancesPage includes the requested fields of the GraphQL type InstancesPage.
+type listInstancesInstancesInstancesPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listInstancesInstancesInstancesPageCursorPaginationCursor `json:"cursor"`
+	// A list of type instance.
+	Items []listInstancesInstancesInstancesPageItemsInstance `json:"items"`
+}
+
+// GetCursor returns listInstancesInstancesInstancesPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPage) GetCursor() listInstancesInstancesInstancesPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listInstancesInstancesInstancesPage.Items, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPage) GetItems() []listInstancesInstancesInstancesPageItemsInstance {
+	return v.Items
+}
+
+// listInstancesInstancesInstancesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listInstancesInstancesInstancesPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
+}
+
+// GetNext returns listInstancesInstancesInstancesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageCursorPaginationCursor) GetNext() string { return v.Next }
+
+// GetPrevious returns listInstancesInstancesInstancesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
+}
+
+// listInstancesInstancesInstancesPageItemsInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type listInstancesInstancesInstancesPageItemsInstance struct {
+	Id string `json:"id"`
+	// Human-readable display name for the instance.
+	Name string `json:"name"`
+	// Current lifecycle state of the instance.
+	Status InstanceStatus `json:"status"`
+	// Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`.
+	Version string `json:"version"`
+	// Whether to include development (pre-release) builds when resolving the version constraint.
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// The concrete bundle version resolved from the version constraint and release strategy.
+	//
+	// This is the version that will be used on the **next** deployment. Compare
+	// with `deployedVersion` to determine if a redeployment would change anything.
+	ResolvedVersion string `json:"resolvedVersion"`
+	// The bundle version that was last successfully deployed to infrastructure.
+	//
+	// May differ from `resolvedVersion` if the version constraint has been updated
+	// but no deployment has occurred yet. Null if the instance has never been deployed.
+	DeployedVersion string `json:"deployedVersion"`
+	// The newest bundle version available that satisfies the version constraint.
+	//
+	// Returns null if the instance is already on the latest matching version.
+	// Use this field to detect when an upgrade is available.
+	AvailableUpgrade string `json:"availableUpgrade"`
+	// Key-value attributes assigned directly to this instance.
+	Attributes map[string]any `json:"-"`
+	// When this instance was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this instance was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Cloud provider cost summary for this instance, including daily and monthly breakdowns.
+	Cost listInstancesInstancesInstancesPageItemsInstanceCostCostSummary `json:"cost"`
+	// The environment this instance is deployed in.
+	Environment listInstancesInstancesInstancesPageItemsInstanceEnvironment `json:"environment"`
+	// The bundle release currently resolved for this instance.
+	Bundle listInstancesInstancesInstancesPageItemsInstanceBundle `json:"bundle"`
+	// The component this instance was deployed from.
+	Component listInstancesInstancesInstancesPageItemsInstanceComponent `json:"component"`
+}
+
+// GetId returns listInstancesInstancesInstancesPageItemsInstance.Id, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetId() string { return v.Id }
+
+// GetName returns listInstancesInstancesInstancesPageItemsInstance.Name, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetName() string { return v.Name }
+
+// GetStatus returns listInstancesInstancesInstancesPageItemsInstance.Status, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetStatus() InstanceStatus {
+	return v.Status
+}
+
+// GetVersion returns listInstancesInstancesInstancesPageItemsInstance.Version, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetVersion() string { return v.Version }
+
+// GetReleaseStrategy returns listInstancesInstancesInstancesPageItemsInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetReleaseStrategy() ReleaseStrategy {
+	return v.ReleaseStrategy
+}
+
+// GetResolvedVersion returns listInstancesInstancesInstancesPageItemsInstance.ResolvedVersion, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetResolvedVersion() string {
+	return v.ResolvedVersion
+}
+
+// GetDeployedVersion returns listInstancesInstancesInstancesPageItemsInstance.DeployedVersion, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetDeployedVersion() string {
+	return v.DeployedVersion
+}
+
+// GetAvailableUpgrade returns listInstancesInstancesInstancesPageItemsInstance.AvailableUpgrade, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetAvailableUpgrade() string {
+	return v.AvailableUpgrade
+}
+
+// GetAttributes returns listInstancesInstancesInstancesPageItemsInstance.Attributes, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns listInstancesInstancesInstancesPageItemsInstance.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listInstancesInstancesInstancesPageItemsInstance.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetCost returns listInstancesInstancesInstancesPageItemsInstance.Cost, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetCost() listInstancesInstancesInstancesPageItemsInstanceCostCostSummary {
+	return v.Cost
+}
+
+// GetEnvironment returns listInstancesInstancesInstancesPageItemsInstance.Environment, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetEnvironment() listInstancesInstancesInstancesPageItemsInstanceEnvironment {
+	return v.Environment
+}
+
+// GetBundle returns listInstancesInstancesInstancesPageItemsInstance.Bundle, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetBundle() listInstancesInstancesInstancesPageItemsInstanceBundle {
+	return v.Bundle
+}
+
+// GetComponent returns listInstancesInstancesInstancesPageItemsInstance.Component, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstance) GetComponent() listInstancesInstancesInstancesPageItemsInstanceComponent {
+	return v.Component
+}
+
+func (v *listInstancesInstancesInstancesPageItemsInstance) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*listInstancesInstancesInstancesPageItemsInstance
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.listInstancesInstancesInstancesPageItemsInstance = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal listInstancesInstancesInstancesPageItemsInstance.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallistInstancesInstancesInstancesPageItemsInstance struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Status InstanceStatus `json:"status"`
+
+	Version string `json:"version"`
+
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+
+	ResolvedVersion string `json:"resolvedVersion"`
+
+	DeployedVersion string `json:"deployedVersion"`
+
+	AvailableUpgrade string `json:"availableUpgrade"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Cost listInstancesInstancesInstancesPageItemsInstanceCostCostSummary `json:"cost"`
+
+	Environment listInstancesInstancesInstancesPageItemsInstanceEnvironment `json:"environment"`
+
+	Bundle listInstancesInstancesInstancesPageItemsInstanceBundle `json:"bundle"`
+
+	Component listInstancesInstancesInstancesPageItemsInstanceComponent `json:"component"`
+}
+
+func (v *listInstancesInstancesInstancesPageItemsInstance) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *listInstancesInstancesInstancesPageItemsInstance) __premarshalJSON() (*__premarshallistInstancesInstancesInstancesPageItemsInstance, error) {
+	var retval __premarshallistInstancesInstancesInstancesPageItemsInstance
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Status = v.Status
+	retval.Version = v.Version
+	retval.ReleaseStrategy = v.ReleaseStrategy
+	retval.ResolvedVersion = v.ResolvedVersion
+	retval.DeployedVersion = v.DeployedVersion
+	retval.AvailableUpgrade = v.AvailableUpgrade
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal listInstancesInstancesInstancesPageItemsInstance.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Cost = v.Cost
+	retval.Environment = v.Environment
+	retval.Bundle = v.Bundle
+	retval.Component = v.Component
+	return &retval, nil
+}
+
+// listInstancesInstancesInstancesPageItemsInstanceBundle includes the requested fields of the GraphQL type Bundle.
+// The GraphQL type's documentation follows.
+//
+// A versioned infrastructure-as-code package.
+//
+// A bundle is a single published version of an IaC package in your organization's
+// catalog. Each bundle belongs to an OCI repository and is identified by a composite
+// `name@version` string (e.g., `aws-aurora-postgres@1.2.3`).
+//
+// Bundles declare **dependencies** (inputs they require from other bundles) and
+// **resources** (outputs they produce). These declarations drive the connection
+// system on the Massdriver canvas -- when you add a component to a blueprint,
+// the platform knows which other components can satisfy its dependencies.
+//
+// ```mermaid
+// graph TD
+// R["OCI Repository: aws-aurora-postgres"] --> T1["Tag: 1.0.0"]
+// R --> T2["Tag: 1.1.0"]
+// R --> T3["Tag: 1.2.3"]
+// R --> RC1["Channel: ~1 → 1.2.3"]
+// R --> RC2["Channel: latest → 1.2.3"]
+// T3 --> B["Bundle: aws-aurora-postgres@1.2.3"]
+// B --> D1["Dependency: aws-iam-role"]
+// B --> D2["Dependency: aws-vpc"]
+// B --> RES["Resource: aurora-cluster"]
+// ```
+type listInstancesInstancesInstancesPageItemsInstanceBundle struct {
+	// Composite identifier in `name@version` format (e.g., `aws-aurora-postgres@1.2.3`). Always contains the fully resolved semver version.
+	Id string `json:"id"`
+	// OCI repository name this bundle belongs to (e.g., `aws-aurora-postgres`).
+	Name string `json:"name"`
+	// Fully resolved semantic version of this bundle (e.g., `1.2.3`).
+	Version string `json:"version"`
+}
+
+// GetId returns listInstancesInstancesInstancesPageItemsInstanceBundle.Id, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceBundle) GetId() string { return v.Id }
+
+// GetName returns listInstancesInstancesInstancesPageItemsInstanceBundle.Name, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceBundle) GetName() string { return v.Name }
+
+// GetVersion returns listInstancesInstancesInstancesPageItemsInstanceBundle.Version, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceBundle) GetVersion() string {
+	return v.Version
+}
+
+// listInstancesInstancesInstancesPageItemsInstanceComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type listInstancesInstancesInstancesPageItemsInstanceComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+}
+
+// GetId returns listInstancesInstancesInstancesPageItemsInstanceComponent.Id, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceComponent) GetId() string { return v.Id }
+
+// GetName returns listInstancesInstancesInstancesPageItemsInstanceComponent.Name, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceComponent) GetName() string { return v.Name }
+
+// GetDescription returns listInstancesInstancesInstancesPageItemsInstanceComponent.Description, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceComponent) GetDescription() string {
+	return v.Description
+}
+
+// listInstancesInstancesInstancesPageItemsInstanceCostCostSummary includes the requested fields of the GraphQL type CostSummary.
+// The GraphQL type's documentation follows.
+//
+// Aggregated cloud-provider cost metrics for a project or environment.
+//
+// Cost data is sourced from your cloud provider's billing APIs and refreshed periodically.
+// Each metric is a `CostSample` containing an amount and currency. All four metrics are
+// always present, but their inner `amount` and `currency` may be null if billing data has
+// not yet been ingested.
+//
+// - **last_month** -- Total spend for the most recent complete billing cycle.
+// - **monthly_average** -- Average monthly spend across all available billing cycles.
+// - **last_day** -- Total spend for the most recent 24-hour period.
+// - **daily_average** -- Average daily spend over the last 7 days.
+type listInstancesInstancesInstancesPageItemsInstanceCostCostSummary struct {
+	// Average monthly cost across all available billing cycles.
+	MonthlyAverage listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	// Average daily cost over the last 7 days.
+	DailyAverage listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+}
+
+// GetMonthlyAverage returns listInstancesInstancesInstancesPageItemsInstanceCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceCostCostSummary) GetMonthlyAverage() listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryMonthlyAverageCostSample {
+	return v.MonthlyAverage
+}
+
+// GetDailyAverage returns listInstancesInstancesInstancesPageItemsInstanceCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceCostCostSummary) GetDailyAverage() listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryDailyAverageCostSample {
+	return v.DailyAverage
+}
+
+// listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryDailyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryMonthlyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// listInstancesInstancesInstancesPageItemsInstanceEnvironment includes the requested fields of the GraphQL type Environment.
+// The GraphQL type's documentation follows.
+//
+// A deployment target within a project where blueprint components become live infrastructure.
+//
+// Each project can have multiple environments (e.g., `staging`, `production`). When you deploy
+// to an environment, every component in the project's blueprint is realized as an **Instance** --
+// a running piece of cloud infrastructure with its own configuration, state, and cost data.
+//
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
+// that cascade down to all instances within the environment. **Defaults** let you pre-assign
+// resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
+//
+// Before deleting an environment, all instances must be decommissioned. Use the `deletable`
+// field to check for blocking constraints.
+type listInstancesInstancesInstancesPageItemsInstanceEnvironment struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the project.
+	Name string `json:"name"`
+	// The parent project that this environment belongs to.
+	Project listInstancesInstancesInstancesPageItemsInstanceEnvironmentProject `json:"project"`
+}
+
+// GetId returns listInstancesInstancesInstancesPageItemsInstanceEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceEnvironment) GetId() string { return v.Id }
+
+// GetName returns listInstancesInstancesInstancesPageItemsInstanceEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceEnvironment) GetName() string { return v.Name }
+
+// GetProject returns listInstancesInstancesInstancesPageItemsInstanceEnvironment.Project, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceEnvironment) GetProject() listInstancesInstancesInstancesPageItemsInstanceEnvironmentProject {
+	return v.Project
+}
+
+// listInstancesInstancesInstancesPageItemsInstanceEnvironmentProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project organizes related infrastructure under a single blueprint.
+//
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Attributes set on a project are inherited by all environments and instances within it.
+type listInstancesInstancesInstancesPageItemsInstanceEnvironmentProject struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the organization.
+	Name string `json:"name"`
+}
+
+// GetId returns listInstancesInstancesInstancesPageItemsInstanceEnvironmentProject.Id, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceEnvironmentProject) GetId() string {
+	return v.Id
+}
+
+// GetName returns listInstancesInstancesInstancesPageItemsInstanceEnvironmentProject.Name, and is useful for accessing the field via an interface.
+func (v *listInstancesInstancesInstancesPageItemsInstanceEnvironmentProject) GetName() string {
+	return v.Name
+}
+
+// listInstancesResponse is returned by listInstances on success.
+type listInstancesResponse struct {
+	// List all instances you have access to.
+	//
+	// Returns a paginated list of deployed infrastructure across all projects
+	// and environments visible to the current user. Use filters to narrow by
+	// project, environment, status, bundle, or configuration parameters.
+	//
+	// ```graphql
+	// query {
+	// instances(
+	// organizationId: "my-org"
+	// filter: { status: { eq: PROVISIONED } }
+	// sort: { field: name, order: ASC }
+	// ) {
+	// items {
+	// id
+	// name
+	// status
+	// resolvedVersion
+	// environment { id }
+	// }
+	// cursor { after }
+	// }
+	// }
+	// ```
+	Instances listInstancesInstancesInstancesPage `json:"instances"`
+}
+
+// GetInstances returns listInstancesResponse.Instances, and is useful for accessing the field via an interface.
+func (v *listInstancesResponse) GetInstances() listInstancesInstancesInstancesPage {
+	return v.Instances
+}
+
+// listLinksProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project organizes related infrastructure under a single blueprint.
+//
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Attributes set on a project are inherited by all environments and instances within it.
+type listLinksProject struct {
+	// The infrastructure blueprint defining this project's components and their connections.
+	Blueprint listLinksProjectBlueprint `json:"blueprint"`
+}
+
+// GetBlueprint returns listLinksProject.Blueprint, and is useful for accessing the field via an interface.
+func (v *listLinksProject) GetBlueprint() listLinksProjectBlueprint { return v.Blueprint }
+
+// listLinksProjectBlueprint includes the requested fields of the GraphQL type Blueprint.
+// The GraphQL type's documentation follows.
+//
+// A project's infrastructure blueprint -- the design-time architecture.
+//
+// The blueprint is the canonical description of how your infrastructure fits
+// together. It contains **components** (the bundles you want to deploy) and
+// **links** (the wiring between them).
+//
+// Every project has exactly one blueprint. When you deploy to an environment,
+// the blueprint is realized as an **environment blueprint** containing live
+// **instances** and **connections**.
+//
+// ```mermaid
+// graph TB
+// subgraph "Design Time (Blueprint)"
+// C1["Component: database"] ---|"Link"| C2["Component: cache"]
+// end
+// subgraph "Runtime (Environment Blueprint)"
+// I1["Instance: database"] ---|"Connection"| I2["Instance: cache"]
+// end
+// C1 -.->|"deployed to"| I1
+// C2 -.->|"deployed to"| I2
+// ```
+type listLinksProjectBlueprint struct {
+	// Paginated list of links between components in this blueprint.
+	//
+	// Each link declares a dependency from one component's output to another's input.
+	// Defaults to chronological order by creation time.
+	Links listLinksProjectBlueprintLinksLinksPage `json:"links"`
+}
+
+// GetLinks returns listLinksProjectBlueprint.Links, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprint) GetLinks() listLinksProjectBlueprintLinksLinksPage {
+	return v.Links
+}
+
+// listLinksProjectBlueprintLinksLinksPage includes the requested fields of the GraphQL type LinksPage.
+type listLinksProjectBlueprintLinksLinksPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor `json:"cursor"`
+	// A list of type link.
+	Items []listLinksProjectBlueprintLinksLinksPageItemsLink `json:"items"`
+}
+
+// GetCursor returns listLinksProjectBlueprintLinksLinksPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPage) GetCursor() listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listLinksProjectBlueprintLinksLinksPage.Items, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPage) GetItems() []listLinksProjectBlueprintLinksLinksPageItemsLink {
+	return v.Items
+}
+
+// listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
+}
+
+// GetNext returns listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor) GetNext() string {
+	return v.Next
+}
+
+// GetPrevious returns listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
+}
+
+// listLinksProjectBlueprintLinksLinksPageItemsLink includes the requested fields of the GraphQL type Link.
+// The GraphQL type's documentation follows.
+//
+// A design-time dependency between two components in a blueprint.
+//
+// A link declares that one component's output should be wired into another
+// component's input. For example, a link from a database component's
+// `authentication` output to an application component's `database` input
+// ensures the app receives the database connection string.
+//
+// At deploy time, each link is realized as a **connection** in the environment,
+// wiring the actual instance outputs to instance inputs.
+type listLinksProjectBlueprintLinksLinksPageItemsLink struct {
+	// Unique identifier for this link.
+	Id string `json:"id"`
+	// The output field name on the source component (e.g., `authentication`).
+	FromField string `json:"fromField"`
+	// The input field name on the destination component (e.g., `database`).
+	ToField string `json:"toField"`
+	// When this link was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this link was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// The source component that produces the output.
+	FromComponent listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent `json:"fromComponent"`
+	// The destination component that consumes the input.
+	ToComponent listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent `json:"toComponent"`
+}
+
+// GetId returns listLinksProjectBlueprintLinksLinksPageItemsLink.Id, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetId() string { return v.Id }
+
+// GetFromField returns listLinksProjectBlueprintLinksLinksPageItemsLink.FromField, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetFromField() string { return v.FromField }
+
+// GetToField returns listLinksProjectBlueprintLinksLinksPageItemsLink.ToField, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetToField() string { return v.ToField }
+
+// GetCreatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLink.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLink.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetFromComponent returns listLinksProjectBlueprintLinksLinksPageItemsLink.FromComponent, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetFromComponent() listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent {
+	return v.FromComponent
+}
+
+// GetToComponent returns listLinksProjectBlueprintLinksLinksPageItemsLink.ToComponent, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLink) GetToComponent() listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent {
+	return v.ToComponent
+}
+
+// listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Id, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetId() string { return v.Id }
+
+// GetName returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Name, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Description, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetAttributes returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent) __premarshalJSON() (*__premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent, error) {
+	var retval __premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal listLinksProjectBlueprintLinksLinksPageItemsLinkFromComponent.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Id, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetId() string { return v.Id }
+
+// GetName returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Name, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetName() string { return v.Name }
+
+// GetDescription returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Description, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetAttributes returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkToComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent) __premarshalJSON() (*__premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkToComponent, error) {
+	var retval __premarshallistLinksProjectBlueprintLinksLinksPageItemsLinkToComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal listLinksProjectBlueprintLinksLinksPageItemsLinkToComponent.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// listLinksResponse is returned by listLinks on success.
+type listLinksResponse struct {
+	// Fetch a single project by its identifier.
+	Project listLinksProject `json:"project"`
+}
+
+// GetProject returns listLinksResponse.Project, and is useful for accessing the field via an interface.
+func (v *listLinksResponse) GetProject() listLinksProject { return v.Project }
+
+// listOciReposOciReposOciReposPage includes the requested fields of the GraphQL type OciReposPage.
+type listOciReposOciReposOciReposPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listOciReposOciReposOciReposPageCursorPaginationCursor `json:"cursor"`
+	// A list of type oci_repo.
+	Items []listOciReposOciReposOciReposPageItemsOciRepo `json:"items"`
+}
+
+// GetCursor returns listOciReposOciReposOciReposPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPage) GetCursor() listOciReposOciReposOciReposPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listOciReposOciReposOciReposPage.Items, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPage) GetItems() []listOciReposOciReposOciReposPageItemsOciRepo {
+	return v.Items
+}
+
+// listOciReposOciReposOciReposPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listOciReposOciReposOciReposPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
+}
+
+// GetNext returns listOciReposOciReposOciReposPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageCursorPaginationCursor) GetNext() string { return v.Next }
+
+// GetPrevious returns listOciReposOciReposOciReposPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
+}
+
+// listOciReposOciReposOciReposPageItemsOciRepo includes the requested fields of the GraphQL type OciRepo.
+// The GraphQL type's documentation follows.
+//
+// An OCI repository in your organization's bundle catalog.
+//
+// An OCI repository is the container for all published versions of a single
+// infrastructure-as-code package. It is analogous to a Docker image repository
+// but for Massdriver bundles.
+//
+// Each repository has a unique `name` (e.g., `aws-aurora-postgres`) and contains:
+//
+// - **Tags** -- the individual published versions (`1.0.0`, `1.1.0`, `1.2.3`, etc.)
+// - **Release channels** -- auto-resolving version constraints (`latest`, `~1`, `~1.2`)
+// that always point to the newest matching tag
+//
+// To fetch a specific bundle version from a repository, use the `bundle` query
+// with a `BundleId` like `aws-aurora-postgres@1.2.3` or `aws-aurora-postgres@~1`.
+type listOciReposOciReposOciReposPageItemsOciRepo struct {
+	Id string `json:"id"`
+	// Repository name, unique within your organization (e.g., `aws-aurora-postgres`).
+	Name string `json:"name"`
+	// The [OCI artifact type](https://github.com/opencontainers/image-spec/blob/main/manifest.md#guidelines-for-artifact-usage)
+	// stored in this repository. Currently always
+	// `application/vnd.massdriver.bundle.v1+json`.
+	ArtifactType string `json:"artifactType"`
+	// Timestamp when this repository was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this repository was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Paginated list of release channels for this repository.
+	//
+	// Each channel is a version constraint that auto-resolves to the latest matching
+	// tag. Use the `stable` filter to show only stable or only development channels.
+	ReleaseChannels listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPage `json:"releaseChannels"`
+}
+
+// GetId returns listOciReposOciReposOciReposPageItemsOciRepo.Id, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageItemsOciRepo) GetId() string { return v.Id }
+
+// GetName returns listOciReposOciReposOciReposPageItemsOciRepo.Name, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageItemsOciRepo) GetName() string { return v.Name }
+
+// GetArtifactType returns listOciReposOciReposOciReposPageItemsOciRepo.ArtifactType, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageItemsOciRepo) GetArtifactType() string {
+	return v.ArtifactType
+}
+
+// GetCreatedAt returns listOciReposOciReposOciReposPageItemsOciRepo.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageItemsOciRepo) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns listOciReposOciReposOciReposPageItemsOciRepo.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageItemsOciRepo) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetReleaseChannels returns listOciReposOciReposOciReposPageItemsOciRepo.ReleaseChannels, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageItemsOciRepo) GetReleaseChannels() listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPage {
+	return v.ReleaseChannels
+}
+
+// listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPage includes the requested fields of the GraphQL type OciRepoReleaseChannelsPage.
+type listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPage struct {
+	// A list of type oci_repo_release_channel.
+	Items []listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel `json:"items"`
+}
+
+// GetItems returns listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPage.Items, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPage) GetItems() []listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel {
+	return v.Items
+}
+
+// listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel includes the requested fields of the GraphQL type OciRepoReleaseChannel.
+// The GraphQL type's documentation follows.
+//
+// A release channel within an OCI repository.
+//
+// Release channels are auto-resolving version constraints. Each channel points to
+// the latest published tag that matches its constraint. As new versions are
+// published, channels automatically update to point to the newest match.
+//
+// For example, channel `~1` always resolves to the highest `1.x.x` stable tag.
+// If `1.2.3` is the latest, the channel points there. When `1.3.0` is published,
+// the channel automatically advances.
+type listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel struct {
+	// The channel constraint expression (e.g., `~1`, `~1.2`, `latest`, `latest+dev`).
+	Name string `json:"name"`
+	// The fully resolved semver version this channel currently points to.
+	Tag string `json:"tag"`
+}
+
+// GetName returns listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel.Name, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel) GetName() string {
+	return v.Name
+}
+
+// GetTag returns listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel.Tag, and is useful for accessing the field via an interface.
+func (v *listOciReposOciReposOciReposPageItemsOciRepoReleaseChannelsOciRepoReleaseChannelsPageItemsOciRepoReleaseChannel) GetTag() string {
+	return v.Tag
+}
+
+// listOciReposResponse is returned by listOciRepos on success.
+type listOciReposResponse struct {
+	// List OCI repositories in your organization's bundle catalog.
+	//
+	// Returns a paginated list of repositories. Each repository is the container
+	// for all published versions of a bundle. Use `filter` to narrow by name,
+	// artifact type, or full-text search.
+	//
+	// ```graphql
+	// query {
+	// ociRepos(organizationId: "your-org-id", filter: { name: { startsWith: "aws-" } }) {
+	// items {
+	// id
+	// name
+	// tags(sort: { field: VERSION, order: DESC }) {
+	// items { tag }
+	// }
+	// }
+	// cursor { next }
+	// }
+	// }
+	// ```
+	OciRepos listOciReposOciReposOciReposPage `json:"ociRepos"`
+}
+
+// GetOciRepos returns listOciReposResponse.OciRepos, and is useful for accessing the field via an interface.
+func (v *listOciReposResponse) GetOciRepos() listOciReposOciReposOciReposPage { return v.OciRepos }
+
+// listProjectsProjectsProjectsPage includes the requested fields of the GraphQL type ProjectsPage.
+type listProjectsProjectsProjectsPage struct {
+	// A list of type project.
+	Items []listProjectsProjectsProjectsPageItemsProject `json:"items"`
+}
+
+// GetItems returns listProjectsProjectsProjectsPage.Items, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPage) GetItems() []listProjectsProjectsProjectsPageItemsProject {
+	return v.Items
+}
+
+// listProjectsProjectsProjectsPageItemsProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project organizes related infrastructure under a single blueprint.
+//
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Attributes set on a project are inherited by all environments and instances within it.
+type listProjectsProjectsProjectsPageItemsProject struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the organization.
+	Name string `json:"name"`
+	// Free-text description of what this project is for.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this project. Attributes cascade to environments and instances. Must conform to your organization's custom attributes for the `PROJECT` scope.
+	Attributes map[string]any `json:"-"`
+	// When this project was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this project was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Aggregated cloud-provider cost metrics for all instances in this project.
+	Cost listProjectsProjectsProjectsPageItemsProjectCostCostSummary `json:"cost"`
+}
+
+// GetId returns listProjectsProjectsProjectsPageItemsProject.Id, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetId() string { return v.Id }
+
+// GetName returns listProjectsProjectsProjectsPageItemsProject.Name, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetName() string { return v.Name }
+
+// GetDescription returns listProjectsProjectsProjectsPageItemsProject.Description, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetDescription() string { return v.Description }
+
+// GetAttributes returns listProjectsProjectsProjectsPageItemsProject.Attributes, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns listProjectsProjectsProjectsPageItemsProject.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns listProjectsProjectsProjectsPageItemsProject.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+// GetCost returns listProjectsProjectsProjectsPageItemsProject.Cost, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProject) GetCost() listProjectsProjectsProjectsPageItemsProjectCostCostSummary {
+	return v.Cost
+}
+
+func (v *listProjectsProjectsProjectsPageItemsProject) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*listProjectsProjectsProjectsPageItemsProject
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.listProjectsProjectsProjectsPageItemsProject = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal listProjectsProjectsProjectsPageItemsProject.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshallistProjectsProjectsProjectsPageItemsProject struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	Cost listProjectsProjectsProjectsPageItemsProjectCostCostSummary `json:"cost"`
+}
+
+func (v *listProjectsProjectsProjectsPageItemsProject) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *listProjectsProjectsProjectsPageItemsProject) __premarshalJSON() (*__premarshallistProjectsProjectsProjectsPageItemsProject, error) {
+	var retval __premarshallistProjectsProjectsProjectsPageItemsProject
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal listProjectsProjectsProjectsPageItemsProject.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.Cost = v.Cost
+	return &retval, nil
+}
+
+// listProjectsProjectsProjectsPageItemsProjectCostCostSummary includes the requested fields of the GraphQL type CostSummary.
+// The GraphQL type's documentation follows.
+//
+// Aggregated cloud-provider cost metrics for a project or environment.
+//
+// Cost data is sourced from your cloud provider's billing APIs and refreshed periodically.
+// Each metric is a `CostSample` containing an amount and currency. All four metrics are
+// always present, but their inner `amount` and `currency` may be null if billing data has
+// not yet been ingested.
+//
+// - **last_month** -- Total spend for the most recent complete billing cycle.
+// - **monthly_average** -- Average monthly spend across all available billing cycles.
+// - **last_day** -- Total spend for the most recent 24-hour period.
+// - **daily_average** -- Average daily spend over the last 7 days.
+type listProjectsProjectsProjectsPageItemsProjectCostCostSummary struct {
+	// Average monthly cost across all available billing cycles.
+	MonthlyAverage listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample `json:"monthlyAverage"`
+	// Average daily cost over the last 7 days.
+	DailyAverage listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample `json:"dailyAverage"`
+}
+
+// GetMonthlyAverage returns listProjectsProjectsProjectsPageItemsProjectCostCostSummary.MonthlyAverage, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummary) GetMonthlyAverage() listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample {
+	return v.MonthlyAverage
+}
+
+// GetDailyAverage returns listProjectsProjectsProjectsPageItemsProjectCostCostSummary.DailyAverage, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummary) GetDailyAverage() listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample {
+	return v.DailyAverage
+}
+
+// listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummaryDailyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample includes the requested fields of the GraphQL type CostSample.
+// The GraphQL type's documentation follows.
+//
+// A single cost data point containing an amount and its currency.
+//
+// Both `amount` and `currency` are nullable. A `null` amount means Massdriver has no cost
+// data for the requested period -- this is normal for newly provisioned resources or when
+// cloud provider billing data has not yet been ingested. When data is present, `amount` is
+// always a positive float and `currency` is an ISO 4217 code (e.g., `USD`, `EUR`).
+type listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample struct {
+	// The cost in the given currency. Null when no billing data is available for this period.
+	Amount float64 `json:"amount"`
+	// ISO 4217 currency code (e.g., `USD`). Null when no billing data is available.
+	Currency string `json:"currency"`
+}
+
+// GetAmount returns listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample.Amount, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample) GetAmount() float64 {
+	return v.Amount
+}
+
+// GetCurrency returns listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample.Currency, and is useful for accessing the field via an interface.
+func (v *listProjectsProjectsProjectsPageItemsProjectCostCostSummaryMonthlyAverageCostSample) GetCurrency() string {
+	return v.Currency
+}
+
+// listProjectsResponse is returned by listProjects on success.
+type listProjectsResponse struct {
+	// List all projects you have access to in the organization.
+	//
+	// Returns a cursor-paginated list. Use `sort` to control ordering (defaults to name ascending).
+	//
+	// ```graphql
+	// query {
+	// projects(organizationId: "my-org") {
+	// items { id name description attributes }
+	// cursor { next }
+	// }
+	// }
+	// ```
+	Projects listProjectsProjectsProjectsPage `json:"projects"`
+}
+
+// GetProjects returns listProjectsResponse.Projects, and is useful for accessing the field via an interface.
+func (v *listProjectsResponse) GetProjects() listProjectsProjectsProjectsPage { return v.Projects }
+
+// listResourceTypesResourceTypesResourceTypesPage includes the requested fields of the GraphQL type ResourceTypesPage.
+type listResourceTypesResourceTypesResourceTypesPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listResourceTypesResourceTypesResourceTypesPageCursorPaginationCursor `json:"cursor"`
+	// A list of type resource_type.
+	Items []listResourceTypesResourceTypesResourceTypesPageItemsResourceType `json:"items"`
+}
+
+// GetCursor returns listResourceTypesResourceTypesResourceTypesPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPage) GetCursor() listResourceTypesResourceTypesResourceTypesPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listResourceTypesResourceTypesResourceTypesPage.Items, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPage) GetItems() []listResourceTypesResourceTypesResourceTypesPageItemsResourceType {
+	return v.Items
+}
+
+// listResourceTypesResourceTypesResourceTypesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listResourceTypesResourceTypesResourceTypesPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
+}
+
+// GetNext returns listResourceTypesResourceTypesResourceTypesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPageCursorPaginationCursor) GetNext() string {
+	return v.Next
+}
+
+// GetPrevious returns listResourceTypesResourceTypesResourceTypesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
+}
+
+// listResourceTypesResourceTypesResourceTypesPageItemsResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type listResourceTypesResourceTypesResourceTypesPageItemsResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.Id, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetId() string {
+	return v.Id
+}
+
+// GetName returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.Name, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetName() string {
+	return v.Name
+}
+
+// GetIcon returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listResourceTypesResourceTypesResourceTypesPageItemsResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResourceTypesResourceTypesPageItemsResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// listResourceTypesResponse is returned by listResourceTypes on success.
+type listResourceTypesResponse struct {
+	// List resource types available to your organization.
+	//
+	// Returns both public resource types provided by Massdriver and any private
+	// resource types defined by your organization. Use this to discover what
+	// dependency and resource types are available when building bundles.
+	//
+	// ```graphql
+	// query {
+	// resourceTypes(organizationId: "your-org-id", filter: { id: { startsWith: "aws-" } }) {
+	// items {
+	// id
+	// name
+	// connectionOrientation
+	// icon
+	// }
+	// cursor { next }
+	// }
+	// }
+	// ```
+	ResourceTypes listResourceTypesResourceTypesResourceTypesPage `json:"resourceTypes"`
+}
+
+// GetResourceTypes returns listResourceTypesResponse.ResourceTypes, and is useful for accessing the field via an interface.
+func (v *listResourceTypesResponse) GetResourceTypes() listResourceTypesResourceTypesResourceTypesPage {
+	return v.ResourceTypes
+}
+
+// listResourcesResourcesResourcesPage includes the requested fields of the GraphQL type ResourcesPage.
+type listResourcesResourcesResourcesPage struct {
+	// Pagination cursors for navigating between pages.
+	Cursor listResourcesResourcesResourcesPageCursorPaginationCursor `json:"cursor"`
+	// A list of type resource.
+	Items []listResourcesResourcesResourcesPageItemsResource `json:"items"`
+}
+
+// GetCursor returns listResourcesResourcesResourcesPage.Cursor, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPage) GetCursor() listResourcesResourcesResourcesPageCursorPaginationCursor {
+	return v.Cursor
+}
+
+// GetItems returns listResourcesResourcesResourcesPage.Items, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPage) GetItems() []listResourcesResourcesResourcesPageItemsResource {
+	return v.Items
+}
+
+// listResourcesResourcesResourcesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
+// The GraphQL type's documentation follows.
+//
+// Pagination cursors returned with every paginated response.
+//
+// Contains opaque cursor strings for navigating forward and backward through results.
+// A `null` value for `next` indicates you have reached the last page; a `null` value
+// for `previous` indicates you are on the first page.
+type listResourcesResourcesResourcesPageCursorPaginationCursor struct {
+	// Cursor for the next page. `null` if there are no more results.
+	Next string `json:"next"`
+	// Cursor for the previous page. `null` if this is the first page.
+	Previous string `json:"previous"`
+}
+
+// GetNext returns listResourcesResourcesResourcesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageCursorPaginationCursor) GetNext() string { return v.Next }
+
+// GetPrevious returns listResourcesResourcesResourcesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageCursorPaginationCursor) GetPrevious() string {
+	return v.Previous
+}
+
+// listResourcesResourcesResourcesPageItemsResource includes the requested fields of the GraphQL type Resource.
+// The GraphQL type's documentation follows.
+//
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
+//
+// Resources are the connective tissue between instances. When an instance is deployed, it
+// produces resources as outputs. Other instances can consume those resources as inputs,
+// creating a dependency graph of your infrastructure.
+//
+// Resources have two origins:
+// - **Imported** — created directly through the API (e.g., uploading existing AWS credentials).
+// You have full CRUD control over these resources.
+// - **Provisioned** — created automatically when an instance is deployed. These are read-only
+// and managed entirely by the owning instance's lifecycle.
+type listResourcesResourcesResourcesPageItemsResource struct {
+	// Unique identifier for this resource.
+	Id string `json:"id"`
+	// Human-readable display name for this resource.
+	Name string `json:"name"`
+	// How this resource was created. Determines whether it can be modified through the API.
+	Origin ResourceOrigin `json:"origin"`
+	// The resource type that this resource conforms to, defining its schema and validation rules.
+	ResourceType listResourcesResourcesResourcesPageItemsResourceResourceType `json:"resourceType"`
+	// The bundle output handle that produced this resource (e.g., `authentication`, `database`).
+	//
+	// Set only for **provisioned** resources — it corresponds to a field declared under
+	// `artifacts` in the producing bundle's `massdriver.yaml`. Null for **imported** resources.
+	Field string `json:"field"`
+	// The instance whose deployment produced this resource.
+	//
+	// Null for **imported** resources. For **provisioned** resources, this is the instance
+	// that owns the resource's lifecycle — updating or decommissioning the instance will
+	// update or remove the resource.
+	Instance listResourcesResourcesResourcesPageItemsResourceInstance `json:"instance"`
+	// Download formats supported for this resource.
+	//
+	// Always includes `json` (the raw payload). Additional formats come from the resource
+	// type's `$md.export` declarations, which can render the payload as YAML or other
+	// templated outputs. Pass a returned format to `downloadArtifact` to retrieve the
+	// rendered content.
+	Formats []string `json:"formats"`
+	// When this resource was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this resource was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns listResourcesResourcesResourcesPageItemsResource.Id, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetId() string { return v.Id }
+
+// GetName returns listResourcesResourcesResourcesPageItemsResource.Name, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetName() string { return v.Name }
+
+// GetOrigin returns listResourcesResourcesResourcesPageItemsResource.Origin, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetOrigin() ResourceOrigin {
+	return v.Origin
+}
+
+// GetResourceType returns listResourcesResourcesResourcesPageItemsResource.ResourceType, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetResourceType() listResourcesResourcesResourcesPageItemsResourceResourceType {
+	return v.ResourceType
+}
+
+// GetField returns listResourcesResourcesResourcesPageItemsResource.Field, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetField() string { return v.Field }
+
+// GetInstance returns listResourcesResourcesResourcesPageItemsResource.Instance, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetInstance() listResourcesResourcesResourcesPageItemsResourceInstance {
+	return v.Instance
+}
+
+// GetFormats returns listResourcesResourcesResourcesPageItemsResource.Formats, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetFormats() []string { return v.Formats }
+
+// GetCreatedAt returns listResourcesResourcesResourcesPageItemsResource.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listResourcesResourcesResourcesPageItemsResource.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResource) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// listResourcesResourcesResourcesPageItemsResourceInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type listResourcesResourcesResourcesPageItemsResourceInstance struct {
+	Id string `json:"id"`
+	// Human-readable display name for the instance.
+	Name string `json:"name"`
+	// Current lifecycle state of the instance.
+	Status InstanceStatus `json:"status"`
+	// Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`.
+	Version string `json:"version"`
+	// Whether to include development (pre-release) builds when resolving the version constraint.
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// When this instance was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this instance was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns listResourcesResourcesResourcesPageItemsResourceInstance.Id, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetId() string { return v.Id }
+
+// GetName returns listResourcesResourcesResourcesPageItemsResourceInstance.Name, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetName() string { return v.Name }
+
+// GetStatus returns listResourcesResourcesResourcesPageItemsResourceInstance.Status, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetStatus() InstanceStatus {
+	return v.Status
+}
+
+// GetVersion returns listResourcesResourcesResourcesPageItemsResourceInstance.Version, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetVersion() string {
+	return v.Version
+}
+
+// GetReleaseStrategy returns listResourcesResourcesResourcesPageItemsResourceInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetReleaseStrategy() ReleaseStrategy {
+	return v.ReleaseStrategy
+}
+
+// GetCreatedAt returns listResourcesResourcesResourcesPageItemsResourceInstance.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listResourcesResourcesResourcesPageItemsResourceInstance.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceInstance) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// listResourcesResourcesResourcesPageItemsResourceResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type listResourcesResourcesResourcesPageItemsResourceResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns listResourcesResourcesResourcesPageItemsResourceResourceType.Id, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetId() string { return v.Id }
+
+// GetName returns listResourcesResourcesResourcesPageItemsResourceResourceType.Name, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetName() string {
+	return v.Name
+}
+
+// GetIcon returns listResourcesResourcesResourcesPageItemsResourceResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns listResourcesResourcesResourcesPageItemsResourceResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns listResourcesResourcesResourcesPageItemsResourceResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns listResourcesResourcesResourcesPageItemsResourceResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listResourcesResourcesResourcesPageItemsResourceResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// listResourcesResponse is returned by listResources on success.
+type listResourcesResponse struct {
+	// List all resources in your organization.
+	//
+	// Returns a cursor-paginated list of both imported and provisioned resources.
+	// Use the `filter` argument to view only imported or only provisioned resources.
+	//
+	// ```graphql
+	// query {
+	// resources(organizationId: "my-org", filter: { origin: { eq: imported } }) {
+	// items {
+	// id
+	// name
+	// origin
+	// resourceType { id }
+	// }
+	// cursor { next }
+	// }
+	// }
+	// ```
+	Resources listResourcesResourcesResourcesPage `json:"resources"`
+}
+
+// GetResources returns listResourcesResponse.Resources, and is useful for accessing the field via an interface.
+func (v *listResourcesResponse) GetResources() listResourcesResourcesResourcesPage {
+	return v.Resources
+}
+
+// publishResourceTypePublishResourceTypeResourceTypePayload includes the requested fields of the GraphQL type ResourceTypePayload.
+type publishResourceTypePublishResourceTypeResourceTypePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns publishResourceTypePublishResourceTypeResourceTypePayload.Result, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayload) GetResult() publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType {
+	return v.Result
+}
+
+// GetSuccessful returns publishResourceTypePublishResourceTypeResourceTypePayload.Successful, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns publishResourceTypePublishResourceTypeResourceTypePayload.Messages, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayload) GetMessages() []publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// The full JSON Schema describing the shape of data this resource type exposes to dependents.
+	//
+	// Use this to generate forms, validate inputs, or inspect the fields available on a connection
+	// of this resource type. The schema is returned verbatim, including Massdriver's `$md` extensions
+	// (e.g., `icon`, `ui`). Callers that only want the data contract can read `properties.data` or
+	// strip `$md` themselves.
+	Schema map[string]any `json:"-"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Id, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetId() string {
+	return v.Id
+}
+
+// GetName returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Name, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetName() string {
+	return v.Name
+}
+
+// GetIcon returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetSchema returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Schema, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetSchema() map[string]any {
+	return v.Schema
+}
+
+// GetCreatedAt returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType
+		Schema json.RawMessage `json:"schema"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Schema
+		src := firstPass.Schema
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Schema: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalpublishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Icon string `json:"icon"`
+
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+
+	Schema json.RawMessage `json:"schema"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType) __premarshalJSON() (*__premarshalpublishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType, error) {
+	var retval __premarshalpublishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Icon = v.Icon
+	retval.ConnectionOrientation = v.ConnectionOrientation
+	{
+
+		dst := &retval.Schema
+		src := v.Schema
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal publishResourceTypePublishResourceTypeResourceTypePayloadResultResourceType.Schema: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// publishResourceTypeResponse is returned by publishResourceType on success.
+type publishResourceTypeResponse struct {
+	// **Deprecated — use at your own risk.** This mutation exists only to bridge V0's
+	// `publishArtifactDefinition` into V1 while resource types are being migrated to OCI.
+	// New integrations should use the OCI-native publishing flow. This mutation may be
+	// removed or change behavior without notice.
+	//
+	// Upsert a resource type from a JSON Schema document. If an existing resource type in
+	// your organization has the same `$md.name`, its schema is replaced; otherwise a new
+	// resource type is created.
+	//
+	// The schema describes the shape of data this resource type exposes to dependents. It
+	// must include a `$md` extension that declares the type's identifier (`$md.name`),
+	// display label, icon, and UI behavior.
+	//
+	// ```graphql
+	// mutation {
+	// publishResourceType(
+	// organizationId: "your-org-id"
+	// input: {
+	// schema: {
+	// "$md": { name: "aws-iam-role", label: "AWS IAM Role" }
+	// type: "object"
+	// properties: { data: { type: "object", required: ["arn"], properties: { arn: { type: "string" } } } }
+	// }
+	// }
+	// ) {
+	// successful
+	// result { id name }
+	// messages { field message }
+	// }
+	// }
+	// ```
+	PublishResourceType publishResourceTypePublishResourceTypeResourceTypePayload `json:"publishResourceType"`
+}
+
+// GetPublishResourceType returns publishResourceTypeResponse.PublishResourceType, and is useful for accessing the field via an interface.
+func (v *publishResourceTypeResponse) GetPublishResourceType() publishResourceTypePublishResourceTypeResourceTypePayload {
+	return v.PublishResourceType
+}
+
+// removeComponentRemoveComponentComponentPayload includes the requested fields of the GraphQL type ComponentPayload.
+type removeComponentRemoveComponentComponentPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result removeComponentRemoveComponentComponentPayloadResultComponent `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []removeComponentRemoveComponentComponentPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns removeComponentRemoveComponentComponentPayload.Result, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayload) GetResult() removeComponentRemoveComponentComponentPayloadResultComponent {
+	return v.Result
+}
+
+// GetSuccessful returns removeComponentRemoveComponentComponentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns removeComponentRemoveComponentComponentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayload) GetMessages() []removeComponentRemoveComponentComponentPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// removeComponentRemoveComponentComponentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type removeComponentRemoveComponentComponentPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns removeComponentRemoveComponentComponentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns removeComponentRemoveComponentComponentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns removeComponentRemoveComponentComponentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// removeComponentRemoveComponentComponentPayloadResultComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type removeComponentRemoveComponentComponentPayloadResultComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+}
+
+// GetId returns removeComponentRemoveComponentComponentPayloadResultComponent.Id, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayloadResultComponent) GetId() string { return v.Id }
+
+// GetName returns removeComponentRemoveComponentComponentPayloadResultComponent.Name, and is useful for accessing the field via an interface.
+func (v *removeComponentRemoveComponentComponentPayloadResultComponent) GetName() string {
+	return v.Name
+}
+
+// removeComponentResponse is returned by removeComponent on success.
+type removeComponentResponse struct {
+	// Remove a component from a project's blueprint.
+	//
+	// Deletes the component and all of its links. Any instances deployed from
+	// this component must be decommissioned first.
+	RemoveComponent removeComponentRemoveComponentComponentPayload `json:"removeComponent"`
+}
+
+// GetRemoveComponent returns removeComponentResponse.RemoveComponent, and is useful for accessing the field via an interface.
+func (v *removeComponentResponse) GetRemoveComponent() removeComponentRemoveComponentComponentPayload {
+	return v.RemoveComponent
+}
+
+// removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload includes the requested fields of the GraphQL type InstanceSecretPayload.
+type removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload.Result, and is useful for accessing the field via an interface.
+func (v *removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload) GetResult() removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret {
+	return v.Result
+}
+
+// GetSuccessful returns removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload.Successful, and is useful for accessing the field via an interface.
+func (v *removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload.Messages, and is useful for accessing the field via an interface.
+func (v *removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload) GetMessages() []removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret includes the requested fields of the GraphQL type InstanceSecret.
+// The GraphQL type's documentation follows.
+//
+// Metadata about an encrypted secret attached to an instance.
+//
+// Secrets are encrypted key-value pairs injected at deploy time. The API
+// never returns secret values -- only the name and timestamps are exposed.
+type removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret struct {
+	// The secret's key name, used to reference it in deployment configuration.
+	Name string `json:"name"`
+	// When this secret was first created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this secret's value was last changed (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetName returns removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret.Name, and is useful for accessing the field via an interface.
+func (v *removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret) GetName() string {
+	return v.Name
+}
+
+// GetCreatedAt returns removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret.CreatedAt, and is useful for accessing the field via an interface.
+func (v *removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// removeInstanceSecretResponse is returned by removeInstanceSecret on success.
+type removeInstanceSecretResponse struct {
+	// Remove a secret from an instance.
+	//
+	// The secret is permanently deleted. The change takes effect on the next deployment;
+	// any currently running infrastructure retains the secret until redeployed.
+	RemoveInstanceSecret removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload `json:"removeInstanceSecret"`
+}
+
+// GetRemoveInstanceSecret returns removeInstanceSecretResponse.RemoveInstanceSecret, and is useful for accessing the field via an interface.
+func (v *removeInstanceSecretResponse) GetRemoveInstanceSecret() removeInstanceSecretRemoveInstanceSecretInstanceSecretPayload {
+	return v.RemoveInstanceSecret
+}
+
+// setEnvironmentDefaultResponse is returned by setEnvironmentDefault on success.
+type setEnvironmentDefaultResponse struct {
+	// Set a resource as the default of its type for an environment.
+	//
+	// All instances in the environment that require this resource type will automatically
+	// inherit it. Only one resource per type can be the default -- remove the existing
+	// default first with `removeEnvironmentDefault` to change it.
+	SetEnvironmentDefault setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayload `json:"setEnvironmentDefault"`
+}
+
+// GetSetEnvironmentDefault returns setEnvironmentDefaultResponse.SetEnvironmentDefault, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultResponse) GetSetEnvironmentDefault() setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayload {
+	return v.SetEnvironmentDefault
+}
+
+// setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayload includes the requested fields of the GraphQL type EnvironmentDefaultPayload.
+type setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayload.Result, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayload) GetResult() setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault {
+	return v.Result
+}
+
+// GetSuccessful returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayload.Successful, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayload.Messages, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayload) GetMessages() []setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault includes the requested fields of the GraphQL type EnvironmentDefault.
+// The GraphQL type's documentation follows.
+//
+// An environment default that automatically provides a resource to instances.
+//
+// When an instance in the environment requires a resource type that matches this default,
+// the resource is automatically connected without manual configuration. Only one default
+// per resource type is allowed per environment -- remove the existing default before
+// setting a new one.
+type setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault struct {
+	// Unique identifier for this environment default.
+	Id string `json:"id"`
+	// When this default was first set (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this default was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// The resource that is set as the default for its type.
+	Resource setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResource `json:"resource"`
+}
+
+// GetId returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault.Id, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault) GetId() string {
+	return v.Id
+}
+
+// GetCreatedAt returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault.CreatedAt, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetResource returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault.Resource, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefault) GetResource() setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResource {
+	return v.Resource
+}
+
+// setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResource includes the requested fields of the GraphQL type EnvironmentDefaultResource.
+// The GraphQL type's documentation follows.
+//
+// A resource referenced by an environment default.
+//
+// This represents the actual cloud resource (e.g., a VPC or DNS zone) that has been
+// designated as the default for its resource type within an environment.
+type setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResource struct {
+	// The resource's unique identifier.
+	Id string `json:"id"`
+	// Human-readable name of the resource.
+	Name string `json:"name"`
+	// The resource type (e.g., `massdriver/aws-vpc`) that this resource conforms to.
+	ResourceType setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType `json:"resourceType"`
+}
+
+// GetId returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResource.Id, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResource) GetId() string {
+	return v.Id
+}
+
+// GetName returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResource.Name, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResource) GetName() string {
+	return v.Name
+}
+
+// GetResourceType returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResource.ResourceType, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResource) GetResourceType() setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType {
+	return v.ResourceType
+}
+
+// setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.Id, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetId() string {
+	return v.Id
+}
+
+// GetName returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.Name, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetName() string {
+	return v.Name
+}
+
+// GetIcon returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *setEnvironmentDefaultSetEnvironmentDefaultEnvironmentDefaultPayloadResultEnvironmentDefaultResourceResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// setInstanceSecretResponse is returned by setInstanceSecret on success.
+type setInstanceSecretResponse struct {
+	// Create or update a secret on an instance.
+	//
+	// If a secret with the given name already exists, its value is replaced.
+	// Secret values are encrypted at rest and **never returned** in API responses.
+	// Secrets are injected into the deployment environment at deploy time.
+	SetInstanceSecret setInstanceSecretSetInstanceSecretInstanceSecretPayload `json:"setInstanceSecret"`
+}
+
+// GetSetInstanceSecret returns setInstanceSecretResponse.SetInstanceSecret, and is useful for accessing the field via an interface.
+func (v *setInstanceSecretResponse) GetSetInstanceSecret() setInstanceSecretSetInstanceSecretInstanceSecretPayload {
+	return v.SetInstanceSecret
+}
+
+// setInstanceSecretSetInstanceSecretInstanceSecretPayload includes the requested fields of the GraphQL type InstanceSecretPayload.
+type setInstanceSecretSetInstanceSecretInstanceSecretPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns setInstanceSecretSetInstanceSecretInstanceSecretPayload.Result, and is useful for accessing the field via an interface.
+func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayload) GetResult() setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret {
+	return v.Result
+}
+
+// GetSuccessful returns setInstanceSecretSetInstanceSecretInstanceSecretPayload.Successful, and is useful for accessing the field via an interface.
+func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns setInstanceSecretSetInstanceSecretInstanceSecretPayload.Messages, and is useful for accessing the field via an interface.
+func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayload) GetMessages() []setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret includes the requested fields of the GraphQL type InstanceSecret.
+// The GraphQL type's documentation follows.
+//
+// Metadata about an encrypted secret attached to an instance.
+//
+// Secrets are encrypted key-value pairs injected at deploy time. The API
+// never returns secret values -- only the name and timestamps are exposed.
+type setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret struct {
+	// The secret's key name, used to reference it in deployment configuration.
+	Name string `json:"name"`
+	// When this secret was first created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this secret's value was last changed (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetName returns setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret.Name, and is useful for accessing the field via an interface.
+func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret) GetName() string {
+	return v.Name
+}
+
+// GetCreatedAt returns setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret.CreatedAt, and is useful for accessing the field via an interface.
+func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// unlinkComponentsResponse is returned by unlinkComponents on success.
+type unlinkComponentsResponse struct {
+	// Remove a link between two components.
+	//
+	// Deletes the design-time dependency. Existing connections in deployed
+	// environments are not affected until the next deployment.
+	UnlinkComponents unlinkComponentsUnlinkComponentsLinkPayload `json:"unlinkComponents"`
+}
+
+// GetUnlinkComponents returns unlinkComponentsResponse.UnlinkComponents, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsResponse) GetUnlinkComponents() unlinkComponentsUnlinkComponentsLinkPayload {
+	return v.UnlinkComponents
+}
+
+// unlinkComponentsUnlinkComponentsLinkPayload includes the requested fields of the GraphQL type LinkPayload.
+type unlinkComponentsUnlinkComponentsLinkPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result unlinkComponentsUnlinkComponentsLinkPayloadResultLink `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns unlinkComponentsUnlinkComponentsLinkPayload.Result, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayload) GetResult() unlinkComponentsUnlinkComponentsLinkPayloadResultLink {
+	return v.Result
+}
+
+// GetSuccessful returns unlinkComponentsUnlinkComponentsLinkPayload.Successful, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns unlinkComponentsUnlinkComponentsLinkPayload.Messages, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayload) GetMessages() []unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// unlinkComponentsUnlinkComponentsLinkPayloadResultLink includes the requested fields of the GraphQL type Link.
+// The GraphQL type's documentation follows.
+//
+// A design-time dependency between two components in a blueprint.
+//
+// A link declares that one component's output should be wired into another
+// component's input. For example, a link from a database component's
+// `authentication` output to an application component's `database` input
+// ensures the app receives the database connection string.
+//
+// At deploy time, each link is realized as a **connection** in the environment,
+// wiring the actual instance outputs to instance inputs.
+type unlinkComponentsUnlinkComponentsLinkPayloadResultLink struct {
+	// Unique identifier for this link.
+	Id string `json:"id"`
+	// The output field name on the source component (e.g., `authentication`).
+	FromField string `json:"fromField"`
+	// The input field name on the destination component (e.g., `database`).
+	ToField string `json:"toField"`
+}
+
+// GetId returns unlinkComponentsUnlinkComponentsLinkPayloadResultLink.Id, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadResultLink) GetId() string { return v.Id }
+
+// GetFromField returns unlinkComponentsUnlinkComponentsLinkPayloadResultLink.FromField, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadResultLink) GetFromField() string {
+	return v.FromField
+}
+
+// GetToField returns unlinkComponentsUnlinkComponentsLinkPayloadResultLink.ToField, and is useful for accessing the field via an interface.
+func (v *unlinkComponentsUnlinkComponentsLinkPayloadResultLink) GetToField() string { return v.ToField }
+
+// updateEnvironmentResponse is returned by updateEnvironment on success.
+type updateEnvironmentResponse struct {
+	// Update an environment's mutable fields (name, description, attributes).
+	UpdateEnvironment updateEnvironmentUpdateEnvironmentEnvironmentPayload `json:"updateEnvironment"`
+}
+
+// GetUpdateEnvironment returns updateEnvironmentResponse.UpdateEnvironment, and is useful for accessing the field via an interface.
+func (v *updateEnvironmentResponse) GetUpdateEnvironment() updateEnvironmentUpdateEnvironmentEnvironmentPayload {
+	return v.UpdateEnvironment
+}
+
+// updateEnvironmentUpdateEnvironmentEnvironmentPayload includes the requested fields of the GraphQL type EnvironmentPayload.
+type updateEnvironmentUpdateEnvironmentEnvironmentPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns updateEnvironmentUpdateEnvironmentEnvironmentPayload.Result, and is useful for accessing the field via an interface.
+func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayload) GetResult() updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment {
+	return v.Result
+}
+
+// GetSuccessful returns updateEnvironmentUpdateEnvironmentEnvironmentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayload) GetSuccessful() bool {
+	return v.Successful
+}
+
+// GetMessages returns updateEnvironmentUpdateEnvironmentEnvironmentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayload) GetMessages() []updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment includes the requested fields of the GraphQL type Environment.
+// The GraphQL type's documentation follows.
+//
+// A deployment target within a project where blueprint components become live infrastructure.
+//
+// Each project can have multiple environments (e.g., `staging`, `production`). When you deploy
+// to an environment, every component in the project's blueprint is realized as an **Instance** --
+// a running piece of cloud infrastructure with its own configuration, state, and cost data.
+//
+// Environments inherit attributes from their parent project. You can also set environment-scoped attributes
+// that cascade down to all instances within the environment. **Defaults** let you pre-assign
+// resources (like a shared VPC or DNS zone) so that new instances automatically receive them.
+//
+// Before deleting an environment, all instances must be decommissioned. Use the `deletable`
+// field to check for blocking constraints.
+type updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the project.
+	Name string `json:"name"`
+	// Free-text description of what this environment is for.
+	Description string `json:"description"`
+}
+
+// GetId returns updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment.Id, and is useful for accessing the field via an interface.
+func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment) GetId() string {
+	return v.Id
+}
+
+// GetName returns updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment.Name, and is useful for accessing the field via an interface.
+func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment.Description, and is useful for accessing the field via an interface.
+func (v *updateEnvironmentUpdateEnvironmentEnvironmentPayloadResultEnvironment) GetDescription() string {
+	return v.Description
+}
+
+// updateInstanceResponse is returned by updateInstance on success.
+type updateInstanceResponse struct {
+	// Update an instance's version constraint or release strategy.
+	//
+	// Changes are staged and take effect on the **next** deployment. The
+	// `resolvedVersion` field will reflect the new constraint immediately,
+	// while `deployedVersion` remains unchanged until a deploy runs.
+	//
+	// ```graphql
+	// mutation {
+	// updateInstance(
+	// organizationId: "my-org"
+	// id: "my-database"
+	// input: { version: "~2.0", releaseStrategy: stable }
+	// ) {
+	// result { id resolvedVersion }
+	// successful
+	// }
+	// }
+	// ```
+	UpdateInstance updateInstanceUpdateInstanceInstancePayload `json:"updateInstance"`
+}
+
+// GetUpdateInstance returns updateInstanceResponse.UpdateInstance, and is useful for accessing the field via an interface.
+func (v *updateInstanceResponse) GetUpdateInstance() updateInstanceUpdateInstanceInstancePayload {
+	return v.UpdateInstance
+}
+
+// updateInstanceUpdateInstanceInstancePayload includes the requested fields of the GraphQL type InstancePayload.
+type updateInstanceUpdateInstanceInstancePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result updateInstanceUpdateInstanceInstancePayloadResultInstance `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns updateInstanceUpdateInstanceInstancePayload.Result, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayload) GetResult() updateInstanceUpdateInstanceInstancePayloadResultInstance {
+	return v.Result
+}
+
+// GetSuccessful returns updateInstanceUpdateInstanceInstancePayload.Successful, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns updateInstanceUpdateInstanceInstancePayload.Messages, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayload) GetMessages() []updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// updateInstanceUpdateInstanceInstancePayloadResultInstance includes the requested fields of the GraphQL type Instance.
+// The GraphQL type's documentation follows.
+//
+// A deployed piece of infrastructure in an environment.
+//
+// An instance is the **runtime representation** of a component. When you add a
+// "database" component to your blueprint and deploy it to the `staging`
+// environment, Massdriver creates an instance that tracks the database's
+// configuration, deployment state, costs, and produced resources.
+//
+// **Lifecycle:** Instances progress through a well-defined set of states:
+//
+// ```mermaid
+// stateDiagram-v2
+// [*] --> INITIALIZED: "Component added to environment"
+// INITIALIZED --> PROVISIONED: "Deployment succeeds"
+// INITIALIZED --> FAILED: "Deployment fails"
+// PROVISIONED --> PROVISIONED: "Redeploy / update"
+// PROVISIONED --> DECOMMISSIONED: "Decommission succeeds"
+// PROVISIONED --> FAILED: "Deployment fails"
+// FAILED --> PROVISIONED: "Retry succeeds"
+// FAILED --> DECOMMISSIONED: "Decommission"
+// [*] --> EXTERNAL: "Remote reference set"
+// ```
+//
+// **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
+// and a `releaseStrategy` (stable or development). Together these determine
+// the `resolvedVersion` that will be used on the next deployment. Compare
+// `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
+// or check `availableUpgrade` for newer matching releases.
+type updateInstanceUpdateInstanceInstancePayloadResultInstance struct {
+	Id string `json:"id"`
+	// Human-readable display name for the instance.
+	Name string `json:"name"`
+	// Current lifecycle state of the instance.
+	Status InstanceStatus `json:"status"`
+	// Version constraint that controls which bundle releases are eligible. Supports semver constraints like `~1.0`, exact versions like `1.2.3`, or `latest`.
+	Version string `json:"version"`
+	// Whether to include development (pre-release) builds when resolving the version constraint.
+	ReleaseStrategy ReleaseStrategy `json:"releaseStrategy"`
+	// The concrete bundle version resolved from the version constraint and release strategy.
+	//
+	// This is the version that will be used on the **next** deployment. Compare
+	// with `deployedVersion` to determine if a redeployment would change anything.
+	ResolvedVersion string `json:"resolvedVersion"`
+}
+
+// GetId returns updateInstanceUpdateInstanceInstancePayloadResultInstance.Id, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayloadResultInstance) GetId() string { return v.Id }
+
+// GetName returns updateInstanceUpdateInstanceInstancePayloadResultInstance.Name, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayloadResultInstance) GetName() string { return v.Name }
+
+// GetStatus returns updateInstanceUpdateInstanceInstancePayloadResultInstance.Status, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayloadResultInstance) GetStatus() InstanceStatus {
+	return v.Status
+}
+
+// GetVersion returns updateInstanceUpdateInstanceInstancePayloadResultInstance.Version, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayloadResultInstance) GetVersion() string {
+	return v.Version
+}
+
+// GetReleaseStrategy returns updateInstanceUpdateInstanceInstancePayloadResultInstance.ReleaseStrategy, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayloadResultInstance) GetReleaseStrategy() ReleaseStrategy {
+	return v.ReleaseStrategy
+}
+
+// GetResolvedVersion returns updateInstanceUpdateInstanceInstancePayloadResultInstance.ResolvedVersion, and is useful for accessing the field via an interface.
+func (v *updateInstanceUpdateInstanceInstancePayloadResultInstance) GetResolvedVersion() string {
+	return v.ResolvedVersion
+}
+
+// updateProjectResponse is returned by updateProject on success.
+type updateProjectResponse struct {
+	// Update a project's mutable fields (name, description, attributes).
+	UpdateProject updateProjectUpdateProjectProjectPayload `json:"updateProject"`
+}
+
+// GetUpdateProject returns updateProjectResponse.UpdateProject, and is useful for accessing the field via an interface.
+func (v *updateProjectResponse) GetUpdateProject() updateProjectUpdateProjectProjectPayload {
+	return v.UpdateProject
+}
+
+// updateProjectUpdateProjectProjectPayload includes the requested fields of the GraphQL type ProjectPayload.
+type updateProjectUpdateProjectProjectPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result updateProjectUpdateProjectProjectPayloadResultProject `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []updateProjectUpdateProjectProjectPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns updateProjectUpdateProjectProjectPayload.Result, and is useful for accessing the field via an interface.
+func (v *updateProjectUpdateProjectProjectPayload) GetResult() updateProjectUpdateProjectProjectPayloadResultProject {
+	return v.Result
+}
+
+// GetSuccessful returns updateProjectUpdateProjectProjectPayload.Successful, and is useful for accessing the field via an interface.
+func (v *updateProjectUpdateProjectProjectPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns updateProjectUpdateProjectProjectPayload.Messages, and is useful for accessing the field via an interface.
+func (v *updateProjectUpdateProjectProjectPayload) GetMessages() []updateProjectUpdateProjectProjectPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// updateProjectUpdateProjectProjectPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type updateProjectUpdateProjectProjectPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns updateProjectUpdateProjectProjectPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *updateProjectUpdateProjectProjectPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns updateProjectUpdateProjectProjectPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *updateProjectUpdateProjectProjectPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns updateProjectUpdateProjectProjectPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *updateProjectUpdateProjectProjectPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// updateProjectUpdateProjectProjectPayloadResultProject includes the requested fields of the GraphQL type Project.
+// The GraphQL type's documentation follows.
+//
+// A project organizes related infrastructure under a single blueprint.
+//
+// Each project contains a **Blueprint** that defines your infrastructure architecture -- which
+// bundles to use and how they connect -- and one or more **Environments** (like staging or
+// production) where that architecture is actually deployed.
+//
+// ```mermaid
+// graph LR
+// P["Project"] --> B["Blueprint"]
+// P --> E1["Environment: staging"]
+// P --> E2["Environment: production"]
+// B --> C1["Component: database"]
+// B --> C2["Component: cache"]
+// C1 -.->|"Link"| C2
+// ```
+//
+// Attributes set on a project are inherited by all environments and instances within it.
+type updateProjectUpdateProjectProjectPayloadResultProject struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI. Must be unique within the organization.
+	Name string `json:"name"`
+	// Free-text description of what this project is for.
+	Description string `json:"description"`
+}
+
+// GetId returns updateProjectUpdateProjectProjectPayloadResultProject.Id, and is useful for accessing the field via an interface.
+func (v *updateProjectUpdateProjectProjectPayloadResultProject) GetId() string { return v.Id }
+
+// GetName returns updateProjectUpdateProjectProjectPayloadResultProject.Name, and is useful for accessing the field via an interface.
+func (v *updateProjectUpdateProjectProjectPayloadResultProject) GetName() string { return v.Name }
+
+// GetDescription returns updateProjectUpdateProjectProjectPayloadResultProject.Description, and is useful for accessing the field via an interface.
+func (v *updateProjectUpdateProjectProjectPayloadResultProject) GetDescription() string {
+	return v.Description
+}
+
+// updateResourceResponse is returned by updateResource on success.
+type updateResourceResponse struct {
+	// Update an imported resource's name or payload.
+	//
+	// Only resources with origin `IMPORTED` can be updated. Attempting to update a
+	// `PROVISIONED` resource returns an error — those are managed by their owning
+	// instance's deployment lifecycle.
+	UpdateResource updateResourceUpdateResourceResourcePayload `json:"updateResource"`
+}
+
+// GetUpdateResource returns updateResourceResponse.UpdateResource, and is useful for accessing the field via an interface.
+func (v *updateResourceResponse) GetUpdateResource() updateResourceUpdateResourceResourcePayload {
+	return v.UpdateResource
+}
+
+// updateResourceUpdateResourceResourcePayload includes the requested fields of the GraphQL type ResourcePayload.
+type updateResourceUpdateResourceResourcePayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result updateResourceUpdateResourceResourcePayloadResultResource `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []updateResourceUpdateResourceResourcePayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns updateResourceUpdateResourceResourcePayload.Result, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayload) GetResult() updateResourceUpdateResourceResourcePayloadResultResource {
+	return v.Result
+}
+
+// GetSuccessful returns updateResourceUpdateResourceResourcePayload.Successful, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns updateResourceUpdateResourceResourcePayload.Messages, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayload) GetMessages() []updateResourceUpdateResourceResourcePayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// updateResourceUpdateResourceResourcePayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type updateResourceUpdateResourceResourcePayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns updateResourceUpdateResourceResourcePayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns updateResourceUpdateResourceResourcePayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns updateResourceUpdateResourceResourcePayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// updateResourceUpdateResourceResourcePayloadResultResource includes the requested fields of the GraphQL type Resource.
+// The GraphQL type's documentation follows.
+//
+// A cloud credential, database connection string, network configuration, or other
+// infrastructure output produced by (or imported into) Massdriver.
+//
+// Resources are the connective tissue between instances. When an instance is deployed, it
+// produces resources as outputs. Other instances can consume those resources as inputs,
+// creating a dependency graph of your infrastructure.
+//
+// Resources have two origins:
+// - **Imported** — created directly through the API (e.g., uploading existing AWS credentials).
+// You have full CRUD control over these resources.
+// - **Provisioned** — created automatically when an instance is deployed. These are read-only
+// and managed entirely by the owning instance's lifecycle.
+type updateResourceUpdateResourceResourcePayloadResultResource struct {
+	// Unique identifier for this resource.
+	Id string `json:"id"`
+	// Human-readable display name for this resource.
+	Name string `json:"name"`
+	// How this resource was created. Determines whether it can be modified through the API.
+	Origin ResourceOrigin `json:"origin"`
+	// The resource type that this resource conforms to, defining its schema and validation rules.
+	ResourceType updateResourceUpdateResourceResourcePayloadResultResourceResourceType `json:"resourceType"`
+	// When this resource was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this resource was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns updateResourceUpdateResourceResourcePayloadResultResource.Id, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResource) GetId() string { return v.Id }
+
+// GetName returns updateResourceUpdateResourceResourcePayloadResultResource.Name, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResource) GetName() string { return v.Name }
+
+// GetOrigin returns updateResourceUpdateResourceResourcePayloadResultResource.Origin, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResource) GetOrigin() ResourceOrigin {
+	return v.Origin
+}
+
+// GetResourceType returns updateResourceUpdateResourceResourcePayloadResultResource.ResourceType, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResource) GetResourceType() updateResourceUpdateResourceResourcePayloadResultResourceResourceType {
+	return v.ResourceType
+}
+
+// GetCreatedAt returns updateResourceUpdateResourceResourcePayloadResultResource.CreatedAt, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResource) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns updateResourceUpdateResourceResourcePayloadResultResource.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResource) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// updateResourceUpdateResourceResourcePayloadResultResourceResourceType includes the requested fields of the GraphQL type ResourceType.
+// The GraphQL type's documentation follows.
+//
+// A resource type that defines what kind of infrastructure a resource represents.
+//
+// Resource types are the schema layer for Massdriver's connection system. Every
+// dependency a bundle declares and every resource a bundle produces references a
+// resource type. This is what makes bundles composable -- a database bundle that
+// produces an `aws-rds-instance` resource can be connected to any application
+// bundle that declares an `aws-rds-instance` dependency.
+//
+// Resource types include both public types provided by Massdriver (e.g.,
+// `aws-iam-role`, `kubernetes-cluster`) and private types defined by your
+// organization for custom infrastructure.
+type updateResourceUpdateResourceResourcePayloadResultResourceResourceType struct {
+	// Unique identifier in kebab-case (e.g., `aws-iam-role`, `kubernetes-cluster`).
+	Id string `json:"id"`
+	// Human-readable display name (e.g., "AWS IAM Role", "Kubernetes Cluster").
+	Name string `json:"name"`
+	// URL to the icon representing this resource type, if available.
+	Icon string `json:"icon"`
+	// How instances receive a dependency of this resource type. Determines whether connections are explicit links on the canvas or automatic environment-level defaults.
+	ConnectionOrientation ConnectionOrientation `json:"connectionOrientation"`
+	// Timestamp when this resource type was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// Timestamp when this resource type was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.Id, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetId() string {
+	return v.Id
+}
+
+// GetName returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.Name, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetName() string {
+	return v.Name
+}
+
+// GetIcon returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.Icon, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetIcon() string {
+	return v.Icon
+}
+
+// GetConnectionOrientation returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.ConnectionOrientation, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetConnectionOrientation() ConnectionOrientation {
+	return v.ConnectionOrientation
+}
+
+// GetCreatedAt returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.CreatedAt, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns updateResourceUpdateResourceResourcePayloadResultResourceResourceType.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *updateResourceUpdateResourceResourcePayloadResultResourceResourceType) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// The mutation executed by addComponent.
+const addComponent_Operation = `
+mutation addComponent ($organizationId: ID!, $projectId: ID!, $ociRepoName: OciRepoName!, $input: AddComponentInput!) {
+	addComponent(organizationId: $organizationId, projectId: $projectId, ociRepoName: $ociRepoName, input: $input) {
 		result {
 			id
-			params
-			slug
+			name
+			description
+			attributes
+			createdAt
+			updatedAt
+			ociRepo {
+				id
+				name
+			}
 		}
 		successful
 		messages {
+			code
+			field
 			message
 		}
 	}
 }
 `
 
-func configurePackage(
+func addComponent(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	projectId string,
+	ociRepoName string,
+	input AddComponentInput,
+) (data_ *addComponentResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "addComponent",
+		Query:  addComponent_Operation,
+		Variables: &__addComponentInput{
+			OrganizationId: organizationId,
+			ProjectId:      projectId,
+			OciRepoName:    ociRepoName,
+			Input:          input,
+		},
+	}
+
+	data_ = &addComponentResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by createDeployment.
+const createDeployment_Operation = `
+mutation createDeployment ($organizationId: ID!, $id: ID!, $input: CreateDeploymentInput!) {
+	createDeployment(organizationId: $organizationId, id: $id, input: $input) {
+		result {
+			id
+			status
+			action
+			version
+			message
+			createdAt
+			instance {
+				id
+				name
+			}
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func createDeployment(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
 	id string,
-	params map[string]any,
-) (data_ *configurePackageResponse, err_ error) {
+	input CreateDeploymentInput,
+) (data_ *createDeploymentResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "configurePackage",
-		Query:  configurePackage_Operation,
-		Variables: &__configurePackageInput{
+		OpName: "createDeployment",
+		Query:  createDeployment_Operation,
+		Variables: &__createDeploymentInput{
 			OrganizationId: organizationId,
 			Id:             id,
-			Params:         params,
+			Input:          input,
 		},
 	}
 
-	data_ = &configurePackageResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by containerRepository.
-const containerRepository_Operation = `
-query containerRepository ($orgId: ID!, $artifactId: ID!, $input: ContainerRepositoryInput!) {
-	containerRepository(organizationId: $orgId, artifactId: $artifactId, input: $input) {
-		token
-		repoUri
-	}
-}
-`
-
-func containerRepository(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	orgId string,
-	artifactId string,
-	input ContainerRepositoryInput,
-) (data_ *containerRepositoryResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "containerRepository",
-		Query:  containerRepository_Operation,
-		Variables: &__containerRepositoryInput{
-			OrgId:      orgId,
-			ArtifactId: artifactId,
-			Input:      input,
-		},
-	}
-
-	data_ = &containerRepositoryResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The mutation executed by createArtifact.
-const createArtifact_Operation = `
-mutation createArtifact ($organizationId: ID!, $artifactName: String!, $artifactType: String!, $artifactPayload: JSON!) {
-	createArtifact(organizationId: $organizationId, name: $artifactName, type: $artifactType, payload: $artifactPayload) {
-		result {
-			name
-			id
-		}
-		successful
-		messages {
-			message
-		}
-	}
-}
-`
-
-func createArtifact(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	artifactName string,
-	artifactType string,
-	artifactPayload map[string]any,
-) (data_ *createArtifactResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "createArtifact",
-		Query:  createArtifact_Operation,
-		Variables: &__createArtifactInput{
-			OrganizationId:  organizationId,
-			ArtifactName:    artifactName,
-			ArtifactType:    artifactType,
-			ArtifactPayload: artifactPayload,
-		},
-	}
-
-	data_ = &createArtifactResponse{}
+	data_ = &createDeploymentResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -5326,16 +12051,17 @@ func createArtifact(
 
 // The mutation executed by createEnvironment.
 const createEnvironment_Operation = `
-mutation createEnvironment ($organizationId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
-	createEnvironment(organizationId: $organizationId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
+mutation createEnvironment ($organizationId: ID!, $projectId: ID!, $input: CreateEnvironmentInput!) {
+	createEnvironment(organizationId: $organizationId, projectId: $projectId, input: $input) {
 		result {
 			id
 			name
-			slug
 			description
 		}
 		successful
 		messages {
+			code
+			field
 			message
 		}
 	}
@@ -5347,9 +12073,7 @@ func createEnvironment(
 	client_ graphql.Client,
 	organizationId string,
 	projectId string,
-	name string,
-	slug string,
-	description string,
+	input CreateEnvironmentInput,
 ) (data_ *createEnvironmentResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "createEnvironment",
@@ -5357,9 +12081,7 @@ func createEnvironment(
 		Variables: &__createEnvironmentInput{
 			OrganizationId: organizationId,
 			ProjectId:      projectId,
-			Name:           name,
-			Slug:           slug,
-			Description:    description,
+			Input:          input,
 		},
 	}
 
@@ -5375,123 +12097,19 @@ func createEnvironment(
 	return data_, err_
 }
 
-// The mutation executed by createEnvironmentConnection.
-const createEnvironmentConnection_Operation = `
-mutation createEnvironmentConnection ($organizationId: ID!, $artifactId: ID!, $environmentId: ID!) {
-	createEnvironmentConnection(organizationId: $organizationId, artifactId: $artifactId, environmentId: $environmentId) {
-		successful
-		messages {
-			message
-		}
-		result {
-			id
-			artifact {
-				id
-				name
-			}
-			environment {
-				id
-				slug
-			}
-		}
-	}
-}
-`
-
-func createEnvironmentConnection(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	artifactId string,
-	environmentId string,
-) (data_ *createEnvironmentConnectionResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "createEnvironmentConnection",
-		Query:  createEnvironmentConnection_Operation,
-		Variables: &__createEnvironmentConnectionInput{
-			OrganizationId: organizationId,
-			ArtifactId:     artifactId,
-			EnvironmentId:  environmentId,
-		},
-	}
-
-	data_ = &createEnvironmentConnectionResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The mutation executed by createManifest.
-const createManifest_Operation = `
-mutation createManifest ($organizationId: ID!, $bundleId: ID!, $projectId: ID!, $name: String!, $slug: String!, $description: String) {
-	createManifest(organizationId: $organizationId, bundleId: $bundleId, projectId: $projectId, name: $name, slug: $slug, description: $description) {
-		result {
-			id
-			name
-			slug
-			description
-		}
-		successful
-		messages {
-			message
-		}
-	}
-}
-`
-
-func createManifest(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	bundleId string,
-	projectId string,
-	name string,
-	slug string,
-	description string,
-) (data_ *createManifestResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "createManifest",
-		Query:  createManifest_Operation,
-		Variables: &__createManifestInput{
-			OrganizationId: organizationId,
-			BundleId:       bundleId,
-			ProjectId:      projectId,
-			Name:           name,
-			Slug:           slug,
-			Description:    description,
-		},
-	}
-
-	data_ = &createManifestResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
 // The mutation executed by createProject.
 const createProject_Operation = `
-mutation createProject ($organizationId: ID!, $name: String!, $slug: String!, $description: String) {
-	createProject(organizationId: $organizationId, name: $name, slug: $slug, description: $description) {
+mutation createProject ($organizationId: ID!, $input: CreateProjectInput!) {
+	createProject(organizationId: $organizationId, input: $input) {
 		result {
 			id
 			name
-			slug
 			description
 		}
 		successful
 		messages {
+			code
+			field
 			message
 		}
 	}
@@ -5502,18 +12120,14 @@ func createProject(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-	name string,
-	slug string,
-	description string,
+	input CreateProjectInput,
 ) (data_ *createProjectResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "createProject",
 		Query:  createProject_Operation,
 		Variables: &__createProjectInput{
 			OrganizationId: organizationId,
-			Name:           name,
-			Slug:           slug,
-			Description:    description,
+			Input:          input,
 		},
 	}
 
@@ -5529,86 +12143,53 @@ func createProject(
 	return data_, err_
 }
 
-// The mutation executed by decommissionPackage.
-const decommissionPackage_Operation = `
-mutation decommissionPackage ($organizationId: ID!, $id: ID!, $message: String) {
-	decommissionPackage(organizationId: $organizationId, id: $id, message: $message) {
-		successful
+// The mutation executed by createResource.
+const createResource_Operation = `
+mutation createResource ($organizationId: ID!, $resourceTypeId: ID!, $input: CreateResourceInput!) {
+	createResource(organizationId: $organizationId, resourceTypeId: $resourceTypeId, input: $input) {
 		result {
 			id
-		}
-		messages {
-			message
-		}
-	}
-}
-`
-
-func decommissionPackage(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	id string,
-	message string,
-) (data_ *decommissionPackageResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "decommissionPackage",
-		Query:  decommissionPackage_Operation,
-		Variables: &__decommissionPackageInput{
-			OrganizationId: organizationId,
-			Id:             id,
-			Message:        message,
-		},
-	}
-
-	data_ = &decommissionPackageResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The mutation executed by decommissionPreviewEnvironment.
-const decommissionPreviewEnvironment_Operation = `
-mutation decommissionPreviewEnvironment ($orgId: ID!, $targetId: ID!) {
-	decommissionPreviewEnvironment(organizationId: $orgId, targetId: $targetId) {
-		result {
-			id
-			slug
-			project {
+			name
+			origin
+			resourceType {
 				id
-				slug
+				name
+				icon
+				connectionOrientation
+				createdAt
+				updatedAt
 			}
+			createdAt
+			updatedAt
 		}
 		successful
 		messages {
+			code
+			field
 			message
 		}
 	}
 }
 `
 
-func decommissionPreviewEnvironment(
+func createResource(
 	ctx_ context.Context,
 	client_ graphql.Client,
-	orgId string,
-	targetId string,
-) (data_ *decommissionPreviewEnvironmentResponse, err_ error) {
+	organizationId string,
+	resourceTypeId string,
+	input CreateResourceInput,
+) (data_ *createResourceResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "decommissionPreviewEnvironment",
-		Query:  decommissionPreviewEnvironment_Operation,
-		Variables: &__decommissionPreviewEnvironmentInput{
-			OrgId:    orgId,
-			TargetId: targetId,
+		OpName: "createResource",
+		Query:  createResource_Operation,
+		Variables: &__createResourceInput{
+			OrganizationId: organizationId,
+			ResourceTypeId: resourceTypeId,
+			Input:          input,
 		},
 	}
 
-	data_ = &decommissionPreviewEnvironmentResponse{}
+	data_ = &createResourceResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -5620,81 +12201,41 @@ func decommissionPreviewEnvironment(
 	return data_, err_
 }
 
-// The mutation executed by deleteArtifact.
-const deleteArtifact_Operation = `
-mutation deleteArtifact ($organizationId: ID!, $id: ID!) {
-	deleteArtifact(organizationId: $organizationId, id: $id) {
-		successful
-		messages {
-			message
-		}
+// The mutation executed by deleteEnvironment.
+const deleteEnvironment_Operation = `
+mutation deleteEnvironment ($organizationId: ID!, $id: ID!) {
+	deleteEnvironment(organizationId: $organizationId, id: $id) {
 		result {
 			id
 			name
+			description
+		}
+		successful
+		messages {
+			code
+			field
+			message
 		}
 	}
 }
 `
 
-func deleteArtifact(
+func deleteEnvironment(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (data_ *deleteArtifactResponse, err_ error) {
+) (data_ *deleteEnvironmentResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "deleteArtifact",
-		Query:  deleteArtifact_Operation,
-		Variables: &__deleteArtifactInput{
+		OpName: "deleteEnvironment",
+		Query:  deleteEnvironment_Operation,
+		Variables: &__deleteEnvironmentInput{
 			OrganizationId: organizationId,
 			Id:             id,
 		},
 	}
 
-	data_ = &deleteArtifactResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The mutation executed by deleteArtifactDefinition.
-const deleteArtifactDefinition_Operation = `
-mutation deleteArtifactDefinition ($organizationId: ID!, $name: String!) {
-	deleteArtifactDefinition(organizationId: $organizationId, name: $name) {
-		successful
-		messages {
-			message
-		}
-		result {
-			name
-			id
-		}
-	}
-}
-`
-
-func deleteArtifactDefinition(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	name string,
-) (data_ *deleteArtifactDefinitionResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "deleteArtifactDefinition",
-		Query:  deleteArtifactDefinition_Operation,
-		Variables: &__deleteArtifactDefinitionInput{
-			OrganizationId: organizationId,
-			Name:           name,
-		},
-	}
-
-	data_ = &deleteArtifactDefinitionResponse{}
+	data_ = &deleteEnvironmentResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -5713,11 +12254,12 @@ mutation deleteProject ($organizationId: ID!, $id: ID!) {
 		result {
 			id
 			name
-			slug
 			description
 		}
 		successful
 		messages {
+			code
+			field
 			message
 		}
 	}
@@ -5751,181 +12293,41 @@ func deleteProject(
 	return data_, err_
 }
 
-// The mutation executed by deployPackage.
-const deployPackage_Operation = `
-mutation deployPackage ($organizationId: ID!, $targetId: ID!, $manifestId: ID!, $message: String!) {
-	deployPackage(organizationId: $organizationId, manifestId: $manifestId, targetId: $targetId, message: $message) {
-		successful
+// The mutation executed by deleteResource.
+const deleteResource_Operation = `
+mutation deleteResource ($organizationId: ID!, $id: ID!) {
+	deleteResource(organizationId: $organizationId, id: $id) {
 		result {
-			id
-		}
-		messages {
-			message
-		}
-	}
-}
-`
-
-func deployPackage(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	targetId string,
-	manifestId string,
-	message string,
-) (data_ *deployPackageResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "deployPackage",
-		Query:  deployPackage_Operation,
-		Variables: &__deployPackageInput{
-			OrganizationId: organizationId,
-			TargetId:       targetId,
-			ManifestId:     manifestId,
-			Message:        message,
-		},
-	}
-
-	data_ = &deployPackageResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The mutation executed by deployPreviewEnvironment.
-const deployPreviewEnvironment_Operation = `
-mutation deployPreviewEnvironment ($organizationId: ID!, $projectId: ID!, $input: PreviewEnvironmentInput!) {
-	deployPreviewEnvironment(projectId: $projectId, organizationId: $organizationId, input: $input) {
-		successful
-		result {
-			id
-			slug
-			project {
-				id
-				slug
-			}
-		}
-		messages {
-			message
-		}
-	}
-}
-`
-
-func deployPreviewEnvironment(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	projectId string,
-	input PreviewEnvironmentInput,
-) (data_ *deployPreviewEnvironmentResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "deployPreviewEnvironment",
-		Query:  deployPreviewEnvironment_Operation,
-		Variables: &__deployPreviewEnvironmentInput{
-			OrganizationId: organizationId,
-			ProjectId:      projectId,
-			Input:          input,
-		},
-	}
-
-	data_ = &deployPreviewEnvironmentResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by downloadArtifact.
-const downloadArtifact_Operation = `
-query downloadArtifact ($organizationId: ID!, $artifactId: ID!, $format: String!) {
-	downloadArtifact(organizationId: $organizationId, artifactId: $artifactId, format: $format) {
-		renderedArtifact
-	}
-}
-`
-
-func downloadArtifact(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	artifactId string,
-	format string,
-) (data_ *downloadArtifactResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "downloadArtifact",
-		Query:  downloadArtifact_Operation,
-		Variables: &__downloadArtifactInput{
-			OrganizationId: organizationId,
-			ArtifactId:     artifactId,
-			Format:         format,
-		},
-	}
-
-	data_ = &downloadArtifactResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getArtifact.
-const getArtifact_Operation = `
-query getArtifact ($organizationId: ID!, $id: ID!) {
-	artifact(organizationId: $organizationId, id: $id) {
-		id
-		name
-		type
-		field
-		payload
-		formats
-		createdAt
-		updatedAt
-		artifactDefinition {
 			id
 			name
-			label
+			origin
 		}
-		package {
-			id
-			slug
+		successful
+		messages {
+			code
+			field
+			message
 		}
-		origin
 	}
 }
 `
 
-func getArtifact(
+func deleteResource(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (data_ *getArtifactResponse, err_ error) {
+) (data_ *deleteResourceResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "getArtifact",
-		Query:  getArtifact_Operation,
-		Variables: &__getArtifactInput{
+		OpName: "deleteResource",
+		Query:  deleteResource_Operation,
+		Variables: &__deleteResourceInput{
 			OrganizationId: organizationId,
 			Id:             id,
 		},
 	}
 
-	data_ = &getArtifactResponse{}
+	data_ = &deleteResourceResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -5937,82 +12339,100 @@ func getArtifact(
 	return data_, err_
 }
 
-// The query executed by getArtifactDefinition.
-const getArtifactDefinition_Operation = `
-query getArtifactDefinition ($organizationId: ID!, $name: String!) {
-	artifactDefinition(organizationId: $organizationId, name: $name) {
-		id
-		schema
-		name
-		icon
-		label
-		updatedAt
-		url
-		ui {
-			connectionOrientation
-			environmentDefaultGroup
-		}
-	}
-}
-`
-
-func getArtifactDefinition(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	name string,
-) (data_ *getArtifactDefinitionResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getArtifactDefinition",
-		Query:  getArtifactDefinition_Operation,
-		Variables: &__getArtifactDefinitionInput{
-			OrganizationId: organizationId,
-			Name:           name,
-		},
-	}
-
-	data_ = &getArtifactDefinitionResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getArtifactsByType.
-const getArtifactsByType_Operation = `
-query getArtifactsByType ($organizationId: ID!, $artifactType: String!) {
-	artifacts(organizationId: $organizationId, input: {filter:{type:$artifactType}}) {
-		items {
+// The mutation executed by deleteResourceType.
+const deleteResourceType_Operation = `
+mutation deleteResourceType ($organizationId: ID!, $id: ID!) {
+	deleteResourceType(organizationId: $organizationId, id: $id) {
+		result {
 			id
 			name
-			type
-			updatedAt
+		}
+		successful
+		messages {
+			code
+			field
+			message
 		}
 	}
 }
 `
 
-func getArtifactsByType(
+func deleteResourceType(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-	artifactType string,
-) (data_ *getArtifactsByTypeResponse, err_ error) {
+	id string,
+) (data_ *deleteResourceTypeResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "getArtifactsByType",
-		Query:  getArtifactsByType_Operation,
-		Variables: &__getArtifactsByTypeInput{
+		OpName: "deleteResourceType",
+		Query:  deleteResourceType_Operation,
+		Variables: &__deleteResourceTypeInput{
 			OrganizationId: organizationId,
-			ArtifactType:   artifactType,
+			Id:             id,
 		},
 	}
 
-	data_ = &getArtifactsByTypeResponse{}
+	data_ = &deleteResourceTypeResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by exportResource.
+const exportResource_Operation = `
+mutation exportResource ($organizationId: ID!, $id: ID!, $format: String) {
+	exportResource(organizationId: $organizationId, id: $id, format: $format) {
+		result {
+			id
+			name
+			origin
+			resourceType {
+				id
+				name
+				icon
+				connectionOrientation
+				createdAt
+				updatedAt
+			}
+			payload
+			rendered
+			createdAt
+			updatedAt
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func exportResource(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	format string,
+) (data_ *exportResourceResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "exportResource",
+		Query:  exportResource_Operation,
+		Variables: &__exportResourceInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Format:         format,
+		},
+	}
+
+	data_ = &exportResourceResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -6026,21 +12446,15 @@ func getArtifactsByType(
 
 // The query executed by getBundle.
 const getBundle_Operation = `
-query getBundle ($organizationId: ID!, $id: ID!, $version: VersionConstraint) {
-	bundle(organizationId: $organizationId, id: $id, version: $version) {
+query getBundle ($organizationId: ID!, $id: BundleId!) {
+	bundle(organizationId: $organizationId, id: $id) {
 		id
 		name
 		version
 		description
-		spec
-		specVersion
 		icon
 		sourceUrl
-		paramsSchema
-		connectionsSchema
-		artifactsSchema
-		uiSchema
-		operatorGuide
+		repo
 		createdAt
 		updatedAt
 	}
@@ -6052,7 +12466,6 @@ func getBundle(
 	client_ graphql.Client,
 	organizationId string,
 	id string,
-	version string,
 ) (data_ *getBundleResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "getBundle",
@@ -6060,7 +12473,6 @@ func getBundle(
 		Variables: &__getBundleInput{
 			OrganizationId: organizationId,
 			Id:             id,
-			Version:        version,
 		},
 	}
 
@@ -6076,162 +12488,187 @@ func getBundle(
 	return data_, err_
 }
 
-// The query executed by getDeploymentById.
-const getDeploymentById_Operation = `
-query getDeploymentById ($organizationId: ID!, $id: ID!) {
+// The query executed by getDeployment.
+const getDeployment_Operation = `
+query getDeployment ($organizationId: ID!, $id: ID!) {
 	deployment(organizationId: $organizationId, id: $id) {
 		id
 		status
-	}
-}
-`
-
-func getDeploymentById(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	id string,
-) (data_ *getDeploymentByIdResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getDeploymentById",
-		Query:  getDeploymentById_Operation,
-		Variables: &__getDeploymentByIdInput{
-			OrganizationId: organizationId,
-			Id:             id,
-		},
-	}
-
-	data_ = &getDeploymentByIdResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getDeploymentLogStream.
-const getDeploymentLogStream_Operation = `
-query getDeploymentLogStream ($organizationId: ID!, $id: ID!) {
-	deploymentLogStream(organizationId: $organizationId, id: $id) {
-		id
-		logs {
-			content
-			metadata {
-				step
-				timestamp
-				index
-			}
-		}
-	}
-}
-`
-
-func getDeploymentLogStream(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	id string,
-) (data_ *getDeploymentLogStreamResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getDeploymentLogStream",
-		Query:  getDeploymentLogStream_Operation,
-		Variables: &__getDeploymentLogStreamInput{
-			OrganizationId: organizationId,
-			Id:             id,
-		},
-	}
-
-	data_ = &getDeploymentLogStreamResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getEnvironmentById.
-const getEnvironmentById_Operation = `
-query getEnvironmentById ($organizationId: ID!, $id: ID!) {
-	environment(id: $id, organizationId: $organizationId) {
-		id
-		name
-		slug
-		description
-		cost {
-			monthly {
-				average {
-					amount
-				}
-			}
-			daily {
-				average {
-					amount
-				}
-			}
-		}
-		packages {
+		action
+		version
+		message
+		params
+		createdAt
+		updatedAt
+		lastTransitionedAt
+		elapsedTime
+		deployedBy
+		instance {
 			id
-			slug
-			params
-			artifacts {
+			name
+			status
+			environment {
 				id
 				name
-				field
-			}
-			remoteReferences {
-				artifact {
+				project {
 					id
 					name
-					field
 				}
 			}
-			bundle {
-				id
-				name
-				spec
-				specVersion
+		}
+	}
+}
+`
+
+func getDeployment(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *getDeploymentResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getDeployment",
+		Query:  getDeployment_Operation,
+		Variables: &__getDeploymentInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &getDeploymentResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by getDeploymentLogs.
+const getDeploymentLogs_Operation = `
+query getDeploymentLogs ($organizationId: ID!, $id: ID!) {
+	deployment(organizationId: $organizationId, id: $id) {
+		id
+		logs {
+			timestamp
+			message
+		}
+	}
+}
+`
+
+func getDeploymentLogs(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *getDeploymentLogsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getDeploymentLogs",
+		Query:  getDeploymentLogs_Operation,
+		Variables: &__getDeploymentLogsInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &getDeploymentLogsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by getEnvironment.
+const getEnvironment_Operation = `
+query getEnvironment ($organizationId: ID!, $id: ID!) {
+	environment(organizationId: $organizationId, id: $id) {
+		id
+		name
+		description
+		attributes
+		createdAt
+		updatedAt
+		cost {
+			monthlyAverage {
+				amount
+				currency
 			}
-			status
-			manifest {
-				id
-				name
-				slug
-				suffix
-				description
+			dailyAverage {
+				amount
+				currency
 			}
 		}
 		project {
 			id
-			slug
+			name
+			description
+		}
+		blueprint {
+			instances {
+				cursor {
+					next
+					previous
+				}
+				items {
+					id
+					name
+					status
+					version
+					releaseStrategy
+					attributes
+					createdAt
+					updatedAt
+					component {
+						id
+						name
+						description
+						attributes
+						createdAt
+						updatedAt
+					}
+					bundle {
+						id
+						name
+						version
+						description
+						icon
+						sourceUrl
+						repo
+						createdAt
+						updatedAt
+					}
+				}
+			}
 		}
 	}
 }
 `
 
-func getEnvironmentById(
+func getEnvironment(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (data_ *getEnvironmentByIdResponse, err_ error) {
+) (data_ *getEnvironmentResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "getEnvironmentById",
-		Query:  getEnvironmentById_Operation,
-		Variables: &__getEnvironmentByIdInput{
+		OpName: "getEnvironment",
+		Query:  getEnvironment_Operation,
+		Variables: &__getEnvironmentInput{
 			OrganizationId: organizationId,
 			Id:             id,
 		},
 	}
 
-	data_ = &getEnvironmentByIdResponse{}
+	data_ = &getEnvironmentResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -6243,83 +12680,85 @@ func getEnvironmentById(
 	return data_, err_
 }
 
-// The query executed by getEnvironmentsByProject.
-const getEnvironmentsByProject_Operation = `
-query getEnvironmentsByProject ($organizationId: ID!, $projectId: ID!) {
-	project(id: $projectId, organizationId: $organizationId) {
-		environments {
+// The query executed by getInstance.
+const getInstance_Operation = `
+query getInstance ($organizationId: ID!, $id: ID!) {
+	instance(organizationId: $organizationId, id: $id) {
+		id
+		name
+		status
+		params
+		attributes
+		version
+		releaseStrategy
+		resolvedVersion
+		deployedVersion
+		availableUpgrade
+		createdAt
+		updatedAt
+		cost {
+			monthlyAverage {
+				amount
+				currency
+			}
+			dailyAverage {
+				amount
+				currency
+			}
+		}
+		environment {
 			id
 			name
-			slug
 			description
-			cost {
-				monthly {
-					average {
-						amount
-					}
-				}
-				daily {
-					average {
-						amount
-					}
-				}
-			}
-			packages {
-				id
-				slug
-				status
-				params
-				artifacts {
-					id
-					name
-					field
-				}
-				remoteReferences {
-					artifact {
-						id
-						name
-						field
-					}
-				}
-				bundle {
-					id
-					name
-					spec
-					specVersion
-				}
-				manifest {
-					id
-					name
-					slug
-					suffix
-					description
-				}
-			}
 			project {
 				id
-				slug
+				name
+				description
 			}
+		}
+		bundle {
+			id
+			name
+			version
+			description
+			icon
+			sourceUrl
+			repo
+			createdAt
+			updatedAt
+		}
+		component {
+			id
+			name
+			description
+			attributes
+			createdAt
+			updatedAt
+		}
+		statePaths {
+			stepName
+			stateUrl
 		}
 	}
 }
 `
 
-func getEnvironmentsByProject(
+func getInstance(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-	projectId string,
-) (data_ *getEnvironmentsByProjectResponse, err_ error) {
+	id string,
+) (data_ *getInstanceResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "getEnvironmentsByProject",
-		Query:  getEnvironmentsByProject_Operation,
-		Variables: &__getEnvironmentsByProjectInput{
+		OpName: "getInstance",
+		Query:  getInstance_Operation,
+		Variables: &__getInstanceInput{
 			OrganizationId: organizationId,
-			ProjectId:      projectId,
+			Id:             id,
 		},
 	}
 
-	data_ = &getEnvironmentsByProjectResponse{}
+	data_ = &getInstanceResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -6335,13 +12774,22 @@ func getEnvironmentsByProject(
 const getOciRepo_Operation = `
 query getOciRepo ($organizationId: ID!, $id: ID!) {
 	ociRepo(organizationId: $organizationId, id: $id) {
+		id
 		name
+		artifactType
+		createdAt
+		updatedAt
 		releaseChannels {
-			name
-			tag
+			items {
+				name
+				tag
+			}
 		}
 		tags {
-			tag
+			items {
+				tag
+				createdAt
+			}
 		}
 	}
 }
@@ -6374,122 +12822,68 @@ func getOciRepo(
 	return data_, err_
 }
 
-// The query executed by getPackage.
-const getPackage_Operation = `
-query getPackage ($organizationId: ID!, $id: ID!) {
-	package(organizationId: $organizationId, id: $id) {
-		id
-		slug
-		status
-		deployedVersion
-		params
-		latestDeployment {
-			id
-			status
-			action
-			version
-			createdAt
-		}
-		activeDeployment {
-			id
-			status
-			action
-			version
-			createdAt
-		}
-		artifacts {
-			id
-			name
-			field
-		}
-		remoteReferences {
-			artifact {
-				id
-				name
-				field
-			}
-		}
-		bundle {
-			id
-			name
-			spec
-			specVersion
-		}
-		manifest {
-			id
-			name
-			slug
-			suffix
-			description
-		}
-		environment {
-			id
-			slug
-			project {
-				id
-				slug
-			}
-		}
-	}
-}
-`
-
-func getPackage(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-	id string,
-) (data_ *getPackageResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "getPackage",
-		Query:  getPackage_Operation,
-		Variables: &__getPackageInput{
-			OrganizationId: organizationId,
-			Id:             id,
-		},
-	}
-
-	data_ = &getPackageResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by getProjectById.
-const getProjectById_Operation = `
-query getProjectById ($organizationId: ID!, $id: ID!) {
+// The query executed by getProject.
+const getProject_Operation = `
+query getProject ($organizationId: ID!, $id: ID!) {
 	project(organizationId: $organizationId, id: $id) {
 		id
 		name
-		defaultParams
-		slug
 		description
+		attributes
+		environments {
+			items {
+				id
+				name
+				description
+				createdAt
+				updatedAt
+				cost {
+					monthlyAverage {
+						amount
+						currency
+					}
+					dailyAverage {
+						amount
+						currency
+					}
+				}
+			}
+		}
+		createdAt
+		updatedAt
+		deletable {
+			result
+		}
+		cost {
+			monthlyAverage {
+				amount
+				currency
+			}
+			dailyAverage {
+				amount
+				currency
+			}
+		}
 	}
 }
 `
 
-func getProjectById(
+func getProject(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
 	id string,
-) (data_ *getProjectByIdResponse, err_ error) {
+) (data_ *getProjectResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "getProjectById",
-		Query:  getProjectById_Operation,
-		Variables: &__getProjectByIdInput{
+		OpName: "getProject",
+		Query:  getProject_Operation,
+		Variables: &__getProjectInput{
 			OrganizationId: organizationId,
 			Id:             id,
 		},
 	}
 
-	data_ = &getProjectByIdResponse{}
+	data_ = &getProjectResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -6501,49 +12895,97 @@ func getProjectById(
 	return data_, err_
 }
 
-// The query executed by getProjects.
-const getProjects_Operation = `
-query getProjects ($organizationId: ID!) {
-	projects(organizationId: $organizationId) {
-		name
+// The query executed by getResource.
+const getResource_Operation = `
+query getResource ($organizationId: ID!, $id: ID!) {
+	resource(organizationId: $organizationId, id: $id) {
 		id
-		slug
-		description
-		defaultParams
-		environments {
+		name
+		origin
+		resourceType {
+			id
 			name
-			slug
+			icon
+			connectionOrientation
+			createdAt
+			updatedAt
 		}
-		cost {
-			monthly {
-				average {
-					amount
-				}
-			}
-			daily {
-				average {
-					amount
-				}
-			}
+		field
+		instance {
+			id
+			name
+			status
+			version
+			releaseStrategy
+			createdAt
+			updatedAt
 		}
+		formats
+		payload
+		createdAt
+		updatedAt
 	}
 }
 `
 
-func getProjects(
+func getResource(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-) (data_ *getProjectsResponse, err_ error) {
+	id string,
+) (data_ *getResourceResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "getProjects",
-		Query:  getProjects_Operation,
-		Variables: &__getProjectsInput{
+		OpName: "getResource",
+		Query:  getResource_Operation,
+		Variables: &__getResourceInput{
 			OrganizationId: organizationId,
+			Id:             id,
 		},
 	}
 
-	data_ = &getProjectsResponse{}
+	data_ = &getResourceResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by getResourceType.
+const getResourceType_Operation = `
+query getResourceType ($organizationId: ID!, $id: ID!) {
+	resourceType(organizationId: $organizationId, id: $id) {
+		id
+		name
+		icon
+		connectionOrientation
+		schema
+		createdAt
+		updatedAt
+	}
+}
+`
+
+func getResourceType(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *getResourceTypeResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getResourceType",
+		Query:  getResourceType_Operation,
+		Variables: &__getResourceTypeInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &getResourceTypeResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -6560,8 +13002,17 @@ const getServer_Operation = `
 query getServer {
 	server {
 		appUrl
-		mode
 		version
+		mode
+		ssoProviders {
+			name
+			loginUrl
+			uiIconUrl
+			uiLabel
+		}
+		emailAuthMethods {
+			name
+		}
 	}
 }
 `
@@ -6587,112 +13038,59 @@ func getServer(
 	return data_, err_
 }
 
-// The query executed by listArtifactDefinitions.
-const listArtifactDefinitions_Operation = `
-query listArtifactDefinitions ($organizationId: ID!) {
-	artifactDefinitions(organizationId: $organizationId) {
-		id
-		schema
-		name
-		icon
-		label
-		updatedAt
-		url
-		ui {
-			connectionOrientation
-			environmentDefaultGroup
-		}
-	}
-}
-`
-
-func listArtifactDefinitions(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-) (data_ *listArtifactDefinitionsResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "listArtifactDefinitions",
-		Query:  listArtifactDefinitions_Operation,
-		Variables: &__listArtifactDefinitionsInput{
-			OrganizationId: organizationId,
-		},
-	}
-
-	data_ = &listArtifactDefinitionsResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by listCredentialArtifactDefinitions.
-const listCredentialArtifactDefinitions_Operation = `
-query listCredentialArtifactDefinitions ($organizationId: ID!) {
-	artifactDefinitions(organizationId: $organizationId, input: {filter:{isCredential:true}}) {
-		name
-	}
-}
-`
-
-func listCredentialArtifactDefinitions(
-	ctx_ context.Context,
-	client_ graphql.Client,
-	organizationId string,
-) (data_ *listCredentialArtifactDefinitionsResponse, err_ error) {
-	req_ := &graphql.Request{
-		OpName: "listCredentialArtifactDefinitions",
-		Query:  listCredentialArtifactDefinitions_Operation,
-		Variables: &__listCredentialArtifactDefinitionsInput{
-			OrganizationId: organizationId,
-		},
-	}
-
-	data_ = &listCredentialArtifactDefinitionsResponse{}
-	resp_ := &graphql.Response{Data: data_}
-
-	err_ = client_.MakeRequest(
-		ctx_,
-		req_,
-		resp_,
-	)
-
-	return data_, err_
-}
-
-// The query executed by listCredentials.
-const listCredentials_Operation = `
-query listCredentials ($organizationId: ID!) {
-	artifacts(organizationId: $organizationId, input: {filter:{credential:true}}) {
-		items {
+// The mutation executed by linkComponents.
+const linkComponents_Operation = `
+mutation linkComponents ($organizationId: ID!, $input: LinkComponentsInput!) {
+	linkComponents(organizationId: $organizationId, input: $input) {
+		result {
 			id
-			name
-			type
+			fromField
+			toField
+			createdAt
 			updatedAt
+			fromComponent {
+				id
+				name
+				description
+				attributes
+				createdAt
+				updatedAt
+			}
+			toComponent {
+				id
+				name
+				description
+				attributes
+				createdAt
+				updatedAt
+			}
+		}
+		successful
+		messages {
+			code
+			field
+			message
 		}
 	}
 }
 `
 
-func listCredentials(
+func linkComponents(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-) (data_ *listCredentialsResponse, err_ error) {
+	input LinkComponentsInput,
+) (data_ *linkComponentsResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "listCredentials",
-		Query:  listCredentials_Operation,
-		Variables: &__listCredentialsInput{
+		OpName: "linkComponents",
+		Query:  linkComponents_Operation,
+		Variables: &__linkComponentsInput{
 			OrganizationId: organizationId,
+			Input:          input,
 		},
 	}
 
-	data_ = &listCredentialsResponse{}
+	data_ = &linkComponentsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -6704,10 +13102,10 @@ func listCredentials(
 	return data_, err_
 }
 
-// The query executed by listRepos.
-const listRepos_Operation = `
-query listRepos ($organizationId: ID!, $sort: ReposSort, $cursor: Cursor, $search: String) {
-	repos(organizationId: $organizationId, sort: $sort, cursor: $cursor, search: $search) {
+// The query executed by listBundles.
+const listBundles_Operation = `
+query listBundles ($organizationId: ID!, $filter: BundlesFilter, $sort: BundlesSort, $cursor: Cursor) {
+	bundles(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
 		cursor {
 			next
 			previous
@@ -6715,36 +13113,97 @@ query listRepos ($organizationId: ID!, $sort: ReposSort, $cursor: Cursor, $searc
 		items {
 			id
 			name
+			version
+			description
+			icon
+			sourceUrl
+			repo
 			createdAt
-			releaseChannels {
+			updatedAt
+		}
+	}
+}
+`
+
+func listBundles(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	filter *BundlesFilter,
+	sort *BundlesSort,
+	cursor *Cursor,
+) (data_ *listBundlesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "listBundles",
+		Query:  listBundles_Operation,
+		Variables: &__listBundlesInput{
+			OrganizationId: organizationId,
+			Filter:         filter,
+			Sort:           sort,
+			Cursor:         cursor,
+		},
+	}
+
+	data_ = &listBundlesResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by listDeployments.
+const listDeployments_Operation = `
+query listDeployments ($organizationId: ID!, $filter: DeploymentsFilter, $sort: DeploymentsSort, $cursor: Cursor) {
+	deployments(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+		cursor {
+			next
+			previous
+		}
+		items {
+			id
+			status
+			action
+			version
+			message
+			createdAt
+			updatedAt
+			lastTransitionedAt
+			elapsedTime
+			deployedBy
+			instance {
+				id
 				name
-				tag
 			}
 		}
 	}
 }
 `
 
-func listRepos(
+func listDeployments(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-	sort *ReposSort,
-	cursor *scalars.Cursor,
-	search *string,
-) (data_ *listReposResponse, err_ error) {
+	filter *DeploymentsFilter,
+	sort *DeploymentsSort,
+	cursor *Cursor,
+) (data_ *listDeploymentsResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "listRepos",
-		Query:  listRepos_Operation,
-		Variables: &__listReposInput{
+		OpName: "listDeployments",
+		Query:  listDeployments_Operation,
+		Variables: &__listDeploymentsInput{
 			OrganizationId: organizationId,
+			Filter:         filter,
 			Sort:           sort,
 			Cursor:         cursor,
-			Search:         search,
 		},
 	}
 
-	data_ = &listReposResponse{}
+	data_ = &listDeploymentsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -6756,38 +13215,61 @@ func listRepos(
 	return data_, err_
 }
 
-// The mutation executed by publishArtifactDefinition.
-const publishArtifactDefinition_Operation = `
-mutation publishArtifactDefinition ($organizationId: ID!, $schema: JSON!) {
-	publishArtifactDefinition(organizationId: $organizationId, schema: $schema) {
-		result {
-			name
-			id
+// The query executed by listEnvironments.
+const listEnvironments_Operation = `
+query listEnvironments ($organizationId: ID!, $filter: EnvironmentsFilter, $sort: EnvironmentsSort, $cursor: Cursor) {
+	environments(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+		cursor {
+			next
+			previous
 		}
-		successful
-		messages {
-			message
+		items {
+			id
+			name
+			description
+			attributes
+			createdAt
+			updatedAt
+			project {
+				id
+				name
+				description
+			}
+			cost {
+				monthlyAverage {
+					amount
+					currency
+				}
+				dailyAverage {
+					amount
+					currency
+				}
+			}
 		}
 	}
 }
 `
 
-func publishArtifactDefinition(
+func listEnvironments(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-	schema map[string]any,
-) (data_ *publishArtifactDefinitionResponse, err_ error) {
+	filter *EnvironmentsFilter,
+	sort *EnvironmentsSort,
+	cursor *Cursor,
+) (data_ *listEnvironmentsResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "publishArtifactDefinition",
-		Query:  publishArtifactDefinition_Operation,
-		Variables: &__publishArtifactDefinitionInput{
+		OpName: "listEnvironments",
+		Query:  listEnvironments_Operation,
+		Variables: &__listEnvironmentsInput{
 			OrganizationId: organizationId,
-			Schema:         schema,
+			Filter:         filter,
+			Sort:           sort,
+			Cursor:         cursor,
 		},
 	}
 
-	data_ = &publishArtifactDefinitionResponse{}
+	data_ = &listEnvironmentsResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -6799,45 +13281,132 @@ func publishArtifactDefinition(
 	return data_, err_
 }
 
-// The mutation executed by resetPackage.
-const resetPackage_Operation = `
-mutation resetPackage ($organizationId: ID!, $id: ID!, $deleteState: Boolean!, $deleteParams: Boolean!, $deleteDeployments: Boolean!) {
-	resetPackage(organizationId: $organizationId, id: $id, deleteState: $deleteState, deleteParams: $deleteParams, deleteDeployments: $deleteDeployments) {
-		successful
-		result {
+// The query executed by listInstanceResources.
+const listInstanceResources_Operation = `
+query listInstanceResources ($organizationId: ID!, $instanceId: ID!, $cursor: Cursor) {
+	instance(organizationId: $organizationId, id: $instanceId) {
+		resources(cursor: $cursor) {
+			cursor {
+				next
+				previous
+			}
+			items {
+				field
+				resource {
+					id
+					name
+					origin
+					createdAt
+					updatedAt
+				}
+			}
+		}
+	}
+}
+`
+
+func listInstanceResources(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	instanceId string,
+	cursor *Cursor,
+) (data_ *listInstanceResourcesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "listInstanceResources",
+		Query:  listInstanceResources_Operation,
+		Variables: &__listInstanceResourcesInput{
+			OrganizationId: organizationId,
+			InstanceId:     instanceId,
+			Cursor:         cursor,
+		},
+	}
+
+	data_ = &listInstanceResourcesResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by listInstances.
+const listInstances_Operation = `
+query listInstances ($organizationId: ID!, $filter: InstancesFilter, $sort: InstancesSort, $cursor: Cursor) {
+	instances(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+		cursor {
+			next
+			previous
+		}
+		items {
 			id
-			slug
+			name
 			status
-		}
-		messages {
-			message
+			version
+			releaseStrategy
+			resolvedVersion
+			deployedVersion
+			availableUpgrade
+			attributes
+			createdAt
+			updatedAt
+			cost {
+				monthlyAverage {
+					amount
+					currency
+				}
+				dailyAverage {
+					amount
+					currency
+				}
+			}
+			environment {
+				id
+				name
+				project {
+					id
+					name
+				}
+			}
+			bundle {
+				id
+				name
+				version
+			}
+			component {
+				id
+				name
+				description
+			}
 		}
 	}
 }
 `
 
-func resetPackage(
+func listInstances(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-	id string,
-	deleteState bool,
-	deleteParams bool,
-	deleteDeployments bool,
-) (data_ *resetPackageResponse, err_ error) {
+	filter *InstancesFilter,
+	sort *InstancesSort,
+	cursor *Cursor,
+) (data_ *listInstancesResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "resetPackage",
-		Query:  resetPackage_Operation,
-		Variables: &__resetPackageInput{
-			OrganizationId:    organizationId,
-			Id:                id,
-			DeleteState:       deleteState,
-			DeleteParams:      deleteParams,
-			DeleteDeployments: deleteDeployments,
+		OpName: "listInstances",
+		Query:  listInstances_Operation,
+		Variables: &__listInstancesInput{
+			OrganizationId: organizationId,
+			Filter:         filter,
+			Sort:           sort,
+			Cursor:         cursor,
 		},
 	}
 
-	data_ = &resetPackageResponse{}
+	data_ = &listInstancesResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -6849,42 +13418,342 @@ func resetPackage(
 	return data_, err_
 }
 
-// The mutation executed by setPackageVersion.
-const setPackageVersion_Operation = `
-mutation setPackageVersion ($organizationId: ID!, $id: ID!, $version: String!, $releaseStrategy: ReleaseStrategy) {
-	setPackageVersion(organizationId: $organizationId, id: $id, version: $version, releaseStrategy: $releaseStrategy) {
+// The query executed by listLinks.
+const listLinks_Operation = `
+query listLinks ($organizationId: ID!, $projectId: ID!, $filter: LinksFilter, $cursor: Cursor) {
+	project(organizationId: $organizationId, id: $projectId) {
+		blueprint {
+			links(filter: $filter, cursor: $cursor) {
+				cursor {
+					next
+					previous
+				}
+				items {
+					id
+					fromField
+					toField
+					createdAt
+					updatedAt
+					fromComponent {
+						id
+						name
+						description
+						attributes
+						createdAt
+						updatedAt
+					}
+					toComponent {
+						id
+						name
+						description
+						attributes
+						createdAt
+						updatedAt
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func listLinks(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	projectId string,
+	filter *LinksFilter,
+	cursor *Cursor,
+) (data_ *listLinksResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "listLinks",
+		Query:  listLinks_Operation,
+		Variables: &__listLinksInput{
+			OrganizationId: organizationId,
+			ProjectId:      projectId,
+			Filter:         filter,
+			Cursor:         cursor,
+		},
+	}
+
+	data_ = &listLinksResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by listOciRepos.
+const listOciRepos_Operation = `
+query listOciRepos ($organizationId: ID!, $filter: OciReposFilter, $sort: OciReposSort, $cursor: Cursor) {
+	ociRepos(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+		cursor {
+			next
+			previous
+		}
+		items {
+			id
+			name
+			artifactType
+			createdAt
+			updatedAt
+			releaseChannels {
+				items {
+					name
+					tag
+				}
+			}
+		}
+	}
+}
+`
+
+func listOciRepos(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	filter *OciReposFilter,
+	sort *OciReposSort,
+	cursor *Cursor,
+) (data_ *listOciReposResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "listOciRepos",
+		Query:  listOciRepos_Operation,
+		Variables: &__listOciReposInput{
+			OrganizationId: organizationId,
+			Filter:         filter,
+			Sort:           sort,
+			Cursor:         cursor,
+		},
+	}
+
+	data_ = &listOciReposResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by listProjects.
+const listProjects_Operation = `
+query listProjects ($organizationId: ID!) {
+	projects(organizationId: $organizationId, sort: {field:NAME,order:ASC}) {
+		items {
+			id
+			name
+			description
+			attributes
+			createdAt
+			updatedAt
+			cost {
+				monthlyAverage {
+					amount
+					currency
+				}
+				dailyAverage {
+					amount
+					currency
+				}
+			}
+		}
+	}
+}
+`
+
+func listProjects(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+) (data_ *listProjectsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "listProjects",
+		Query:  listProjects_Operation,
+		Variables: &__listProjectsInput{
+			OrganizationId: organizationId,
+		},
+	}
+
+	data_ = &listProjectsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by listResourceTypes.
+const listResourceTypes_Operation = `
+query listResourceTypes ($organizationId: ID!, $filter: ResourceTypesFilter, $sort: ResourceTypesSort, $cursor: Cursor) {
+	resourceTypes(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+		cursor {
+			next
+			previous
+		}
+		items {
+			id
+			name
+			icon
+			connectionOrientation
+			createdAt
+			updatedAt
+		}
+	}
+}
+`
+
+func listResourceTypes(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	filter *ResourceTypesFilter,
+	sort *ResourceTypesSort,
+	cursor *Cursor,
+) (data_ *listResourceTypesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "listResourceTypes",
+		Query:  listResourceTypes_Operation,
+		Variables: &__listResourceTypesInput{
+			OrganizationId: organizationId,
+			Filter:         filter,
+			Sort:           sort,
+			Cursor:         cursor,
+		},
+	}
+
+	data_ = &listResourceTypesResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by listResources.
+const listResources_Operation = `
+query listResources ($organizationId: ID!, $filter: ResourcesFilter, $sort: ResourcesSort, $cursor: Cursor) {
+	resources(organizationId: $organizationId, filter: $filter, sort: $sort, cursor: $cursor) {
+		cursor {
+			next
+			previous
+		}
+		items {
+			id
+			name
+			origin
+			resourceType {
+				id
+				name
+				icon
+				connectionOrientation
+				createdAt
+				updatedAt
+			}
+			field
+			instance {
+				id
+				name
+				status
+				version
+				releaseStrategy
+				createdAt
+				updatedAt
+			}
+			formats
+			createdAt
+			updatedAt
+		}
+	}
+}
+`
+
+func listResources(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	filter *ResourcesFilter,
+	sort *ResourcesSort,
+	cursor *Cursor,
+) (data_ *listResourcesResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "listResources",
+		Query:  listResources_Operation,
+		Variables: &__listResourcesInput{
+			OrganizationId: organizationId,
+			Filter:         filter,
+			Sort:           sort,
+			Cursor:         cursor,
+		},
+	}
+
+	data_ = &listResourcesResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by publishResourceType.
+const publishResourceType_Operation = `
+mutation publishResourceType ($organizationId: ID!, $input: PublishResourceTypeInput!) {
+	publishResourceType(organizationId: $organizationId, input: $input) {
 		result {
 			id
-			slug
+			name
+			icon
+			connectionOrientation
+			schema
+			createdAt
+			updatedAt
 		}
 		successful
 		messages {
+			code
+			field
 			message
 		}
 	}
 }
 `
 
-func setPackageVersion(
+func publishResourceType(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-	id string,
-	version string,
-	releaseStrategy ReleaseStrategy,
-) (data_ *setPackageVersionResponse, err_ error) {
+	input PublishResourceTypeInput,
+) (data_ *publishResourceTypeResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "setPackageVersion",
-		Query:  setPackageVersion_Operation,
-		Variables: &__setPackageVersionInput{
-			OrganizationId:  organizationId,
-			Id:              id,
-			Version:         version,
-			ReleaseStrategy: releaseStrategy,
+		OpName: "publishResourceType",
+		Query:  publishResourceType_Operation,
+		Variables: &__publishResourceTypeInput{
+			OrganizationId: organizationId,
+			Input:          input,
 		},
 	}
 
-	data_ = &setPackageVersionResponse{}
+	data_ = &publishResourceTypeResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -6896,42 +13765,447 @@ func setPackageVersion(
 	return data_, err_
 }
 
-// The mutation executed by updateArtifact.
-const updateArtifact_Operation = `
-mutation updateArtifact ($organizationId: ID!, $artifactId: ID!, $artifactName: String!, $artifactPayload: JSON!) {
-	updateArtifact(organizationId: $organizationId, id: $artifactId, params: {name:$artifactName,payload:$artifactPayload}) {
+// The mutation executed by removeComponent.
+const removeComponent_Operation = `
+mutation removeComponent ($organizationId: ID!, $id: ID!) {
+	removeComponent(organizationId: $organizationId, id: $id) {
 		result {
 			id
 			name
 		}
 		successful
 		messages {
+			code
+			field
 			message
 		}
 	}
 }
 `
 
-func updateArtifact(
+func removeComponent(
 	ctx_ context.Context,
 	client_ graphql.Client,
 	organizationId string,
-	artifactId string,
-	artifactName string,
-	artifactPayload map[string]any,
-) (data_ *updateArtifactResponse, err_ error) {
+	id string,
+) (data_ *removeComponentResponse, err_ error) {
 	req_ := &graphql.Request{
-		OpName: "updateArtifact",
-		Query:  updateArtifact_Operation,
-		Variables: &__updateArtifactInput{
-			OrganizationId:  organizationId,
-			ArtifactId:      artifactId,
-			ArtifactName:    artifactName,
-			ArtifactPayload: artifactPayload,
+		OpName: "removeComponent",
+		Query:  removeComponent_Operation,
+		Variables: &__removeComponentInput{
+			OrganizationId: organizationId,
+			Id:             id,
 		},
 	}
 
-	data_ = &updateArtifactResponse{}
+	data_ = &removeComponentResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by removeInstanceSecret.
+const removeInstanceSecret_Operation = `
+mutation removeInstanceSecret ($organizationId: ID!, $id: ID!, $name: String!) {
+	removeInstanceSecret(organizationId: $organizationId, id: $id, name: $name) {
+		result {
+			name
+			createdAt
+			updatedAt
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func removeInstanceSecret(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	name string,
+) (data_ *removeInstanceSecretResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "removeInstanceSecret",
+		Query:  removeInstanceSecret_Operation,
+		Variables: &__removeInstanceSecretInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Name:           name,
+		},
+	}
+
+	data_ = &removeInstanceSecretResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by setEnvironmentDefault.
+const setEnvironmentDefault_Operation = `
+mutation setEnvironmentDefault ($organizationId: ID!, $environmentId: ID!, $resourceId: ID!) {
+	setEnvironmentDefault(organizationId: $organizationId, environmentId: $environmentId, resourceId: $resourceId) {
+		result {
+			id
+			createdAt
+			updatedAt
+			resource {
+				id
+				name
+				resourceType {
+					id
+					name
+					icon
+					connectionOrientation
+					createdAt
+					updatedAt
+				}
+			}
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func setEnvironmentDefault(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	environmentId string,
+	resourceId string,
+) (data_ *setEnvironmentDefaultResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "setEnvironmentDefault",
+		Query:  setEnvironmentDefault_Operation,
+		Variables: &__setEnvironmentDefaultInput{
+			OrganizationId: organizationId,
+			EnvironmentId:  environmentId,
+			ResourceId:     resourceId,
+		},
+	}
+
+	data_ = &setEnvironmentDefaultResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by setInstanceSecret.
+const setInstanceSecret_Operation = `
+mutation setInstanceSecret ($organizationId: ID!, $id: ID!, $input: SetInstanceSecretInput!) {
+	setInstanceSecret(organizationId: $organizationId, id: $id, input: $input) {
+		result {
+			name
+			createdAt
+			updatedAt
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func setInstanceSecret(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	input SetInstanceSecretInput,
+) (data_ *setInstanceSecretResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "setInstanceSecret",
+		Query:  setInstanceSecret_Operation,
+		Variables: &__setInstanceSecretInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Input:          input,
+		},
+	}
+
+	data_ = &setInstanceSecretResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by unlinkComponents.
+const unlinkComponents_Operation = `
+mutation unlinkComponents ($organizationId: ID!, $id: ID!) {
+	unlinkComponents(organizationId: $organizationId, id: $id) {
+		result {
+			id
+			fromField
+			toField
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func unlinkComponents(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *unlinkComponentsResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "unlinkComponents",
+		Query:  unlinkComponents_Operation,
+		Variables: &__unlinkComponentsInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &unlinkComponentsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateEnvironment.
+const updateEnvironment_Operation = `
+mutation updateEnvironment ($organizationId: ID!, $id: ID!, $input: UpdateEnvironmentInput!) {
+	updateEnvironment(organizationId: $organizationId, id: $id, input: $input) {
+		result {
+			id
+			name
+			description
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func updateEnvironment(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	input UpdateEnvironmentInput,
+) (data_ *updateEnvironmentResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateEnvironment",
+		Query:  updateEnvironment_Operation,
+		Variables: &__updateEnvironmentInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Input:          input,
+		},
+	}
+
+	data_ = &updateEnvironmentResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateInstance.
+const updateInstance_Operation = `
+mutation updateInstance ($organizationId: ID!, $id: ID!, $input: UpdateInstanceInput!) {
+	updateInstance(organizationId: $organizationId, id: $id, input: $input) {
+		result {
+			id
+			name
+			status
+			version
+			releaseStrategy
+			resolvedVersion
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func updateInstance(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	input UpdateInstanceInput,
+) (data_ *updateInstanceResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateInstance",
+		Query:  updateInstance_Operation,
+		Variables: &__updateInstanceInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Input:          input,
+		},
+	}
+
+	data_ = &updateInstanceResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateProject.
+const updateProject_Operation = `
+mutation updateProject ($organizationId: ID!, $id: ID!, $input: UpdateProjectInput!) {
+	updateProject(organizationId: $organizationId, id: $id, input: $input) {
+		result {
+			id
+			name
+			description
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func updateProject(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	input UpdateProjectInput,
+) (data_ *updateProjectResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateProject",
+		Query:  updateProject_Operation,
+		Variables: &__updateProjectInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Input:          input,
+		},
+	}
+
+	data_ = &updateProjectResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateResource.
+const updateResource_Operation = `
+mutation updateResource ($organizationId: ID!, $id: ID!, $input: UpdateResourceInput!) {
+	updateResource(organizationId: $organizationId, id: $id, input: $input) {
+		result {
+			id
+			name
+			origin
+			resourceType {
+				id
+				name
+				icon
+				connectionOrientation
+				createdAt
+				updatedAt
+			}
+			createdAt
+			updatedAt
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func updateResource(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	input UpdateResourceInput,
+) (data_ *updateResourceResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateResource",
+		Query:  updateResource_Operation,
+		Variables: &__updateResourceInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Input:          input,
+		},
+	}
+
+	data_ = &updateResourceResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

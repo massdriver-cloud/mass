@@ -1,16 +1,11 @@
-// Package api provides client functions for interacting with the Massdriver API.
 package api
 
-// Cost holds monthly and daily cost summaries for a package.
-type Cost struct {
-	Monthly Summary `json:"monthly" mapstructure:"monthly"`
-	Daily   Summary `json:"daily" mapstructure:"daily"`
-}
-
-// Summary of costs over a time period.
-type Summary struct {
-	Previous CostSample `json:"previous" mapstructure:"previous"`
-	Average  CostSample `json:"average" mapstructure:"average"`
+// CostSummary holds cost data for a resource.
+type CostSummary struct {
+	LastMonth      CostSample `json:"lastMonth" mapstructure:"lastMonth"`
+	MonthlyAverage CostSample `json:"monthlyAverage" mapstructure:"monthlyAverage"`
+	LastDay        CostSample `json:"lastDay" mapstructure:"lastDay"`
+	DailyAverage   CostSample `json:"dailyAverage" mapstructure:"dailyAverage"`
 }
 
 // CostSample is a single cost measurement. Fields may be null when no cost data exists.

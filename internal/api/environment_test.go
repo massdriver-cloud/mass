@@ -1,262 +1,200 @@
 package api_test
 
 import (
-	"reflect"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/api"
+	api "github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-func floatPtr(v float64) *float64 { return &v }
-
 func TestGetEnvironment(t *testing.T) {
-	want := api.Environment{
-		ID:          "env-uuid1",
-		Name:        "Test Environment",
-		Slug:        "env",
-		Description: "This is a test environment",
-		Cost: api.Cost{
-			Daily: api.Summary{
-				Average: api.CostSample{
-					Amount: floatPtr(10.0),
-				},
-			},
-			Monthly: api.Summary{
-				Average: api.CostSample{
-					Amount: floatPtr(300.0),
-				},
-			},
-		},
-		Packages: []api.Package{
-			{
-				ID:     "pkg-uuid1",
-				Params: map[string]any{"param1": "value1"},
-				Artifacts: []api.Artifact{
-					{
-						ID:    "artifact-uuid1",
-						Name:  "artifact1",
-						Field: "field1",
-					},
-				},
-				RemoteReferences: []api.RemoteReference{
-					{
-						Artifact: api.Artifact{
-							ID:    "remote-artifact-uuid1",
-							Name:  "remote-artifact1",
-							Field: "remote-field1",
-						},
-					},
-				},
-				Bundle: &api.Bundle{
-					ID:   "bundle-uuid1",
-					Name: "test-bundle",
-				},
-				Status: string(api.PackageStatusProvisioned),
-				Manifest: &api.Manifest{
-					ID:          "manifest-uuid1",
-					Name:        "Test Manifest",
-					Slug:        "manifest",
-					Suffix:      "0000",
-					Description: "This is a test manifest",
-				},
-			},
-		},
-		Project: &api.Project{
-			ID:   "proj-uuid1",
-			Slug: "proj",
-		},
-	}
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
 			"environment": map[string]any{
 				"id":          "env-uuid1",
-				"name":        "Test Environment",
-				"slug":        "env",
-				"description": "This is a test environment",
-				"cost": map[string]any{
-					"daily": map[string]any{
-						"average": map[string]any{
-							"amount": 10.0,
-						},
-					},
-					"monthly": map[string]any{
-						"average": map[string]any{
-							"amount": 300.0,
-						},
-					},
-				},
-				"packages": []map[string]any{
-					{
-						"id":     "pkg-uuid1",
-						"params": map[string]any{"param1": "value1"},
-						"artifacts": []map[string]any{
-							{
-								"id":    "artifact-uuid1",
-								"name":  "artifact1",
-								"field": "field1",
-							},
-						},
-						"remoteReferences": []map[string]any{
-							{
-								"artifact": map[string]any{
-									"id":    "remote-artifact-uuid1",
-									"name":  "remote-artifact1",
-									"field": "remote-field1",
-								},
-							},
-						},
-						"bundle": map[string]any{
-							"id":   "bundle-uuid1",
-							"name": "test-bundle",
-						},
-						"status": "PROVISIONED",
-						"manifest": map[string]any{
-							"id":          "manifest-uuid1",
-							"name":        "Test Manifest",
-							"slug":        "manifest",
-							"suffix":      "0000",
-							"description": "This is a test manifest",
-						},
-					},
-				},
+				"name":        "Production",
+				"description": "Production environment",
 				"project": map[string]any{
-					"id":   "proj-uuid1",
-					"slug": "proj",
+					"id":   "proj-1",
+					"name": "My Project",
 				},
 			},
 		},
 	})
 	mdClient := client.Client{
-		GQL: gqlClient,
+		GQLv1: gqlClient,
 	}
 
-	got, err := api.GetEnvironment(t.Context(), &mdClient, "proj-env")
-
+	env, err := api.GetEnvironment(t.Context(), &mdClient, "env-uuid1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(got, &want) {
-		t.Errorf("got %+v, wanted %+v", got, &want)
+	if env.ID != "env-uuid1" {
+		t.Errorf("got %s, wanted env-uuid1", env.ID)
+	}
+	if env.Name != "Production" {
+		t.Errorf("got %s, wanted Production", env.Name)
+	}
+	if env.Project == nil || env.Project.ID != "proj-1" {
+		t.Errorf("expected project with ID proj-1")
 	}
 }
 
-func TestGetEnvironmentsByPackage(t *testing.T) {
-	packageID := "pkg-uuid1"
-
-	want := []api.Environment{
-		{
-			ID:          "env-uuid1",
-			Name:        "Test Environment 1",
-			Slug:        "env1",
-			Description: "First test environment",
-			Cost: api.Cost{
-				Daily: api.Summary{
-					Average: api.CostSample{
-						Amount: floatPtr(5.0),
-					},
-				},
-				Monthly: api.Summary{
-					Average: api.CostSample{
-						Amount: floatPtr(150.0),
-					},
-				},
-			},
-			Project: &api.Project{
-				ID:   "proj-uuid1",
-				Slug: "proj1",
-			},
-		},
-		{
-			ID:          "env-uuid2",
-			Name:        "Test Environment 2",
-			Slug:        "env2",
-			Description: "Second test environment",
-			Cost: api.Cost{
-				Daily: api.Summary{
-					Average: api.CostSample{
-						Amount: floatPtr(8.0),
-					},
-				},
-				Monthly: api.Summary{
-					Average: api.CostSample{
-						Amount: floatPtr(240.0),
-					},
-				},
-			},
-			Project: &api.Project{
-				ID:   "proj-uuid2",
-				Slug: "proj2",
-			},
-		},
-	}
-
+func TestListEnvironments(t *testing.T) {
 	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 		"data": map[string]any{
-			"project": map[string]any{
-				"environments": []map[string]any{
+			"environments": map[string]any{
+				"cursor": map[string]any{},
+				"items": []map[string]any{
 					{
-						"id":          "env-uuid1",
-						"name":        "Test Environment 1",
-						"slug":        "env1",
-						"description": "First test environment",
-						"cost": map[string]any{
-							"daily": map[string]any{
-								"average": map[string]any{
-									"amount": 5.0,
-								},
-							},
-							"monthly": map[string]any{
-								"average": map[string]any{
-									"amount": 150.0,
-								},
-							},
-						},
-						"project": map[string]any{
-							"id":   "proj-uuid1",
-							"slug": "proj1",
-						},
+						"id":   "env-1",
+						"name": "staging",
 					},
 					{
-						"id":          "env-uuid2",
-						"name":        "Test Environment 2",
-						"slug":        "env2",
-						"description": "Second test environment",
-						"cost": map[string]any{
-							"daily": map[string]any{
-								"average": map[string]any{
-									"amount": 8.0,
-								},
-							},
-							"monthly": map[string]any{
-								"average": map[string]any{
-									"amount": 240.0,
-								},
-							},
-						},
-						"project": map[string]any{
-							"id":   "proj-uuid2",
-							"slug": "proj2",
-						},
+						"id":   "env-2",
+						"name": "production",
 					},
 				},
 			},
 		},
 	})
-
 	mdClient := client.Client{
-		GQL: gqlClient,
+		GQLv1: gqlClient,
 	}
 
-	got, err := api.GetEnvironmentsByProject(t.Context(), &mdClient, packageID)
-
+	envs, err := api.ListEnvironments(t.Context(), &mdClient, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %+v, wanted %+v", got, want)
+	if len(envs) != 2 {
+		t.Errorf("got %d environments, wanted 2", len(envs))
+	}
+}
+
+func TestCreateEnvironment(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"createEnvironment": map[string]any{
+				"result": map[string]any{
+					"id":          "env-new",
+					"name":        "Staging",
+					"description": "Staging environment",
+				},
+				"successful": true,
+			},
+		},
+	})
+	mdClient := client.Client{
+		GQLv1: gqlClient,
+	}
+
+	env, err := api.CreateEnvironment(t.Context(), &mdClient, "proj-1", api.CreateEnvironmentInput{
+		Id:          "staging",
+		Name:        "Staging",
+		Description: "Staging environment",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if env.ID != "env-new" {
+		t.Errorf("got %s, wanted env-new", env.ID)
+	}
+}
+
+func TestSetEnvironmentDefault(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"setEnvironmentDefault": map[string]any{
+				"result": map[string]any{
+					"id": "envdef-1",
+					"resource": map[string]any{
+						"id":   "res-1",
+						"name": "default-vpc",
+						"resourceType": map[string]any{
+							"id":   "aws-vpc",
+							"name": "AWS VPC",
+						},
+					},
+				},
+				"successful": true,
+			},
+		},
+	})
+	mdClient := client.Client{
+		GQLv1: gqlClient,
+	}
+
+	envDefault, err := api.SetEnvironmentDefault(t.Context(), &mdClient, "env-1", "res-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if envDefault.ID != "envdef-1" {
+		t.Errorf("got %s, wanted envdef-1", envDefault.ID)
+	}
+	if envDefault.Resource.ID != "res-1" {
+		t.Errorf("got resource ID %s, wanted res-1", envDefault.Resource.ID)
+	}
+	if envDefault.Resource.Name != "default-vpc" {
+		t.Errorf("got resource name %s, wanted default-vpc", envDefault.Resource.Name)
+	}
+	if envDefault.Resource.ResourceType == nil || envDefault.Resource.ResourceType.ID != "aws-vpc" {
+		t.Errorf("expected resource type aws-vpc")
+	}
+}
+
+func TestSetEnvironmentDefaultFailure(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"setEnvironmentDefault": map[string]any{
+				"result":     nil,
+				"successful": false,
+				"messages": []map[string]any{
+					{
+						"code":    "conflict",
+						"field":   "resourceId",
+						"message": "a default of this resource type already exists",
+					},
+				},
+			},
+		},
+	})
+	mdClient := client.Client{
+		GQLv1: gqlClient,
+	}
+
+	_, err := api.SetEnvironmentDefault(t.Context(), &mdClient, "env-1", "res-1")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestDeleteEnvironment(t *testing.T) {
+	gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		"data": map[string]any{
+			"deleteEnvironment": map[string]any{
+				"result": map[string]any{
+					"id":   "env-1",
+					"name": "Staging",
+				},
+				"successful": true,
+			},
+		},
+	})
+	mdClient := client.Client{
+		GQLv1: gqlClient,
+	}
+
+	env, err := api.DeleteEnvironment(t.Context(), &mdClient, "env-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if env.ID != "env-1" {
+		t.Errorf("got %s, wanted env-1", env.ID)
 	}
 }

@@ -86,7 +86,7 @@ params:
 		}
 		sb.WriteString("  properties:\n")
 		for _, conn := range data.Connections {
-			sb.WriteString(fmt.Sprintf("    %s:\n      $ref: %s\n", conn.Name, conn.ArtifactDefinition))
+			sb.WriteString(fmt.Sprintf("    %s:\n      $ref: %s\n", conn.Name, conn.ResourceType))
 		}
 	}
 	yaml += sb.String()

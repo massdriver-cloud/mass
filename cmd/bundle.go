@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -28,13 +29,6 @@ import (
 //go:embed templates/bundle.get.md.tmpl
 var bundleTemplates embed.FS
 
-// hiddenArtifacts are artifact definitions that the API returns that
-// should not be added to bundles
-var hiddenArtifacts = map[string]struct{}{
-	"massdriver/api":        {},
-	"massdriver/draft-node": {},
-}
-
 type bundleNew struct {
 	name         string
 	description  string
@@ -46,9 +40,9 @@ type bundleNew struct {
 
 type bundleList struct {
 	search    string
+	name      string
 	sortField string
 	sortOrder string
-	limit     int
 	output    string
 }
 
@@ -71,10 +65,10 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 			return runBundleList(&bundleListInput)
 		},
 	}
-	bundleListCmd.Flags().StringVarP(&bundleListInput.search, "search", "s", "", "Search bundles (supports AND, OR, -, quotes)")
-	bundleListCmd.Flags().StringVar(&bundleListInput.sortField, "sort", "name", "Sort field (name, created_at)")
+	bundleListCmd.Flags().StringVarP(&bundleListInput.search, "search", "s", "", "Search bundles by name, readme, and changelog")
+	bundleListCmd.Flags().StringVarP(&bundleListInput.name, "name", "n", "", "Filter by exact bundle name")
+	bundleListCmd.Flags().StringVar(&bundleListInput.sortField, "sort", "", "Sort field (name, created_at). Defaults to name, or relevance when using --search")
 	bundleListCmd.Flags().StringVar(&bundleListInput.sortOrder, "order", "asc", "Sort order (asc, desc)")
-	bundleListCmd.Flags().IntVarP(&bundleListInput.limit, "limit", "l", 0, "Maximum number of results to return")
 	bundleListCmd.Flags().StringVarP(&bundleListInput.output, "output", "o", "table", "Output format (table, json)")
 
 	bundleBuildCmd := &cobra.Command{
@@ -193,9 +187,10 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runBundleNewInteractive(outputDir string) (*templates.TemplateData, error) {
+func runBundleNewInteractive(outputDir string, resourceTypeNames []string) (*templates.TemplateData, error) {
 	templateData := &templates.TemplateData{
-		OutputDir: outputDir,
+		OutputDir:     outputDir,
+		ResourceTypes: resourceTypeNames,
 	}
 
 	err := bundle.RunPromptNew(templateData)
@@ -214,8 +209,8 @@ func runBundleNewFlags(input *bundleNew) (*templates.TemplateData, error) {
 			return nil, fmt.Errorf("invalid connection argument: %s", conn)
 		}
 		connectionData[i] = templates.Connection{
-			ArtifactDefinition: parts[1],
-			Name:               parts[0],
+			ResourceType: parts[1],
+			Name:         parts[0],
 		}
 	}
 
@@ -234,31 +229,29 @@ func runBundleNewFlags(input *bundleNew) (*templates.TemplateData, error) {
 func runBundleNew(input *bundleNew) error {
 	ctx := context.Background()
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
-	}
-
-	artifactDefs, listErr := api.ListArtifactDefinitions(ctx, mdClient)
-	if listErr != nil {
-		return fmt.Errorf("error listing artifact definitions: %w", listErr)
-	}
-
-	artifactDefinitions := map[string]map[string]any{}
-	for _, v := range artifactDefs {
-		if _, ok := hiddenArtifacts[v.Name]; ok {
-			continue
-		}
-		artifactDefinitions[v.Name] = v.Schema
-	}
-
-	bundle.SetMassdriverArtifactDefinitions(artifactDefinitions)
-
 	var templateData *templates.TemplateData
 	var runErr error
 	if input.name == "" || input.templateName == "" {
 		// run the interactive prompt
-		templateData, runErr = runBundleNewInteractive(input.outputDir)
+		mdClient, mdClientErr := client.New()
+		if mdClientErr != nil {
+			return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+		}
+
+		resourceTypes, listErr := api.ListResourceTypes(ctx, mdClient, nil)
+		if listErr != nil {
+			return fmt.Errorf("error fetching resource types: %w", listErr)
+		}
+		resourceTypeNames := make([]string, len(resourceTypes))
+		for i, rt := range resourceTypes {
+			resourceTypeNames[i] = rt.ID
+			if rt.Name != rt.ID {
+				resourceTypeNames[i] += " (" + rt.Name + ")"
+			}
+		}
+		slices.Sort(resourceTypeNames)
+
+		templateData, runErr = runBundleNewInteractive(input.outputDir, resourceTypeNames)
 		if runErr != nil {
 			return fmt.Errorf("error running interactive prompt: %w", runErr)
 		}
@@ -461,28 +454,42 @@ func runBundleList(input *bundleList) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	opts := api.ReposListOptions{
-		Search:    input.search,
-		SortField: input.sortField,
-		SortOrder: input.sortOrder,
-		Limit:     input.limit,
+	filter := &api.OciReposFilter{
+		ArtifactType: "application/vnd.massdriver.bundle.v1+json",
+		Search:       input.search,
+	}
+	if input.name != "" {
+		filter.Name = &api.OciRepoNameFilter{Eq: input.name}
 	}
 
-	page, err := api.ListRepos(ctx, mdClient, opts)
+	var sort *api.OciReposSort
+	if input.sortField != "" {
+		order := api.SortOrderAsc
+		if strings.EqualFold(input.sortOrder, "desc") {
+			order = api.SortOrderDesc
+		}
+		field := api.OciReposSortFieldName
+		if strings.EqualFold(input.sortField, "created_at") {
+			field = api.OciReposSortFieldCreatedAt
+		}
+		sort = &api.OciReposSort{Field: field, Order: order}
+	}
+
+	repos, err := api.ListOciRepos(ctx, mdClient, filter, sort)
 	if err != nil {
 		return fmt.Errorf("failed to list bundles: %w", err)
 	}
 
 	switch input.output {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(page, "", "  ")
+		jsonBytes, err := json.MarshalIndent(repos, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal bundles to JSON: %w", err)
 		}
 		fmt.Println(string(jsonBytes))
 	case "table":
 		tbl := cli.NewTable("Name", "Latest", "Created At")
-		for _, repo := range page.Items {
+		for _, repo := range repos {
 			latest := ""
 			for _, rc := range repo.ReleaseChannels {
 				if rc.Name == "latest" {
@@ -504,12 +511,9 @@ func runBundleList(input *bundleList) error {
 func runBundleGet(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	arg := args[0]
-	parts := strings.Split(arg, "@")
-	bundleID := parts[0]
-	version := "latest"
-	if len(parts) == 2 {
-		version = parts[1]
+	bundleID := args[0]
+	if !strings.Contains(bundleID, "@") {
+		bundleID = bundleID + "@latest"
 	}
 
 	outputFormat, err := cmd.Flags().GetString("output")
@@ -523,7 +527,7 @@ func runBundleGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	bundle, err := api.GetBundle(ctx, mdClient, bundleID, &version)
+	bundle, err := api.GetBundle(ctx, mdClient, bundleID)
 	if err != nil {
 		return err
 	}

@@ -6,70 +6,53 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Bundle represents a Massdriver bundle (IaC module) and its metadata.
 type Bundle struct {
-	ID                string         `json:"id" mapstructure:"id"`
-	Name              string         `json:"name" mapstructure:"name"`
-	Version           string         `json:"version" mapstructure:"version"`
-	Description       string         `json:"description,omitempty" mapstructure:"description"`
-	Spec              map[string]any `json:"spec,omitempty" mapstructure:"spec"`
-	SpecVersion       string         `json:"specVersion,omitempty" mapstructure:"specVersion"`
-	Icon              string         `json:"icon,omitempty" mapstructure:"icon"`
-	SourceURL         string         `json:"sourceUrl,omitempty" mapstructure:"sourceUrl"`
-	ParamsSchema      map[string]any `json:"paramsSchema,omitempty" mapstructure:"paramsSchema"`
-	ConnectionsSchema map[string]any `json:"connectionsSchema,omitempty" mapstructure:"connectionsSchema"`
-	ArtifactsSchema   map[string]any `json:"artifactsSchema,omitempty" mapstructure:"artifactsSchema"`
-	UISchema          map[string]any `json:"uiSchema,omitempty" mapstructure:"uiSchema"`
-	OperatorGuide     string         `json:"operatorGuide,omitempty" mapstructure:"operatorGuide"`
-	CreatedAt         time.Time      `json:"createdAt,omitempty" mapstructure:"createdAt"`
-	UpdatedAt         time.Time      `json:"updatedAt,omitempty" mapstructure:"updatedAt"`
+	ID          string    `json:"id" mapstructure:"id"`
+	Name        string    `json:"name" mapstructure:"name"`
+	Version     string    `json:"version" mapstructure:"version"`
+	Description string    `json:"description,omitempty" mapstructure:"description"`
+	Icon        string    `json:"icon,omitempty" mapstructure:"icon"`
+	SourceURL   string    `json:"sourceUrl,omitempty" mapstructure:"sourceUrl"`
+	Repo        string    `json:"repo,omitempty" mapstructure:"repo"`
+	CreatedAt   time.Time `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
 }
 
-// GetBundle retrieves a bundle by ID and optional version from the Massdriver API.
-func GetBundle(ctx context.Context, mdClient *client.Client, bundleID string, version *string) (*Bundle, error) {
-	versionStr := ""
-	if version != nil {
-		versionStr = *version
-	}
-	response, err := getBundle(ctx, mdClient.GQL, mdClient.Config.OrganizationID, bundleID, versionStr)
+// GetBundle retrieves a bundle by its identifier (e.g., "aws-aurora-postgres@1.2.3" or "aws-aurora-postgres@latest").
+func GetBundle(ctx context.Context, mdClient *client.Client, id string) (*Bundle, error) {
+	response, err := getBundle(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get bundle %s: %w", bundleID, err)
+		return nil, fmt.Errorf("failed to get bundle %s: %w", id, err)
 	}
 	return toBundle(response.Bundle)
 }
 
-func toBundle(b any) (*Bundle, error) {
-	// Type assert to the generated type
-	genBundle, ok := b.(getBundleBundle)
-	if !ok {
-		// Fallback to mapstructure for flexibility
-		bundle := Bundle{}
-		if err := mapstructure.Decode(b, &bundle); err != nil {
-			return nil, fmt.Errorf("failed to decode bundle: %w", err)
-		}
-		return &bundle, nil
+// ListBundles returns bundles, optionally filtered and sorted.
+func ListBundles(ctx context.Context, mdClient *client.Client, filter *BundlesFilter, sort *BundlesSort) ([]Bundle, error) {
+	response, err := listBundles(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, sort, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list bundles: %w", err)
 	}
 
-	// Direct assignment from generated type
-	bundle := Bundle{
-		ID:                genBundle.Id,
-		Name:              genBundle.Name,
-		Version:           genBundle.Version,
-		Description:       genBundle.Description,
-		Spec:              genBundle.Spec,
-		SpecVersion:       genBundle.SpecVersion,
-		Icon:              genBundle.Icon,
-		SourceURL:         genBundle.SourceUrl,
-		ParamsSchema:      genBundle.ParamsSchema,
-		ConnectionsSchema: genBundle.ConnectionsSchema,
-		ArtifactsSchema:   genBundle.ArtifactsSchema,
-		UISchema:          genBundle.UiSchema,
-		OperatorGuide:     genBundle.OperatorGuide,
-		CreatedAt:         genBundle.CreatedAt,
-		UpdatedAt:         genBundle.UpdatedAt,
+	bundles := make([]Bundle, 0, len(response.Bundles.Items))
+	for _, resp := range response.Bundles.Items {
+		b, bErr := toBundle(resp)
+		if bErr != nil {
+			return nil, fmt.Errorf("failed to convert bundle: %w", bErr)
+		}
+		bundles = append(bundles, *b)
 	}
-	return &bundle, nil
+
+	return bundles, nil
+}
+
+func toBundle(v any) (*Bundle, error) {
+	b := Bundle{}
+	if err := decode(v, &b); err != nil {
+		return nil, fmt.Errorf("failed to decode bundle: %w", err)
+	}
+	return &b, nil
 }
