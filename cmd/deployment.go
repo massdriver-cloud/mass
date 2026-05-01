@@ -5,9 +5,13 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"text/template"
+	"time"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
@@ -139,6 +143,15 @@ func runDeploymentList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// terminalDeploymentStatuses are the deployment lifecycle states past which no
+// further logs will be emitted.
+var terminalDeploymentStatuses = map[string]struct{}{
+	"COMPLETED": {},
+	"FAILED":    {},
+	"ABORTED":   {},
+	"REJECTED":  {},
+}
+
 func runDeploymentLogs(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	deploymentID := args[0]
@@ -149,16 +162,88 @@ func runDeploymentLogs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
+	deployment, err := api.GetDeployment(ctx, mdClient, deploymentID)
+	if err != nil {
+		return fmt.Errorf("error getting deployment: %w", err)
+	}
+
+	if _, terminal := terminalDeploymentStatuses[deployment.Status]; terminal {
+		// Deployment finished; just dump the stored log batches and exit.
+		return printDeploymentBackfill(ctx, mdClient, deploymentID)
+	}
+
+	// Still running — open the subscription first so we don't miss batches that
+	// land between the backfill fetch and the subscribe call. The buffered
+	// channel inside the subscription will hold them until we drain it.
+	streamCtx, cancel := signalContext(ctx)
+	defer cancel()
+
+	stream, closeStream, err := api.SubscribeDeploymentLogs(streamCtx, mdClient, deploymentID)
+	if err != nil {
+		// If streaming setup fails (e.g., basic-auth instead of PAT) fall back
+		// to whatever's already stored.
+		fmt.Fprintf(os.Stderr, "warning: log streaming unavailable: %v\n", err)
+		return printDeploymentBackfill(ctx, mdClient, deploymentID)
+	}
+	defer closeStream()
+
+	if err := printDeploymentBackfill(ctx, mdClient, deploymentID); err != nil {
+		return err
+	}
+
+	// Poll status in the background; close the stream when we hit terminal.
+	statusErrCh := make(chan error, 1)
+	go func() {
+		statusErrCh <- pollUntilTerminal(streamCtx, mdClient, deploymentID, cancel)
+	}()
+
+	for log := range stream {
+		fmt.Fprint(os.Stdout, log.Message)
+	}
+
+	if err := <-statusErrCh; err != nil && !errors.Is(err, context.Canceled) {
+		return err
+	}
+	return nil
+}
+
+func printDeploymentBackfill(ctx context.Context, mdClient *client.Client, deploymentID string) error {
 	logs, err := api.GetDeploymentLogs(ctx, mdClient, deploymentID)
 	if err != nil {
 		return fmt.Errorf("error getting deployment logs: %w", err)
 	}
-
 	for _, log := range logs {
 		fmt.Fprint(os.Stdout, log.Message)
 	}
-
 	return nil
+}
+
+// pollUntilTerminal polls the deployment status every 5 seconds until it
+// reaches a terminal state, then invokes done() to tear down the streaming
+// subscription. Returns ctx.Err() if cancelled before terminal.
+func pollUntilTerminal(ctx context.Context, mdClient *client.Client, deploymentID string, done func()) error {
+	const pollInterval = 5 * time.Second
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(pollInterval):
+		}
+		dep, err := api.GetDeployment(ctx, mdClient, deploymentID)
+		if err != nil {
+			return err
+		}
+		if _, terminal := terminalDeploymentStatuses[dep.Status]; terminal {
+			done()
+			return nil
+		}
+	}
+}
+
+// signalContext returns a derived context that cancels on SIGINT/SIGTERM, so
+// Ctrl-C cleanly tears down the WebSocket and exits.
+func signalContext(parent context.Context) (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(parent, syscall.SIGINT, syscall.SIGTERM)
 }
 
 func renderDeployment(deployment *api.Deployment) error {

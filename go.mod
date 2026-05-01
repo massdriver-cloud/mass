@@ -13,11 +13,12 @@ require (
 	github.com/cli/browser v1.3.0
 	github.com/fatih/color v1.17.0
 	github.com/go-resty/resty/v2 v2.16.5
+	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/hcl/v2 v2.23.0
 	github.com/itchyny/gojq v0.12.16
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/airlock v0.0.9
-	github.com/massdriver-cloud/massdriver-sdk-go v0.1.0
+	github.com/massdriver-cloud/massdriver-sdk-go v0.1.1-0.20260430231410-083a6afb23c1
 	github.com/mattn/go-runewidth v0.0.16
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/moby v27.3.1+incompatible

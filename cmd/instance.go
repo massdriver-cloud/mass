@@ -45,6 +45,7 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 	instanceDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
 	instanceDeployCmd.Flags().StringP("params", "p", "", "Path to params json, tfvars or yaml file. Use '-' to read from stdin. When provided, the full configuration is replaced. Supports bash interpolation.")
 	instanceDeployCmd.Flags().StringArrayP("patch", "P", []string{}, "Patch the last deployed configuration using a JQ expression. Can be specified multiple times.")
+	instanceDeployCmd.Flags().BoolP("follow", "f", false, "Stream the deployment's logs to stdout until it completes")
 	instanceDeployCmd.MarkFlagsMutuallyExclusive("params", "patch")
 
 	instanceExportCmd := &cobra.Command{
@@ -90,6 +91,7 @@ func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders
 	instanceDestroyCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	instanceDestroyCmd.Flags().StringP("params", "p", "", "Path to params json, tfvars or yaml file. Use '-' to read from stdin. When provided, the full configuration is replaced. Supports bash interpolation.")
 	instanceDestroyCmd.Flags().StringArrayP("patch", "P", []string{}, "Patch the last deployed configuration using a JQ expression. Can be specified multiple times.")
+	instanceDestroyCmd.Flags().Bool("follow", false, "Stream the deployment's logs to stdout until it completes")
 	instanceDestroyCmd.MarkFlagsMutuallyExclusive("params", "patch")
 
 	instanceListCmd := &cobra.Command{
@@ -214,10 +216,18 @@ func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	follow, err := cmd.Flags().GetBool("follow")
+	if err != nil {
+		return err
+	}
+
 	opts := instance.DeployOptions{
 		Action:       action,
 		Message:      msg,
 		PatchQueries: patchQueries,
+	}
+	if follow {
+		opts.LogWriter = os.Stdout
 	}
 
 	if paramsPath != "" {

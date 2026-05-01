@@ -212,6 +212,32 @@ type RootQueryType {
   ): ParamDimensionsPage
 
   """
+  Fetch a single component by its ID.
+
+  Returns null with a `NOT_FOUND` error if the component does not exist or
+  is not visible to the caller.
+
+  ```graphql
+  query {
+    component(organizationId: "my-org", id: "my-project-database") {
+      id
+      name
+      instances {
+        items { id environment { id } }
+      }
+    }
+  }
+  ```
+  """
+  component(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The component ID to look up (e.g., `myproject-database`)."
+    id: ID!
+  ): Component
+
+  """
   List deployments across all projects and environments you have access to.
 
   Returns a cursor-paginated list, sorted by newest first by default. Use `filter`
@@ -916,6 +942,32 @@ type RootQueryType {
     "Sort field and direction. Defaults to alphabetical by id."
     sort: EventTypesSort
   ): [EventType!]!
+
+  """
+  List all service accounts in the organization.
+
+  Returns a cursor-paginated list. Use `sort` to control ordering (defaults to name ascending).
+  Requires `organization_admin` permissions.
+  """
+  serviceAccounts(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "How to sort results. Defaults to name ascending."
+    sort: ServiceAccountsSort
+
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): ServiceAccountsPage
+
+  "Fetch a single service account by id. Requires `organization_admin` permissions."
+  serviceAccount(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The service account's unique identifier."
+    id: ID!
+  ): ServiceAccount
 }
 
 type RootSubscriptionType {
@@ -985,11 +1037,12 @@ type RootSubscriptionType {
   """
   Subscribe to events within a specific environment via WebSocket.
 
-  Receives updates and deletions for the environment itself, plus creation,
-  update, and deletion events for every instance, connection, and alarm in
-  that environment (including alarm firing-state transitions). Environment
-  creation events are delivered via `projectEvents` (the environment must
-  exist before you can subscribe to it).
+  Receives updates and deletions for the environment itself, lifecycle events
+  for its default resources (set/removed), and creation, update, and deletion
+  events for every instance, connection, and alarm in that environment
+  (including alarm firing-state transitions). Environment creation events are
+  delivered via `projectEvents` (the environment must exist before you can
+  subscribe to it).
 
   ```graphql
   subscription {
@@ -997,6 +1050,9 @@ type RootSubscriptionType {
       ... on Event { action timestamp }
       ... on EnvironmentEvent {
         environment { id name }
+      }
+      ... on EnvironmentDefaultEvent {
+        environmentDefault { id resource { id name } }
       }
       ... on InstanceEvent {
         instance { id name status }
@@ -1769,6 +1825,22 @@ type RootMutationType {
   ): ServiceAccountWithSecretPayload @inputs(name: "createServiceAccount", schema: "\/graphql\/v1\/inputs\/createServiceAccount.json", ui: "\/graphql\/v1\/inputs\/createServiceAccount.ui.json")
 
   """
+  Update a service account's name or description.
+
+  Send only the fields you want to change. Requires `organization_admin` permissions.
+  """
+  updateServiceAccount(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The service account's unique identifier."
+    id: ID!
+
+    "Update a service account's name or description. Both fields are optional; send only the fields you want to change."
+    input: UpdateServiceAccountInput!
+  ): ServiceAccountPayload @inputs(name: "updateServiceAccount", schema: "\/graphql\/v1\/inputs\/updateServiceAccount.json", ui: "\/graphql\/v1\/inputs\/updateServiceAccount.ui.json")
+
+  """
   Permanently delete a service account.
 
   This immediately revokes all API access for this service account, including any active
@@ -1820,15 +1892,14 @@ type RootMutationType {
   ): ServiceAccountGroupPayload
 
   """
-  Set a remote reference on an instance, linking one of its resource fields to an
-  external resource.
+  Override one of an instance's connection slots with a resource from another
+  project (or an imported resource).
 
-  The target resource can be from another project or an imported resource. The instance
-  must **not** be in `PROVISIONED` or `FAILED` status — you can only set remote references
-  on instances that haven't been deployed yet or have been decommissioned.
+  The instance must **not** be in `PROVISIONED` or `FAILED` status — like
+  other configuration changes, overrides cannot be set on a deployed instance.
 
-  If this is the first remote reference on the instance, the instance status transitions
-  to `EXTERNAL`.
+  The override takes priority over any blueprint-level Link wired into the
+  same slot. Removing the override reverts to the Link (or environment default).
 
   ```graphql
   mutation {
@@ -1860,13 +1931,12 @@ type RootMutationType {
   ): RemoteReferencePayload @inputs(name: "setRemoteReference", schema: "\/graphql\/v1\/inputs\/setRemoteReference.json", ui: "\/graphql\/v1\/inputs\/setRemoteReference.ui.json")
 
   """
-  Remove a remote reference from an instance.
+  Remove a per-instance remote-reference override. The slot reverts to its
+  blueprint Link (if any) or the environment default at the next deploy.
 
-  The reference can only be removed if no other provisioned instances depend on the
-  connection it provides. Disconnect any downstream consumers first.
-
-  If this is the last remote reference on the instance, the instance status transitions
-  back from `EXTERNAL` to `INITIALIZED`.
+  The instance must **not** be in `PROVISIONED` or `FAILED` status — taking
+  an override off a deployed instance would change the resolved connection
+  map under the running deployment.
 
   ```graphql
   mutation {
@@ -2309,6 +2379,25 @@ type RootMutationType {
   ): PolicyPayload @inputs(name: "createEnvironmentPolicy", schema: "\/graphql\/v1\/inputs\/createEnvironmentPolicy.json", ui: "\/graphql\/v1\/inputs\/createEnvironmentPolicy.ui.json")
 
   """
+  Edit a policy's `effect`, `action`, or `conditions` in place.
+
+  The principal (group, project, or environment) is fixed at create time and
+  cannot be changed — to retarget a policy, delete it and create a new one.
+  Omit a field from the input to leave it unchanged. Set `conditions` to
+  `null` explicitly to clear conditions and turn the policy into a wildcard.
+  """
+  updatePolicy(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The policy's unique identifier."
+    id: ID!
+
+    "Edit an existing policy's effect, action, or conditions in place. The principal (group, project, or environment) cannot be changed; create a new policy if you need to attach to a different principal."
+    input: UpdatePolicyInput!
+  ): PolicyPayload @inputs(name: "updatePolicy", schema: "\/graphql\/v1\/inputs\/updatePolicy.json", ui: "\/graphql\/v1\/inputs\/updatePolicy.ui.json")
+
+  """
   Delete a policy by its id. Removes the policy regardless of its principal
   type — group, project, or environment.
   """
@@ -2448,6 +2537,26 @@ type EnvironmentEvent implements Event {
 
   "The environment that was created, updated, or deleted."
   environment: Environment!
+}
+
+"""
+A lifecycle event for an environment default — a resource pre-assigned to an
+environment so instances inherit it automatically when their connection schema
+matches the resource type.
+
+Fires `CREATED` when `setEnvironmentDefault` adds a default and `DELETED` when
+`removeEnvironmentDefault` clears one. Defaults are exposed as a paginated
+`environment.defaults` connection, so refetch that page on receipt rather than
+relying on cache merging — the parent `Environment` row is unchanged.
+Subscribe via `environmentEvents`.
+"""
+type EnvironmentDefaultEvent implements Event {
+  action: EventAction!
+
+  timestamp: DateTime!
+
+  "The environment default that was created or deleted."
+  environmentDefault: EnvironmentDefault!
 }
 
 """
@@ -2604,11 +2713,11 @@ union ProjectEventsPayload = ProjectEvent | EnvironmentEvent | ComponentEvent | 
 """
 Events delivered by the `environmentEvents` subscription.
 
-Covers the environment itself, every instance provisioned into it, every
-connection wired within it, every alarm attached to those instances, and
-every deployment run against them.
+Covers the environment itself, its default resources, every instance
+provisioned into it, every connection wired within it, every alarm attached
+to those instances, and every deployment run against them.
 """
-union EnvironmentEventsPayload = EnvironmentEvent | InstanceEvent | ConnectionEvent | AlarmEvent | DeploymentEvent
+union EnvironmentEventsPayload = EnvironmentEvent | EnvironmentDefaultEvent | InstanceEvent | ConnectionEvent | AlarmEvent | DeploymentEvent
 
 """
 Events delivered by the `instanceEvents` subscription.
@@ -2639,6 +2748,12 @@ enum PolicyEffect {
 
   "Block the action when the conditions match. Deny policies override every matching allow policy."
   DENY
+}
+
+"Fields available for sorting a list of policies."
+enum PoliciesSortField {
+  "Sort by creation date (oldest first or newest first)."
+  CREATED_AT
 }
 
 """
@@ -2719,6 +2834,14 @@ type Policy {
   updatedAt: DateTime!
 }
 
+type PoliciesPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type policy."
+  items: [Policy]
+}
+
 type PolicyPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -2728,6 +2851,15 @@ type PolicyPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: Policy
+}
+
+"Sorting options for a list of policies. Specify a field and direction."
+input PoliciesSort {
+  "The field to sort by."
+  field: PoliciesSortField!
+
+  "`ASC` for oldest first, `DESC` for newest first."
+  order: SortOrder!
 }
 
 "Attach an ABAC policy to a group. The policy grants or denies the action on resources whose attributes satisfy the conditions."
@@ -2764,6 +2896,18 @@ input CreateEnvironmentPolicyInput {
 
   "`ALLOW` grants the action to the environment; `DENY` blocks it (and wins over allow)."
   effect: PolicyEffect!
+}
+
+"Edit an existing policy's effect, action, or conditions in place. The principal (group, project, or environment) cannot be changed; create a new policy if you need to attach to a different principal."
+input UpdatePolicyInput {
+  "Action id in `entity:verb` form (for example `project:view`, `repo:pull`). Query `policyActions` for the full catalog."
+  action: String
+
+  "Attribute conditions a resource must match. Keys are attribute names; values are a string or list of strings. Pass `null` to clear conditions and make the policy a wildcard that matches any resource of the action's entity."
+  conditions: Map
+
+  "`ALLOW` grants the action; `DENY` blocks it (and wins over allow)."
+  effect: PolicyEffect
 }
 
 """
@@ -3046,6 +3190,21 @@ enum ConnectionOrientation {
 }
 
 """
+A single set of import instructions for a resource type, typically rendered as a tab.
+
+Resource types may ship multiple instruction variants (e.g., one for the CLI and one
+for the cloud console) so users can pick the workflow they prefer when importing an
+existing resource. The `label` is the tab heading; the `content` is the markdown body.
+"""
+type ImportInstruction {
+  "Short heading shown above this instruction set (e.g., \"AWS CLI\", \"AWS Console\")."
+  label: String!
+
+  "Markdown body of the instructions. Already decoded from any base64 transport encoding."
+  content: String!
+}
+
+"""
 A resource type that defines what kind of infrastructure a resource represents.
 
 Resource types are the schema layer for Massdriver's connection system. Every
@@ -3080,6 +3239,25 @@ type ResourceType {
   strip `$md` themselves.
   """
   schema: Map!
+
+  """
+  UI hints describing how to render the import form for this resource type.
+
+  Follows [react-jsonschema-form](https://rjsf-team.github.io/react-jsonschema-form/)'s
+  `uiSchema` conventions: keys mirror the `data` schema's structure and values contain
+  rendering directives (e.g., `ui:widget`, `ui:order`, `ui:help`). Returns an empty
+  object when the resource type does not provide UI hints.
+  """
+  uiSchema: Map!
+
+  """
+  Step-by-step import instructions, typically one entry per workflow (CLI, console, etc.).
+
+  Each entry is rendered as its own tab or section so users can pick the workflow they
+  prefer when importing an existing resource. Returns an empty list when the resource
+  type does not provide instructions.
+  """
+  instructions: [ImportInstruction!]!
 
   "Timestamp when this resource type was created (UTC)."
   createdAt: DateTime!
@@ -3120,15 +3298,20 @@ input RemoveRemoteReferenceInput {
 }
 
 """
-A link between an instance's resource field and a resource from another project or an imported resource.
+A per-instance override of a single connection slot. The blueprint Link wires
+a slot from a sibling package's output; a remote reference overrides that
+wiring on one instance, pointing the slot at a resource from another project
+(or an imported resource) instead.
 
-Remote references enable cross-project infrastructure sharing. For example, a networking
-team can provision a VPC in one project, and application teams can reference that VPC from
-their own projects using remote references.
+Remote references enable cross-project infrastructure sharing. For example, a
+networking team provisions a VPC in one project, and application teams override
+the `vpc` connection slot on their database/cache/etc. instances to point at
+that shared VPC.
 
-Each remote reference binds a specific `field` on the instance to the target resource.
-Setting a remote reference on an instance with no other references transitions the
-instance to `EXTERNAL` status. Removing the last reference resets it to `INITIALIZED`.
+Each remote reference binds a specific `field` on the instance — a key in the
+instance's bundle's `connectionsSchema` — to the target resource. The override
+takes priority over any blueprint-level Link on the same slot, and reverts to
+the Link (or environment default) when removed.
 """
 type RemoteReference {
   "Unique identifier for this remote reference."
@@ -3219,6 +3402,14 @@ type ServiceAccountWithSecret {
   updatedAt: DateTime!
 }
 
+type ServiceAccountsPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type service_account."
+  items: [ServiceAccount]
+}
+
 type ServiceAccountPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -3252,6 +3443,24 @@ type ServiceAccountGroupPayload {
   result: ServiceAccount
 }
 
+"Fields available for sorting the service accounts list."
+enum ServiceAccountsSortField {
+  "Sort alphabetically by service account name (A-Z or Z-A)."
+  NAME
+
+  "Sort by creation date (oldest first or newest first)."
+  CREATED_AT
+}
+
+"Sorting options for the service accounts list. Specify a field and direction."
+input ServiceAccountsSort {
+  "The field to sort by."
+  field: ServiceAccountsSortField!
+
+  "Sort direction (`ASC` or `DESC`)."
+  order: SortOrder!
+}
+
 "Create a new service account for programmatic API access."
 input CreateServiceAccountInput {
   "What this service account is used for"
@@ -3259,6 +3468,15 @@ input CreateServiceAccountInput {
 
   "A human-readable name for the service account"
   name: String!
+}
+
+"Update a service account's name or description. Both fields are optional; send only the fields you want to change."
+input UpdateServiceAccountInput {
+  "What this service account is used for"
+  description: String
+
+  "A human-readable name for the service account"
+  name: String
 }
 
 """
@@ -4671,28 +4889,10 @@ query {
 """
 union Viewer = AccountViewer | ServiceAccountViewer
 
-"Available fields for sorting components."
-enum ComponentsSortField {
-  "Alphabetical by component name (A-Z or Z-A)."
-  NAME
-
-  "Chronological by creation time (oldest or newest first)."
-  CREATED_AT
-}
-
 "Available fields for sorting links."
 enum LinksSortField {
   "Chronological by creation time (oldest or newest first)."
   CREATED_AT
-}
-
-"Sorting options for the components list."
-input ComponentsSort {
-  "The field to sort by."
-  field: ComponentsSortField!
-
-  "`ASC` for A-Z \/ oldest first, `DESC` for Z-A \/ newest first."
-  order: SortOrder!
 }
 
 "Sorting options for the links list."
@@ -4704,15 +4904,6 @@ input LinksSort {
   order: SortOrder!
 }
 
-"Filter which components to return."
-input ComponentsFilter {
-  "Match by component ID (e.g., `myproj-database`). Supports `eq` and `in`."
-  id: IdFilter
-
-  "Match by the OCI repository name of the underlying bundle."
-  ociRepoName: OciRepoNameFilter
-}
-
 "Filter which links to return."
 input LinksFilter {
   "Match by the source (from) component's ID (e.g., `myproj-database`)."
@@ -4720,21 +4911,6 @@ input LinksFilter {
 
   "Match by the destination (to) component's ID (e.g., `myproj-app`)."
   toComponentId: IdFilter
-}
-
-"Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application."
-input AddComponentInput {
-  "Key-value attributes for this component. Keys and values must be strings. Must conform to the organization's custom attributes for the component scope."
-  attributes: Map
-
-  "Optional description of this component's purpose"
-  description: String
-
-  "A short, memorable identifier for this component. This becomes the final segment of package identifiers. For example, project 'ecomm' with environment 'prod' and component 'db' creates 'ecomm-prod-db'. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation."
-  id: String!
-
-  "Display name for this component (e.g., 'Billing Database')"
-  name: String!
 }
 
 "Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources."
@@ -4756,76 +4932,6 @@ input LinkComponentsInput {
 
   "Version constraint for the destination component (e.g., '~1.0', '1.2.3', 'latest')"
   toVersion: VersionConstraint!
-}
-
-"Set the position of a component on the canvas."
-input SetComponentPositionInput {
-  "Horizontal position in pixels"
-  x: Int!
-
-  "Vertical position in pixels"
-  y: Int!
-}
-
-"A component's position on the visual canvas, in pixel coordinates."
-type ComponentPosition {
-  "Horizontal offset in pixels from the canvas origin."
-  x: Int!
-
-  "Vertical offset in pixels from the canvas origin."
-  y: Int!
-}
-
-"""
-A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
-
-A component is the **design-time** building block of your architecture. It says
-"I want a database here" or "I need a Kubernetes cluster there." The component
-defines *what* to deploy; the actual running infrastructure lives in **instances**
--- one per environment the component is deployed to.
-
-Components are connected to each other via **links**, which declare that one
-component's output (e.g., a connection string) should be wired into another
-component's input.
-"""
-type Component {
-  id: ID!
-
-  "Human-readable display name shown in the UI."
-  name: String!
-
-  "Optional free-text description of this component's purpose."
-  description: String
-
-  "Key-value attributes assigned directly to this component."
-  attributes: Map!
-
-  """
-  The full attribute map the authorization system evaluates policies against for
-  this component — user attributes merged with the parent project (project wins on
-  conflict) plus auto-injected `md-*` system attributes.
-
-  System attributes always present on a component:
-  - `md-id` — the component's identifier
-  - `md-project` — the project's identifier
-  - `md-component` — the component's local identifier
-  """
-  effectiveAttributes: Map!
-
-  "Position on the visual canvas. Null if never placed."
-  position: ComponentPosition
-
-  "When this component was created (UTC)."
-  createdAt: DateTime!
-
-  "When this component was last modified (UTC)."
-  updatedAt: DateTime!
-
-  "The OCI repository (bundle) this component is based on."
-  ociRepo: OciRepo
-
-  "The project that owns this component."
-  project: Project
 }
 
 """
@@ -4921,31 +5027,12 @@ type Blueprint {
   ): LinksPage
 }
 
-type ComponentsPage {
-  "Pagination cursors for navigating between pages."
-  cursor: PaginationCursor!
-
-  "A list of type component."
-  items: [Component]
-}
-
 type LinksPage {
   "Pagination cursors for navigating between pages."
   cursor: PaginationCursor!
 
   "A list of type link."
   items: [Link]
-}
-
-type ComponentPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: Component
 }
 
 type LinkPayload {
@@ -4957,6 +5044,154 @@ type LinkPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: Link
+}
+
+"Available fields for sorting components."
+enum ComponentsSortField {
+  "Alphabetical by component name (A-Z or Z-A)."
+  NAME
+
+  "Chronological by creation time (oldest or newest first)."
+  CREATED_AT
+}
+
+"Sorting options for the components list."
+input ComponentsSort {
+  "The field to sort by."
+  field: ComponentsSortField!
+
+  "`ASC` for A-Z \/ oldest first, `DESC` for Z-A \/ newest first."
+  order: SortOrder!
+}
+
+"Filter which components to return."
+input ComponentsFilter {
+  "Match by component ID (e.g., `myproj-database`). Supports `eq` and `in`."
+  id: IdFilter
+
+  "Match by the OCI repository name of the underlying bundle."
+  ociRepoName: OciRepoNameFilter
+}
+
+"Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application."
+input AddComponentInput {
+  "Key-value attributes for this component. Keys and values must be strings. Must conform to the organization's custom attributes for the component scope."
+  attributes: Map
+
+  "Optional description of this component's purpose"
+  description: String
+
+  "A short, memorable identifier for this component. This becomes the final segment of package identifiers. For example, project 'ecomm' with environment 'prod' and component 'db' creates 'ecomm-prod-db'. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation."
+  id: String!
+
+  "Display name for this component (e.g., 'Billing Database')"
+  name: String!
+}
+
+"Set the position of a component on the canvas."
+input SetComponentPositionInput {
+  "Horizontal position in pixels"
+  x: Int!
+
+  "Vertical position in pixels"
+  y: Int!
+}
+
+"A component's position on the visual canvas, in pixel coordinates."
+type ComponentPosition {
+  "Horizontal offset in pixels from the canvas origin."
+  x: Int!
+
+  "Vertical offset in pixels from the canvas origin."
+  y: Int!
+}
+
+"""
+A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+
+A component is the **design-time** building block of your architecture. It says
+"I want a database here" or "I need a Kubernetes cluster there." The component
+defines *what* to deploy; the actual running infrastructure lives in **instances**
+-- one per environment the component is deployed to.
+
+Components are connected to each other via **links**, which declare that one
+component's output (e.g., a connection string) should be wired into another
+component's input.
+"""
+type Component {
+  id: ID!
+
+  "Human-readable display name shown in the UI."
+  name: String!
+
+  "Optional free-text description of this component's purpose."
+  description: String
+
+  "Key-value attributes assigned directly to this component."
+  attributes: Map!
+
+  """
+  The full attribute map the authorization system evaluates policies against for
+  this component — user attributes merged with the parent project (project wins on
+  conflict) plus auto-injected `md-*` system attributes.
+
+  System attributes always present on a component:
+  - `md-id` — the component's identifier
+  - `md-project` — the project's identifier
+  - `md-component` — the component's local identifier
+  """
+  effectiveAttributes: Map!
+
+  "Position on the visual canvas. Null if never placed."
+  position: ComponentPosition
+
+  "When this component was created (UTC)."
+  createdAt: DateTime!
+
+  "When this component was last modified (UTC)."
+  updatedAt: DateTime!
+
+  "Whether this component can be safely deleted. Check `constraints` for blocking conditions."
+  deletable: Deletable!
+
+  "The OCI repository (bundle) this component is based on."
+  ociRepo: OciRepo
+
+  "The project that owns this component."
+  project: Project
+
+  """
+  Paginated list of instances deployed from this component.
+
+  Returns one instance per environment the component has been deployed to.
+  Defaults to alphabetical order by name.
+  """
+  instances(
+    "Sort field and direction. Defaults to `name` ascending."
+    sort: InstancesSort
+
+    "Pagination cursor returned by a previous page."
+    cursor: Cursor
+  ): InstancesPage
+}
+
+type ComponentsPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type component."
+  items: [Component]
+}
+
+type ComponentPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Component
 }
 
 "Deploy an instance with configuration parameters. Params are validated against the bundle's params schema, cached on the instance, and snapshotted into the deployment."
@@ -5364,7 +5599,6 @@ stateDiagram-v2
   PROVISIONED --> FAILED: "Deployment fails"
   FAILED --> PROVISIONED: "Retry succeeds"
   FAILED --> DECOMMISSIONED: "Decommission"
-  [*] --> EXTERNAL: "Remote reference set"
 ```
 """
 enum InstanceStatus {
@@ -5379,9 +5613,6 @@ enum InstanceStatus {
 
   "The most recent deployment failed. Check deployment logs for details. Can be retried."
   FAILED
-
-  "Imported infrastructure managed outside Massdriver. Not deployed by Massdriver but tracked for wiring."
-  EXTERNAL
 }
 
 """
@@ -5524,17 +5755,47 @@ input CopyInstanceInput {
 Metadata about an encrypted secret attached to an instance.
 
 Secrets are encrypted key-value pairs injected at deploy time. The API
-never returns secret values -- only the name and timestamps are exposed.
+never returns secret values -- only the name, fingerprint, and timestamps are exposed.
 """
 type InstanceSecret {
   "The secret's key name, used to reference it in deployment configuration."
   name: String!
+
+  "Lowercase hex SHA-256 of the stored value. Use as a stable fingerprint to detect changes without exposing the secret itself."
+  sha256: String!
 
   "When this secret was first created (UTC)."
   createdAt: DateTime!
 
   "When this secret's value was last changed (UTC)."
   updatedAt: DateTime!
+}
+
+"""
+Definition of a secret expected by an instance's bundle, with the stored value's
+fingerprint when one has been set.
+
+Bundles declare the secrets they consume in their `app.secrets` manifest. Each
+field describes one expected secret. The `sha256` fingerprint is null when no
+value has been stored, and the lowercase hex SHA-256 of the stored value otherwise --
+use it to render set/unset state and to dirty-check edits client-side. Secret values
+themselves are never returned by the API.
+"""
+type InstanceSecretField {
+  "The secret's key name (typically an environment variable name like `DATABASE_PASSWORD`). Use this name when calling `setInstanceSecret`."
+  name: String!
+
+  "Whether this secret must be set before the instance can be deployed."
+  required: Boolean!
+
+  "Human-readable display name shown in the UI."
+  title: String
+
+  "Explanation of what this secret is used for."
+  description: String
+
+  "Lowercase hex SHA-256 of the stored value, or null when no value has been set. Use null vs non-null to detect whether the secret is set."
+  sha256: String
 }
 
 type InstancePayload {
@@ -5572,6 +5833,12 @@ type InstanceResource {
 
   "The resource containing the actual data."
   resource: Resource!
+
+  "Whether the bundle guarantees this output is produced on every successful deployment."
+  required: Boolean!
+
+  "The resource type (artifact definition) this output produces."
+  resourceType: ResourceType!
 }
 
 """
@@ -5587,6 +5854,12 @@ type InstanceDependency {
 
   "The resource containing the actual data."
   resource: Resource!
+
+  "Whether this dependency must be connected before the instance can be deployed."
+  required: Boolean!
+
+  "The resource type (artifact definition) this dependency slot accepts."
+  resourceType: ResourceType!
 }
 
 """
@@ -5660,7 +5933,6 @@ stateDiagram-v2
   PROVISIONED --> FAILED: "Deployment fails"
   FAILED --> PROVISIONED: "Retry succeeds"
   FAILED --> DECOMMISSIONED: "Decommission"
-  [*] --> EXTERNAL: "Remote reference set"
 ```
 
 **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -5680,6 +5952,58 @@ type Instance {
 
   "Cached configuration parameters from the most recent deployment. Null if the instance has never been deployed."
   params: Map
+
+  """
+  JSON Schema describing the configuration parameters this instance accepts.
+
+  The schema is sourced from the instance's resolved bundle release with
+  Massdriver's `$md` extensions evaluated against the current instance state:
+
+  - `$md.enum` is replaced with a `oneOf` list whose entries are computed by
+    running the configured jq expression against the connected resource's
+    payload. Missing connections or jq errors produce a single placeholder
+    entry whose `title` begins with `ERROR:`.
+  - `$md.immutable` is rewritten to `readOnly: true` once the instance has
+    reached a state where the field can no longer be changed (`PROVISIONED`
+    or `FAILED`).
+
+  Use this schema to drive form rendering, client-side validation, or to
+  inspect the contract between the bundle and the deployer.
+  """
+  paramsSchema: Map!
+
+  """
+  UI hints describing how to render the params form.
+
+  Follows [react-jsonschema-form](https://rjsf-team.github.io/react-jsonschema-form/)'s
+  `uiSchema` conventions: keys mirror the params schema's structure and values
+  contain rendering directives (e.g., `ui:widget`, `ui:order`, `ui:help`).
+  Returns an empty object when the bundle does not provide UI hints.
+  """
+  uiSchema: Map!
+
+  """
+  Definitions of the secrets this instance's bundle expects, sorted by name.
+
+  Each entry pairs the bundle's declared field (name, required flag, optional title /
+  description) with the stored value's `sha256` fingerprint when one has been set.
+  Use null vs non-null `sha256` to render set/unset state. Secret values are never
+  returned by the API.
+  """
+  secretFields: [InstanceSecretField!]!
+
+  """
+  Operator guide for this instance, rendered with the current instance state.
+
+  The bundle's raw guide is plain markdown that may include YAML front matter
+  selecting a templating engine (`mustache` or `liquid`). When templating is
+  enabled, the body is rendered with a context exposing the instance's
+  `id`, `params`, connected `connections` payloads, and produced `artifacts`
+  payloads -- with sensitive fields masked as `[SENSITIVE]`. When templating
+  is not declared (or the engine is unsupported), the raw guide is returned
+  unchanged. Returns null when the bundle does not provide an operator guide.
+  """
+  operatorGuide: String
 
   "Key-value attributes assigned directly to this instance."
   attributes: Map!
@@ -5808,6 +6132,16 @@ type Instance {
     "Pagination cursor returned by a previous page."
     cursor: Cursor
   ): InstanceDependenciesPage
+
+  """
+  Whether this instance can be safely decommissioned right now. Check `constraints` for blocking conditions.
+
+  Decommissioning tears down the instance's provisioned cloud infrastructure and
+  moves the instance to `DECOMMISSIONED`. Decommissioning is blocked while another
+  instance is consuming this instance's resources, or while an environment default
+  is pinned to one of those resources.
+  """
+  decommissionable: Deletable!
 }
 
 type InstancesPage {
@@ -6084,6 +6418,20 @@ type Environment {
     "Cursor from a previous page to fetch the next set of results."
     cursor: Cursor
   ): EnvironmentDefaultsPage
+
+  """
+  Paginated list of policies attached directly to this environment as the
+  principal (sometimes called "resource sharing"). Group policies and project
+  policies are not included even when they reference this environment — query
+  those through their own principals.
+  """
+  policies(
+    "How to sort results. Defaults to oldest first."
+    sort: PoliciesSort
+
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): PoliciesPage
 }
 
 """
@@ -6337,6 +6685,20 @@ type Project {
 
   "The infrastructure blueprint defining this project's components and their connections."
   blueprint: Blueprint
+
+  """
+  Paginated list of policies attached directly to this project as the principal
+  (sometimes called "bundle sharing"). Group policies and environment policies
+  are not included even when they reference this project — query those through
+  their own principals.
+  """
+  policies(
+    "How to sort results. Defaults to oldest first."
+    sort: PoliciesSort
+
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): PoliciesPage
 }
 
 type ProjectsPage {
@@ -7021,7 +7383,7 @@ type DeletionConstraint {
   "Human-readable explanation of why deletion is blocked."
   message: String!
 
-  "The kind of resource causing the block (e.g., `package`, `environment`)."
+  "The kind of resource causing the block (e.g., `instance`, `environment`)."
   type: String!
 
   "The identifier of the blocking resource."
