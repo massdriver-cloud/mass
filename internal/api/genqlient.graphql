@@ -266,7 +266,7 @@ mutation linkComponents($organizationId: ID!, $input: LinkComponentsInput!) {
   }
 }
 
-mutation unlinkComponents($organizationId: ID!, $id: ID!) {
+mutation unlinkComponents($organizationId: ID!, $id: UUID!) {
   unlinkComponents(organizationId: $organizationId, id: $id) {
     result {
       id
@@ -608,25 +608,17 @@ query getInstance($organizationId: ID!, $id: ID!) {
 
 query listInstanceResources(
   $organizationId: ID!,
-  $instanceId: ID!,
-  # @genqlient(omitempty: true, pointer: true)
-  $cursor: Cursor
+  $instanceId: ID!
 ) {
   instance(organizationId: $organizationId, id: $instanceId) {
-    resources(cursor: $cursor) {
-      cursor {
-        next
-        previous
-      }
-      items {
-        field
-        resource {
-          id
-          name
-          origin
-          createdAt
-          updatedAt
-        }
+    resources {
+      field
+      resource {
+        id
+        name
+        origin
+        createdAt
+        updatedAt
       }
     }
   }
@@ -728,7 +720,7 @@ query listDeployments(
   }
 }
 
-query getDeployment($organizationId: ID!, $id: ID!) {
+query getDeployment($organizationId: ID!, $id: UUID!) {
   deployment(organizationId: $organizationId, id: $id) {
     id
     status
@@ -757,7 +749,7 @@ query getDeployment($organizationId: ID!, $id: ID!) {
   }
 }
 
-query getDeploymentLogs($organizationId: ID!, $id: ID!) {
+query getDeploymentLogs($organizationId: ID!, $id: UUID!) {
   deployment(organizationId: $organizationId, id: $id) {
     id
     logs {

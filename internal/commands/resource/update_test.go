@@ -25,7 +25,7 @@ func TestResourceUpdate(t *testing.T) {
 	})
 
 	mdClient := client.Client{
-		GQLv1: gqlClient,
+		GQLv2: gqlClient,
 	}
 
 	got, err := resource.RunUpdate(t.Context(), &mdClient, "resource-id", "resource-name", "testdata/resource.json")
@@ -71,7 +71,7 @@ func TestResourceUpdateWithoutName(t *testing.T) {
 	}
 
 	mdClient := client.Client{
-		GQLv1: gqlmock.NewClientWithJSONResponseArray(responses),
+		GQLv2: gqlmock.NewClientWithJSONResponseArray(responses),
 	}
 
 	got, err := resource.RunUpdate(t.Context(), &mdClient, "resource-id", "", "testdata/resource.json")

@@ -22,7 +22,7 @@ func TestGetBundle(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	bundle, err := api.GetBundle(t.Context(), &mdClient, "aws-aurora-postgres@1.2.3")
 	if err != nil {
@@ -65,7 +65,7 @@ func TestListBundles(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	bundles, err := api.ListBundles(t.Context(), &mdClient, nil, nil)
 	if err != nil {
@@ -92,7 +92,7 @@ func TestListBundlesWithFilter(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	filter := api.BundlesFilter{
 		OciRepo: &api.OciRepoNameFilter{Eq: "aws-aurora-postgres"},

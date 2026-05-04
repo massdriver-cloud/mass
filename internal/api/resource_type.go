@@ -24,7 +24,7 @@ type ResourceType struct {
 
 // GetResourceType retrieves a resource type by ID.
 func GetResourceType(ctx context.Context, mdClient *client.Client, id string) (*ResourceType, error) {
-	response, err := getResourceType(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
+	response, err := getResourceType(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resource type %s: %w", id, err)
 	}
@@ -37,7 +37,7 @@ func ListResourceTypes(ctx context.Context, mdClient *client.Client, filter *Res
 	var cursor *Cursor
 
 	for {
-		response, err := listResourceTypes(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, nil, cursor)
+		response, err := listResourceTypes(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, filter, nil, cursor)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list resource types: %w", err)
 		}
@@ -65,7 +65,7 @@ func ListResourceTypes(ctx context.Context, mdClient *client.Client, filter *Res
 //
 // Deprecated: transitional shim from V0 `publishArtifactDefinition`. Prefer the OCI-native flow.
 func PublishResourceType(ctx context.Context, mdClient *client.Client, input PublishResourceTypeInput) (*ResourceType, error) {
-	response, err := publishResourceType(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, input)
+	response, err := publishResourceType(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, input)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func PublishResourceType(ctx context.Context, mdClient *client.Client, input Pub
 //
 // Deprecated: transitional shim from V0 `deleteArtifactDefinition`. Prefer the OCI-native flow.
 func DeleteResourceType(ctx context.Context, mdClient *client.Client, id string) (*ResourceType, error) {
-	response, err := deleteResourceType(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
+	response, err := deleteResourceType(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, err
 	}

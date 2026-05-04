@@ -33,7 +33,7 @@ type OciRepoTag struct {
 
 // GetOciRepo retrieves an OCI repository by name.
 func GetOciRepo(ctx context.Context, mdClient *client.Client, id string) (*OciRepo, error) {
-	response, err := getOciRepo(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
+	response, err := getOciRepo(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get OCI repo %s: %w", id, err)
 	}
@@ -63,7 +63,7 @@ func ListOciRepos(ctx context.Context, mdClient *client.Client, filter *OciRepos
 	var cursor *Cursor
 
 	for {
-		response, err := listOciRepos(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, sort, cursor)
+		response, err := listOciRepos(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, filter, sort, cursor)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list OCI repos: %w", err)
 		}

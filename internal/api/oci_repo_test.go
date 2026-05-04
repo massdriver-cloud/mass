@@ -30,7 +30,7 @@ func TestGetOciRepo(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	repo, err := api.GetOciRepo(t.Context(), &mdClient, "aws-aurora-postgres")
 	if err != nil {
@@ -80,7 +80,7 @@ func TestListOciRepos(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	repos, err := api.ListOciRepos(t.Context(), &mdClient, nil, nil)
 	if err != nil {
@@ -107,7 +107,7 @@ func TestListOciReposWithFilter(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	filter := api.OciReposFilter{
 		Name: &api.OciRepoNameFilter{StartsWith: "aws-"},

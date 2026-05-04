@@ -29,7 +29,7 @@ func TestGetServer(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	server, err := api.GetServer(t.Context(), &mdClient)
 	if err != nil {

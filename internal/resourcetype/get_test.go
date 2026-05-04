@@ -48,7 +48,7 @@ func TestGet(t *testing.T) {
 			}
 
 			mdClient := client.Client{
-				GQLv1: gqlmock.NewClientWithJSONResponseArray(responses),
+				GQLv2: gqlmock.NewClientWithJSONResponseArray(responses),
 			}
 
 			got, err := resourcetype.Get(t.Context(), &mdClient, "massdriver/test-schema")

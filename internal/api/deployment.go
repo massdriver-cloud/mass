@@ -48,7 +48,7 @@ type DeploymentLog struct {
 
 // GetDeployment retrieves a deployment by ID from the Massdriver API.
 func GetDeployment(ctx context.Context, mdClient *client.Client, id string) (*Deployment, error) {
-	response, err := getDeployment(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
+	response, err := getDeployment(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get deployment %s: %w", id, err)
 	}
@@ -63,7 +63,7 @@ func ListDeployments(ctx context.Context, mdClient *client.Client, filter *Deplo
 	if limit > 0 {
 		cursor = &Cursor{Limit: limit}
 	}
-	response, err := listDeployments(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, sort, cursor)
+	response, err := listDeployments(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, filter, sort, cursor)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list deployments: %w", err)
 	}
@@ -82,7 +82,7 @@ func ListDeployments(ctx context.Context, mdClient *client.Client, filter *Deplo
 
 // GetDeploymentLogs returns all log batches emitted for the given deployment so far, oldest first.
 func GetDeploymentLogs(ctx context.Context, mdClient *client.Client, deploymentID string) ([]DeploymentLog, error) {
-	response, err := getDeploymentLogs(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, deploymentID)
+	response, err := getDeploymentLogs(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logs for deployment %s: %w", deploymentID, err)
 	}
@@ -100,7 +100,7 @@ func GetDeploymentLogs(ctx context.Context, mdClient *client.Client, deploymentI
 
 // CreateDeployment starts a new deployment for an instance.
 func CreateDeployment(ctx context.Context, mdClient *client.Client, instanceID string, input CreateDeploymentInput) (*Deployment, error) {
-	response, err := createDeployment(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, instanceID, input)
+	response, err := createDeployment(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, instanceID, input)
 	if err != nil {
 		return nil, err
 	}

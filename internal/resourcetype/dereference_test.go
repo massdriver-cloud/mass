@@ -123,7 +123,7 @@ func TestDereferenceSchema(t *testing.T) {
 	for _, test := range cases {
 		t.Run(test.Name, func(t *testing.T) {
 			mdClient := client.Client{
-				GQLv1: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+				GQLv2: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 					"data": map[string]any{
 						"resourceType": map[string]any{
 							"id":   "123-456",

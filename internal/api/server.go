@@ -31,7 +31,7 @@ type EmailAuthMethod struct {
 
 // GetServer returns server info and available authentication methods. No authentication required.
 func GetServer(ctx context.Context, mdClient *client.Client) (*Server, error) {
-	response, err := getServer(ctx, mdClient.GQLv1)
+	response, err := getServer(ctx, mdClient.GQLv2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get server info: %w", err)
 	}

@@ -43,7 +43,7 @@ func TestResourceImport(t *testing.T) {
 	})
 
 	mdClient := client.Client{
-		GQLv1: gqlClient,
+		GQLv2: gqlClient,
 	}
 
 	got, err := resource.RunCreate(t.Context(), &mdClient, "resource-name", "massdriver/fake-resource-schema", "testdata/resource.json")

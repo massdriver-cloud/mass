@@ -53,7 +53,7 @@ func TestRunDeployReusesLastConfig(t *testing.T) {
 		},
 	}
 
-	mdClient := client.Client{GQLv1: gqlmock.NewClientWithFuncResponseArray(responses)}
+	mdClient := client.Client{GQLv2: gqlmock.NewClientWithFuncResponseArray(responses)}
 	instance.DeploymentStatusSleep = 0 //nolint:reassign // intentionally overriding sleep duration in tests
 
 	dep, err := instance.RunDeploy(t.Context(), &mdClient, "ecomm-prod-cache", instance.DeployOptions{Message: "redeploy"})
@@ -118,7 +118,7 @@ func TestRunDeployWithParamsReplacesConfig(t *testing.T) {
 		},
 	}
 
-	mdClient := client.Client{GQLv1: gqlmock.NewClientWithFuncResponseArray(responses)}
+	mdClient := client.Client{GQLv2: gqlmock.NewClientWithFuncResponseArray(responses)}
 	instance.DeploymentStatusSleep = 0 //nolint:reassign // intentionally overriding sleep duration in tests
 
 	t.Setenv("MEMORY_AMT", "6")
@@ -174,7 +174,7 @@ func TestRunDeployWithPatchQueriesUpdatesLastConfig(t *testing.T) {
 		},
 	}
 
-	mdClient := client.Client{GQLv1: gqlmock.NewClientWithFuncResponseArray(responses)}
+	mdClient := client.Client{GQLv2: gqlmock.NewClientWithFuncResponseArray(responses)}
 	instance.DeploymentStatusSleep = 0 //nolint:reassign // intentionally overriding sleep duration in tests
 
 	opts := instance.DeployOptions{
@@ -229,7 +229,7 @@ func TestRunDeployWithDecommissionAction(t *testing.T) {
 		},
 	}
 
-	mdClient := client.Client{GQLv1: gqlmock.NewClientWithFuncResponseArray(responses)}
+	mdClient := client.Client{GQLv2: gqlmock.NewClientWithFuncResponseArray(responses)}
 	instance.DeploymentStatusSleep = 0 //nolint:reassign // intentionally overriding sleep duration in tests
 
 	_, err := instance.RunDeploy(t.Context(), &mdClient, "ecomm-prod-cache", instance.DeployOptions{
@@ -280,7 +280,7 @@ func TestRunDeployFailsWhenDeploymentFails(t *testing.T) {
 		},
 	}
 
-	mdClient := client.Client{GQLv1: gqlmock.NewClientWithFuncResponseArray(responses)}
+	mdClient := client.Client{GQLv2: gqlmock.NewClientWithFuncResponseArray(responses)}
 	instance.DeploymentStatusSleep = 0 //nolint:reassign // intentionally overriding sleep duration in tests
 
 	if _, err := instance.RunDeploy(t.Context(), &mdClient, "ecomm-prod-cache", instance.DeployOptions{}); err == nil {

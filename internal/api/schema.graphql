@@ -284,7 +284,7 @@ type RootQueryType {
     organizationId: ID!
 
     "The deployment's unique identifier."
-    id: ID!
+    id: UUID!
   ): Deployment
 
   """
@@ -315,10 +315,10 @@ type RootQueryType {
     organizationId: ID!
 
     "The source deployment's unique identifier."
-    sourceId: ID!
+    sourceId: UUID!
 
     "The target deployment's unique identifier."
-    targetId: ID!
+    targetId: UUID!
   ): DeploymentComparison
 
   """
@@ -510,7 +510,7 @@ type RootQueryType {
     organizationId: ID!
 
     "The group's unique identifier."
-    id: ID!
+    id: UUID!
   ): Group
 
   """
@@ -521,6 +521,7 @@ type RootQueryType {
     organization(organizationId: "my-org") {
       id
       name
+      subscriptionStatus
       customAttributes { items { key scope required } }
     }
   }
@@ -944,19 +945,36 @@ type RootQueryType {
   ): [EventType!]!
 
   """
-  List all service accounts in the organization.
+  List the service accounts in your organization.
 
-  Returns a cursor-paginated list. Use `sort` to control ordering (defaults to name ascending).
+  Returns a cursor-paginated list. Use `filter` to narrow by id or to search across each
+  service account's name and description. Use `sort` to control ordering (defaults to name
+  ascending; relevance ranking is used instead when `search` is active and no `sort` is given).
   Requires `organization_admin` permissions.
+
+  ```graphql
+  query {
+    serviceAccounts(organizationId: "my-org", filter: { search: "deploy" }) {
+      items { id name description createdAt }
+      cursor { next }
+    }
+  }
+  ```
+
+  **Note:** when a `search` filter is active, pagination cursors are offset-based and are
+  not interchangeable with the keyset cursors returned by non-search queries.
   """
   serviceAccounts(
     "Your organization's unique identifier."
     organizationId: ID!
 
-    "How to sort results. Defaults to name ascending."
+    "Narrow results by id or full-text search."
+    filter: ServiceAccountsFilter
+
+    "Explicit sort order. Defaults to `name` ascending. When a `search` filter is active and no sort is provided, results are ranked by relevance."
     sort: ServiceAccountsSort
 
-    "Cursor from a previous page to fetch the next set of results."
+    "Cursor from a previous page's `cursor.next` or `cursor.previous`."
     cursor: Cursor
   ): ServiceAccountsPage
 
@@ -966,8 +984,154 @@ type RootQueryType {
     organizationId: ID!
 
     "The service account's unique identifier."
-    id: ID!
+    id: UUID!
   ): ServiceAccount
+
+  """
+  Fetch a single alarm by its unique identifier.
+
+  Returns the alarm with its most recent `currentState` attached, or a
+  `NOT_FOUND` error if the alarm doesn't exist or its project isn't
+  visible to the caller.
+
+  ```graphql
+  query {
+    instanceAlarm(organizationId: "my-org", id: "0192…uuid") {
+      id
+      displayName
+      currentState { status occurredAt }
+      metric { namespace name }
+    }
+  }
+  ```
+  """
+  instanceAlarm(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The alarm's unique identifier."
+    id: UUID!
+  ): Alarm
+
+  """
+  List alarms across all projects you can see.
+
+  Returns a paginated list. Use `filter` to narrow by project, environment,
+  component, bundle (`ociRepoName`), or instance. Default sort is
+  alphabetical by `displayName`.
+
+  ```graphql
+  query {
+    instanceAlarms(
+      organizationId: "my-org"
+      filter: { environmentId: { eq: "prod" }, ociRepoName: { eq: "aws-rds" } }
+    ) {
+      items { id displayName currentState { status occurredAt } }
+      cursor { next }
+    }
+  }
+  ```
+  """
+  instanceAlarms(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "Narrow results by project, environment, component, bundle, or instance."
+    filter: InstanceAlarmsFilter
+
+    "Sort field and direction. Defaults to `displayName` ascending."
+    sort: InstanceAlarmsSort
+
+    "Pagination cursor returned by a previous page."
+    cursor: Cursor
+  ): AlarmsPage
+
+  """
+  Evaluate whether the authenticated subject is permitted to perform a
+  single action on a single entity.
+
+  Returns `allowed: false` (not an error) for entities that don't exist or
+  that belong to a different organization, so that the caller can't probe
+  for their existence. Returns a `NOT_FOUND` error when `action` is not
+  in the policy catalog or refers to an entity that has no addressable id.
+  """
+  evaluatePolicy(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "Action id in `entity:verb` form (for example `project:view`). Query `policyActions` for the full catalog."
+    action: String!
+
+    "The identifier of the entity (e.g., a project's identifier)."
+    entityId: ID!
+  ): PolicyDecision!
+
+  """
+  Evaluate multiple `(action, entityId)` permissions in a single request.
+  The list of `checks` is capped at 10 entries.
+
+  Decisions are returned in the same order as `checks`. Each decision
+  echoes its inputs so callers can correlate without relying on positional
+  indices. Same not-found / cross-org behavior as `evaluatePolicy`. If any
+  check references an action outside the policy catalog (or one that
+  can't be evaluated against an id) the whole request returns a
+  `NOT_FOUND` error.
+  """
+  evaluatePolicies(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The list of permissions to evaluate. Capped at 10 entries."
+    checks: [PolicyDecisionInput!]!
+  ): [PolicyDecision!]!
+
+  """
+  Returns a JSON Schema document describing the custom-attribute keys and
+  permitted values for a given action, narrowed by the caller's policies.
+
+  The schema is the org's custom-attribute schema for the action's scope
+  (e.g. `project:create` → project-scope attributes), with each key's
+  `enum` reduced to the values the caller's allow policies permit for
+  that action. Org admins see the full closed set; non-admins with no
+  matching policy receive `{"properties": {}, "additionalProperties": false}`,
+  which rejects any write. Actions whose entity has no custom-attribute
+  scope (group, organization, resource, resource_type) return
+  `{"type": "object"}` (no constraints).
+
+  Renders well as a form schema for `createProject`, `createEnvironment`,
+  `setComponentAttributes`, etc. — only the choices the API will actually
+  accept on write are surfaced.
+
+  Returns a `NOT_FOUND` error when `action` is not in the policy catalog.
+  """
+  customAttributeSchema(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "Action id in `entity:verb` form (for example `project:create`). Query `policyActions` for the catalog."
+    action: String!
+  ): Map!
+
+  """
+  Returns the closed set of values declared for one custom attribute.
+
+  Equivalent to looking up `customAttribute.values` for a single
+  `(scope, key)` pair without paginating through `organization.customAttributes`.
+  Useful for populating a single dropdown (e.g. a `TEAM` picker) by key.
+
+  Returns a `NOT_FOUND` error when `(scope, key)` does not correspond to a
+  declared custom attribute in the organization.
+  """
+  customAttributeValues(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The custom attribute's declared scope (matches `customAttribute.scope`)."
+    scope: AttributeScope!
+
+    "The custom attribute's key (matches `customAttribute.key`)."
+    key: String!
+  ): [String!]!
 }
 
 type RootSubscriptionType {
@@ -1324,7 +1488,7 @@ type RootMutationType {
     organizationId: ID!
 
     "The identifier of the environment default to remove."
-    id: ID!
+    id: UUID!
   ): EnvironmentDefaultPayload
 
   """
@@ -1377,6 +1541,37 @@ type RootMutationType {
   ): ComponentPayload
 
   """
+  Update a component's mutable fields (name, description, attributes).
+
+  The component ID and underlying bundle cannot be changed after creation.
+  Attributes are validated against the organization's custom-attribute schema
+  for the component scope.
+
+  ```graphql
+  mutation {
+    updateComponent(
+      organizationId: "my-org"
+      id: "my-project-database"
+      input: { name: "Primary Database", description: "User data" }
+    ) {
+      result { id name description }
+      successful
+    }
+  }
+  ```
+  """
+  updateComponent(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The component ID to update (e.g., `myproj-database`)."
+    id: ID!
+
+    "Update an existing component's name, description, and attributes. The component ID and underlying bundle cannot be changed."
+    input: UpdateComponentInput!
+  ): ComponentPayload @inputs(name: "updateComponent", schema: "\/graphql\/v1\/inputs\/updateComponent.json", ui: "\/graphql\/v1\/inputs\/updateComponent.ui.json")
+
+  """
   Create a link between two components.
 
   Declares that the `fromField` output of one component should be wired to the
@@ -1422,7 +1617,7 @@ type RootMutationType {
     organizationId: ID!
 
     "The link ID to remove."
-    id: ID!
+    id: UUID!
   ): LinkPayload
 
   "Set the pixel position of a component on the visual canvas."
@@ -1446,7 +1641,7 @@ type RootMutationType {
   """
   acceptGroupInvite(
     "The invitation's unique identifier."
-    id: ID!
+    id: UUID!
   ): InviteViewerPayload
 
   """
@@ -1493,7 +1688,7 @@ type RootMutationType {
     organizationId: ID!
 
     "The group's unique identifier."
-    id: ID!
+    id: UUID!
 
     "Update a group's name or description."
     input: UpdateGroupInput!
@@ -1511,28 +1706,32 @@ type RootMutationType {
     organizationId: ID!
 
     "The group's unique identifier."
-    id: ID!
+    id: UUID!
   ): GroupPayload
 
   """
-  Invite a user to a group by email address.
+  Add an account to a group by email.
 
-  Sends an email invitation to the specified address. If the user already has a Massdriver
-  account, the invitation appears in their pending invites (see the `viewer` query). If they
-  don't have an account yet, they'll be prompted to sign up when they accept.
+  Behavior depends on whether the email already belongs to an organization member:
 
-  Requires `organization_admin` permissions.
+  - **If the user is already in the organization**, they are added to the group directly
+    with no invitation step. The mutation returns the resulting `Account`.
+  - **If the user is not yet in the organization**, an invitation email is sent. The
+    mutation returns a `GroupInvitation`. The recipient joins the group when they accept.
+
+  Use inline fragments on the union result to handle both branches in a single client call.
+  Requires the `group:manage` action on this group.
   """
-  createGroupInvitation(
+  addAccountToGroup(
     "Your organization's unique identifier."
     organizationId: ID!
 
-    "The group to invite the user to."
-    groupId: ID!
+    "The group to add the account to."
+    groupId: UUID!
 
-    "Email address of the user to invite."
-    email: String!
-  ): GroupInvitationPayload
+    "Add an account to a group by email. If the email belongs to an existing organization member they are added directly; otherwise an invitation is sent."
+    input: AddAccountToGroupInput!
+  ): AddedAccountToGroupPayload @inputs(name: "addAccountToGroup", schema: "\/graphql\/v1\/inputs\/addAccountToGroup.json", ui: "\/graphql\/v1\/inputs\/addAccountToGroup.ui.json")
 
   """
   Revoke a pending invitation.
@@ -1545,7 +1744,7 @@ type RootMutationType {
     organizationId: ID!
 
     "The group the invitation belongs to."
-    groupId: ID!
+    groupId: UUID!
 
     "Email address of the invitation to revoke."
     email: String!
@@ -1563,17 +1762,17 @@ type RootMutationType {
     organizationId: ID!
 
     "The group to remove the member from."
-    groupId: ID!
+    groupId: UUID!
 
     "Email address of the member to remove."
     email: String!
-  ): GroupMemberPayload
+  ): DeletedGroupMemberPayload
 
   """
   Declare a new custom attribute in your organization.
 
   Once declared, the attribute immediately applies to new resources at the specified scope.
-  Existing resources are not retroactively validated.
+  Existing resources are not retroactively validated. Requires the `organization:manageAttributes` action.
   """
   createCustomAttribute(
     "Your organization's unique identifier."
@@ -1584,17 +1783,36 @@ type RootMutationType {
   ): CustomAttributePayload @inputs(name: "createCustomAttribute", schema: "\/graphql\/v1\/inputs\/createCustomAttribute.json", ui: "\/graphql\/v1\/inputs\/createCustomAttribute.ui.json")
 
   """
+  Replace the closed set of values for an existing custom attribute.
+
+  Changing `values` does not retroactively validate or rewrite resources
+  that were tagged before this update. Subsequent writes (and policy conditions
+  referencing this key) must use a value from the new set. Requires the
+  `organization:manageAttributes` action.
+  """
+  updateCustomAttribute(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The identifier of the custom attribute to update."
+    id: UUID!
+
+    "Replace the closed set of values for an existing custom attribute. The key and scope are immutable."
+    input: UpdateCustomAttributeInput!
+  ): CustomAttributePayload @inputs(name: "updateCustomAttribute", schema: "\/graphql\/v1\/inputs\/updateCustomAttribute.json", ui: "\/graphql\/v1\/inputs\/updateCustomAttribute.ui.json")
+
+  """
   Delete a custom attribute from your organization.
 
   Removing a custom attribute stops enforcing the rule for future resources.
-  Existing attributes on resources are not removed.
+  Existing attributes on resources are not removed. Requires the `organization:manageAttributes` action.
   """
   deleteCustomAttribute(
     "Your organization's unique identifier."
     organizationId: ID!
 
     "The identifier of the custom attribute to delete."
-    id: ID!
+    id: UUID!
   ): CustomAttributePayload
 
   """
@@ -1608,11 +1826,21 @@ type RootMutationType {
     input: CreateOrganizationInput!
   ): OrganizationPayload @inputs(name: "createOrganization", schema: "\/graphql\/v1\/inputs\/createOrganization.json", ui: "\/graphql\/v1\/inputs\/createOrganization.ui.json")
 
+  "Update mutable organization settings. Requires the `organization:manage` action."
+  updateOrganization(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "Update mutable settings on an organization. The identifier is fixed at creation and cannot be changed."
+    input: UpdateOrganizationInput!
+  ): OrganizationPayload @inputs(name: "updateOrganization", schema: "\/graphql\/v1\/inputs\/updateOrganization.json", ui: "\/graphql\/v1\/inputs\/updateOrganization.ui.json")
+
   """
   Upload or replace your organization's logo.
 
   Accepts PNG, JPG, GIF, or WebP images up to 1 MB. If a logo already exists,
   it is replaced. Use `removeOrganizationLogo` to delete without replacement.
+  Requires the `organization:manage` action.
   """
   setOrganizationLogo(
     "Your organization's unique identifier."
@@ -1622,7 +1850,10 @@ type RootMutationType {
     logo: Upload!
   ): LogoOrganizationPayload
 
-  "Remove your organization's logo. Returns the deleted logo's metadata, or `null` if none existed."
+  """
+  Remove your organization's logo. Returns the deleted logo's metadata, or `null` if none existed.
+  Requires the `organization:manage` action.
+  """
   removeOrganizationLogo(
     "Your organization's unique identifier."
     organizationId: ID!
@@ -1632,7 +1863,8 @@ type RootMutationType {
   Remove a member from the organization.
 
   This revokes all group memberships and cancels any pending invitations for the
-  specified email address. The member immediately loses access to all organization resources.
+  specified email address. The member immediately loses access to all organization
+  resources. Requires the `organization:manage` action.
   """
   deleteOrganizationMember(
     "Your organization's unique identifier."
@@ -1730,11 +1962,10 @@ type RootMutationType {
   ): IntegrationPayload
 
   """
-  Create a scoped, time-limited access token.
+  Create a scoped, time-limited access token for the authenticated identity.
 
   Accounts create personal access tokens for themselves; service accounts create tokens for
-  their own identity. An organization admin can additionally create a token on behalf of a
-  service account by passing `serviceAccountId` — account-to-account delegation is not supported.
+  their own identity.
 
   The `token` field in the response contains the full bearer token value — **it is only
   shown once**. Store it securely before navigating away. If you lose it, revoke the
@@ -1766,7 +1997,7 @@ type RootMutationType {
     "Your organization's unique identifier."
     organizationId: ID!
 
-    "Create a scoped, time-limited access token for API authentication."
+    "Create a scoped, time-limited access token for the authenticated identity."
     input: CreateAccessTokenInput!
   ): AccessTokenWithValuePayload @inputs(name: "createAccessToken", schema: "\/graphql\/v1\/inputs\/createAccessToken.json", ui: "\/graphql\/v1\/inputs\/createAccessToken.ui.json")
 
@@ -1783,19 +2014,18 @@ type RootMutationType {
     organizationId: ID!
 
     "The access token's unique identifier."
-    id: ID!
+    id: UUID!
   ): AccessTokenPayload
 
   """
   Create a new service account in your organization.
 
-  Returns the service account with its `secret` token. **The secret is only included in this
-  response** — store it immediately in a secure location (e.g., a secrets manager or CI/CD
-  environment variable). If you lose the secret, you must delete the service account and
-  create a new one.
+  A default access token is issued in the same request — its raw `token` value is returned
+  once on the response and **cannot be retrieved later**. Capture it before navigating away;
+  if it's lost, revoke the token and issue a new one via `createAccessToken`.
 
-  The new service account has no permissions until you add it to a group.
-  Requires `organization_admin` permissions.
+  The new service account has no permissions until you add it to a group. Requires
+  `organization_admin` permissions.
 
   **Example:**
 
@@ -1803,12 +2033,16 @@ type RootMutationType {
   mutation {
     createServiceAccount(
       organizationId: "my-org"
-      input: { name: "ci-deploy-bot", description: "GitHub Actions deployer" }
+      input: {
+        name: "ci-deploy-bot"
+        description: "GitHub Actions deployer"
+        defaultAccessTokenExpirationInMinutes: 525600
+      }
     ) {
       result {
         id
         name
-        secret
+        defaultAccessToken { token prefix expiresAt }
       }
       successful
       messages { field message }
@@ -1820,9 +2054,9 @@ type RootMutationType {
     "Your organization's unique identifier."
     organizationId: ID!
 
-    "Create a new service account for programmatic API access."
+    "Create a new service account for programmatic API access. Issues a default access token alongside the service account; the raw token value is returned once and cannot be retrieved later."
     input: CreateServiceAccountInput!
-  ): ServiceAccountWithSecretPayload @inputs(name: "createServiceAccount", schema: "\/graphql\/v1\/inputs\/createServiceAccount.json", ui: "\/graphql\/v1\/inputs\/createServiceAccount.ui.json")
+  ): ServiceAccountWithDefaultAccessTokenPayload @inputs(name: "createServiceAccount", schema: "\/graphql\/v1\/inputs\/createServiceAccount.json", ui: "\/graphql\/v1\/inputs\/createServiceAccount.ui.json")
 
   """
   Update a service account's name or description.
@@ -1834,7 +2068,7 @@ type RootMutationType {
     organizationId: ID!
 
     "The service account's unique identifier."
-    id: ID!
+    id: UUID!
 
     "Update a service account's name or description. Both fields are optional; send only the fields you want to change."
     input: UpdateServiceAccountInput!
@@ -1852,7 +2086,7 @@ type RootMutationType {
     organizationId: ID!
 
     "The service account's unique identifier."
-    id: ID!
+    id: UUID!
   ): ServiceAccountPayload
 
   """
@@ -1867,10 +2101,10 @@ type RootMutationType {
     organizationId: ID!
 
     "The service account to add."
-    serviceAccountId: ID!
+    serviceAccountId: UUID!
 
     "The group to add the service account to."
-    groupId: ID!
+    groupId: UUID!
   ): ServiceAccountGroupPayload
 
   """
@@ -1885,10 +2119,10 @@ type RootMutationType {
     organizationId: ID!
 
     "The service account to remove."
-    serviceAccountId: ID!
+    serviceAccountId: UUID!
 
     "The group to remove the service account from."
-    groupId: ID!
+    groupId: UUID!
   ): ServiceAccountGroupPayload
 
   """
@@ -2304,7 +2538,7 @@ type RootMutationType {
     organizationId: ID!
 
     "The proposed deployment's unique identifier."
-    id: ID!
+    id: UUID!
   ): DeploymentPayload
 
   """
@@ -2319,7 +2553,7 @@ type RootMutationType {
     organizationId: ID!
 
     "The proposed deployment's unique identifier."
-    id: ID!
+    id: UUID!
   ): DeploymentPayload
 
   """
@@ -2334,80 +2568,211 @@ type RootMutationType {
     organizationId: ID!
 
     "The group to attach the policy to."
-    groupId: ID!
+    groupId: UUID!
 
-    "Attach an ABAC policy to a group. The policy grants or denies the action on resources whose attributes satisfy the conditions."
+    "Attach an ABAC policy to a group. Each policy grants or denies one or more actions on entities whose attributes satisfy the conditions."
     input: CreateGroupPolicyInput!
   ): PolicyPayload @inputs(name: "createGroupPolicy", schema: "\/graphql\/v1\/inputs\/createGroupPolicy.json", ui: "\/graphql\/v1\/inputs\/createGroupPolicy.ui.json")
 
   """
-  Attach an ABAC policy to a project — sometimes called "bundle sharing"
-  because the typical use is granting `repo:*` actions so the project can
-  pull a specific bundle from the catalog.
+  Edit a group policy's `effect`, `actions`, or `conditions` in place.
 
-  The project itself is the principal: instances within the project inherit
-  the policy when consuming bundles.
-  """
-  createProjectPolicy(
-    "Your organization's unique identifier."
-    organizationId: ID!
-
-    "The project to attach the policy to."
-    projectId: ID!
-
-    "Attach an ABAC policy to a project — the project becomes the principal. Used to control which bundles a project may pull (commonly called \"bundle sharing\")."
-    input: CreateProjectPolicyInput!
-  ): PolicyPayload @inputs(name: "createProjectPolicy", schema: "\/graphql\/v1\/inputs\/createProjectPolicy.json", ui: "\/graphql\/v1\/inputs\/createProjectPolicy.ui.json")
-
-  """
-  Attach an ABAC policy to an environment — sometimes called "resource
-  sharing" because the typical use is granting `resource:view` so the
-  environment can consume external resources as remote references or defaults.
-
-  The environment is the principal: instances within the environment inherit
-  the policy when consuming resources.
-  """
-  createEnvironmentPolicy(
-    "Your organization's unique identifier."
-    organizationId: ID!
-
-    "The environment to attach the policy to."
-    environmentId: ID!
-
-    "Attach an ABAC policy to an environment — the environment becomes the principal. Used to control which external resources an environment may consume as remote references or defaults (commonly called \"resource sharing\")."
-    input: CreateEnvironmentPolicyInput!
-  ): PolicyPayload @inputs(name: "createEnvironmentPolicy", schema: "\/graphql\/v1\/inputs\/createEnvironmentPolicy.json", ui: "\/graphql\/v1\/inputs\/createEnvironmentPolicy.ui.json")
-
-  """
-  Edit a policy's `effect`, `action`, or `conditions` in place.
-
-  The principal (group, project, or environment) is fixed at create time and
-  cannot be changed — to retarget a policy, delete it and create a new one.
-  Omit a field from the input to leave it unchanged. Set `conditions` to
-  `null` explicitly to clear conditions and turn the policy into a wildcard.
+  The group is fixed at create time and cannot be changed — to retarget a
+  policy, delete it and create a new one. Omit a field from the input to
+  leave it unchanged. Set `conditions` to `"*"` explicitly to clear
+  conditions and turn the policy into a wildcard. Setting `actions`
+  replaces the entire list (no merge).
   """
   updatePolicy(
     "Your organization's unique identifier."
     organizationId: ID!
 
     "The policy's unique identifier."
-    id: ID!
+    id: UUID!
 
-    "Edit an existing policy's effect, action, or conditions in place. The principal (group, project, or environment) cannot be changed; create a new policy if you need to attach to a different principal."
+    "Edit an existing policy in place. The principal cannot be changed."
     input: UpdatePolicyInput!
   ): PolicyPayload @inputs(name: "updatePolicy", schema: "\/graphql\/v1\/inputs\/updatePolicy.json", ui: "\/graphql\/v1\/inputs\/updatePolicy.ui.json")
 
-  """
-  Delete a policy by its id. Removes the policy regardless of its principal
-  type — group, project, or environment.
-  """
+  "Delete a policy by its id."
   deletePolicy(
     "Your organization's unique identifier."
     organizationId: ID!
 
     "The policy's unique identifier."
-    id: ID!
+    id: UUID!
   ): PolicyPayload
+
+  """
+  Register a cloud metric alarm with an instance.
+
+  The alarm appears in the UI immediately and starts receiving state updates
+  as soon as the cloud provider reports them. The `cloudResourceId` is used
+  to correlate inbound webhooks (CloudWatch, Azure Monitor, GCP Cloud
+  Monitoring, Alertmanager) back to this alarm — it must be unique within
+  the instance.
+
+  Requires `environment:update` on the alarm's environment.
+  """
+  createInstanceAlarm(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The instance to attach the alarm to."
+    instanceId: ID!
+
+    "Register a cloud metric alarm with an instance. The alarm appears in the UI immediately and receives state transitions as soon as the cloud provider reports them. Webhooks from AWS CloudWatch, Azure Monitor, GCP Cloud Monitoring, and Prometheus Alertmanager match against `cloudResourceId` to attach state."
+    input: CreateInstanceAlarmInput!
+  ): AlarmPayload @inputs(name: "createInstanceAlarm", schema: "\/graphql\/v1\/inputs\/createInstanceAlarm.json", ui: "\/graphql\/v1\/inputs\/createInstanceAlarm.ui.json")
+
+  """
+  Update a registered alarm's mutable fields.
+
+  Omit a field from the input to leave it unchanged.
+
+  Requires `environment:update` on the alarm's environment.
+  """
+  updateInstanceAlarm(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The alarm's unique identifier."
+    id: UUID!
+
+    "Update a registered alarm's mutable fields. Omit a field to leave it unchanged."
+    input: UpdateInstanceAlarmInput!
+  ): AlarmPayload @inputs(name: "updateInstanceAlarm", schema: "\/graphql\/v1\/inputs\/updateInstanceAlarm.json", ui: "\/graphql\/v1\/inputs\/updateInstanceAlarm.ui.json")
+
+  """
+  Delete an alarm registration.
+
+  Removes the alarm and any recorded state transitions. The underlying cloud
+  provider alarm is unaffected.
+
+  Requires `environment:update` on the alarm's environment.
+  """
+  deleteInstanceAlarm(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The alarm's unique identifier."
+    id: UUID!
+  ): AlarmPayload
+
+  """
+  Create a new (empty) OCI repository in your organization's catalog.
+
+  The `id` becomes the repository's permanent name and cannot be changed
+  after creation. Repositories must exist before any version can be
+  published — pushing to a non-existent repository returns 404.
+  """
+  createOciRepo(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "Create a new OCI repository in your organization's catalog. Repositories must exist before any version can be published to them."
+    input: CreateOciRepoInput!
+  ): OciRepoPayload @inputs(name: "createOciRepo", schema: "\/graphql\/v1\/inputs\/createOciRepo.json", ui: "\/graphql\/v1\/inputs\/createOciRepo.ui.json")
+
+  "Update an OCI repository's mutable metadata (today: attributes)."
+  updateOciRepo(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The repository name (e.g., `aws-aurora-postgres`)."
+    id: ID!
+
+    "Update an OCI repository's user-settable metadata. The repository name and artifact type are immutable."
+    input: UpdateOciRepoInput!
+  ): OciRepoPayload @inputs(name: "updateOciRepo", schema: "\/graphql\/v1\/inputs\/updateOciRepo.json", ui: "\/graphql\/v1\/inputs\/updateOciRepo.ui.json")
+
+  """
+  Delete an OCI repository.
+
+  Refused if the repository has any published versions. Tags are immutable;
+  to remove versions today, recreate the repository.
+  """
+  deleteOciRepo(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The repository name to delete."
+    id: ID!
+  ): OciRepoPayload
+
+  """
+  Share an OCI repo with recipient projects matching `recipientConditions`.
+
+  The caller must have `repo:update` on the source repo. Grants are immutable —
+  to change `action` or `recipientConditions`, delete and re-create.
+  """
+  createRepoGrant(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The repository name (e.g., `aws-aurora-postgres`)."
+    repoId: ID!
+
+    "Share an OCI repo with recipient projects matching attribute conditions. The caller must have `repo:update` on the source repo."
+    input: CreateRepoGrantInput!
+  ): GrantPayload @inputs(name: "createRepoGrant", schema: "\/graphql\/v1\/inputs\/createRepoGrant.json", ui: "\/graphql\/v1\/inputs\/createRepoGrant.ui.json")
+
+  """
+  Share a resource with recipient environments matching `recipientConditions`.
+
+  The caller must have `resource:update` on the source resource. Grants are
+  immutable — to change `action` or `recipientConditions`, delete and re-create.
+  """
+  createResourceGrant(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The resource's unique identifier."
+    resourceId: ID!
+
+    "Share a resource with recipient environments matching attribute conditions. The caller must have `resource:update` on the source resource."
+    input: CreateResourceGrantInput!
+  ): GrantPayload @inputs(name: "createResourceGrant", schema: "\/graphql\/v1\/inputs\/createResourceGrant.json", ui: "\/graphql\/v1\/inputs\/createResourceGrant.ui.json")
+
+  """
+  Delete a grant by its id. The caller must have `repo:update` on the grant's
+  source repo (for repo grants) or `resource:update` on its source resource
+  (for resource grants).
+  """
+  deleteGrant(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The grant's unique identifier."
+    id: UUID!
+  ): GrantPayload
+}
+
+"""
+The decision returned by an `evaluatePolicy` request.
+
+`action` and `entityId` mirror the inputs so batch callers can correlate
+decisions with their original questions without tracking positions
+externally.
+"""
+type PolicyDecision {
+  "`true` if the subject is permitted to perform the action; `false` otherwise."
+  allowed: Boolean!
+
+  "The action that was evaluated."
+  action: String!
+
+  "The identifier of the entity the action was evaluated against, echoed from the request."
+  entityId: ID!
+}
+
+"A single permission question inside an `evaluatePolicies` request."
+input PolicyDecisionInput {
+  "Action id in `entity:verb` form (for example `project:view`). Query `policyActions` for the catalog."
+  action: String!
+
+  "The identifier of the entity (e.g., a project's identifier)."
+  entityId: ID!
 }
 
 "Available fields for sorting the event type catalog."
@@ -2737,16 +3102,84 @@ this feed.
 union DeploymentEventsPayload = DeploymentEvent
 
 """
-Whether a policy grants or blocks the action.
+The thing a grant is sharing — exactly one of an OCI repo or a resource. The
+caller authoring the grant must have `repo:update` (for repo grants) or
+`resource:update` (for resource grants) on this source.
+"""
+union GrantSource = OciRepo | Resource
+
+"""
+A grant: a specific OCI repo or resource shared with recipient projects /
+environments matching `recipientConditions`.
+"""
+type Grant {
+  "Unique identifier for this grant."
+  id: ID!
+
+  "The action being granted on the source. Repo grants take `repo:view`\/`repo:pull`\/`repo:push`; resource grants take `resource:view`\/`resource:export`."
+  action: String!
+
+  "Either `\"*\"` (the grant is a wildcard — every recipient in the org sees the source) or a JSON-encoded object of attribute conditions the recipient project \/ environment must satisfy. Keys are attribute names; values are a string or list of strings."
+  recipientConditions: Conditions!
+
+  "The OCI repo or resource being shared."
+  source: GrantSource!
+
+  "When this grant was created."
+  createdAt: DateTime!
+
+  "When this grant was last updated."
+  updatedAt: DateTime!
+}
+
+type GrantPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Grant
+}
+
+type GrantsPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type grant."
+  items: [Grant]
+}
+
+"Share an OCI repo with recipient projects matching attribute conditions. The caller must have `repo:update` on the source repo."
+input CreateRepoGrantInput {
+  "The action being granted on the repo. Currently the only grantable repo action is `repo:pull` — repo visibility is inferred from any granted action, and publishing is not a sharing concern."
+  action: String!
+
+  "Restrict this grant to recipient projects whose attributes match every condition. Send the literal `\"*\"` to apply to every project in the organization. Per-key, send `\"*\"` to match any value or a non-empty list of strings to match a closed set."
+  recipientConditions: Conditions!
+}
+
+"Share a resource with recipient environments matching attribute conditions. The caller must have `resource:update` on the source resource."
+input CreateResourceGrantInput {
+  "The action being granted on the resource. Currently the only grantable resource action is `resource:export` — resource visibility is inferred from any granted action."
+  action: String!
+
+  "Restrict this grant to recipient environments whose attributes match every condition. Send the literal `\"*\"` to apply to every environment in the organization. Per-key, send `\"*\"` to match any value or a non-empty list of strings to match a closed set."
+  recipientConditions: Conditions!
+}
+
+"""
+Whether a policy grants or blocks its actions.
 
 `DENY` always wins over `ALLOW` — if any deny policy matches a resource, the
 action is blocked even if other allow policies also match.
 """
 enum PolicyEffect {
-  "Grant the action when the conditions match."
+  "Grant the policy's actions when the conditions match."
   ALLOW
 
-  "Block the action when the conditions match. Deny policies override every matching allow policy."
+  "Block the policy's actions when the conditions match. Deny policies override every matching allow policy."
   DENY
 }
 
@@ -2797,35 +3230,33 @@ type PolicyAction {
 }
 
 """
-The thing a policy is attached to. Exactly one of `Group`, `Project`, or
-`Environment` is returned per policy, matching how the policy was created.
-"""
-union PolicyPrincipal = Group | Project | Environment
+A single ABAC group policy: an effect (`ALLOW`/`DENY`), one or more actions,
+optional attribute conditions, and the group whose members the policy
+applies to.
 
-"""
-A single ABAC policy: an effect (`ALLOW`/`DENY`), an action, optional attribute
-conditions, and the principal the policy is attached to.
-
-Conditions are evaluated AND within a policy and OR across policies of the
-same principal. A policy with no conditions is a wildcard — it matches any
-resource of the action's entity. Deny policies win over allow policies. See
+Conditions are evaluated AND within a policy and OR across policies on the
+same group. A policy with no conditions is a wildcard — it matches any
+resource of each action's entity. Deny policies win over allow policies. A
+policy can list actions across different entities (for example
+`project:view` together with `instance:deploy`); conditions whose attributes
+do not apply to a given entity simply never match for it. See
 `docs/guides/abac.md` for the full evaluation model.
 """
 type Policy {
   "Unique identifier for this policy."
   id: ID!
 
-  "Whether this policy grants (`ALLOW`) or blocks (`DENY`) the action."
+  "Whether this policy grants (`ALLOW`) or blocks (`DENY`) the actions."
   effect: PolicyEffect!
 
-  "The action this policy applies to, in `{entity}:{verb}` form (for example `repo:pull`)."
-  action: String!
+  "The actions this policy authorizes, each in `{entity}:{verb}` form (for example `[\"repo:pull\", \"instance:deploy\"]`). Always non-empty."
+  actions: [String!]!
 
-  "Attribute conditions a resource must match for the policy to apply. Keys are attribute names; values are a string or list of strings. `null` means wildcard — the policy matches any resource of the entity."
-  conditions: Map
+  "Either `\"*\"` (the policy is a wildcard — every resource of the entity matches) or a JSON-encoded object of attribute conditions. Keys are attribute names; values are a string or list of strings."
+  conditions: Conditions!
 
-  "The thing this policy is attached to: a group, project, or environment."
-  principal: PolicyPrincipal!
+  "The group this policy applies to."
+  group: Group!
 
   "When this policy was created."
   createdAt: DateTime!
@@ -2862,51 +3293,45 @@ input PoliciesSort {
   order: SortOrder!
 }
 
-"Attach an ABAC policy to a group. The policy grants or denies the action on resources whose attributes satisfy the conditions."
+"Filters for narrowing a list of policies. All filters are optional and combine with AND logic."
+input PoliciesFilter {
+  "Filter by `ALLOW` or `DENY`. Use `in` to match either."
+  effect: PolicyEffectFilter
+
+  "Filter by action id (e.g. `project:view`, `instance:deploy`). Returns policies whose `actions` list contains the value. Use `in` to return policies whose `actions` list intersects the supplied list."
+  action: StringFilter
+}
+
+"Filter by `ALLOW` or `DENY`."
+input PolicyEffectFilter {
+  "Return only policies whose effect exactly equals this value."
+  eq: PolicyEffect
+
+  "Return policies whose effect matches any value in this list."
+  in: [PolicyEffect!]
+}
+
+"Attach an ABAC policy to a group. Each policy grants or denies one or more actions on entities whose attributes satisfy the conditions."
 input CreateGroupPolicyInput {
-  "Action id in `entity:verb` form (for example `project:view`, `repo:pull`). Query `policyActions` for the full catalog."
-  action: String!
+  "What members of this group can do. Pass one or more action ids in `{entity}:{verb}` form. Conditions apply to every action; actions whose entity does not support a given condition simply never match. Duplicate entries are rejected."
+  actions: [String!]!
 
-  "Attribute conditions a resource must match. Keys are attribute names; values are a string or list of strings. Omit for a wildcard policy that matches any resource of the action's entity."
-  conditions: Map
+  "Restrict the actions to entities whose attributes match every condition. Send the literal `\"*\"` to apply to all entities of each action's type. Per-key, send `\"*\"` to match any value or a non-empty list of strings to match a closed set. Within a policy all conditions are AND. Across policies, evaluation is OR."
+  conditions: Conditions!
 
-  "`ALLOW` grants the action; `DENY` blocks it (and wins over allow)."
+  "ALLOW grants the actions. DENY blocks them and wins over any matching ALLOW."
   effect: PolicyEffect!
 }
 
-"Attach an ABAC policy to a project — the project becomes the principal. Used to control which bundles a project may pull (commonly called \"bundle sharing\")."
-input CreateProjectPolicyInput {
-  "Action id in `entity:verb` form. Project-as-principal is typically used with `repo:*` actions (for example `repo:pull`, `repo:view`)."
-  action: String!
-
-  "Attribute conditions a resource must match. Use `md-repo` or `md-bundle` to target specific bundles, or any custom attribute for tag-based selection. Omit for a wildcard."
-  conditions: Map
-
-  "`ALLOW` grants the action to the project; `DENY` blocks it (and wins over allow)."
-  effect: PolicyEffect!
-}
-
-"Attach an ABAC policy to an environment — the environment becomes the principal. Used to control which external resources an environment may consume as remote references or defaults (commonly called \"resource sharing\")."
-input CreateEnvironmentPolicyInput {
-  "Action id in `entity:verb` form. Environment-as-principal is typically used with `resource:*` actions (for example `resource:view`)."
-  action: String!
-
-  "Attribute conditions a resource must match. Use custom attributes (for example `TEAM`) or system attributes (for example `md-resource-type`) to target which resources the environment can consume. Omit for a wildcard."
-  conditions: Map
-
-  "`ALLOW` grants the action to the environment; `DENY` blocks it (and wins over allow)."
-  effect: PolicyEffect!
-}
-
-"Edit an existing policy's effect, action, or conditions in place. The principal (group, project, or environment) cannot be changed; create a new policy if you need to attach to a different principal."
+"Edit an existing policy in place. The principal cannot be changed."
 input UpdatePolicyInput {
-  "Action id in `entity:verb` form (for example `project:view`, `repo:pull`). Query `policyActions` for the full catalog."
-  action: String
+  "Replace the policy's full action list. Pass one or more action ids in `{entity}:{verb}` form. Omit the field to leave the existing list unchanged. Duplicate entries are rejected."
+  actions: [String!]
 
-  "Attribute conditions a resource must match. Keys are attribute names; values are a string or list of strings. Pass `null` to clear conditions and make the policy a wildcard that matches any resource of the action's entity."
-  conditions: Map
+  "Restrict the actions to entities whose attributes match every condition. Pass `\"*\"` to clear all conditions and make the policy a wildcard. Per-key, send `\"*\"` to match any value or a non-empty list of strings to match a closed set. Omit the field to leave conditions unchanged."
+  conditions: Conditions
 
-  "`ALLOW` grants the action; `DENY` blocks it (and wins over allow)."
+  "ALLOW grants the actions. DENY blocks them and wins over any matching ALLOW."
   effect: PolicyEffect
 }
 
@@ -2959,6 +3384,9 @@ input ResourcesFilter {
 
   "Return only resources of the given resource type, matched by the type's identifier (e.g., `aws-iam-role`, `kubernetes-cluster`)."
   resourceType: StringFilter
+
+  "Return only resources provisioned into the specified environment(s). Imported resources have no environment and are excluded when this filter is set."
+  environmentId: IdFilter
 
   "Full-text search across the resource name. Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, name-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries."
   search: String
@@ -3069,6 +3497,43 @@ type Resource {
 
   "When this resource was last modified (UTC)."
   updatedAt: DateTime!
+
+  """
+  Connections that consume this resource — runtime wirings into a sibling instance via a
+  blueprint Link. Filtered to consumers in projects you can view.
+  """
+  connections(
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): ConnectionsPage
+
+  """
+  Environments that have set this resource as the default for its resource type. Filtered
+  to environments in projects you can view.
+  """
+  environmentDefaults(
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): EnvironmentDefaultsPage
+
+  """
+  Per-instance connection-slot overrides that point at this resource. Filtered to instances
+  in projects you can view.
+  """
+  remoteReferences(
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): RemoteReferencesPage
+
+  """
+  Grants the publisher has authored on this resource — what it is shared as, and which
+  recipient projects / environments qualify. If you can see this resource you can see all
+  of its grants; grants are publisher-side metadata, not visibility-gated themselves.
+  """
+  grants(
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): GrantsPage
 }
 
 """
@@ -3328,6 +3793,9 @@ type RemoteReference {
 
   "The resource from another project (or an imported resource) that this reference points to."
   resource: Resource!
+
+  "The instance whose connection slot this remote reference overrides."
+  instance: Instance!
 }
 
 type RemoteReferencePayload {
@@ -3341,22 +3809,32 @@ type RemoteReferencePayload {
   result: RemoteReference
 }
 
+type RemoteReferencesPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type remote_reference."
+  items: [RemoteReference]
+}
+
 """
 A non-human identity for programmatic API access.
 
 Service accounts let you integrate CI/CD pipelines, scripts, and external tools with the
-Massdriver API. They authenticate using HTTP Basic auth with the format
-`organization_slug:secret`.
+Massdriver API. They authenticate using access tokens — issue one with `createAccessToken`
+and pass it as a bearer token on API requests.
 
 **Permissions** — Service accounts have no inherent permissions. Add them to groups to grant
 access, using the same role model as human users. A service account in the `Admins` group
 has the same access as a human admin.
 
 **Lifecycle:**
-1. Create the service account and **immediately store the secret** — it is only shown once.
+1. Create the service account.
 2. Add the service account to one or more groups to grant access.
-3. Optionally create scoped access tokens for finer-grained, time-limited credentials.
-4. Delete the service account when it is no longer needed. This immediately revokes all access.
+3. Issue one or more access tokens for the service account via `createAccessToken`. The raw
+   token value is only shown once at creation — store it securely before navigating away.
+4. Delete the service account when it is no longer needed. This immediately revokes all access,
+   including any active access tokens.
 """
 type ServiceAccount {
   "Unique identifier for this service account."
@@ -3376,13 +3854,13 @@ type ServiceAccount {
 }
 
 """
-A service account with its secret token included.
+A service account returned from `createServiceAccount`, including the raw default access token.
 
-This type is only returned by the `createServiceAccount` mutation. The `secret` field is
-the credential used for API authentication and **cannot be retrieved again** after creation.
-Store it securely (e.g., in a secrets manager or CI/CD variable) before navigating away.
+The `defaultAccessToken.token` value is the only opportunity to capture the bearer credential
+for this service account — store it securely before navigating away. If lost, revoke the token
+and issue a new one with `createAccessToken`.
 """
-type ServiceAccountWithSecret {
+type ServiceAccountWithDefaultAccessToken {
   "Unique identifier for this service account."
   id: ID!
 
@@ -3392,14 +3870,14 @@ type ServiceAccountWithSecret {
   "Optional text explaining what this service account is used for."
   description: String
 
-  "The secret credential for API authentication. Only returned once at creation time — store it immediately in a secure location."
-  secret: String!
-
   "When this service account was created (UTC)."
   createdAt: DateTime!
 
   "When this service account was last modified (UTC)."
   updatedAt: DateTime!
+
+  "The default access token issued for this service account. The raw `token` value is only included in this response — store it securely."
+  defaultAccessToken: AccessTokenWithValue!
 }
 
 type ServiceAccountsPage {
@@ -3421,17 +3899,6 @@ type ServiceAccountPayload {
   result: ServiceAccount
 }
 
-type ServiceAccountWithSecretPayload {
-  "Indicates if the mutation completed successfully or not."
-  successful: Boolean!
-
-  "A list of failed validations. May be blank or null if mutation succeeded."
-  messages: [ValidationMessage]
-
-  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: ServiceAccountWithSecret
-}
-
 type ServiceAccountGroupPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
@@ -3441,6 +3908,17 @@ type ServiceAccountGroupPayload {
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
   result: ServiceAccount
+}
+
+type ServiceAccountWithDefaultAccessTokenPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: ServiceAccountWithDefaultAccessToken
 }
 
 "Fields available for sorting the service accounts list."
@@ -3461,8 +3939,36 @@ input ServiceAccountsSort {
   order: SortOrder!
 }
 
-"Create a new service account for programmatic API access."
+"""
+Filter criteria for narrowing which service accounts are returned.
+
+All filters are combined with AND logic — a service account must match every specified
+filter to appear in the results. Omit a filter to not restrict on that field.
+"""
+input ServiceAccountsFilter {
+  """
+  Case-insensitive substring search across the service account's `name` and `description`.
+
+  Useful for finding a service account when you remember part of what it's called or what
+  it does but don't have its exact id. So `search: "deploy"` will match a service account
+  named `ci-deploy-bot`, one whose description mentions "deploys to staging", and any
+  other combination of substring matches in either field.
+
+  Blank or whitespace-only values skip this filter. When `search` is active and no
+  explicit `sort` is provided, results are ranked by relevance — name-prefix matches
+  outrank tsvector-only matches in either field.
+  """
+  search: String
+
+  "Restrict results to one or more service accounts by their unique identifier."
+  id: IdFilter
+}
+
+"Create a new service account for programmatic API access. Issues a default access token alongside the service account; the raw token value is returned once and cannot be retrieved later."
 input CreateServiceAccountInput {
+  "How long the default access token issued alongside the service account remains valid, in minutes. The raw token value is returned once on creation and cannot be retrieved again. Capped at 5,256,000 minutes (10 years) by the service-account expiry policy."
+  defaultAccessTokenExpirationInMinutes: Int!
+
   "What this service account is used for"
   description: String
 
@@ -3605,7 +4111,7 @@ input AccessTokensFilter {
   revoked: Boolean
 }
 
-"Create a scoped, time-limited access token for API authentication."
+"Create a scoped, time-limited access token for the authenticated identity."
 input CreateAccessTokenInput {
   "How many minutes until this token expires. Defaults to 60 (1 hour). Maximum ~5,256,000 (10 years)."
   expiresInMinutes: Int
@@ -3615,9 +4121,6 @@ input CreateAccessTokenInput {
 
   "Permission scopes. At least one required. Currently only [\"*\"] (full access) is supported."
   scopes: [String!]!
-
-  "Create the token on behalf of this service account. Omit to create for the authenticated identity."
-  serviceAccountId: String
 }
 
 """
@@ -4047,6 +4550,17 @@ type EmailAuthMethod {
 }
 
 """
+Server-level feature flags that gate UI affordances and API behavior on this Massdriver instance.
+
+Feature flags here describe what an unauthenticated client can or cannot do against this server,
+so login screens and signup flows can render the correct options.
+"""
+type ServerFeatures {
+  "Whether end users may create new organizations on this server. Self-hosted installations may be capped to a single organization by license."
+  orgCreationEnabled: Boolean!
+}
+
+"""
 Information about the Massdriver server you are connected to.
 
 Use this to discover the server's version, deployment mode, and available
@@ -4068,13 +4582,18 @@ type Server {
 
   "Email-based authentication methods available (e.g., passkeys). Empty if only SSO is available."
   emailAuthMethods: [EmailAuthMethod]
+
+  "Server-level feature flags. Use these to drive UI affordances on the login and signup flows."
+  features: ServerFeatures!
 }
 
 """
-The resource level in the hierarchy where a custom attribute applies.
+The resource level where a custom attribute applies.
 
-Attributes are set at the specified scope and cascade downward. For example, an attribute
-set at the `PROJECT` scope is inherited by all environments and instances in that project.
+Attributes set at hierarchy scopes (`PROJECT`, `ENVIRONMENT`, `COMPONENT`, `INSTANCE`) cascade
+downward — an attribute set at `PROJECT` is inherited by all environments and instances in
+that project. `REPO`-scoped attributes apply to OCI repositories; the bundle name is propagated
+to components, instances, deployments, and resources via the `md-repo` system attribute.
 """
 enum AttributeScope {
   "Attribute is set on individual projects."
@@ -4088,6 +4607,9 @@ enum AttributeScope {
 
   "Attribute is set on deployed instances (run-time)."
   INSTANCE
+
+  "Attribute is set on individual OCI repositories (bundles)."
+  REPO
 }
 
 "Fields available for sorting the custom attributes list."
@@ -4119,8 +4641,20 @@ input CreateCustomAttributeInput {
   "Whether this attribute must be set when creating a resource at the specified scope."
   required: Boolean
 
-  "The resource level where this attribute is set. Values cascade to child resources."
+  "The resource level where this attribute is set. Hierarchy scopes (PROJECT, ENVIRONMENT, COMPONENT, INSTANCE) cascade values downward. REPO scope applies to OCI repositories; the bundle name propagates to derived components, instances, deployments, and resources via the md-repo system attribute."
   scope: AttributeScope!
+
+  "The closed set of values this attribute may take. Must contain at least one entry, no duplicates, and may not contain the literal \"*\" (reserved for a future \"any value\" semantic)."
+  values: [String!]!
+}
+
+"Replace the closed set of values for an existing custom attribute. The key and scope are immutable."
+input UpdateCustomAttributeInput {
+  "Whether this attribute must be set when creating a resource at the specified scope."
+  required: Boolean
+
+  "The closed set of values this attribute may take. Must contain at least one entry, no duplicates, and may not contain the literal \"*\" (reserved for a future \"any value\" semantic). Replaces the current set in full."
+  values: [String!]!
 }
 
 """
@@ -4134,8 +4668,10 @@ mandating them.
 System attributes (`md-*`) are auto-injected by Massdriver and are not declared here —
 only user-defined keys live in this list.
 
-Use the `attributeSchema` field on the Organization type to generate a JSON Schema
-document from your custom attributes for client-side validation.
+Use the `customAttributeSchema` query to generate a JSON Schema document narrowed
+to the values your policies permit for a given action — useful for client-side
+validation that mirrors what the API will accept on write. Use
+`customAttributeValues` to fetch just the closed set for a single key.
 
 **Example:** A custom attribute with `key: "TEAM"`, `scope: PROJECT`, `required: true`
 means every project must have a `TEAM` attribute set at creation time.
@@ -4152,6 +4688,9 @@ type CustomAttribute {
 
   "When `true`, resources created at the specified scope must include this attribute. When `false`, the attribute is allowed but optional."
   required: Boolean!
+
+  "The closed set of values this attribute may take. Resource attribute writes and policy conditions referencing this key must use one of these values."
+  values: [String!]!
 
   "When this custom attribute was created (UTC)."
   createdAt: DateTime!
@@ -4209,10 +4748,43 @@ enum GroupsSortField {
   CREATED_AT
 }
 
+"Available fields for sorting a group's members."
+enum GroupMembersSortField {
+  "Sort alphabetically by email (A-Z or Z-A)."
+  EMAIL
+}
+
+"Available fields for sorting a group's pending invitations."
+enum GroupInvitationsSortField {
+  "Sort alphabetically by email (A-Z or Z-A)."
+  EMAIL
+
+  "Sort by when the invitation was sent."
+  CREATED_AT
+}
+
 "Sorting options for the groups list."
 input GroupsSort {
   "The field to sort by."
   field: GroupsSortField!
+
+  "Ascending (`ASC`) or descending (`DESC`)."
+  order: SortOrder!
+}
+
+"Sorting options for a group's members list."
+input GroupMembersSort {
+  "The field to sort by."
+  field: GroupMembersSortField!
+
+  "Ascending (`ASC`) or descending (`DESC`)."
+  order: SortOrder!
+}
+
+"Sorting options for a group's pending invitations."
+input GroupInvitationsSort {
+  "The field to sort by."
+  field: GroupInvitationsSortField!
 
   "Ascending (`ASC`) or descending (`DESC`)."
   order: SortOrder!
@@ -4234,6 +4806,34 @@ input UpdateGroupInput {
 
   "A human-readable name for the group"
   name: String!
+}
+
+"Add an account to a group by email. If the email belongs to an existing organization member they are added directly; otherwise an invitation is sent."
+input AddAccountToGroupInput {
+  "Email address of the user to add to the group."
+  email: String!
+}
+
+"""
+A human user account in your organization.
+
+Returned wherever the API exposes the people behind group memberships and
+organization roster — for example as an element of `Group.members` and
+`Organization.members`. Every account in the result set is already a
+member of at least one group in the organization.
+"""
+type Account {
+  "Unique identifier for this account."
+  id: ID!
+
+  "Email address used to sign in and receive notifications."
+  email: String!
+
+  "Given name as it appears in the UI, or `null` if not set."
+  firstName: String
+
+  "Family name as it appears in the UI, or `null` if not set."
+  lastName: String
 }
 
 """
@@ -4261,8 +4861,10 @@ and a `Viewers` group (`organization_viewer` role). These cannot be deleted.
 **Custom groups** — Create custom groups with the `CUSTOM` role to grant project-level access.
 Each custom group can be assigned `project_admin` or `project_viewer` on specific projects.
 
-**Members** — Both human users and service accounts can be group members. Users are added via
-email invitation; service accounts are added directly.
+**Members** — Both human users and service accounts can be group members. Users live under
+`members` and are added via `addAccountToGroup` (auto-adds existing org members or sends an
+invitation otherwise). Service accounts live under `serviceAccounts` and are added via
+`addServiceAccountToGroup`.
 """
 type Group {
   "Unique identifier for this group."
@@ -4282,6 +4884,66 @@ type Group {
 
   "When this group was last modified (UTC)."
   updatedAt: DateTime!
+
+  """
+  Paginated list of ABAC policies attached to this group as the principal.
+
+  Group policies define what every member of the group can do across the organization.
+  """
+  policies(
+    "Narrow the list by `effect` or `action`. Filters combine with AND."
+    filter: PoliciesFilter
+
+    "How to sort results. Defaults to oldest first."
+    sort: PoliciesSort
+
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): PoliciesPage
+
+  """
+  Paginated list of human accounts that are members of this group.
+
+  Service accounts are exposed separately via `serviceAccounts` — pair both queries when
+  rendering the full membership of a group.
+  """
+  members(
+    "How to sort results. Defaults to email ascending."
+    sort: GroupMembersSort
+
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): AccountsPage
+
+  """
+  Paginated list of pending invitations to this group. Visible to organization admins only.
+
+  Pending invitations are users who have been invited by email but have not yet accepted.
+  Once accepted, the row is replaced by a `GroupMembership` and no longer appears here.
+  Non-admin callers receive `null` here with a top-level forbidden error so the rest of the
+  response still resolves; viewers should query `Viewer.invites` for their own invitations.
+  """
+  invitations(
+    "How to sort results. Defaults to email ascending."
+    sort: GroupInvitationsSort
+
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): GroupInvitationsPage
+
+  """
+  Paginated list of service accounts in this group.
+
+  Human accounts are exposed separately via `members` — pair both queries when rendering
+  the full group membership.
+  """
+  serviceAccounts(
+    "How to sort results. Defaults to name ascending."
+    sort: ServiceAccountsSort
+
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): ServiceAccountsPage
 }
 
 """
@@ -4302,11 +4964,39 @@ type GroupInvitation {
   createdAt: DateTime!
 }
 
-"A member of a group, identified by their email address."
-type GroupMember {
-  "Email address of the group member."
+"Confirmation payload returned after removing a member from a group."
+type DeletedGroupMember {
+  "Email address of the member who was removed."
   email: String!
 }
+
+"""
+The result of `addAccountToGroup`.
+
+- When the email already belongs to an organization member, the API adds them to the group
+  directly and returns an `Account`.
+- When the email is new to the organization, the API sends an invitation and returns a
+  `GroupInvitation`. The recipient becomes a member when they accept.
+
+Use inline fragments to react to each branch:
+
+```graphql
+mutation {
+  addAccountToGroup(
+    organizationId: "my-org"
+    groupId: "platform"
+    input: { email: "newuser@example.com" }
+  ) {
+    successful
+    result {
+      ... on Account { id email }
+      ... on GroupInvitation { email createdAt }
+    }
+  }
+}
+```
+"""
+union AddedAccountToGroup = Account | GroupInvitation
 
 type GroupsPage {
   "Pagination cursors for navigating between pages."
@@ -4314,6 +5004,22 @@ type GroupsPage {
 
   "A list of type group."
   items: [Group]
+}
+
+type AccountsPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type account."
+  items: [Account]
+}
+
+type GroupInvitationsPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type group_invitation."
+  items: [GroupInvitation]
 }
 
 type GroupPayload {
@@ -4338,7 +5044,7 @@ type GroupInvitationPayload {
   result: GroupInvitation
 }
 
-type GroupMemberPayload {
+type DeletedGroupMemberPayload {
   "Indicates if the mutation completed successfully or not."
   successful: Boolean!
 
@@ -4346,7 +5052,18 @@ type GroupMemberPayload {
   messages: [ValidationMessage]
 
   "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
-  result: GroupMember
+  result: DeletedGroupMember
+}
+
+type AddedAccountToGroupPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: AddedAccountToGroup
 }
 
 "Create a new organization. An organization is the top-level container for all your projects, environments, and infrastructure resources."
@@ -4354,8 +5071,65 @@ input CreateOrganizationInput {
   "A short, memorable identifier for looking up this organization in the API and CLI. Choose something concise and meaningful—human-readable, not a UUID. Max 20 characters, lowercase alphanumeric only (a-z, 0-9). Immutable after creation."
   id: String!
 
-  "A human-readable name for the organization"
+  "A human-readable name for the organization."
   name: String!
+}
+
+"Update mutable settings on an organization. The identifier is fixed at creation and cannot be changed."
+input UpdateOrganizationInput {
+  "Display name shown in the UI and CLI. 1–255 characters."
+  name: String!
+}
+
+"""
+Subscription status for an organization.
+
+Use this to display billing warnings, gate features for unpaid accounts,
+or guide users toward resolving payment issues. Visible to every member
+of the organization regardless of role.
+"""
+enum OrganizationSubscriptionStatus {
+  "Free trial period. The organization has full access until the trial expires."
+  TRIAL
+
+  "Subscription is active and in good standing."
+  ACTIVE
+
+  "A payment is overdue. Access continues but action is needed to avoid suspension."
+  PAST_DUE
+
+  "The free trial has ended without a subscription. Functionality is limited."
+  EXPIRED
+
+  "The subscription was canceled. The organization is in a grace period."
+  CANCELED
+
+  "The account is suspended due to billing issues. Most operations are blocked."
+  SUSPENDED
+
+  "A payment is being processed. This is typically a brief transitional state."
+  PAYMENT_PENDING
+
+  "The most recent payment attempt failed. Update payment details to restore access."
+  PAYMENT_FAILED
+}
+
+"Available fields for sorting organizations."
+enum OrganizationsSortField {
+  "Sort alphabetically by organization name (A-Z or Z-A)."
+  NAME
+
+  "Sort by when the organization was created (oldest or newest first)."
+  CREATED_AT
+}
+
+"Sorting options for organization lists."
+input OrganizationsSort {
+  "The field to sort by."
+  field: OrganizationsSortField!
+
+  "Ascending (`ASC`) or descending (`DESC`)."
+  order: SortOrder!
 }
 
 """
@@ -4378,6 +5152,10 @@ graph TD
 
 Members access resources through **group memberships** with role-based permissions.
 Custom attributes defined at the organization level govern attribute metadata across all child resources.
+
+Administrative fields (`billing`, `members`, `customAttributes`) resolve to `null` for
+callers who lack the corresponding ABAC action; in that case a top-level `FORBIDDEN`
+error is added to the response while the rest of the organization still resolves.
 """
 type Organization {
   id: ID!
@@ -4391,10 +5169,55 @@ type Organization {
   "When this organization was last modified (UTC)."
   updatedAt: DateTime!
 
+  """
+  Subscription status of the organization. Visible to every member so the UI can
+  surface billing warnings or lock down features for delinquent accounts. Detailed
+  payment, seat, and invoice data live behind the admin-only `billing` field.
+  """
+  subscriptionStatus: OrganizationSubscriptionStatus!
+
+  """
+  When this organization's free trial ends (UTC).
+
+  Every organization is created with a trial period. If a paid plan is not active
+  by this timestamp, `subscriptionStatus` becomes `EXPIRED` and most write
+  operations are blocked until billing is resolved.
+  """
+  trialEndsAt: DateTime!
+
+  """
+  Date the current paid plan period ends.
+
+  Populated for annual plans (the date the prepaid year runs out) and for grace
+  periods after a failed payment. `null` for organizations on monthly plans
+  (which auto-renew without a fixed end date), trial-only organizations, and
+  organizations that have never had a paid plan.
+  """
+  planExpiresOn: Date
+
   "The organization's logo image, or `null` if no logo has been uploaded."
   logo: LogoOrganization
 
-  "Paginated list of custom attributes that govern attribute metadata across this organization."
+  """
+  Paginated list of human accounts that are members of at least one group in this organization.
+
+  Sorted by email ascending. Service accounts live under the top-level `serviceAccounts`
+  query — pair both when rendering the full organization roster.
+
+  Requires the `organization:manage` action. Callers without it receive `null` here
+  along with a top-level `FORBIDDEN` error so the rest of the response still resolves.
+  """
+  members(
+    "Cursor from a previous page to fetch the next set of results."
+    cursor: Cursor
+  ): AccountsPage
+
+  """
+  Paginated list of custom attributes that govern attribute metadata across this organization.
+
+  Requires the `organization:manageAttributes` action. Callers without it receive
+  `null` along with a top-level `FORBIDDEN` error.
+  """
   customAttributes(
     "How to sort results. Defaults to alphabetical by key."
     sort: CustomAttributesSort
@@ -4404,22 +5227,27 @@ type Organization {
   ): CustomAttributesPage
 
   """
-  Returns a JSON Schema document you can use to validate attributes for a given resource scope.
+  Subscription, trial, and upgrade information for this organization.
 
-  The schema is derived from this organization's custom attributes. It includes
-  `properties` for each allowed attribute key and a `required` array for mandatory attributes.
-  If no custom attributes exist for the scope, returns `{"type": "object"}`.
+  Requires the `organization:manageBilling` action. Callers without it receive
+  `null` along with a top-level `FORBIDDEN` error. The non-sensitive
+  `subscriptionStatus` field at the top of the type stays visible to every member.
   """
-  attributeSchema(
-    "The resource scope to generate the schema for (e.g., `PROJECT`, `ENVIRONMENT`)."
-    scope: AttributeScope!
-  ): Map!
+  billing: OrganizationBilling
 }
 
 "Confirmation payload returned after removing a member from the organization."
 type DeletedOrganizationMember {
   "Email address of the member who was removed."
   email: String!
+}
+
+type OrganizationsPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type organization."
+  items: [Organization]
 }
 
 type OrganizationPayload {
@@ -4487,45 +5315,77 @@ type LogoOrganizationPayload {
   result: LogoOrganization
 }
 
-"Available fields for sorting organizations in the viewer context."
-enum ViewerOrganizationsSortField {
-  "Sort alphabetically by organization name (A-Z or Z-A)."
-  NAME
+"Cadence at which an organization or plan is billed."
+enum BillingFrequency {
+  "Billed every month."
+  MONTHLY
 
-  "Sort by when you joined the organization (oldest or newest first)."
-  CREATED_AT
+  "Billed once per year."
+  ANNUALLY
 }
 
 """
-The billing status of an organization's subscription.
+An upgrade or switch path the organization can subscribe to.
 
-Use this to display billing warnings, restrict actions for unpaid accounts, or guide
-users toward resolving payment issues.
+Each plan represents a Stripe payment link prefilled with this organization's
+context, so following `url` takes the buyer straight to checkout.
 """
-enum ViewerBillingStatus {
-  "Free trial period. The organization has full access until the trial expires."
-  TRIAL
+type BillingPlan {
+  "Plan display name (e.g., `\"Startup Plan\"`, `\"Growth Plan\"`)."
+  name: String!
 
-  "Subscription is active and in good standing."
-  ACTIVE
+  "Short marketing blurb explaining what the plan includes. Safe to render in the UI."
+  description: String!
 
-  "A payment is overdue. Access continues but action is needed to avoid suspension."
-  PAST_DUE
+  "External Stripe checkout URL. Already prefilled with the organization's reference and email — open it directly."
+  url: String!
 
-  "The free trial has ended without a subscription. Functionality is limited."
-  EXPIRED
+  "Number of seats included in the plan."
+  seats: Int!
 
-  "The subscription was canceled. The organization is in a grace period."
-  CANCELED
+  "Plan price for the full billing period, expressed in the smallest subunit of `currency` (e.g., cents for `USD`)."
+  price: Int!
 
-  "The account is suspended due to billing issues. Most operations are blocked."
-  SUSPENDED
+  "ISO 4217 currency code for `price` (e.g., `USD`)."
+  currency: String!
 
-  "A payment is being processed. This is typically a brief transitional state."
-  PAYMENT_PENDING
+  "How often this plan bills."
+  frequency: BillingFrequency!
+}
 
-  "The most recent payment attempt failed. Update payment details to restore access."
-  PAYMENT_FAILED
+"""
+Subscription, trial, and upgrade information for an organization.
+
+Returned by `Organization.billing` for organization administrators only.
+Non-admin members will see `null` here even when they can otherwise view the organization.
+"""
+type OrganizationBilling {
+  "Number of seats currently provisioned on the subscription (the org's max member count)."
+  seats: Int!
+
+  "Current subscription cost for the full billing period, expressed in the smallest subunit of `currency` (e.g., cents for `USD`). `null` if the org is not on a paid plan."
+  cost: Int
+
+  "ISO 4217 currency code for `cost` (e.g., `USD`). `null` if the org is not on a paid plan."
+  currency: String
+
+  "Cadence the org is currently billed at. `null` if the org is not on a paid plan."
+  frequency: BillingFrequency
+
+  "Friendly attribution name for the partner that referred this org (e.g., `\"Y Combinator\"`)."
+  affiliate: String
+
+  "When the free trial expires (UTC)."
+  trialEndsAt: DateTime!
+
+  "End date of the current paid plan or grace period. `null` when not applicable (e.g., monthly plans)."
+  planExpiresOn: Date
+
+  "Stripe Customer Portal URL for managing payment methods, invoices, and cancellation."
+  portalUrl: String!
+
+  "Plans the organization can upgrade or switch to. URLs are prefilled with this org's reference for one-click checkout."
+  plans: [BillingPlan!]!
 }
 
 "Available fields for sorting linked identities."
@@ -4555,15 +5415,6 @@ enum ViewerGroupType {
   CUSTOM
 }
 
-"Sorting options for the viewer's organizations list."
-input ViewerOrganizationsSort {
-  "The field to sort by."
-  field: ViewerOrganizationsSortField!
-
-  "Ascending (`ASC`) or descending (`DESC`)."
-  order: SortOrder!
-}
-
 "Sorting options for the viewer's linked identities list."
 input IdentitiesSort {
   "The field to sort by."
@@ -4580,36 +5431,6 @@ input InvitesSort {
 
   "Ascending (`ASC`) or descending (`DESC`)."
   order: SortOrder!
-}
-
-"Billing information for an organization, as seen from the viewer's perspective."
-type ViewerOrganizationBilling {
-  "Current billing status of the organization's subscription."
-  status: ViewerBillingStatus!
-}
-
-"""
-An organization the viewer belongs to.
-
-Each viewer can be a member of multiple organizations. Use the `billing` field to check
-whether the organization's subscription is in good standing.
-"""
-type ViewerOrganization {
-  id: ID!
-
-  "Human-readable name of the organization."
-  name: String!
-
-  "Billing information for this organization."
-  billing: ViewerOrganizationBilling
-}
-
-type ViewerOrganizationsPage {
-  "Pagination cursors for navigating between pages."
-  cursor: PaginationCursor!
-
-  "A list of type viewer_organization."
-  items: [ViewerOrganization]
 }
 
 """
@@ -4788,11 +5609,11 @@ type AccountViewer {
   """
   organizations(
     "Sort field and direction. Defaults to name ascending."
-    sort: ViewerOrganizationsSort
+    sort: OrganizationsSort
 
     "Pagination cursor from a previous response to fetch the next page."
     cursor: Cursor
-  ): ViewerOrganizationsPage
+  ): OrganizationsPage
 
   """
   Your most recently joined organization.
@@ -4800,7 +5621,7 @@ type AccountViewer {
   Useful for setting a default context when the user first opens the application.
   Returns `null` if the user does not belong to any organization.
   """
-  defaultOrganization: ViewerOrganization
+  defaultOrganization: Organization
 
   """
   OAuth and OIDC provider identities linked to your account.
@@ -4856,7 +5677,7 @@ type ServiceAccountViewer {
   updatedAt: DateTime!
 
   "The organization this service account belongs to."
-  organization: ViewerOrganization!
+  organization: Organization!
 }
 
 """
@@ -5086,6 +5907,18 @@ input AddComponentInput {
 
   "Display name for this component (e.g., 'Billing Database')"
   name: String!
+}
+
+"Update an existing component's name, description, and attributes. The component ID and underlying bundle cannot be changed."
+input UpdateComponentInput {
+  "Key-value attributes for this component. Keys and values must be strings. Must conform to the organization's custom attributes for the component scope."
+  attributes: Map
+
+  "Optional description of this component's purpose"
+  description: String
+
+  "Display name for this component (e.g., 'Billing Database')"
+  name: String
 }
 
 "Set the position of a component on the canvas."
@@ -5468,6 +6301,15 @@ enum AlarmStatus {
   ALARM
 }
 
+"Available fields for sorting the instance alarms list."
+enum InstanceAlarmsSortField {
+  "Alphabetical by alarm display name (A-Z or Z-A)."
+  DISPLAY_NAME
+
+  "Chronological by creation time (oldest or newest first)."
+  CREATED_AT
+}
+
 """
 A key-value pair identifying the specific cloud resource a metric applies to.
 
@@ -5530,12 +6372,11 @@ type AlarmState {
 """
 A cloud metric alarm attached to an instance.
 
-Alarms are provisioned via the Massdriver Terraform/OpenTofu provider and
-receive state updates via webhooks from AWS CloudWatch, Azure Monitor, GCP
-Cloud Monitoring, or Prometheus Alertmanager.
+Receives state updates via webhooks from AWS CloudWatch, Azure Monitor,
+GCP Cloud Monitoring, or Prometheus Alertmanager.
 
-Check `currentState` to see whether the alarm is firing. A `null` `currentState`
-means no state has been reported yet for this alarm.
+Check `currentState` to see whether the alarm is firing. A `null`
+`currentState` means no state has been reported yet for this alarm.
 """
 type Alarm {
   "Unique identifier for this alarm."
@@ -5575,6 +6416,123 @@ type AlarmsPage {
 
   "A list of type alarm."
   items: [Alarm]
+}
+
+type AlarmPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: Alarm
+}
+
+"A key-value dimension identifying the cloud resource a metric applies to."
+input AlarmMetricDimensionInput {
+  "Dimension name as defined by the cloud provider."
+  name: String!
+
+  "Dimension value identifying the monitored resource."
+  value: String!
+}
+
+"""
+The cloud metric an alarm evaluates.
+
+Most fields are optional because availability depends on the cloud provider.
+Pass `dimensions: []` if the provider doesn't expose structured dimensions
+for this metric.
+"""
+input AlarmMetricInput {
+  "Cloud service namespace that categorizes the metric (e.g., `AWS\/RDS`)."
+  namespace: String
+
+  "Metric name within the namespace (e.g., `CPUUtilization`)."
+  name: String
+
+  "Aggregation function applied to samples (e.g., `Average`). Optional for providers without it."
+  statistic: String
+
+  "Cloud region the metric is scoped to, when applicable."
+  region: String
+
+  "Dimensions identifying the monitored resource. Omit or pass an empty list when the cloud provider doesn't expose structured dimensions."
+  dimensions: [AlarmMetricDimensionInput!]
+}
+
+"Register a cloud metric alarm with an instance. The alarm appears in the UI immediately and receives state transitions as soon as the cloud provider reports them. Webhooks from AWS CloudWatch, Azure Monitor, GCP Cloud Monitoring, and Prometheus Alertmanager match against `cloudResourceId` to attach state."
+input CreateInstanceAlarmInput {
+  "The cloud provider's unique identifier for the alarm. Used to correlate incoming state transition webhooks back to this alarm. Examples: a CloudWatch AlarmArn, a GCP alert policy name, an Azure alert id."
+  cloudResourceId: String!
+
+  "How the metric is compared against `threshold` (e.g., `GREATER_THAN`, `LESS_THAN`). Optional for providers that don't expose this concept (e.g., Alertmanager, GCP)."
+  comparisonOperator: String
+
+  "Human-readable name for the alarm. Shown in the UI and in notifications. Typically the alarm name registered with the cloud provider."
+  displayName: String!
+
+  "The cloud metric this alarm evaluates. Optional; not all providers expose structured metric data."
+  metric: AlarmMetricInput
+
+  "Evaluation window in seconds over which the metric is aggregated before the comparison is applied. Optional."
+  period: Int
+
+  "The value crossed to trigger the alarm. Compared against the metric using `comparisonOperator`. Optional."
+  threshold: Float
+}
+
+"Update a registered alarm's mutable fields. Omit a field to leave it unchanged."
+input UpdateInstanceAlarmInput {
+  "The cloud provider's unique identifier for the alarm. Updating this changes which incoming webhooks correlate to this alarm."
+  cloudResourceId: String
+
+  "How the metric is compared against `threshold` (e.g., `GREATER_THAN`, `LESS_THAN`)."
+  comparisonOperator: String
+
+  "Human-readable name for the alarm. Shown in the UI and in notifications."
+  displayName: String
+
+  "The cloud metric this alarm evaluates."
+  metric: AlarmMetricInput
+
+  "Evaluation window in seconds over which the metric is aggregated."
+  period: Int
+
+  "The value crossed to trigger the alarm."
+  threshold: Float
+}
+
+"""
+Narrows the instance alarms list to only matching records.
+
+All filters are combined with AND logic. Omit a filter to skip that criterion.
+"""
+input InstanceAlarmsFilter {
+  "Return only alarms in the specified project(s)."
+  projectId: IdFilter
+
+  "Return only alarms in the specified environment(s)."
+  environmentId: IdFilter
+
+  "Return only alarms attached to the specified component(s)."
+  componentId: IdFilter
+
+  "Return only alarms for the specified instance(s)."
+  instanceId: IdFilter
+
+  "Return only alarms on instances of the given bundle (e.g., `aws-rds`)."
+  ociRepoName: OciRepoNameFilter
+}
+
+"Sorting options for the instance alarms list. Specify a field and direction."
+input InstanceAlarmsSort {
+  "The field to sort by."
+  field: InstanceAlarmsSortField!
+
+  "`ASC` for A-Z \/ oldest first, `DESC` for Z-A \/ newest first."
+  order: SortOrder!
 }
 
 "Available fields for sorting instances."
@@ -5842,11 +6800,26 @@ type InstanceResource {
 }
 
 """
+Where a dependency wire-in comes from.
+
+- `Connection` — the wire was drawn from a blueprint Link between two
+  components in this project.
+- `RemoteReference` — the wire is a per-instance override pointing at a
+  resource from another project (or an imported resource).
+- `EnvironmentDefault` — no explicit wire was set, so the slot is filled
+  from the environment's default for this resource type.
+
+Per-instance `RemoteReference` overrides take priority over blueprint
+`Connection`s, which take priority over `EnvironmentDefault`s.
+"""
+union InstanceDependencySource = Connection | RemoteReference | EnvironmentDefault
+
+"""
 An input dependency consumed by an instance, keyed by the field handle that receives it.
 
-Dependencies are resources from other instances wired in via connections. For
-example, an application instance might have a `database` dependency that
-receives the connection string from a database instance.
+Dependencies are resources wired into this instance's bundle slots — either
+through a blueprint connection, a per-instance remote-reference override, or
+the environment's default for the resource type.
 """
 type InstanceDependency {
   "The input handle name that consumes this resource (e.g., `database`)."
@@ -5860,6 +6833,9 @@ type InstanceDependency {
 
   "The resource type (artifact definition) this dependency slot accepts."
   resourceType: ResourceType!
+
+  "Where this slot's wire-in comes from. Inspect the concrete type — `Connection`, `RemoteReference`, or `EnvironmentDefault` — to distinguish."
+  source: InstanceDependencySource!
 }
 
 """
@@ -5874,22 +6850,6 @@ type InstanceStatePath {
 
   "The step's path identifier as defined in the bundle's `massdriver.yaml`."
   stepName: String!
-}
-
-type InstanceResourcesPage {
-  "Pagination cursors for navigating between pages."
-  cursor: PaginationCursor!
-
-  "A list of type instance_resource."
-  items: [InstanceResource]
-}
-
-type InstanceDependenciesPage {
-  "Pagination cursors for navigating between pages."
-  cursor: PaginationCursor!
-
-  "A list of type instance_dependency."
-  items: [InstanceDependency]
 }
 
 """
@@ -6096,16 +7056,13 @@ type Instance {
   properties: [InstanceProperty!]!
 
   """
-  Paginated list of resources produced by this instance.
+  Resources produced by this instance, sorted alphabetically by field.
 
   Resources are the outputs published after a successful deployment
   (e.g., connection strings, endpoints, credentials). Other instances consume
   these resources via connections.
   """
-  resources(
-    "Pagination cursor returned by a previous page."
-    cursor: Cursor
-  ): InstanceResourcesPage
+  resources: [InstanceResource!]!
 
   """
   Paginated list of cloud metric alarms configured for this instance.
@@ -6122,16 +7079,14 @@ type Instance {
   ): AlarmsPage
 
   """
-  Paginated list of dependencies consumed by this instance.
+  Dependencies wired into this instance's bundle slots, sorted alphabetically by field.
 
-  Dependencies are resources from other instances wired in via connections.
-  For example, an application instance might depend on a database instance's
-  `authentication` resource to get its connection string.
+  Each entry is one filled slot from the bundle's `connections_schema` along
+  with the source object that filled it — a blueprint `Connection`, a
+  per-instance `RemoteReference`, or an `EnvironmentDefault` from the
+  environment. Unfilled slots are not included.
   """
-  dependencies(
-    "Pagination cursor returned by a previous page."
-    cursor: Cursor
-  ): InstanceDependenciesPage
+  dependencies: [InstanceDependency!]!
 
   """
   Whether this instance can be safely decommissioned right now. Check `constraints` for blocking conditions.
@@ -6418,20 +7373,6 @@ type Environment {
     "Cursor from a previous page to fetch the next set of results."
     cursor: Cursor
   ): EnvironmentDefaultsPage
-
-  """
-  Paginated list of policies attached directly to this environment as the
-  principal (sometimes called "resource sharing"). Group policies and project
-  policies are not included even when they reference this environment — query
-  those through their own principals.
-  """
-  policies(
-    "How to sort results. Defaults to oldest first."
-    sort: PoliciesSort
-
-    "Cursor from a previous page to fetch the next set of results."
-    cursor: Cursor
-  ): PoliciesPage
 }
 
 """
@@ -6465,6 +7406,9 @@ type EnvironmentDefault {
 
   "The resource that is set as the default for its type."
   resource: EnvironmentDefaultResource!
+
+  "The environment in which this resource is the default for its type."
+  environment: Environment!
 
   "When this default was first set (UTC)."
   createdAt: DateTime!
@@ -6685,20 +7629,6 @@ type Project {
 
   "The infrastructure blueprint defining this project's components and their connections."
   blueprint: Blueprint
-
-  """
-  Paginated list of policies attached directly to this project as the principal
-  (sometimes called "bundle sharing"). Group policies and environment policies
-  are not included even when they reference this project — query those through
-  their own principals.
-  """
-  policies(
-    "How to sort results. Defaults to oldest first."
-    sort: PoliciesSort
-
-    "Cursor from a previous page to fetch the next set of results."
-    cursor: Cursor
-  ): PoliciesPage
 }
 
 type ProjectsPage {
@@ -7012,6 +7942,21 @@ enum OciRepoReleaseChannelsSortField {
   NAME
 }
 
+"Create a new OCI repository in your organization's catalog. Repositories must exist before any version can be published to them."
+input CreateOciRepoInput {
+  "Key-value attributes for this repository. Used by ABAC policies for fine-grained access control. Reserved `md-*` keys are rejected. Must conform to the organization's custom attributes for the repo scope."
+  attributes: Map
+
+  "Unique repository name within your organization, e.g. `aws-aurora-postgres`. Lowercase letters, numbers, dashes, underscores only. Max 53 characters. Cannot be changed after creation."
+  id: String!
+}
+
+"Update an OCI repository's user-settable metadata. The repository name and artifact type are immutable."
+input UpdateOciRepoInput {
+  "Replacement key-value attributes for this repository. Reserved `md-*` keys are rejected. Must conform to the organization's custom attributes for the repo scope."
+  attributes: Map
+}
+
 """
 Filters for narrowing the OCI repositories list.
 
@@ -7161,6 +8106,20 @@ type OciRepo {
   """
   artifactType: String!
 
+  """
+  Key-value attributes assigned directly to this repository, used by ABAC
+  policies. Reserved keys starting with `md-` are auto-injected by the system
+  and excluded from this map — see `effectiveAttributes` for the merged view.
+  """
+  attributes: Map!
+
+  """
+  The full set of attributes that ABAC policy evaluation sees for this
+  repository — your user attributes plus auto-injected `md-*` system
+  attributes (today: `md-id`, `md-repo`).
+  """
+  effectiveAttributes: Map!
+
   "Timestamp when this repository was created (UTC)."
   createdAt: DateTime!
 
@@ -7239,6 +8198,17 @@ type OciRepo {
     "Cursor from a previous page's `cursor.next` or `cursor.previous`."
     cursor: Cursor
   ): OciRepoTagsPage
+
+  """
+  Grants the publisher has authored on this repository — what it is shared as,
+  and which recipient projects qualify. If you can see this repository you can
+  see all of its grants; grants are publisher-side metadata, not visibility-gated
+  themselves.
+  """
+  grants(
+    "Cursor from a previous page's `cursor.next` or `cursor.previous`."
+    cursor: Cursor
+  ): GrantsPage
 }
 
 type OciReposPage {
@@ -7263,6 +8233,17 @@ type OciRepoReleaseChannelsPage {
 
   "A list of type oci_repo_release_channel."
   items: [OciRepoReleaseChannel]
+}
+
+type OciRepoPayload {
+  "Indicates if the mutation completed successfully or not."
+  successful: Boolean!
+
+  "A list of failed validations. May be blank or null if mutation succeeded."
+  messages: [ValidationMessage]
+
+  "The object created\/updated\/deleted by the mutation. May be null if mutation failed."
+  result: OciRepo
 }
 
 """
@@ -7668,6 +8649,12 @@ type PaginationCursor {
   previous: String
 }
 
+"Either the literal `\"*\"` (explicit whole-field wildcard) or a JSON-encoded non-empty object of attribute conditions. Per-key values are each either `\"*\"` (any value matches) or a non-empty array of strings (closed set). Empty `{}`, `null`, malformed JSON, top-level arrays, and bare strings other than `\"*\"` are rejected."
+scalar Conditions
+
+"An RFC 4122 UUID, formatted as a 36-character lowercase hex string with hyphens (e.g., `550e8400-e29b-41d4-a716-446655440000`)."
+scalar UUID
+
 "A JSON object (key-value map) encoded as a string. Accepts only `{}` objects — arrays, strings, numbers, booleans, and `null` are rejected. Pass values as a JSON-encoded string, e.g. `{\"key\": \"value\"}`. Used for dynamic configuration data like integration configs, parameter overrides, and schemas."
 scalar Map
 
@@ -7747,3 +8734,9 @@ string, including UTC timezone ("Z"). The parsed date and time string will
 be converted to UTC if there is an offset.
 """
 scalar DateTime
+
+"""
+The `Date` scalar type represents a date. The Date appears in a JSON
+response as an ISO8601 formatted string, without a time component.
+"""
+scalar Date

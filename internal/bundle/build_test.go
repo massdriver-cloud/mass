@@ -229,7 +229,7 @@ func TestBuildSchemas(t *testing.T) {
 	}
 
 	mdClient := client.Client{
-		GQLv1: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		GQLv2: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 			"data": map[string]any{
 				"resourceType": draftNodeSchema,
 			},
@@ -275,7 +275,7 @@ func TestBuildTFVars(t *testing.T) {
 	}
 
 	mdClient := client.Client{
-		GQLv1: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
+		GQLv2: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 			"data": map[string]any{
 				"resourceType": draftNodeSchema,
 			},

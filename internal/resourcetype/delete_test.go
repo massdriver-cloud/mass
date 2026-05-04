@@ -44,7 +44,7 @@ func TestDelete(t *testing.T) {
 			}
 
 			mdClient := client.Client{
-				GQLv1: gqlmock.NewClientWithJSONResponseArray(responses),
+				GQLv2: gqlmock.NewClientWithJSONResponseArray(responses),
 				Config: config.Config{
 					OrganizationID: "org-123",
 				},

@@ -23,7 +23,7 @@ func TestGetDeployment(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	dep, err := api.GetDeployment(t.Context(), &mdClient, "dep-uuid1")
 	if err != nil {
@@ -53,7 +53,7 @@ func TestListDeployments(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	deployments, err := api.ListDeployments(t.Context(), &mdClient, nil, nil, 0)
 	if err != nil {
@@ -80,7 +80,7 @@ func TestCreateDeployment(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	dep, err := api.CreateDeployment(t.Context(), &mdClient, "inst-1", api.CreateDeploymentInput{
 		Action:  api.DeploymentActionProvision,
@@ -112,7 +112,7 @@ func TestCreateDeploymentFailure(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	_, err := api.CreateDeployment(t.Context(), &mdClient, "inst-1", api.CreateDeploymentInput{
 		Action: api.DeploymentActionProvision,

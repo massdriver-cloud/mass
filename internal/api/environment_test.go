@@ -23,7 +23,7 @@ func TestGetEnvironment(t *testing.T) {
 		},
 	})
 	mdClient := client.Client{
-		GQLv1: gqlClient,
+		GQLv2: gqlClient,
 	}
 
 	env, err := api.GetEnvironment(t.Context(), &mdClient, "env-uuid1")
@@ -61,7 +61,7 @@ func TestListEnvironments(t *testing.T) {
 		},
 	})
 	mdClient := client.Client{
-		GQLv1: gqlClient,
+		GQLv2: gqlClient,
 	}
 
 	envs, err := api.ListEnvironments(t.Context(), &mdClient, nil)
@@ -88,7 +88,7 @@ func TestCreateEnvironment(t *testing.T) {
 		},
 	})
 	mdClient := client.Client{
-		GQLv1: gqlClient,
+		GQLv2: gqlClient,
 	}
 
 	env, err := api.CreateEnvironment(t.Context(), &mdClient, "proj-1", api.CreateEnvironmentInput{
@@ -125,7 +125,7 @@ func TestSetEnvironmentDefault(t *testing.T) {
 		},
 	})
 	mdClient := client.Client{
-		GQLv1: gqlClient,
+		GQLv2: gqlClient,
 	}
 
 	envDefault, err := api.SetEnvironmentDefault(t.Context(), &mdClient, "env-1", "res-1")
@@ -164,7 +164,7 @@ func TestSetEnvironmentDefaultFailure(t *testing.T) {
 		},
 	})
 	mdClient := client.Client{
-		GQLv1: gqlClient,
+		GQLv2: gqlClient,
 	}
 
 	_, err := api.SetEnvironmentDefault(t.Context(), &mdClient, "env-1", "res-1")
@@ -186,7 +186,7 @@ func TestDeleteEnvironment(t *testing.T) {
 		},
 	})
 	mdClient := client.Client{
-		GQLv1: gqlClient,
+		GQLv2: gqlClient,
 	}
 
 	env, err := api.DeleteEnvironment(t.Context(), &mdClient, "env-1")

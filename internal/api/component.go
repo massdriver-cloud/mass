@@ -38,7 +38,7 @@ func ListLinks(ctx context.Context, mdClient *client.Client, projectID string, f
 	var cursor *Cursor
 
 	for {
-		response, err := listLinks(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, projectID, filter, cursor)
+		response, err := listLinks(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, projectID, filter, cursor)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list links for project %s: %w", projectID, err)
 		}
@@ -63,7 +63,7 @@ func ListLinks(ctx context.Context, mdClient *client.Client, projectID string, f
 
 // AddComponent adds a component to a project's blueprint.
 func AddComponent(ctx context.Context, mdClient *client.Client, projectID, ociRepoName string, input AddComponentInput) (*Component, error) {
-	response, err := addComponent(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, projectID, ociRepoName, input)
+	response, err := addComponent(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, projectID, ociRepoName, input)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func AddComponent(ctx context.Context, mdClient *client.Client, projectID, ociRe
 
 // RemoveComponent removes a component from a project's blueprint.
 func RemoveComponent(ctx context.Context, mdClient *client.Client, componentID string) (*Component, error) {
-	response, err := removeComponent(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, componentID)
+	response, err := removeComponent(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, componentID)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func RemoveComponent(ctx context.Context, mdClient *client.Client, componentID s
 
 // LinkComponents creates a design-time link between two components.
 func LinkComponents(ctx context.Context, mdClient *client.Client, input LinkComponentsInput) (*Link, error) {
-	response, err := linkComponents(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, input)
+	response, err := linkComponents(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, input)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func LinkComponents(ctx context.Context, mdClient *client.Client, input LinkComp
 
 // UnlinkComponents removes a link by its ID.
 func UnlinkComponents(ctx context.Context, mdClient *client.Client, linkID string) (*Link, error) {
-	response, err := unlinkComponents(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, linkID)
+	response, err := unlinkComponents(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, linkID)
 	if err != nil {
 		return nil, err
 	}

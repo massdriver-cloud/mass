@@ -60,7 +60,7 @@ func TestGetVersion(t *testing.T) {
 				},
 			})
 			mdClient := client.Client{
-				GQLv1: gqlClient,
+				GQLv2: gqlClient,
 			}
 
 			ver, err := getVersion(t.Context(), &mdClient, b, tc.developmentRelease)

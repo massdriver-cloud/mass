@@ -19,7 +19,7 @@ func TestGetResourceType(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	rt, err := api.GetResourceType(t.Context(), &mdClient, "aws-iam-role")
 	if err != nil {
@@ -60,7 +60,7 @@ func TestListResourceTypes(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	rts, err := api.ListResourceTypes(t.Context(), &mdClient, nil)
 	if err != nil {
@@ -89,7 +89,7 @@ func TestPublishResourceType(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	rt, err := api.PublishResourceType(t.Context(), &mdClient, api.PublishResourceTypeInput{
 		Schema: map[string]any{
@@ -122,7 +122,7 @@ func TestPublishResourceTypeFailure(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	_, err := api.PublishResourceType(t.Context(), &mdClient, api.PublishResourceTypeInput{})
 	if err == nil {
@@ -142,7 +142,7 @@ func TestDeleteResourceType(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	rt, err := api.DeleteResourceType(t.Context(), &mdClient, "aws-iam-role")
 	if err != nil {
@@ -170,7 +170,7 @@ func TestDeleteResourceTypeFailure(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	_, err := api.DeleteResourceType(t.Context(), &mdClient, "aws-iam-role")
 	if err == nil {

@@ -31,3 +31,7 @@ bindings:
     type: string
   Cursor:
     type: github.com/massdriver-cloud/mass/internal/api.Cursor
+  UUID:
+    type: string
+  Conditions:
+    type: string

@@ -62,7 +62,7 @@ func (inst *Instance) ParamsJSON() (string, error) {
 
 // GetInstance retrieves an instance by ID from the Massdriver API.
 func GetInstance(ctx context.Context, mdClient *client.Client, id string) (*Instance, error) {
-	response, err := getInstance(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
+	response, err := getInstance(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance %s: %w", id, err)
 	}
@@ -70,30 +70,20 @@ func GetInstance(ctx context.Context, mdClient *client.Client, id string) (*Inst
 	return toInstance(response.Instance)
 }
 
-// ListInstanceResources returns every output resource produced by the named instance, following pagination.
+// ListInstanceResources returns every output resource produced by the named instance.
 func ListInstanceResources(ctx context.Context, mdClient *client.Client, instanceID string) ([]InstanceResource, error) {
-	var resources []InstanceResource
-	var cursor *Cursor
+	response, err := listInstanceResources(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list instance resources for %s: %w", instanceID, err)
+	}
 
-	for {
-		response, err := listInstanceResources(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, instanceID, cursor)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list instance resources for %s: %w", instanceID, err)
+	resources := make([]InstanceResource, 0, len(response.Instance.Resources))
+	for _, item := range response.Instance.Resources {
+		ir := InstanceResource{}
+		if decodeErr := decode(item, &ir); decodeErr != nil {
+			return nil, fmt.Errorf("failed to decode instance resource: %w", decodeErr)
 		}
-
-		for _, item := range response.Instance.Resources.Items {
-			ir := InstanceResource{}
-			if decodeErr := decode(item, &ir); decodeErr != nil {
-				return nil, fmt.Errorf("failed to decode instance resource: %w", decodeErr)
-			}
-			resources = append(resources, ir)
-		}
-
-		next := response.Instance.Resources.Cursor.Next
-		if next == "" {
-			break
-		}
-		cursor = &Cursor{Next: next}
+		resources = append(resources, ir)
 	}
 
 	return resources, nil
@@ -101,7 +91,7 @@ func ListInstanceResources(ctx context.Context, mdClient *client.Client, instanc
 
 // ListInstances returns instances, optionally filtered.
 func ListInstances(ctx context.Context, mdClient *client.Client, filter *InstancesFilter) ([]Instance, error) {
-	response, err := listInstances(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, nil, nil)
+	response, err := listInstances(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, filter, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list instances: %w", err)
 	}
@@ -120,7 +110,7 @@ func ListInstances(ctx context.Context, mdClient *client.Client, filter *Instanc
 
 // UpdateInstance updates an instance's version constraint or release strategy.
 func UpdateInstance(ctx context.Context, mdClient *client.Client, id string, input UpdateInstanceInput) (*Instance, error) {
-	response, err := updateInstance(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id, input)
+	response, err := updateInstance(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id, input)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +132,7 @@ func UpdateInstance(ctx context.Context, mdClient *client.Client, id string, inp
 
 // SetInstanceSecret creates or updates a secret on an instance.
 func SetInstanceSecret(ctx context.Context, mdClient *client.Client, id string, input SetInstanceSecretInput) (*InstanceSecret, error) {
-	response, err := setInstanceSecret(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id, input)
+	response, err := setInstanceSecret(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id, input)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +154,7 @@ func SetInstanceSecret(ctx context.Context, mdClient *client.Client, id string, 
 
 // RemoveInstanceSecret removes a secret from an instance.
 func RemoveInstanceSecret(ctx context.Context, mdClient *client.Client, id, name string) (*InstanceSecret, error) {
-	response, err := removeInstanceSecret(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id, name)
+	response, err := removeInstanceSecret(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id, name)
 	if err != nil {
 		return nil, err
 	}

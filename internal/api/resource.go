@@ -28,7 +28,7 @@ type Resource struct {
 
 // GetResource retrieves a resource by ID.
 func GetResource(ctx context.Context, mdClient *client.Client, id string) (*Resource, error) {
-	response, err := getResource(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
+	response, err := getResource(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resource %s: %w", id, err)
 	}
@@ -41,7 +41,7 @@ func ListResources(ctx context.Context, mdClient *client.Client, filter *Resourc
 	var cursor *Cursor
 
 	for {
-		response, err := listResources(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, nil, cursor)
+		response, err := listResources(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, filter, nil, cursor)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list resources: %w", err)
 		}
@@ -66,7 +66,7 @@ func ListResources(ctx context.Context, mdClient *client.Client, filter *Resourc
 
 // CreateResource imports a new resource of the given type.
 func CreateResource(ctx context.Context, mdClient *client.Client, resourceTypeID string, input CreateResourceInput) (*Resource, error) {
-	response, err := createResource(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, resourceTypeID, input)
+	response, err := createResource(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, resourceTypeID, input)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func CreateResource(ctx context.Context, mdClient *client.Client, resourceTypeID
 
 // UpdateResource updates an existing resource.
 func UpdateResource(ctx context.Context, mdClient *client.Client, id string, input UpdateResourceInput) (*Resource, error) {
-	response, err := updateResource(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id, input)
+	response, err := updateResource(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id, input)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ type ResourceWithSensitiveValues struct {
 // ExportResource returns a resource with sensitive payload fields unmasked, along with a `rendered`
 // string in the requested format. An empty format defaults to the API's default (json).
 func ExportResource(ctx context.Context, mdClient *client.Client, id, format string) (*ResourceWithSensitiveValues, error) {
-	response, err := exportResource(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id, format)
+	response, err := exportResource(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id, format)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func ExportResource(ctx context.Context, mdClient *client.Client, id, format str
 
 // DeleteResource deletes an imported resource by ID.
 func DeleteResource(ctx context.Context, mdClient *client.Client, id string) (*Resource, error) {
-	response, err := deleteResource(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
+	response, err := deleteResource(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, err
 	}

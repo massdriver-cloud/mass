@@ -29,7 +29,7 @@ func TestGetInstance(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	inst, err := api.GetInstance(t.Context(), &mdClient, "inst-uuid1")
 	if err != nil {
@@ -62,7 +62,7 @@ func TestListInstances(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	instances, err := api.ListInstances(t.Context(), &mdClient, nil)
 	if err != nil {
@@ -88,7 +88,7 @@ func TestUpdateInstance(t *testing.T) {
 			},
 		},
 	})
-	mdClient := client.Client{GQLv1: gqlClient}
+	mdClient := client.Client{GQLv2: gqlClient}
 
 	inst, err := api.UpdateInstance(t.Context(), &mdClient, "inst-1", api.UpdateInstanceInput{
 		Version:         "~2.0",

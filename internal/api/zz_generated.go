@@ -807,7 +807,6 @@ func (v *IdFilter) GetIn() []string { return v.In }
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 type InstanceStatus string
 
@@ -820,8 +819,6 @@ const (
 	InstanceStatusDecommissioned InstanceStatus = "DECOMMISSIONED"
 	// The most recent deployment failed. Check deployment logs for details. Can be retried.
 	InstanceStatusFailed InstanceStatus = "FAILED"
-	// Imported infrastructure managed outside Massdriver. Not deployed by Massdriver but tracked for wiring.
-	InstanceStatusExternal InstanceStatus = "EXTERNAL"
 )
 
 var AllInstanceStatus = []InstanceStatus{
@@ -829,7 +826,6 @@ var AllInstanceStatus = []InstanceStatus{
 	InstanceStatusProvisioned,
 	InstanceStatusDecommissioned,
 	InstanceStatusFailed,
-	InstanceStatusExternal,
 }
 
 // Filter by instance status.
@@ -1276,6 +1272,8 @@ type ResourcesFilter struct {
 	Origin *ResourceOriginFilter `json:"origin,omitempty"`
 	// Return only resources of the given resource type, matched by the type's identifier (e.g., `aws-iam-role`, `kubernetes-cluster`).
 	ResourceType StringFilter `json:"resourceType"`
+	// Return only resources provisioned into the specified environment(s). Imported resources have no environment and are excluded when this filter is set.
+	EnvironmentId IdFilter `json:"environmentId"`
 	// Full-text search across the resource name. Results are ranked by relevance unless you provide an explicit `sort`. For terms longer than 3 characters, name-prefix matches are also included. **Note:** pagination cursors returned by search results use offset-based pagination and are not interchangeable with cursors from non-search queries.
 	Search string `json:"search"`
 }
@@ -1285,6 +1283,9 @@ func (v *ResourcesFilter) GetOrigin() *ResourceOriginFilter { return v.Origin }
 
 // GetResourceType returns ResourcesFilter.ResourceType, and is useful for accessing the field via an interface.
 func (v *ResourcesFilter) GetResourceType() StringFilter { return v.ResourceType }
+
+// GetEnvironmentId returns ResourcesFilter.EnvironmentId, and is useful for accessing the field via an interface.
+func (v *ResourcesFilter) GetEnvironmentId() IdFilter { return v.EnvironmentId }
 
 // GetSearch returns ResourcesFilter.Search, and is useful for accessing the field via an interface.
 func (v *ResourcesFilter) GetSearch() string { return v.Search }
@@ -1992,9 +1993,8 @@ func (v *__listEnvironmentsInput) GetCursor() *Cursor { return v.Cursor }
 
 // __listInstanceResourcesInput is used internally by genqlient
 type __listInstanceResourcesInput struct {
-	OrganizationId string  `json:"organizationId"`
-	InstanceId     string  `json:"instanceId"`
-	Cursor         *Cursor `json:"cursor,omitempty"`
+	OrganizationId string `json:"organizationId"`
+	InstanceId     string `json:"instanceId"`
 }
 
 // GetOrganizationId returns __listInstanceResourcesInput.OrganizationId, and is useful for accessing the field via an interface.
@@ -2002,9 +2002,6 @@ func (v *__listInstanceResourcesInput) GetOrganizationId() string { return v.Org
 
 // GetInstanceId returns __listInstanceResourcesInput.InstanceId, and is useful for accessing the field via an interface.
 func (v *__listInstanceResourcesInput) GetInstanceId() string { return v.InstanceId }
-
-// GetCursor returns __listInstanceResourcesInput.Cursor, and is useful for accessing the field via an interface.
-func (v *__listInstanceResourcesInput) GetCursor() *Cursor { return v.Cursor }
 
 // __listInstancesInput is used internally by genqlient
 type __listInstancesInput struct {
@@ -2704,7 +2701,6 @@ func (v *createDeploymentCreateDeploymentDeploymentPayloadResultDeployment) GetI
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -4388,7 +4384,6 @@ func (v *getDeploymentDeployment) __premarshalJSON() (*__premarshalgetDeployment
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -4802,7 +4797,6 @@ func (v *getEnvironmentEnvironmentBlueprintInstancesInstancesPageCursorPaginatio
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -5350,7 +5344,6 @@ func (v *getEnvironmentResponse) GetEnvironment() getEnvironmentEnvironment { re
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -6762,7 +6755,6 @@ func (v *getResourceResource) __premarshalJSON() (*__premarshalgetResourceResour
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -7891,7 +7883,6 @@ func (v *listDeploymentsDeploymentsDeploymentsPageItemsDeployment) GetInstance()
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -8315,7 +8306,6 @@ func (v *listEnvironmentsResponse) GetEnvironments() listEnvironmentsEnvironment
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -8324,63 +8314,20 @@ func (v *listEnvironmentsResponse) GetEnvironments() listEnvironmentsEnvironment
 // `resolvedVersion` with `deployedVersion` to see if a redeployment is needed,
 // or check `availableUpgrade` for newer matching releases.
 type listInstanceResourcesInstance struct {
-	// Paginated list of resources produced by this instance.
+	// Resources produced by this instance, sorted alphabetically by field.
 	//
 	// Resources are the outputs published after a successful deployment
 	// (e.g., connection strings, endpoints, credentials). Other instances consume
 	// these resources via connections.
-	Resources listInstanceResourcesInstanceResourcesInstanceResourcesPage `json:"resources"`
+	Resources []listInstanceResourcesInstanceResourcesInstanceResource `json:"resources"`
 }
 
 // GetResources returns listInstanceResourcesInstance.Resources, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstance) GetResources() listInstanceResourcesInstanceResourcesInstanceResourcesPage {
+func (v *listInstanceResourcesInstance) GetResources() []listInstanceResourcesInstanceResourcesInstanceResource {
 	return v.Resources
 }
 
-// listInstanceResourcesInstanceResourcesInstanceResourcesPage includes the requested fields of the GraphQL type InstanceResourcesPage.
-type listInstanceResourcesInstanceResourcesInstanceResourcesPage struct {
-	// Pagination cursors for navigating between pages.
-	Cursor listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor `json:"cursor"`
-	// A list of type instance_resource.
-	Items []listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource `json:"items"`
-}
-
-// GetCursor returns listInstanceResourcesInstanceResourcesInstanceResourcesPage.Cursor, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPage) GetCursor() listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor {
-	return v.Cursor
-}
-
-// GetItems returns listInstanceResourcesInstanceResourcesInstanceResourcesPage.Items, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPage) GetItems() []listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource {
-	return v.Items
-}
-
-// listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor includes the requested fields of the GraphQL type PaginationCursor.
-// The GraphQL type's documentation follows.
-//
-// Pagination cursors returned with every paginated response.
-//
-// Contains opaque cursor strings for navigating forward and backward through results.
-// A `null` value for `next` indicates you have reached the last page; a `null` value
-// for `previous` indicates you are on the first page.
-type listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor struct {
-	// Cursor for the next page. `null` if there are no more results.
-	Next string `json:"next"`
-	// Cursor for the previous page. `null` if this is the first page.
-	Previous string `json:"previous"`
-}
-
-// GetNext returns listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor.Next, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor) GetNext() string {
-	return v.Next
-}
-
-// GetPrevious returns listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor.Previous, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPaginationCursor) GetPrevious() string {
-	return v.Previous
-}
-
-// listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource includes the requested fields of the GraphQL type InstanceResource.
+// listInstanceResourcesInstanceResourcesInstanceResource includes the requested fields of the GraphQL type InstanceResource.
 // The GraphQL type's documentation follows.
 //
 // An output resource produced by an instance, keyed by the field handle that produced it.
@@ -8388,24 +8335,22 @@ func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageCursorPagina
 // Resources are the outputs an instance publishes after a successful deployment
 // (e.g., a database connection string, a Kubernetes cluster endpoint). Other
 // instances can consume these resources via connections.
-type listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource struct {
+type listInstanceResourcesInstanceResourcesInstanceResource struct {
 	// The output handle name that produced this resource (e.g., `authentication`).
 	Field string `json:"field"`
 	// The resource containing the actual data.
-	Resource listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource `json:"resource"`
+	Resource listInstanceResourcesInstanceResourcesInstanceResourceResource `json:"resource"`
 }
 
-// GetField returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource.Field, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource) GetField() string {
-	return v.Field
-}
+// GetField returns listInstanceResourcesInstanceResourcesInstanceResource.Field, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResource) GetField() string { return v.Field }
 
-// GetResource returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource.Resource, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResource) GetResource() listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource {
+// GetResource returns listInstanceResourcesInstanceResourcesInstanceResource.Resource, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResource) GetResource() listInstanceResourcesInstanceResourcesInstanceResourceResource {
 	return v.Resource
 }
 
-// listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource includes the requested fields of the GraphQL type Resource.
+// listInstanceResourcesInstanceResourcesInstanceResourceResource includes the requested fields of the GraphQL type Resource.
 // The GraphQL type's documentation follows.
 //
 // A cloud credential, database connection string, network configuration, or other
@@ -8420,7 +8365,7 @@ func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanc
 // You have full CRUD control over these resources.
 // - **Provisioned** — created automatically when an instance is deployed. These are read-only
 // and managed entirely by the owning instance's lifecycle.
-type listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource struct {
+type listInstanceResourcesInstanceResourcesInstanceResourceResource struct {
 	// Unique identifier for this resource.
 	Id string `json:"id"`
 	// Human-readable display name for this resource.
@@ -8433,28 +8378,26 @@ type listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceRes
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// GetId returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Id, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetId() string {
-	return v.Id
-}
+// GetId returns listInstanceResourcesInstanceResourcesInstanceResourceResource.Id, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourceResource) GetId() string { return v.Id }
 
-// GetName returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Name, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetName() string {
+// GetName returns listInstanceResourcesInstanceResourcesInstanceResourceResource.Name, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourceResource) GetName() string {
 	return v.Name
 }
 
-// GetOrigin returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.Origin, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetOrigin() ResourceOrigin {
+// GetOrigin returns listInstanceResourcesInstanceResourcesInstanceResourceResource.Origin, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourceResource) GetOrigin() ResourceOrigin {
 	return v.Origin
 }
 
-// GetCreatedAt returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.CreatedAt, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetCreatedAt() time.Time {
+// GetCreatedAt returns listInstanceResourcesInstanceResourcesInstanceResourceResource.CreatedAt, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourceResource) GetCreatedAt() time.Time {
 	return v.CreatedAt
 }
 
-// GetUpdatedAt returns listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource.UpdatedAt, and is useful for accessing the field via an interface.
-func (v *listInstanceResourcesInstanceResourcesInstanceResourcesPageItemsInstanceResourceResource) GetUpdatedAt() time.Time {
+// GetUpdatedAt returns listInstanceResourcesInstanceResourcesInstanceResourceResource.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *listInstanceResourcesInstanceResourcesInstanceResourceResource) GetUpdatedAt() time.Time {
 	return v.UpdatedAt
 }
 
@@ -8532,7 +8475,6 @@ func (v *listInstancesInstancesInstancesPageCursorPaginationCursor) GetPrevious(
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -10161,7 +10103,6 @@ func (v *listResourcesResourcesResourcesPageItemsResource) GetUpdatedAt() time.T
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -10779,7 +10720,7 @@ func (v *removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadMessagesVa
 // Metadata about an encrypted secret attached to an instance.
 //
 // Secrets are encrypted key-value pairs injected at deploy time. The API
-// never returns secret values -- only the name and timestamps are exposed.
+// never returns secret values -- only the name, fingerprint, and timestamps are exposed.
 type removeInstanceSecretRemoveInstanceSecretInstanceSecretPayloadResultInstanceSecret struct {
 	// The secret's key name, used to reference it in deployment configuration.
 	Name string `json:"name"`
@@ -11144,7 +11085,7 @@ func (v *setInstanceSecretSetInstanceSecretInstanceSecretPayloadMessagesValidati
 // Metadata about an encrypted secret attached to an instance.
 //
 // Secrets are encrypted key-value pairs injected at deploy time. The API
-// never returns secret values -- only the name and timestamps are exposed.
+// never returns secret values -- only the name, fingerprint, and timestamps are exposed.
 type setInstanceSecretSetInstanceSecretInstanceSecretPayloadResultInstanceSecret struct {
 	// The secret's key name, used to reference it in deployment configuration.
 	Name string `json:"name"`
@@ -11550,7 +11491,6 @@ func (v *updateInstanceUpdateInstanceInstancePayloadMessagesValidationMessage) G
 // PROVISIONED --> FAILED: "Deployment fails"
 // FAILED --> PROVISIONED: "Retry succeeds"
 // FAILED --> DECOMMISSIONED: "Decommission"
-// [*] --> EXTERNAL: "Remote reference set"
 // ```
 //
 // **Version resolution:** Each instance has a `version` constraint (e.g., `~1.0`)
@@ -12490,7 +12430,7 @@ func getBundle(
 
 // The query executed by getDeployment.
 const getDeployment_Operation = `
-query getDeployment ($organizationId: ID!, $id: ID!) {
+query getDeployment ($organizationId: ID!, $id: UUID!) {
 	deployment(organizationId: $organizationId, id: $id) {
 		id
 		status
@@ -12549,7 +12489,7 @@ func getDeployment(
 
 // The query executed by getDeploymentLogs.
 const getDeploymentLogs_Operation = `
-query getDeploymentLogs ($organizationId: ID!, $id: ID!) {
+query getDeploymentLogs ($organizationId: ID!, $id: UUID!) {
 	deployment(organizationId: $organizationId, id: $id) {
 		id
 		logs {
@@ -13283,22 +13223,16 @@ func listEnvironments(
 
 // The query executed by listInstanceResources.
 const listInstanceResources_Operation = `
-query listInstanceResources ($organizationId: ID!, $instanceId: ID!, $cursor: Cursor) {
+query listInstanceResources ($organizationId: ID!, $instanceId: ID!) {
 	instance(organizationId: $organizationId, id: $instanceId) {
-		resources(cursor: $cursor) {
-			cursor {
-				next
-				previous
-			}
-			items {
-				field
-				resource {
-					id
-					name
-					origin
-					createdAt
-					updatedAt
-				}
+		resources {
+			field
+			resource {
+				id
+				name
+				origin
+				createdAt
+				updatedAt
 			}
 		}
 	}
@@ -13310,7 +13244,6 @@ func listInstanceResources(
 	client_ graphql.Client,
 	organizationId string,
 	instanceId string,
-	cursor *Cursor,
 ) (data_ *listInstanceResourcesResponse, err_ error) {
 	req_ := &graphql.Request{
 		OpName: "listInstanceResources",
@@ -13318,7 +13251,6 @@ func listInstanceResources(
 		Variables: &__listInstanceResourcesInput{
 			OrganizationId: organizationId,
 			InstanceId:     instanceId,
-			Cursor:         cursor,
 		},
 	}
 
@@ -13968,7 +13900,7 @@ func setInstanceSecret(
 
 // The mutation executed by unlinkComponents.
 const unlinkComponents_Operation = `
-mutation unlinkComponents ($organizationId: ID!, $id: ID!) {
+mutation unlinkComponents ($organizationId: ID!, $id: UUID!) {
 	unlinkComponents(organizationId: $organizationId, id: $id) {
 		result {
 			id

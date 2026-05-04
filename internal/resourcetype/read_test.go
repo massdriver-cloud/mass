@@ -45,7 +45,7 @@ func TestRead(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mdClient := client.Client{
-				GQL: gqlmock.NewClientWithSingleJSONResponse(map[string]any{"data": map[string]any{}}),
+				GQLv2: gqlmock.NewClientWithSingleJSONResponse(map[string]any{"data": map[string]any{}}),
 			}
 
 			got, err := resourcetype.Read(t.Context(), &mdClient, tc.file)

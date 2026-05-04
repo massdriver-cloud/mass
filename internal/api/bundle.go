@@ -23,7 +23,7 @@ type Bundle struct {
 
 // GetBundle retrieves a bundle by its identifier (e.g., "aws-aurora-postgres@1.2.3" or "aws-aurora-postgres@latest").
 func GetBundle(ctx context.Context, mdClient *client.Client, id string) (*Bundle, error) {
-	response, err := getBundle(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, id)
+	response, err := getBundle(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get bundle %s: %w", id, err)
 	}
@@ -32,7 +32,7 @@ func GetBundle(ctx context.Context, mdClient *client.Client, id string) (*Bundle
 
 // ListBundles returns bundles, optionally filtered and sorted.
 func ListBundles(ctx context.Context, mdClient *client.Client, filter *BundlesFilter, sort *BundlesSort) ([]Bundle, error) {
-	response, err := listBundles(ctx, mdClient.GQLv1, mdClient.Config.OrganizationID, filter, sort, nil)
+	response, err := listBundles(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, filter, sort, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list bundles: %w", err)
 	}

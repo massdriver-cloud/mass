@@ -97,7 +97,7 @@ func (dbf *DefaultBundleFetcher) FetchBundle(ctx context.Context, bundleName, ve
 	return pullErr
 }
 
-// DefaultResourceLister is the production ResourceLister backed by the v1 API.
+// DefaultResourceLister is the production ResourceLister backed by the v2 API.
 type DefaultResourceLister struct {
 	Client *client.Client
 }
@@ -107,7 +107,7 @@ func (drl *DefaultResourceLister) ListInstanceResources(ctx context.Context, ins
 	return api.ListInstanceResources(ctx, drl.Client, instanceID)
 }
 
-// DefaultResourceExporter is the production ResourceExporter backed by the v1 API.
+// DefaultResourceExporter is the production ResourceExporter backed by the v2 API.
 type DefaultResourceExporter struct {
 	Client *client.Client
 }
