@@ -28,7 +28,7 @@ const (
 	heartbeatEvent    = "heartbeat"
 	heartbeatInterval = 30 * time.Second
 	replyTimeout      = 30 * time.Second
-	socketPath        = "/socket/websocket"
+	socketPath        = "/api/socket/websocket"
 	phoenixVsn        = "2.0.0"
 )
 
@@ -49,7 +49,9 @@ type Socket struct {
 	closed      bool
 	closeErr    error
 
-	done chan struct{} // closed when the read loop exits
+	closeConnOne sync.Once     // gates conn.Close so user-Close is idempotent
+	connCloseErr error         //   captured once for the caller
+	done         chan struct{} // closed when the read loop exits
 }
 
 // reply carries a phx_reply payload back to the caller awaiting it.
@@ -62,7 +64,7 @@ type reply struct {
 // `__absinthe__:control`, and starts the read/heartbeat loops.
 //
 // baseURL is the HTTPS API base (e.g. "https://api.example.com"). It's converted
-// to wss://example.com/socket/websocket?token=<token>&vsn=2.0.0. The token is
+// to wss://example.com/api/socket/websocket?token=<token>&vsn=2.0.0. The token is
 // sent as a query parameter because browsers can't set headers on WebSocket
 // upgrades — Phoenix UserSockets typically accept it from `connect/3`.
 func Dial(ctx context.Context, baseURL, token string) (*Socket, error) {
@@ -93,9 +95,13 @@ func Dial(ctx context.Context, baseURL, token string) (*Socket, error) {
 }
 
 // Close terminates the WebSocket and aborts any in-flight subscriptions.
+// Safe to call multiple times and from multiple goroutines.
 func (s *Socket) Close() error {
 	s.shutdown(nil)
-	return s.conn.Close()
+	s.closeConnOne.Do(func() {
+		s.connCloseErr = s.conn.Close()
+	})
+	return s.connCloseErr
 }
 
 // Err returns the error that caused the socket to close, if any. Returns nil

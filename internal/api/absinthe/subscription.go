@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 )
 
 // Subscription is an open Absinthe subscription. Iterate Data until it closes,
@@ -18,8 +19,8 @@ type Subscription struct {
 	// socket dies, the subscription is closed, or the server completes.
 	Data <-chan json.RawMessage
 
-	socket *Socket
-	closed bool
+	socket   *Socket
+	closeOne sync.Once
 }
 
 // Subscribe pushes a GraphQL subscription document on the Absinthe control
@@ -79,24 +80,22 @@ func (s *Socket) Subscribe(ctx context.Context, query string, variables map[stri
 }
 
 // Close unsubscribes on the server side and stops routing data to this
-// Subscription's channel. Safe to call multiple times.
+// Subscription's channel. Safe to call multiple times and from multiple
+// goroutines.
 func (sub *Subscription) Close() error {
-	if sub.closed {
-		return nil
-	}
-	sub.closed = true
+	sub.closeOne.Do(func() {
+		// Best-effort unsubscribe; ignore errors (the server may already have
+		// dropped the sub or the socket may be closing).
+		body, _ := json.Marshal(struct {
+			SubscriptionID string `json:"subscriptionId"`
+		}{SubscriptionID: sub.ID})
+		ctx, cancel := context.WithTimeout(context.Background(), replyTimeout)
+		defer cancel()
+		ref := sub.socket.refID()
+		_, _ = sub.socket.push(ctx, &sub.socket.joinRef, ref, controlTopic, "unsubscribe", body)
 
-	// Best-effort unsubscribe; ignore errors (the server may already have
-	// dropped the sub or the socket may be closing).
-	body, _ := json.Marshal(struct {
-		SubscriptionID string `json:"subscriptionId"`
-	}{SubscriptionID: sub.ID})
-	ctx, cancel := context.WithTimeout(context.Background(), replyTimeout)
-	defer cancel()
-	ref := sub.socket.refID()
-	_, _ = sub.socket.push(ctx, &sub.socket.joinRef, ref, controlTopic, "unsubscribe", body)
-
-	sub.socket.unregisterSubscription(sub.ID)
+		sub.socket.unregisterSubscription(sub.ID)
+	})
 	return nil
 }
 

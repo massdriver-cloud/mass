@@ -23,11 +23,12 @@ const deploymentLogsSubscription = `subscription deploymentLogs($organizationId:
 
 // SubscribeDeploymentLogs opens an Absinthe subscription for the given
 // deployment's log stream. The returned channel yields one DeploymentLog per
-// server batch and is closed when ctx is cancelled, the socket dies, or the
-// server completes the subscription.
+// server batch and is closed when the returned cancel function runs, the socket
+// dies, or the server completes the subscription. (Cancelling ctx alone does
+// *not* close the channel — call cancel for synchronous teardown.)
 //
 // The returned cancel function tears down both the subscription and the
-// underlying WebSocket — call it with `defer` even if you also cancel ctx.
+// underlying WebSocket. It is safe to call multiple times.
 //
 // Subscriptions require PAT (bearer) authentication. Basic-auth (API_KEY in
 // org:apiKey form) is rejected with an error since browsers/Phoenix sockets

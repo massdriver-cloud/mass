@@ -191,10 +191,11 @@ func runDeploymentLogs(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Poll status in the background; close the stream when we hit terminal.
+	// Poll status in the background; close the stream when we hit terminal so
+	// the range loop below unblocks.
 	statusErrCh := make(chan error, 1)
 	go func() {
-		statusErrCh <- pollUntilTerminal(streamCtx, mdClient, deploymentID, cancel)
+		statusErrCh <- pollUntilTerminal(streamCtx, mdClient, deploymentID, closeStream)
 	}()
 
 	for log := range stream {
@@ -218,11 +219,11 @@ func printDeploymentBackfill(ctx context.Context, mdClient *client.Client, deplo
 	return nil
 }
 
-// pollUntilTerminal polls the deployment status every 5 seconds until it
+// pollUntilTerminal polls the deployment status every second until it
 // reaches a terminal state, then invokes done() to tear down the streaming
 // subscription. Returns ctx.Err() if cancelled before terminal.
 func pollUntilTerminal(ctx context.Context, mdClient *client.Client, deploymentID string, done func()) error {
-	const pollInterval = 5 * time.Second
+	const pollInterval = 1 * time.Second
 	for {
 		select {
 		case <-ctx.Done():

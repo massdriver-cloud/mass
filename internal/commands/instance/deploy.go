@@ -170,10 +170,7 @@ func waitForDeployment(ctx context.Context, mdClient *client.Client, id string, 
 // while polling the deployment status silently in the background. Returns once
 // the deployment reaches a terminal state.
 func waitForDeploymentWithLogs(ctx context.Context, mdClient *client.Client, id string, w io.Writer, timeout time.Duration) (*api.Deployment, error) {
-	streamCtx, cancelStream := context.WithCancel(ctx)
-	defer cancelStream()
-
-	logs, closeStream, err := api.SubscribeDeploymentLogs(streamCtx, mdClient, id)
+	logs, closeStream, err := api.SubscribeDeploymentLogs(ctx, mdClient, id)
 	if err != nil {
 		// Streaming setup failed (e.g. non-PAT auth). Fall back to status polling
 		// so the user still gets *some* signal rather than an opaque failure.
@@ -182,7 +179,8 @@ func waitForDeploymentWithLogs(ctx context.Context, mdClient *client.Client, id 
 	}
 	defer closeStream()
 
-	// Goroutine: print log batches as they arrive.
+	// Goroutine: print log batches as they arrive. Exits when `logs` closes,
+	// which happens after closeStream() tears down the subscription.
 	streamDone := make(chan struct{})
 	go func() {
 		defer close(streamDone)
@@ -204,7 +202,7 @@ func waitForDeploymentWithLogs(ctx context.Context, mdClient *client.Client, id 
 		}
 
 		if final, done, terminalErr := terminalOutcome(deployment); done {
-			cancelStream()
+			closeStream()
 			<-streamDone
 			fmt.Fprintf(w, "\n%s after %ds\n", final.Status, final.ElapsedTime)
 			return final, terminalErr
