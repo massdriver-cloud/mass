@@ -8427,6 +8427,344 @@ func (v *getServerServerSsoProvidersSsoProvider) GetUiIconUrl() string { return 
 // GetUiLabel returns getServerServerSsoProvidersSsoProvider.UiLabel, and is useful for accessing the field via an interface.
 func (v *getServerServerSsoProvidersSsoProvider) GetUiLabel() string { return v.UiLabel }
 
+// getViewerResponse is returned by getViewer on success.
+type getViewerResponse struct {
+	// Get information about the currently authenticated entity.
+	//
+	// Returns an `AccountViewer` for human users or a `ServiceAccountViewer` for API clients.
+	// This is the "who am I?" query — use it to bootstrap user profiles, display org switchers,
+	// check billing status, or verify which service account is making requests.
+	//
+	// Returns an authentication error if the request has no valid credentials.
+	Viewer getViewerViewer `json:"-"`
+}
+
+// GetViewer returns getViewerResponse.Viewer, and is useful for accessing the field via an interface.
+func (v *getViewerResponse) GetViewer() getViewerViewer { return v.Viewer }
+
+func (v *getViewerResponse) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getViewerResponse
+		Viewer json.RawMessage `json:"viewer"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getViewerResponse = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Viewer
+		src := firstPass.Viewer
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalgetViewerViewer(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getViewerResponse.Viewer: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetViewerResponse struct {
+	Viewer json.RawMessage `json:"viewer"`
+}
+
+func (v *getViewerResponse) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getViewerResponse) __premarshalJSON() (*__premarshalgetViewerResponse, error) {
+	var retval __premarshalgetViewerResponse
+
+	{
+
+		dst := &retval.Viewer
+		src := v.Viewer
+		var err error
+		*dst, err = __marshalgetViewerViewer(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getViewerResponse.Viewer: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// getViewerViewer includes the requested fields of the GraphQL interface Viewer.
+//
+// getViewerViewer is implemented by the following types:
+// getViewerViewerAccountViewer
+// getViewerViewerServiceAccountViewer
+// The GraphQL type's documentation follows.
+//
+// The authenticated entity making this API request.
+//
+// This is a union type — check `__typename` to determine whether the viewer is a human
+// user (`AccountViewer`) or an API client (`ServiceAccountViewer`), then query the
+// appropriate fields.
+//
+// **Example:**
+//
+// ```graphql
+// query {
+// viewer {
+// __typename
+// ... on AccountViewer {
+// id
+// email
+// firstName
+// organizations { data { id name } }
+// }
+// ... on ServiceAccountViewer {
+// id
+// name
+// organization { id name }
+// }
+// }
+// }
+// ```
+type getViewerViewer interface {
+	implementsGraphQLInterfacegetViewerViewer()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *getViewerViewerAccountViewer) implementsGraphQLInterfacegetViewerViewer()        {}
+func (v *getViewerViewerServiceAccountViewer) implementsGraphQLInterfacegetViewerViewer() {}
+
+func __unmarshalgetViewerViewer(b []byte, v *getViewerViewer) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "AccountViewer":
+		*v = new(getViewerViewerAccountViewer)
+		return json.Unmarshal(b, *v)
+	case "ServiceAccountViewer":
+		*v = new(getViewerViewerServiceAccountViewer)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing Viewer.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for getViewerViewer: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalgetViewerViewer(v *getViewerViewer) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *getViewerViewerAccountViewer:
+		typename = "AccountViewer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getViewerViewerAccountViewer
+		}{typename, v}
+		return json.Marshal(result)
+	case *getViewerViewerServiceAccountViewer:
+		typename = "ServiceAccountViewer"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*getViewerViewerServiceAccountViewer
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for getViewerViewer: "%T"`, v)
+	}
+}
+
+// getViewerViewerAccountViewer includes the requested fields of the GraphQL type AccountViewer.
+// The GraphQL type's documentation follows.
+//
+// The authenticated human user (account).
+//
+// Returned by the `viewer` query when the request is authenticated with a user session or
+// on behalf of a human account. Contains profile information, organization memberships,
+// linked OAuth identities, and pending group invitations.
+//
+// Use `organizations` to build an org switcher, `defaultOrganization` to set an initial
+// context, and `invites` to show pending invitations the user can accept.
+type getViewerViewerAccountViewer struct {
+	Typename string `json:"__typename"`
+	// Unique identifier for this account.
+	Id string `json:"id"`
+	// Primary email address associated with the account.
+	Email string `json:"email"`
+	// First name, if set in the user's profile.
+	FirstName string `json:"firstName"`
+	// Last name, if set in the user's profile.
+	LastName string `json:"lastName"`
+	// Your most recently joined organization.
+	//
+	// Useful for setting a default context when the user first opens the application.
+	// Returns `null` if the user does not belong to any organization.
+	DefaultOrganization getViewerViewerAccountViewerDefaultOrganization `json:"defaultOrganization"`
+}
+
+// GetTypename returns getViewerViewerAccountViewer.Typename, and is useful for accessing the field via an interface.
+func (v *getViewerViewerAccountViewer) GetTypename() string { return v.Typename }
+
+// GetId returns getViewerViewerAccountViewer.Id, and is useful for accessing the field via an interface.
+func (v *getViewerViewerAccountViewer) GetId() string { return v.Id }
+
+// GetEmail returns getViewerViewerAccountViewer.Email, and is useful for accessing the field via an interface.
+func (v *getViewerViewerAccountViewer) GetEmail() string { return v.Email }
+
+// GetFirstName returns getViewerViewerAccountViewer.FirstName, and is useful for accessing the field via an interface.
+func (v *getViewerViewerAccountViewer) GetFirstName() string { return v.FirstName }
+
+// GetLastName returns getViewerViewerAccountViewer.LastName, and is useful for accessing the field via an interface.
+func (v *getViewerViewerAccountViewer) GetLastName() string { return v.LastName }
+
+// GetDefaultOrganization returns getViewerViewerAccountViewer.DefaultOrganization, and is useful for accessing the field via an interface.
+func (v *getViewerViewerAccountViewer) GetDefaultOrganization() getViewerViewerAccountViewerDefaultOrganization {
+	return v.DefaultOrganization
+}
+
+// getViewerViewerAccountViewerDefaultOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// The top-level account that owns all your infrastructure, projects, and team members.
+//
+// An organization is the root of the Massdriver resource hierarchy. Everything you build
+// and deploy lives under an organization: **Projects** contain your infrastructure designs,
+// **Environments** (like staging and production) are where those designs come to life, and
+// **Instances** are the actual running cloud resources.
+//
+// ```mermaid
+// graph TD
+// O["Organization"] --> P1["Project"]
+// O --> P2["Project"]
+// P1 --> E1["Environment: staging"]
+// P1 --> E2["Environment: production"]
+// E1 --> I1["Instance"]
+// E1 --> I2["Instance"]
+// ```
+//
+// Members access resources through **group memberships** with role-based permissions.
+// Custom attributes defined at the organization level govern attribute metadata across all child resources.
+//
+// Administrative fields (`billing`, `members`, `customAttributes`) resolve to `null` for
+// callers who lack the corresponding ABAC action; in that case a top-level `FORBIDDEN`
+// error is added to the response while the rest of the organization still resolves.
+type getViewerViewerAccountViewerDefaultOrganization struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI.
+	Name string `json:"name"`
+}
+
+// GetId returns getViewerViewerAccountViewerDefaultOrganization.Id, and is useful for accessing the field via an interface.
+func (v *getViewerViewerAccountViewerDefaultOrganization) GetId() string { return v.Id }
+
+// GetName returns getViewerViewerAccountViewerDefaultOrganization.Name, and is useful for accessing the field via an interface.
+func (v *getViewerViewerAccountViewerDefaultOrganization) GetName() string { return v.Name }
+
+// getViewerViewerServiceAccountViewer includes the requested fields of the GraphQL type ServiceAccountViewer.
+// The GraphQL type's documentation follows.
+//
+// The authenticated service account (API client).
+//
+// Returned by the `viewer` query when the request is authenticated with a service account
+// credential (Basic auth or access token). Contains the service account's identity and the
+// organization it belongs to.
+type getViewerViewerServiceAccountViewer struct {
+	Typename string `json:"__typename"`
+	// Unique identifier for this service account.
+	Id string `json:"id"`
+	// Human-readable name of the service account.
+	Name string `json:"name"`
+	// Optional text describing the purpose of this service account.
+	Description string `json:"description"`
+	// The organization this service account belongs to.
+	Organization getViewerViewerServiceAccountViewerOrganization `json:"organization"`
+}
+
+// GetTypename returns getViewerViewerServiceAccountViewer.Typename, and is useful for accessing the field via an interface.
+func (v *getViewerViewerServiceAccountViewer) GetTypename() string { return v.Typename }
+
+// GetId returns getViewerViewerServiceAccountViewer.Id, and is useful for accessing the field via an interface.
+func (v *getViewerViewerServiceAccountViewer) GetId() string { return v.Id }
+
+// GetName returns getViewerViewerServiceAccountViewer.Name, and is useful for accessing the field via an interface.
+func (v *getViewerViewerServiceAccountViewer) GetName() string { return v.Name }
+
+// GetDescription returns getViewerViewerServiceAccountViewer.Description, and is useful for accessing the field via an interface.
+func (v *getViewerViewerServiceAccountViewer) GetDescription() string { return v.Description }
+
+// GetOrganization returns getViewerViewerServiceAccountViewer.Organization, and is useful for accessing the field via an interface.
+func (v *getViewerViewerServiceAccountViewer) GetOrganization() getViewerViewerServiceAccountViewerOrganization {
+	return v.Organization
+}
+
+// getViewerViewerServiceAccountViewerOrganization includes the requested fields of the GraphQL type Organization.
+// The GraphQL type's documentation follows.
+//
+// The top-level account that owns all your infrastructure, projects, and team members.
+//
+// An organization is the root of the Massdriver resource hierarchy. Everything you build
+// and deploy lives under an organization: **Projects** contain your infrastructure designs,
+// **Environments** (like staging and production) are where those designs come to life, and
+// **Instances** are the actual running cloud resources.
+//
+// ```mermaid
+// graph TD
+// O["Organization"] --> P1["Project"]
+// O --> P2["Project"]
+// P1 --> E1["Environment: staging"]
+// P1 --> E2["Environment: production"]
+// E1 --> I1["Instance"]
+// E1 --> I2["Instance"]
+// ```
+//
+// Members access resources through **group memberships** with role-based permissions.
+// Custom attributes defined at the organization level govern attribute metadata across all child resources.
+//
+// Administrative fields (`billing`, `members`, `customAttributes`) resolve to `null` for
+// callers who lack the corresponding ABAC action; in that case a top-level `FORBIDDEN`
+// error is added to the response while the rest of the organization still resolves.
+type getViewerViewerServiceAccountViewerOrganization struct {
+	Id string `json:"id"`
+	// Display name shown in the UI and CLI.
+	Name string `json:"name"`
+}
+
+// GetId returns getViewerViewerServiceAccountViewerOrganization.Id, and is useful for accessing the field via an interface.
+func (v *getViewerViewerServiceAccountViewerOrganization) GetId() string { return v.Id }
+
+// GetName returns getViewerViewerServiceAccountViewerOrganization.Name, and is useful for accessing the field via an interface.
+func (v *getViewerViewerServiceAccountViewerOrganization) GetName() string { return v.Name }
+
 // linkComponentsLinkComponentsLinkPayload includes the requested fields of the GraphQL type LinkPayload.
 type linkComponentsLinkComponentsLinkPayload struct {
 	// The object created/updated/deleted by the mutation. May be null if mutation failed.
@@ -14768,6 +15106,55 @@ func getServer(
 	}
 
 	data_ = &getServerResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by getViewer.
+const getViewer_Operation = `
+query getViewer {
+	viewer {
+		__typename
+		... on AccountViewer {
+			id
+			email
+			firstName
+			lastName
+			defaultOrganization {
+				id
+				name
+			}
+		}
+		... on ServiceAccountViewer {
+			id
+			name
+			description
+			organization {
+				id
+				name
+			}
+		}
+	}
+}
+`
+
+func getViewer(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (data_ *getViewerResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getViewer",
+		Query:  getViewer_Operation,
+	}
+
+	data_ = &getViewerResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(

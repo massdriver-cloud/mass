@@ -6,7 +6,7 @@
 
 {{if .Field}}**Field:** {{.Field | mdEscape}}{{end}}
 
-{{if .ResourceType}}**Type:** {{.ResourceType.Label | mdEscape}} ({{.ResourceType.Name | mdEscape}}){{end}}
+{{if .ResourceType}}**Type:** {{.ResourceType.Name | mdEscape}} (`{{.ResourceType.ID | mdEscape}}`){{end}}
 
 {{if .Instance}}**Instance:** {{.Instance.ID | mdEscape}}{{end}}
 

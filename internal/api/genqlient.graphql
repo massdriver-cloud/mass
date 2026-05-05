@@ -1,4 +1,29 @@
-# SERVER
+# SERVER / VIEWER
+
+query getViewer {
+  viewer {
+    __typename
+    ... on AccountViewer {
+      id
+      email
+      firstName
+      lastName
+      defaultOrganization {
+        id
+        name
+      }
+    }
+    ... on ServiceAccountViewer {
+      id
+      name
+      description
+      organization {
+        id
+        name
+      }
+    }
+  }
+}
 
 query getServer {
   server {
