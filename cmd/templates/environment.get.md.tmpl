@@ -14,10 +14,18 @@ No attributes
 {{- end}}
 
 ## Instances
+{{- with .Blueprint}}
+{{- if .Instances}}
 | Name | Bundle | Status |
 | ---- | ------ | ------ |
-{{- range .Blueprint.Instances}}
+{{- range .Instances}}
 | **{{.Name}}** | {{.Bundle.Name}} | {{.Status}} |
+{{- end}}
+{{- else}}
+No instances
+{{- end}}
+{{- else}}
+No instances
 {{- end}}
 
 ## Cost

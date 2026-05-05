@@ -182,6 +182,17 @@ query listLinks(
   }
 }
 
+query getComponent($organizationId: ID!, $id: ID!) {
+  component(organizationId: $organizationId, id: $id) {
+    id
+    name
+    description
+    attributes
+    createdAt
+    updatedAt
+  }
+}
+
 # @genqlient(for: "AddComponentInput.description", omitempty: true)
 # @genqlient(for: "AddComponentInput.attributes", omitempty: true)
 mutation addComponent(
@@ -222,6 +233,22 @@ mutation removeComponent($organizationId: ID!, $id: ID!) {
     result {
       id
       name
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation updateComponent($organizationId: ID!, $id: ID!, $input: UpdateComponentInput!) {
+  updateComponent(organizationId: $organizationId, id: $id, input: $input) {
+    result {
+      id
+      name
+      description
     }
     successful
     messages {

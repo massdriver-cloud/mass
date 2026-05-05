@@ -32,7 +32,19 @@ func NewCmdComponent() *cobra.Command {
 	componentAddCmd.Flags().String("id", "", "Short identifier for this component (e.g., db). Max 20 chars, lowercase alphanumeric.")
 	componentAddCmd.Flags().StringP("name", "n", "", "Display name (defaults to --id if not provided)")
 	componentAddCmd.Flags().StringP("description", "d", "", "Optional description")
+	componentAddCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a priority=high,cost-center=engineering)")
 	_ = componentAddCmd.MarkFlagRequired("id")
+
+	componentUpdateCmd := &cobra.Command{
+		Use:     "update <component-id>",
+		Short:   "Update a component's name, description, or attributes",
+		Example: `mass component update ecomm-db --name "Primary DB" -a priority=high`,
+		Args:    cobra.ExactArgs(1),
+		RunE:    runComponentUpdate,
+	}
+	componentUpdateCmd.Flags().StringP("name", "n", "", "New display name")
+	componentUpdateCmd.Flags().StringP("description", "d", "", "New description")
+	componentUpdateCmd.Flags().StringToStringP("attributes", "a", nil, "Replacement custom attributes (e.g. -a priority=high,cost-center=engineering)")
 
 	componentRemoveCmd := &cobra.Command{
 		Use:     "remove <component-id>",
@@ -65,6 +77,7 @@ func NewCmdComponent() *cobra.Command {
 	}
 
 	componentCmd.AddCommand(componentAddCmd)
+	componentCmd.AddCommand(componentUpdateCmd)
 	componentCmd.AddCommand(componentRemoveCmd)
 	componentCmd.AddCommand(componentLinkCmd)
 	componentCmd.AddCommand(componentUnlinkCmd)
@@ -90,6 +103,10 @@ func runComponentAdd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	attrs, err := cmd.Flags().GetStringToString("attributes")
+	if err != nil {
+		return err
+	}
 	if name == "" {
 		name = shortID
 	}
@@ -105,6 +122,7 @@ func runComponentAdd(cmd *cobra.Command, args []string) error {
 		Id:          shortID,
 		Name:        name,
 		Description: description,
+		Attributes:  attributesToMap(attrs),
 	}
 	comp, addErr := api.AddComponent(ctx, mdClient, projectID, ociRepoName, input)
 	if addErr != nil {
@@ -112,6 +130,63 @@ func runComponentAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("✅ Component `%s` added to project `%s`\n", comp.ID, projectID)
+	return nil
+}
+
+func runComponentUpdate(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	componentID := args[0]
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+	description, err := cmd.Flags().GetString("description")
+	if err != nil {
+		return err
+	}
+	attrs, err := cmd.Flags().GetStringToString("attributes")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	current, getErr := api.GetComponent(ctx, mdClient, componentID)
+	if getErr != nil {
+		return fmt.Errorf("error getting component: %w", getErr)
+	}
+
+	if !cmd.Flags().Changed("name") {
+		name = current.Name
+	}
+	if !cmd.Flags().Changed("description") {
+		description = current.Description
+	}
+	var attributes map[string]any
+	if cmd.Flags().Changed("attributes") {
+		attributes = attributesToMap(attrs)
+	} else {
+		attributes = stringMapToAny(current.Attributes)
+	}
+
+	input := api.UpdateComponentInput{
+		Name:        name,
+		Description: description,
+		Attributes:  attributes,
+	}
+
+	updated, err := api.UpdateComponent(ctx, mdClient, componentID, input)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Component `%s` updated\n", updated.ID)
 	return nil
 }
 

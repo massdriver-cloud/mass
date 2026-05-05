@@ -77,6 +77,35 @@ func AddComponent(ctx context.Context, mdClient *client.Client, projectID, ociRe
 	return toComponent(response.AddComponent.Result)
 }
 
+// GetComponent retrieves a component by ID.
+func GetComponent(ctx context.Context, mdClient *client.Client, componentID string) (*Component, error) {
+	response, err := getComponent(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, componentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get component %s: %w", componentID, err)
+	}
+	if response.Component.Id == "" {
+		return nil, fmt.Errorf("component %s not found", componentID)
+	}
+	return toComponent(response.Component)
+}
+
+// UpdateComponent updates a component's name, description, and attributes.
+// The component ID and underlying bundle cannot be changed.
+func UpdateComponent(ctx context.Context, mdClient *client.Client, componentID string, input UpdateComponentInput) (*Component, error) {
+	response, err := updateComponent(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, componentID, input)
+	if err != nil {
+		return nil, err
+	}
+	if !response.UpdateComponent.Successful {
+		messages := make([]string, 0, len(response.UpdateComponent.Messages))
+		for _, m := range response.UpdateComponent.Messages {
+			messages = append(messages, m.Message)
+		}
+		return nil, mutationError("unable to update component", messages)
+	}
+	return toComponent(response.UpdateComponent.Result)
+}
+
 // RemoveComponent removes a component from a project's blueprint.
 func RemoveComponent(ctx context.Context, mdClient *client.Client, componentID string) (*Component, error) {
 	response, err := removeComponent(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, componentID)

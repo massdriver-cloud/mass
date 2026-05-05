@@ -64,6 +64,18 @@ func NewCmdEnvironment() *cobra.Command {
 		RunE:  runEnvironmentCreate,
 	}
 	environmentCreateCmd.Flags().StringP("name", "n", "", "Environment name (defaults to ID if not provided)")
+	environmentCreateCmd.Flags().StringP("description", "d", "", "Optional environment description")
+	environmentCreateCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a environment=staging,region=uswest)")
+
+	environmentUpdateCmd := &cobra.Command{
+		Use:   "update [environment]",
+		Short: "Update an environment's name, description, or attributes",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runEnvironmentUpdate,
+	}
+	environmentUpdateCmd.Flags().StringP("name", "n", "", "New environment name")
+	environmentUpdateCmd.Flags().StringP("description", "d", "", "New environment description")
+	environmentUpdateCmd.Flags().StringToStringP("attributes", "a", nil, "Replacement custom attributes (e.g. -a environment=staging,region=uswest)")
 
 	environmentDefaultCmd := &cobra.Command{
 		Use:   "default [environment] [resource-id]",
@@ -77,6 +89,7 @@ func NewCmdEnvironment() *cobra.Command {
 	environmentCmd.AddCommand(environmentGetCmd)
 	environmentCmd.AddCommand(environmentListCmd)
 	environmentCmd.AddCommand(environmentCreateCmd)
+	environmentCmd.AddCommand(environmentUpdateCmd)
 	environmentCmd.AddCommand(environmentDefaultCmd)
 
 	return environmentCmd
@@ -216,6 +229,14 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	description, err := cmd.Flags().GetString("description")
+	if err != nil {
+		return err
+	}
+	attrs, err := cmd.Flags().GetStringToString("attributes")
+	if err != nil {
+		return err
+	}
 
 	// Parse project-env format: extract project and env IDs separately
 	parts := strings.Split(fullID, "-")
@@ -229,14 +250,18 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 		name = envID
 	}
 
+	cmd.SilenceUsage = true
+
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
 	input := api.CreateEnvironmentInput{
-		Id:   envID,
-		Name: name,
+		Id:          envID,
+		Name:        name,
+		Description: description,
+		Attributes:  attributesToMap(attrs),
 	}
 
 	env, err := api.CreateEnvironment(ctx, mdClient, projectID, input)
@@ -248,6 +273,67 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
 		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(env.ID))
+	}
+	return nil
+}
+
+func runEnvironmentUpdate(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	environmentID := args[0]
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+	description, err := cmd.Flags().GetString("description")
+	if err != nil {
+		return err
+	}
+	attrs, err := cmd.Flags().GetStringToString("attributes")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	current, getErr := api.GetEnvironment(ctx, mdClient, environmentID)
+	if getErr != nil {
+		return fmt.Errorf("error getting environment: %w", getErr)
+	}
+
+	if !cmd.Flags().Changed("name") {
+		name = current.Name
+	}
+	if !cmd.Flags().Changed("description") {
+		description = current.Description
+	}
+	var attributes map[string]any
+	if cmd.Flags().Changed("attributes") {
+		attributes = attributesToMap(attrs)
+	} else {
+		attributes = stringMapToAny(current.Attributes)
+	}
+
+	input := api.UpdateEnvironmentInput{
+		Name:        name,
+		Description: description,
+		Attributes:  attributes,
+	}
+
+	updated, err := api.UpdateEnvironment(ctx, mdClient, environmentID, input)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Environment `%s` updated\n", updated.ID)
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	if urlErr == nil {
+		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(updated.ID))
 	}
 	return nil
 }

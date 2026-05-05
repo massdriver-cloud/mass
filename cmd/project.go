@@ -64,6 +64,18 @@ func NewCmdProject() *cobra.Command {
 		RunE:  runProjectCreate,
 	}
 	projectCreateCmd.Flags().StringP("name", "n", "", "Project name (defaults to slug if not provided)")
+	projectCreateCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (repeat or comma-separate, e.g. -a team=ops,system=api)")
+	projectCreateCmd.Flags().StringP("description", "d", "", "Optional project description")
+
+	projectUpdateCmd := &cobra.Command{
+		Use:   "update [project]",
+		Short: "Update a project's name, description, or attributes",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runProjectUpdate,
+	}
+	projectUpdateCmd.Flags().StringP("name", "n", "", "New project name")
+	projectUpdateCmd.Flags().StringP("description", "d", "", "New project description")
+	projectUpdateCmd.Flags().StringToStringP("attributes", "a", nil, "Replacement custom attributes (e.g. -a team=ops,system=api)")
 
 	projectDeleteCmd := &cobra.Command{
 		Use:   "delete [project]",
@@ -78,6 +90,7 @@ func NewCmdProject() *cobra.Command {
 	projectCmd.AddCommand(projectGetCmd)
 	projectCmd.AddCommand(projectListCmd)
 	projectCmd.AddCommand(projectCreateCmd)
+	projectCmd.AddCommand(projectUpdateCmd)
 	projectCmd.AddCommand(projectDeleteCmd)
 
 	return projectCmd
@@ -210,6 +223,16 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 	if name == "" {
 		name = id
 	}
+	description, err := cmd.Flags().GetString("description")
+	if err != nil {
+		return err
+	}
+	attrs, err := cmd.Flags().GetStringToString("attributes")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
 
 	mdClient, mdClientErr := client.New()
 	if mdClientErr != nil {
@@ -219,7 +242,8 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 	input := api.CreateProjectInput{
 		Id:          id,
 		Name:        name,
-		Description: "",
+		Description: description,
+		Attributes:  attributesToMap(attrs),
 	}
 
 	project, err := api.CreateProject(ctx, mdClient, input)
@@ -231,6 +255,69 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
 	if urlErr == nil {
 		fmt.Printf("🔗 %s\n", urlHelper.ProjectURL(project.ID))
+	}
+	return nil
+}
+
+func runProjectUpdate(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	projectID := args[0]
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+	description, err := cmd.Flags().GetString("description")
+	if err != nil {
+		return err
+	}
+	attrs, err := cmd.Flags().GetStringToString("attributes")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	// Fetch current state so unset flags retain their existing values rather
+	// than blanking the field at the server.
+	current, getErr := api.GetProject(ctx, mdClient, projectID)
+	if getErr != nil {
+		return fmt.Errorf("error getting project: %w", getErr)
+	}
+
+	if !cmd.Flags().Changed("name") {
+		name = current.Name
+	}
+	if !cmd.Flags().Changed("description") {
+		description = current.Description
+	}
+	var attributes map[string]any
+	if cmd.Flags().Changed("attributes") {
+		attributes = attributesToMap(attrs)
+	} else {
+		attributes = stringMapToAny(current.Attributes)
+	}
+
+	input := api.UpdateProjectInput{
+		Name:        name,
+		Description: description,
+		Attributes:  attributes,
+	}
+
+	updated, err := api.UpdateProject(ctx, mdClient, projectID, input)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Project `%s` updated\n", updated.ID)
+	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
+	if urlErr == nil {
+		fmt.Printf("🔗 %s\n", urlHelper.ProjectURL(updated.ID))
 	}
 	return nil
 }

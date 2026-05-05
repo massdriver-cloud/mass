@@ -1397,6 +1397,94 @@ func (v *StringFilter) GetEq() string { return v.Eq }
 // GetIn returns StringFilter.In, and is useful for accessing the field via an interface.
 func (v *StringFilter) GetIn() []string { return v.In }
 
+// Update an existing component's name, description, and attributes. The component ID and underlying bundle cannot be changed.
+type UpdateComponentInput struct {
+	// Key-value attributes for this component. Keys and values must be strings. Must conform to the organization's custom attributes for the component scope.
+	Attributes map[string]any `json:"-"`
+	// Optional description of this component's purpose
+	Description string `json:"description"`
+	// Display name for this component (e.g., 'Billing Database')
+	Name string `json:"name"`
+}
+
+// GetAttributes returns UpdateComponentInput.Attributes, and is useful for accessing the field via an interface.
+func (v *UpdateComponentInput) GetAttributes() map[string]any { return v.Attributes }
+
+// GetDescription returns UpdateComponentInput.Description, and is useful for accessing the field via an interface.
+func (v *UpdateComponentInput) GetDescription() string { return v.Description }
+
+// GetName returns UpdateComponentInput.Name, and is useful for accessing the field via an interface.
+func (v *UpdateComponentInput) GetName() string { return v.Name }
+
+func (v *UpdateComponentInput) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*UpdateComponentInput
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.UpdateComponentInput = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal UpdateComponentInput.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalUpdateComponentInput struct {
+	Attributes json.RawMessage `json:"attributes"`
+
+	Description string `json:"description"`
+
+	Name string `json:"name"`
+}
+
+func (v *UpdateComponentInput) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *UpdateComponentInput) __premarshalJSON() (*__premarshalUpdateComponentInput, error) {
+	var retval __premarshalUpdateComponentInput
+
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal UpdateComponentInput.Attributes: %w", err)
+		}
+	}
+	retval.Description = v.Description
+	retval.Name = v.Name
+	return &retval, nil
+}
+
 // Update an existing environment's name and description. The ID cannot be changed after creation.
 type UpdateEnvironmentInput struct {
 	// Key-value attributes for this environment. Keys and values must be strings. Must conform to the organization's custom attributes for the environment scope.
@@ -1823,6 +1911,18 @@ func (v *__getBundleInput) GetOrganizationId() string { return v.OrganizationId 
 // GetId returns __getBundleInput.Id, and is useful for accessing the field via an interface.
 func (v *__getBundleInput) GetId() string { return v.Id }
 
+// __getComponentInput is used internally by genqlient
+type __getComponentInput struct {
+	OrganizationId string `json:"organizationId"`
+	Id             string `json:"id"`
+}
+
+// GetOrganizationId returns __getComponentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__getComponentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __getComponentInput.Id, and is useful for accessing the field via an interface.
+func (v *__getComponentInput) GetId() string { return v.Id }
+
 // __getDeploymentInput is used internally by genqlient
 type __getDeploymentInput struct {
 	OrganizationId string `json:"organizationId"`
@@ -2194,6 +2294,22 @@ func (v *__unlinkComponentsInput) GetOrganizationId() string { return v.Organiza
 
 // GetId returns __unlinkComponentsInput.Id, and is useful for accessing the field via an interface.
 func (v *__unlinkComponentsInput) GetId() string { return v.Id }
+
+// __updateComponentInput is used internally by genqlient
+type __updateComponentInput struct {
+	OrganizationId string               `json:"organizationId"`
+	Id             string               `json:"id"`
+	Input          UpdateComponentInput `json:"input"`
+}
+
+// GetOrganizationId returns __updateComponentInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *__updateComponentInput) GetOrganizationId() string { return v.OrganizationId }
+
+// GetId returns __updateComponentInput.Id, and is useful for accessing the field via an interface.
+func (v *__updateComponentInput) GetId() string { return v.Id }
+
+// GetInput returns __updateComponentInput.Input, and is useful for accessing the field via an interface.
+func (v *__updateComponentInput) GetInput() UpdateComponentInput { return v.Input }
 
 // __updateEnvironmentInput is used internally by genqlient
 type __updateEnvironmentInput struct {
@@ -4187,6 +4303,153 @@ type getBundleResponse struct {
 
 // GetBundle returns getBundleResponse.Bundle, and is useful for accessing the field via an interface.
 func (v *getBundleResponse) GetBundle() getBundleBundle { return v.Bundle }
+
+// getComponentComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type getComponentComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetId returns getComponentComponent.Id, and is useful for accessing the field via an interface.
+func (v *getComponentComponent) GetId() string { return v.Id }
+
+// GetName returns getComponentComponent.Name, and is useful for accessing the field via an interface.
+func (v *getComponentComponent) GetName() string { return v.Name }
+
+// GetDescription returns getComponentComponent.Description, and is useful for accessing the field via an interface.
+func (v *getComponentComponent) GetDescription() string { return v.Description }
+
+// GetAttributes returns getComponentComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *getComponentComponent) GetAttributes() map[string]any { return v.Attributes }
+
+// GetCreatedAt returns getComponentComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getComponentComponent) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetUpdatedAt returns getComponentComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getComponentComponent) GetUpdatedAt() time.Time { return v.UpdatedAt }
+
+func (v *getComponentComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getComponentComponent
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getComponentComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getComponentComponent.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetComponentComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (v *getComponentComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getComponentComponent) __premarshalJSON() (*__premarshalgetComponentComponent, error) {
+	var retval __premarshalgetComponentComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getComponentComponent.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	return &retval, nil
+}
+
+// getComponentResponse is returned by getComponent on success.
+type getComponentResponse struct {
+	// Fetch a single component by its ID.
+	//
+	// Returns null with a `NOT_FOUND` error if the component does not exist or
+	// is not visible to the caller.
+	//
+	// ```graphql
+	// query {
+	// component(organizationId: "my-org", id: "my-project-database") {
+	// id
+	// name
+	// instances {
+	// items { id environment { id } }
+	// }
+	// }
+	// }
+	// ```
+	Component getComponentComponent `json:"component"`
+}
+
+// GetComponent returns getComponentResponse.Component, and is useful for accessing the field via an interface.
+func (v *getComponentResponse) GetComponent() getComponentComponent { return v.Component }
 
 // getDeploymentDeployment includes the requested fields of the GraphQL type Deployment.
 // The GraphQL type's documentation follows.
@@ -11234,6 +11497,146 @@ func (v *unlinkComponentsUnlinkComponentsLinkPayloadResultLink) GetFromField() s
 // GetToField returns unlinkComponentsUnlinkComponentsLinkPayloadResultLink.ToField, and is useful for accessing the field via an interface.
 func (v *unlinkComponentsUnlinkComponentsLinkPayloadResultLink) GetToField() string { return v.ToField }
 
+// updateComponentResponse is returned by updateComponent on success.
+type updateComponentResponse struct {
+	// Update a component's mutable fields (name, description, attributes).
+	//
+	// The component ID and underlying bundle cannot be changed after creation.
+	// Attributes are validated against the organization's custom-attribute schema
+	// for the component scope.
+	//
+	// ```graphql
+	// mutation {
+	// updateComponent(
+	// organizationId: "my-org"
+	// id: "my-project-database"
+	// input: { name: "Primary Database", description: "User data" }
+	// ) {
+	// result { id name description }
+	// successful
+	// }
+	// }
+	// ```
+	UpdateComponent updateComponentUpdateComponentComponentPayload `json:"updateComponent"`
+}
+
+// GetUpdateComponent returns updateComponentResponse.UpdateComponent, and is useful for accessing the field via an interface.
+func (v *updateComponentResponse) GetUpdateComponent() updateComponentUpdateComponentComponentPayload {
+	return v.UpdateComponent
+}
+
+// updateComponentUpdateComponentComponentPayload includes the requested fields of the GraphQL type ComponentPayload.
+type updateComponentUpdateComponentComponentPayload struct {
+	// The object created/updated/deleted by the mutation. May be null if mutation failed.
+	Result updateComponentUpdateComponentComponentPayloadResultComponent `json:"result"`
+	// Indicates if the mutation completed successfully or not.
+	Successful bool `json:"successful"`
+	// A list of failed validations. May be blank or null if mutation succeeded.
+	Messages []updateComponentUpdateComponentComponentPayloadMessagesValidationMessage `json:"messages"`
+}
+
+// GetResult returns updateComponentUpdateComponentComponentPayload.Result, and is useful for accessing the field via an interface.
+func (v *updateComponentUpdateComponentComponentPayload) GetResult() updateComponentUpdateComponentComponentPayloadResultComponent {
+	return v.Result
+}
+
+// GetSuccessful returns updateComponentUpdateComponentComponentPayload.Successful, and is useful for accessing the field via an interface.
+func (v *updateComponentUpdateComponentComponentPayload) GetSuccessful() bool { return v.Successful }
+
+// GetMessages returns updateComponentUpdateComponentComponentPayload.Messages, and is useful for accessing the field via an interface.
+func (v *updateComponentUpdateComponentComponentPayload) GetMessages() []updateComponentUpdateComponentComponentPayloadMessagesValidationMessage {
+	return v.Messages
+}
+
+// updateComponentUpdateComponentComponentPayloadMessagesValidationMessage includes the requested fields of the GraphQL type ValidationMessage.
+// The GraphQL type's documentation follows.
+//
+// Validation messages are returned when mutation input does not meet the requirements.
+// While client-side validation is highly recommended to provide the best User Experience,
+// All inputs will always be validated server-side.
+//
+// Some examples of validations are:
+//
+// * Username must be at least 10 characters
+// * Email field does not contain an email address
+// * Birth Date is required
+//
+// While GraphQL has support for required values, mutation data fields are always
+// set to optional in our API. This allows 'required field' messages
+// to be returned in the same manner as other validations. The only exceptions
+// are id fields, which may be required to perform updates or deletes.
+type updateComponentUpdateComponentComponentPayloadMessagesValidationMessage struct {
+	// A unique error code for the type of validation used.
+	Code string `json:"code"`
+	// The input field that the error applies to. The field can be used to
+	// identify which field the error message should be displayed next to in the
+	// presentation layer.
+	//
+	// If there are multiple errors to display for a field, multiple validation
+	// messages will be in the result.
+	//
+	// This field may be null in cases where an error cannot be applied to a specific field.
+	Field string `json:"field"`
+	// A friendly error message, appropriate for display to the end user.
+	//
+	// The message is interpolated to include the appropriate variables.
+	//
+	// Example: `Username must be at least 10 characters`
+	//
+	// This message may change without notice, so we do not recommend you match against the text.
+	// Instead, use the *code* field for matching.
+	Message string `json:"message"`
+}
+
+// GetCode returns updateComponentUpdateComponentComponentPayloadMessagesValidationMessage.Code, and is useful for accessing the field via an interface.
+func (v *updateComponentUpdateComponentComponentPayloadMessagesValidationMessage) GetCode() string {
+	return v.Code
+}
+
+// GetField returns updateComponentUpdateComponentComponentPayloadMessagesValidationMessage.Field, and is useful for accessing the field via an interface.
+func (v *updateComponentUpdateComponentComponentPayloadMessagesValidationMessage) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns updateComponentUpdateComponentComponentPayloadMessagesValidationMessage.Message, and is useful for accessing the field via an interface.
+func (v *updateComponentUpdateComponentComponentPayloadMessagesValidationMessage) GetMessage() string {
+	return v.Message
+}
+
+// updateComponentUpdateComponentComponentPayloadResultComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type updateComponentUpdateComponentComponentPayloadResultComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+}
+
+// GetId returns updateComponentUpdateComponentComponentPayloadResultComponent.Id, and is useful for accessing the field via an interface.
+func (v *updateComponentUpdateComponentComponentPayloadResultComponent) GetId() string { return v.Id }
+
+// GetName returns updateComponentUpdateComponentComponentPayloadResultComponent.Name, and is useful for accessing the field via an interface.
+func (v *updateComponentUpdateComponentComponentPayloadResultComponent) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns updateComponentUpdateComponentComponentPayloadResultComponent.Description, and is useful for accessing the field via an interface.
+func (v *updateComponentUpdateComponentComponentPayloadResultComponent) GetDescription() string {
+	return v.Description
+}
+
 // updateEnvironmentResponse is returned by updateEnvironment on success.
 type updateEnvironmentResponse struct {
 	// Update an environment's mutable fields (name, description, attributes).
@@ -12417,6 +12820,47 @@ func getBundle(
 	}
 
 	data_ = &getBundleResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The query executed by getComponent.
+const getComponent_Operation = `
+query getComponent ($organizationId: ID!, $id: ID!) {
+	component(organizationId: $organizationId, id: $id) {
+		id
+		name
+		description
+		attributes
+		createdAt
+		updatedAt
+	}
+}
+`
+
+func getComponent(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+) (data_ *getComponentResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "getComponent",
+		Query:  getComponent_Operation,
+		Variables: &__getComponentInput{
+			OrganizationId: organizationId,
+			Id:             id,
+		},
+	}
+
+	data_ = &getComponentResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
@@ -13933,6 +14377,54 @@ func unlinkComponents(
 	}
 
 	data_ = &unlinkComponentsResponse{}
+	resp_ := &graphql.Response{Data: data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return data_, err_
+}
+
+// The mutation executed by updateComponent.
+const updateComponent_Operation = `
+mutation updateComponent ($organizationId: ID!, $id: ID!, $input: UpdateComponentInput!) {
+	updateComponent(organizationId: $organizationId, id: $id, input: $input) {
+		result {
+			id
+			name
+			description
+		}
+		successful
+		messages {
+			code
+			field
+			message
+		}
+	}
+}
+`
+
+func updateComponent(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	organizationId string,
+	id string,
+	input UpdateComponentInput,
+) (data_ *updateComponentResponse, err_ error) {
+	req_ := &graphql.Request{
+		OpName: "updateComponent",
+		Query:  updateComponent_Operation,
+		Variables: &__updateComponentInput{
+			OrganizationId: organizationId,
+			Id:             id,
+			Input:          input,
+		},
+	}
+
+	data_ = &updateComponentResponse{}
 	resp_ := &graphql.Response{Data: data_}
 
 	err_ = client_.MakeRequest(
