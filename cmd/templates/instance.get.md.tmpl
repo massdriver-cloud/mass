@@ -1,17 +1,17 @@
-# Instance: {{.ID}}
+# Instance: {{.ID | mdEscape}}
 
-**Bundle:** {{.Bundle.Name}}
+**Bundle:** {{.Bundle.Name | mdEscape}}
 
-**Environment:** {{.Environment.ID}}
+**Environment:** {{.Environment.ID | mdEscape}}
 
-**Status:** {{.Status}}
+**Status:** {{.Status | mdEscape}}
 
-**Deployed Version:** {{if .DeployedVersion}}`{{deref .DeployedVersion}}`{{else}}N/A{{end}}
+**Deployed Version:** {{if .DeployedVersion}}`{{.DeployedVersion}}`{{else}}N/A{{end}}
 
 **Attributes:**
 {{- if .Attributes}}
 {{- range $key, $value := .Attributes}}
-- **{{$key}}:** {{$value}}
+- **{{$key | mdEscape}}:** {{$value | mdEscape}}
 {{- end}}
 {{- else}}
 No attributes

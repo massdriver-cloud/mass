@@ -17,6 +17,7 @@ type Project struct {
 	Cost         CostSummary       `json:"cost" mapstructure:"cost"`
 	Attributes   map[string]string `json:"attributes,omitempty" mapstructure:"attributes"`
 	Environments []Environment     `json:"environments,omitempty" mapstructure:"-"`
+	Components   []Component       `json:"components,omitempty" mapstructure:"-"`
 }
 
 // GetProject retrieves a project by ID from the Massdriver API.
@@ -54,16 +55,25 @@ func toProject(p any) (*Project, error) {
 		return nil, fmt.Errorf("failed to decode project: %w", err)
 	}
 
-	// Unwrap paginated environments (API returns {items: [...]})
-	type envPage struct {
-		Items []Environment `json:"items"`
+	// Unwrap paginated environments and blueprint.components — both come back
+	// as `{items: [...]}` from the API.
+	type page[T any] struct {
+		Items []T `json:"items"`
 	}
-	type hasEnvs struct {
-		Environments envPage `json:"environments"`
+	type wrapper struct {
+		Environments page[Environment] `json:"environments"`
+		Blueprint    *struct {
+			Components page[Component] `json:"components"`
+		} `json:"blueprint"`
 	}
-	var wrapper hasEnvs
-	if err := decode(p, &wrapper); err == nil && len(wrapper.Environments.Items) > 0 {
-		proj.Environments = wrapper.Environments.Items
+	var w wrapper
+	if err := decode(p, &w); err == nil {
+		if len(w.Environments.Items) > 0 {
+			proj.Environments = w.Environments.Items
+		}
+		if w.Blueprint != nil && len(w.Blueprint.Components.Items) > 0 {
+			proj.Components = w.Blueprint.Components.Items
+		}
 	}
 
 	return &proj, nil

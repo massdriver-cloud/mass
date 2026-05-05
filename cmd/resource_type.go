@@ -169,7 +169,7 @@ func renderType(restype *api.ResourceType) error {
 		return fmt.Errorf("failed to read template: %w", err)
 	}
 
-	tmpl, err := template.New("type").Parse(string(tmplBytes))
+	tmpl, err := template.New("type").Funcs(cli.MarkdownTemplateFuncs).Parse(string(tmplBytes))
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}

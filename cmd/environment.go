@@ -197,7 +197,7 @@ func renderEnvironment(environment *api.Environment) error {
 		return fmt.Errorf("failed to read template: %w", err)
 	}
 
-	tmpl, err := template.New("environment").Parse(string(tmplBytes))
+	tmpl, err := template.New("environment").Funcs(cli.MarkdownTemplateFuncs).Parse(string(tmplBytes))
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
@@ -261,7 +261,7 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 		Id:          envID,
 		Name:        name,
 		Description: description,
-		Attributes:  attributesToMap(attrs),
+		Attributes:  cli.AttributesToAnyMap(attrs),
 	}
 
 	env, err := api.CreateEnvironment(ctx, mdClient, projectID, input)
@@ -314,9 +314,9 @@ func runEnvironmentUpdate(cmd *cobra.Command, args []string) error {
 	}
 	var attributes map[string]any
 	if cmd.Flags().Changed("attributes") {
-		attributes = attributesToMap(attrs)
+		attributes = cli.AttributesToAnyMap(attrs)
 	} else {
-		attributes = stringMapToAny(current.Attributes)
+		attributes = cli.StringMapToAnyMap(current.Attributes)
 	}
 
 	input := api.UpdateEnvironmentInput{

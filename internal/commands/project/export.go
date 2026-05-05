@@ -18,11 +18,21 @@ func RunExport(ctx context.Context, mdClient *client.Client, projectIDOrSlug str
 		return getErr
 	}
 
+	if len(proj.Components) == 0 {
+		fmt.Printf("Project %s has no components to export\n", proj.Name)
+		return nil
+	}
+
 	envs, listErr := api.ListEnvironments(ctx, mdClient, &api.EnvironmentsFilter{
 		ProjectId: &api.IdFilter{Eq: proj.ID},
 	})
 	if listErr != nil {
 		return listErr
+	}
+
+	if len(envs) == 0 {
+		fmt.Printf("Project %s has no environments to export\n", proj.Name)
+		return nil
 	}
 
 	directory := filepath.Join(".", proj.ID)

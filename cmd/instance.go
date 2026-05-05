@@ -159,15 +159,7 @@ func renderInstance(instance *api.Instance) error {
 		return fmt.Errorf("failed to read template: %w", err)
 	}
 
-	funcMap := template.FuncMap{
-		"deref": func(s *string) string {
-			if s == nil {
-				return ""
-			}
-			return *s
-		},
-	}
-	tmpl, err := template.New("instance").Funcs(funcMap).Parse(string(tmplBytes))
+	tmpl, err := template.New("instance").Funcs(cli.MarkdownTemplateFuncs).Parse(string(tmplBytes))
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}

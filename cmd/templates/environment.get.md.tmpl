@@ -1,13 +1,13 @@
-# Environment: {{.Name}}
+# Environment: {{.Name | mdEscape}}
 
-**ID:** {{.ID}}
+**ID:** {{.ID | mdEscape}}
 
-**Description:** {{.Description}}
+**Description:** {{.Description | mdEscape}}
 
 **Attributes:**
 {{- if .Attributes}}
 {{- range $key, $value := .Attributes}}
-- **{{$key}}:** {{$value}}
+- **{{$key | mdEscape}}:** {{$value | mdEscape}}
 {{- end}}
 {{- else}}
 No attributes
@@ -19,7 +19,7 @@ No attributes
 | Name | Bundle | Status |
 | ---- | ------ | ------ |
 {{- range .Instances}}
-| **{{.Name}}** | {{.Bundle.Name}} | {{.Status}} |
+| **{{.Name | mdEscape}}** | {{.Bundle.Name | mdEscape}} | {{.Status | mdEscape}} |
 {{- end}}
 {{- else}}
 No instances

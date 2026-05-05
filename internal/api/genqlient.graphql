@@ -68,6 +68,22 @@ query getProject($organizationId: ID!, $id: ID!) {
         }
       }
     }
+    blueprint {
+      components {
+        items {
+          id
+          name
+          description
+          attributes
+          createdAt
+          updatedAt
+          ociRepo {
+            id
+            name
+          }
+        }
+      }
+    }
     createdAt
     updatedAt
     deletable {

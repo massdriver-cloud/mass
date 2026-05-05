@@ -1,6 +1,6 @@
-# Bundle: {{.Name}}
+# Bundle: {{.Name | mdEscape}}
 
-**Version:** {{.Version}}
+**Version:** {{.Version | mdEscape}}
 
 {{if .URL}}
 **URL:** {{.URL}}
@@ -9,7 +9,7 @@
 {{if .Description}}
 ## Description
 
-{{.Description}}
+{{.Description | mdEscape}}
 {{end}}
 
 {{if .SourceURL}}

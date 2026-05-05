@@ -6,6 +6,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/component"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
@@ -122,7 +123,7 @@ func runComponentAdd(cmd *cobra.Command, args []string) error {
 		Id:          shortID,
 		Name:        name,
 		Description: description,
-		Attributes:  attributesToMap(attrs),
+		Attributes:  cli.AttributesToAnyMap(attrs),
 	}
 	comp, addErr := api.AddComponent(ctx, mdClient, projectID, ociRepoName, input)
 	if addErr != nil {
@@ -170,9 +171,9 @@ func runComponentUpdate(cmd *cobra.Command, args []string) error {
 	}
 	var attributes map[string]any
 	if cmd.Flags().Changed("attributes") {
-		attributes = attributesToMap(attrs)
+		attributes = cli.AttributesToAnyMap(attrs)
 	} else {
-		attributes = stringMapToAny(current.Attributes)
+		attributes = cli.StringMapToAnyMap(current.Attributes)
 	}
 
 	input := api.UpdateComponentInput{

@@ -188,7 +188,7 @@ func renderProject(project *api.Project) error {
 		return fmt.Errorf("failed to read template: %w", err)
 	}
 
-	tmpl, err := template.New("project").Parse(string(tmplBytes))
+	tmpl, err := template.New("project").Funcs(cli.MarkdownTemplateFuncs).Parse(string(tmplBytes))
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
@@ -243,7 +243,7 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 		Id:          id,
 		Name:        name,
 		Description: description,
-		Attributes:  attributesToMap(attrs),
+		Attributes:  cli.AttributesToAnyMap(attrs),
 	}
 
 	project, err := api.CreateProject(ctx, mdClient, input)
@@ -298,9 +298,9 @@ func runProjectUpdate(cmd *cobra.Command, args []string) error {
 	}
 	var attributes map[string]any
 	if cmd.Flags().Changed("attributes") {
-		attributes = attributesToMap(attrs)
+		attributes = cli.AttributesToAnyMap(attrs)
 	} else {
-		attributes = stringMapToAny(current.Attributes)
+		attributes = cli.StringMapToAnyMap(current.Attributes)
 	}
 
 	input := api.UpdateProjectInput{

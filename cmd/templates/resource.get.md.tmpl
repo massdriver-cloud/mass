@@ -1,16 +1,16 @@
-# Resource: {{.Name}}
+# Resource: {{.Name | mdEscape}}
 
-**ID:** {{.ID}}
+**ID:** {{.ID | mdEscape}}
 
-**Type:** {{.Type}}
+**Type:** {{.Type | mdEscape}}
 
-{{if .Field}}**Field:** {{.Field}}{{end}}
+{{if .Field}}**Field:** {{.Field | mdEscape}}{{end}}
 
-{{if .ResourceType}}**Type:** {{.ResourceType.Label}} ({{.ResourceType.Name}}){{end}}
+{{if .ResourceType}}**Type:** {{.ResourceType.Label | mdEscape}} ({{.ResourceType.Name | mdEscape}}){{end}}
 
-{{if .Instance}}**Instance:** {{.Instance.ID}}{{end}}
+{{if .Instance}}**Instance:** {{.Instance.ID | mdEscape}}{{end}}
 
-{{if .Origin}}**Origin:** {{.Origin}}{{end}}
+{{if .Origin}}**Origin:** {{.Origin | mdEscape}}{{end}}
 
 **Created:** {{.CreatedAt}}
 

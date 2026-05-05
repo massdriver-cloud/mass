@@ -557,7 +557,7 @@ func renderBundle(b *api.Bundle, mdClient *client.Client) error {
 		return fmt.Errorf("failed to read template: %w", err)
 	}
 
-	tmpl, err := template.New("bundle").Parse(string(tmplBytes))
+	tmpl, err := template.New("bundle").Funcs(cli.MarkdownTemplateFuncs).Parse(string(tmplBytes))
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}

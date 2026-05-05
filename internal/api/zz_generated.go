@@ -6434,6 +6434,8 @@ type getProjectProject struct {
 	Attributes map[string]any `json:"-"`
 	// Paginated list of environments in this project (e.g., staging, production).
 	Environments getProjectProjectEnvironmentsEnvironmentsPage `json:"environments"`
+	// The infrastructure blueprint defining this project's components and their connections.
+	Blueprint getProjectProjectBlueprint `json:"blueprint"`
 	// When this project was created (UTC).
 	CreatedAt time.Time `json:"createdAt"`
 	// When this project was last modified (UTC).
@@ -6460,6 +6462,9 @@ func (v *getProjectProject) GetAttributes() map[string]any { return v.Attributes
 func (v *getProjectProject) GetEnvironments() getProjectProjectEnvironmentsEnvironmentsPage {
 	return v.Environments
 }
+
+// GetBlueprint returns getProjectProject.Blueprint, and is useful for accessing the field via an interface.
+func (v *getProjectProject) GetBlueprint() getProjectProjectBlueprint { return v.Blueprint }
 
 // GetCreatedAt returns getProjectProject.CreatedAt, and is useful for accessing the field via an interface.
 func (v *getProjectProject) GetCreatedAt() time.Time { return v.CreatedAt }
@@ -6517,6 +6522,8 @@ type __premarshalgetProjectProject struct {
 
 	Environments getProjectProjectEnvironmentsEnvironmentsPage `json:"environments"`
 
+	Blueprint getProjectProjectBlueprint `json:"blueprint"`
+
 	CreatedAt time.Time `json:"createdAt"`
 
 	UpdatedAt time.Time `json:"updatedAt"`
@@ -6553,11 +6560,238 @@ func (v *getProjectProject) __premarshalJSON() (*__premarshalgetProjectProject, 
 		}
 	}
 	retval.Environments = v.Environments
+	retval.Blueprint = v.Blueprint
 	retval.CreatedAt = v.CreatedAt
 	retval.UpdatedAt = v.UpdatedAt
 	retval.Deletable = v.Deletable
 	retval.Cost = v.Cost
 	return &retval, nil
+}
+
+// getProjectProjectBlueprint includes the requested fields of the GraphQL type Blueprint.
+// The GraphQL type's documentation follows.
+//
+// A project's infrastructure blueprint -- the design-time architecture.
+//
+// The blueprint is the canonical description of how your infrastructure fits
+// together. It contains **components** (the bundles you want to deploy) and
+// **links** (the wiring between them).
+//
+// Every project has exactly one blueprint. When you deploy to an environment,
+// the blueprint is realized as an **environment blueprint** containing live
+// **instances** and **connections**.
+//
+// ```mermaid
+// graph TB
+// subgraph "Design Time (Blueprint)"
+// C1["Component: database"] ---|"Link"| C2["Component: cache"]
+// end
+// subgraph "Runtime (Environment Blueprint)"
+// I1["Instance: database"] ---|"Connection"| I2["Instance: cache"]
+// end
+// C1 -.->|"deployed to"| I1
+// C2 -.->|"deployed to"| I2
+// ```
+type getProjectProjectBlueprint struct {
+	// Paginated list of components in this blueprint.
+	//
+	// Returns all bundle slots that make up the project's architecture.
+	// Defaults to alphabetical order by name.
+	Components getProjectProjectBlueprintComponentsComponentsPage `json:"components"`
+}
+
+// GetComponents returns getProjectProjectBlueprint.Components, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprint) GetComponents() getProjectProjectBlueprintComponentsComponentsPage {
+	return v.Components
+}
+
+// getProjectProjectBlueprintComponentsComponentsPage includes the requested fields of the GraphQL type ComponentsPage.
+type getProjectProjectBlueprintComponentsComponentsPage struct {
+	// A list of type component.
+	Items []getProjectProjectBlueprintComponentsComponentsPageItemsComponent `json:"items"`
+}
+
+// GetItems returns getProjectProjectBlueprintComponentsComponentsPage.Items, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprintComponentsComponentsPage) GetItems() []getProjectProjectBlueprintComponentsComponentsPageItemsComponent {
+	return v.Items
+}
+
+// getProjectProjectBlueprintComponentsComponentsPageItemsComponent includes the requested fields of the GraphQL type Component.
+// The GraphQL type's documentation follows.
+//
+// A bundle placed in a project's blueprint, representing a slot for deployable infrastructure.
+//
+// A component is the **design-time** building block of your architecture. It says
+// "I want a database here" or "I need a Kubernetes cluster there." The component
+// defines *what* to deploy; the actual running infrastructure lives in **instances**
+// -- one per environment the component is deployed to.
+//
+// Components are connected to each other via **links**, which declare that one
+// component's output (e.g., a connection string) should be wired into another
+// component's input.
+type getProjectProjectBlueprintComponentsComponentsPageItemsComponent struct {
+	Id string `json:"id"`
+	// Human-readable display name shown in the UI.
+	Name string `json:"name"`
+	// Optional free-text description of this component's purpose.
+	Description string `json:"description"`
+	// Key-value attributes assigned directly to this component.
+	Attributes map[string]any `json:"-"`
+	// When this component was created (UTC).
+	CreatedAt time.Time `json:"createdAt"`
+	// When this component was last modified (UTC).
+	UpdatedAt time.Time `json:"updatedAt"`
+	// The OCI repository (bundle) this component is based on.
+	OciRepo getProjectProjectBlueprintComponentsComponentsPageItemsComponentOciRepo `json:"ociRepo"`
+}
+
+// GetId returns getProjectProjectBlueprintComponentsComponentsPageItemsComponent.Id, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponent) GetId() string {
+	return v.Id
+}
+
+// GetName returns getProjectProjectBlueprintComponentsComponentsPageItemsComponent.Name, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponent) GetName() string {
+	return v.Name
+}
+
+// GetDescription returns getProjectProjectBlueprintComponentsComponentsPageItemsComponent.Description, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponent) GetDescription() string {
+	return v.Description
+}
+
+// GetAttributes returns getProjectProjectBlueprintComponentsComponentsPageItemsComponent.Attributes, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponent) GetAttributes() map[string]any {
+	return v.Attributes
+}
+
+// GetCreatedAt returns getProjectProjectBlueprintComponentsComponentsPageItemsComponent.CreatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponent) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// GetUpdatedAt returns getProjectProjectBlueprintComponentsComponentsPageItemsComponent.UpdatedAt, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponent) GetUpdatedAt() time.Time {
+	return v.UpdatedAt
+}
+
+// GetOciRepo returns getProjectProjectBlueprintComponentsComponentsPageItemsComponent.OciRepo, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponent) GetOciRepo() getProjectProjectBlueprintComponentsComponentsPageItemsComponentOciRepo {
+	return v.OciRepo
+}
+
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponent) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getProjectProjectBlueprintComponentsComponentsPageItemsComponent
+		Attributes json.RawMessage `json:"attributes"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getProjectProjectBlueprintComponentsComponentsPageItemsComponent = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Attributes
+		src := firstPass.Attributes
+		if len(src) != 0 && string(src) != "null" {
+			err = scalars.UnmarshalJSON(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal getProjectProjectBlueprintComponentsComponentsPageItemsComponent.Attributes: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalgetProjectProjectBlueprintComponentsComponentsPageItemsComponent struct {
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	Attributes json.RawMessage `json:"attributes"`
+
+	CreatedAt time.Time `json:"createdAt"`
+
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	OciRepo getProjectProjectBlueprintComponentsComponentsPageItemsComponentOciRepo `json:"ociRepo"`
+}
+
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponent) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponent) __premarshalJSON() (*__premarshalgetProjectProjectBlueprintComponentsComponentsPageItemsComponent, error) {
+	var retval __premarshalgetProjectProjectBlueprintComponentsComponentsPageItemsComponent
+
+	retval.Id = v.Id
+	retval.Name = v.Name
+	retval.Description = v.Description
+	{
+
+		dst := &retval.Attributes
+		src := v.Attributes
+		var err error
+		*dst, err = scalars.MarshalJSON(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal getProjectProjectBlueprintComponentsComponentsPageItemsComponent.Attributes: %w", err)
+		}
+	}
+	retval.CreatedAt = v.CreatedAt
+	retval.UpdatedAt = v.UpdatedAt
+	retval.OciRepo = v.OciRepo
+	return &retval, nil
+}
+
+// getProjectProjectBlueprintComponentsComponentsPageItemsComponentOciRepo includes the requested fields of the GraphQL type OciRepo.
+// The GraphQL type's documentation follows.
+//
+// An OCI repository in your organization's bundle catalog.
+//
+// An OCI repository is the container for all published versions of a single
+// infrastructure-as-code package. It is analogous to a Docker image repository
+// but for Massdriver bundles.
+//
+// Each repository has a unique `name` (e.g., `aws-aurora-postgres`) and contains:
+//
+// - **Tags** -- the individual published versions (`1.0.0`, `1.1.0`, `1.2.3`, etc.)
+// - **Release channels** -- auto-resolving version constraints (`latest`, `~1`, `~1.2`)
+// that always point to the newest matching tag
+//
+// To fetch a specific bundle version from a repository, use the `bundle` query
+// with a `BundleId` like `aws-aurora-postgres@1.2.3` or `aws-aurora-postgres@~1`.
+type getProjectProjectBlueprintComponentsComponentsPageItemsComponentOciRepo struct {
+	Id string `json:"id"`
+	// Repository name, unique within your organization (e.g., `aws-aurora-postgres`).
+	Name string `json:"name"`
+}
+
+// GetId returns getProjectProjectBlueprintComponentsComponentsPageItemsComponentOciRepo.Id, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponentOciRepo) GetId() string {
+	return v.Id
+}
+
+// GetName returns getProjectProjectBlueprintComponentsComponentsPageItemsComponentOciRepo.Name, and is useful for accessing the field via an interface.
+func (v *getProjectProjectBlueprintComponentsComponentsPageItemsComponentOciRepo) GetName() string {
+	return v.Name
 }
 
 // getProjectProjectCostCostSummary includes the requested fields of the GraphQL type CostSummary.
@@ -13229,6 +13463,22 @@ query getProject ($organizationId: ID!, $id: ID!) {
 					dailyAverage {
 						amount
 						currency
+					}
+				}
+			}
+		}
+		blueprint {
+			components {
+				items {
+					id
+					name
+					description
+					attributes
+					createdAt
+					updatedAt
+					ociRepo {
+						id
+						name
 					}
 				}
 			}

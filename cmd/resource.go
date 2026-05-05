@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/resource"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
@@ -232,7 +233,7 @@ func renderResource(resource *api.Resource) error {
 		return fmt.Errorf("failed to read template: %w", err)
 	}
 
-	tmpl, err := template.New("resource").Parse(string(tmplBytes))
+	tmpl, err := template.New("resource").Funcs(cli.MarkdownTemplateFuncs).Parse(string(tmplBytes))
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}

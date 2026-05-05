@@ -1,18 +1,18 @@
-# Deployment: {{.ID}}
+# Deployment: {{.ID | mdEscape}}
 
-**Action:** {{.Action}}
+**Action:** {{.Action | mdEscape}}
 
-**Status:** {{.Status}}
+**Status:** {{.Status | mdEscape}}
 
 **Version:** `{{.Version}}`
 
 {{- if .Message}}
 
-**Message:** {{.Message}}
+**Message:** {{.Message | mdEscape}}
 {{- end}}
 {{- if .DeployedBy}}
 
-**Deployed By:** {{.DeployedBy}}
+**Deployed By:** {{.DeployedBy | mdEscape}}
 {{- end}}
 {{- if .Instance}}
 

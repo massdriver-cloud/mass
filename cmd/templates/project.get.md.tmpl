@@ -1,22 +1,38 @@
-# Project: {{.Name}}
+# Project: {{.Name | mdEscape}}
 
-**ID:** {{.ID}}
+**ID:** {{.ID | mdEscape}}
 
-**Description:** {{.Description}}
+**Description:** {{.Description | mdEscape}}
 
 **Attributes:**
 {{- if .Attributes}}
 {{- range $key, $value := .Attributes}}
-- **{{$key}}:** {{$value}}
+- **{{$key | mdEscape}}:** {{$value | mdEscape}}
 {{- end}}
 {{- else}}
 No attributes
 {{- end}}
 
+## Components
+{{- if .Components}}
+
+| Name | ID | Bundle |
+| ---- | -- | ------ |
+{{- range .Components}}
+| **{{.Name | mdEscape}}** | {{.ID | mdEscape}} | {{with .OciRepo}}{{.Name | mdEscape}}{{end}} |
+{{- end}}
+{{- else}}
+No components
+{{- end}}
+
 ## Environments
+{{- if .Environments}}
 {{range .Environments}}
-- **{{.Name}}** ({{.ID}})
-{{end}}
+- **{{.Name | mdEscape}}** ({{.ID | mdEscape}})
+{{- end}}
+{{- else}}
+No environments
+{{- end}}
 
 ## Cost
 **Monthly Average:** {{with .Cost.MonthlyAverage.Amount}}${{.}}{{end}}
