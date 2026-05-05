@@ -876,6 +876,22 @@ query getBundle($organizationId: ID!, $id: BundleId!) {
     repo
     createdAt
     updatedAt
+    dependencies {
+      name
+      required
+      resourceType {
+        id
+        name
+      }
+    }
+    resources {
+      name
+      required
+      resourceType {
+        id
+        name
+      }
+    }
   }
 }
 
@@ -923,6 +939,8 @@ query getOciRepo($organizationId: ID!, $id: ID!) {
     id
     name
     artifactType
+    description
+    attributes
     createdAt
     updatedAt
     releaseChannels {
@@ -931,11 +949,61 @@ query getOciRepo($organizationId: ID!, $id: ID!) {
         tag
       }
     }
-    tags {
+    tags(sort: { field: VERSION, order: DESC }) {
       items {
         tag
         createdAt
       }
+    }
+  }
+}
+
+mutation createOciRepo($organizationId: ID!, $input: CreateOciRepoInput!) {
+  createOciRepo(organizationId: $organizationId, input: $input) {
+    result {
+      id
+      name
+      artifactType
+      attributes
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation updateOciRepo($organizationId: ID!, $id: ID!, $input: UpdateOciRepoInput!) {
+  updateOciRepo(organizationId: $organizationId, id: $id, input: $input) {
+    result {
+      id
+      name
+      artifactType
+      attributes
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}
+
+mutation deleteOciRepo($organizationId: ID!, $id: ID!) {
+  deleteOciRepo(organizationId: $organizationId, id: $id) {
+    result {
+      id
+      name
+      artifactType
+    }
+    successful
+    messages {
+      code
+      field
+      message
     }
   }
 }

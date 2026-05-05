@@ -27,10 +27,15 @@ func runVersion(cmd *cobra.Command, args []string) {
 	massVersionColor := prettylogs.Green(version.MassVersion())
 	fmt.Printf("🧰 CLI version: %v (git SHA: %v)\n", massVersionColor, version.MassGitSHA())
 
-	// Best-effort: check whether a newer CLI is available (does not affect exit code).
-	if latestVersion, err := version.GetLatestVersion(); err == nil {
-		if isOld, _ := version.CheckForNewerVersionAvailable(latestVersion); isOld {
-			fmt.Printf("⬆️ A newer version of the CLI is available, you can download it here: %v\n", version.LatestReleaseURL)
+	// Best-effort: check whether a newer CLI is available (does not affect
+	// exit code). Skip for dev/local builds where the version is the
+	// `unknown` sentinel — comparing against a real release tag will always
+	// look "out of date" and the prompt is just noise.
+	if version.MassVersion() != "unknown" {
+		if latestVersion, err := version.GetLatestVersion(); err == nil {
+			if isOld, _ := version.CheckForNewerVersionAvailable(latestVersion); isOld {
+				fmt.Printf("⬆️ A newer version of the CLI is available, you can download it here: %v\n", version.LatestReleaseURL)
+			}
 		}
 	}
 

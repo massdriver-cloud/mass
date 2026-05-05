@@ -267,7 +267,7 @@ type RootQueryType {
     "Optional filters to narrow the results."
     filter: DeploymentsFilter
 
-    "Sort order for results. Defaults to newest first."
+    "Sort order for results. Defaults to most recently active first."
     sort: DeploymentsSort
 
     "Cursor from a previous page to fetch the next set of results."
@@ -915,7 +915,48 @@ type RootQueryType {
   ): [PolicyEntity!]!
 
   """
-  Return the catalog of V1 event types.
+  Render a policy spec — the same input shape as `createGroupPolicy` — as a
+  list of plain-English sentences describing what it permits or blocks.
+
+  The explanation reflects the engine's scope-aware evaluation: a condition
+  whose attribute key isn't reachable from a given action's entity is
+  dropped before rendering, which can widen that action to be unconditional.
+  Pair this with the policy editor so authors see exactly what the policy
+  will allow before saving.
+
+  Conditions referencing undeclared custom attribute keys are silently
+  ignored — the explainer is lenient by design, so typos surface as a
+  "wider than expected" sentence rather than a hard error.
+
+  **Example input:**
+
+  ```graphql
+  {
+    effect: ALLOW
+    actions: ["project:create", "project:update", "environment:create"]
+    conditions: "{\"md-environment\":[\"dev\",\"staging\",\"prod\"]}"
+  }
+  ```
+
+  **Example output:**
+
+  ```
+  [
+    "Can create environments with identifiers [dev, staging, prod].",
+    "Can create and update any project."
+  ]
+  ```
+  """
+  explainPolicy(
+    "Your organization's unique identifier."
+    organizationId: ID!
+
+    "The policy spec to explain — same shape as the `createGroupPolicy` input."
+    input: CreateGroupPolicyInput!
+  ): [String!]!
+
+  """
+  Return the catalog of V2 event types.
 
   Filter by `entity` to narrow the list.
 
@@ -1348,7 +1389,7 @@ type RootMutationType {
 
     "Create a new project. A project is the complete model of your application—its infrastructure, architecture, configurations, and environments."
     input: CreateProjectInput!
-  ): ProjectPayload @inputs(name: "createProject", schema: "\/graphql\/v1\/inputs\/createProject.json", ui: "\/graphql\/v1\/inputs\/createProject.ui.json")
+  ): ProjectPayload @inputs(name: "createProject", schema: "\/graphql\/v2\/inputs\/createProject.json", ui: "\/graphql\/v2\/inputs\/createProject.ui.json")
 
   "Update a project's mutable fields (name, description, attributes)."
   updateProject(
@@ -1360,7 +1401,7 @@ type RootMutationType {
 
     "Update an existing project's name and description. The ID cannot be changed after creation."
     input: UpdateProjectInput!
-  ): ProjectPayload @inputs(name: "updateProject", schema: "\/graphql\/v1\/inputs\/updateProject.json", ui: "\/graphql\/v1\/inputs\/updateProject.ui.json")
+  ): ProjectPayload @inputs(name: "updateProject", schema: "\/graphql\/v2\/inputs\/updateProject.json", ui: "\/graphql\/v2\/inputs\/updateProject.ui.json")
 
   """
   Create a new project by cloning another project's blueprint.
@@ -1378,7 +1419,7 @@ type RootMutationType {
 
     "Attributes for the new project."
     input: CloneProjectInput!
-  ): ProjectPayload @inputs(name: "cloneProject", schema: "\/graphql\/v1\/inputs\/cloneProject.json", ui: "\/graphql\/v1\/inputs\/cloneProject.ui.json")
+  ): ProjectPayload @inputs(name: "cloneProject", schema: "\/graphql\/v2\/inputs\/cloneProject.json", ui: "\/graphql\/v2\/inputs\/cloneProject.ui.json")
 
   """
   Delete a project permanently.
@@ -1409,7 +1450,7 @@ type RootMutationType {
 
     "Create a new environment. Environments are isolated deployment contexts like production, staging, or development, each with independent secrets and configurations."
     input: CreateEnvironmentInput!
-  ): EnvironmentPayload @inputs(name: "createEnvironment", schema: "\/graphql\/v1\/inputs\/createEnvironment.json", ui: "\/graphql\/v1\/inputs\/createEnvironment.ui.json")
+  ): EnvironmentPayload @inputs(name: "createEnvironment", schema: "\/graphql\/v2\/inputs\/createEnvironment.json", ui: "\/graphql\/v2\/inputs\/createEnvironment.ui.json")
 
   "Update an environment's mutable fields (name, description, attributes)."
   updateEnvironment(
@@ -1421,7 +1462,7 @@ type RootMutationType {
 
     "Update an existing environment's name and description. The ID cannot be changed after creation."
     input: UpdateEnvironmentInput!
-  ): EnvironmentPayload @inputs(name: "updateEnvironment", schema: "\/graphql\/v1\/inputs\/updateEnvironment.json", ui: "\/graphql\/v1\/inputs\/updateEnvironment.ui.json")
+  ): EnvironmentPayload @inputs(name: "updateEnvironment", schema: "\/graphql\/v2\/inputs\/updateEnvironment.json", ui: "\/graphql\/v2\/inputs\/updateEnvironment.ui.json")
 
   """
   Create a new environment by forking an existing one.
@@ -1442,7 +1483,7 @@ type RootMutationType {
 
     "Attributes for the new environment. The fork references the parent via `parentId`, starts with blank instances, and does not copy any instance-level configuration. Use `copyInstance` per-instance if you want to seed configuration from the parent."
     input: ForkEnvironmentInput!
-  ): EnvironmentPayload @inputs(name: "forkEnvironment", schema: "\/graphql\/v1\/inputs\/forkEnvironment.json", ui: "\/graphql\/v1\/inputs\/forkEnvironment.ui.json")
+  ): EnvironmentPayload @inputs(name: "forkEnvironment", schema: "\/graphql\/v2\/inputs\/forkEnvironment.json", ui: "\/graphql\/v2\/inputs\/forkEnvironment.ui.json")
 
   """
   Delete an environment permanently.
@@ -1524,7 +1565,7 @@ type RootMutationType {
 
     "Add an infrastructure component to a project's blueprint. Each component is a specific instance of a bundle (like a Redis cache or PostgreSQL database) that composes with other components to form your application."
     input: AddComponentInput!
-  ): ComponentPayload @inputs(name: "addComponent", schema: "\/graphql\/v1\/inputs\/addComponent.json", ui: "\/graphql\/v1\/inputs\/addComponent.ui.json")
+  ): ComponentPayload @inputs(name: "addComponent", schema: "\/graphql\/v2\/inputs\/addComponent.json", ui: "\/graphql\/v2\/inputs\/addComponent.ui.json")
 
   """
   Remove a component from a project's blueprint.
@@ -1569,7 +1610,7 @@ type RootMutationType {
 
     "Update an existing component's name, description, and attributes. The component ID and underlying bundle cannot be changed."
     input: UpdateComponentInput!
-  ): ComponentPayload @inputs(name: "updateComponent", schema: "\/graphql\/v1\/inputs\/updateComponent.json", ui: "\/graphql\/v1\/inputs\/updateComponent.ui.json")
+  ): ComponentPayload @inputs(name: "updateComponent", schema: "\/graphql\/v2\/inputs\/updateComponent.json", ui: "\/graphql\/v2\/inputs\/updateComponent.ui.json")
 
   """
   Create a link between two components.
@@ -1604,7 +1645,7 @@ type RootMutationType {
 
     "Create a link between two components in a project's blueprint. Links connect an output field on the source component to an input field on the destination component, establishing data flow between infrastructure resources."
     input: LinkComponentsInput!
-  ): LinkPayload @inputs(name: "linkComponents", schema: "\/graphql\/v1\/inputs\/linkComponents.json", ui: "\/graphql\/v1\/inputs\/linkComponents.ui.json")
+  ): LinkPayload @inputs(name: "linkComponents", schema: "\/graphql\/v2\/inputs\/linkComponents.json", ui: "\/graphql\/v2\/inputs\/linkComponents.ui.json")
 
   """
   Remove a link between two components.
@@ -1630,7 +1671,7 @@ type RootMutationType {
 
     "Set the position of a component on the canvas."
     input: SetComponentPositionInput!
-  ): ComponentPayload @inputs(name: "setComponentPosition", schema: "\/graphql\/v1\/inputs\/setComponentPosition.json", ui: "\/graphql\/v1\/inputs\/setComponentPosition.ui.json")
+  ): ComponentPayload @inputs(name: "setComponentPosition", schema: "\/graphql\/v2\/inputs\/setComponentPosition.json", ui: "\/graphql\/v2\/inputs\/setComponentPosition.ui.json")
 
   """
   Accept a pending group invitation.
@@ -1675,7 +1716,7 @@ type RootMutationType {
 
     "Create a new group. Groups control which projects members can access."
     input: CreateGroupInput!
-  ): GroupPayload @inputs(name: "createGroup", schema: "\/graphql\/v1\/inputs\/createGroup.json", ui: "\/graphql\/v1\/inputs\/createGroup.ui.json")
+  ): GroupPayload @inputs(name: "createGroup", schema: "\/graphql\/v2\/inputs\/createGroup.json", ui: "\/graphql\/v2\/inputs\/createGroup.ui.json")
 
   """
   Update a group's name or description.
@@ -1692,7 +1733,7 @@ type RootMutationType {
 
     "Update a group's name or description."
     input: UpdateGroupInput!
-  ): GroupPayload @inputs(name: "updateGroup", schema: "\/graphql\/v1\/inputs\/updateGroup.json", ui: "\/graphql\/v1\/inputs\/updateGroup.ui.json")
+  ): GroupPayload @inputs(name: "updateGroup", schema: "\/graphql\/v2\/inputs\/updateGroup.json", ui: "\/graphql\/v2\/inputs\/updateGroup.ui.json")
 
   """
   Delete a group.
@@ -1731,7 +1772,7 @@ type RootMutationType {
 
     "Add an account to a group by email. If the email belongs to an existing organization member they are added directly; otherwise an invitation is sent."
     input: AddAccountToGroupInput!
-  ): AddedAccountToGroupPayload @inputs(name: "addAccountToGroup", schema: "\/graphql\/v1\/inputs\/addAccountToGroup.json", ui: "\/graphql\/v1\/inputs\/addAccountToGroup.ui.json")
+  ): AddedAccountToGroupPayload @inputs(name: "addAccountToGroup", schema: "\/graphql\/v2\/inputs\/addAccountToGroup.json", ui: "\/graphql\/v2\/inputs\/addAccountToGroup.ui.json")
 
   """
   Revoke a pending invitation.
@@ -1772,7 +1813,7 @@ type RootMutationType {
   Declare a new custom attribute in your organization.
 
   Once declared, the attribute immediately applies to new resources at the specified scope.
-  Existing resources are not retroactively validated. Requires the `organization:manageAttributes` action.
+  Existing resources are not retroactively validated. Requires the `organization:manage` action.
   """
   createCustomAttribute(
     "Your organization's unique identifier."
@@ -1780,7 +1821,7 @@ type RootMutationType {
 
     "Declare a custom attribute key for your organization. Custom attributes control which user-defined attribute keys can be set on resources at each level of the hierarchy. System attributes (md-*) are auto-injected by Massdriver and do not need to be declared."
     input: CreateCustomAttributeInput!
-  ): CustomAttributePayload @inputs(name: "createCustomAttribute", schema: "\/graphql\/v1\/inputs\/createCustomAttribute.json", ui: "\/graphql\/v1\/inputs\/createCustomAttribute.ui.json")
+  ): CustomAttributePayload @inputs(name: "createCustomAttribute", schema: "\/graphql\/v2\/inputs\/createCustomAttribute.json", ui: "\/graphql\/v2\/inputs\/createCustomAttribute.ui.json")
 
   """
   Replace the closed set of values for an existing custom attribute.
@@ -1788,7 +1829,7 @@ type RootMutationType {
   Changing `values` does not retroactively validate or rewrite resources
   that were tagged before this update. Subsequent writes (and policy conditions
   referencing this key) must use a value from the new set. Requires the
-  `organization:manageAttributes` action.
+  `organization:manage` action.
   """
   updateCustomAttribute(
     "Your organization's unique identifier."
@@ -1799,13 +1840,13 @@ type RootMutationType {
 
     "Replace the closed set of values for an existing custom attribute. The key and scope are immutable."
     input: UpdateCustomAttributeInput!
-  ): CustomAttributePayload @inputs(name: "updateCustomAttribute", schema: "\/graphql\/v1\/inputs\/updateCustomAttribute.json", ui: "\/graphql\/v1\/inputs\/updateCustomAttribute.ui.json")
+  ): CustomAttributePayload @inputs(name: "updateCustomAttribute", schema: "\/graphql\/v2\/inputs\/updateCustomAttribute.json", ui: "\/graphql\/v2\/inputs\/updateCustomAttribute.ui.json")
 
   """
   Delete a custom attribute from your organization.
 
   Removing a custom attribute stops enforcing the rule for future resources.
-  Existing attributes on resources are not removed. Requires the `organization:manageAttributes` action.
+  Existing attributes on resources are not removed. Requires the `organization:manage` action.
   """
   deleteCustomAttribute(
     "Your organization's unique identifier."
@@ -1824,7 +1865,7 @@ type RootMutationType {
   createOrganization(
     "Create a new organization. An organization is the top-level container for all your projects, environments, and infrastructure resources."
     input: CreateOrganizationInput!
-  ): OrganizationPayload @inputs(name: "createOrganization", schema: "\/graphql\/v1\/inputs\/createOrganization.json", ui: "\/graphql\/v1\/inputs\/createOrganization.ui.json")
+  ): OrganizationPayload @inputs(name: "createOrganization", schema: "\/graphql\/v2\/inputs\/createOrganization.json", ui: "\/graphql\/v2\/inputs\/createOrganization.ui.json")
 
   "Update mutable organization settings. Requires the `organization:manage` action."
   updateOrganization(
@@ -1833,7 +1874,7 @@ type RootMutationType {
 
     "Update mutable settings on an organization. The identifier is fixed at creation and cannot be changed."
     input: UpdateOrganizationInput!
-  ): OrganizationPayload @inputs(name: "updateOrganization", schema: "\/graphql\/v1\/inputs\/updateOrganization.json", ui: "\/graphql\/v1\/inputs\/updateOrganization.ui.json")
+  ): OrganizationPayload @inputs(name: "updateOrganization", schema: "\/graphql\/v2\/inputs\/updateOrganization.json", ui: "\/graphql\/v2\/inputs\/updateOrganization.ui.json")
 
   """
   Upload or replace your organization's logo.
@@ -1914,7 +1955,7 @@ type RootMutationType {
 
     "Create and activate an integration for your organization. The config and auth payloads must conform to the integration type's configSchema and authSchema respectively."
     input: CreateIntegrationInput!
-  ): IntegrationActivationPayload @inputs(name: "createIntegration", schema: "\/graphql\/v1\/inputs\/createIntegration.json", ui: "\/graphql\/v1\/inputs\/createIntegration.ui.json")
+  ): IntegrationActivationPayload @inputs(name: "createIntegration", schema: "\/graphql\/v2\/inputs\/createIntegration.json", ui: "\/graphql\/v2\/inputs\/createIntegration.ui.json")
 
   """
   Re-enable a disabled integration.
@@ -1999,7 +2040,7 @@ type RootMutationType {
 
     "Create a scoped, time-limited access token for the authenticated identity."
     input: CreateAccessTokenInput!
-  ): AccessTokenWithValuePayload @inputs(name: "createAccessToken", schema: "\/graphql\/v1\/inputs\/createAccessToken.json", ui: "\/graphql\/v1\/inputs\/createAccessToken.ui.json")
+  ): AccessTokenWithValuePayload @inputs(name: "createAccessToken", schema: "\/graphql\/v2\/inputs\/createAccessToken.json", ui: "\/graphql\/v2\/inputs\/createAccessToken.ui.json")
 
   """
   Revoke an access token.
@@ -2056,7 +2097,7 @@ type RootMutationType {
 
     "Create a new service account for programmatic API access. Issues a default access token alongside the service account; the raw token value is returned once and cannot be retrieved later."
     input: CreateServiceAccountInput!
-  ): ServiceAccountWithDefaultAccessTokenPayload @inputs(name: "createServiceAccount", schema: "\/graphql\/v1\/inputs\/createServiceAccount.json", ui: "\/graphql\/v1\/inputs\/createServiceAccount.ui.json")
+  ): ServiceAccountWithDefaultAccessTokenPayload @inputs(name: "createServiceAccount", schema: "\/graphql\/v2\/inputs\/createServiceAccount.json", ui: "\/graphql\/v2\/inputs\/createServiceAccount.ui.json")
 
   """
   Update a service account's name or description.
@@ -2072,7 +2113,7 @@ type RootMutationType {
 
     "Update a service account's name or description. Both fields are optional; send only the fields you want to change."
     input: UpdateServiceAccountInput!
-  ): ServiceAccountPayload @inputs(name: "updateServiceAccount", schema: "\/graphql\/v1\/inputs\/updateServiceAccount.json", ui: "\/graphql\/v1\/inputs\/updateServiceAccount.ui.json")
+  ): ServiceAccountPayload @inputs(name: "updateServiceAccount", schema: "\/graphql\/v2\/inputs\/updateServiceAccount.json", ui: "\/graphql\/v2\/inputs\/updateServiceAccount.ui.json")
 
   """
   Permanently delete a service account.
@@ -2162,7 +2203,7 @@ type RootMutationType {
 
     "Link an instance's resource field to a resource from another project or an imported resource. The instance must not be in a provisioned or failed state."
     input: SetRemoteReferenceInput!
-  ): RemoteReferencePayload @inputs(name: "setRemoteReference", schema: "\/graphql\/v1\/inputs\/setRemoteReference.json", ui: "\/graphql\/v1\/inputs\/setRemoteReference.ui.json")
+  ): RemoteReferencePayload @inputs(name: "setRemoteReference", schema: "\/graphql\/v2\/inputs\/setRemoteReference.json", ui: "\/graphql\/v2\/inputs\/setRemoteReference.ui.json")
 
   """
   Remove a per-instance remote-reference override. The slot reverts to its
@@ -2195,7 +2236,7 @@ type RootMutationType {
 
     "Remove a remote reference from an instance. The reference can only be removed if no provisioned instances are connected through it."
     input: RemoveRemoteReferenceInput!
-  ): RemoteReferencePayload @inputs(name: "removeRemoteReference", schema: "\/graphql\/v1\/inputs\/removeRemoteReference.json", ui: "\/graphql\/v1\/inputs\/removeRemoteReference.ui.json")
+  ): RemoteReferencePayload @inputs(name: "removeRemoteReference", schema: "\/graphql\/v2\/inputs\/removeRemoteReference.json", ui: "\/graphql\/v2\/inputs\/removeRemoteReference.ui.json")
 
   """
   Import a new resource into your organization.
@@ -2227,7 +2268,7 @@ type RootMutationType {
 
     "Import a new resource with a name and optional payload conforming to the resource type's schema."
     input: CreateResourceInput!
-  ): ResourcePayload @inputs(name: "createResource", schema: "\/graphql\/v1\/inputs\/createResource.json", ui: "\/graphql\/v1\/inputs\/createResource.ui.json")
+  ): ResourcePayload @inputs(name: "createResource", schema: "\/graphql\/v2\/inputs\/createResource.json", ui: "\/graphql\/v2\/inputs\/createResource.ui.json")
 
   """
   Update an imported resource's name or payload.
@@ -2245,7 +2286,7 @@ type RootMutationType {
 
     "Update a resource's name or payload. Provisioned resources can only have their name updated. Imported resources can also update their payload."
     input: UpdateResourceInput!
-  ): ResourcePayload @inputs(name: "updateResource", schema: "\/graphql\/v1\/inputs\/updateResource.json", ui: "\/graphql\/v1\/inputs\/updateResource.ui.json")
+  ): ResourcePayload @inputs(name: "updateResource", schema: "\/graphql\/v2\/inputs\/updateResource.json", ui: "\/graphql\/v2\/inputs\/updateResource.ui.json")
 
   """
   Export a resource, returning it along with its unmasked `payload` and a `rendered`
@@ -2288,7 +2329,7 @@ type RootMutationType {
 
   """
   **Deprecated — use at your own risk.** This mutation exists only to bridge V0's
-  `publishArtifactDefinition` into V1 while resource types are being migrated to OCI.
+  `publishArtifactDefinition` into V2 while resource types are being migrated to OCI.
   New integrations should use the OCI-native publishing flow. This mutation may be
   removed or change behavior without notice.
 
@@ -2323,13 +2364,13 @@ type RootMutationType {
     "Your organization's unique identifier."
     organizationId: ID!
 
-    "Upsert a resource type for your organization from a JSON Schema document. If an existing resource type has the same identifier, its schema is replaced. **Deprecated:** this mutation exists solely to bridge V0 `publishArtifactDefinition` into the V1 API while resource types are being migrated to OCI. New integrations should use the OCI-native publishing flow — this mutation may be removed without notice."
+    "Upsert a resource type for your organization from a JSON Schema document. If an existing resource type has the same identifier, its schema is replaced. **Deprecated:** this mutation exists solely to bridge V0 `publishArtifactDefinition` into the V2 API while resource types are being migrated to OCI. New integrations should use the OCI-native publishing flow — this mutation may be removed without notice."
     input: PublishResourceTypeInput!
-  ): ResourceTypePayload @inputs(name: "publishResourceType", schema: "\/graphql\/v1\/inputs\/publishResourceType.json", ui: "\/graphql\/v1\/inputs\/publishResourceType.ui.json") @deprecated(reason: "Transitional shim from V0 `publishArtifactDefinition` during the migration to OCI-hosted resource types. Prefer the OCI-native publishing flow; this mutation may be removed without notice.")
+  ): ResourceTypePayload @inputs(name: "publishResourceType", schema: "\/graphql\/v2\/inputs\/publishResourceType.json", ui: "\/graphql\/v2\/inputs\/publishResourceType.ui.json") @deprecated(reason: "Transitional shim from V0 `publishArtifactDefinition` during the migration to OCI-hosted resource types. Prefer the OCI-native publishing flow; this mutation may be removed without notice.")
 
   """
   **Deprecated — use at your own risk.** This mutation exists only to bridge V0's
-  `deleteArtifactDefinition` into V1 while resource types are being migrated to OCI.
+  `deleteArtifactDefinition` into V2 while resource types are being migrated to OCI.
   New integrations should use the OCI-native publishing flow. This mutation may be
   removed or change behavior without notice.
 
@@ -2374,7 +2415,7 @@ type RootMutationType {
 
     "Update an instance's version constraint or release strategy. Changes take effect on the next deployment."
     input: UpdateInstanceInput!
-  ): InstancePayload @inputs(name: "updateInstance", schema: "\/graphql\/v1\/inputs\/updateInstance.json", ui: "\/graphql\/v1\/inputs\/updateInstance.ui.json")
+  ): InstancePayload @inputs(name: "updateInstance", schema: "\/graphql\/v2\/inputs\/updateInstance.json", ui: "\/graphql\/v2\/inputs\/updateInstance.ui.json")
 
   """
   Copy configuration from one instance to another.
@@ -2411,7 +2452,7 @@ type RootMutationType {
 
     "Copy configuration from one instance to another. The source and destination must be instances of the same component. Source params (minus any fields marked non-copyable in the bundle) are written to the destination, then a plan deployment is created on the destination so the changes can be reviewed before applying."
     input: CopyInstanceInput!
-  ): InstancePayload @inputs(name: "copyInstance", schema: "\/graphql\/v1\/inputs\/copyInstance.json", ui: "\/graphql\/v1\/inputs\/copyInstance.ui.json")
+  ): InstancePayload @inputs(name: "copyInstance", schema: "\/graphql\/v2\/inputs\/copyInstance.json", ui: "\/graphql\/v2\/inputs\/copyInstance.ui.json")
 
   """
   Create or update a secret on an instance.
@@ -2429,7 +2470,7 @@ type RootMutationType {
 
     "Create or update a secret on an instance. The secret value is encrypted at rest and never returned in API responses."
     input: SetInstanceSecretInput!
-  ): InstanceSecretPayload @inputs(name: "setInstanceSecret", schema: "\/graphql\/v1\/inputs\/setInstanceSecret.json", ui: "\/graphql\/v1\/inputs\/setInstanceSecret.ui.json")
+  ): InstanceSecretPayload @inputs(name: "setInstanceSecret", schema: "\/graphql\/v2\/inputs\/setInstanceSecret.json", ui: "\/graphql\/v2\/inputs\/setInstanceSecret.ui.json")
 
   """
   Remove a secret from an instance.
@@ -2485,7 +2526,7 @@ type RootMutationType {
 
     "Deploy an instance with configuration parameters. Params are validated against the bundle's params schema, cached on the instance, and snapshotted into the deployment."
     input: CreateDeploymentInput!
-  ): DeploymentPayload @inputs(name: "createDeployment", schema: "\/graphql\/v1\/inputs\/createDeployment.json", ui: "\/graphql\/v1\/inputs\/createDeployment.ui.json")
+  ): DeploymentPayload @inputs(name: "createDeployment", schema: "\/graphql\/v2\/inputs\/createDeployment.json", ui: "\/graphql\/v2\/inputs\/createDeployment.ui.json")
 
   """
   Propose a deployment for human review.
@@ -2523,7 +2564,7 @@ type RootMutationType {
 
     "Propose a deployment for human review. The deployment is created in PROPOSED status and will not execute until it is approved via approveDeployment. Params are validated against the bundle's params schema and snapshotted into the proposal."
     input: ProposeDeploymentInput!
-  ): DeploymentPayload @inputs(name: "proposeDeployment", schema: "\/graphql\/v1\/inputs\/proposeDeployment.json", ui: "\/graphql\/v1\/inputs\/proposeDeployment.ui.json")
+  ): DeploymentPayload @inputs(name: "proposeDeployment", schema: "\/graphql\/v2\/inputs\/proposeDeployment.json", ui: "\/graphql\/v2\/inputs\/proposeDeployment.ui.json")
 
   """
   Approve a proposed deployment, releasing it into the run queue.
@@ -2572,7 +2613,7 @@ type RootMutationType {
 
     "Attach an ABAC policy to a group. Each policy grants or denies one or more actions on entities whose attributes satisfy the conditions."
     input: CreateGroupPolicyInput!
-  ): PolicyPayload @inputs(name: "createGroupPolicy", schema: "\/graphql\/v1\/inputs\/createGroupPolicy.json", ui: "\/graphql\/v1\/inputs\/createGroupPolicy.ui.json")
+  ): PolicyPayload @inputs(name: "createGroupPolicy", schema: "\/graphql\/v2\/inputs\/createGroupPolicy.json", ui: "\/graphql\/v2\/inputs\/createGroupPolicy.ui.json")
 
   """
   Edit a group policy's `effect`, `actions`, or `conditions` in place.
@@ -2592,7 +2633,7 @@ type RootMutationType {
 
     "Edit an existing policy in place. The principal cannot be changed."
     input: UpdatePolicyInput!
-  ): PolicyPayload @inputs(name: "updatePolicy", schema: "\/graphql\/v1\/inputs\/updatePolicy.json", ui: "\/graphql\/v1\/inputs\/updatePolicy.ui.json")
+  ): PolicyPayload @inputs(name: "updatePolicy", schema: "\/graphql\/v2\/inputs\/updatePolicy.json", ui: "\/graphql\/v2\/inputs\/updatePolicy.ui.json")
 
   "Delete a policy by its id."
   deletePolicy(
@@ -2623,7 +2664,7 @@ type RootMutationType {
 
     "Register a cloud metric alarm with an instance. The alarm appears in the UI immediately and receives state transitions as soon as the cloud provider reports them. Webhooks from AWS CloudWatch, Azure Monitor, GCP Cloud Monitoring, and Prometheus Alertmanager match against `cloudResourceId` to attach state."
     input: CreateInstanceAlarmInput!
-  ): AlarmPayload @inputs(name: "createInstanceAlarm", schema: "\/graphql\/v1\/inputs\/createInstanceAlarm.json", ui: "\/graphql\/v1\/inputs\/createInstanceAlarm.ui.json")
+  ): AlarmPayload @inputs(name: "createInstanceAlarm", schema: "\/graphql\/v2\/inputs\/createInstanceAlarm.json", ui: "\/graphql\/v2\/inputs\/createInstanceAlarm.ui.json")
 
   """
   Update a registered alarm's mutable fields.
@@ -2641,7 +2682,7 @@ type RootMutationType {
 
     "Update a registered alarm's mutable fields. Omit a field to leave it unchanged."
     input: UpdateInstanceAlarmInput!
-  ): AlarmPayload @inputs(name: "updateInstanceAlarm", schema: "\/graphql\/v1\/inputs\/updateInstanceAlarm.json", ui: "\/graphql\/v1\/inputs\/updateInstanceAlarm.ui.json")
+  ): AlarmPayload @inputs(name: "updateInstanceAlarm", schema: "\/graphql\/v2\/inputs\/updateInstanceAlarm.json", ui: "\/graphql\/v2\/inputs\/updateInstanceAlarm.ui.json")
 
   """
   Delete an alarm registration.
@@ -2672,7 +2713,7 @@ type RootMutationType {
 
     "Create a new OCI repository in your organization's catalog. Repositories must exist before any version can be published to them."
     input: CreateOciRepoInput!
-  ): OciRepoPayload @inputs(name: "createOciRepo", schema: "\/graphql\/v1\/inputs\/createOciRepo.json", ui: "\/graphql\/v1\/inputs\/createOciRepo.ui.json")
+  ): OciRepoPayload @inputs(name: "createOciRepo", schema: "\/graphql\/v2\/inputs\/createOciRepo.json", ui: "\/graphql\/v2\/inputs\/createOciRepo.ui.json")
 
   "Update an OCI repository's mutable metadata (today: attributes)."
   updateOciRepo(
@@ -2684,7 +2725,7 @@ type RootMutationType {
 
     "Update an OCI repository's user-settable metadata. The repository name and artifact type are immutable."
     input: UpdateOciRepoInput!
-  ): OciRepoPayload @inputs(name: "updateOciRepo", schema: "\/graphql\/v1\/inputs\/updateOciRepo.json", ui: "\/graphql\/v1\/inputs\/updateOciRepo.ui.json")
+  ): OciRepoPayload @inputs(name: "updateOciRepo", schema: "\/graphql\/v2\/inputs\/updateOciRepo.json", ui: "\/graphql\/v2\/inputs\/updateOciRepo.ui.json")
 
   """
   Delete an OCI repository.
@@ -2715,7 +2756,7 @@ type RootMutationType {
 
     "Share an OCI repo with recipient projects matching attribute conditions. The caller must have `repo:update` on the source repo."
     input: CreateRepoGrantInput!
-  ): GrantPayload @inputs(name: "createRepoGrant", schema: "\/graphql\/v1\/inputs\/createRepoGrant.json", ui: "\/graphql\/v1\/inputs\/createRepoGrant.ui.json")
+  ): GrantPayload @inputs(name: "createRepoGrant", schema: "\/graphql\/v2\/inputs\/createRepoGrant.json", ui: "\/graphql\/v2\/inputs\/createRepoGrant.ui.json")
 
   """
   Share a resource with recipient environments matching `recipientConditions`.
@@ -2732,7 +2773,7 @@ type RootMutationType {
 
     "Share a resource with recipient environments matching attribute conditions. The caller must have `resource:update` on the source resource."
     input: CreateResourceGrantInput!
-  ): GrantPayload @inputs(name: "createResourceGrant", schema: "\/graphql\/v1\/inputs\/createResourceGrant.json", ui: "\/graphql\/v1\/inputs\/createResourceGrant.ui.json")
+  ): GrantPayload @inputs(name: "createResourceGrant", schema: "\/graphql\/v2\/inputs\/createResourceGrant.json", ui: "\/graphql\/v2\/inputs\/createResourceGrant.ui.json")
 
   """
   Delete a grant by its id. The caller must have `repo:update` on the grant's
@@ -3238,9 +3279,11 @@ Conditions are evaluated AND within a policy and OR across policies on the
 same group. A policy with no conditions is a wildcard — it matches any
 resource of each action's entity. Deny policies win over allow policies. A
 policy can list actions across different entities (for example
-`project:view` together with `instance:deploy`); conditions whose attributes
-do not apply to a given entity simply never match for it. See
-`docs/guides/abac.md` for the full evaluation model.
+`project:view` together with `instance:deploy`); for each action, condition
+keys whose registered attribute scope is unreachable for that action's
+entity are skipped, and a policy whose conditions all skip for a given
+action is a wildcard match for that action. See `docs/guides/abac.md` for
+the full evaluation model.
 """
 type Policy {
   "Unique identifier for this policy."
@@ -3492,6 +3535,21 @@ type Resource {
   """
   payload: Map
 
+  """
+  Key-value attributes assigned directly to this resource, used by ABAC
+  policies. Reserved keys starting with `md-` are auto-injected by the system
+  and excluded from this map — see `effectiveAttributes` for the merged view.
+  """
+  attributes: Map!
+
+  """
+  The full set of attributes that ABAC policy evaluation sees for this
+  resource — its own attributes plus user attributes cascaded from the
+  instance chain (project, environment, component, instance) and the
+  resource type, plus auto-injected `md-*` system attributes.
+  """
+  effectiveAttributes: Map!
+
   "When this resource was created (UTC)."
   createdAt: DateTime!
 
@@ -3625,7 +3683,7 @@ input ResourceTypesSort {
   order: SortOrder!
 }
 
-"Upsert a resource type for your organization from a JSON Schema document. If an existing resource type has the same identifier, its schema is replaced. **Deprecated:** this mutation exists solely to bridge V0 `publishArtifactDefinition` into the V1 API while resource types are being migrated to OCI. New integrations should use the OCI-native publishing flow — this mutation may be removed without notice."
+"Upsert a resource type for your organization from a JSON Schema document. If an existing resource type has the same identifier, its schema is replaced. **Deprecated:** this mutation exists solely to bridge V0 `publishArtifactDefinition` into the V2 API while resource types are being migrated to OCI. New integrations should use the OCI-native publishing flow — this mutation may be removed without notice."
 input PublishResourceTypeInput {
   "The full JSON Schema document describing the shape of data this resource type exposes to dependents. Must include `$md.name` (a kebab-case identifier like `aws-iam-role`) and should include `$md.label`, `$md.icon`, and `$md.ui.connectionOrientation`."
   schema: Map!
@@ -3723,6 +3781,14 @@ type ResourceType {
   type does not provide instructions.
   """
   instructions: [ImportInstruction!]!
+
+  """
+  The auto-injected `md-*` system attributes for this resource type
+  (today: `md-id`). Resource types do not yet carry user-settable
+  attributes; user attributes will arrive when resource types move to
+  OCI-hosted distribution.
+  """
+  effectiveAttributes: Map!
 
   "Timestamp when this resource type was created (UTC)."
   createdAt: DateTime!
@@ -4230,7 +4296,7 @@ of actor, and `name` provides a human-readable label:
 
 If the original actor has been deleted, the `name` will indicate this (e.g., "deleted account").
 """
-type V1AuditLogActor {
+type AuditLogActor {
   "Unique identifier of the actor that performed the action."
   id: ID!
 
@@ -4274,7 +4340,7 @@ type AuditLog {
   data: Map
 
   "The actor (user, service account, deployment, or system) that performed this action."
-  actor: V1AuditLogActor!
+  actor: AuditLogActor!
 }
 
 type AuditLogsPage {
@@ -4590,10 +4656,11 @@ type Server {
 """
 The resource level where a custom attribute applies.
 
-Attributes set at hierarchy scopes (`PROJECT`, `ENVIRONMENT`, `COMPONENT`, `INSTANCE`) cascade
-downward — an attribute set at `PROJECT` is inherited by all environments and instances in
-that project. `REPO`-scoped attributes apply to OCI repositories; the bundle name is propagated
-to components, instances, deployments, and resources via the `md-repo` system attribute.
+Attributes set at hierarchy scopes (`PROJECT`, `ENVIRONMENT`, `COMPONENT`) cascade
+downward — an attribute set at `PROJECT` is inherited by all environments, instances,
+deployments, and resources in that project. `REPO`-scoped attributes apply to OCI
+repositories; the bundle name is propagated to components, instances, deployments,
+and resources via the `md-repo` system attribute.
 """
 enum AttributeScope {
   "Attribute is set on individual projects."
@@ -4604,9 +4671,6 @@ enum AttributeScope {
 
   "Attribute is set on blueprint components (design-time)."
   COMPONENT
-
-  "Attribute is set on deployed instances (run-time)."
-  INSTANCE
 
   "Attribute is set on individual OCI repositories (bundles)."
   REPO
@@ -4641,7 +4705,7 @@ input CreateCustomAttributeInput {
   "Whether this attribute must be set when creating a resource at the specified scope."
   required: Boolean
 
-  "The resource level where this attribute is set. Hierarchy scopes (PROJECT, ENVIRONMENT, COMPONENT, INSTANCE) cascade values downward. REPO scope applies to OCI repositories; the bundle name propagates to derived components, instances, deployments, and resources via the md-repo system attribute."
+  "The resource level where this attribute is set. Hierarchy scopes (PROJECT, ENVIRONMENT, COMPONENT) cascade values downward to instances, deployments, and resources. REPO scope applies to OCI repositories; the bundle name propagates to derived components, instances, deployments, and resources via the md-repo system attribute."
   scope: AttributeScope!
 
   "The closed set of values this attribute may take. Must contain at least one entry, no duplicates, and may not contain the literal \"*\" (reserved for a future \"any value\" semantic)."
@@ -5177,13 +5241,14 @@ type Organization {
   subscriptionStatus: OrganizationSubscriptionStatus!
 
   """
-  When this organization's free trial ends (UTC).
+  When the current free trial expires (UTC).
 
-  Every organization is created with a trial period. If a paid plan is not active
-  by this timestamp, `subscriptionStatus` becomes `EXPIRED` and most write
-  operations are blocked until billing is resolved.
+  Only populated while `subscriptionStatus` is `TRIAL`. If a paid plan is not
+  active by this timestamp, `subscriptionStatus` becomes `EXPIRED` and most
+  write operations are blocked until billing is resolved. Once the organization
+  upgrades to a paid plan or the trial expires, this field returns `null`.
   """
-  trialEndsAt: DateTime!
+  trialEndsAt: DateTime
 
   """
   Date the current paid plan period ends.
@@ -5215,7 +5280,7 @@ type Organization {
   """
   Paginated list of custom attributes that govern attribute metadata across this organization.
 
-  Requires the `organization:manageAttributes` action. Callers without it receive
+  Requires the `organization:manage` action. Callers without it receive
   `null` along with a top-level `FORBIDDEN` error.
   """
   customAttributes(
@@ -5229,7 +5294,7 @@ type Organization {
   """
   Subscription, trial, and upgrade information for this organization.
 
-  Requires the `organization:manageBilling` action. Callers without it receive
+  Requires the `organization:manage` action. Callers without it receive
   `null` along with a top-level `FORBIDDEN` error. The non-sensitive
   `subscriptionStatus` field at the top of the type stays visible to every member.
   """
@@ -5375,8 +5440,8 @@ type OrganizationBilling {
   "Friendly attribution name for the partner that referred this org (e.g., `\"Y Combinator\"`)."
   affiliate: String
 
-  "When the free trial expires (UTC)."
-  trialEndsAt: DateTime!
+  "When the current free trial expires (UTC). `null` once `subscriptionStatus` is anything other than `TRIAL`."
+  trialEndsAt: DateTime
 
   "End date of the current paid plan or grace period. `null` when not applicable (e.g., monthly plans)."
   planExpiresOn: Date
@@ -6130,6 +6195,9 @@ enum ProposeDeploymentAction {
 
 "Available fields for sorting the deployments list."
 enum DeploymentsSortField {
+  "Sort by the timestamp of the most recent change to the deployment record (status transitions, log compaction). This is what surfaces \"recently active\" work first."
+  UPDATED_AT
+
   "Sort by creation timestamp (oldest first when ascending, newest first when descending)."
   CREATED_AT
 
@@ -6140,7 +6208,7 @@ enum DeploymentsSortField {
 """
 Controls the sort order of the deployments list.
 
-Defaults to newest first (`created_at` descending) when not specified.
+Defaults to most recently active first (`updated_at` descending) when not specified.
 """
 input DeploymentsSort {
   "The field to sort by."
@@ -7885,11 +7953,37 @@ type Bundle {
   "URL to the bundle's source code repository, if published by the author."
   sourceUrl: String
 
+  """
+  The README for this exact bundle version, in markdown. `null` if the
+  publisher didn't include one.
+
+  Use this when rendering documentation for a specific version — for the
+  latest stable README at the repository level, use `OciRepo.readme`.
+  """
+  readme: String
+
+  """
+  The changelog for this exact bundle version, in markdown. `null` if the
+  publisher didn't include one.
+
+  Each version's changelog is preserved — for the latest stable changelog
+  at the repository level, use `OciRepo.changelog`.
+  """
+  changelog: String
+
   "Timestamp when this bundle version was first published (UTC)."
   createdAt: DateTime!
 
   "Timestamp when this bundle version was last modified (UTC)."
   updatedAt: DateTime!
+
+  """
+  The full set of attributes that ABAC policy evaluation sees for this
+  bundle version — the auto-injected `md-*` system attributes (today:
+  `md-id`, `md-repo`, `md-bundle`). Bundle versions are immutable
+  snapshots and do not carry user attributes of their own.
+  """
+  effectiveAttributes: Map!
 
   "OCI repository name for this bundle (e.g., `aws-aurora-postgres`). Equivalent to `name`."
   repo: String!
@@ -7912,6 +8006,17 @@ Repository names are unique within an organization and follow a lowercase
 kebab-case convention (e.g., `aws-aurora-postgres`, `kubernetes-cluster`).
 """
 scalar OciRepoName
+
+"""
+The kind of artifact stored in an OCI repository.
+
+Each value maps to a concrete [OCI artifact type](https://github.com/opencontainers/image-spec/blob/main/manifest.md#guidelines-for-artifact-usage)
+media string written to the manifest. Today only `BUNDLE` is supported; additional types will be added as the catalog expands.
+"""
+enum OciArtifactType {
+  "Massdriver bundle (`application\/vnd.massdriver.bundle.v1+json`)."
+  BUNDLE
+}
 
 """
 Fields available for ordering the OCI repositories list.
@@ -7942,8 +8047,17 @@ enum OciRepoReleaseChannelsSortField {
   NAME
 }
 
+"Fields available for ordering files within a tagged version of an OCI artifact."
+enum OciFilesSortField {
+  "Alphabetical order by filename (e.g., `CHANGELOG.md`, `README.md`, `src\/main.tf`)."
+  NAME
+}
+
 "Create a new OCI repository in your organization's catalog. Repositories must exist before any version can be published to them."
 input CreateOciRepoInput {
+  "OCI artifact type stored in this repository. Today only `BUNDLE` is accepted; additional types will be added as Massdriver expands the catalog."
+  artifactType: OciArtifactType!
+
   "Key-value attributes for this repository. Used by ABAC policies for fine-grained access control. Reserved `md-*` keys are rejected. Must conform to the organization's custom attributes for the repo scope."
   attributes: Map
 
@@ -7991,6 +8105,25 @@ input OciReposSort {
 input OciRepoTagsSort {
   "The field to order results by."
   field: OciRepoTagsSortField!
+
+  "Ascending (`ASC`) or descending (`DESC`)."
+  order: SortOrder!
+}
+
+"""
+Filters for narrowing the tags list within an OCI repository.
+
+All filters are combined with AND logic.
+"""
+input OciRepoTagsFilter {
+  "Return only the tag with this exact version (e.g., `1.3.3`). When set, the result is at most one item."
+  version: Semver
+}
+
+"Controls the sort order of files in a tagged version of an OCI artifact."
+input OciFilesSort {
+  "The field to order results by."
+  field: OciFilesSortField!
 
   "Ascending (`ASC`) or descending (`DESC`)."
   order: SortOrder!
@@ -8061,6 +8194,61 @@ type OciRepoTag {
 
   "Size of the manifest blob in bytes."
   size: Int!
+
+  """
+  The README for this version, in markdown. `null` if the publisher didn't
+  include one. Each version's README is preserved as it was at publish time.
+  """
+  readme: String
+
+  """
+  The changelog for this version, in markdown. `null` if the publisher
+  didn't include one. Each version's changelog is preserved as it was at
+  publish time.
+  """
+  changelog: String
+
+  """
+  Files packaged into this version of the artifact (e.g., `README.md`,
+  schemas, source files, templates — whatever the publisher included).
+
+  Each item carries a downloadable `url`, a content-addressable `digest`,
+  its declared `mediaType`, and its size — enough to render or verify the
+  file. Defaults to `name` ascending.
+  """
+  files(
+    "Sort order for files. Defaults to `name` ascending."
+    sort: OciFilesSort
+
+    "Cursor from a previous page's `cursor.next` or `cursor.previous`."
+    cursor: Cursor
+  ): OciFilesPage
+}
+
+"""
+A single file inside an OCI artifact — for example, a bundle's
+`README.md`, a Terraform module's `src/main.tf`, or a Helm chart's
+`templates/deployment.yaml`. File names may include nested paths.
+
+Use `url` to download the bytes; use `mediaType` to decide how to render
+them; use `digest` and `size` to verify integrity or to pull the file
+directly with an OCI client.
+"""
+type OciFile {
+  "The file's path within the artifact, including any directory segments (e.g., `README.md`, `src\/main.tf`, `helm\/templates\/deployment.yaml`)."
+  name: String!
+
+  "Content type the publisher declared for this file (e.g., `text\/markdown`, `application\/json`, `image\/svg+xml`, `text\/x-terraform`). Use this to pick a renderer in your UI — the response from `url` is always served as plain text for safety, so the consumer is responsible for interpreting the bytes."
+  mediaType: String!
+
+  "File size in bytes."
+  size: Int!
+
+  "Content-addressable SHA-256 digest of the file (e.g., `sha256:e3b0c44298fc1c14...`). Stable across re-publishes of identical content; useful for integrity checks or pulling the file directly with an OCI client like `oras`."
+  digest: String!
+
+  "Authenticated URL to download this file. Requires an active session or API credentials, and `repo:view` on the OCI repository. The response is always served as `text\/plain` (regardless of the file's `mediaType`) so it cannot execute scripts in a browser. To render the file, fetch the URL with credentials, read the bytes, and render them client-side according to `mediaType`. Direct embedding via `<img>` or `<iframe>` will not work."
+  url: String!
 }
 
 """
@@ -8153,18 +8341,18 @@ type OciRepo {
   sourceUrl: String
 
   """
-  Markdown README for this repository. Cached on publish from the latest
-  stable release; falls back to the latest release when the cache is empty.
-  `null` when the repository has no releases or the latest release has no
-  README.
+  The README for this repository, in markdown — taken from the latest
+  stable release. `null` if no release has shipped a README. To get a
+  specific version's README, query that tag's `readme` field, or the
+  `bundle(id: "name@version") { readme }` field.
   """
   readme: String
 
   """
-  Markdown changelog for this repository. Cached on publish from the latest
-  stable release; falls back to the latest release when the cache is empty.
-  `null` when the repository has no releases or the latest release has no
-  changelog.
+  The changelog for this repository, in markdown — taken from the latest
+  stable release. `null` if no release has shipped a changelog. To get a
+  specific version's changelog, query that tag's `changelog` field, or
+  the `bundle(id: "name@version") { changelog }` field.
   """
   changelog: String
 
@@ -8192,6 +8380,9 @@ type OciRepo {
   version first (`version` descending).
   """
   tags(
+    "Narrow results to a specific version."
+    filter: OciRepoTagsFilter
+
     "Sort order for tags. Defaults to `version` descending (newest first)."
     sort: OciRepoTagsSort
 
@@ -8233,6 +8424,14 @@ type OciRepoReleaseChannelsPage {
 
   "A list of type oci_repo_release_channel."
   items: [OciRepoReleaseChannel]
+}
+
+type OciFilesPage {
+  "Pagination cursors for navigating between pages."
+  cursor: PaginationCursor!
+
+  "A list of type oci_file."
+  items: [OciFile]
 }
 
 type OciRepoPayload {

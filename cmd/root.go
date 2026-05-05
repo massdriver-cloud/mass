@@ -40,6 +40,7 @@ func Execute() {
 	rootCmd.AddCommand(NewCmdEnvironment())
 	rootCmd.AddCommand(NewCmdInstance())
 	rootCmd.AddCommand(NewCmdProject())
+	rootCmd.AddCommand(NewCmdRepository())
 	rootCmd.AddCommand(NewCmdResource())
 	rootCmd.AddCommand(NewCmdType())
 	rootCmd.AddCommand(NewCmdSchema())

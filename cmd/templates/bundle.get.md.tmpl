@@ -1,17 +1,46 @@
-# Bundle: {{.Name | mdEscape}}
+# {{.Name | mdEscape}} `{{.Version}}`
 
-**Version:** {{.Version | mdEscape}}
-
-{{if .URL}}
-**URL:** {{.URL}}
-{{end}}
-
-{{if .Description}}
-## Description
+{{- if .Description}}
 
 {{.Description | mdEscape}}
-{{end}}
+{{- end}}
 
-{{if .SourceURL}}
-**Source:** {{.SourceURL}}
-{{end}}
+| | |
+| --- | --- |
+| **Repository** | `{{.Repo | mdEscape}}` |
+| **Published** | {{call .FormatTime .CreatedAt}} |
+{{- if not (eq (call .FormatTime .UpdatedAt) (call .FormatTime .CreatedAt))}}
+| **Updated** | {{call .FormatTime .UpdatedAt}} |
+{{- end}}
+{{- if .SourceURL}}
+| **Source** | {{.SourceURL}} |
+{{- end}}
+{{- if .URL}}
+| **Link** | {{.URL}} |
+{{- end}}
+
+## Dependencies
+{{- if .Dependencies}}
+
+| Name | Required | Resource Type |
+| --- | --- | --- |
+{{- range .Dependencies}}
+| `{{.Name}}` | {{if .Required}}yes{{else}}no{{end}} | {{with .ResourceType}}`{{.ID | mdEscape}}`{{else}}_(removed)_{{end}} |
+{{- end}}
+{{- else}}
+
+_None — this bundle has no input dependencies._
+{{- end}}
+
+## Resources
+{{- if .Resources}}
+
+| Name | Always Produced | Resource Type |
+| --- | --- | --- |
+{{- range .Resources}}
+| `{{.Name}}` | {{if .Required}}yes{{else}}no{{end}} | {{with .ResourceType}}`{{.ID | mdEscape}}`{{else}}_(removed)_{{end}} |
+{{- end}}
+{{- else}}
+
+_None — this bundle produces no output resources._
+{{- end}}
