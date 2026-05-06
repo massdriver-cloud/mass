@@ -44,7 +44,7 @@ func isEmpty(v any) bool {
 		}
 		rv = rv.Elem()
 	}
-	switch rv.Kind() {
+	switch rv.Kind() { //nolint:exhaustive // only nil-able container kinds need the IsNil check
 	case reflect.Map, reflect.Slice:
 		return rv.IsNil()
 	}

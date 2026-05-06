@@ -51,10 +51,10 @@ func GetOciRepo(ctx context.Context, mdClient *client.Client, id string) (*OciRe
 		UpdatedAt:    r.UpdatedAt,
 	}
 	for _, rc := range r.ReleaseChannels.Items {
-		repo.ReleaseChannels = append(repo.ReleaseChannels, OciReleaseChannel{Name: rc.Name, Tag: rc.Tag})
+		repo.ReleaseChannels = append(repo.ReleaseChannels, OciReleaseChannel(rc))
 	}
 	for _, tag := range r.Tags.Items {
-		repo.Tags = append(repo.Tags, OciRepoTag{Tag: tag.Tag, CreatedAt: tag.CreatedAt})
+		repo.Tags = append(repo.Tags, OciRepoTag(tag))
 	}
 
 	return &repo, nil
@@ -81,7 +81,7 @@ func ListOciRepos(ctx context.Context, mdClient *client.Client, filter *OciRepos
 				UpdatedAt:    r.UpdatedAt,
 			}
 			for _, rc := range r.ReleaseChannels.Items {
-				repo.ReleaseChannels = append(repo.ReleaseChannels, OciReleaseChannel{Name: rc.Name, Tag: rc.Tag})
+				repo.ReleaseChannels = append(repo.ReleaseChannels, OciReleaseChannel(rc))
 			}
 			repos = append(repos, repo)
 		}

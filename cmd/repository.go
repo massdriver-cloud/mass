@@ -6,6 +6,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -167,7 +168,7 @@ func runRepositoryList(input *repositoryListInput) error {
 
 func buildOciReposFilter(input *repositoryListInput) (*api.OciReposFilter, error) {
 	filter := &api.OciReposFilter{}
-	any := false
+	hasFilter := false
 
 	if input.kind != "" {
 		mediaType, resolveErr := resolveArtifactType(input.kind)
@@ -175,23 +176,23 @@ func buildOciReposFilter(input *repositoryListInput) (*api.OciReposFilter, error
 			return nil, resolveErr
 		}
 		filter.ArtifactType = mediaType
-		any = true
+		hasFilter = true
 	}
 	if input.search != "" {
 		filter.Search = input.search
-		any = true
+		hasFilter = true
 	}
 	switch {
 	case input.name != "" && input.prefix != "":
-		return nil, fmt.Errorf("--name and --prefix are mutually exclusive")
+		return nil, errors.New("--name and --prefix are mutually exclusive")
 	case input.name != "":
 		filter.Name = &api.OciRepoNameFilter{Eq: input.name}
-		any = true
+		hasFilter = true
 	case input.prefix != "":
 		filter.Name = &api.OciRepoNameFilter{StartsWith: input.prefix}
-		any = true
+		hasFilter = true
 	}
-	if !any {
+	if !hasFilter {
 		return nil, nil //nolint:nilnil // explicit nil filter is the no-filter signal to the API
 	}
 	return filter, nil
