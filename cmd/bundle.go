@@ -125,7 +125,6 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 	}
 	bundlePublishCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundlePublishCmd.Flags().BoolP("development", "d", false, "Publish the bundle as a development release.")
-	bundlePublishCmd.Flags().String("access", "", "(Deprecated) Only here for backwards compatibility. Will be removed in a future release.")
 	bundlePublishCmd.Flags().BoolP("fail-warnings", "f", false, "Fail on warnings from the linter")
 	bundlePublishCmd.Flags().BoolP("skip-lint", "s", false, "Skip linting")
 
