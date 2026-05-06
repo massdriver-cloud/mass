@@ -31,7 +31,7 @@ func NewCmdType() *cobra.Command {
 		Use:     "resource-type",
 		Short:   "Resource type management",
 		Long:    helpdocs.MustRender("type"),
-		Aliases: []string{"type", "res-type", "definition", "artifact-definition", "artdef", "def"},
+		Aliases: []string{"rt", "type", "res-type", "definition", "artifact-definition", "artdef", "def"},
 	}
 
 	typeGetCmd := &cobra.Command{
