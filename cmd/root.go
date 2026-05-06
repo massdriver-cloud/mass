@@ -33,22 +33,19 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	rootCmd.AddCommand(NewCmdApp())
-	rootCmd.AddCommand(NewCmdArtifact())
 	rootCmd.AddCommand(NewCmdBundle())
-	rootCmd.AddCommand(NewCmdCredential())
-	rootCmd.AddCommand(NewCmdDefinition())
+	rootCmd.AddCommand(NewCmdComponent())
+	rootCmd.AddCommand(NewCmdDeployment())
 	rootCmd.AddCommand(NewCmdDocs())
 	rootCmd.AddCommand(NewCmdEnvironment())
-	rootCmd.AddCommand(NewCmdImage())
-	rootCmd.AddCommand(NewCmdInfra())
-	rootCmd.AddCommand(NewCmdLogs())
-	rootCmd.AddCommand(NewCmdPreview())
+	rootCmd.AddCommand(NewCmdInstance())
 	rootCmd.AddCommand(NewCmdProject())
+	rootCmd.AddCommand(NewCmdRepository())
+	rootCmd.AddCommand(NewCmdResource())
+	rootCmd.AddCommand(NewCmdType())
 	rootCmd.AddCommand(NewCmdSchema())
-	rootCmd.AddCommand(NewCmdServer())
 	rootCmd.AddCommand(NewCmdVersion())
-	rootCmd.AddCommand(NewCmdPkg())
+	rootCmd.AddCommand(NewCmdWhoami())
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

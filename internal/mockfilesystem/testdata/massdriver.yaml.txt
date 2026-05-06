@@ -42,7 +42,7 @@ connections:
       $ref: massdriver/aws-iam-role
   {%- for conn in connections %}
     {{conn.name}}:
-      $ref: {{conn.artifact_definition}}
+      $ref: {{conn.resourceType}}
   {% endfor %}
 
 # schema-artifacts.json

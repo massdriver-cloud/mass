@@ -111,8 +111,8 @@ func TestGenerateBasicBundleWithoutTemplate(t *testing.T) {
 		Description:  "A test bundle without a template",
 		TemplateName: "", // No template
 		Connections: []templates.Connection{
-			{Name: "vpc", ArtifactDefinition: "massdriver/aws-vpc"},
-			{Name: "database", ArtifactDefinition: "massdriver/aws-rds-postgres"},
+			{Name: "vpc", ResourceType: "massdriver/aws-vpc"},
+			{Name: "database", ResourceType: "massdriver/aws-rds-postgres"},
 		},
 	}
 
@@ -192,7 +192,7 @@ func mockTemplateData(writePath string) *templates.TemplateData {
 		TemplateName:      "opentofu",
 		Name:              "aws-dynamodb",
 		Description:       "whatever",
-		Connections:       []templates.Connection{{ArtifactDefinition: "massdriver/aws-dynamodb-table", Name: "dynamo"}},
+		Connections:       []templates.Connection{{ResourceType: "massdriver/aws-dynamodb-table", Name: "dynamo"}},
 		CloudAbbreviation: "aws",
 		RepoName:          "massdriver-cloud/bundle-templates",
 		RepoNameEncoded:   "massdriver-cloud/bundle-templates",

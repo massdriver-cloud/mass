@@ -9,13 +9,29 @@ package: api
 bindings:
   JSON:
     type: map[string]any
-    marshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.MarshalJSON
-    unmarshaler: github.com/massdriver-cloud/mass/pkg/api/scalars.UnmarshalJSON
+    marshaler: github.com/massdriver-cloud/mass/internal/api/scalars.MarshalJSON
+    unmarshaler: github.com/massdriver-cloud/mass/internal/api/scalars.UnmarshalJSON
+  Map:
+    type: map[string]any
+    marshaler: github.com/massdriver-cloud/mass/internal/api/scalars.MarshalJSON
+    unmarshaler: github.com/massdriver-cloud/mass/internal/api/scalars.UnmarshalJSON
   DateTime:
     type: time.Time
   VersionConstraint:
     type: string
-  Markdown:
+  Semver:
+    type: string
+  BundleId:
+    type: string
+  OciRepoName:
+    type: string
+  ReleaseChannel:
+    type: string
+  Upload:
     type: string
   Cursor:
-    type: github.com/massdriver-cloud/mass/pkg/api/scalars.Cursor
+    type: github.com/massdriver-cloud/mass/internal/api.Cursor
+  UUID:
+    type: string
+  Conditions:
+    type: string

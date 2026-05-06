@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
@@ -28,13 +30,6 @@ import (
 //go:embed templates/bundle.get.md.tmpl
 var bundleTemplates embed.FS
 
-// hiddenArtifacts are artifact definitions that the API returns that
-// should not be added to bundles
-var hiddenArtifacts = map[string]struct{}{
-	"massdriver/api":        {},
-	"massdriver/draft-node": {},
-}
-
 type bundleNew struct {
 	name         string
 	description  string
@@ -46,9 +41,9 @@ type bundleNew struct {
 
 type bundleList struct {
 	search    string
+	name      string
 	sortField string
 	sortOrder string
-	limit     int
 	output    string
 }
 
@@ -71,34 +66,37 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 			return runBundleList(&bundleListInput)
 		},
 	}
-	bundleListCmd.Flags().StringVarP(&bundleListInput.search, "search", "s", "", "Search bundles (supports AND, OR, -, quotes)")
-	bundleListCmd.Flags().StringVar(&bundleListInput.sortField, "sort", "name", "Sort field (name, created_at)")
+	bundleListCmd.Flags().StringVarP(&bundleListInput.search, "search", "s", "", "Search bundles by name, readme, and changelog")
+	bundleListCmd.Flags().StringVarP(&bundleListInput.name, "name", "n", "", "Filter by exact bundle name")
+	bundleListCmd.Flags().StringVar(&bundleListInput.sortField, "sort", "", "Sort field (name, created_at). Defaults to name, or relevance when using --search")
 	bundleListCmd.Flags().StringVar(&bundleListInput.sortOrder, "order", "asc", "Sort order (asc, desc)")
-	bundleListCmd.Flags().IntVarP(&bundleListInput.limit, "limit", "l", 0, "Maximum number of results to return")
 	bundleListCmd.Flags().StringVarP(&bundleListInput.output, "output", "o", "table", "Output format (table, json)")
 
 	bundleBuildCmd := &cobra.Command{
-		Use:   "build",
+		Use:   "build [path]",
 		Short: "Build schemas and generate IaC files from massdriver.yaml file",
+		Args:  cobra.MaximumNArgs(1),
 		RunE:  runBundleBuild,
 	}
-	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleBuildCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	bundleImportCmd := &cobra.Command{
-		Use:   "import",
+		Use:   "import [path]",
 		Short: "Import declared variables from IaC into massdriver.yaml params",
 		Long:  helpdocs.MustRender("bundle/import"),
+		Args:  cobra.MaximumNArgs(1),
 		RunE:  runBundleImport,
 	}
-	bundleImportCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleImportCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleImportCmd.Flags().BoolP("all", "a", false, "Import all variables without prompting")
 
 	bundleLintCmd := &cobra.Command{
-		Use:   "lint",
+		Use:   "lint [path]",
 		Short: "Check massdriver.yaml file for common errors",
+		Args:  cobra.MaximumNArgs(1),
 		RunE:  runBundleLint,
 	}
-	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleLintCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	var bundleNewInput bundleNew
 
@@ -119,14 +117,14 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.paramsDir, "params-directory", "p", "", "Path with existing params to use - opentofu module directory or helm chart values.yaml")
 
 	bundlePublishCmd := &cobra.Command{
-		Use:     "publish",
+		Use:     "publish [path]",
 		Aliases: []string{"push"},
 		Short:   "Publish bundle to Massdriver's package manager",
+		Args:    cobra.MaximumNArgs(1),
 		RunE:    runBundlePublish,
 	}
-	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundlePublishCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundlePublishCmd.Flags().BoolP("development", "d", false, "Publish the bundle as a development release.")
-	bundlePublishCmd.Flags().String("access", "", "(Deprecated) Only here for backwards compatibility. Will be removed in a future release.")
 	bundlePublishCmd.Flags().BoolP("fail-warnings", "f", false, "Fail on warnings from the linter")
 	bundlePublishCmd.Flags().BoolP("skip-lint", "s", false, "Skip linting")
 
@@ -162,17 +160,46 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 		RunE:  runBundleTemplateList,
 	}
 
+	bundleCreateCmd := &cobra.Command{
+		Use:     "create <name>",
+		Short:   "Create a new bundle OCI repository in your organization's catalog",
+		Example: `mass bundle create aws-aurora-postgres -a owner=data,service=database`,
+		Args:    cobra.ExactArgs(1),
+		RunE:    runBundleCreate,
+	}
+	bundleCreateCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes (e.g. -a owner=data,service=database)")
+
 	bundleCmd.AddCommand(bundleListCmd)
 	bundleCmd.AddCommand(bundleBuildCmd)
 	bundleCmd.AddCommand(bundleImportCmd)
 	bundleCmd.AddCommand(bundleLintCmd)
 	bundleCmd.AddCommand(bundleNewCmd)
+	bundleCmd.AddCommand(bundleCreateCmd)
 	bundleCmd.AddCommand(bundlePublishCmd)
 	bundleCmd.AddCommand(bundleGetCmd)
 	bundleCmd.AddCommand(bundlePullCmd)
 	bundleCmd.AddCommand(bundleTemplateCmd)
 	bundleTemplateCmd.AddCommand(bundleTemplateListCmd)
 	return bundleCmd
+}
+
+func runBundleCreate(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	name := args[0]
+	attrs, err := cmd.Flags().GetStringToString("attributes")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := client.New()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	return createOciRepoCommon(ctx, mdClient, name, "bundle", attrs)
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
@@ -193,9 +220,10 @@ func runBundleTemplateList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runBundleNewInteractive(outputDir string) (*templates.TemplateData, error) {
+func runBundleNewInteractive(outputDir string, resourceTypeNames []string) (*templates.TemplateData, error) {
 	templateData := &templates.TemplateData{
-		OutputDir: outputDir,
+		OutputDir:     outputDir,
+		ResourceTypes: resourceTypeNames,
 	}
 
 	err := bundle.RunPromptNew(templateData)
@@ -214,8 +242,8 @@ func runBundleNewFlags(input *bundleNew) (*templates.TemplateData, error) {
 			return nil, fmt.Errorf("invalid connection argument: %s", conn)
 		}
 		connectionData[i] = templates.Connection{
-			ArtifactDefinition: parts[1],
-			Name:               parts[0],
+			ResourceType: parts[1],
+			Name:         parts[0],
 		}
 	}
 
@@ -234,31 +262,29 @@ func runBundleNewFlags(input *bundleNew) (*templates.TemplateData, error) {
 func runBundleNew(input *bundleNew) error {
 	ctx := context.Background()
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
-	}
-
-	artifactDefs, listErr := api.ListArtifactDefinitions(ctx, mdClient)
-	if listErr != nil {
-		return fmt.Errorf("error listing artifact definitions: %w", listErr)
-	}
-
-	artifactDefinitions := map[string]map[string]any{}
-	for _, v := range artifactDefs {
-		if _, ok := hiddenArtifacts[v.Name]; ok {
-			continue
-		}
-		artifactDefinitions[v.Name] = v.Schema
-	}
-
-	bundle.SetMassdriverArtifactDefinitions(artifactDefinitions)
-
 	var templateData *templates.TemplateData
 	var runErr error
 	if input.name == "" || input.templateName == "" {
 		// run the interactive prompt
-		templateData, runErr = runBundleNewInteractive(input.outputDir)
+		mdClient, mdClientErr := client.New()
+		if mdClientErr != nil {
+			return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+		}
+
+		resourceTypes, listErr := api.ListResourceTypes(ctx, mdClient, nil)
+		if listErr != nil {
+			return fmt.Errorf("error fetching resource types: %w", listErr)
+		}
+		resourceTypeNames := make([]string, len(resourceTypes))
+		for i, rt := range resourceTypes {
+			resourceTypeNames[i] = rt.ID
+			if rt.Name != rt.ID {
+				resourceTypeNames[i] += " (" + rt.Name + ")"
+			}
+		}
+		slices.Sort(resourceTypeNames)
+
+		templateData, runErr = runBundleNewInteractive(input.outputDir, resourceTypeNames)
 		if runErr != nil {
 			return fmt.Errorf("error running interactive prompt: %w", runErr)
 		}
@@ -283,8 +309,23 @@ func runBundleNew(input *bundleNew) error {
 	return nil
 }
 
+// bundleDir resolves the bundle directory from either the optional positional
+// argument or the --bundle-directory flag. Specifying both is rejected so a
+// user-facing surprise (silent precedence) becomes a clear error.
+func bundleDir(cmd *cobra.Command, args []string) (string, error) {
+	hasPositional := len(args) > 0
+	flagSet := cmd.Flags().Changed("bundle-directory")
+	if hasPositional && flagSet {
+		return "", fmt.Errorf("cannot specify both a positional path and --bundle-directory; use one")
+	}
+	if hasPositional {
+		return args[0], nil
+	}
+	return cmd.Flags().GetString("bundle-directory")
+}
+
 func runBundleBuild(cmd *cobra.Command, args []string) error {
-	bundleDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := bundleDir(cmd, args)
 	if err != nil {
 		return err
 	}
@@ -304,7 +345,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 }
 
 func runBundleImport(cmd *cobra.Command, args []string) error {
-	bundleDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := bundleDir(cmd, args)
 	if err != nil {
 		return err
 	}
@@ -318,7 +359,7 @@ func runBundleImport(cmd *cobra.Command, args []string) error {
 }
 
 func runBundleLint(cmd *cobra.Command, args []string) error {
-	bundleDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := bundleDir(cmd, args)
 	if err != nil {
 		return err
 	}
@@ -360,7 +401,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	if access != "" {
 		fmt.Println(prettylogs.Orange("Warning: The --access flag is deprecated and will be removed in a future release."))
 	}
-	bundleDirectory, err := cmd.Flags().GetString("build-directory")
+	bundleDirectory, err := bundleDir(cmd, args)
 	if err != nil {
 		return err
 	}
@@ -461,28 +502,42 @@ func runBundleList(input *bundleList) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	opts := api.ReposListOptions{
-		Search:    input.search,
-		SortField: input.sortField,
-		SortOrder: input.sortOrder,
-		Limit:     input.limit,
+	filter := &api.OciReposFilter{
+		ArtifactType: "application/vnd.massdriver.bundle.v1+json",
+		Search:       input.search,
+	}
+	if input.name != "" {
+		filter.Name = &api.OciRepoNameFilter{Eq: input.name}
 	}
 
-	page, err := api.ListRepos(ctx, mdClient, opts)
+	var sort *api.OciReposSort
+	if input.sortField != "" {
+		order := api.SortOrderAsc
+		if strings.EqualFold(input.sortOrder, "desc") {
+			order = api.SortOrderDesc
+		}
+		field := api.OciReposSortFieldName
+		if strings.EqualFold(input.sortField, "created_at") {
+			field = api.OciReposSortFieldCreatedAt
+		}
+		sort = &api.OciReposSort{Field: field, Order: order}
+	}
+
+	repos, err := api.ListOciRepos(ctx, mdClient, filter, sort)
 	if err != nil {
 		return fmt.Errorf("failed to list bundles: %w", err)
 	}
 
 	switch input.output {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(page, "", "  ")
+		jsonBytes, err := json.MarshalIndent(repos, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal bundles to JSON: %w", err)
 		}
 		fmt.Println(string(jsonBytes))
 	case "table":
 		tbl := cli.NewTable("Name", "Latest", "Created At")
-		for _, repo := range page.Items {
+		for _, repo := range repos {
 			latest := ""
 			for _, rc := range repo.ReleaseChannels {
 				if rc.Name == "latest" {
@@ -504,12 +559,9 @@ func runBundleList(input *bundleList) error {
 func runBundleGet(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	arg := args[0]
-	parts := strings.Split(arg, "@")
-	bundleID := parts[0]
-	version := "latest"
-	if len(parts) == 2 {
-		version = parts[1]
+	bundleID := args[0]
+	if !strings.Contains(bundleID, "@") {
+		bundleID = bundleID + "@latest"
 	}
 
 	outputFormat, err := cmd.Flags().GetString("output")
@@ -523,7 +575,7 @@ func runBundleGet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
 
-	bundle, err := api.GetBundle(ctx, mdClient, bundleID, &version)
+	bundle, err := api.GetBundle(ctx, mdClient, bundleID)
 	if err != nil {
 		return err
 	}
@@ -553,7 +605,7 @@ func renderBundle(b *api.Bundle, mdClient *client.Client) error {
 		return fmt.Errorf("failed to read template: %w", err)
 	}
 
-	tmpl, err := template.New("bundle").Parse(string(tmplBytes))
+	tmpl, err := template.New("bundle").Funcs(cli.MarkdownTemplateFuncs).Parse(string(tmplBytes))
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
@@ -568,10 +620,12 @@ func renderBundle(b *api.Bundle, mdClient *client.Client) error {
 
 	data := struct {
 		*api.Bundle
-		URL string
+		URL        string
+		FormatTime func(time.Time) string
 	}{
-		Bundle: b,
-		URL:    bundleURL,
+		Bundle:     b,
+		URL:        bundleURL,
+		FormatTime: func(t time.Time) string { return t.Format("2006-01-02 15:04:05") },
 	}
 
 	var buf bytes.Buffer

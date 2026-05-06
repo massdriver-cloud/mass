@@ -1,17 +1,34 @@
-# Environment: {{.Name}}
+# Environment: {{.Name | mdEscape}}
 
-**Slug:** {{.Slug}}
+**ID:** {{.ID | mdEscape}}
 
-**Description:** {{.Description}}
+**Description:** {{.Description | mdEscape}}
 
-## Packages
+**Attributes:**
+{{- if .Attributes}}
+{{- range $key, $value := .Attributes}}
+- **{{$key | mdEscape}}:** {{$value | mdEscape}}
+{{- end}}
+{{- else}}
+No attributes
+{{- end}}
+
+## Instances
+{{- with .Blueprint}}
+{{- if .Instances}}
 | Name | Bundle | Status |
 | ---- | ------ | ------ |
-{{- range .Packages}}
-| **{{.Manifest.Name}}** | {{.Bundle.Name}} | {{.Status}} |
+{{- range .Instances}}
+| **{{.Name | mdEscape}}** | {{.Bundle.Name | mdEscape}} | {{.Status | mdEscape}} |
+{{- end}}
+{{- else}}
+No instances
+{{- end}}
+{{- else}}
+No instances
 {{- end}}
 
 ## Cost
-**Monthly Average:** {{with .Cost.Monthly.Average.Amount}}${{.}}{{end}}
+**Monthly Average:** {{with .Cost.MonthlyAverage.Amount}}${{.}}{{end}}
 
-**Daily Average:** {{with .Cost.Daily.Average.Amount}}${{.}}{{end}}
+**Daily Average:** {{with .Cost.DailyAverage.Amount}}${{.}}{{end}}

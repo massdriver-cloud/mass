@@ -53,12 +53,14 @@ func TestGetVersion(t *testing.T) {
 			gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
 				"data": map[string]any{
 					"ociRepo": map[string]any{
-						"tags": tc.existingVersions,
+						"tags": map[string]any{
+							"items": tc.existingVersions,
+						},
 					},
 				},
 			})
 			mdClient := client.Client{
-				GQL: gqlClient,
+				GQLv2: gqlClient,
 			}
 
 			ver, err := getVersion(t.Context(), &mdClient, b, tc.developmentRelease)

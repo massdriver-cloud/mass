@@ -1,0 +1,25 @@
+# Resource: {{.Name | mdEscape}}
+
+**ID:** {{.ID | mdEscape}}
+
+**Type:** {{.Type | mdEscape}}
+
+{{if .Field}}**Field:** {{.Field | mdEscape}}{{end}}
+
+{{if .ResourceType}}**Type:** {{.ResourceType.Name | mdEscape}} (`{{.ResourceType.ID | mdEscape}}`){{end}}
+
+{{if .Instance}}**Instance:** {{.Instance.ID | mdEscape}}{{end}}
+
+{{if .Origin}}**Origin:** {{.Origin | mdEscape}}{{end}}
+
+**Created:** {{.CreatedAt}}
+
+**Updated:** {{.UpdatedAt}}
+
+{{if .Formats}}**Available Formats:** {{range $i, $f := .Formats}}{{if $i}}, {{end}}{{$f}}{{end}}{{end}}
+
+{{if ne .Payload "{}"}}## Payload
+```json
+{{.Payload}}
+```
+{{end}}

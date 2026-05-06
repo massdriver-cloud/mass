@@ -1,0 +1,33 @@
+# Deployment: {{.ID | mdEscape}}
+
+**Action:** {{.Action | mdEscape}}
+
+**Status:** {{.Status | mdEscape}}
+
+**Version:** `{{.Version}}`
+
+{{- if .Message}}
+
+**Message:** {{.Message | mdEscape}}
+{{- end}}
+{{- if .DeployedBy}}
+
+**Deployed By:** {{.DeployedBy | mdEscape}}
+{{- end}}
+{{- if .Instance}}
+
+**Instance:** `{{.Instance.ID}}`
+{{- end}}
+
+**Created At:** {{.CreatedAt}}
+{{- if not .LastTransitionedAt.IsZero}}
+
+**Last Transitioned:** {{.LastTransitionedAt}}
+{{- end}}
+
+**Elapsed:** {{.ElapsedTime}}s
+
+**Parameters:**
+```json
+{{.ParamsJSON}}
+```

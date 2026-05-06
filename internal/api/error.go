@@ -10,6 +10,13 @@ type MutationError struct {
 	Messages []MutationValidationError
 }
 
+// MutationValidationError represents a single validation error from a mutation.
+type MutationValidationError struct {
+	Code    string
+	Field   string
+	Message string
+}
+
 func (m *MutationError) Error() string {
 	err := fmt.Sprintf("GraphQL mutation %s\n", m.Err)
 

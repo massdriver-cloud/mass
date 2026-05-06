@@ -1,0 +1,23 @@
+# Instance: {{.ID | mdEscape}}
+
+**Bundle:** {{.Bundle.Name | mdEscape}}
+
+**Environment:** {{.Environment.ID | mdEscape}}
+
+**Status:** {{.Status | mdEscape}}
+
+**Deployed Version:** {{if .DeployedVersion}}`{{.DeployedVersion}}`{{else}}N/A{{end}}
+
+**Attributes:**
+{{- if .Attributes}}
+{{- range $key, $value := .Attributes}}
+- **{{$key | mdEscape}}:** {{$value | mdEscape}}
+{{- end}}
+{{- else}}
+No attributes
+{{- end}}
+
+**Parameters:**
+```json
+{{.ParamsJSON}}
+```

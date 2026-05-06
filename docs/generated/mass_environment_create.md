@@ -36,14 +36,16 @@ mass environment create dbbundle-test --name "Database Test Environment"
 
 
 ```
-mass environment create [slug] [flags]
+mass environment create [ID] [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help          help for create
-  -n, --name string   Environment name (defaults to slug if not provided)
+  -a, --attributes stringToString   Custom attributes for ABAC (e.g. -a environment=staging,region=uswest) (default [])
+  -d, --description string          Optional environment description
+  -h, --help                        help for create
+  -n, --name string                 Environment name (defaults to ID if not provided)
 ```
 
 ### SEE ALSO

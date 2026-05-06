@@ -12,7 +12,7 @@ List bundles in your organization
 
 # List bundles in your organization
 
-List all bundle repositories with optional search, sort, and limit.
+List all bundle repositories with optional search, filter, and sort.
 
 ## Usage
 
@@ -22,10 +22,10 @@ mass bundle list [flags]
 
 ## Flags
 
-- `--search, -s`: Search bundles using Google-style operators (AND, OR, -, quotes)
-- `--sort`: Sort field (name, created_at). Defaults to "name"
+- `--search, -s`: Search bundles by name, readme, and changelog. Results ranked by relevance by default
+- `--name, -n`: Filter by exact bundle name
+- `--sort`: Sort field (name, created_at). Defaults to name, or relevance when using --search
 - `--order`: Sort order (asc, desc). Defaults to "asc"
-- `--limit, -l`: Maximum number of results to return
 - `--output, -o`: Output format (table or json). Defaults to "table"
 
 ## Examples
@@ -37,14 +37,11 @@ mass bundle list
 # Search for postgres bundles
 mass bundle list --search postgres
 
-# Search with operators
-mass bundle list --search "postgres AND aws -aurora"
+# Filter by exact name
+mass bundle list --name aws-vpc
 
 # Sort by creation date, newest first
 mass bundle list --sort created_at --order desc
-
-# Limit results
-mass bundle list --limit 10
 
 # Output as JSON
 mass bundle list -o json
@@ -59,11 +56,11 @@ mass bundle list [flags]
 
 ```
   -h, --help            help for list
-  -l, --limit int       Maximum number of results to return
+  -n, --name string     Filter by exact bundle name
       --order string    Sort order (asc, desc) (default "asc")
   -o, --output string   Output format (table, json) (default "table")
-  -s, --search string   Search bundles (supports AND, OR, -, quotes)
-      --sort string     Sort field (name, created_at) (default "name")
+  -s, --search string   Search bundles by name, readme, and changelog
+      --sort string     Sort field (name, created_at). Defaults to name, or relevance when using --search
 ```
 
 ### SEE ALSO

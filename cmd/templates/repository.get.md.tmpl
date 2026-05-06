@@ -1,0 +1,39 @@
+# Repository: {{.Name | mdEscape}}
+
+**ID:** {{.ID | mdEscape}}
+
+**Type:** {{.TypeLabel | mdEscape}}
+
+{{- if .Description}}
+
+**Description:** {{.Description | mdEscape}}
+{{- end}}
+
+**Created:** {{call .FormatTime .CreatedAt}}
+
+**Updated:** {{call .FormatTime .UpdatedAt}}
+
+**Attributes:**
+{{- if .Attributes}}
+{{- range $key, $value := .Attributes}}
+- **{{$key | mdEscape}}:** {{$value | mdEscape}}
+{{- end}}
+{{- else}}
+No attributes
+{{- end}}
+
+## Tags
+{{- if .ShownTags}}
+
+| Tag | Created |
+| --- | ------- |
+{{- range .ShownTags}}
+| `{{.Tag}}` | {{call $.FormatTime .CreatedAt}} |
+{{- end}}
+{{- if .Truncated}}
+
+_Showing {{len .ShownTags}} of {{.TotalTags}} tags. Use `--tags <n>` to show more._
+{{- end}}
+{{- else}}
+No tags published
+{{- end}}

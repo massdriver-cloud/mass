@@ -2,83 +2,128 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-// Deployment represents a Massdriver deployment operation and its current status.
+// Deployment represents a record of an infrastructure provisioning operation.
 type Deployment struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	ID                 string         `json:"id" mapstructure:"id"`
+	Status             string         `json:"status" mapstructure:"status"`
+	Action             string         `json:"action" mapstructure:"action"`
+	Version            string         `json:"version" mapstructure:"version"`
+	Message            string         `json:"message,omitempty" mapstructure:"message"`
+	Params             map[string]any `json:"params,omitempty" mapstructure:"params"`
+	DeployedBy         string         `json:"deployedBy,omitempty" mapstructure:"deployedBy"`
+	ElapsedTime        int            `json:"elapsedTime" mapstructure:"elapsedTime"`
+	CreatedAt          time.Time      `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt          time.Time      `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
+	LastTransitionedAt time.Time      `json:"lastTransitionedAt,omitzero" mapstructure:"lastTransitionedAt"`
+	Instance           *Instance      `json:"instance,omitempty" mapstructure:"instance,omitempty"`
 }
 
-// DeploymentLog represents a single log entry from a deployment operation.
+// ParamsJSON returns the deployment's snapshot parameters as pretty-printed JSON.
+func (d *Deployment) ParamsJSON() (string, error) {
+	if d.Params == nil {
+		return "{}", nil
+	}
+	b, err := json.MarshalIndent(d.Params, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal params to JSON: %w", err)
+	}
+	return string(b), nil
+}
+
+// DeploymentLog is a single batch of logs emitted by the provisioner during a deployment.
+// The message may span multiple lines separated by "\n".
 type DeploymentLog struct {
-	Content   string
-	Step      string
-	Timestamp time.Time
-	Index     int
+	Timestamp time.Time `json:"timestamp,omitzero" mapstructure:"timestamp"`
+	Message   string    `json:"message" mapstructure:"message"`
 }
 
 // GetDeployment retrieves a deployment by ID from the Massdriver API.
 func GetDeployment(ctx context.Context, mdClient *client.Client, id string) (*Deployment, error) {
-	response, err := getDeploymentById(ctx, mdClient.GQL, mdClient.Config.OrganizationID, id)
-
-	return response.Deployment.toDeployment(), err
-}
-
-func (d *getDeploymentByIdDeployment) toDeployment() *Deployment {
-	return &Deployment{
-		ID:     d.Id,
-		Status: string(d.Status),
+	response, err := getDeployment(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get deployment %s: %w", id, err)
 	}
+
+	return toDeployment(response.Deployment)
 }
 
-// DeployPackage initiates a deployment of a package in the Massdriver API.
-func DeployPackage(ctx context.Context, mdClient *client.Client, targetID, manifestID, message string) (*Deployment, error) {
-	response, err := deployPackage(ctx, mdClient.GQL, mdClient.Config.OrganizationID, targetID, manifestID, message)
+// ListDeployments returns deployments, optionally filtered and sorted. If limit > 0, at most
+// that many records are returned (capped by the server's cursor max, currently 100).
+func ListDeployments(ctx context.Context, mdClient *client.Client, filter *DeploymentsFilter, sort *DeploymentsSort, limit int) ([]Deployment, error) {
+	var cursor *Cursor
+	if limit > 0 {
+		cursor = &Cursor{Limit: limit}
+	}
+	response, err := listDeployments(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, filter, sort, cursor)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list deployments: %w", err)
+	}
 
+	deployments := make([]Deployment, 0, len(response.Deployments.Items))
+	for _, resp := range response.Deployments.Items {
+		dep, depErr := toDeployment(resp)
+		if depErr != nil {
+			return nil, fmt.Errorf("failed to convert deployment: %w", depErr)
+		}
+		deployments = append(deployments, *dep)
+	}
+
+	return deployments, nil
+}
+
+// GetDeploymentLogs returns all log batches emitted for the given deployment so far, oldest first.
+func GetDeploymentLogs(ctx context.Context, mdClient *client.Client, deploymentID string) ([]DeploymentLog, error) {
+	response, err := getDeploymentLogs(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get logs for deployment %s: %w", deploymentID, err)
+	}
+
+	logs := make([]DeploymentLog, 0, len(response.Deployment.Logs))
+	for _, l := range response.Deployment.Logs {
+		log := DeploymentLog{}
+		if decodeErr := decode(l, &log); decodeErr != nil {
+			return nil, fmt.Errorf("failed to decode deployment log: %w", decodeErr)
+		}
+		logs = append(logs, log)
+	}
+	return logs, nil
+}
+
+// CreateDeployment starts a new deployment for an instance.
+func CreateDeployment(ctx context.Context, mdClient *client.Client, instanceID string, input CreateDeploymentInput) (*Deployment, error) {
+	response, err := createDeployment(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, instanceID, input)
 	if err != nil {
 		return nil, err
 	}
-
-	if response.DeployPackage.Successful {
-		return response.DeployPackage.Result.toDeployment(), nil
-	}
-
-	return nil, NewMutationError("failed to deploy package", response.DeployPackage.Messages)
-}
-
-func (d *deployPackageDeployPackageDeploymentPayloadResultDeployment) toDeployment() *Deployment {
-	return &Deployment{
-		ID: d.Id,
-	}
-}
-
-func (d *decommissionPackageDecommissionPackageDeploymentPayloadResultDeployment) toDeployment() *Deployment {
-	return &Deployment{
-		ID: d.Id,
-	}
-}
-
-// GetDeploymentLogs retrieves the log stream for a given deployment.
-func GetDeploymentLogs(ctx context.Context, mdClient *client.Client, deploymentID string) ([]DeploymentLog, error) {
-	response, err := getDeploymentLogStream(ctx, mdClient.GQL, mdClient.Config.OrganizationID, deploymentID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get deployment logs: %w", err)
-	}
-
-	logs := make([]DeploymentLog, len(response.DeploymentLogStream.Logs))
-	for i, log := range response.DeploymentLogStream.Logs {
-		logs[i] = DeploymentLog{
-			Content:   log.Content,
-			Step:      log.Metadata.Step,
-			Timestamp: log.Metadata.Timestamp,
-			Index:     log.Metadata.Index,
+	if !response.CreateDeployment.Successful {
+		messages := response.CreateDeployment.GetMessages()
+		if len(messages) > 0 {
+			var sb strings.Builder
+			sb.WriteString("unable to create deployment:")
+			for _, msg := range messages {
+				sb.WriteString("\n  - ")
+				sb.WriteString(msg.Message)
+			}
+			return nil, errors.New(sb.String())
 		}
+		return nil, errors.New("unable to create deployment")
 	}
+	return toDeployment(response.CreateDeployment.Result)
+}
 
-	return logs, nil
+func toDeployment(v any) (*Deployment, error) {
+	dep := Deployment{}
+	if err := decode(v, &dep); err != nil {
+		return nil, fmt.Errorf("failed to decode deployment: %w", err)
+	}
+	return &dep, nil
 }

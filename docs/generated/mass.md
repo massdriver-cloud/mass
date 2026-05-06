@@ -32,18 +32,17 @@ Configure and deploying infrastructure and applications.
 
 ### SEE ALSO
 
-* [mass artifact](/cli/commands/mass_artifact)	 - Manage artifacts
 * [mass bundle](/cli/commands/mass_bundle)	 - Generate and publish bundles
 * [mass completion](/cli/commands/mass_completion)	 - Generate the autocompletion script for the specified shell
-* [mass credential](/cli/commands/mass_credential)	 - Credential management
-* [mass definition](/cli/commands/mass_definition)	 - Artifact definition management
+* [mass component](/cli/commands/mass_component)	 - Manage components in a project's blueprint
+* [mass deployment](/cli/commands/mass_deployment)	 - Manage deployments
 * [mass docs](/cli/commands/mass_docs)	 - Gen docs
 * [mass environment](/cli/commands/mass_environment)	 - Environment management
-* [mass image](/cli/commands/mass_image)	 - Container image integration Massdriver
-* [mass logs](/cli/commands/mass_logs)	 - Get deployment logs
-* [mass package](/cli/commands/mass_package)	 - Manage packages of IaC deployed in environments.
-* [mass preview](/cli/commands/mass_preview)	 - Create & deploy preview environments
+* [mass instance](/cli/commands/mass_instance)	 - Manage instances of IaC deployed in environments.
 * [mass project](/cli/commands/mass_project)	 - Project management
+* [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and, in future, resource types and provisioners)
+* [mass resource](/cli/commands/mass_resource)	 - Manage resources
+* [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management
 * [mass schema](/cli/commands/mass_schema)	 - Manage JSON Schemas
-* [mass server](/cli/commands/mass_server)	 - Start the bundle development server
 * [mass version](/cli/commands/mass_version)	 - Version of Mass CLI
+* [mass whoami](/cli/commands/mass_whoami)	 - Show the currently authenticated user or service account
