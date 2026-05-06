@@ -1,3 +1,4 @@
+// Package cmd implements the mass CLI commands.
 package cmd
 
 import (
@@ -6,6 +7,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -316,7 +318,7 @@ func bundleDir(cmd *cobra.Command, args []string) (string, error) {
 	hasPositional := len(args) > 0
 	flagSet := cmd.Flags().Changed("bundle-directory")
 	if hasPositional && flagSet {
-		return "", fmt.Errorf("cannot specify both a positional path and --bundle-directory; use one")
+		return "", errors.New("cannot specify both a positional path and --bundle-directory; use one")
 	}
 	if hasPositional {
 		return args[0], nil
@@ -561,7 +563,7 @@ func runBundleGet(cmd *cobra.Command, args []string) error {
 
 	bundleID := args[0]
 	if !strings.Contains(bundleID, "@") {
-		bundleID = bundleID + "@latest"
+		bundleID += "@latest"
 	}
 
 	outputFormat, err := cmd.Flags().GetString("output")

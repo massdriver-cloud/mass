@@ -26,7 +26,7 @@ import (
 var instanceTemplates embed.FS
 
 // NewCmdInstance returns a cobra command for managing instances of IaC deployed in environments.
-func NewCmdInstance() *cobra.Command { //nolint:funlen // cobra command builders are necessarily long
+func NewCmdInstance() *cobra.Command {
 	instanceCmd := &cobra.Command{
 		Use:     "instance",
 		Aliases: []string{"inst", "package", "instance"},
@@ -183,6 +183,7 @@ func renderInstance(instance *api.Instance) error {
 	return nil
 }
 
+//nolint:gocognit // sequential flag parsing and dispatch, not branching logic
 func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 

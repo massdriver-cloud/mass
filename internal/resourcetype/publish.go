@@ -40,7 +40,7 @@ func Publish(ctx context.Context, mdClient *client.Client, path string) (*api.Re
 		Schema: rt,
 	}
 
-	return api.PublishResourceType(ctx, mdClient, input)
+	return api.PublishResourceType(ctx, mdClient, input) //nolint:staticcheck // pending migration to OCI-native flow
 }
 
 func validateResourceType(rt map[string]any, schemaURL string) error {

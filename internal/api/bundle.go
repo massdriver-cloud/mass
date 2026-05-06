@@ -10,17 +10,17 @@ import (
 
 // Bundle represents a Massdriver bundle (IaC module) and its metadata.
 type Bundle struct {
-	ID           string           `json:"id" mapstructure:"id"`
-	Name         string           `json:"name" mapstructure:"name"`
-	Version      string           `json:"version" mapstructure:"version"`
-	Description  string           `json:"description,omitempty" mapstructure:"description"`
-	Icon         string           `json:"icon,omitempty" mapstructure:"icon"`
-	SourceURL    string           `json:"sourceUrl,omitempty" mapstructure:"sourceUrl"`
-	Repo         string           `json:"repo,omitempty" mapstructure:"repo"`
-	CreatedAt    time.Time        `json:"createdAt,omitzero" mapstructure:"createdAt"`
-	UpdatedAt    time.Time        `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
-	Dependencies []BundleSlot     `json:"dependencies,omitempty" mapstructure:"dependencies"`
-	Resources    []BundleSlot     `json:"resources,omitempty" mapstructure:"resources"`
+	ID           string       `json:"id" mapstructure:"id"`
+	Name         string       `json:"name" mapstructure:"name"`
+	Version      string       `json:"version" mapstructure:"version"`
+	Description  string       `json:"description,omitempty" mapstructure:"description"`
+	Icon         string       `json:"icon,omitempty" mapstructure:"icon"`
+	SourceURL    string       `json:"sourceUrl,omitempty" mapstructure:"sourceUrl"`
+	Repo         string       `json:"repo,omitempty" mapstructure:"repo"`
+	CreatedAt    time.Time    `json:"createdAt,omitzero" mapstructure:"createdAt"`
+	UpdatedAt    time.Time    `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
+	Dependencies []BundleSlot `json:"dependencies,omitempty" mapstructure:"dependencies"`
+	Resources    []BundleSlot `json:"resources,omitempty" mapstructure:"resources"`
 }
 
 // BundleSlot describes one of a bundle's input dependencies or output

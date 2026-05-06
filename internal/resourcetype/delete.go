@@ -35,7 +35,7 @@ func Delete(ctx context.Context, mdClient *client.Client, name string, force boo
 		}
 	}
 
-	deletedRT, deleteErr := api.DeleteResourceType(ctx, mdClient, name)
+	deletedRT, deleteErr := api.DeleteResourceType(ctx, mdClient, name) //nolint:staticcheck // pending migration to OCI-native flow
 	if deleteErr != nil {
 		return fmt.Errorf("error deleting resource type: %w", deleteErr)
 	}

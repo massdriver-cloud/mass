@@ -277,6 +277,7 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+//nolint:dupl // parallel CRUD shape with other entity update commands
 func runEnvironmentUpdate(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 

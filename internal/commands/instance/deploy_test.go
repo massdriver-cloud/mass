@@ -65,10 +65,7 @@ func TestRunDeployReusesLastConfig(t *testing.T) {
 		t.Errorf("got %s, wanted COMPLETED", dep.Status)
 	}
 
-	input, ok := createDeploymentVars["input"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected input map, got %T", createDeploymentVars["input"])
-	}
+	input := mustInputMap(t, createDeploymentVars)
 	if input["message"] != "redeploy" {
 		t.Errorf("expected message 'redeploy', got %v", input["message"])
 	}
@@ -76,8 +73,7 @@ func TestRunDeployReusesLastConfig(t *testing.T) {
 		t.Errorf("expected action 'PROVISION', got %v", input["action"])
 	}
 
-	gotParams := map[string]any{}
-	gqlmock.MustUnmarshalJSON([]byte(input["params"].(string)), &gotParams)
+	gotParams := unmarshalParams(t, input)
 	wantParams := map[string]any{"size": "small"}
 	if !reflect.DeepEqual(gotParams, wantParams) {
 		t.Errorf("got params %v, wanted %v", gotParams, wantParams)
@@ -131,9 +127,8 @@ func TestRunDeployWithParamsReplacesConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	input := createDeploymentVars["input"].(map[string]any)
-	gotParams := map[string]any{}
-	gqlmock.MustUnmarshalJSON([]byte(input["params"].(string)), &gotParams)
+	input := mustInputMap(t, createDeploymentVars)
+	gotParams := unmarshalParams(t, input)
 	wantParams := map[string]any{"size": "6GB"}
 	if !reflect.DeepEqual(gotParams, wantParams) {
 		t.Errorf("got params %v, wanted %v", gotParams, wantParams)
@@ -186,9 +181,8 @@ func TestRunDeployWithPatchQueriesUpdatesLastConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	input := createDeploymentVars["input"].(map[string]any)
-	gotParams := map[string]any{}
-	gqlmock.MustUnmarshalJSON([]byte(input["params"].(string)), &gotParams)
+	input := mustInputMap(t, createDeploymentVars)
+	gotParams := unmarshalParams(t, input)
 	wantParams := map[string]any{"cidr": "10.0.0.0/20", "name": "keep"}
 	if !reflect.DeepEqual(gotParams, wantParams) {
 		t.Errorf("got params %v, wanted %v", gotParams, wantParams)
@@ -239,13 +233,12 @@ func TestRunDeployWithDecommissionAction(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	input := createDeploymentVars["input"].(map[string]any)
+	input := mustInputMap(t, createDeploymentVars)
 	if input["action"] != "DECOMMISSION" {
 		t.Errorf("expected action 'DECOMMISSION', got %v", input["action"])
 	}
 
-	gotParams := map[string]any{}
-	gqlmock.MustUnmarshalJSON([]byte(input["params"].(string)), &gotParams)
+	gotParams := unmarshalParams(t, input)
 	wantParams := map[string]any{"size": "small"}
 	if !reflect.DeepEqual(gotParams, wantParams) {
 		t.Errorf("got params %v, wanted %v", gotParams, wantParams)
@@ -286,4 +279,24 @@ func TestRunDeployFailsWhenDeploymentFails(t *testing.T) {
 	if _, err := instance.RunDeploy(t.Context(), &mdClient, "ecomm-prod-cache", instance.DeployOptions{}); err == nil {
 		t.Fatal("expected error, got nil")
 	}
+}
+
+func mustInputMap(t *testing.T, vars map[string]any) map[string]any {
+	t.Helper()
+	input, ok := vars["input"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected input map, got %T", vars["input"])
+	}
+	return input
+}
+
+func unmarshalParams(t *testing.T, input map[string]any) map[string]any {
+	t.Helper()
+	raw, ok := input["params"].(string)
+	if !ok {
+		t.Fatalf("expected params string, got %T", input["params"])
+	}
+	out := map[string]any{}
+	gqlmock.MustUnmarshalJSON([]byte(raw), &out)
+	return out
 }
