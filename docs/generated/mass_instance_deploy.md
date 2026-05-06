@@ -70,6 +70,7 @@ mass instance deploy ecomm-prod-vpc
 ### Options
 
 ```
+  -f, --follow              Stream the deployment's logs to stdout until it completes
   -h, --help                help for deploy
   -m, --message string      Add a message when deploying
   -p, --params string       Path to params json, tfvars or yaml file. Use '-' to read from stdin. When provided, the full configuration is replaced. Supports bash interpolation.

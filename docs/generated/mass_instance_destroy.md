@@ -25,6 +25,7 @@ mass instance destroy api-prod-db --force
 ### Options
 
 ```
+      --follow              Stream the deployment's logs to stdout until it completes
   -f, --force               Skip confirmation prompt
   -h, --help                help for destroy
   -m, --message string      Add a message when decommissioning

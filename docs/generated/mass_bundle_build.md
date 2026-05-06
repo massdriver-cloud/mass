@@ -9,14 +9,14 @@ sidebar_label: Mass Bundle Build
 Build schemas and generate IaC files from massdriver.yaml file
 
 ```
-mass bundle build [flags]
+mass bundle build [path] [flags]
 ```
 
 ### Options
 
 ```
-  -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
-  -h, --help                     help for build
+  -b, --bundle-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
+  -h, --help                      help for build
 ```
 
 ### SEE ALSO

@@ -37,3 +37,4 @@ Use these commands to manage components and links in a project's blueprint:
 * [mass component link](/cli/commands/mass_component_link)	 - Link two components in a project's blueprint
 * [mass component remove](/cli/commands/mass_component_remove)	 - Remove a component from a project's blueprint
 * [mass component unlink](/cli/commands/mass_component_unlink)	 - Remove a link between two components
+* [mass component update](/cli/commands/mass_component_update)	 - Update a component's name, description, or attributes

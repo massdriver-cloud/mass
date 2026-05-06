@@ -42,8 +42,10 @@ mass environment create [ID] [flags]
 ### Options
 
 ```
-  -h, --help          help for create
-  -n, --name string   Environment name (defaults to ID if not provided)
+  -a, --attributes stringToString   Custom attributes for ABAC (e.g. -a environment=staging,region=uswest) (default [])
+  -d, --description string          Optional environment description
+  -h, --help                        help for create
+  -n, --name string                 Environment name (defaults to ID if not provided)
 ```
 
 ### SEE ALSO

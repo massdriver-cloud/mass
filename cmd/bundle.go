@@ -78,7 +78,7 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  runBundleBuild,
 	}
-	bundleBuildCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleBuildCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	bundleImportCmd := &cobra.Command{
 		Use:   "import [path]",
@@ -87,7 +87,7 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  runBundleImport,
 	}
-	bundleImportCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleImportCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundleImportCmd.Flags().BoolP("all", "a", false, "Import all variables without prompting")
 
 	bundleLintCmd := &cobra.Command{
@@ -96,7 +96,7 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  runBundleLint,
 	}
-	bundleLintCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundleLintCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 
 	var bundleNewInput bundleNew
 
@@ -123,7 +123,7 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 		Args:    cobra.MaximumNArgs(1),
 		RunE:    runBundlePublish,
 	}
-	bundlePublishCmd.Flags().StringP("build-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
+	bundlePublishCmd.Flags().StringP("bundle-directory", "b", ".", "Path to a directory containing a massdriver.yaml file.")
 	bundlePublishCmd.Flags().BoolP("development", "d", false, "Publish the bundle as a development release.")
 	bundlePublishCmd.Flags().String("access", "", "(Deprecated) Only here for backwards compatibility. Will be removed in a future release.")
 	bundlePublishCmd.Flags().BoolP("fail-warnings", "f", false, "Fail on warnings from the linter")
@@ -311,18 +311,18 @@ func runBundleNew(input *bundleNew) error {
 }
 
 // bundleDir resolves the bundle directory from either the optional positional
-// argument or the --build-directory flag. Specifying both is rejected so a
+// argument or the --bundle-directory flag. Specifying both is rejected so a
 // user-facing surprise (silent precedence) becomes a clear error.
 func bundleDir(cmd *cobra.Command, args []string) (string, error) {
 	hasPositional := len(args) > 0
-	flagSet := cmd.Flags().Changed("build-directory")
+	flagSet := cmd.Flags().Changed("bundle-directory")
 	if hasPositional && flagSet {
-		return "", fmt.Errorf("cannot specify both a positional path and --build-directory; use one")
+		return "", fmt.Errorf("cannot specify both a positional path and --bundle-directory; use one")
 	}
 	if hasPositional {
 		return args[0], nil
 	}
-	return cmd.Flags().GetString("build-directory")
+	return cmd.Flags().GetString("bundle-directory")
 }
 
 func runBundleBuild(cmd *cobra.Command, args []string) error {

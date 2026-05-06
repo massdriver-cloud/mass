@@ -42,8 +42,10 @@ mass project create [slug] [flags]
 ### Options
 
 ```
-  -h, --help          help for create
-  -n, --name string   Project name (defaults to slug if not provided)
+  -a, --attributes stringToString   Custom attributes for ABAC (repeat or comma-separate, e.g. -a team=ops,system=api) (default [])
+  -d, --description string          Optional project description
+  -h, --help                        help for create
+  -n, --name string                 Project name (defaults to slug if not provided)
 ```
 
 ### SEE ALSO

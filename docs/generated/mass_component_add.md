@@ -48,10 +48,11 @@ mass component add ecomm aws-rds-cluster --id db --name "Primary Database"
 ### Options
 
 ```
-  -d, --description string   Optional description
-  -h, --help                 help for add
-      --id string            Short identifier for this component (e.g., db). Max 20 chars, lowercase alphanumeric.
-  -n, --name string          Display name (defaults to --id if not provided)
+  -a, --attributes stringToString   Custom attributes for ABAC (e.g. -a priority=high,cost-center=engineering) (default [])
+  -d, --description string          Optional description
+  -h, --help                        help for add
+      --id string                   Short identifier for this component (e.g., db). Max 20 chars, lowercase alphanumeric.
+  -n, --name string                 Display name (defaults to --id if not provided)
 ```
 
 ### SEE ALSO

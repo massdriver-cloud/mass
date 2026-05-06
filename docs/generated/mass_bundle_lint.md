@@ -9,14 +9,14 @@ sidebar_label: Mass Bundle Lint
 Check massdriver.yaml file for common errors
 
 ```
-mass bundle lint [flags]
+mass bundle lint [path] [flags]
 ```
 
 ### Options
 
 ```
-  -b, --build-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
-  -h, --help                     help for lint
+  -b, --bundle-directory string   Path to a directory containing a massdriver.yaml file. (default ".")
+  -h, --help                      help for lint
 ```
 
 ### SEE ALSO
