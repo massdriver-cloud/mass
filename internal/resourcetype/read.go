@@ -8,12 +8,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"gopkg.in/yaml.v3"
 )
 
 // Read reads and dereferences a resource type from path, supporting JSON, YAML, and massdriver.yaml formats.
-func Read(_ context.Context, mdClient *client.Client, path string) (map[string]any, error) {
+func Read(_ context.Context, mdClient *massdriver.Client, path string) (map[string]any, error) {
 	// Check if this is a massdriver.yaml file (experimental resource type format)
 	if IsMassdriverYAMLResourceType(path) {
 		built, buildErr := Build(path)
@@ -23,8 +23,8 @@ func Read(_ context.Context, mdClient *client.Client, path string) (map[string]a
 
 		// Dereference the built schema
 		opts := DereferenceOptions{
-			Client: mdClient,
-			Cwd:    filepath.Dir(path),
+			Resolver: NewMassdriverResolver(mdClient),
+			Cwd:      filepath.Dir(path),
 		}
 		dereferencedAny, derefErr := DereferenceSchema(built, opts)
 		if derefErr != nil {
@@ -60,8 +60,8 @@ func Read(_ context.Context, mdClient *client.Client, path string) (map[string]a
 
 	// Dereferencing here. We may want to break this out in the future, but for now Reading and Dereferencing should be coupled.
 	opts := DereferenceOptions{
-		Client: mdClient,
-		Cwd:    filepath.Dir(path),
+		Resolver: NewMassdriverResolver(mdClient),
+		Cwd:      filepath.Dir(path),
 	}
 	dereferencedResourceTypeAny, derefErr := DereferenceSchema(artdefMap, opts)
 	if derefErr != nil {

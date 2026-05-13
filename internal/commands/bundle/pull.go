@@ -3,25 +3,25 @@ package bundle
 import (
 	"context"
 	"fmt"
+	"slices"
 
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	sdkbundle "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/bundle"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"oras.land/oras-go/v2/content/file"
 )
 
 // RunPull pulls a bundle from the Massdriver registry into the specified directory.
-func RunPull(ctx context.Context, mdClient *client.Client, bundleName string, version string, directory string) error {
+func RunPull(ctx context.Context, mdClient *massdriver.Client, bundleName string, version string, directory string) error {
+	cfg := mdClient.Config()
 	fmt.Printf("Pulling bundle %s:%s from organization %s to directory %s\n",
 		prettylogs.Underline(bundleName),
 		prettylogs.Underline(version),
-		prettylogs.Underline(mdClient.Config.OrganizationID),
+		prettylogs.Underline(cfg.OrganizationID),
 		prettylogs.Underline(directory),
 	)
 
-	repo, repoErr := sdkbundle.GetBundleRepository(mdClient, bundleName)
+	repo, repoErr := mdClient.OciRepos.Target(bundleName)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -56,16 +56,14 @@ func RunPull(ctx context.Context, mdClient *client.Client, bundleName string, ve
 	return nil
 }
 
-func resolveTag(ctx context.Context, mdClient *client.Client, bundleName string, version string) (string, error) {
-	repo, getErr := api.GetOciRepo(ctx, mdClient, bundleName)
+func resolveTag(ctx context.Context, mdClient *massdriver.Client, bundleName string, version string) (string, error) {
+	repo, getErr := mdClient.OciRepos.Get(ctx, bundleName)
 	if getErr != nil {
 		return "", fmt.Errorf("failed to get OCI repo: %w", getErr)
 	}
 
-	for _, tag := range repo.Tags {
-		if version == tag.Tag {
-			return version, nil
-		}
+	if slices.Contains(repo.Tags, version) {
+		return version, nil
 	}
 
 	for _, channel := range repo.ReleaseChannels {

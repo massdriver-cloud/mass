@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/viewer"
 	"github.com/spf13/cobra"
 )
 
@@ -32,25 +32,25 @@ func runWhoami(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	viewer, viewerErr := api.GetViewer(ctx, mdClient)
-	if viewerErr != nil {
-		return viewerErr
+	v, err := mdClient.Viewer.Get(ctx)
+	if err != nil {
+		return err
 	}
 
 	switch outputFormat {
 	case "json":
-		bytes, marshalErr := json.MarshalIndent(viewer, "", "  ")
+		bytes, marshalErr := json.MarshalIndent(v, "", "  ")
 		if marshalErr != nil {
 			return fmt.Errorf("failed to marshal viewer to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(bytes))
 	case "text":
-		printViewer(viewer)
+		printViewer(v)
 	default:
 		return fmt.Errorf("unsupported output format: %s", outputFormat)
 	}
@@ -58,16 +58,16 @@ func runWhoami(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func printViewer(v *api.Viewer) {
+func printViewer(v *viewer.Viewer) {
 	switch v.Kind {
-	case api.ViewerKindAccount:
+	case viewer.KindAccount:
 		fmt.Println("👤 User")
 		fmt.Printf("   ID:    %s\n", v.ID)
 		fmt.Printf("   Email: %s\n", v.Email)
 		if name := strings.TrimSpace(v.FirstName + " " + v.LastName); name != "" {
 			fmt.Printf("   Name:  %s\n", name)
 		}
-	case api.ViewerKindServiceAccount:
+	case viewer.KindServiceAccount:
 		fmt.Println("🤖 Service account")
 		fmt.Printf("   ID:   %s\n", v.ID)
 		fmt.Printf("   Name: %s\n", v.Name)

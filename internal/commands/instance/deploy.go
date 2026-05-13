@@ -11,8 +11,9 @@ import (
 	"time"
 
 	"github.com/itchyny/gojq"
-	api "github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
 // DeploymentStatusSleep is the interval between deployment status polling requests.
@@ -21,19 +22,40 @@ var DeploymentStatusSleep = time.Duration(10) * time.Second
 // DeploymentTimeout is the maximum duration to wait for a deployment to complete.
 var DeploymentTimeout = time.Duration(5) * time.Minute
 
-// terminalDeploymentStatuses are the deployment lifecycle states past which no
-// further transitions occur.
-var terminalDeploymentStatuses = map[string]struct{}{
-	"COMPLETED": {},
-	"FAILED":    {},
-	"ABORTED":   {},
-	"REJECTED":  {},
+// DeployAPI is the narrow SDK surface RunDeploy needs. Tests supply a fake
+// directly; production callers use [NewDeployAPI] to bind a *massdriver.Client.
+type DeployAPI interface {
+	GetInstance(ctx context.Context, id string) (*types.Instance, error)
+	CreateDeployment(ctx context.Context, instanceID string, in deployments.CreateInput) (*types.Deployment, error)
+	GetDeployment(ctx context.Context, id string) (*types.Deployment, error)
+	TailLogs(ctx context.Context, deploymentID string, w io.Writer) error
+}
+
+// NewDeployAPI returns the production [DeployAPI] backed by the SDK client.
+func NewDeployAPI(c *massdriver.Client) DeployAPI { return sdkDeployAPI{c: c} }
+
+type sdkDeployAPI struct{ c *massdriver.Client }
+
+func (s sdkDeployAPI) GetInstance(ctx context.Context, id string) (*types.Instance, error) {
+	return s.c.Instances.Get(ctx, id)
+}
+
+func (s sdkDeployAPI) CreateDeployment(ctx context.Context, instanceID string, in deployments.CreateInput) (*types.Deployment, error) {
+	return s.c.Deployments.Create(ctx, instanceID, in)
+}
+
+func (s sdkDeployAPI) GetDeployment(ctx context.Context, id string) (*types.Deployment, error) {
+	return s.c.Deployments.Get(ctx, id)
+}
+
+func (s sdkDeployAPI) TailLogs(ctx context.Context, deploymentID string, w io.Writer) error {
+	return s.c.Deployments.TailLogs(ctx, deploymentID, w)
 }
 
 // DeployOptions configures how RunDeploy builds the new deployment.
 type DeployOptions struct {
 	// Action is the deployment action to perform. Defaults to PROVISION when empty.
-	Action api.DeploymentAction
+	Action deployments.Action
 	// Message is an optional message describing the deployment.
 	Message string
 	// Params, when non-nil, fully replaces the instance's current configuration.
@@ -50,23 +72,23 @@ type DeployOptions struct {
 // completes or times out. When opts.LogWriter is non-nil, log batches are
 // streamed to it as they arrive (and the periodic status messages are
 // suppressed); otherwise the legacy status-polling output is printed to stdout.
-func RunDeploy(ctx context.Context, mdClient *client.Client, name string, opts DeployOptions) (*api.Deployment, error) {
-	instance, err := api.GetInstance(ctx, mdClient, name)
+func RunDeploy(ctx context.Context, api DeployAPI, name string, opts DeployOptions) (*types.Deployment, error) {
+	inst, err := api.GetInstance(ctx, name)
 	if err != nil {
 		return nil, err
 	}
 
-	params, err := resolveDeployParams(instance, opts.Params, opts.PatchQueries)
+	params, err := resolveDeployParams(inst, opts.Params, opts.PatchQueries)
 	if err != nil {
 		return nil, err
 	}
 
 	action := opts.Action
 	if action == "" {
-		action = api.DeploymentActionProvision
+		action = deployments.ActionProvision
 	}
 
-	deployment, err := api.CreateDeployment(ctx, mdClient, instance.ID, api.CreateDeploymentInput{
+	deployment, err := api.CreateDeployment(ctx, inst.ID, deployments.CreateInput{
 		Action:  action,
 		Message: opts.Message,
 		Params:  params,
@@ -76,12 +98,12 @@ func RunDeploy(ctx context.Context, mdClient *client.Client, name string, opts D
 	}
 
 	if opts.LogWriter != nil {
-		return waitForDeploymentWithLogs(ctx, mdClient, deployment.ID, opts.LogWriter, DeploymentTimeout)
+		return waitForDeploymentWithLogs(ctx, api, deployment.ID, opts.LogWriter)
 	}
-	return waitForDeployment(ctx, mdClient, deployment.ID, DeploymentTimeout)
+	return waitForDeployment(ctx, api, deployment.ID, DeploymentTimeout)
 }
 
-func resolveDeployParams(instance *api.Instance, params map[string]any, patchQueries []string) (map[string]any, error) {
+func resolveDeployParams(inst *types.Instance, params map[string]any, patchQueries []string) (map[string]any, error) {
 	var result map[string]any
 	if params != nil {
 		interpolated := map[string]any{}
@@ -90,7 +112,7 @@ func resolveDeployParams(instance *api.Instance, params map[string]any, patchQue
 		}
 		result = interpolated
 	} else {
-		result = instance.Params
+		result = inst.Params
 		if result == nil {
 			result = map[string]any{}
 		}
@@ -136,14 +158,14 @@ func interpolateParams(params map[string]any, interpolatedParams *map[string]any
 // waitForDeployment polls the deployment until it reaches a terminal state,
 // printing each status check to stdout. Returns the final Deployment on success
 // or an error on FAILED/ABORTED/REJECTED.
-func waitForDeployment(ctx context.Context, mdClient *client.Client, id string, timeout time.Duration) (*api.Deployment, error) {
+func waitForDeployment(ctx context.Context, api DeployAPI, id string, timeout time.Duration) (*types.Deployment, error) {
 	deadline := time.Now().Add(timeout)
 	for {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 
-		deployment, err := api.GetDeployment(ctx, mdClient, id)
+		deployment, err := api.GetDeployment(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -166,68 +188,43 @@ func waitForDeployment(ctx context.Context, mdClient *client.Client, id string, 
 	}
 }
 
-// waitForDeploymentWithLogs streams the deployment's logs to w in real time
-// while polling the deployment status silently in the background. Returns once
-// the deployment reaches a terminal state.
-func waitForDeploymentWithLogs(ctx context.Context, mdClient *client.Client, id string, w io.Writer, timeout time.Duration) (*api.Deployment, error) {
-	logs, closeStream, err := api.SubscribeDeploymentLogs(ctx, mdClient, id)
+// waitForDeploymentWithLogs tails the deployment's logs to w in real time,
+// returning when the deployment reaches a terminal state. If the configured
+// credentials can't open the streaming websocket (basic-auth /
+// service-account), the call fails loudly — `--follow` is opt-in, so the
+// user explicitly asked for streaming and deserves a clear error rather than
+// silent fallback.
+func waitForDeploymentWithLogs(ctx context.Context, api DeployAPI, id string, w io.Writer) (*types.Deployment, error) {
+	err := api.TailLogs(ctx, id, w)
+	if errors.Is(err, deployments.ErrStreamingRequiresPAT) {
+		return nil, fmt.Errorf("log streaming requires a personal access token. Set MASSDRIVER_API_KEY to a token starting with mds_ or md_ and retry, or omit --follow to skip streaming")
+	}
 	if err != nil {
-		// Streaming setup failed (e.g. non-PAT auth). Fall back to status polling
-		// so the user still gets *some* signal rather than an opaque failure.
-		fmt.Fprintf(w, "warning: log streaming unavailable: %v\nfalling back to status polling\n", err)
-		return waitForDeployment(ctx, mdClient, id, timeout)
+		return nil, err
 	}
-	defer closeStream()
 
-	// Goroutine: print log batches as they arrive. Exits when `logs` closes,
-	// which happens after closeStream() tears down the subscription.
-	streamDone := make(chan struct{})
-	go func() {
-		defer close(streamDone)
-		for log := range logs {
-			fmt.Fprint(w, log.Message)
-		}
-	}()
-
-	// Main loop: poll status silently until terminal.
-	deadline := time.Now().Add(timeout)
-	for {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-
-		deployment, getErr := api.GetDeployment(ctx, mdClient, id)
-		if getErr != nil {
-			return nil, getErr
-		}
-
-		if final, done, terminalErr := terminalOutcome(deployment); done {
-			closeStream()
-			<-streamDone
-			fmt.Fprintf(w, "\n%s after %ds\n", final.Status, final.ElapsedTime)
-			return final, terminalErr
-		}
-
-		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("timed out waiting for deployment %s", id)
-		}
-
-		select {
-		case <-time.After(DeploymentStatusSleep):
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
+	// TailLogs returned cleanly, meaning the deployment is terminal. Fetch the
+	// final record so we can report status + elapsed time consistently with
+	// the polling path.
+	final, getErr := api.GetDeployment(ctx, id)
+	if getErr != nil {
+		return nil, getErr
 	}
+	fmt.Fprintf(w, "\n%s after %ds\n", final.Status, final.ElapsedTime)
+	if _, done, terminalErr := terminalOutcome(final); done {
+		return final, terminalErr
+	}
+	return final, nil
 }
 
 // terminalOutcome reports whether a deployment is in a terminal lifecycle
 // state and, if so, the *Deployment to return and any error. A "terminal"
 // status that isn't COMPLETED is reported as an error.
-func terminalOutcome(d *api.Deployment) (*api.Deployment, bool, error) {
-	if _, terminal := terminalDeploymentStatuses[d.Status]; !terminal {
+func terminalOutcome(d *types.Deployment) (*types.Deployment, bool, error) {
+	if !deployments.IsTerminal(d.Status) {
 		return nil, false, nil
 	}
-	if d.Status == "COMPLETED" {
+	if d.Status == string(deployments.StatusCompleted) {
 		return d, true, nil
 	}
 	return d, true, fmt.Errorf("deployment %s in status %s", d.ID, d.Status)

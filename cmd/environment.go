@@ -11,11 +11,12 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/environment"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/environments"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/instances"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
@@ -102,9 +103,9 @@ func runEnvironmentExport(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	return environment.RunExport(ctx, mdClient, environmentID)
@@ -121,26 +122,25 @@ func runEnvironmentGet(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	environment, err := api.GetEnvironment(ctx, mdClient, environmentID)
+	env, err := mdClient.Environments.Get(ctx, environmentID)
 	if err != nil {
 		return err
 	}
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, marshalErr := json.MarshalIndent(environment, "", "  ")
+		jsonBytes, marshalErr := json.MarshalIndent(env, "", "  ")
 		if marshalErr != nil {
 			return fmt.Errorf("failed to marshal environment to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
-		err = renderEnvironment(environment)
-		if err != nil {
+		if err := renderEnvironment(ctx, mdClient, env); err != nil {
 			return err
 		}
 	default:
@@ -157,30 +157,28 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	filter := api.EnvironmentsFilter{
-		ProjectId: &api.IdFilter{Eq: projectID},
-	}
-
-	environments, err := api.ListEnvironments(ctx, mdClient, &filter)
+	envs, err := mdClient.Environments.List(ctx, environments.ListInput{ProjectID: projectID})
 	if err != nil {
 		return err
 	}
 
 	tbl := cli.NewTable("ID", "Name", "Description", "Monthly $", "Daily $")
 
-	for _, env := range environments {
+	for _, env := range envs {
 		monthly := ""
 		daily := ""
-		if env.Cost.MonthlyAverage.Amount != nil {
-			monthly = fmt.Sprintf("%v", *env.Cost.MonthlyAverage.Amount)
-		}
-		if env.Cost.DailyAverage.Amount != nil {
-			daily = fmt.Sprintf("%v", *env.Cost.DailyAverage.Amount)
+		if env.Cost != nil {
+			if env.Cost.MonthlyAverage.Amount != nil {
+				monthly = fmt.Sprintf("%v", *env.Cost.MonthlyAverage.Amount)
+			}
+			if env.Cost.DailyAverage.Amount != nil {
+				daily = fmt.Sprintf("%v", *env.Cost.DailyAverage.Amount)
+			}
 		}
 		description := cli.TruncateString(env.Description, 60)
 		tbl.AddRow(env.ID, env.Name, description, monthly, daily)
@@ -191,7 +189,7 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func renderEnvironment(environment *api.Environment) error {
+func renderEnvironment(ctx context.Context, mdClient *massdriver.Client, env *environments.Environment) error {
 	tmplBytes, err := environmentTemplates.ReadFile("templates/environment.get.md.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to read template: %w", err)
@@ -202,8 +200,27 @@ func renderEnvironment(environment *api.Environment) error {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	// Instances aren't embedded on the environment record returned by
+	// Environments.Get; fetch them separately so the template can render them.
+	insts, err := mdClient.Instances.List(ctx, instances.ListInput{EnvironmentID: env.ID})
+	if err != nil {
+		return fmt.Errorf("failed to list instances: %w", err)
+	}
+
+	// The template chains through .Cost.MonthlyAverage.Amount unconditionally;
+	// supply a zero CostSummary so a nil cost record renders as empty values
+	// rather than aborting template execution.
+	if env.Cost == nil {
+		env.Cost = &types.CostSummary{}
+	}
+
+	data := struct {
+		*types.Environment
+		Instances []types.Instance
+	}{Environment: env, Instances: insts}
+
 	var buf bytes.Buffer
-	if renderErr := tmpl.Execute(&buf, environment); renderErr != nil {
+	if renderErr := tmpl.Execute(&buf, data); renderErr != nil {
 		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 
@@ -252,28 +269,25 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	input := api.CreateEnvironmentInput{
-		Id:          envID,
+	input := environments.CreateInput{
+		ID:          envID,
 		Name:        name,
 		Description: description,
 		Attributes:  cli.AttributesToAnyMap(attrs),
 	}
 
-	env, err := api.CreateEnvironment(ctx, mdClient, projectID, input)
+	env, err := mdClient.Environments.Create(ctx, projectID, input)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("✅ Environment `%s` created successfully\n", fullID)
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(env.ID))
-	}
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(env.ID))
 	return nil
 }
 
@@ -297,14 +311,14 @@ func runEnvironmentUpdate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	current, getErr := api.GetEnvironment(ctx, mdClient, environmentID)
-	if getErr != nil {
-		return fmt.Errorf("error getting environment: %w", getErr)
+	current, err := mdClient.Environments.Get(ctx, environmentID)
+	if err != nil {
+		return fmt.Errorf("error getting environment: %w", err)
 	}
 
 	if !cmd.Flags().Changed("name") {
@@ -317,25 +331,22 @@ func runEnvironmentUpdate(cmd *cobra.Command, args []string) error {
 	if cmd.Flags().Changed("attributes") {
 		attributes = cli.AttributesToAnyMap(attrs)
 	} else {
-		attributes = cli.StringMapToAnyMap(current.Attributes)
+		attributes = current.Attributes
 	}
 
-	input := api.UpdateEnvironmentInput{
+	input := environments.UpdateInput{
 		Name:        name,
 		Description: description,
 		Attributes:  attributes,
 	}
 
-	updated, err := api.UpdateEnvironment(ctx, mdClient, environmentID, input)
+	updated, err := mdClient.Environments.Update(ctx, environmentID, input)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("✅ Environment `%s` updated\n", updated.ID)
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(updated.ID))
-	}
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(updated.ID))
 	return nil
 }
 
@@ -347,26 +358,22 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	_, err := api.SetEnvironmentDefault(ctx, mdClient, environmentID, resourceID)
-	if err != nil {
+	if _, err := mdClient.Environments.SetDefault(ctx, environmentID, resourceID); err != nil {
 		return err
 	}
 
-	environment, err := api.GetEnvironment(ctx, mdClient, environmentID)
+	env, err := mdClient.Environments.Get(ctx, environmentID)
 	if err != nil {
 		return fmt.Errorf("failed to get environment: %w", err)
 	}
 
-	fmt.Printf("✅ Environment `%s` default connection set successfully\n", environment.ID)
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.EnvironmentURL(environment.ID))
-	}
+	fmt.Printf("✅ Environment `%s` default connection set successfully\n", env.ID)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(env.ID))
 
 	return nil
 }

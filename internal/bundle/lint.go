@@ -11,7 +11,6 @@ import (
 	"github.com/massdriver-cloud/mass/internal/jsonschema"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/mass/internal/provisioners"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 // LintSeverity represents the severity level of a lint issue
@@ -123,11 +122,12 @@ func (r *LintResult) IsClean() bool {
 	return len(r.Issues) == 0
 }
 
-// LintSchema validates the bundle against the Massdriver bundle JSON schema.
-func (b *Bundle) LintSchema(mdClient *client.Client) LintResult {
+// LintSchema validates the bundle against the Massdriver bundle JSON schema
+// served at serverURL.
+func (b *Bundle) LintSchema(serverURL string) LintResult {
 	var result LintResult
 
-	bundleSchemaURL, err := url.JoinPath(mdClient.Config.URL, "json-schemas", "bundle.json")
+	bundleSchemaURL, err := url.JoinPath(serverURL, "json-schemas", "bundle.json")
 	if err != nil {
 		result.AddError("schema-validation", fmt.Sprintf("failed to construct bundle schema URL: %v", err))
 		return result

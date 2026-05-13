@@ -12,14 +12,51 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/manifoldco/promptui"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/jsonschema"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/mass/internal/resourcetype"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/resources"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
+// API is the narrow SDK surface every resource command in this package uses.
+// Tests supply a hand-rolled fake; production callers use [NewAPI] to bind a
+// *massdriver.Client.
+type API interface {
+	GetResource(ctx context.Context, id string) (*types.Resource, error)
+	CreateResource(ctx context.Context, resourceTypeID string, in resources.CreateInput) (*types.Resource, error)
+	UpdateResource(ctx context.Context, id string, in resources.UpdateInput) (*types.Resource, error)
+	GetResourceType(ctx context.Context, name string) (*resourcetype.ResourceType, error)
+	ListResourceTypes(ctx context.Context) ([]resourcetype.ResourceType, error)
+}
+
+// NewAPI returns the production [API] backed by the SDK client.
+func NewAPI(c *massdriver.Client) API { return sdkAPI{c: c} }
+
+type sdkAPI struct{ c *massdriver.Client }
+
+func (s sdkAPI) GetResource(ctx context.Context, id string) (*types.Resource, error) {
+	return s.c.Resources.Get(ctx, id)
+}
+
+func (s sdkAPI) CreateResource(ctx context.Context, resourceTypeID string, in resources.CreateInput) (*types.Resource, error) {
+	return s.c.Resources.Create(ctx, resourceTypeID, in)
+}
+
+func (s sdkAPI) UpdateResource(ctx context.Context, id string, in resources.UpdateInput) (*types.Resource, error) {
+	return s.c.Resources.Update(ctx, id, in)
+}
+
+func (s sdkAPI) GetResourceType(ctx context.Context, name string) (*resourcetype.ResourceType, error) {
+	return resourcetype.Get(ctx, s.c, name)
+}
+
+func (s sdkAPI) ListResourceTypes(ctx context.Context) ([]resourcetype.ResourceType, error) {
+	return resourcetype.List(ctx, s.c)
+}
+
 // RunCreate reads an resource from a file, validates it, and creates it in Massdriver.
-func RunCreate(ctx context.Context, mdClient *client.Client, resourceName string, resourceType string, resourceFile string) (string, error) {
+func RunCreate(ctx context.Context, api API, resourceName string, resourceType string, resourceFile string) (string, error) {
 	bytes, readErr := os.ReadFile(resourceFile)
 	if readErr != nil {
 		return "", readErr
@@ -31,18 +68,17 @@ func RunCreate(ctx context.Context, mdClient *client.Client, resourceName string
 		return "", unmarshalErr
 	}
 
-	validateErr := validateResource(ctx, mdClient, resourceType, payload)
-	if validateErr != nil {
+	if validateErr := validateResource(ctx, api, resourceType, payload); validateErr != nil {
 		return "", validateErr
 	}
 
-	input := api.CreateResourceInput{
+	input := resources.CreateInput{
 		Name:    resourceName,
 		Payload: payload,
 	}
 
 	fmt.Printf("Creating resource %s of type %s...\n", resourceName, resourceType)
-	resp, createErr := api.CreateResource(ctx, mdClient, resourceType, input)
+	resp, createErr := api.CreateResource(ctx, resourceType, input)
 	if createErr != nil {
 		return "", createErr
 	}
@@ -51,13 +87,13 @@ func RunCreate(ctx context.Context, mdClient *client.Client, resourceName string
 	return resp.ID, nil
 }
 
-func validateResource(ctx context.Context, mdClient *client.Client, resourceTypeName string, resource map[string]any) error {
-	resourceType, typeErr := api.GetResourceType(ctx, mdClient, resourceTypeName)
+func validateResource(ctx context.Context, api API, resourceTypeName string, resource map[string]any) error {
+	rt, typeErr := api.GetResourceType(ctx, resourceTypeName)
 	if typeErr != nil {
 		return typeErr
 	}
 
-	sch, schemaErr := jsonschema.LoadSchemaFromGo(resourceType.Schema)
+	sch, schemaErr := jsonschema.LoadSchemaFromGo(rt.Schema)
 	if schemaErr != nil {
 		return fmt.Errorf("failed to compile resource definition schema: %w", schemaErr)
 	}
@@ -80,10 +116,8 @@ var promptsNew = []func(t *CreatePrompt) error{
 var resourceTypeNames = []string{}
 
 // RunCreatePrompt interactively prompts the user to fill in any missing resource import fields.
-func RunCreatePrompt(ctx context.Context, mdClient *client.Client, t *CreatePrompt) error {
-	var err error
-
-	rts, err := api.ListResourceTypes(ctx, mdClient, nil)
+func RunCreatePrompt(ctx context.Context, api API, t *CreatePrompt) error {
+	rts, err := api.ListResourceTypes(ctx)
 	if err != nil {
 		return err
 	}
@@ -95,8 +129,7 @@ func RunCreatePrompt(ctx context.Context, mdClient *client.Client, t *CreateProm
 	sort.Strings(resourceTypeNames)
 
 	for _, prompt := range promptsNew {
-		err = prompt(t)
-		if err != nil {
+		if err := prompt(t); err != nil {
 			return err
 		}
 	}

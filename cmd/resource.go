@@ -10,10 +10,10 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/resource"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
@@ -117,18 +117,18 @@ func runResourceCreate(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
+	api := resource.NewAPI(mdClient)
 	promptData := resource.CreatePrompt{Name: resourceName, Type: resourceType, File: resourceFile}
-	promptErr := resource.RunCreatePrompt(ctx, mdClient, &promptData)
-	if promptErr != nil {
-		return promptErr
+	if err := resource.RunCreatePrompt(ctx, api, &promptData); err != nil {
+		return err
 	}
 
-	_, createErr := resource.RunCreate(ctx, mdClient, promptData.Name, promptData.Type, promptData.File)
+	_, createErr := resource.RunCreate(ctx, api, promptData.Name, promptData.Type, promptData.File)
 	return createErr
 }
 
@@ -146,12 +146,12 @@ func runResourceUpdate(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	_, updateErr := resource.RunUpdate(ctx, mdClient, resourceID, resourceName, resourceFile)
+	_, updateErr := resource.RunUpdate(ctx, resource.NewAPI(mdClient), resourceID, resourceName, resourceFile)
 	return updateErr
 }
 
@@ -166,25 +166,25 @@ func runResourceGet(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	resource, getErr := api.GetResource(ctx, mdClient, resourceID)
-	if getErr != nil {
-		return fmt.Errorf("error getting resource: %w", getErr)
+	res, err := mdClient.Resources.Get(ctx, resourceID)
+	if err != nil {
+		return fmt.Errorf("error getting resource: %w", err)
 	}
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, marshalErr := json.MarshalIndent(resource, "", "  ")
+		jsonBytes, marshalErr := json.MarshalIndent(res, "", "  ")
 		if marshalErr != nil {
 			return fmt.Errorf("failed to marshal resource to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
-		err = renderResource(resource)
+		err = renderResource(res)
 		if err != nil {
 			return err
 		}
@@ -205,24 +205,24 @@ func runResourceDownload(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	rendered, downloadErr := api.ExportResource(ctx, mdClient, resourceID, format)
-	if downloadErr != nil {
-		return fmt.Errorf("error downloading resource: %w", downloadErr)
+	exported, err := mdClient.Resources.Export(ctx, resourceID, format)
+	if err != nil {
+		return fmt.Errorf("error downloading resource: %w", err)
 	}
 
-	fmt.Print(rendered)
+	fmt.Print(exported.Rendered)
 	return nil
 }
 
-func renderResource(resource *api.Resource) error {
+func renderResource(res *types.Resource) error {
 	prettyPayload := "{}"
-	if resource.Payload != nil {
-		payloadBytes, err := json.MarshalIndent(resource.Payload, "", "  ")
+	if res.Payload != nil {
+		payloadBytes, err := json.MarshalIndent(res.Payload, "", "  ")
 		if err == nil {
 			prettyPayload = string(payloadBytes)
 		}
@@ -238,6 +238,11 @@ func renderResource(resource *api.Resource) error {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	typeName := ""
+	if res.ResourceType != nil {
+		typeName = res.ResourceType.Name
+	}
+
 	data := struct {
 		ID           string
 		Name         string
@@ -248,20 +253,20 @@ func renderResource(resource *api.Resource) error {
 		Formats      []string
 		CreatedAt    string
 		UpdatedAt    string
-		ResourceType *api.ResourceType
-		Instance     *api.Instance
+		ResourceType *types.ResourceType
+		Instance     *types.Instance
 	}{
-		ID:           resource.ID,
-		Name:         resource.Name,
-		Type:         resource.ResourceType.Name,
-		Field:        resource.Field,
-		Origin:       resource.Origin,
+		ID:           res.ID,
+		Name:         res.Name,
+		Type:         typeName,
+		Field:        res.Field,
+		Origin:       res.Origin,
 		Payload:      prettyPayload,
-		Formats:      resource.Formats,
-		CreatedAt:    resource.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:    resource.UpdatedAt.Format("2006-01-02 15:04:05"),
-		ResourceType: resource.ResourceType,
-		Instance:     resource.Instance,
+		Formats:      res.Formats,
+		CreatedAt:    res.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:    res.UpdatedAt.Format("2006-01-02 15:04:05"),
+		ResourceType: res.ResourceType,
+		Instance:     res.Instance,
 	}
 
 	var buf bytes.Buffer

@@ -1,17 +1,14 @@
 package bundle_test
 
 import (
+	"context"
 	"os"
 	"path"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
-	cmdbundle "github.com/massdriver-cloud/mass/internal/commands/bundle"
-	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/mass/internal/mockfilesystem"
 	"sigs.k8s.io/yaml"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 var draftNodeSchema = map[string]any{
@@ -207,38 +204,32 @@ variable "resource_type" {
 `),
 }
 
+// stubResolver returns a SchemaResolver that always answers with the supplied
+// resource-type record. Build's dereferencer expects the nested `schema`
+// shape; pass in the same fixture the old test used.
+func stubResolver(rt map[string]any) bundle.SchemaResolver {
+	return func(_ context.Context, _ string) (map[string]any, error) {
+		return rt, nil
+	}
+}
+
 func TestBuildSchemas(t *testing.T) {
 	testDir := t.TempDir()
-	err := mockfilesystem.SetupBundle(testDir)
-
-	if err != nil {
+	if err := mockfilesystem.SetupBundle(testDir); err != nil {
 		t.Fatal(err)
 	}
 
 	file, err := os.ReadFile(path.Join(testDir, "massdriver.yaml"))
-
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	unmarshalledBundle := &bundle.Bundle{}
-	err = yaml.Unmarshal(file, unmarshalledBundle)
-
-	if err != nil {
+	if err := yaml.Unmarshal(file, unmarshalledBundle); err != nil {
 		t.Fatal(err)
 	}
 
-	mdClient := client.Client{
-		GQLv2: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
-			"data": map[string]any{
-				"resourceType": draftNodeSchema,
-			},
-		}),
-	}
-
-	err = cmdbundle.RunBuild(testDir, unmarshalledBundle, &mdClient)
-
-	if err != nil {
+	if err := unmarshalledBundle.Build(testDir, stubResolver(draftNodeSchema)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -255,36 +246,21 @@ func TestBuildSchemas(t *testing.T) {
 
 func TestBuildTFVars(t *testing.T) {
 	testDir := t.TempDir()
-	err := mockfilesystem.SetupBundle(testDir)
-
-	if err != nil {
+	if err := mockfilesystem.SetupBundle(testDir); err != nil {
 		t.Fatal(err)
 	}
 
 	file, err := os.ReadFile(path.Join(testDir, "massdriver.yaml"))
-
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	unmarshalledBundle := &bundle.Bundle{}
-	err = yaml.Unmarshal(file, unmarshalledBundle)
-
-	if err != nil {
+	if err := yaml.Unmarshal(file, unmarshalledBundle); err != nil {
 		t.Fatal(err)
 	}
 
-	mdClient := client.Client{
-		GQLv2: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
-			"data": map[string]any{
-				"resourceType": draftNodeSchema,
-			},
-		}),
-	}
-
-	err = cmdbundle.RunBuild(testDir, unmarshalledBundle, &mdClient)
-
-	if err != nil {
+	if err := unmarshalledBundle.Build(testDir, stubResolver(draftNodeSchema)); err != nil {
 		t.Fatal(err)
 	}
 

@@ -6,27 +6,26 @@ import (
 	"slices"
 	"time"
 
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	sdkbundle "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/bundle"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 
 	"oras.land/oras-go/v2/content/memory"
 )
 
 // RunPublish packages and publishes a bundle to the Massdriver registry.
-func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *client.Client, buildFromDir string, developmentRelease bool) error {
-	version, versionErr := getVersion(ctx, mdClient, b, developmentRelease)
-	if versionErr != nil {
-		return versionErr
+func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *massdriver.Client, buildFromDir string, developmentRelease bool) error {
+	version, err := getVersion(ctx, mdClient, b, developmentRelease)
+	if err != nil {
+		return err
 	}
 
+	cfg := mdClient.Config()
 	var printBundleName = prettylogs.Underline(b.Name)
-	var printOrganizationID = prettylogs.Underline(mdClient.Config.OrganizationID)
+	var printOrganizationID = prettylogs.Underline(cfg.OrganizationID)
 	fmt.Printf("Publishing %s:%s to organization %s...\n", printBundleName, version, printOrganizationID)
 
-	repo, repoErr := sdkbundle.GetBundleRepository(mdClient, b.Name)
+	repo, repoErr := mdClient.OciRepos.Target(b.Name)
 	if repoErr != nil {
 		return fmt.Errorf("getting repository: %w", repoErr)
 	}
@@ -54,27 +53,26 @@ func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *client.Client, 
 	fmt.Printf("Bundle %s:%s successfully published to organization %s!\n", printBundleName, version, printOrganizationID)
 
 	// Output repo instances URL
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-	if urlErr == nil {
-		instancesURL := urlHelper.RepoInstancesURL(b.Name, version)
-		fmt.Printf("🔗 %s\n", instancesURL)
-	}
+	instancesURL := mdClient.URLs.Helper(ctx).RepoInstancesURL(b.Name, version)
+	fmt.Printf("🔗 %s\n", instancesURL)
 
 	return nil
 }
 
-func getVersion(ctx context.Context, mdClient *client.Client, b *bundle.Bundle, developmentRelease bool) (string, error) {
-	repo, err := api.GetOciRepo(ctx, mdClient, b.Name)
+// getVersion fetches the repo's existing tags and delegates to
+// resolveVersion for the actual rule.
+func getVersion(ctx context.Context, mdClient *massdriver.Client, b *bundle.Bundle, developmentRelease bool) (string, error) {
+	repo, err := mdClient.OciRepos.Get(ctx, b.Name)
 	if err != nil {
 		return "", fmt.Errorf("fetching OCI repo: %w", err)
 	}
+	return resolveVersion(b, repo.Tags, developmentRelease)
+}
 
-	tags := make([]string, len(repo.Tags))
-	for i, tag := range repo.Tags {
-		tags[i] = tag.Tag
-	}
-
-	if b.Version != "0.0.0" && slices.Contains(tags, b.Version) {
+// resolveVersion returns the tag to publish under, refusing to overwrite an
+// existing non-development tag.
+func resolveVersion(b *bundle.Bundle, existingTags []string, developmentRelease bool) (string, error) {
+	if b.Version != "0.0.0" && slices.Contains(existingTags, b.Version) {
 		if !developmentRelease {
 			return "", fmt.Errorf("version %s already exists for bundle %s", b.Version, b.Name)
 		}

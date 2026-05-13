@@ -9,12 +9,11 @@ import (
 
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 )
 
 // Delete removes a resource type by name, prompting for confirmation unless force is set.
-func Delete(ctx context.Context, mdClient *client.Client, name string, force bool) error {
+func Delete(ctx context.Context, mdClient *massdriver.Client, name string, force bool) error {
 	// Get resource type details for confirmation
 	rt, getErr := Get(ctx, mdClient, name)
 	if getErr != nil {
@@ -35,7 +34,7 @@ func Delete(ctx context.Context, mdClient *client.Client, name string, force boo
 		}
 	}
 
-	deletedRT, deleteErr := api.DeleteResourceType(ctx, mdClient, name) //nolint:staticcheck // pending migration to OCI-native flow
+	deletedRT, deleteErr := api.DeleteResourceType(ctx, mdClient, name)
 	if deleteErr != nil {
 		return fmt.Errorf("error deleting resource type: %w", deleteErr)
 	}

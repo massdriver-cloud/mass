@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/massdriver-cloud/mass/internal/api"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
 // SplitComponentID splits a full component ID (e.g., "ecomm-db") into its project and short ID.
@@ -28,12 +28,22 @@ func ParseComponentField(arg string) (componentID, field string, err error) {
 	return arg[:idx], arg[idx+1:], nil
 }
 
-// FindLink returns the link whose FromField/ToField match, or an error if none exists.
-func FindLink(links []api.Link, fromField, toField string) (*api.Link, error) {
+// FindLink returns the link whose from/to component+field tuple matches all
+// four arguments. The platform no longer exposes a links-list query scoped by
+// component, so callers pass the full project link set and FindLink filters
+// in-memory.
+func FindLink(links []types.Link, fromComponentID, fromField, toComponentID, toField string) (*types.Link, error) {
 	for i := range links {
-		if links[i].FromField == fromField && links[i].ToField == toField {
-			return &links[i], nil
+		l := &links[i]
+		if l.FromComponent == nil || l.ToComponent == nil {
+			continue
+		}
+		if l.FromComponent.ID == fromComponentID &&
+			l.FromField == fromField &&
+			l.ToComponent.ID == toComponentID &&
+			l.ToField == toField {
+			return l, nil
 		}
 	}
-	return nil, fmt.Errorf("no link found with fromField=%q toField=%q", fromField, toField)
+	return nil, fmt.Errorf("no link found from %s.%s to %s.%s", fromComponentID, fromField, toComponentID, toField)
 }

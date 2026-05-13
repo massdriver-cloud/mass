@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/component"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/components"
 
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/spf13/cobra"
 )
 
@@ -114,20 +114,20 @@ func runComponentAdd(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	input := api.AddComponentInput{
-		Id:          shortID,
+	input := components.AddInput{
+		ID:          shortID,
 		Name:        name,
 		Description: description,
 		Attributes:  cli.AttributesToAnyMap(attrs),
 	}
-	comp, addErr := api.AddComponent(ctx, mdClient, projectID, ociRepoName, input)
-	if addErr != nil {
-		return addErr
+	comp, err := mdClient.Components.Add(ctx, projectID, ociRepoName, input)
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf("✅ Component `%s` added to project `%s`\n", comp.ID, projectID)
@@ -153,14 +153,14 @@ func runComponentUpdate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	current, getErr := api.GetComponent(ctx, mdClient, componentID)
-	if getErr != nil {
-		return fmt.Errorf("error getting component: %w", getErr)
+	current, err := mdClient.Components.Get(ctx, componentID)
+	if err != nil {
+		return fmt.Errorf("error getting component: %w", err)
 	}
 
 	if !cmd.Flags().Changed("name") {
@@ -173,16 +173,16 @@ func runComponentUpdate(cmd *cobra.Command, args []string) error {
 	if cmd.Flags().Changed("attributes") {
 		attributes = cli.AttributesToAnyMap(attrs)
 	} else {
-		attributes = cli.StringMapToAnyMap(current.Attributes)
+		attributes = current.Attributes
 	}
 
-	input := api.UpdateComponentInput{
+	input := components.UpdateInput{
 		Name:        name,
 		Description: description,
 		Attributes:  attributes,
 	}
 
-	updated, err := api.UpdateComponent(ctx, mdClient, componentID, input)
+	updated, err := mdClient.Components.Update(ctx, componentID, input)
 	if err != nil {
 		return err
 	}
@@ -197,12 +197,12 @@ func runComponentRemove(cmd *cobra.Command, args []string) error {
 	componentID := args[0]
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	comp, err := api.RemoveComponent(ctx, mdClient, componentID)
+	comp, err := mdClient.Components.Remove(ctx, componentID)
 	if err != nil {
 		return err
 	}
@@ -234,22 +234,22 @@ func runComponentLink(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	input := api.LinkComponentsInput{
-		FromComponentId: fromComponentID,
+	input := components.AddLinkInput{
+		FromComponentID: fromComponentID,
 		FromField:       fromField,
 		FromVersion:     fromVersion,
-		ToComponentId:   toComponentID,
+		ToComponentID:   toComponentID,
 		ToField:         toField,
 		ToVersion:       toVersion,
 	}
-	link, linkErr := api.LinkComponents(ctx, mdClient, input)
-	if linkErr != nil {
-		return linkErr
+	link, err := mdClient.Components.AddLink(ctx, input)
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf("✅ Linked `%s.%s` → `%s.%s` (id: %s)\n", fromComponentID, link.FromField, toComponentID, link.ToField, link.ID)
@@ -275,25 +275,24 @@ func runComponentUnlink(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	links, err := api.ListLinks(ctx, mdClient, projectID, &api.LinksFilter{
-		FromComponentId: &api.IdFilter{Eq: fromComponentID},
-		ToComponentId:   &api.IdFilter{Eq: toComponentID},
-	})
+	// Links no longer have a dedicated GraphQL list query; fetch the project's
+	// full link set and filter client-side.
+	proj, err := mdClient.Projects.Get(ctx, projectID)
 	if err != nil {
 		return err
 	}
 
-	target, err := component.FindLink(links, fromField, toField)
+	target, err := component.FindLink(proj.Links, fromComponentID, fromField, toComponentID, toField)
 	if err != nil {
 		return fmt.Errorf("no link found from `%s.%s` to `%s.%s`", fromComponentID, fromField, toComponentID, toField)
 	}
 
-	if _, err := api.UnlinkComponents(ctx, mdClient, target.ID); err != nil {
+	if _, err := mdClient.Components.RemoveLink(ctx, target.ID); err != nil {
 		return err
 	}
 

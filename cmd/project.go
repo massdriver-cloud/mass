@@ -13,10 +13,11 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/project"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/projects"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
@@ -105,25 +106,25 @@ func runProjectGet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	project, err := api.GetProject(ctx, mdClient, projectID)
+	proj, err := mdClient.Projects.Get(ctx, projectID)
 	if err != nil {
 		return err
 	}
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, marshalErr := json.MarshalIndent(project, "", "  ")
+		jsonBytes, marshalErr := json.MarshalIndent(proj, "", "  ")
 		if marshalErr != nil {
 			return fmt.Errorf("failed to marshal project to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
-		err = renderProject(project)
+		err = renderProject(proj)
 		if err != nil {
 			return err
 		}
@@ -141,9 +142,9 @@ func runProjectExport(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	return project.RunExport(ctx, mdClient, projectID)
@@ -152,29 +153,31 @@ func runProjectExport(cmd *cobra.Command, args []string) error {
 func runProjectList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	projects, err := api.ListProjects(ctx, mdClient)
+	projectList, err := mdClient.Projects.List(ctx)
 	if err != nil {
 		return err
 	}
 
 	tbl := cli.NewTable("ID/Slug", "Name", "Description", "Monthly $", "Daily $")
 
-	for _, project := range projects {
+	for _, p := range projectList {
 		monthly := ""
 		daily := ""
-		if project.Cost.MonthlyAverage.Amount != nil {
-			monthly = fmt.Sprintf("%v", *project.Cost.MonthlyAverage.Amount)
+		if p.Cost != nil {
+			if p.Cost.MonthlyAverage.Amount != nil {
+				monthly = fmt.Sprintf("%v", *p.Cost.MonthlyAverage.Amount)
+			}
+			if p.Cost.DailyAverage.Amount != nil {
+				daily = fmt.Sprintf("%v", *p.Cost.DailyAverage.Amount)
+			}
 		}
-		if project.Cost.DailyAverage.Amount != nil {
-			daily = fmt.Sprintf("%v", *project.Cost.DailyAverage.Amount)
-		}
-		description := cli.TruncateString(project.Description, 60)
-		tbl.AddRow(project.ID, project.Name, description, monthly, daily)
+		description := cli.TruncateString(p.Description, 60)
+		tbl.AddRow(p.ID, p.Name, description, monthly, daily)
 	}
 
 	tbl.Print()
@@ -182,7 +185,7 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func renderProject(project *api.Project) error {
+func renderProject(p *projects.Project) error {
 	tmplBytes, err := projectTemplates.ReadFile("templates/project.get.md.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to read template: %w", err)
@@ -193,8 +196,15 @@ func renderProject(project *api.Project) error {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	// The template chains through .Cost.MonthlyAverage.Amount unconditionally;
+	// supply a zero CostSummary so a nil cost record renders as empty values
+	// rather than aborting template execution.
+	if p.Cost == nil {
+		p.Cost = &types.CostSummary{}
+	}
+
 	var buf bytes.Buffer
-	if renderErr := tmpl.Execute(&buf, project); renderErr != nil {
+	if renderErr := tmpl.Execute(&buf, p); renderErr != nil {
 		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 
@@ -234,28 +244,25 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	input := api.CreateProjectInput{
-		Id:          id,
+	input := projects.CreateInput{
+		ID:          id,
 		Name:        name,
 		Description: description,
 		Attributes:  cli.AttributesToAnyMap(attrs),
 	}
 
-	project, err := api.CreateProject(ctx, mdClient, input)
+	proj, err := mdClient.Projects.Create(ctx, input)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("✅ Project `%s` created successfully\n", project.ID)
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.ProjectURL(project.ID))
-	}
+	fmt.Printf("✅ Project `%s` created successfully\n", proj.ID)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).ProjectURL(proj.ID))
 	return nil
 }
 
@@ -279,16 +286,16 @@ func runProjectUpdate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	// Fetch current state so unset flags retain their existing values rather
 	// than blanking the field at the server.
-	current, getErr := api.GetProject(ctx, mdClient, projectID)
-	if getErr != nil {
-		return fmt.Errorf("error getting project: %w", getErr)
+	current, err := mdClient.Projects.Get(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("error getting project: %w", err)
 	}
 
 	if !cmd.Flags().Changed("name") {
@@ -301,25 +308,22 @@ func runProjectUpdate(cmd *cobra.Command, args []string) error {
 	if cmd.Flags().Changed("attributes") {
 		attributes = cli.AttributesToAnyMap(attrs)
 	} else {
-		attributes = cli.StringMapToAnyMap(current.Attributes)
+		attributes = current.Attributes
 	}
 
-	input := api.UpdateProjectInput{
+	input := projects.UpdateInput{
 		Name:        name,
 		Description: description,
 		Attributes:  attributes,
 	}
 
-	updated, err := api.UpdateProject(ctx, mdClient, projectID, input)
+	updated, err := mdClient.Projects.Update(ctx, projectID, input)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("✅ Project `%s` updated\n", updated.ID)
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.ProjectURL(updated.ID))
-	}
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).ProjectURL(updated.ID))
 	return nil
 }
 
@@ -334,32 +338,32 @@ func runProjectDelete(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	// Get project details for confirmation
-	project, getErr := api.GetProject(ctx, mdClient, projectID)
-	if getErr != nil {
-		return fmt.Errorf("error getting project: %w", getErr)
+	proj, err := mdClient.Projects.Get(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("error getting project: %w", err)
 	}
 
 	// Prompt for confirmation - requires typing the project ID unless --force is used
 	if !force {
-		fmt.Printf("WARNING: This will permanently delete project `%s` and all its resources.\n", project.ID)
-		fmt.Printf("Type `%s` to confirm deletion: ", project.ID)
+		fmt.Printf("WARNING: This will permanently delete project `%s` and all its resources.\n", proj.ID)
+		fmt.Printf("Type `%s` to confirm deletion: ", proj.ID)
 		reader := bufio.NewReader(os.Stdin)
 		answer, _ := reader.ReadString('\n')
 		answer = strings.TrimSpace(answer)
 
-		if answer != project.ID {
+		if answer != proj.ID {
 			fmt.Println("Deletion cancelled.")
 			return nil
 		}
 	}
 
-	deletedProject, err := api.DeleteProject(ctx, mdClient, projectID)
+	deletedProject, err := mdClient.Projects.Delete(ctx, projectID)
 	if err != nil {
 		return err
 	}
