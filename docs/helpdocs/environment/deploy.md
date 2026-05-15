@@ -18,6 +18,12 @@ mass environment deploy <environment>
 - `environment`: full identifier of the environment to deploy
   (e.g. `ecomm-staging`).
 
+## Flags
+
+- `--follow`: stream every deployment's logs to stdout until the rollout
+  completes. Each line is prefixed with the instance id so the interleaved
+  output stays grep-friendly when multiple deployments run in parallel.
+
 ## Examples
 
 ```bash

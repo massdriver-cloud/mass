@@ -118,11 +118,12 @@ func NewCmdEnvironment() *cobra.Command {
 	environmentDeployCmd := &cobra.Command{
 		Use:     "deploy [environment]",
 		Short:   "Deploy every instance in an environment, in dependency order",
-		Example: `mass environment deploy ecomm-staging`,
+		Example: `mass environment deploy ecomm-staging --follow`,
 		Long:    helpdocs.MustRender("environment/deploy"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runEnvironmentDeploy,
 	}
+	environmentDeployCmd.Flags().Bool("follow", false, "Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
 
 	environmentCmd.AddCommand(environmentExportCmd)
 	environmentCmd.AddCommand(environmentGetCmd)
@@ -535,6 +536,10 @@ func runEnvironmentDeploy(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	environmentID := args[0]
+	follow, err := cmd.Flags().GetBool("follow")
+	if err != nil {
+		return err
+	}
 
 	cmd.SilenceUsage = true
 
@@ -550,5 +555,9 @@ func runEnvironmentDeploy(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("🚀 Deploying environment `%s` — instances roll out in dependency order asynchronously\n", env.ID)
 	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(env.ID))
+
+	if follow {
+		return environment.FollowEnvironment(ctx, environment.NewFollowAPI(mdClient), env.ID, os.Stdout)
+	}
 	return nil
 }
