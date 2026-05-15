@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands/instance"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -50,9 +50,9 @@ type MockResourceLister struct {
 	mock.Mock
 }
 
-func (mrl *MockResourceLister) ListInstanceResources(ctx context.Context, instanceID string) ([]api.InstanceResource, error) {
+func (mrl *MockResourceLister) ListInstanceResources(ctx context.Context, instanceID string) ([]types.Resource, error) {
 	args := mrl.Called(ctx, instanceID)
-	resources, _ := args.Get(0).([]api.InstanceResource)
+	resources, _ := args.Get(0).([]types.Resource)
 	return resources, args.Error(1)
 }
 
@@ -81,7 +81,7 @@ func (msf *MockStateFetcher) FetchState(ctx context.Context, stateURL string) (a
 func TestExportInstance(t *testing.T) {
 	tests := []struct {
 		name          string
-		instance      *api.Instance
+		instance      *types.Instance
 		baseDir       string
 		setupMocks    func(*MockFileSystem, *MockBundleFetcher, *MockResourceLister, *MockResourceExporter, *MockStateFetcher)
 		expectedDirs  []string
@@ -90,7 +90,7 @@ func TestExportInstance(t *testing.T) {
 	}{
 		{
 			name: "export provisioned instance with all components",
-			instance: &api.Instance{
+			instance: &types.Instance{
 				ID:              "ecomm-prod-db",
 				Status:          "PROVISIONED",
 				DeployedVersion: "1.2.3",
@@ -98,9 +98,9 @@ func TestExportInstance(t *testing.T) {
 					"param1": "value1",
 					"param2": 42,
 				},
-				Bundle:    &api.Bundle{Name: "test-bundle"},
-				Component: &api.Component{ID: "db", Name: "Database"},
-				StatePaths: []api.InstanceStatePath{
+				Bundle:    &types.Bundle{Name: "test-bundle"},
+				Component: &types.Component{ID: "db", Name: "Database"},
+				StatePaths: []types.InstanceStatePath{
 					{StepName: "src", StateURL: "https://api.example.com/state/ecomm-prod-db/src"},
 				},
 			},
@@ -111,8 +111,8 @@ func TestExportInstance(t *testing.T) {
 
 				mbf.On("FetchBundle", mock.Anything, "test-bundle", "1.2.3", "/tmp/export/db").Return(nil)
 
-				mrl.On("ListInstanceResources", mock.Anything, "ecomm-prod-db").Return([]api.InstanceResource{
-					{Field: "output", Resource: api.Resource{ID: "resource-1", Name: "test-resource"}},
+				mrl.On("ListInstanceResources", mock.Anything, "ecomm-prod-db").Return([]types.Resource{
+					{ID: "resource-1", Name: "test-resource", Field: "output"},
 				}, nil)
 				mre.On("ExportResource", mock.Anything, "resource-1", "json").Return(`{"data": "test"}`, nil)
 				mfs.On("WriteFile", "/tmp/export/db/artifact_output.json", mock.Anything, os.FileMode(0644)).Return(nil)
@@ -130,16 +130,16 @@ func TestExportInstance(t *testing.T) {
 		},
 		{
 			name: "skip state write when no state exists yet",
-			instance: &api.Instance{
+			instance: &types.Instance{
 				ID:              "ecomm-prod-cache",
 				Status:          "PROVISIONED",
 				DeployedVersion: "0.1.0",
 				Params: map[string]any{
 					"param1": "value1",
 				},
-				Bundle:    &api.Bundle{Name: "cache-bundle"},
-				Component: &api.Component{ID: "cache"},
-				StatePaths: []api.InstanceStatePath{
+				Bundle:    &types.Bundle{Name: "cache-bundle"},
+				Component: &types.Component{ID: "cache"},
+				StatePaths: []types.InstanceStatePath{
 					{StepName: "src", StateURL: "https://api.example.com/state/ecomm-prod-cache/src"},
 				},
 			},
@@ -150,7 +150,7 @@ func TestExportInstance(t *testing.T) {
 
 				mbf.On("FetchBundle", mock.Anything, "cache-bundle", "0.1.0", "/tmp/export/cache").Return(nil)
 
-				mrl.On("ListInstanceResources", mock.Anything, "ecomm-prod-cache").Return([]api.InstanceResource{}, nil)
+				mrl.On("ListInstanceResources", mock.Anything, "ecomm-prod-cache").Return([]types.Resource{}, nil)
 
 				msf.On("FetchState", mock.Anything, "https://api.example.com/state/ecomm-prod-cache/src").Return(nil, instance.ErrNoState)
 			},
@@ -162,11 +162,11 @@ func TestExportInstance(t *testing.T) {
 		},
 		{
 			name: "skip export for non-provisioned instance",
-			instance: &api.Instance{
+			instance: &types.Instance{
 				ID:        "ecomm-prod-pending",
 				Status:    "INITIALIZED",
-				Bundle:    &api.Bundle{Name: "pending-bundle"},
-				Component: &api.Component{ID: "pending"},
+				Bundle:    &types.Bundle{Name: "pending-bundle"},
+				Component: &types.Component{ID: "pending"},
 			},
 			baseDir: "/tmp/export",
 			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mrl *MockResourceLister, mre *MockResourceExporter, msf *MockStateFetcher) {
@@ -177,7 +177,7 @@ func TestExportInstance(t *testing.T) {
 		},
 		{
 			name:     "validation error for invalid instance",
-			instance: &api.Instance{ID: "invalid-instance"},
+			instance: &types.Instance{ID: "invalid-instance"},
 			baseDir:  "/tmp/export",
 			setupMocks: func(mfs *MockFileSystem, mbf *MockBundleFetcher, mrl *MockResourceLister, mre *MockResourceExporter, msf *MockStateFetcher) {
 			},
@@ -233,12 +233,12 @@ func TestExportInstance(t *testing.T) {
 }
 
 func TestExportInstance_FileSystemError(t *testing.T) {
-	inst := &api.Instance{
+	inst := &types.Instance{
 		ID:              "ecomm-prod-db",
 		Status:          "PROVISIONED",
 		DeployedVersion: "1.2.3",
-		Bundle:          &api.Bundle{Name: "test-bundle"},
-		Component:       &api.Component{ID: "db"},
+		Bundle:          &types.Bundle{Name: "test-bundle"},
+		Component:       &types.Component{ID: "db"},
 	}
 
 	mockFS := &MockFileSystem{}

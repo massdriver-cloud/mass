@@ -11,21 +11,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	cmdbundle "github.com/massdriver-cloud/mass/internal/commands/bundle"
 	"github.com/massdriver-cloud/mass/internal/params"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
+	"github.com/massdriver-cloud/mass/internal/resourcetype"
 	"github.com/massdriver-cloud/mass/internal/templates"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/ocirepos"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
@@ -196,12 +198,12 @@ func runBundleCreate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	return createOciRepoCommon(ctx, mdClient, name, "bundle", attrs)
+	return createOciRepoCommon(ctx, mdClient, name, string(ocirepos.ArtifactTypeBundle), attrs)
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
@@ -268,12 +270,12 @@ func runBundleNew(input *bundleNew) error {
 	var runErr error
 	if input.name == "" || input.templateName == "" {
 		// run the interactive prompt
-		mdClient, mdClientErr := client.New()
-		if mdClientErr != nil {
-			return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+		mdClient, err := massdriver.NewClient()
+		if err != nil {
+			return fmt.Errorf("error initializing massdriver client: %w", err)
 		}
 
-		resourceTypes, listErr := api.ListResourceTypes(ctx, mdClient, nil)
+		resourceTypes, listErr := resourcetype.List(ctx, mdClient)
 		if listErr != nil {
 			return fmt.Errorf("error fetching resource types: %w", listErr)
 		}
@@ -284,7 +286,7 @@ func runBundleNew(input *bundleNew) error {
 				resourceTypeNames[i] += " (" + rt.Name + ")"
 			}
 		}
-		slices.Sort(resourceTypeNames)
+		sort.Strings(resourceTypeNames)
 
 		templateData, runErr = runBundleNewInteractive(input.outputDir, resourceTypeNames)
 		if runErr != nil {
@@ -338,9 +340,9 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	return cmdbundle.RunBuild(bundleDirectory, unmarshalledBundle, mdClient)
@@ -372,12 +374,12 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	err = unmarshalledBundle.DereferenceSchemas(bundleDirectory, mdClient)
+	err = unmarshalledBundle.DereferenceSchemas(bundleDirectory, resourcetype.NewMassdriverResolver(mdClient))
 	if err != nil {
 		return err
 	}
@@ -427,12 +429,12 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	err = unmarshalledBundle.Build(bundleDirectory, mdClient)
+	err = unmarshalledBundle.Build(bundleDirectory, resourcetype.NewMassdriverResolver(mdClient))
 	if err != nil {
 		return err
 	}
@@ -483,9 +485,9 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return mdClientErr
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	pullErr := cmdbundle.RunPull(ctx, mdClient, bundleName, version, directory)
@@ -499,33 +501,28 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 func runBundleList(input *bundleList) error {
 	ctx := context.Background()
 
-	mdClient, err := client.New()
+	mdClient, err := massdriver.NewClient()
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	filter := &api.OciReposFilter{
-		ArtifactType: "application/vnd.massdriver.bundle.v1+json",
+	listInput := ocirepos.ListInput{
+		ArtifactType: ocirepos.ArtifactTypeBundle,
 		Search:       input.search,
+		NameEquals:   input.name,
 	}
-	if input.name != "" {
-		filter.Name = &api.OciRepoNameFilter{Eq: input.name}
-	}
-
-	var sort *api.OciReposSort
 	if input.sortField != "" {
-		order := api.SortOrderAsc
+		listInput.SortOrder = ocirepos.SortAsc
 		if strings.EqualFold(input.sortOrder, "desc") {
-			order = api.SortOrderDesc
+			listInput.SortOrder = ocirepos.SortDesc
 		}
-		field := api.OciReposSortFieldName
+		listInput.SortBy = ocirepos.SortByName
 		if strings.EqualFold(input.sortField, "created_at") {
-			field = api.OciReposSortFieldCreatedAt
+			listInput.SortBy = ocirepos.SortByCreatedAt
 		}
-		sort = &api.OciReposSort{Field: field, Order: order}
 	}
 
-	repos, err := api.ListOciRepos(ctx, mdClient, filter, sort)
+	repos, err := mdClient.OciRepos.List(ctx, listInput)
 	if err != nil {
 		return fmt.Errorf("failed to list bundles: %w", err)
 	}
@@ -540,15 +537,7 @@ func runBundleList(input *bundleList) error {
 	case "table":
 		tbl := cli.NewTable("Name", "Latest", "Created At")
 		for _, repo := range repos {
-			latest := ""
-			for _, rc := range repo.ReleaseChannels {
-				if rc.Name == "latest" {
-					latest = rc.Tag
-					break
-				}
-			}
-			createdAt := repo.CreatedAt.Format("2006-01-02 15:04:05")
-			tbl.AddRow(repo.Name, latest, createdAt)
+			tbl.AddRow(repo.Name, repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05"))
 		}
 		tbl.Print()
 	default:
@@ -572,25 +561,25 @@ func runBundleGet(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	bundle, err := api.GetBundle(ctx, mdClient, bundleID)
+	b, err := mdClient.Bundles.Get(ctx, bundleID)
 	if err != nil {
 		return err
 	}
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, marshalErr := json.MarshalIndent(bundle, "", "  ")
+		jsonBytes, marshalErr := json.MarshalIndent(b, "", "  ")
 		if marshalErr != nil {
 			return fmt.Errorf("failed to marshal bundle to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
-		err = renderBundle(bundle, mdClient)
+		err = renderBundle(b, mdClient)
 		if err != nil {
 			return err
 		}
@@ -601,7 +590,7 @@ func runBundleGet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func renderBundle(b *api.Bundle, mdClient *client.Client) error {
+func renderBundle(b *types.Bundle, mdClient *massdriver.Client) error {
 	tmplBytes, err := bundleTemplates.ReadFile("templates/bundle.get.md.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to read template: %w", err)
@@ -614,14 +603,10 @@ func renderBundle(b *api.Bundle, mdClient *client.Client) error {
 
 	// Get app URL for constructing bundle URL
 	ctx := context.Background()
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-	bundleURL := ""
-	if urlErr == nil {
-		bundleURL = urlHelper.BundleURL(b.Name, b.Version)
-	}
+	bundleURL := mdClient.URLs.Helper(ctx).BundleURL(b.Name, b.Version)
 
 	data := struct {
-		*api.Bundle
+		*types.Bundle
 		URL        string
 		FormatTime func(time.Time) string
 	}{

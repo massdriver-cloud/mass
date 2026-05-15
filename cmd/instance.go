@@ -12,13 +12,15 @@ import (
 	"text/template"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/instance"
 	"github.com/massdriver-cloud/mass/internal/files"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/instances"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
@@ -72,12 +74,11 @@ func NewCmdInstance() *cobra.Command {
 	instanceVersionCmd := &cobra.Command{
 		Use:     `version <instance-id>@<version>`,
 		Short:   "Set instance version",
-		Example: `mass instance version api-prod-db@latest --release-channel development`,
+		Example: `mass instance version api-prod-db@latest`,
 		Long:    helpdocs.MustRender("instance/version"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInstanceVersion,
 	}
-	instanceVersionCmd.Flags().String("release-channel", "stable", "Release strategy (stable or development)")
 
 	instanceDestroyCmd := &cobra.Command{
 		Use:     `destroy <project>-<env>-<manifest>`,
@@ -124,26 +125,25 @@ func runInstanceGet(cmd *cobra.Command, args []string) error {
 
 	instanceID := args[0]
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	instance, err := api.GetInstance(ctx, mdClient, instanceID)
+	inst, err := mdClient.Instances.Get(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 
 	switch outputFormat {
 	case "json":
-		jsonBytes, marshalErr := json.MarshalIndent(instance, "", "  ")
+		jsonBytes, marshalErr := json.MarshalIndent(inst, "", "  ")
 		if marshalErr != nil {
 			return fmt.Errorf("failed to marshal instance to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "text":
-		err = renderInstance(instance)
-		if err != nil {
+		if err := renderInstance(inst); err != nil {
 			return err
 		}
 	default:
@@ -153,7 +153,8 @@ func runInstanceGet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func renderInstance(instance *api.Instance) error {
+//nolint:dupl // parallel template-render shape with renderDeployment; consolidating would couple unrelated commands
+func renderInstance(inst *types.Instance) error {
 	tmplBytes, err := instanceTemplates.ReadFile("templates/instance.get.md.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to read template: %w", err)
@@ -164,8 +165,20 @@ func renderInstance(instance *api.Instance) error {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	paramsJSON := "{}"
+	if inst.Params != nil {
+		if b, marshalErr := json.MarshalIndent(inst.Params, "", "  "); marshalErr == nil {
+			paramsJSON = string(b)
+		}
+	}
+
+	data := struct {
+		*types.Instance
+		ParamsJSON string
+	}{Instance: inst, ParamsJSON: paramsJSON}
+
 	var buf bytes.Buffer
-	if renderErr := tmpl.Execute(&buf, instance); renderErr != nil {
+	if renderErr := tmpl.Execute(&buf, data); renderErr != nil {
 		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 
@@ -183,15 +196,14 @@ func renderInstance(instance *api.Instance) error {
 	return nil
 }
 
-//nolint:gocognit // sequential flag parsing and dispatch, not branching logic
 func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	name := args[0]
 
-	action := api.DeploymentActionProvision
+	action := deployments.ActionProvision
 	if cmd.Name() == "destroy" {
-		action = api.DeploymentActionDecommission
+		action = deployments.ActionDecommission
 	}
 
 	msg, err := cmd.Flags().GetString("message")
@@ -231,7 +243,7 @@ func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 		opts.Params = params
 	}
 
-	if action == api.DeploymentActionDecommission {
+	if action == deployments.ActionDecommission {
 		force, forceErr := cmd.Flags().GetBool("force")
 		if forceErr != nil {
 			return forceErr
@@ -246,24 +258,22 @@ func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 				return nil
 			}
 		}
-		cmd.SilenceUsage = true
 	}
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	if _, err = instance.RunDeploy(ctx, mdClient, name, opts); err != nil {
+	if _, err = instance.RunDeploy(ctx, instance.NewDeployAPI(mdClient), name, opts); err != nil {
 		return err
 	}
 
-	if action == api.DeploymentActionDecommission {
+	if action == deployments.ActionDecommission {
 		fmt.Printf("✅ Instance `%s` decommission started\n", name)
-		urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-		if urlErr == nil {
-			fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(name))
-		}
+		fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(name))
 	}
 
 	return nil
@@ -290,9 +300,9 @@ func runInstanceExport(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	exportErr := instance.RunExport(ctx, mdClient, instanceID)
@@ -316,42 +326,18 @@ func runInstanceVersion(cmd *cobra.Command, args []string) error {
 	instanceID := parts[0]
 	version := parts[1]
 
-	releaseChannel, err := cmd.Flags().GetString("release-channel")
+	mdClient, err := massdriver.NewClient()
 	if err != nil {
-		return err
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	// Convert release channel to ReleaseStrategy enum value
-	var releaseStrategy api.ReleaseStrategy
-	switch releaseChannel {
-	case "development":
-		releaseStrategy = api.ReleaseStrategyDevelopment
-	case "stable":
-		releaseStrategy = api.ReleaseStrategyStable
-	default:
-		return fmt.Errorf("invalid release-channel: must be 'stable' or 'development', got '%s'", releaseChannel)
-	}
-
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
-	}
-
-	input := api.UpdateInstanceInput{
-		Version:         version,
-		ReleaseStrategy: releaseStrategy,
-	}
-
-	updatedInstance, err := api.UpdateInstance(ctx, mdClient, instanceID, input)
+	updatedInstance, err := mdClient.Instances.Update(ctx, instanceID, instances.UpdateInput{Version: version})
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("✅ Instance `%s` version set successfully\n", updatedInstance.ID)
-	urlHelper, urlErr := api.NewURLHelper(ctx, mdClient)
-	if urlErr == nil {
-		fmt.Printf("🔗 %s\n", urlHelper.InstanceURL(updatedInstance.ID))
-	}
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(updatedInstance.ID))
 
 	return nil
 }
@@ -363,24 +349,28 @@ func runInstanceList(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	filter := api.InstancesFilter{
-		EnvironmentId: &api.IdFilter{Eq: environmentID},
-	}
-
-	instances, err := api.ListInstances(ctx, mdClient, &filter)
+	insts, err := mdClient.Instances.List(ctx, instances.ListInput{EnvironmentID: environmentID})
 	if err != nil {
 		return err
 	}
 
 	tbl := cli.NewTable("ID", "Name", "Bundle", "Status")
 
-	for _, instance := range instances {
-		tbl.AddRow(instance.ID, instance.Component.Name, instance.Bundle.Name, instance.Status)
+	for _, inst := range insts {
+		componentName := ""
+		if inst.Component != nil {
+			componentName = inst.Component.Name
+		}
+		bundleName := ""
+		if inst.Bundle != nil {
+			bundleName = inst.Bundle.Name
+		}
+		tbl.AddRow(inst.ID, componentName, bundleName, inst.Status)
 	}
 
 	tbl.Print()

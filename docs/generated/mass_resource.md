@@ -25,6 +25,7 @@ Resources represent infrastructure outputs and connections in Massdriver. They c
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
 * [mass resource create](/cli/commands/mass_resource_create)	 - Create a resource
+* [mass resource delete](/cli/commands/mass_resource_delete)	 - Delete a resource
 * [mass resource download](/cli/commands/mass_resource_download)	 - Download an resource in the specified format
 * [mass resource get](/cli/commands/mass_resource_get)	 - Get an resource from Massdriver
 * [mass resource update](/cli/commands/mass_resource_update)	 - Update an imported resource

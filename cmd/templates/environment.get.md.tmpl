@@ -14,15 +14,11 @@ No attributes
 {{- end}}
 
 ## Instances
-{{- with .Blueprint}}
 {{- if .Instances}}
 | Name | Bundle | Status |
 | ---- | ------ | ------ |
 {{- range .Instances}}
-| **{{.Name | mdEscape}}** | {{.Bundle.Name | mdEscape}} | {{.Status | mdEscape}} |
-{{- end}}
-{{- else}}
-No instances
+| **{{.Name | mdEscape}}** | {{with .Bundle}}{{.Name | mdEscape}}{{end}} | {{.Status | mdEscape}} |
 {{- end}}
 {{- else}}
 No instances

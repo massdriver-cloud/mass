@@ -14,30 +14,26 @@ import (
 	"time"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/cli"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/ocirepos"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
 //go:embed templates/repository.get.md.tmpl
 var repositoryTemplates embed.FS
 
-// artifactTypeAliases maps friendly names users might type into the canonical
-// OCI media type the server stores. The reverse mapping (`mediaTypeLabels`)
-// is used for display in `mass repository list`.
-var artifactTypeAliases = map[string]string{
-	"bundle": "application/vnd.massdriver.bundle.v1+json",
+// artifactTypeAliases maps the user-facing --type flag values to the SDK's
+// typed artifact-type enum. Today only "bundle" is supported by the platform.
+var artifactTypeAliases = map[string]ocirepos.ArtifactType{
+	"bundle": ocirepos.ArtifactTypeBundle,
 }
 
-var mediaTypeLabels = map[string]string{
-	"application/vnd.massdriver.bundle.v1+json": "bundle",
-}
-
-// createTypeEnums maps the friendly --type flag values into the
-// OciArtifactType enum the createOciRepo mutation expects.
-var createTypeEnums = map[string]api.OciArtifactType{
-	"bundle": api.OciArtifactTypeBundle,
+// artifactTypeLabels is the reverse lookup for table/output rendering — turns
+// the SDK's typed enum back into the friendly name the user typed.
+var artifactTypeLabels = map[ocirepos.ArtifactType]string{
+	ocirepos.ArtifactTypeBundle: "bundle",
 }
 
 // NewCmdRepository returns a cobra command for managing OCI repositories.
@@ -122,19 +118,17 @@ type repositoryListInput struct {
 func runRepositoryList(input *repositoryListInput) error {
 	ctx := context.Background()
 
-	mdClient, err := client.New()
+	mdClient, err := massdriver.NewClient()
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	filter, filterErr := buildOciReposFilter(input)
-	if filterErr != nil {
-		return filterErr
+	listInput, buildErr := buildOciReposListInput(input)
+	if buildErr != nil {
+		return buildErr
 	}
 
-	sort := buildOciReposSort(input.sortField, input.sortOrder)
-
-	repos, err := api.ListOciRepos(ctx, mdClient, filter, sort)
+	repos, err := mdClient.OciRepos.List(ctx, listInput)
 	if err != nil {
 		return fmt.Errorf("failed to list repositories: %w", err)
 	}
@@ -149,14 +143,7 @@ func runRepositoryList(input *repositoryListInput) error {
 	case "table":
 		tbl := cli.NewTable("Name", "Type", "Latest", "Created At")
 		for _, repo := range repos {
-			latest := ""
-			for _, rc := range repo.ReleaseChannels {
-				if rc.Name == "latest" {
-					latest = rc.Tag
-					break
-				}
-			}
-			tbl.AddRow(repo.Name, artifactTypeLabel(repo.ArtifactType), latest, repo.CreatedAt.Format("2006-01-02 15:04:05"))
+			tbl.AddRow(repo.Name, artifactTypeLabel(repo.ArtifactType), repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05"))
 		}
 		tbl.Print()
 	default:
@@ -166,69 +153,56 @@ func runRepositoryList(input *repositoryListInput) error {
 	return nil
 }
 
-func buildOciReposFilter(input *repositoryListInput) (*api.OciReposFilter, error) {
-	filter := &api.OciReposFilter{}
-	hasFilter := false
+func buildOciReposListInput(input *repositoryListInput) (ocirepos.ListInput, error) {
+	out := ocirepos.ListInput{
+		Search: input.search,
+	}
 
 	if input.kind != "" {
-		mediaType, resolveErr := resolveArtifactType(input.kind)
+		artifactType, resolveErr := resolveArtifactType(input.kind)
 		if resolveErr != nil {
-			return nil, resolveErr
+			return out, resolveErr
 		}
-		filter.ArtifactType = mediaType
-		hasFilter = true
+		out.ArtifactType = artifactType
 	}
-	if input.search != "" {
-		filter.Search = input.search
-		hasFilter = true
-	}
+
 	switch {
 	case input.name != "" && input.prefix != "":
-		return nil, errors.New("--name and --prefix are mutually exclusive")
+		return out, errors.New("--name and --prefix are mutually exclusive")
 	case input.name != "":
-		filter.Name = &api.OciRepoNameFilter{Eq: input.name}
-		hasFilter = true
+		out.NameEquals = input.name
 	case input.prefix != "":
-		filter.Name = &api.OciRepoNameFilter{StartsWith: input.prefix}
-		hasFilter = true
+		out.NameStartsWith = input.prefix
 	}
-	if !hasFilter {
-		return nil, nil //nolint:nilnil // explicit nil filter is the no-filter signal to the API
+
+	if input.sortField != "" {
+		field := ocirepos.SortByName
+		if strings.EqualFold(input.sortField, "created_at") {
+			field = ocirepos.SortByCreatedAt
+		}
+		order := ocirepos.SortAsc
+		if strings.EqualFold(input.sortOrder, "desc") {
+			order = ocirepos.SortDesc
+		}
+		out.SortBy = field
+		out.SortOrder = order
 	}
-	return filter, nil
+
+	return out, nil
 }
 
-func buildOciReposSort(sortField, sortOrder string) *api.OciReposSort {
-	if sortField == "" {
-		return nil
-	}
-	field := api.OciReposSortFieldName
-	if strings.EqualFold(sortField, "created_at") {
-		field = api.OciReposSortFieldCreatedAt
-	}
-	order := api.SortOrderAsc
-	if strings.EqualFold(sortOrder, "desc") {
-		order = api.SortOrderDesc
-	}
-	return &api.OciReposSort{Field: field, Order: order}
-}
-
-func resolveArtifactType(s string) (string, error) {
-	if mediaType, ok := artifactTypeAliases[strings.ToLower(s)]; ok {
-		return mediaType, nil
-	}
-	if strings.Contains(s, "/") {
-		// already a media type
-		return s, nil
+func resolveArtifactType(s string) (ocirepos.ArtifactType, error) {
+	if at, ok := artifactTypeAliases[strings.ToLower(s)]; ok {
+		return at, nil
 	}
 	return "", fmt.Errorf("unknown artifact type %q (valid: bundle)", s)
 }
 
-func artifactTypeLabel(mediaType string) string {
-	if label, ok := mediaTypeLabels[mediaType]; ok {
+func artifactTypeLabel(at ocirepos.ArtifactType) string {
+	if label, ok := artifactTypeLabels[at]; ok {
 		return label
 	}
-	return mediaType
+	return string(at)
 }
 
 func runRepositoryGet(cmd *cobra.Command, args []string) error {
@@ -246,14 +220,14 @@ func runRepositoryGet(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	repo, getErr := api.GetOciRepo(ctx, mdClient, name)
-	if getErr != nil {
-		return getErr
+	repo, err := mdClient.OciRepos.Get(ctx, name)
+	if err != nil {
+		return err
 	}
 
 	switch outputFormat {
@@ -272,7 +246,7 @@ func runRepositoryGet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func renderRepository(repo *api.OciRepo, tagCount int) error {
+func renderRepository(repo *ocirepos.OciRepo, tagCount int) error {
 	tmplBytes, err := repositoryTemplates.ReadFile("templates/repository.get.md.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to read template: %w", err)
@@ -289,9 +263,9 @@ func renderRepository(repo *api.OciRepo, tagCount int) error {
 	}
 
 	data := struct {
-		*api.OciRepo
+		*ocirepos.OciRepo
 		TypeLabel  string
-		ShownTags  []api.OciRepoTag
+		ShownTags  []types.OciRepoTag
 		TotalTags  int
 		Truncated  bool
 		FormatTime func(time.Time) string
@@ -336,9 +310,9 @@ func runRepositoryCreate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	return createOciRepoCommon(ctx, mdClient, name, typeFlag, attrs)
@@ -346,24 +320,24 @@ func runRepositoryCreate(cmd *cobra.Command, args []string) error {
 
 // createOciRepoCommon is shared by `mass repository create` and
 // `mass bundle create`. It resolves the friendly type name into the
-// OciArtifactType enum, calls the API, and prints a success line.
-func createOciRepoCommon(ctx context.Context, mdClient *client.Client, name, typeFlag string, attrs map[string]string) error {
-	enumValue, ok := createTypeEnums[strings.ToLower(typeFlag)]
-	if !ok {
-		valid := make([]string, 0, len(createTypeEnums))
-		for k := range createTypeEnums {
+// ArtifactType enum, calls the SDK, and prints a success line.
+func createOciRepoCommon(ctx context.Context, mdClient *massdriver.Client, name, typeFlag string, attrs map[string]string) error {
+	artifactType, resolveErr := resolveArtifactType(typeFlag)
+	if resolveErr != nil {
+		valid := make([]string, 0, len(artifactTypeAliases))
+		for k := range artifactTypeAliases {
 			valid = append(valid, k)
 		}
 		return fmt.Errorf("unknown artifact type %q (valid: %s)", typeFlag, strings.Join(valid, ", "))
 	}
 
-	created, createErr := api.CreateOciRepo(ctx, mdClient, api.CreateOciRepoInput{
-		Id:           name,
-		ArtifactType: enumValue,
+	created, err := mdClient.OciRepos.Create(ctx, ocirepos.CreateInput{
+		ID:           name,
+		ArtifactType: artifactType,
 		Attributes:   cli.AttributesToAnyMap(attrs),
 	})
-	if createErr != nil {
-		return createErr
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf("✅ Repository `%s` created (type: %s)\n", created.Name, artifactTypeLabel(created.ArtifactType))
@@ -381,28 +355,28 @@ func runRepositoryUpdate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	current, getErr := api.GetOciRepo(ctx, mdClient, name)
-	if getErr != nil {
-		return getErr
+	current, err := mdClient.OciRepos.Get(ctx, name)
+	if err != nil {
+		return err
 	}
 
 	var attributes map[string]any
 	if cmd.Flags().Changed("attributes") {
 		attributes = cli.AttributesToAnyMap(attrs)
 	} else {
-		attributes = cli.StringMapToAnyMap(current.Attributes)
+		attributes = current.Attributes
 	}
 
-	updated, updateErr := api.UpdateOciRepo(ctx, mdClient, name, api.UpdateOciRepoInput{
+	updated, err := mdClient.OciRepos.Update(ctx, name, ocirepos.UpdateInput{
 		Attributes: attributes,
 	})
-	if updateErr != nil {
-		return updateErr
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf("✅ Repository `%s` updated\n", updated.Name)
@@ -420,9 +394,9 @@ func runRepositoryDelete(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	if !force {
@@ -437,9 +411,9 @@ func runRepositoryDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	deleted, deleteErr := api.DeleteOciRepo(ctx, mdClient, name)
-	if deleteErr != nil {
-		return deleteErr
+	deleted, err := mdClient.OciRepos.Delete(ctx, name)
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf("Repository %s deleted successfully\n", deleted.Name)

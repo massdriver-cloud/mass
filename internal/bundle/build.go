@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/internal/provisioners"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-// Build dereferences schemas, writes them to disk, and exports provisioner inputs for all steps.
-func (b *Bundle) Build(buildPath string, mdClient *client.Client) error {
-	err := b.DereferenceSchemas(buildPath, mdClient)
+// Build dereferences schemas (using resolver for massdriver $refs), writes
+// them to disk, and exports provisioner inputs for all steps.
+func (b *Bundle) Build(buildPath string, resolver SchemaResolver) error {
+	err := b.DereferenceSchemas(buildPath, resolver)
 	if err != nil {
 		return err
 	}

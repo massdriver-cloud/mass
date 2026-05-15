@@ -5,9 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql/gqltest"
 )
 
 func TestRead(t *testing.T) {
@@ -44,11 +45,15 @@ func TestRead(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mdClient := client.Client{
-				GQLv2: gqlmock.NewClientWithSingleJSONResponse(map[string]any{"data": map[string]any{}}),
+			mdClient, err := massdriver.NewClient(
+				massdriver.WithGQLClient(gqltest.NewClient()),
+				massdriver.WithOrganizationID("test-org"),
+			)
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			got, err := resourcetype.Read(t.Context(), &mdClient, tc.file)
+			got, err := resourcetype.Read(t.Context(), mdClient, tc.file)
 			if err != nil {
 				t.Fatal(err)
 			}

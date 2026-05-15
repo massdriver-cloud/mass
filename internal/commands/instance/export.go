@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/bundle"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	sdkbundle "github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/bundle"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"oras.land/oras-go/v2/content/file"
 )
 
@@ -34,7 +34,7 @@ type BundleFetcher interface {
 
 // ResourceLister enumerates the output resources produced by an instance.
 type ResourceLister interface {
-	ListInstanceResources(ctx context.Context, instanceID string) ([]api.InstanceResource, error)
+	ListInstanceResources(ctx context.Context, instanceID string) ([]types.Resource, error)
 }
 
 // ResourceExporter retrieves a resource's rendered payload in the requested format.
@@ -71,12 +71,12 @@ func (dfs *DefaultFileSystem) WriteFile(filename string, data []byte, perm os.Fi
 
 // DefaultBundleFetcher is the production BundleFetcher that pulls bundles via OCI.
 type DefaultBundleFetcher struct {
-	Client *client.Client
+	Client *massdriver.Client
 }
 
 // FetchBundle downloads the named bundle at the given version into directory using OCI pull.
 func (dbf *DefaultBundleFetcher) FetchBundle(ctx context.Context, bundleName, version, directory string) error {
-	repo, repoErr := sdkbundle.GetBundleRepository(dbf.Client, bundleName)
+	repo, repoErr := dbf.Client.OciRepos.Target(bundleName)
 	if repoErr != nil {
 		return repoErr
 	}
@@ -97,24 +97,28 @@ func (dbf *DefaultBundleFetcher) FetchBundle(ctx context.Context, bundleName, ve
 	return pullErr
 }
 
-// DefaultResourceLister is the production ResourceLister backed by the v2 API.
+// DefaultResourceLister is the production ResourceLister backed by the v2 SDK.
 type DefaultResourceLister struct {
-	Client *client.Client
+	Client *massdriver.Client
 }
 
 // ListInstanceResources returns every output resource produced by the named instance.
-func (drl *DefaultResourceLister) ListInstanceResources(ctx context.Context, instanceID string) ([]api.InstanceResource, error) {
-	return api.ListInstanceResources(ctx, drl.Client, instanceID)
+func (drl *DefaultResourceLister) ListInstanceResources(ctx context.Context, instanceID string) ([]types.Resource, error) {
+	inst, err := drl.Client.Instances.Get(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	return inst.Resources, nil
 }
 
-// DefaultResourceExporter is the production ResourceExporter backed by the v2 API.
+// DefaultResourceExporter is the production ResourceExporter backed by the v2 SDK.
 type DefaultResourceExporter struct {
-	Client *client.Client
+	Client *massdriver.Client
 }
 
 // ExportResource returns the resource's payload rendered in the requested format.
 func (dre *DefaultResourceExporter) ExportResource(ctx context.Context, resourceID, format string) (string, error) {
-	result, err := api.ExportResource(ctx, dre.Client, resourceID, format)
+	result, err := dre.Client.Resources.Export(ctx, resourceID, format)
 	if err != nil {
 		return "", err
 	}
@@ -123,34 +127,46 @@ func (dre *DefaultResourceExporter) ExportResource(ctx context.Context, resource
 
 // DefaultStateFetcher is the production StateFetcher that retrieves Terraform state by URL.
 type DefaultStateFetcher struct {
-	Client *client.Client
+	Client *massdriver.Client
 }
 
 // FetchState retrieves the Terraform state at the given URL using the Massdriver-authenticated HTTP client.
 func (dsf *DefaultStateFetcher) FetchState(ctx context.Context, stateURL string) (any, error) {
-	var result any
-	resp, requestErr := dsf.Client.HTTP.R().
-		SetContext(ctx).
-		SetResult(&result).
-		Get(stateURL)
-
-	if requestErr != nil {
-		return nil, requestErr
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, stateURL, nil)
+	if err != nil {
+		return nil, err
 	}
-	if resp.IsError() {
-		return nil, fmt.Errorf("error fetching state: %s", resp.Status())
+	if auth := dsf.Client.Config().Credentials.AuthHeaderValue; auth != "" {
+		req.Header.Set("Authorization", auth)
 	}
 
-	if string(resp.Body()) == emptyStateResponse {
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("error fetching state: %s", resp.Status)
+	}
+	if string(body) == emptyStateResponse {
 		return nil, ErrNoState
 	}
 
+	var result any
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
 // RunExport fetches an instance by slug or ID and exports it to the current directory.
-func RunExport(ctx context.Context, mdClient *client.Client, instanceSlugOrID string) error {
-	inst, err := api.GetInstance(ctx, mdClient, instanceSlugOrID)
+func RunExport(ctx context.Context, mdClient *massdriver.Client, instanceSlugOrID string) error {
+	inst, err := mdClient.Instances.Get(ctx, instanceSlugOrID)
 	if err != nil {
 		return fmt.Errorf("failed to get instance %s: %w", instanceSlugOrID, err)
 	}
@@ -159,7 +175,7 @@ func RunExport(ctx context.Context, mdClient *client.Client, instanceSlugOrID st
 }
 
 // ExportInstance exports an instance to baseDirectory using default production dependencies.
-func ExportInstance(ctx context.Context, mdClient *client.Client, inst *api.Instance, baseDirectory string) error {
+func ExportInstance(ctx context.Context, mdClient *massdriver.Client, inst *types.Instance, baseDirectory string) error {
 	config := ExportInstanceConfig{
 		FileSystem:       &DefaultFileSystem{},
 		BundleFetcher:    &DefaultBundleFetcher{Client: mdClient},
@@ -172,7 +188,7 @@ func ExportInstance(ctx context.Context, mdClient *client.Client, inst *api.Inst
 }
 
 // ExportInstanceWithConfig exports an instance using the provided configuration and dependency overrides.
-func ExportInstanceWithConfig(ctx context.Context, config *ExportInstanceConfig, inst *api.Instance, baseDirectory string) error {
+func ExportInstanceWithConfig(ctx context.Context, config *ExportInstanceConfig, inst *types.Instance, baseDirectory string) error {
 	if validateErr := validateInstanceExport(inst); validateErr != nil {
 		return fmt.Errorf("instance validation failed: %w", validateErr)
 	}
@@ -203,7 +219,7 @@ func ExportInstanceWithConfig(ctx context.Context, config *ExportInstanceConfig,
 	}
 	for _, r := range resources {
 		if err := writeResourceWithConfig(ctx, config, &r, directory); err != nil {
-			return fmt.Errorf("failed to write resource %s for instance %s: %w", r.Resource.Name, inst.ID, err)
+			return fmt.Errorf("failed to write resource %s for instance %s: %w", r.Name, inst.ID, err)
 		}
 	}
 
@@ -214,7 +230,7 @@ func ExportInstanceWithConfig(ctx context.Context, config *ExportInstanceConfig,
 	return nil
 }
 
-func validateInstanceExport(inst *api.Instance) error {
+func validateInstanceExport(inst *types.Instance) error {
 	if inst == nil {
 		return errors.New("instance is nil")
 	}
@@ -255,27 +271,27 @@ func writeParamsFileWithConfig(config *ExportInstanceConfig, params map[string]a
 	return config.FileSystem.WriteFile(paramsFilePath, data, 0644)
 }
 
-func writeBundleWithConfig(ctx context.Context, config *ExportInstanceConfig, inst *api.Instance, directory string) error {
+func writeBundleWithConfig(ctx context.Context, config *ExportInstanceConfig, inst *types.Instance, directory string) error {
 	return config.BundleFetcher.FetchBundle(ctx, inst.Bundle.Name, inst.DeployedVersion, directory)
 }
 
-func writeResourceWithConfig(ctx context.Context, config *ExportInstanceConfig, r *api.InstanceResource, directory string) error {
+func writeResourceWithConfig(ctx context.Context, config *ExportInstanceConfig, r *types.Resource, directory string) error {
 	fileName := fmt.Sprintf("artifact_%s.json", r.Field)
 	filePath := filepath.Join(directory, fileName)
 
-	data, err := config.ResourceExporter.ExportResource(ctx, r.Resource.ID, "json")
+	data, err := config.ResourceExporter.ExportResource(ctx, r.ID, "json")
 	if err != nil {
-		return fmt.Errorf("failed to export resource %s: %w", r.Resource.Name, err)
+		return fmt.Errorf("failed to export resource %s: %w", r.Name, err)
 	}
 
 	if err := config.FileSystem.WriteFile(filePath, []byte(data), 0644); err != nil {
-		return fmt.Errorf("failed to write resource data for %s: %w", r.Resource.Name, err)
+		return fmt.Errorf("failed to write resource data for %s: %w", r.Name, err)
 	}
 
 	return nil
 }
 
-func writeStateWithConfig(ctx context.Context, config *ExportInstanceConfig, inst *api.Instance, directory string) error {
+func writeStateWithConfig(ctx context.Context, config *ExportInstanceConfig, inst *types.Instance, directory string) error {
 	for _, statePath := range inst.StatePaths {
 		stateFileName := statePath.StepName + ".tfstate.json"
 		stateFilePath := filepath.Join(directory, stateFileName)

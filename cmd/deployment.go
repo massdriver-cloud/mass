@@ -11,14 +11,14 @@ import (
 	"os/signal"
 	"syscall"
 	"text/template"
-	"time"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/cli"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
@@ -81,12 +81,12 @@ func runDeploymentGet(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	deployment, err := api.GetDeployment(ctx, mdClient, deploymentID)
+	deployment, err := mdClient.Deployments.Get(ctx, deploymentID)
 	if err != nil {
 		return err
 	}
@@ -117,128 +117,65 @@ func runDeploymentList(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	filter := &api.DeploymentsFilter{
-		InstanceId: &api.IdFilter{Eq: instanceID},
-	}
-	sort := &api.DeploymentsSort{
-		Field: api.DeploymentsSortFieldCreatedAt,
-		Order: api.SortOrderDesc,
-	}
-	deployments, err := api.ListDeployments(ctx, mdClient, filter, sort, limit)
-	if err != nil {
-		return err
+	// SDK's List auto-paginates without a total cap; we want a total cap, so
+	// drive Iter and stop after `limit` items.
+	listInput := deployments.ListInput{
+		InstanceID: instanceID,
+		SortBy:     deployments.SortByCreatedAt,
+		SortOrder:  deployments.SortDesc,
 	}
 
 	tbl := cli.NewTable("ID", "Action", "Status", "Version", "Created At", "By", "Message")
-	for _, d := range deployments {
+	count := 0
+	for d, iterErr := range mdClient.Deployments.Iter(ctx, listInput) {
+		if iterErr != nil {
+			return iterErr
+		}
+		if limit > 0 && count >= limit {
+			break
+		}
 		tbl.AddRow(d.ID, d.Action, d.Status, d.Version, d.CreatedAt, d.DeployedBy, cli.TruncateString(d.Message, 40))
+		count++
 	}
 	tbl.Print()
 
 	return nil
 }
 
-// terminalDeploymentStatuses are the deployment lifecycle states past which no
-// further logs will be emitted.
-var terminalDeploymentStatuses = map[string]struct{}{
-	"COMPLETED": {},
-	"FAILED":    {},
-	"ABORTED":   {},
-	"REJECTED":  {},
-}
-
 func runDeploymentLogs(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
 	deploymentID := args[0]
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
-	}
-
-	deployment, err := api.GetDeployment(ctx, mdClient, deploymentID)
-	if err != nil {
-		return fmt.Errorf("error getting deployment: %w", err)
-	}
-
-	if _, terminal := terminalDeploymentStatuses[deployment.Status]; terminal {
-		// Deployment finished; just dump the stored log batches and exit.
-		return printDeploymentBackfill(ctx, mdClient, deploymentID)
-	}
-
-	// Still running — open the subscription first so we don't miss batches that
-	// land between the backfill fetch and the subscribe call. The buffered
-	// channel inside the subscription will hold them until we drain it.
-	streamCtx, cancel := signalContext(ctx)
+	ctx, cancel := signalContext(context.Background())
 	defer cancel()
 
-	stream, closeStream, err := api.SubscribeDeploymentLogs(streamCtx, mdClient, deploymentID)
+	mdClient, err := massdriver.NewClient()
 	if err != nil {
-		// If streaming setup fails (e.g., basic-auth instead of PAT) fall back
-		// to whatever's already stored.
-		fmt.Fprintf(os.Stderr, "warning: log streaming unavailable: %v\n", err)
-		return printDeploymentBackfill(ctx, mdClient, deploymentID)
-	}
-	defer closeStream()
-
-	if err := printDeploymentBackfill(ctx, mdClient, deploymentID); err != nil {
-		return err
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	// Poll status in the background; close the stream when we hit terminal so
-	// the range loop below unblocks.
-	statusErrCh := make(chan error, 1)
-	go func() {
-		statusErrCh <- pollUntilTerminal(streamCtx, mdClient, deploymentID, closeStream)
-	}()
-
-	for log := range stream {
-		fmt.Fprint(os.Stdout, log.Message)
-	}
-
-	if err := <-statusErrCh; err != nil && !errors.Is(err, context.Canceled) {
-		return err
-	}
-	return nil
-}
-
-func printDeploymentBackfill(ctx context.Context, mdClient *client.Client, deploymentID string) error {
-	logs, err := api.GetDeploymentLogs(ctx, mdClient, deploymentID)
-	if err != nil {
-		return fmt.Errorf("error getting deployment logs: %w", err)
-	}
-	for _, log := range logs {
-		fmt.Fprint(os.Stdout, log.Message)
-	}
-	return nil
-}
-
-// pollUntilTerminal polls the deployment status every second until it
-// reaches a terminal state, then invokes done() to tear down the streaming
-// subscription. Returns ctx.Err() if cancelled before terminal.
-func pollUntilTerminal(ctx context.Context, mdClient *client.Client, deploymentID string, done func()) error {
-	const pollInterval = 1 * time.Second
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(pollInterval):
-		}
-		dep, err := api.GetDeployment(ctx, mdClient, deploymentID)
+	// TailLogs collapses backfill + terminal-check + live streaming into one call.
+	tailErr := mdClient.Deployments.TailLogs(ctx, deploymentID, os.Stdout)
+	if errors.Is(tailErr, deployments.ErrStreamingRequiresPAT) {
+		// Fall back to a one-shot static-log dump so the user still gets the
+		// available history. Streaming would require a personal access token.
+		fmt.Fprintln(os.Stderr, "warning: log streaming requires a personal access token (mds_*/md_*); showing static logs instead")
+		backfill, err := mdClient.Deployments.GetLogs(ctx, deploymentID)
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting deployment logs: %w", err)
 		}
-		if _, terminal := terminalDeploymentStatuses[dep.Status]; terminal {
-			done()
-			return nil
-		}
+		fmt.Fprint(os.Stdout, backfill)
+		return nil
 	}
+	if tailErr != nil && !errors.Is(tailErr, context.Canceled) {
+		return tailErr
+	}
+	return nil
 }
 
 // signalContext returns a derived context that cancels on SIGINT/SIGTERM, so
@@ -247,7 +184,8 @@ func signalContext(parent context.Context) (context.Context, context.CancelFunc)
 	return signal.NotifyContext(parent, syscall.SIGINT, syscall.SIGTERM)
 }
 
-func renderDeployment(deployment *api.Deployment) error {
+//nolint:dupl // parallel template-render shape with renderInstance; consolidating would couple unrelated commands
+func renderDeployment(deployment *types.Deployment) error {
 	tmplBytes, err := deploymentTemplates.ReadFile("templates/deployment.get.md.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to read template: %w", err)
@@ -258,8 +196,20 @@ func renderDeployment(deployment *api.Deployment) error {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	paramsJSON := "{}"
+	if deployment.Params != nil {
+		if b, marshalErr := json.MarshalIndent(deployment.Params, "", "  "); marshalErr == nil {
+			paramsJSON = string(b)
+		}
+	}
+
+	data := struct {
+		*types.Deployment
+		ParamsJSON string
+	}{Deployment: deployment, ParamsJSON: paramsJSON}
+
 	var buf bytes.Buffer
-	if renderErr := tmpl.Execute(&buf, deployment); renderErr != nil {
+	if renderErr := tmpl.Execute(&buf, data); renderErr != nil {
 		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 

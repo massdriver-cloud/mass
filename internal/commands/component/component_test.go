@@ -3,8 +3,8 @@ package component_test
 import (
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands/component"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
 func TestSplitComponentID(t *testing.T) {
@@ -74,12 +74,14 @@ func TestParseComponentField(t *testing.T) {
 }
 
 func TestFindLink(t *testing.T) {
-	links := []api.Link{
-		{ID: "wrong-link", FromField: "other", ToField: "database"},
-		{ID: "target-link", FromField: "authentication", ToField: "database"},
+	from := &types.Component{ID: "ecomm-db"}
+	to := &types.Component{ID: "ecomm-app"}
+	links := []types.Link{
+		{ID: "wrong-link", FromField: "other", ToField: "database", FromComponent: from, ToComponent: to},
+		{ID: "target-link", FromField: "authentication", ToField: "database", FromComponent: from, ToComponent: to},
 	}
 
-	got, err := component.FindLink(links, "authentication", "database")
+	got, err := component.FindLink(links, "ecomm-db", "authentication", "ecomm-app", "database")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -87,7 +89,7 @@ func TestFindLink(t *testing.T) {
 		t.Errorf("got %q, want target-link", got.ID)
 	}
 
-	if _, err := component.FindLink(links, "missing", "database"); err == nil {
+	if _, err := component.FindLink(links, "ecomm-db", "missing", "ecomm-app", "database"); err == nil {
 		t.Error("expected error when no link matches, got none")
 	}
 }

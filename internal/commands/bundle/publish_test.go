@@ -5,17 +5,15 @@ import (
 	"testing"
 
 	bundlepkg "github.com/massdriver-cloud/mass/internal/bundle"
-	"github.com/massdriver-cloud/mass/internal/gqlmock"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetVersion(t *testing.T) {
+func TestResolveVersion(t *testing.T) {
 	b := &bundlepkg.Bundle{Name: "test-bundle", Version: "1.0.0"}
 
 	tests := []struct {
 		name               string
-		existingVersions   []map[string]string
+		existingTags       []string
 		developmentRelease bool
 		wantErr            string
 		wantRegexp         string
@@ -23,25 +21,25 @@ func TestGetVersion(t *testing.T) {
 	}{
 		{
 			name:               "existing version non-dev",
-			existingVersions:   []map[string]string{{"tag": "1.0.0"}},
+			existingTags:       []string{"1.0.0"},
 			developmentRelease: false,
 			wantErr:            "version 1.0.0 already exists for bundle test-bundle",
 		},
 		{
 			name:               "existing version development release",
-			existingVersions:   []map[string]string{{"tag": "1.0.0"}},
+			existingTags:       []string{"1.0.0"},
 			developmentRelease: true,
 			wantErr:            "version 1.0.0 already exists for bundle test-bundle - cannot publish a development release for an existing version",
 		},
 		{
 			name:               "valid version",
-			existingVersions:   []map[string]string{},
+			existingTags:       []string{},
 			developmentRelease: false,
 			wantVersion:        "1.0.0",
 		},
 		{
 			name:               "valid development release version",
-			existingVersions:   []map[string]string{},
+			existingTags:       []string{},
 			developmentRelease: true,
 			wantRegexp:         `^1\.0\.0-dev\.\d{8}T\d{6}Z$`,
 		},
@@ -49,21 +47,7 @@ func TestGetVersion(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Prepare a mock GraphQL client that returns the expected bundle versions
-			gqlClient := gqlmock.NewClientWithSingleJSONResponse(map[string]any{
-				"data": map[string]any{
-					"ociRepo": map[string]any{
-						"tags": map[string]any{
-							"items": tc.existingVersions,
-						},
-					},
-				},
-			})
-			mdClient := client.Client{
-				GQLv2: gqlClient,
-			}
-
-			ver, err := getVersion(t.Context(), &mdClient, b, tc.developmentRelease)
+			ver, err := resolveVersion(b, tc.existingTags, tc.developmentRelease)
 			if tc.wantErr != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tc.wantErr)

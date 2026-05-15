@@ -4,84 +4,43 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/commands/resource"
-	"github.com/massdriver-cloud/mass/internal/gqlmock"
 
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
 func TestResourceUpdate(t *testing.T) {
-	gqlClient := gqlmock.NewClientWithJSONResponseMap(map[string]any{
-		"updateResource": map[string]any{
-			"data": map[string]any{
-				"updateResource": map[string]any{
-					"result": map[string]any{
-						"id":   "resource-id",
-						"name": "resource-name",
-					},
-					"successful": true,
-				},
-			},
-		},
-	})
-
-	mdClient := client.Client{
-		GQLv2: gqlClient,
+	api := &fakeResourceAPI{
+		resource: &types.Resource{ID: "resource-id", Name: "resource-name"},
 	}
 
-	got, err := resource.RunUpdate(t.Context(), &mdClient, "resource-id", "resource-name", "testdata/resource.json")
-
+	got, err := resource.RunUpdate(t.Context(), api, "resource-id", "resource-name", "testdata/resource.json")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	want := "resource-id"
-	if got != want {
-		t.Errorf("got %s , wanted %s", got, want)
+	if got != "resource-id" {
+		t.Errorf("got %s, wanted resource-id", got)
+	}
+	if api.gotUpdateInput.Name != "resource-name" {
+		t.Errorf("got name %q, wanted resource-name", api.gotUpdateInput.Name)
 	}
 }
 
 func TestResourceUpdateWithoutName(t *testing.T) {
 	// When no name is provided, RunUpdate fetches the existing resource first.
-	responses := []any{
-		gqlmock.MockQueryResponse("resource", map[string]any{
-			"id":      "resource-id",
-			"name":    "existing-name",
-			"type":    "massdriver/aws-s3",
-			"field":   "",
-			"payload": map[string]any{},
-			"formats": []string{},
-			"origin":  "IMPORTED",
-			"resourceDefinition": map[string]any{
-				"id":    "def-id",
-				"name":  "aws-s3",
-				"label": "AWS S3",
-			},
-		}),
-		map[string]any{
-			"data": map[string]any{
-				"updateResource": map[string]any{
-					"result": map[string]any{
-						"id":   "resource-id",
-						"name": "existing-name",
-					},
-					"successful": true,
-				},
-			},
-		},
+	api := &fakeResourceAPI{
+		resource: &types.Resource{ID: "resource-id", Name: "existing-name"},
 	}
 
-	mdClient := client.Client{
-		GQLv2: gqlmock.NewClientWithJSONResponseArray(responses),
-	}
-
-	got, err := resource.RunUpdate(t.Context(), &mdClient, "resource-id", "", "testdata/resource.json")
-
+	got, err := resource.RunUpdate(t.Context(), api, "resource-id", "", "testdata/resource.json")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	want := "resource-id"
-	if got != want {
-		t.Errorf("got %s , wanted %s", got, want)
+	if got != "resource-id" {
+		t.Errorf("got %s, wanted resource-id", got)
+	}
+	if api.gotUpdateInput.Name != "existing-name" {
+		t.Errorf("got name %q, wanted existing-name", api.gotUpdateInput.Name)
 	}
 }

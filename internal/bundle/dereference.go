@@ -1,16 +1,23 @@
 package bundle
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
-// DereferenceSchemas resolves all $ref entries in the bundle's schemas using the API client.
-func (b *Bundle) DereferenceSchemas(path string, mdClient *client.Client) error {
+// SchemaResolver fetches a published resource-type schema by name (returned as
+// a generic map). The bundle dereferencer invokes it for every massdriver $ref
+// encountered while walking the bundle's schemas.
+type SchemaResolver func(ctx context.Context, name string) (map[string]any, error)
+
+// DereferenceSchemas resolves all $ref entries in the bundle's schemas. Massdriver
+// $refs are looked up via the supplied resolver — pass
+// [resourcetype.NewMassdriverResolver] in production, or a hand-rolled stub in
+// tests.
+func (b *Bundle) DereferenceSchemas(path string, resolver SchemaResolver) error {
 	cwd := filepath.Dir(path)
 
 	// The stripID is a hack to get around the issue of the UI choking if the params schema has 2 or more of the same $id in it.
@@ -34,7 +41,7 @@ func (b *Bundle) DereferenceSchemas(path string, mdClient *client.Client) error 
 			}
 		}
 
-		dereferencedSchema, err := resourcetype.DereferenceSchema(*task.schema, resourcetype.DereferenceOptions{Client: mdClient, Cwd: cwd, StripID: task.stripID})
+		dereferencedSchema, err := resourcetype.DereferenceSchema(*task.schema, resourcetype.DereferenceOptions{Resolver: resolver, Cwd: cwd, StripID: task.stripID})
 
 		if err != nil {
 			return err

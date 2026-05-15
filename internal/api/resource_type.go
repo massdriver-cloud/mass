@@ -2,118 +2,199 @@ package api
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/Khan/genqlient/graphql"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql/scalars"
 )
 
-// ResourceType defines a category of resource (e.g., "aws-iam-role", "kubernetes-cluster").
-// Replaces the v0 concept of "artifact definition".
+// ResourceType mirrors the v2 GraphQL schema's resource-type record. Field
+// names match the JSON wire shape so handcrafted GraphQL responses decode
+// without bespoke mapping.
 type ResourceType struct {
-	ID                    string         `json:"id" mapstructure:"id"`
-	Name                  string         `json:"name" mapstructure:"name"`
-	Icon                  string         `json:"icon,omitempty" mapstructure:"icon"`
-	ConnectionOrientation string         `json:"connectionOrientation" mapstructure:"connectionOrientation"`
-	Schema                map[string]any `json:"schema,omitempty" mapstructure:"schema"`
-	CreatedAt             time.Time      `json:"createdAt,omitzero" mapstructure:"createdAt"`
-	UpdatedAt             time.Time      `json:"updatedAt,omitzero" mapstructure:"updatedAt"`
+	ID                    string         `json:"id"`
+	Name                  string         `json:"name"`
+	Icon                  string         `json:"icon,omitempty"`
+	ConnectionOrientation string         `json:"connectionOrientation"`
+	Schema                map[string]any `json:"schema,omitempty"`
+	CreatedAt             time.Time      `json:"createdAt"`
+	UpdatedAt             time.Time      `json:"updatedAt"`
 }
 
-// GetResourceType retrieves a resource type by ID.
-func GetResourceType(ctx context.Context, mdClient *client.Client, id string) (*ResourceType, error) {
-	response, err := getResourceType(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
+// PublishResourceTypeInput is the input for PublishResourceType.
+type PublishResourceTypeInput struct {
+	Schema map[string]any `json:"schema"`
+}
+
+// resourceTypeMutationResult is the wrapped payload every resource-type
+// mutation returns.
+type resourceTypeMutationResult struct {
+	Result     *ResourceType     `json:"result"`
+	Successful bool              `json:"successful"`
+	Messages   []mutationMessage `json:"messages"`
+}
+
+const getResourceTypeQuery = `query getResourceType($organizationId: ID!, $id: ID!) {
+  resourceType(organizationId: $organizationId, id: $id) {
+    id
+    name
+    icon
+    connectionOrientation
+    schema
+    createdAt
+    updatedAt
+  }
+}`
+
+const listResourceTypesQuery = `query listResourceTypes($organizationId: ID!) {
+  resourceTypes(organizationId: $organizationId) {
+    items {
+      id
+      name
+      icon
+      connectionOrientation
+      createdAt
+      updatedAt
+    }
+  }
+}`
+
+const publishResourceTypeMutation = `mutation publishResourceType($organizationId: ID!, $input: PublishResourceTypeInput!) {
+  publishResourceType(organizationId: $organizationId, input: $input) {
+    result {
+      id
+      name
+      icon
+      connectionOrientation
+      schema
+      createdAt
+      updatedAt
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}`
+
+const deleteResourceTypeMutation = `mutation deleteResourceType($organizationId: ID!, $id: ID!) {
+  deleteResourceType(organizationId: $organizationId, id: $id) {
+    result {
+      id
+      name
+    }
+    successful
+    messages {
+      code
+      field
+      message
+    }
+  }
+}`
+
+// GetResourceType fetches a single resource type by name.
+func GetResourceType(ctx context.Context, mdClient *massdriver.Client, name string) (*ResourceType, error) {
+	cfg := mdClient.Config()
+	var resp struct {
+		ResourceType *ResourceType `json:"resourceType"`
+	}
+	req := &graphql.Request{
+		OpName: "getResourceType",
+		Query:  getResourceTypeQuery,
+		Variables: map[string]any{
+			"organizationId": cfg.OrganizationID,
+			"id":             name,
+		},
+	}
+	if err := gqlClient(mdClient).MakeRequest(ctx, req, &graphql.Response{Data: &resp}); err != nil {
+		return nil, fmt.Errorf("get resource type %s: %w", name, err)
+	}
+	if resp.ResourceType == nil {
+		return nil, fmt.Errorf("get resource type %s: %w", name, gql.ErrNotFound)
+	}
+	return resp.ResourceType, nil
+}
+
+// ListResourceTypes fetches all resource types in the configured organization.
+// The legacy CLI supported a filter argument; the few callsites that survive
+// the v2 migration only need the unfiltered list.
+func ListResourceTypes(ctx context.Context, mdClient *massdriver.Client) ([]ResourceType, error) {
+	cfg := mdClient.Config()
+	var resp struct {
+		ResourceTypes struct {
+			Items []ResourceType `json:"items"`
+		} `json:"resourceTypes"`
+	}
+	req := &graphql.Request{
+		OpName: "listResourceTypes",
+		Query:  listResourceTypesQuery,
+		Variables: map[string]any{
+			"organizationId": cfg.OrganizationID,
+		},
+	}
+	if err := gqlClient(mdClient).MakeRequest(ctx, req, &graphql.Response{Data: &resp}); err != nil {
+		return nil, fmt.Errorf("list resource types: %w", err)
+	}
+	return resp.ResourceTypes.Items, nil
+}
+
+// PublishResourceType registers a resource-type schema.
+func PublishResourceType(ctx context.Context, mdClient *massdriver.Client, input PublishResourceTypeInput) (*ResourceType, error) {
+	cfg := mdClient.Config()
+
+	// The schema field is a GraphQL `Map!` scalar — wire format is a
+	// JSON-encoded string. scalars.MarshalJSON is the canonical encoder the
+	// genqlient codegen uses; reuse it so the wire shape stays in lockstep.
+	schemaRaw, err := scalars.MarshalJSON(input.Schema)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get resource type %s: %w", id, err)
+		return nil, fmt.Errorf("marshal resource-type schema: %w", err)
 	}
-	return toResourceType(response.ResourceType)
+
+	var resp struct {
+		PublishResourceType resourceTypeMutationResult `json:"publishResourceType"`
+	}
+	req := &graphql.Request{
+		OpName: "publishResourceType",
+		Query:  publishResourceTypeMutation,
+		Variables: map[string]any{
+			"organizationId": cfg.OrganizationID,
+			"input":          map[string]any{"schema": json.RawMessage(schemaRaw)},
+		},
+	}
+	if err := gqlClient(mdClient).MakeRequest(ctx, req, &graphql.Response{Data: &resp}); err != nil {
+		return nil, fmt.Errorf("publish resource type: %w", err)
+	}
+	if !resp.PublishResourceType.Successful {
+		return nil, mutationError("publish resource type", resp.PublishResourceType.Messages)
+	}
+	return resp.PublishResourceType.Result, nil
 }
 
-// ListResourceTypes returns resource types, optionally filtered, following pagination.
-func ListResourceTypes(ctx context.Context, mdClient *client.Client, filter *ResourceTypesFilter) ([]ResourceType, error) {
-	var resourceTypes []ResourceType
-	var cursor *Cursor
-
-	for {
-		response, err := listResourceTypes(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, filter, nil, cursor)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list resource types: %w", err)
-		}
-
-		for _, resp := range response.ResourceTypes.Items {
-			rt, rtErr := toResourceType(resp)
-			if rtErr != nil {
-				return nil, fmt.Errorf("failed to convert resource type: %w", rtErr)
-			}
-			resourceTypes = append(resourceTypes, *rt)
-		}
-
-		next := response.ResourceTypes.Cursor.Next
-		if next == "" {
-			break
-		}
-		cursor = &Cursor{Next: next}
+// DeleteResourceType removes a resource type by name.
+func DeleteResourceType(ctx context.Context, mdClient *massdriver.Client, name string) (*ResourceType, error) {
+	cfg := mdClient.Config()
+	var resp struct {
+		DeleteResourceType resourceTypeMutationResult `json:"deleteResourceType"`
 	}
-
-	return resourceTypes, nil
-}
-
-// PublishResourceType upserts a resource type from a JSON Schema document. If an existing
-// resource type has the same identifier (from `$md.name` in the schema), its schema is replaced.
-//
-// Deprecated: transitional shim from V0 `publishArtifactDefinition`. Prefer the OCI-native flow.
-func PublishResourceType(ctx context.Context, mdClient *client.Client, input PublishResourceTypeInput) (*ResourceType, error) {
-	response, err := publishResourceType(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, input)
-	if err != nil {
-		return nil, err
+	req := &graphql.Request{
+		OpName: "deleteResourceType",
+		Query:  deleteResourceTypeMutation,
+		Variables: map[string]any{
+			"organizationId": cfg.OrganizationID,
+			"id":             name,
+		},
 	}
-	if !response.PublishResourceType.Successful {
-		messages := response.PublishResourceType.GetMessages()
-		if len(messages) > 0 {
-			var sb strings.Builder
-			sb.WriteString("unable to publish resource type:")
-			for _, msg := range messages {
-				sb.WriteString("\n  - ")
-				sb.WriteString(msg.Message)
-			}
-			return nil, errors.New(sb.String())
-		}
-		return nil, errors.New("unable to publish resource type")
+	if err := gqlClient(mdClient).MakeRequest(ctx, req, &graphql.Response{Data: &resp}); err != nil {
+		return nil, fmt.Errorf("delete resource type %s: %w", name, err)
 	}
-	return toResourceType(response.PublishResourceType.Result)
-}
-
-// DeleteResourceType deletes a resource type by ID. Fails if the type is still referenced by
-// bundles or existing resources.
-//
-// Deprecated: transitional shim from V0 `deleteArtifactDefinition`. Prefer the OCI-native flow.
-func DeleteResourceType(ctx context.Context, mdClient *client.Client, id string) (*ResourceType, error) {
-	response, err := deleteResourceType(ctx, mdClient.GQLv2, mdClient.Config.OrganizationID, id)
-	if err != nil {
-		return nil, err
+	if !resp.DeleteResourceType.Successful {
+		return nil, mutationError("delete resource type "+name, resp.DeleteResourceType.Messages)
 	}
-	if !response.DeleteResourceType.Successful {
-		messages := response.DeleteResourceType.GetMessages()
-		if len(messages) > 0 {
-			var sb strings.Builder
-			sb.WriteString("unable to delete resource type:")
-			for _, msg := range messages {
-				sb.WriteString("\n  - ")
-				sb.WriteString(msg.Message)
-			}
-			return nil, errors.New(sb.String())
-		}
-		return nil, errors.New("unable to delete resource type")
-	}
-	return toResourceType(response.DeleteResourceType.Result)
-}
-
-func toResourceType(v any) (*ResourceType, error) {
-	rt := ResourceType{}
-	if err := decode(v, &rt); err != nil {
-		return nil, fmt.Errorf("failed to decode resource type: %w", err)
-	}
-	return &rt, nil
+	return resp.DeleteResourceType.Result, nil
 }

@@ -2,46 +2,29 @@ INSTALL_PATH ?= ~/bin
 GIT_SHA := $(shell git log -1 --pretty=format:"%H")
 LD_FLAGS := "-X github.com/massdriver-cloud/mass/internal/version.version=dev -X github.com/massdriver-cloud/mass/internal/version.gitSHA=local-dev-${GIT_SHA}"
 
-MASSDRIVER_PATH?=../massdriver
-MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-MKFILE_DIR := $(dir $(MKFILE_PATH))
-API_DIR := internal/api
-SCHEMA_URL ?= https://api.massdriver.cloud/graphql/v2/schema.graphql
-
 .DEFAULT_GOAL := install
 
-all.macos: clean generate install.macos
-all.linux: clean generate install.linux
-
 .PHONY: check
-check: clean generate test ## Run tests and linter locally
-	golangci-lint run
+check: test lint ## Run tests and linter locally
 
 .PHONY: clean
 clean:
-	rm -rf ${API_DIR}/schema.graphql
-	rm -rf ${API_DIR}/zz_generated.go
-	rm -f ./mass
+	rm -rf bin/
 
 .PHONY: docs
 docs: build
 	./mass docs
 
-.PHONY: generate
-generate:
-	curl -s ${SCHEMA_URL} -o ${API_DIR}/schema.graphql
-	cd ${API_DIR} && go generate
-
 .PHONY: test
 test:
 	go test ./... -cover
 
-bin:
-	mkdir bin
-
 .PHONY: lint
 lint:
 	golangci-lint run
+
+bin:
+	mkdir bin
 
 .PHONY: build
 build:

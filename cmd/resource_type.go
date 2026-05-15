@@ -13,13 +13,11 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/spf13/cobra"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 //go:embed templates/type.get.md.tmpl
@@ -75,7 +73,6 @@ func NewCmdType() *cobra.Command {
 	return typeCmd
 }
 
-//nolint:dupl // runTypeGet and runResourceGet share the same output-format pattern; refactoring would add complexity for marginal gain
 func runTypeGet(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
@@ -86,14 +83,14 @@ func runTypeGet(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	rt, getErr := resourcetype.Get(ctx, mdClient, typeName)
-	if getErr != nil {
-		return fmt.Errorf("error getting resource type: %w", getErr)
+	rt, err := resourcetype.Get(ctx, mdClient, typeName)
+	if err != nil {
+		return fmt.Errorf("error getting resource type: %w", err)
 	}
 
 	switch outputFormat {
@@ -121,9 +118,9 @@ func runTypePublish(cmd *cobra.Command, args []string) error {
 	defFile := args[0]
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	artDef, publishErr := resourcetype.Publish(ctx, mdClient, defFile)
@@ -140,17 +137,17 @@ func runTypeList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	resourceTypes, err := api.ListResourceTypes(ctx, mdClient, nil)
+	resourceTypes, err := resourcetype.List(ctx, mdClient)
 
 	tbl := cli.NewTable("ID", "Name", "Updated At")
 
-	for _, resourceType := range resourceTypes {
-		tbl.AddRow(resourceType.ID, resourceType.Name, resourceType.UpdatedAt)
+	for _, rt := range resourceTypes {
+		tbl.AddRow(rt.ID, rt.Name, rt.UpdatedAt)
 	}
 
 	tbl.Print()
@@ -158,7 +155,7 @@ func runTypeList(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func renderType(restype *api.ResourceType) error {
+func renderType(restype *resourcetype.ResourceType) error {
 	schemaJSON, err := json.MarshalIndent(restype.Schema, "", "  ")
 	if err != nil {
 		return err
@@ -213,15 +210,15 @@ func runTypeDelete(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := client.New()
-	if mdClientErr != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
 	// Get resource type details for confirmation
-	rt, getErr := resourcetype.Get(ctx, mdClient, typeName)
-	if getErr != nil {
-		return fmt.Errorf("error getting resource type: %w", getErr)
+	rt, err := resourcetype.Get(ctx, mdClient, typeName)
+	if err != nil {
+		return fmt.Errorf("error getting resource type: %w", err)
 	}
 
 	// Prompt for confirmation - requires typing the resource type name unless --force is used
@@ -238,11 +235,11 @@ func runTypeDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	deleteErr := resourcetype.Delete(ctx, mdClient, typeName, force)
+	deleted, deleteErr := resourcetype.Delete(ctx, mdClient, typeName)
 	if deleteErr != nil {
 		return fmt.Errorf("error deleting resource type: %w", deleteErr)
 	}
 
-	fmt.Printf("Resource type %s deleted successfully!\n", prettylogs.Underline(typeName))
+	fmt.Printf("Resource type %s deleted successfully!\n", prettylogs.Underline(deleted.Name))
 	return nil
 }

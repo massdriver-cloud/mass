@@ -8,9 +8,6 @@ import (
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
 )
 
 func TestLintSchema(t *testing.T) {
@@ -53,13 +50,7 @@ func TestLintSchema(t *testing.T) {
 			}))
 			defer server.Close()
 
-			mdClient := client.Client{
-				Config: config.Config{
-					URL: server.URL,
-				},
-			}
-
-			got := tc.bun.LintSchema(&mdClient)
+			got := tc.bun.LintSchema(server.URL)
 
 			assert.Len(t, got.Issues, len(tc.want.Issues))
 			for i := range tc.want.Issues {

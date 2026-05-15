@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/gqlmock"
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
 
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/config"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql/gqltest"
 )
 
 func TestDelete(t *testing.T) {
@@ -16,9 +16,6 @@ func TestDelete(t *testing.T) {
 		name       string
 		typeName   string
 		response   map[string]any
-		wantID     string
-		wantName   string
-		force      bool
 		expectErr  bool
 		errMessage string
 	}
@@ -30,27 +27,29 @@ func TestDelete(t *testing.T) {
 				"id":   "123-456",
 				"name": "massdriver/test-schema",
 			},
-			wantID:   "def-123",
-			wantName: "org-123/aws-s3",
-			force:    true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			responses := []any{
-				gqlmock.MockQueryResponse("resourceType", tc.response),
-				gqlmock.MockMutationResponse("deleteResourceType", tc.response),
+			mock := gqltest.NewClient(
+				gqltest.RespondWithData(map[string]any{
+					"deleteResourceType": map[string]any{
+						"result":     tc.response,
+						"successful": true,
+					},
+				}),
+			)
+			t.Cleanup(api.SetTransportForTest(mock))
+			mdClient, err := massdriver.NewClient(
+				massdriver.WithGQLClient(mock),
+				massdriver.WithOrganizationID("org-123"),
+			)
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			mdClient := client.Client{
-				GQLv2: gqlmock.NewClientWithJSONResponseArray(responses),
-				Config: config.Config{
-					OrganizationID: "org-123",
-				},
-			}
-
-			err := resourcetype.Delete(t.Context(), &mdClient, tc.typeName, tc.force)
+			deleted, err := resourcetype.Delete(t.Context(), mdClient, tc.typeName)
 			if tc.expectErr {
 				if err == nil {
 					t.Fatalf("expected error but got none")
@@ -62,6 +61,9 @@ func TestDelete(t *testing.T) {
 			}
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
+			}
+			if deleted == nil || deleted.Name != tc.response["name"] {
+				t.Fatalf("expected deleted record with name %v, got %v", tc.response["name"], deleted)
 			}
 		})
 	}

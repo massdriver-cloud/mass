@@ -1,6 +1,7 @@
 package resourcetype_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,11 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
-
-	"github.com/go-resty/resty/v2"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
 )
 
 func TestDereferenceSchema(t *testing.T) {
@@ -120,25 +117,23 @@ func TestDereferenceSchema(t *testing.T) {
 		},
 	}
 
+	// A stub resolver that pretends every massdriver ref points at the same
+	// fixture schema. Production wires this to resourcetype.NewMassdriverResolver.
+	resolver := func(_ context.Context, _ string) (map[string]any, error) {
+		return map[string]any{
+			"id":   "123-456",
+			"name": "massdriver/test-schema",
+			"schema": map[string]any{
+				"foo": "bar",
+			},
+		}, nil
+	}
+
 	for _, test := range cases {
 		t.Run(test.Name, func(t *testing.T) {
-			mdClient := client.Client{
-				GQLv2: gqlmock.NewClientWithSingleJSONResponse(map[string]any{
-					"data": map[string]any{
-						"resourceType": map[string]any{
-							"id":   "123-456",
-							"name": "massdriver/test-schema",
-							"schema": map[string]any{
-								"foo": "bar",
-							},
-						},
-					},
-				}),
-			}
-
 			opts := resourcetype.DereferenceOptions{
-				Client: &mdClient,
-				Cwd:    ".",
+				Resolver: resolver,
+				Cwd:      ".",
 			}
 
 			got, gotErr := resourcetype.DereferenceSchema(test.Input, opts)
@@ -158,44 +153,33 @@ func TestDereferenceSchema(t *testing.T) {
 		})
 	}
 
-	// Easier to test HTTP refs separately
+	// HTTP refs are exercised independently: dereference uses net/http directly,
+	// no SDK client involved.
 	t.Run("HTTP Refs", func(t *testing.T) {
 		var recursivePtr *string
 		testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			urlPath := r.URL.Path
-			switch urlPath {
+			switch r.URL.Path {
 			case "/recursive":
 				if _, err := w.Write([]byte(*recursivePtr)); err != nil {
 					t.Fatalf("Failed to write response: %v", err)
 				}
-				fmt.Println("in recursive")
 			case "/endpoint":
 				if _, err := w.Write([]byte(`{"foo":"bar"}`)); err != nil {
 					t.Fatalf("Failed to write response: %v", err)
 				}
-				fmt.Println("in endpoint")
 			default:
 				w.WriteHeader(http.StatusNotFound)
-				_, err := w.Write([]byte(`404 - not found`))
-				if err != nil {
-					t.Fatalf("Failed to write response: %v", err)
-				}
+				_, _ = w.Write([]byte(`404 - not found`))
 			}
 		}))
 		defer testServer.Close()
-
-		mdClient := &client.Client{}
-		mdClient.HTTP = resty.New().SetBaseURL(testServer.URL)
 
 		recursive := fmt.Sprintf(`{"baz":{"$ref":"%s/endpoint"}}`, testServer.URL)
 		recursivePtr = &recursive
 
 		input := jsonDecode(fmt.Sprintf(`{"$ref":"%s/recursive"}`, testServer.URL))
 
-		opts := resourcetype.DereferenceOptions{
-			Client: mdClient,
-			Cwd:    ".",
-		}
+		opts := resourcetype.DereferenceOptions{Cwd: "."}
 		got, _ := resourcetype.DereferenceSchema(input, opts)
 		expected := map[string]any{
 			"baz": map[string]string{
@@ -208,11 +192,6 @@ func TestDereferenceSchema(t *testing.T) {
 		}
 
 		input = jsonDecode(fmt.Sprintf(`{"$ref":"%s/not-found"}`, testServer.URL))
-
-		opts = resourcetype.DereferenceOptions{
-			Client: mdClient,
-			Cwd:    ".",
-		}
 		_, gotErr := resourcetype.DereferenceSchema(input, opts)
 		expectedErrPrefix := "received non-200 response getting ref 404 Not Found"
 

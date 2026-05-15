@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/massdriver-cloud/mass/internal/api"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/resources"
 )
 
 // RunUpdate updates an existing resource with the data from the given file.
-func RunUpdate(ctx context.Context, mdClient *client.Client, resourceID string, resourceName string, resourceFile string) (string, error) {
+func RunUpdate(ctx context.Context, api API, resourceID string, resourceName string, resourceFile string) (string, error) {
 	bytes, readErr := os.ReadFile(resourceFile)
 	if readErr != nil {
 		return "", readErr
@@ -26,20 +24,20 @@ func RunUpdate(ctx context.Context, mdClient *client.Client, resourceID string, 
 
 	// Name is required by the backend. If not provided, fetch the existing resource's name.
 	if resourceName == "" {
-		existing, getErr := api.GetResource(ctx, mdClient, resourceID)
+		existing, getErr := api.GetResource(ctx, resourceID)
 		if getErr != nil {
 			return "", fmt.Errorf("failed to get existing resource: %w", getErr)
 		}
 		resourceName = existing.Name
 	}
 
-	input := api.UpdateResourceInput{
+	input := resources.UpdateInput{
 		Name:    resourceName,
 		Payload: payload,
 	}
 
 	fmt.Printf("Updating resource %s...\n", resourceID)
-	resp, updateErr := api.UpdateResource(ctx, mdClient, resourceID, input)
+	resp, updateErr := api.UpdateResource(ctx, resourceID, input)
 	if updateErr != nil {
 		return "", updateErr
 	}

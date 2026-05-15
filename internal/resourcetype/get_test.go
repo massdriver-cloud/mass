@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/api"
-	"github.com/massdriver-cloud/mass/internal/gqlmock"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
 
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql/gqltest"
 )
 
 func TestGet(t *testing.T) {
 	type test struct {
 		name         string
 		resourceType map[string]any
-		want         api.ResourceType
+		want         resourcetype.ResourceType
 	}
 	tests := []test{
 		{
@@ -29,7 +29,7 @@ func TestGet(t *testing.T) {
 					"description": "A test schema for demonstration purposes.",
 				},
 			},
-			want: api.ResourceType{
+			want: resourcetype.ResourceType{
 				ID:   "123-456",
 				Name: "massdriver/test-schema",
 				Schema: map[string]any{
@@ -43,15 +43,21 @@ func TestGet(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			responses := []any{
-				gqlmock.MockQueryResponse("resourceType", tc.resourceType),
+			mock := gqltest.NewClient(
+				gqltest.RespondWithData(map[string]any{
+					"resourceType": tc.resourceType,
+				}),
+			)
+			t.Cleanup(api.SetTransportForTest(mock))
+			mdClient, err := massdriver.NewClient(
+				massdriver.WithGQLClient(mock),
+				massdriver.WithOrganizationID("test-org"),
+			)
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			mdClient := client.Client{
-				GQLv2: gqlmock.NewClientWithJSONResponseArray(responses),
-			}
-
-			got, err := resourcetype.Get(t.Context(), &mdClient, "massdriver/test-schema")
+			got, err := resourcetype.Get(t.Context(), mdClient, "massdriver/test-schema")
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

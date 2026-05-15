@@ -12,14 +12,26 @@ import (
 	"reflect"
 	"regexp"
 
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/client"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 )
 
 // DereferenceOptions holds configuration for schema dereferencing operations.
+//
+// Resolver fetches a published resource-type schema by name; tests inject a
+// stub directly, production callers use [NewMassdriverResolver] (or build a
+// closure around [GetAsMap]).
 type DereferenceOptions struct {
-	Client  *client.Client
-	Cwd     string
-	StripID bool
+	Resolver func(ctx context.Context, name string) (map[string]any, error)
+	Cwd      string
+	StripID  bool
+}
+
+// NewMassdriverResolver returns a Resolver bound to a *massdriver.Client that
+// looks up resource-type schemas via the legacy GraphQL surface.
+func NewMassdriverResolver(c *massdriver.Client) func(context.Context, string) (map[string]any, error) {
+	return func(ctx context.Context, name string) (map[string]any, error) {
+		return GetAsMap(ctx, c, name)
+	}
 }
 
 // relativeFilePathPattern only accepts relative file path prefixes "./" and "../"
@@ -102,7 +114,10 @@ func dereferenceList(val reflect.Value, opts DereferenceOptions) ([]any, error) 
 }
 
 func dereferenceMassdriverRef(hydratedSchema map[string]any, schema map[string]any, schemaRefValue string, opts DereferenceOptions) (map[string]any, error) {
-	referencedSchema, err := GetAsMap(context.Background(), opts.Client, schemaRefValue)
+	if opts.Resolver == nil {
+		return hydratedSchema, fmt.Errorf("cannot resolve massdriver ref %q: no resolver configured", schemaRefValue)
+	}
+	referencedSchema, err := opts.Resolver(context.Background(), schemaRefValue)
 	if err != nil {
 		return hydratedSchema, err
 	}
