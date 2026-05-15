@@ -20,6 +20,8 @@ import (
 type stubFollowAPI struct {
 	mu sync.Mutex
 
+	instances []types.Instance
+
 	events chan types.Event
 
 	// instance ID returned by GetDeployment, keyed by deployment ID.
@@ -37,6 +39,10 @@ func newStubFollowAPI() *stubFollowAPI {
 		logs:          map[string]string{},
 		logErr:        map[string]error{},
 	}
+}
+
+func (s *stubFollowAPI) ListInstances(_ context.Context, _ string) ([]types.Instance, error) {
+	return s.instances, nil
 }
 
 func (s *stubFollowAPI) StreamEnvironmentEvents(_ context.Context, _ string) (<-chan types.Event, error) {
@@ -72,10 +78,14 @@ func TestFollowEnvironment_PrefixesLinesWithInstanceID(t *testing.T) {
 	t.Cleanup(func() { environment.FollowQuietWindow = 30 * time.Second }) //nolint:reassign // restore default
 
 	api := newStubFollowAPI()
+	api.instances = []types.Instance{
+		{ID: "ecomm-prod-db"},    // 13 chars
+		{ID: "ecomm-prod-mysql"}, // 16 chars — sets pad width
+	}
 	api.depToInstance["dep-db-1"] = "ecomm-prod-db"
-	api.depToInstance["dep-app-1"] = "ecomm-prod-app"
+	api.depToInstance["dep-app-1"] = "ecomm-prod-mysql"
 	api.logs["dep-db-1"] = "applying db schema\nmigrations done\n"
-	api.logs["dep-app-1"] = "starting app\nready\n"
+	api.logs["dep-app-1"] = "starting mysql\nready\n"
 
 	// Fire a RUNNING then COMPLETED event for each deployment.
 	api.events <- &types.DeploymentEvent{Deployment: types.Deployment{ID: "dep-db-1", Status: "RUNNING"}}
@@ -93,12 +103,13 @@ func TestFollowEnvironment_PrefixesLinesWithInstanceID(t *testing.T) {
 		t.Fatalf("FollowEnvironment: %v", err)
 	}
 
+	// Pad width = 16 (mysql id). Shorter ids get 3 spaces of padding after `]`.
 	out := buf.String()
 	for _, want := range []string{
-		"[ecomm-prod-db] applying db schema\n",
-		"[ecomm-prod-db] migrations done\n",
-		"[ecomm-prod-app] starting app\n",
-		"[ecomm-prod-app] ready\n",
+		"[ecomm-prod-db]    applying db schema\n",
+		"[ecomm-prod-db]    migrations done\n",
+		"[ecomm-prod-mysql] starting mysql\n",
+		"[ecomm-prod-mysql] ready\n",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing expected line %q in output:\n%s", want, out)
@@ -135,6 +146,9 @@ type errorAPI struct{ err error }
 
 func (e errorAPI) StreamEnvironmentEvents(_ context.Context, _ string) (<-chan types.Event, error) {
 	return nil, e.err
+}
+func (errorAPI) ListInstances(_ context.Context, _ string) ([]types.Instance, error) {
+	return nil, nil
 }
 func (errorAPI) GetDeployment(_ context.Context, _ string) (*types.Deployment, error) {
 	return nil, nil

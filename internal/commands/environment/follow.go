@@ -11,6 +11,7 @@ import (
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/instances"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
@@ -26,6 +27,10 @@ var FollowQuietWindow = 30 * time.Second
 // supply a stub directly; production callers use [NewFollowAPI] to
 // bind a *massdriver.Client.
 type FollowAPI interface {
+	// ListInstances pulls every instance in the environment up front so the
+	// log-prefix column can be sized to the longest id and stay stable as
+	// new deployments come online wave by wave.
+	ListInstances(ctx context.Context, environmentID string) ([]types.Instance, error)
 	StreamEnvironmentEvents(ctx context.Context, environmentID string) (<-chan types.Event, error)
 	GetDeployment(ctx context.Context, id string) (*types.Deployment, error)
 	TailLogs(ctx context.Context, deploymentID string, w io.Writer) error
@@ -35,6 +40,10 @@ type FollowAPI interface {
 func NewFollowAPI(c *massdriver.Client) FollowAPI { return sdkFollowAPI{c: c} }
 
 type sdkFollowAPI struct{ c *massdriver.Client }
+
+func (s sdkFollowAPI) ListInstances(ctx context.Context, environmentID string) ([]types.Instance, error) {
+	return s.c.Instances.List(ctx, instances.ListInput{EnvironmentID: environmentID})
+}
 
 func (s sdkFollowAPI) StreamEnvironmentEvents(ctx context.Context, environmentID string) (<-chan types.Event, error) {
 	return s.c.Environments.StreamEvents(ctx, environmentID)
@@ -65,12 +74,22 @@ func FollowEnvironment(ctx context.Context, api FollowAPI, envID string, w io.Wr
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// List instances first so we know the column width before any logs
+	// land. New instances created later won't change the padding, but
+	// for the env-deploy case that's never — fork created every instance
+	// before the first deployment fires.
+	insts, err := api.ListInstances(ctx, envID)
+	if err != nil {
+		return fmt.Errorf("list instances in %s: %w", envID, err)
+	}
+	padWidth := maxInstanceIDWidth(insts)
+
 	eventCh, err := api.StreamEnvironmentEvents(ctx, envID)
 	if err != nil {
 		return fmt.Errorf("subscribe to environment events for %s: %w", envID, err)
 	}
 
-	sink := newPrefixedSink(w)
+	sink := newPrefixedSink(w, padWidth)
 	seen := map[string]struct{}{}
 	active := map[string]struct{}{}
 	lastActivity := time.Now()
@@ -164,24 +183,56 @@ func quietWindowTick(window time.Duration) time.Duration {
 	return tick
 }
 
+// maxInstanceIDWidth returns the longest instance.ID across the list, used
+// to right-pad log prefixes so multi-instance tails stay column-aligned
+// (no horizontal jitter as `[fancy-claude-pg]` and `[fancy-claude-mysql]`
+// interleave).
+func maxInstanceIDWidth(insts []types.Instance) int {
+	width := 0
+	for _, inst := range insts {
+		if n := len(inst.ID); n > width {
+			width = n
+		}
+	}
+	return width
+}
+
 // prefixedSink serializes interleaved writes from per-instance tail
 // goroutines and tags each line with the instance id. Writers handed
 // out by [prefixedSink.For] line-buffer until they see a `\n`, then
 // emit a single `[id] <line>` write under the sink's mutex so two
 // goroutines never scribble on top of each other.
+//
+// Each prefix is right-padded to padWidth (the longest instance id in
+// the environment) so multi-instance tails stay column-aligned.
 type prefixedSink struct {
-	mu sync.Mutex
-	w  io.Writer
+	mu       sync.Mutex
+	w        io.Writer
+	padWidth int
 }
 
-func newPrefixedSink(w io.Writer) *prefixedSink {
-	return &prefixedSink{w: w}
+func newPrefixedSink(w io.Writer, padWidth int) *prefixedSink {
+	return &prefixedSink{w: w, padWidth: padWidth}
 }
 
 // For returns an io.Writer that prefixes every line it writes with
-// "[<id>] " and forwards to the shared writer.
+// "[<id>] " (padded to the sink's column width) and forwards to the
+// shared writer.
 func (s *prefixedSink) For(id string) io.Writer {
-	return &prefixedWriter{sink: s, prefix: []byte("[" + id + "] ")}
+	padding := s.padWidth - len(id)
+	if padding < 0 {
+		padding = 0
+	}
+	// "[" + id + "]" + repeated space + trailing separator
+	prefix := make([]byte, 0, 3+len(id)+padding+1)
+	prefix = append(prefix, '[')
+	prefix = append(prefix, id...)
+	prefix = append(prefix, ']')
+	for range padding {
+		prefix = append(prefix, ' ')
+	}
+	prefix = append(prefix, ' ')
+	return &prefixedWriter{sink: s, prefix: prefix}
 }
 
 type prefixedWriter struct {
