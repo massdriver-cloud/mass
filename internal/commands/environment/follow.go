@@ -11,27 +11,23 @@ import (
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/instances"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
-// FollowPollInterval controls how often each instance watcher polls for new
-// deployments. Exposed as a var so tests can drop it to zero.
-var FollowPollInterval = 2 * time.Second
-
-// FollowQuietWindow is how long the watcher loop waits with no new
-// deployments observed before declaring the rollout done. The environment
-// deploys in dependency-ordered waves, so we can't bail the moment one
-// wave's deployments are terminal — the next wave's haven't been created
-// yet. The window has to be long enough to cover the gap between waves.
+// FollowQuietWindow is how long the watcher waits with no active
+// deployments and no fresh DeploymentEvents before declaring the
+// rollout done. The environment deploys in dependency-ordered waves,
+// so we can't bail the moment one wave's deployments are terminal —
+// the next wave's haven't been created yet. The window has to outlast
+// the gap between waves.
 var FollowQuietWindow = 30 * time.Second
 
-// FollowAPI is the narrow SDK surface FollowEnvironment needs. Tests supply a
-// stub directly; production callers use [NewFollowAPI] to bind a
-// *massdriver.Client.
+// FollowAPI is the narrow SDK surface FollowEnvironment needs. Tests
+// supply a stub directly; production callers use [NewFollowAPI] to
+// bind a *massdriver.Client.
 type FollowAPI interface {
-	ListInstances(ctx context.Context, input instances.ListInput) ([]types.Instance, error)
-	ListDeployments(ctx context.Context, input deployments.ListInput) ([]types.Deployment, error)
+	StreamEnvironmentEvents(ctx context.Context, environmentID string) (<-chan types.Event, error)
+	GetDeployment(ctx context.Context, id string) (*types.Deployment, error)
 	TailLogs(ctx context.Context, deploymentID string, w io.Writer) error
 }
 
@@ -40,12 +36,12 @@ func NewFollowAPI(c *massdriver.Client) FollowAPI { return sdkFollowAPI{c: c} }
 
 type sdkFollowAPI struct{ c *massdriver.Client }
 
-func (s sdkFollowAPI) ListInstances(ctx context.Context, input instances.ListInput) ([]types.Instance, error) {
-	return s.c.Instances.List(ctx, input)
+func (s sdkFollowAPI) StreamEnvironmentEvents(ctx context.Context, environmentID string) (<-chan types.Event, error) {
+	return s.c.Environments.StreamEvents(ctx, environmentID)
 }
 
-func (s sdkFollowAPI) ListDeployments(ctx context.Context, input deployments.ListInput) ([]types.Deployment, error) {
-	return s.c.Deployments.List(ctx, input)
+func (s sdkFollowAPI) GetDeployment(ctx context.Context, id string) (*types.Deployment, error) {
+	return s.c.Deployments.Get(ctx, id)
 }
 
 func (s sdkFollowAPI) TailLogs(ctx context.Context, deploymentID string, w io.Writer) error {
@@ -53,130 +49,126 @@ func (s sdkFollowAPI) TailLogs(ctx context.Context, deploymentID string, w io.Wr
 }
 
 // FollowEnvironment tails logs for every deployment that fires in an
-// environment-level rollout, prefixing each line with the instance's id so
-// the interleaved output is grep-friendly.
+// environment-level rollout, prefixing each line with the instance's
+// id so the interleaved output stays grep-friendly.
 //
-// The platform deploys in dependency-ordered waves: wave 1 instances start,
-// finish, then wave 2 instances start. This watcher polls per-instance
-// deployment lists every [FollowPollInterval], spawns a [Service.TailLogs]
-// goroutine for each new deployment it sees, and exits when no new
-// deployments have appeared for [FollowQuietWindow] and every observed
-// deployment is in a terminal state.
+// Subscribes to `environmentEvents` over WebSocket; every
+// `DeploymentEvent` either kicks off a [Service.TailLogs] goroutine
+// for a newly-seen deployment or updates the active set so the
+// watcher knows when the rollout has gone quiet.
 //
-// The user's hint on the design ticket was to use Absinthe subscriptions
-// (`environmentEvents` / `instanceEvents`) instead of polling. The SDK's
-// websocket / Absinthe machinery is in an internal package, so subscribing
-// from the CLI would mean either re-porting that layer or waiting for the
-// SDK to expose event subscriptions. The polling approach has a few
-// seconds of discovery latency per deployment, which is acceptable
-// relative to per-instance deploy times measured in minutes.
+// Termination: when no deployments are active and no fresh
+// DeploymentEvents have arrived for [FollowQuietWindow], the watcher
+// exits. The environment deploys in dependency-ordered waves, so the
+// quiet window has to outlast the gap between waves.
 func FollowEnvironment(ctx context.Context, api FollowAPI, envID string, w io.Writer) error {
-	insts, err := api.ListInstances(ctx, instances.ListInput{EnvironmentID: envID})
-	if err != nil {
-		return fmt.Errorf("list instances in environment %s: %w", envID, err)
-	}
-	if len(insts) == 0 {
-		return nil
-	}
-
-	out := newPrefixedSink(w)
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var wg sync.WaitGroup
-	errCh := make(chan error, len(insts))
-
-	for _, inst := range insts {
-		wg.Add(1)
-		go func(inst types.Instance) {
-			defer wg.Done()
-			if watchErr := watchInstanceDeployments(ctx, api, inst, out); watchErr != nil && !errors.Is(watchErr, context.Canceled) {
-				errCh <- watchErr
-			}
-		}(inst)
+	eventCh, err := api.StreamEnvironmentEvents(ctx, envID)
+	if err != nil {
+		return fmt.Errorf("subscribe to environment events for %s: %w", envID, err)
 	}
 
-	wg.Wait()
-	close(errCh)
-
-	var firstErr error
-	for werr := range errCh {
-		if firstErr == nil {
-			firstErr = werr
-		}
-	}
-	return firstErr
-}
-
-// watchInstanceDeployments polls for new deployments on a single instance
-// and tails each one as it's created. Returns when the quiet window elapses
-// with every observed deployment in a terminal state.
-func watchInstanceDeployments(ctx context.Context, api FollowAPI, inst types.Instance, sink *prefixedSink) error {
-	prefixWriter := sink.For(inst.ID)
+	sink := newPrefixedSink(w)
 	seen := map[string]struct{}{}
-	var inFlight sync.WaitGroup
-	var lastChange time.Time
-	allTerminal := true
+	active := map[string]struct{}{}
+	lastActivity := time.Now()
+
+	var tails sync.WaitGroup
+	defer tails.Wait()
+
+	check := time.NewTicker(quietWindowTick(FollowQuietWindow))
+	defer check.Stop()
 
 	for {
-		deps, listErr := api.ListDeployments(ctx, deployments.ListInput{
-			InstanceID: inst.ID,
-			PageSize:   25,
-		})
-		if listErr != nil {
-			return fmt.Errorf("list deployments for %s: %w", inst.ID, listErr)
-		}
-
-		anyNew := false
-		anyActive := false
-		for _, dep := range deps {
-			if _, taken := seen[dep.ID]; !taken {
-				seen[dep.ID] = struct{}{}
-				anyNew = true
-				lastChange = time.Now()
-
-				inFlight.Add(1)
-				go func(depID string) {
-					defer inFlight.Done()
-					// TailLogs blocks until the deployment hits a terminal
-					// status. Errors are silenced per-deployment so one
-					// bad tail doesn't take the whole follow down — the
-					// final deployment list will still show the failure.
-					_ = api.TailLogs(ctx, depID, prefixWriter)
-				}(dep.ID)
-			}
-			if !deployments.IsTerminal(string(dep.Status)) {
-				anyActive = true
-			}
-		}
-
-		if anyNew {
-			allTerminal = false
-		}
-		if !anyActive && !anyNew && !lastChange.IsZero() && time.Since(lastChange) >= FollowQuietWindow {
-			allTerminal = true
-			break
-		}
-
 		select {
-		case <-time.After(FollowPollInterval):
+		case ev, ok := <-eventCh:
+			if !ok {
+				return nil
+			}
+			depEv, isDeploy := ev.(*types.DeploymentEvent)
+			if !isDeploy {
+				continue
+			}
+			lastActivity = time.Now()
+			handleDeploymentEvent(ctx, api, depEv, seen, active, sink, &tails)
+
+		case <-check.C:
+			if len(active) == 0 && time.Since(lastActivity) >= FollowQuietWindow {
+				return nil
+			}
+
 		case <-ctx.Done():
-			inFlight.Wait()
+			if errors.Is(ctx.Err(), context.Canceled) {
+				return nil
+			}
 			return ctx.Err()
 		}
 	}
+}
 
-	inFlight.Wait()
-	_ = allTerminal
-	return nil
+// handleDeploymentEvent kicks off a tail goroutine the first time we
+// see a deployment and tracks whether it's still active. A deployment
+// that arrives already-terminal still gets its logs streamed — TailLogs
+// surfaces the historical batch and returns cleanly when the deployment
+// is past terminal.
+func handleDeploymentEvent(
+	ctx context.Context,
+	api FollowAPI,
+	depEv *types.DeploymentEvent,
+	seen, active map[string]struct{},
+	sink *prefixedSink,
+	tails *sync.WaitGroup,
+) {
+	depID := depEv.Deployment.ID
+	if depID == "" {
+		return
+	}
+
+	if _, taken := seen[depID]; !taken {
+		seen[depID] = struct{}{}
+
+		// Need the instance id to label this deployment's log lines.
+		// The event payload trims it for bandwidth; one round-trip per
+		// new deployment is cheap.
+		dep, getErr := api.GetDeployment(ctx, depID)
+		if getErr != nil || dep.Instance == nil {
+			return
+		}
+		prefixWriter := sink.For(dep.Instance.ID)
+
+		tails.Add(1)
+		go func() {
+			defer tails.Done()
+			_ = api.TailLogs(ctx, depID, prefixWriter)
+		}()
+	}
+
+	if deployments.IsTerminal(string(depEv.Deployment.Status)) {
+		delete(active, depID)
+	} else {
+		active[depID] = struct{}{}
+	}
+}
+
+// quietWindowTick chooses how often to check the termination condition.
+// Polling at the quiet window itself feels laggy; polling at 1/4 of it
+// gives us a tighter "is the rollout actually idle" answer without
+// burning cycles.
+func quietWindowTick(window time.Duration) time.Duration {
+	tick := window / 4
+	if tick < 250*time.Millisecond {
+		tick = 250 * time.Millisecond
+	}
+	return tick
 }
 
 // prefixedSink serializes interleaved writes from per-instance tail
-// goroutines and tags each line with the instance id. Writers handed out by
-// [prefixedSink.For] line-buffer until they see a `\n`, then emit a single
-// `[id] <line>` write under the sink's mutex so two goroutines never
-// scribble on top of each other.
+// goroutines and tags each line with the instance id. Writers handed
+// out by [prefixedSink.For] line-buffer until they see a `\n`, then
+// emit a single `[id] <line>` write under the sink's mutex so two
+// goroutines never scribble on top of each other.
 type prefixedSink struct {
 	mu sync.Mutex
 	w  io.Writer
@@ -207,9 +199,9 @@ func (p *prefixedWriter) Write(b []byte) (int, error) {
 	return n, nil
 }
 
-// flushCompleteLines emits every fully-terminated line in the buffer under
-// the sink mutex. A trailing partial line stays in the buffer until the
-// next Write provides the terminating newline.
+// flushCompleteLines emits every fully-terminated line in the buffer
+// under the sink mutex. A trailing partial line stays in the buffer
+// until the next Write provides the terminating newline.
 func (p *prefixedWriter) flushCompleteLines() error {
 	for {
 		raw := p.buf.Bytes()

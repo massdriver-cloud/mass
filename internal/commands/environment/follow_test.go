@@ -3,6 +3,7 @@ package environment_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"strings"
 	"sync"
@@ -10,81 +11,79 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/mass/internal/commands/environment"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/instances"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
 // stubFollowAPI is an in-test stub for environment.FollowAPI. Each test
-// supplies instances + per-deployment log scripts; the stub serves them
-// back when polled.
+// pushes events on `events`; the channel is closed (or ctx cancelled) to
+// signal end-of-stream. TailLogs serves canned log text per deployment.
 type stubFollowAPI struct {
 	mu sync.Mutex
 
-	instances []types.Instance
-	// deployments per instance, returned in order across successive
-	// ListDeployments calls. Empty means no deployments for that instance.
-	depQueue map[string][][]types.Deployment
-	depCalls map[string]int
+	events chan types.Event
+
+	// instance ID returned by GetDeployment, keyed by deployment ID.
+	depToInstance map[string]string
+	depGetErr     error
 
 	logs   map[string]string
 	logErr map[string]error
 }
 
-func (s *stubFollowAPI) ListInstances(_ context.Context, _ instances.ListInput) ([]types.Instance, error) {
-	return s.instances, nil
+func newStubFollowAPI() *stubFollowAPI {
+	return &stubFollowAPI{
+		events:        make(chan types.Event, 32),
+		depToInstance: map[string]string{},
+		logs:          map[string]string{},
+		logErr:        map[string]error{},
+	}
 }
 
-func (s *stubFollowAPI) ListDeployments(_ context.Context, input deployments.ListInput) ([]types.Deployment, error) {
+func (s *stubFollowAPI) StreamEnvironmentEvents(_ context.Context, _ string) (<-chan types.Event, error) {
+	return s.events, nil
+}
+
+func (s *stubFollowAPI) GetDeployment(_ context.Context, id string) (*types.Deployment, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	queue := s.depQueue[input.InstanceID]
-	call := s.depCalls[input.InstanceID]
-	if call >= len(queue) {
-		// Stable past the script — repeat the final entry to keep the
-		// poller in steady state.
-		if len(queue) == 0 {
-			return nil, nil
-		}
-		return queue[len(queue)-1], nil
+	if s.depGetErr != nil {
+		return nil, s.depGetErr
 	}
-	s.depCalls[input.InstanceID] = call + 1
-	return queue[call], nil
+	return &types.Deployment{
+		ID:       id,
+		Instance: &types.Instance{ID: s.depToInstance[id]},
+	}, nil
 }
 
 func (s *stubFollowAPI) TailLogs(_ context.Context, deploymentID string, w io.Writer) error {
-	if err := s.logErr[deploymentID]; err != nil {
-		return err
+	s.mu.Lock()
+	logErr := s.logErr[deploymentID]
+	logText := s.logs[deploymentID]
+	s.mu.Unlock()
+	if logErr != nil {
+		return logErr
 	}
-	_, err := io.WriteString(w, s.logs[deploymentID])
+	_, err := io.WriteString(w, logText)
 	return err
 }
 
 func TestFollowEnvironment_PrefixesLinesWithInstanceID(t *testing.T) {
-	// Speed the loop up so the test isn't slow.
-	environment.FollowPollInterval = 0
-	environment.FollowQuietWindow = 10 * time.Millisecond
-	t.Cleanup(func() {
-		environment.FollowPollInterval = 2 * time.Second
-		environment.FollowQuietWindow = 30 * time.Second
-	})
+	environment.FollowQuietWindow = 100 * time.Millisecond
+	t.Cleanup(func() { environment.FollowQuietWindow = 30 * time.Second })
 
-	api := &stubFollowAPI{
-		instances: []types.Instance{
-			{ID: "ecomm-prod-db", Name: "db"},
-			{ID: "ecomm-prod-app", Name: "app"},
-		},
-		depQueue: map[string][][]types.Deployment{
-			"ecomm-prod-db":  {{{ID: "dep-db-1", Status: "COMPLETED"}}},
-			"ecomm-prod-app": {{{ID: "dep-app-1", Status: "COMPLETED"}}},
-		},
-		depCalls: map[string]int{},
-		logs: map[string]string{
-			"dep-db-1":  "applying db schema\nmigrations done\n",
-			"dep-app-1": "starting app\nready\n",
-		},
-		logErr: map[string]error{},
-	}
+	api := newStubFollowAPI()
+	api.depToInstance["dep-db-1"] = "ecomm-prod-db"
+	api.depToInstance["dep-app-1"] = "ecomm-prod-app"
+	api.logs["dep-db-1"] = "applying db schema\nmigrations done\n"
+	api.logs["dep-app-1"] = "starting app\nready\n"
+
+	// Fire a RUNNING then COMPLETED event for each deployment.
+	api.events <- &types.DeploymentEvent{Deployment: types.Deployment{ID: "dep-db-1", Status: "RUNNING"}}
+	api.events <- &types.DeploymentEvent{Deployment: types.Deployment{ID: "dep-app-1", Status: "RUNNING"}}
+	api.events <- &types.DeploymentEvent{Deployment: types.Deployment{ID: "dep-db-1", Status: "COMPLETED"}}
+	api.events <- &types.DeploymentEvent{Deployment: types.Deployment{ID: "dep-app-1", Status: "COMPLETED"}}
+	// Don't close `events` — the watcher exits via the quiet window after
+	// both deployments have transitioned to terminal status.
 
 	var buf bytes.Buffer
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
@@ -95,30 +94,47 @@ func TestFollowEnvironment_PrefixesLinesWithInstanceID(t *testing.T) {
 	}
 
 	out := buf.String()
-	if !strings.Contains(out, "[ecomm-prod-db] applying db schema\n") {
-		t.Errorf("missing prefixed db line in:\n%s", out)
-	}
-	if !strings.Contains(out, "[ecomm-prod-db] migrations done\n") {
-		t.Errorf("missing prefixed db line 2 in:\n%s", out)
-	}
-	if !strings.Contains(out, "[ecomm-prod-app] starting app\n") {
-		t.Errorf("missing prefixed app line in:\n%s", out)
-	}
-	if !strings.Contains(out, "[ecomm-prod-app] ready\n") {
-		t.Errorf("missing prefixed app line 2 in:\n%s", out)
+	for _, want := range []string{
+		"[ecomm-prod-db] applying db schema\n",
+		"[ecomm-prod-db] migrations done\n",
+		"[ecomm-prod-app] starting app\n",
+		"[ecomm-prod-app] ready\n",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing expected line %q in output:\n%s", want, out)
+		}
 	}
 }
 
-func TestFollowEnvironment_NoOpForEmptyEnv(t *testing.T) {
-	api := &stubFollowAPI{
-		instances: nil,
-	}
+func TestFollowEnvironment_ExitsWhenStreamCloses(t *testing.T) {
+	api := newStubFollowAPI()
+	close(api.events)
 
 	var buf bytes.Buffer
-	if err := environment.FollowEnvironment(t.Context(), api, "ecomm-prod", &buf); err != nil {
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	if err := environment.FollowEnvironment(ctx, api, "ecomm-prod", &buf); err != nil {
 		t.Fatalf("FollowEnvironment: %v", err)
 	}
 	if buf.Len() != 0 {
-		t.Errorf("expected no output for empty env; got %q", buf.String())
+		t.Errorf("expected no output when no deployments fire; got %q", buf.String())
 	}
 }
+
+func TestFollowEnvironment_PropagatesSubscribeError(t *testing.T) {
+	api := errorAPI{err: errors.New("ws handshake failed")}
+
+	err := environment.FollowEnvironment(t.Context(), api, "ecomm-prod", io.Discard)
+	if err == nil || !strings.Contains(err.Error(), "ws handshake failed") {
+		t.Errorf("expected subscribe error, got %v", err)
+	}
+}
+
+type errorAPI struct{ err error }
+
+func (e errorAPI) StreamEnvironmentEvents(_ context.Context, _ string) (<-chan types.Event, error) {
+	return nil, e.err
+}
+func (errorAPI) GetDeployment(_ context.Context, _ string) (*types.Deployment, error) { return nil, nil }
+func (errorAPI) TailLogs(_ context.Context, _ string, _ io.Writer) error              { return nil }
