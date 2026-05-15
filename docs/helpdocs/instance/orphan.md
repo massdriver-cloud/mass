@@ -1,6 +1,7 @@
 # Orphan an Instance
 
-Resets an instance to `INITIALIZED`, clearing all of its Terraform/OpenTofu state locks. This is a break-glass operation for instances that are permanently stuck — active `RUNNING`, `PENDING`, and `APPROVED` deployments are bulk-aborted so a late worker callback cannot walk the instance status back to `PROVISIONED`.
+Resets an instance to `INITIALIZED`, clearing all of its Terraform/OpenTofu state locks. This is a break-glass operation for instances that are permanently stuck, such as instances in a `FAILED` state that cannot be successfully
+provisioned or decommissioned. Active `RUNNING`, `PENDING`, and `APPROVED` deployments are bulk-aborted so a late worker will not retry deployments.
 
 By default, the remote state files are preserved so the next deployment can re-attach to existing infrastructure. Pass `--delete-state` to also permanently delete the state files.
 

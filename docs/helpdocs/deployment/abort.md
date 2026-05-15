@@ -2,7 +2,11 @@
 
 Cancels a `PENDING`, `APPROVED`, or `RUNNING` deployment. The deployment transitions to `ABORTED`.
 
-A running deployment aborted mid-flight leaves any partial infrastructure changes the provisioner had applied in place — the instance's state is left as it was at the moment of abort.
+A running deployment aborted mid-flight will not cancel or halt the
+running provisioner. It only transitions the state of the Massdriver
+deployment to `ABORTED`. Any partial infrastructure changes the
+provisioner had applied will remain in place — the instance's state is
+left as it was at the moment of abort.
 
 To discard a `PROPOSED` deployment instead, use the `reject` flow.
 
