@@ -127,7 +127,6 @@ func NewCmdInstance() *cobra.Command {
 		RunE:    runInstanceCopy,
 	}
 	instanceCopyCmd.Flags().String("to", "", "Destination instance (required). Must be built from the same component as the source.")
-	instanceCopyCmd.Flags().StringP("message", "m", "", "Optional message attached to the plan deployment created on the destination")
 	instanceCopyCmd.Flags().StringP("overrides", "o", "", "Path to a JSON or YAML file of param overrides deep-merged onto the source params")
 	instanceCopyCmd.Flags().Bool("copy-secrets", false, "Copy secrets from the source instance to the destination")
 	instanceCopyCmd.Flags().Bool("copy-remote-references", false, "Copy remote-reference overrides from the source instance to the destination")
@@ -331,10 +330,6 @@ func runInstanceCopy(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	message, err := cmd.Flags().GetString("message")
-	if err != nil {
-		return err
-	}
 	overridesPath, err := cmd.Flags().GetString("overrides")
 	if err != nil {
 		return err
@@ -367,7 +362,6 @@ func runInstanceCopy(cmd *cobra.Command, args []string) error {
 		Overrides:            overrides,
 		CopySecrets:          copySecrets,
 		CopyRemoteReferences: copyRefs,
-		Message:              message,
 	}
 
 	inst, err := mdClient.Instances.Copy(ctx, sourceID, destinationID, input)
@@ -375,7 +369,7 @@ func runInstanceCopy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("✅ Instance `%s` copied to `%s` — plan deployment created on the destination\n", sourceID, destinationID)
+	fmt.Printf("✅ Instance `%s` configuration copied to `%s`\n", sourceID, destinationID)
 	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(inst.ID))
 	return nil
 }

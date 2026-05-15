@@ -3,14 +3,15 @@
 Copies one instance's configuration to another instance of the same
 component. The source's params (minus any fields the bundle marks
 non-copyable) are written to the destination, optionally deep-merged with
-`--overrides`. A plan deployment is created on the destination so the
-changes can be reviewed before applying.
+`--overrides`. Deployment is a separate action — run `mass instance
+deploy <destination>` when you're ready to apply.
 
 Aliased as `promote` — same command, friendlier shape for the common
 "promote staging to production" flow:
 
 ```bash
 mass instance promote ecomm-staging-db --to ecomm-production-db
+mass instance deploy ecomm-production-db
 ```
 
 ## Usage
@@ -29,8 +30,6 @@ mass instance promote <source> --to <destination> [flags]
 
 - `--to`: destination instance (required). Must be built from the same
   component as the source (e.g. `ecomm-production-db`).
-- `--message, -m`: optional message attached to the plan deployment created
-  on the destination (think: commit message).
 - `--overrides, -o`: path to a JSON or YAML file of param overrides
   deep-merged onto the source params before writing.
 - `--copy-secrets`: also copy the source's secret values to the destination.
@@ -40,13 +39,13 @@ mass instance promote <source> --to <destination> [flags]
 ## Examples
 
 ```bash
-# Promote staging's config to production (review the plan before applying).
-mass instance promote ecomm-staging-db --to ecomm-production-db -m "Promote DB config"
+# Promote staging's config to production.
+mass instance promote ecomm-staging-db --to ecomm-production-db
+mass instance deploy ecomm-production-db
 
 # Promote with a size override and copy secrets.
 mass instance copy ecomm-staging-db \
   --to ecomm-production-db \
   --overrides ./prod-overrides.yaml \
-  --copy-secrets \
-  -m "Scale up DB for production"
+  --copy-secrets
 ```
