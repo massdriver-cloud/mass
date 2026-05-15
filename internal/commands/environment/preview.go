@@ -51,17 +51,17 @@ type PreviewConfig struct {
 
 	// EnvironmentDefaults pins specific resources as the env's defaults of their
 	// type. Each entry must point at an existing resource.
-	EnvironmentDefaults []EnvironmentDefaultEntry `json:"environmentDefaults,omitempty"`
+	EnvironmentDefaults []DefaultEntry `json:"environmentDefaults,omitempty"`
 
 	// Instances lists per-instance overrides. Listed instances without explicit
 	// fields just inherit from the fork's seed.
 	Instances map[string]InstanceOverride `json:"instances,omitempty"`
 }
 
-// EnvironmentDefaultEntry pins one resource as a default for the preview env.
+// DefaultEntry pins one resource as a default for the preview env.
 // `resourceType` is documentation for the human reader; the CLI only needs
 // `resourceId` for the API call.
-type EnvironmentDefaultEntry struct {
+type DefaultEntry struct {
 	ResourceType string `json:"resourceType,omitempty"`
 	ResourceID   string `json:"resourceId"`
 }
