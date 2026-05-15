@@ -14,9 +14,9 @@ import (
 // fakeResourceAPI is a hand-rolled stub for resource.API. Tests set only the
 // fields the case under test exercises.
 type fakeResourceAPI struct {
-	resource       *types.Resource
-	resourceType   *resourcetype.ResourceType
-	resourceTypes  []resourcetype.ResourceType
+	resource      *types.Resource
+	resourceType  *resourcetype.ResourceType
+	resourceTypes []resourcetype.ResourceType
 
 	getResourceErr      error
 	getResourceTypeErr  error
@@ -25,11 +25,11 @@ type fakeResourceAPI struct {
 	updateErr           error
 	deleteErr           error
 
-	gotCreateInput   resources.CreateInput
-	gotCreateTypeID  string
-	gotUpdateInput   resources.UpdateInput
-	gotUpdateID      string
-	gotDeleteID      string
+	gotCreateInput  resources.CreateInput
+	gotCreateTypeID string
+	gotUpdateInput  resources.UpdateInput
+	gotUpdateID     string
+	gotDeleteID     string
 }
 
 func (f *fakeResourceAPI) GetResource(_ context.Context, _ string) (*types.Resource, error) {

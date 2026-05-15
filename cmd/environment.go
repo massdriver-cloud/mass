@@ -354,8 +354,8 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	if _, err := mdClient.Environments.SetDefault(ctx, environmentID, resourceID); err != nil {
-		return err
+	if _, setErr := mdClient.Environments.SetDefault(ctx, environmentID, resourceID); setErr != nil {
+		return setErr
 	}
 
 	env, err := mdClient.Environments.Get(ctx, environmentID)

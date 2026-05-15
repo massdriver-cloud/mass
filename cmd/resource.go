@@ -188,7 +188,6 @@ func runResourceDelete(cmd *cobra.Command, args []string) error {
 	return resource.RunDelete(ctx, resource.NewAPI(mdClient), resourceID, force, os.Stdin)
 }
 
-//nolint:dupl // runResourceGet and runDefinitionGet share the same output-format pattern; refactoring would add complexity for marginal gain
 func runResourceGet(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 

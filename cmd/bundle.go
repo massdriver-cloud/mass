@@ -272,8 +272,8 @@ func runBundleNew(input *bundleNew) error {
 		// run the interactive prompt
 		mdClient, err := massdriver.NewClient()
 		if err != nil {
-		return fmt.Errorf("error initializing massdriver client: %w", err)
-	}
+			return fmt.Errorf("error initializing massdriver client: %w", err)
+		}
 
 		resourceTypes, listErr := resourcetype.List(ctx, mdClient)
 		if listErr != nil {

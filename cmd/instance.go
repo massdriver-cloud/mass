@@ -153,6 +153,7 @@ func runInstanceGet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+//nolint:dupl // parallel template-render shape with renderDeployment; consolidating would couple unrelated commands
 func renderInstance(inst *types.Instance) error {
 	tmplBytes, err := instanceTemplates.ReadFile("templates/instance.get.md.tmpl")
 	if err != nil {
@@ -195,7 +196,6 @@ func renderInstance(inst *types.Instance) error {
 	return nil
 }
 
-//nolint:gocognit // sequential flag parsing and dispatch, not branching logic
 func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
@@ -258,8 +258,9 @@ func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 				return nil
 			}
 		}
-		cmd.SilenceUsage = true
 	}
+
+	cmd.SilenceUsage = true
 
 	mdClient, err := massdriver.NewClient()
 	if err != nil {

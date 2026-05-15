@@ -184,6 +184,7 @@ func signalContext(parent context.Context) (context.Context, context.CancelFunc)
 	return signal.NotifyContext(parent, syscall.SIGINT, syscall.SIGTERM)
 }
 
+//nolint:dupl // parallel template-render shape with renderInstance; consolidating would couple unrelated commands
 func renderDeployment(deployment *types.Deployment) error {
 	tmplBytes, err := deploymentTemplates.ReadFile("templates/deployment.get.md.tmpl")
 	if err != nil {

@@ -18,12 +18,12 @@ type fakeDeployAPI struct {
 	instance       *types.Instance
 	getInstanceErr error
 
-	deployment       *types.Deployment
-	createErr        error
-	gotCreateInput   deployments.CreateInput
-	gotCreateInstID  string
+	deployment      *types.Deployment
+	createErr       error
+	gotCreateInput  deployments.CreateInput
+	gotCreateInstID string
 
-	finalDeployment *types.Deployment
+	finalDeployment  *types.Deployment
 	getDeploymentErr error
 }
 

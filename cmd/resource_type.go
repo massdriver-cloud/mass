@@ -73,7 +73,6 @@ func NewCmdType() *cobra.Command {
 	return typeCmd
 }
 
-//nolint:dupl // runTypeGet and runResourceGet share the same output-format pattern; refactoring would add complexity for marginal gain
 func runTypeGet(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 

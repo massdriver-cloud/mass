@@ -5,7 +5,9 @@
 package api
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
@@ -49,16 +51,21 @@ func mutationError(label string, messages []mutationMessage) error {
 	if len(messages) == 0 {
 		return fmt.Errorf("%s: server reported failure with no detail", label)
 	}
-	out := label + ":"
+	var b strings.Builder
+	b.WriteString(label)
+	b.WriteByte(':')
 	for _, m := range messages {
-		out += "\n  - "
+		b.WriteString("\n  - ")
 		if m.Field != "" {
-			out += m.Field + ": "
+			b.WriteString(m.Field)
+			b.WriteString(": ")
 		}
-		out += m.Message
+		b.WriteString(m.Message)
 		if m.Code != "" {
-			out += " (" + m.Code + ")"
+			b.WriteString(" (")
+			b.WriteString(m.Code)
+			b.WriteByte(')')
 		}
 	}
-	return fmt.Errorf("%s", out)
+	return errors.New(b.String())
 }
