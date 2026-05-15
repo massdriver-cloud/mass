@@ -118,18 +118,20 @@ func NewCmdInstance() *cobra.Command {
 	instanceOrphanCmd.Flags().Bool("delete-state", false, "Also delete the remote Terraform/OpenTofu state files (irreversible)")
 
 	instanceCopyCmd := &cobra.Command{
-		Use:     `copy [source] [destination]`,
+		Use:     `copy [source] --to [destination]`,
 		Aliases: []string{"promote"},
-		Short:   "Copy an instance's configuration into another instance of the same component",
-		Example: `mass instance copy ecomm-staging-db ecomm-production-db --copy-secrets`,
+		Short:   "Copy an instance's configuration to another instance of the same component",
+		Example: `mass instance promote ecomm-staging-db --to ecomm-production-db --copy-secrets`,
 		Long:    helpdocs.MustRender("instance/copy"),
-		Args:    cobra.ExactArgs(2),
+		Args:    cobra.ExactArgs(1),
 		RunE:    runInstanceCopy,
 	}
+	instanceCopyCmd.Flags().String("to", "", "Destination instance (required). Must be built from the same component as the source.")
 	instanceCopyCmd.Flags().StringP("message", "m", "", "Optional message attached to the plan deployment created on the destination")
 	instanceCopyCmd.Flags().StringP("overrides", "o", "", "Path to a JSON or YAML file of param overrides deep-merged onto the source params")
 	instanceCopyCmd.Flags().Bool("copy-secrets", false, "Copy secrets from the source instance to the destination")
 	instanceCopyCmd.Flags().Bool("copy-remote-references", false, "Copy remote-reference overrides from the source instance to the destination")
+	_ = instanceCopyCmd.MarkFlagRequired("to")
 
 	instanceCmd.AddCommand(instanceDeployCmd)
 	instanceCmd.AddCommand(instanceExportCmd)
@@ -325,7 +327,10 @@ func runInstanceCopy(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	sourceID := args[0]
-	destinationID := args[1]
+	destinationID, err := cmd.Flags().GetString("to")
+	if err != nil {
+		return err
+	}
 	message, err := cmd.Flags().GetString("message")
 	if err != nil {
 		return err
