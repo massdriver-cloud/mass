@@ -17,6 +17,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/internal/cli"
+	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
@@ -208,8 +209,8 @@ func runDeploymentAbort(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	if !force {
-		fmt.Printf("WARNING: This will abort deployment `%s`. A running deployment aborted mid-flight leaves any partial infrastructure changes in place.\n", deploymentID)
-		fmt.Printf("Type `%s` to confirm abort: ", deploymentID)
+		fmt.Printf("%s: This will abort deployment %s. A running deployment aborted mid-flight leaves any partial infrastructure changes in place, and does not halt execution of the deployment if it is already running.\n", prettylogs.Orange("WARNING"), deploymentID)
+		fmt.Printf("Type '%s' to confirm abort: ", deploymentID)
 		reader := bufio.NewReader(os.Stdin)
 		answer, _ := reader.ReadString('\n')
 		if strings.TrimSpace(answer) != deploymentID {

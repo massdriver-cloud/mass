@@ -15,6 +15,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/instance"
 	"github.com/massdriver-cloud/mass/internal/files"
+	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 
 	"github.com/charmbracelet/glamour"
@@ -107,7 +108,7 @@ func NewCmdInstance() *cobra.Command {
 
 	instanceOrphanCmd := &cobra.Command{
 		Use:     `orphan <project>-<env>-<manifest>`,
-		Short:   "Orphan an instance (reset to INITIALIZED, clearing state locks)",
+		Short:   "Orphan an instance (reset to INITIALIZED, optionally clearing state locks)",
 		Example: `mass instance orphan api-prod-db --force`,
 		Long:    helpdocs.MustRender("instance/orphan"),
 		Args:    cobra.ExactArgs(1),
@@ -370,11 +371,11 @@ func runInstanceOrphan(cmd *cobra.Command, args []string) error {
 
 	if !force {
 		if deleteState {
-			fmt.Printf("WARNING: This will orphan instance `%s` AND permanently delete its Terraform/OpenTofu state files. The next deployment will provision from scratch and may duplicate any resources tracked by the prior state. This is irreversible.\n", name)
+			fmt.Printf("%s: This will orphan instance %s, resetting it to INITIALIZED and permanently deleting its Terraform/OpenTofu state files. The next deployment will provision from scratch and may duplicate any resources tracked by the prior state. This is irreversible.\n", prettylogs.Orange("WARNING"), name)
 		} else {
-			fmt.Printf("WARNING: This will orphan instance `%s`, resetting it to INITIALIZED and clearing all of its Terraform/OpenTofu state locks. Any active deployments will be aborted.\n", name)
+			fmt.Printf("%s: This will orphan instance %s, resetting it to INITIALIZED and clearing all of its Terraform/OpenTofu state locks.\n", prettylogs.Orange("WARNING"), name)
 		}
-		fmt.Printf("Type `%s` to confirm orphan: ", name)
+		fmt.Printf("Type '%s' to confirm orphan: ", name)
 		reader := bufio.NewReader(os.Stdin)
 		answer, _ := reader.ReadString('\n')
 		if strings.TrimSpace(answer) != name {
