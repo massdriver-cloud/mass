@@ -38,6 +38,7 @@ mass environment preview <ID> [flags]
 - `--name, -n`: human-readable environment name (defaults to `ID`).
 - `--description, -d`: optional environment description.
 - `--attributes, -a`: custom attributes for ABAC, e.g. `-a environment=preview,region=uswest`. Overrides `attributes:` in the config file.
+- `--follow`: stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id so the interleaved output stays grep-friendly when multiple deployments run in parallel.
 
 ## Environment-variable expansion
 
@@ -132,6 +133,7 @@ mass environment preview [ID] [flags]
   -a, --attributes attributes:   Custom attributes for ABAC (e.g. -a environment=preview,region=uswest). Overrides attributes: in the config file. (default [])
   -d, --description string       Optional environment description
   -f, --file string              Path to the preview config YAML (default "preview.yaml")
+      --follow                   Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.
   -h, --help                     help for preview
   -n, --name string              Environment name (defaults to ID if not provided)
 ```

@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"text/template"
 
@@ -97,6 +98,7 @@ func NewCmdEnvironment() *cobra.Command {
 	environmentPreviewCmd.Flags().StringP("name", "n", "", "Environment name (defaults to ID if not provided)")
 	environmentPreviewCmd.Flags().StringP("description", "d", "", "Optional environment description")
 	environmentPreviewCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a environment=preview,region=uswest). Overrides `attributes:` in the config file.")
+	environmentPreviewCmd.Flags().Bool("follow", false, "Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
 
 	environmentCmd.AddCommand(environmentExportCmd)
 	environmentCmd.AddCommand(environmentGetCmd)
@@ -402,6 +404,10 @@ func runEnvironmentPreview(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	follow, err := cmd.Flags().GetBool("follow")
+	if err != nil {
+		return err
+	}
 
 	cmd.SilenceUsage = true
 
@@ -431,5 +437,9 @@ func runEnvironmentPreview(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("✅ Preview environment `%s` converged\n", env.ID)
 	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(env.ID))
+
+	if follow {
+		return environment.FollowEnvironment(ctx, environment.NewFollowAPI(mdClient), env.ID, os.Stdout)
+	}
 	return nil
 }
