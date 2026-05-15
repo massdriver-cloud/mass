@@ -145,7 +145,7 @@ func handleDeploymentEvent(
 		}()
 	}
 
-	if deployments.IsTerminal(string(depEv.Deployment.Status)) {
+	if deployments.IsTerminal(depEv.Deployment.Status) {
 		delete(active, depID)
 	} else {
 		active[depID] = struct{}{}

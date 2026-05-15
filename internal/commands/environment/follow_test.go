@@ -68,8 +68,8 @@ func (s *stubFollowAPI) TailLogs(_ context.Context, deploymentID string, w io.Wr
 }
 
 func TestFollowEnvironment_PrefixesLinesWithInstanceID(t *testing.T) {
-	environment.FollowQuietWindow = 100 * time.Millisecond
-	t.Cleanup(func() { environment.FollowQuietWindow = 30 * time.Second })
+	environment.FollowQuietWindow = 100 * time.Millisecond                 //nolint:reassign // intentionally shortened in tests
+	t.Cleanup(func() { environment.FollowQuietWindow = 30 * time.Second }) //nolint:reassign // restore default
 
 	api := newStubFollowAPI()
 	api.depToInstance["dep-db-1"] = "ecomm-prod-db"
@@ -136,5 +136,7 @@ type errorAPI struct{ err error }
 func (e errorAPI) StreamEnvironmentEvents(_ context.Context, _ string) (<-chan types.Event, error) {
 	return nil, e.err
 }
-func (errorAPI) GetDeployment(_ context.Context, _ string) (*types.Deployment, error) { return nil, nil }
-func (errorAPI) TailLogs(_ context.Context, _ string, _ io.Writer) error              { return nil }
+func (errorAPI) GetDeployment(_ context.Context, _ string) (*types.Deployment, error) {
+	return nil, nil
+}
+func (errorAPI) TailLogs(_ context.Context, _ string, _ io.Writer) error { return nil }
