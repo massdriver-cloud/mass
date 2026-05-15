@@ -16,7 +16,6 @@ func TestDelete(t *testing.T) {
 		name       string
 		typeName   string
 		response   map[string]any
-		force      bool
 		expectErr  bool
 		errMessage string
 	}
@@ -28,17 +27,12 @@ func TestDelete(t *testing.T) {
 				"id":   "123-456",
 				"name": "massdriver/test-schema",
 			},
-			force: true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mock := gqltest.NewClient(
-				// Delete first does a Get for the confirmation prompt.
-				gqltest.RespondWithData(map[string]any{
-					"resourceType": tc.response,
-				}),
 				gqltest.RespondWithData(map[string]any{
 					"deleteResourceType": map[string]any{
 						"result":     tc.response,
@@ -55,7 +49,7 @@ func TestDelete(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err = resourcetype.Delete(t.Context(), mdClient, tc.typeName, tc.force)
+			deleted, err := resourcetype.Delete(t.Context(), mdClient, tc.typeName)
 			if tc.expectErr {
 				if err == nil {
 					t.Fatalf("expected error but got none")
@@ -67,6 +61,9 @@ func TestDelete(t *testing.T) {
 			}
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
+			}
+			if deleted == nil || deleted.Name != tc.response["name"] {
+				t.Fatalf("expected deleted record with name %v, got %v", tc.response["name"], deleted)
 			}
 		})
 	}

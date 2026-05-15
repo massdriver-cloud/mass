@@ -191,13 +191,14 @@ func waitForDeployment(ctx context.Context, api DeployAPI, id string, timeout ti
 // waitForDeploymentWithLogs tails the deployment's logs to w in real time,
 // returning when the deployment reaches a terminal state. If the configured
 // credentials can't open the streaming websocket (basic-auth /
-// service-account), the call fails loudly — `--follow` is opt-in, so the
-// user explicitly asked for streaming and deserves a clear error rather than
-// silent fallback.
+// service-account), the call falls back to status polling — the deploy was
+// created successfully, so the user shouldn't see a non-zero exit just
+// because their auth doesn't support live tailing.
 func waitForDeploymentWithLogs(ctx context.Context, api DeployAPI, id string, w io.Writer) (*types.Deployment, error) {
 	err := api.TailLogs(ctx, id, w)
 	if errors.Is(err, deployments.ErrStreamingRequiresPAT) {
-		return nil, fmt.Errorf("log streaming requires a personal access token. Set MASSDRIVER_API_KEY to a token starting with mds_ or md_ and retry, or omit --follow to skip streaming")
+		fmt.Fprintln(os.Stderr, "warning: log streaming requires a personal access token (mds_*/md_*); falling back to status polling")
+		return waitForDeployment(ctx, api, id, DeploymentTimeout)
 	}
 	if err != nil {
 		return nil, err

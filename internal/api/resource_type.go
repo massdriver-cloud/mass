@@ -2,12 +2,14 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql/scalars"
 )
 
 // ResourceType mirrors the v2 GraphQL schema's resource-type record. Field
@@ -145,6 +147,15 @@ func ListResourceTypes(ctx context.Context, mdClient *massdriver.Client) ([]Reso
 // PublishResourceType registers a resource-type schema.
 func PublishResourceType(ctx context.Context, mdClient *massdriver.Client, input PublishResourceTypeInput) (*ResourceType, error) {
 	cfg := mdClient.Config()
+
+	// The schema field is a GraphQL `Map!` scalar — wire format is a
+	// JSON-encoded string. scalars.MarshalJSON is the canonical encoder the
+	// genqlient codegen uses; reuse it so the wire shape stays in lockstep.
+	schemaRaw, err := scalars.MarshalJSON(input.Schema)
+	if err != nil {
+		return nil, fmt.Errorf("marshal resource-type schema: %w", err)
+	}
+
 	var resp struct {
 		PublishResourceType resourceTypeMutationResult `json:"publishResourceType"`
 	}
@@ -153,7 +164,7 @@ func PublishResourceType(ctx context.Context, mdClient *massdriver.Client, input
 		Query:  publishResourceTypeMutation,
 		Variables: map[string]any{
 			"organizationId": cfg.OrganizationID,
-			"input":          input,
+			"input":          map[string]any{"schema": json.RawMessage(schemaRaw)},
 		},
 	}
 	if err := gqlClient(mdClient).MakeRequest(ctx, req, &graphql.Response{Data: &resp}); err != nil {

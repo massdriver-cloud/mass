@@ -17,6 +17,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/ocirepos"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
@@ -29,8 +30,8 @@ var artifactTypeAliases = map[string]ocirepos.ArtifactType{
 	"bundle": ocirepos.ArtifactTypeBundle,
 }
 
-// artifactTypeLabels is the reverse lookup for table/output rendering — turn
-// the enum the server returns back into the friendly name the user typed.
+// artifactTypeLabels is the reverse lookup for table/output rendering — turns
+// the SDK's typed enum back into the friendly name the user typed.
 var artifactTypeLabels = map[ocirepos.ArtifactType]string{
 	ocirepos.ArtifactTypeBundle: "bundle",
 }
@@ -142,14 +143,7 @@ func runRepositoryList(input *repositoryListInput) error {
 	case "table":
 		tbl := cli.NewTable("Name", "Type", "Latest", "Created At")
 		for _, repo := range repos {
-			latest := ""
-			for _, rc := range repo.ReleaseChannels {
-				if rc.Name == "latest" {
-					latest = rc.Tag
-					break
-				}
-			}
-			tbl.AddRow(repo.Name, artifactTypeLabel(repo.ArtifactType), latest, repo.CreatedAt.Format("2006-01-02 15:04:05"))
+			tbl.AddRow(repo.Name, artifactTypeLabel(repo.ArtifactType), repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05"))
 		}
 		tbl.Print()
 	default:
@@ -204,11 +198,11 @@ func resolveArtifactType(s string) (ocirepos.ArtifactType, error) {
 	return "", fmt.Errorf("unknown artifact type %q (valid: bundle)", s)
 }
 
-func artifactTypeLabel(at string) string {
-	if label, ok := artifactTypeLabels[ocirepos.ArtifactType(at)]; ok {
+func artifactTypeLabel(at ocirepos.ArtifactType) string {
+	if label, ok := artifactTypeLabels[at]; ok {
 		return label
 	}
-	return at
+	return string(at)
 }
 
 func runRepositoryGet(cmd *cobra.Command, args []string) error {
@@ -271,7 +265,7 @@ func renderRepository(repo *ocirepos.OciRepo, tagCount int) error {
 	data := struct {
 		*ocirepos.OciRepo
 		TypeLabel  string
-		ShownTags  []string
+		ShownTags  []types.OciRepoTag
 		TotalTags  int
 		Truncated  bool
 		FormatTime func(time.Time) string

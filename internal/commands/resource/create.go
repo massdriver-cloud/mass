@@ -26,6 +26,7 @@ type API interface {
 	GetResource(ctx context.Context, id string) (*types.Resource, error)
 	CreateResource(ctx context.Context, resourceTypeID string, in resources.CreateInput) (*types.Resource, error)
 	UpdateResource(ctx context.Context, id string, in resources.UpdateInput) (*types.Resource, error)
+	DeleteResource(ctx context.Context, id string) (*types.Resource, error)
 	GetResourceType(ctx context.Context, name string) (*resourcetype.ResourceType, error)
 	ListResourceTypes(ctx context.Context) ([]resourcetype.ResourceType, error)
 }
@@ -45,6 +46,10 @@ func (s sdkAPI) CreateResource(ctx context.Context, resourceTypeID string, in re
 
 func (s sdkAPI) UpdateResource(ctx context.Context, id string, in resources.UpdateInput) (*types.Resource, error) {
 	return s.c.Resources.Update(ctx, id, in)
+}
+
+func (s sdkAPI) DeleteResource(ctx context.Context, id string) (*types.Resource, error) {
+	return s.c.Resources.Delete(ctx, id)
 }
 
 func (s sdkAPI) GetResourceType(ctx context.Context, name string) (*resourcetype.ResourceType, error) {

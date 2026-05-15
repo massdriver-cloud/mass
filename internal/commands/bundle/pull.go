@@ -3,7 +3,6 @@ package bundle
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
@@ -62,8 +61,10 @@ func resolveTag(ctx context.Context, mdClient *massdriver.Client, bundleName str
 		return "", fmt.Errorf("failed to get OCI repo: %w", getErr)
 	}
 
-	if slices.Contains(repo.Tags, version) {
-		return version, nil
+	for _, t := range repo.Tags {
+		if t.Tag == version {
+			return version, nil
+		}
 	}
 
 	for _, channel := range repo.ReleaseChannels {

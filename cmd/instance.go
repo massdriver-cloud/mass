@@ -74,12 +74,11 @@ func NewCmdInstance() *cobra.Command {
 	instanceVersionCmd := &cobra.Command{
 		Use:     `version <instance-id>@<version>`,
 		Short:   "Set instance version",
-		Example: `mass instance version api-prod-db@latest --release-channel development`,
+		Example: `mass instance version api-prod-db@latest`,
 		Long:    helpdocs.MustRender("instance/version"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInstanceVersion,
 	}
-	instanceVersionCmd.Flags().String("release-channel", "stable", "Release strategy (stable or development)")
 
 	instanceDestroyCmd := &cobra.Command{
 		Use:     `destroy <project>-<env>-<manifest>`,
@@ -326,33 +325,12 @@ func runInstanceVersion(cmd *cobra.Command, args []string) error {
 	instanceID := parts[0]
 	version := parts[1]
 
-	releaseChannel, err := cmd.Flags().GetString("release-channel")
-	if err != nil {
-		return err
-	}
-
-	// Convert release channel to ReleaseStrategy enum value
-	var releaseStrategy instances.ReleaseStrategy
-	switch releaseChannel {
-	case "development":
-		releaseStrategy = instances.ReleaseDevelopment
-	case "stable":
-		releaseStrategy = instances.ReleaseStable
-	default:
-		return fmt.Errorf("invalid release-channel: must be 'stable' or 'development', got '%s'", releaseChannel)
-	}
-
 	mdClient, err := massdriver.NewClient()
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	input := instances.UpdateInput{
-		Version:         version,
-		ReleaseStrategy: releaseStrategy,
-	}
-
-	updatedInstance, err := mdClient.Instances.Update(ctx, instanceID, input)
+	updatedInstance, err := mdClient.Instances.Update(ctx, instanceID, instances.UpdateInput{Version: version})
 	if err != nil {
 		return err
 	}

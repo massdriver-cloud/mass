@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"os"
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
@@ -92,10 +93,24 @@ func NewCmdResource() *cobra.Command {
 	resourceUpdateCmd.Flags().StringP("file", "f", "", "Resource payload file")
 	_ = resourceUpdateCmd.MarkFlagRequired("file")
 
+	resourceDeleteCmd := &cobra.Command{
+		Use:   "delete [resource-id]",
+		Short: "Delete a resource",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runResourceDelete,
+		Example: `  # Delete an imported resource
+  mass resource delete 12345678-1234-1234-1234-123456789012
+
+  # Skip the confirmation prompt
+  mass resource delete 12345678-1234-1234-1234-123456789012 --force`,
+	}
+	resourceDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+
 	resourceCmd.AddCommand(resourceCreateCmd)
 	resourceCmd.AddCommand(resourceGetCmd)
 	resourceCmd.AddCommand(resourceDownloadCmd)
 	resourceCmd.AddCommand(resourceUpdateCmd)
+	resourceCmd.AddCommand(resourceDeleteCmd)
 
 	return resourceCmd
 }
@@ -153,6 +168,24 @@ func runResourceUpdate(cmd *cobra.Command, args []string) error {
 
 	_, updateErr := resource.RunUpdate(ctx, resource.NewAPI(mdClient), resourceID, resourceName, resourceFile)
 	return updateErr
+}
+
+func runResourceDelete(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	resourceID := args[0]
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	return resource.RunDelete(ctx, resource.NewAPI(mdClient), resourceID, force, os.Stdin)
 }
 
 //nolint:dupl // runResourceGet and runDefinitionGet share the same output-format pattern; refactoring would add complexity for marginal gain

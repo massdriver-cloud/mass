@@ -17,7 +17,6 @@ import (
 	"github.com/massdriver-cloud/mass/internal/commands/project"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/projects"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
@@ -158,7 +157,7 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	projectList, err := mdClient.Projects.List(ctx)
+	projectList, err := mdClient.Projects.List(ctx, projects.ListInput{})
 	if err != nil {
 		return err
 	}
@@ -168,13 +167,11 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 	for _, p := range projectList {
 		monthly := ""
 		daily := ""
-		if p.Cost != nil {
-			if p.Cost.MonthlyAverage.Amount != nil {
-				monthly = fmt.Sprintf("%v", *p.Cost.MonthlyAverage.Amount)
-			}
-			if p.Cost.DailyAverage.Amount != nil {
-				daily = fmt.Sprintf("%v", *p.Cost.DailyAverage.Amount)
-			}
+		if p.Cost.MonthlyAverage.Amount != nil {
+			monthly = fmt.Sprintf("%v", *p.Cost.MonthlyAverage.Amount)
+		}
+		if p.Cost.DailyAverage.Amount != nil {
+			daily = fmt.Sprintf("%v", *p.Cost.DailyAverage.Amount)
 		}
 		description := cli.TruncateString(p.Description, 60)
 		tbl.AddRow(p.ID, p.Name, description, monthly, daily)
@@ -194,13 +191,6 @@ func renderProject(p *projects.Project) error {
 	tmpl, err := template.New("project").Funcs(cli.MarkdownTemplateFuncs).Parse(string(tmplBytes))
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
-	}
-
-	// The template chains through .Cost.MonthlyAverage.Amount unconditionally;
-	// supply a zero CostSummary so a nil cost record renders as empty values
-	// rather than aborting template execution.
-	if p.Cost == nil {
-		p.Cost = &types.CostSummary{}
 	}
 
 	var buf bytes.Buffer

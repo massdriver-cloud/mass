@@ -537,14 +537,7 @@ func runBundleList(input *bundleList) error {
 	case "table":
 		tbl := cli.NewTable("Name", "Latest", "Created At")
 		for _, repo := range repos {
-			latest := ""
-			for _, rc := range repo.ReleaseChannels {
-				if rc.Name == "latest" {
-					latest = rc.Tag
-					break
-				}
-			}
-			tbl.AddRow(repo.Name, latest, repo.CreatedAt.Format("2006-01-02 15:04:05"))
+			tbl.AddRow(repo.Name, repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05"))
 		}
 		tbl.Print()
 	default:

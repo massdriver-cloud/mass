@@ -236,11 +236,11 @@ func runTypeDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	deleteErr := resourcetype.Delete(ctx, mdClient, typeName, force)
+	deleted, deleteErr := resourcetype.Delete(ctx, mdClient, typeName)
 	if deleteErr != nil {
 		return fmt.Errorf("error deleting resource type: %w", deleteErr)
 	}
 
-	fmt.Printf("Resource type %s deleted successfully!\n", prettylogs.Underline(typeName))
+	fmt.Printf("Resource type %s deleted successfully!\n", prettylogs.Underline(deleted.Name))
 	return nil
 }

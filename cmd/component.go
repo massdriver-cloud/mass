@@ -120,12 +120,13 @@ func runComponentAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	input := components.AddInput{
+		OciRepoName: ociRepoName,
 		ID:          shortID,
 		Name:        name,
 		Description: description,
 		Attributes:  cli.AttributesToAnyMap(attrs),
 	}
-	comp, err := mdClient.Components.Add(ctx, projectID, ociRepoName, input)
+	comp, err := mdClient.Components.Add(ctx, projectID, input)
 	if err != nil {
 		return err
 	}

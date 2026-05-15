@@ -162,7 +162,15 @@ func runDeploymentLogs(cmd *cobra.Command, args []string) error {
 	// TailLogs collapses backfill + terminal-check + live streaming into one call.
 	tailErr := mdClient.Deployments.TailLogs(ctx, deploymentID, os.Stdout)
 	if errors.Is(tailErr, deployments.ErrStreamingRequiresPAT) {
-		return fmt.Errorf("log streaming requires a personal access token. Set MASSDRIVER_API_KEY to a token starting with mds_ or md_ and retry")
+		// Fall back to a one-shot static-log dump so the user still gets the
+		// available history. Streaming would require a personal access token.
+		fmt.Fprintln(os.Stderr, "warning: log streaming requires a personal access token (mds_*/md_*); showing static logs instead")
+		backfill, err := mdClient.Deployments.GetLogs(ctx, deploymentID)
+		if err != nil {
+			return fmt.Errorf("error getting deployment logs: %w", err)
+		}
+		fmt.Fprint(os.Stdout, backfill)
+		return nil
 	}
 	if tailErr != nil && !errors.Is(tailErr, context.Canceled) {
 		return tailErr
@@ -187,8 +195,20 @@ func renderDeployment(deployment *types.Deployment) error {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	paramsJSON := "{}"
+	if deployment.Params != nil {
+		if b, marshalErr := json.MarshalIndent(deployment.Params, "", "  "); marshalErr == nil {
+			paramsJSON = string(b)
+		}
+	}
+
+	data := struct {
+		*types.Deployment
+		ParamsJSON string
+	}{Deployment: deployment, ParamsJSON: paramsJSON}
+
 	var buf bytes.Buffer
-	if renderErr := tmpl.Execute(&buf, deployment); renderErr != nil {
+	if renderErr := tmpl.Execute(&buf, data); renderErr != nil {
 		return fmt.Errorf("failed to execute template: %w", renderErr)
 	}
 

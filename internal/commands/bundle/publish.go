@@ -66,7 +66,11 @@ func getVersion(ctx context.Context, mdClient *massdriver.Client, b *bundle.Bund
 	if err != nil {
 		return "", fmt.Errorf("fetching OCI repo: %w", err)
 	}
-	return resolveVersion(b, repo.Tags, developmentRelease)
+	tagNames := make([]string, len(repo.Tags))
+	for i, t := range repo.Tags {
+		tagNames[i] = t.Tag
+	}
+	return resolveVersion(b, tagNames, developmentRelease)
 }
 
 // resolveVersion returns the tag to publish under, refusing to overwrite an

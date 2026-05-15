@@ -172,13 +172,11 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 	for _, env := range envs {
 		monthly := ""
 		daily := ""
-		if env.Cost != nil {
-			if env.Cost.MonthlyAverage.Amount != nil {
-				monthly = fmt.Sprintf("%v", *env.Cost.MonthlyAverage.Amount)
-			}
-			if env.Cost.DailyAverage.Amount != nil {
-				daily = fmt.Sprintf("%v", *env.Cost.DailyAverage.Amount)
-			}
+		if env.Cost.MonthlyAverage.Amount != nil {
+			monthly = fmt.Sprintf("%v", *env.Cost.MonthlyAverage.Amount)
+		}
+		if env.Cost.DailyAverage.Amount != nil {
+			daily = fmt.Sprintf("%v", *env.Cost.DailyAverage.Amount)
 		}
 		description := cli.TruncateString(env.Description, 60)
 		tbl.AddRow(env.ID, env.Name, description, monthly, daily)
@@ -205,13 +203,6 @@ func renderEnvironment(ctx context.Context, mdClient *massdriver.Client, env *en
 	insts, err := mdClient.Instances.List(ctx, instances.ListInput{EnvironmentID: env.ID})
 	if err != nil {
 		return fmt.Errorf("failed to list instances: %w", err)
-	}
-
-	// The template chains through .Cost.MonthlyAverage.Amount unconditionally;
-	// supply a zero CostSummary so a nil cost record renders as empty values
-	// rather than aborting template execution.
-	if env.Cost == nil {
-		env.Cost = &types.CostSummary{}
 	}
 
 	data := struct {

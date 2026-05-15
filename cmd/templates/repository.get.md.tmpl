@@ -25,10 +25,13 @@ No attributes
 ## Tags
 {{- if .ShownTags}}
 
-{{range .ShownTags -}}
-- `{{.}}`
-{{end}}
+| Tag | Created |
+| --- | ------- |
+{{- range .ShownTags}}
+| `{{.Tag}}` | {{call $.FormatTime .CreatedAt}} |
+{{- end}}
 {{- if .Truncated}}
+
 _Showing {{len .ShownTags}} of {{.TotalTags}} tags. Use `--tags <n>` to show more._
 {{- end}}
 {{- else}}

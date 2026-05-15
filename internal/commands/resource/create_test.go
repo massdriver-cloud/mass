@@ -23,11 +23,13 @@ type fakeResourceAPI struct {
 	listResourceTypeErr error
 	createErr           error
 	updateErr           error
+	deleteErr           error
 
 	gotCreateInput   resources.CreateInput
 	gotCreateTypeID  string
 	gotUpdateInput   resources.UpdateInput
 	gotUpdateID      string
+	gotDeleteID      string
 }
 
 func (f *fakeResourceAPI) GetResource(_ context.Context, _ string) (*types.Resource, error) {
@@ -48,6 +50,14 @@ func (f *fakeResourceAPI) UpdateResource(_ context.Context, id string, in resour
 	f.gotUpdateInput = in
 	if f.updateErr != nil {
 		return nil, f.updateErr
+	}
+	return f.resource, nil
+}
+
+func (f *fakeResourceAPI) DeleteResource(_ context.Context, id string) (*types.Resource, error) {
+	f.gotDeleteID = id
+	if f.deleteErr != nil {
+		return nil, f.deleteErr
 	}
 	return f.resource, nil
 }
