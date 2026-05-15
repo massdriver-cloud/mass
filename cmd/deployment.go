@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"embed"
@@ -9,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"text/template"
 
@@ -64,9 +66,20 @@ func NewCmdDeployment() *cobra.Command {
 		RunE:    runDeploymentLogs,
 	}
 
+	deploymentAbortCmd := &cobra.Command{
+		Use:     "abort <deployment-id>",
+		Short:   "Abort a pending, approved, or running deployment",
+		Example: `mass deployment abort 12345678-1234-1234-1234-123456789012 --force`,
+		Long:    helpdocs.MustRender("deployment/abort"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runDeploymentAbort,
+	}
+	deploymentAbortCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+
 	deploymentCmd.AddCommand(deploymentGetCmd)
 	deploymentCmd.AddCommand(deploymentListCmd)
 	deploymentCmd.AddCommand(deploymentLogsCmd)
+	deploymentCmd.AddCommand(deploymentAbortCmd)
 
 	return deploymentCmd
 }
@@ -182,6 +195,41 @@ func runDeploymentLogs(cmd *cobra.Command, args []string) error {
 // Ctrl-C cleanly tears down the WebSocket and exits.
 func signalContext(parent context.Context) (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(parent, syscall.SIGINT, syscall.SIGTERM)
+}
+
+func runDeploymentAbort(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	deploymentID := args[0]
+
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+	cmd.SilenceUsage = true
+
+	if !force {
+		fmt.Printf("WARNING: This will abort deployment `%s`. A running deployment aborted mid-flight leaves any partial infrastructure changes in place.\n", deploymentID)
+		fmt.Printf("Type `%s` to confirm abort: ", deploymentID)
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		if strings.TrimSpace(answer) != deploymentID {
+			fmt.Println("Abort cancelled.")
+			return nil
+		}
+	}
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	aborted, err := mdClient.Deployments.Abort(ctx, deploymentID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Deployment `%s` aborted (status: %s)\n", aborted.ID, aborted.Status)
+	return nil
 }
 
 //nolint:dupl // parallel template-render shape with renderInstance; consolidating would couple unrelated commands

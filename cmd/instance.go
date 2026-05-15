@@ -105,12 +105,24 @@ func NewCmdInstance() *cobra.Command {
 		RunE:    runInstanceList,
 	}
 
+	instanceOrphanCmd := &cobra.Command{
+		Use:     `orphan <project>-<env>-<manifest>`,
+		Short:   "Orphan an instance (reset to INITIALIZED, clearing state locks)",
+		Example: `mass instance orphan api-prod-db --force`,
+		Long:    helpdocs.MustRender("instance/orphan"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runInstanceOrphan,
+	}
+	instanceOrphanCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	instanceOrphanCmd.Flags().Bool("delete-state", false, "Also delete the remote Terraform/OpenTofu state files (irreversible)")
+
 	instanceCmd.AddCommand(instanceDeployCmd)
 	instanceCmd.AddCommand(instanceExportCmd)
 	instanceCmd.AddCommand(instanceGetCmd)
 	instanceCmd.AddCommand(instanceListCmd)
 	instanceCmd.AddCommand(instanceVersionCmd)
 	instanceCmd.AddCommand(instanceDestroyCmd)
+	instanceCmd.AddCommand(instanceOrphanCmd)
 
 	return instanceCmd
 }
@@ -339,6 +351,50 @@ func runInstanceVersion(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✅ Instance `%s` version set successfully\n", updatedInstance.ID)
 	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(updatedInstance.ID))
 
+	return nil
+}
+
+func runInstanceOrphan(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	name := args[0]
+
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+	deleteState, err := cmd.Flags().GetBool("delete-state")
+	if err != nil {
+		return err
+	}
+	cmd.SilenceUsage = true
+
+	if !force {
+		if deleteState {
+			fmt.Printf("WARNING: This will orphan instance `%s` AND permanently delete its Terraform/OpenTofu state files. The next deployment will provision from scratch and may duplicate any resources tracked by the prior state. This is irreversible.\n", name)
+		} else {
+			fmt.Printf("WARNING: This will orphan instance `%s`, resetting it to INITIALIZED and clearing all of its Terraform/OpenTofu state locks. Any active deployments will be aborted.\n", name)
+		}
+		fmt.Printf("Type `%s` to confirm orphan: ", name)
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		if strings.TrimSpace(answer) != name {
+			fmt.Println("Orphan cancelled.")
+			return nil
+		}
+	}
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	orphaned, err := mdClient.Instances.Orphan(ctx, name, instances.OrphanInput{DeleteState: deleteState})
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Instance `%s` orphaned (status: %s)\n", orphaned.ID, orphaned.Status)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(orphaned.ID))
 	return nil
 }
 

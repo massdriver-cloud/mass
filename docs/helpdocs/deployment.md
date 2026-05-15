@@ -7,3 +7,4 @@ Use these commands to inspect deployment history and logs:
 - `mass deployment list <instance-id>` — list recent deployments for an instance
 - `mass deployment get <deployment-id>` — show details for a single deployment
 - `mass deployment logs <deployment-id>` — print log output from a deployment
+- `mass deployment abort <deployment-id>` — abort a pending, approved, or running deployment
