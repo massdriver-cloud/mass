@@ -2,6 +2,8 @@ INSTALL_PATH ?= ~/bin
 GIT_SHA := $(shell git log -1 --pretty=format:"%H")
 LD_FLAGS := "-X github.com/massdriver-cloud/mass/internal/version.version=dev -X github.com/massdriver-cloud/mass/internal/version.gitSHA=local-dev-${GIT_SHA}"
 
+MAKEFLAGS += --no-print-directory
+
 .DEFAULT_GOAL := install
 
 .PHONY: check
@@ -13,7 +15,18 @@ clean:
 
 .PHONY: docs
 docs: build
-	./mass docs
+	@OS="$$(uname -s)"; \
+	if [ "$$OS" = "Darwin" ]; then \
+		./bin/mass-darwin-arm64 docs; \
+	elif [ "$$OS" = "Linux" ]; then \
+		./bin/mass-linux-amd64 docs; \
+	elif echo "$$OS" | grep -q -E "^(MINGW|MSYS|Windows)"; then \
+		./bin/mass-windows-amd64.exe docs; \
+	else \
+		echo "Unsupported OS: $$OS"; \
+		exit 1; \
+	fi
+	@echo "docs generated"
 
 .PHONY: test
 test:
@@ -41,15 +54,15 @@ build:
 
 .PHONY: build.macos
 build.macos: bin
-	GOOS=darwin GOARCH=arm64 go build -o bin/mass-darwin-arm64 -ldflags=${LD_FLAGS}
+	@GOOS=darwin GOARCH=arm64 go build -o bin/mass-darwin-arm64 -ldflags=${LD_FLAGS}
 
 .PHONY: build.linux
 build.linux: bin
-	GOOS=linux GOARCH=amd64 go build -o bin/mass-linux-amd64 -ldflags=${LD_FLAGS}
+	@GOOS=linux GOARCH=amd64 go build -o bin/mass-linux-amd64 -ldflags=${LD_FLAGS}
 
 .PHONY: build.windows
 build.windows: bin
-	GOOS=windows GOARCH=amd64 go build -o bin/mass-windows-amd64.exe -ldflags=${LD_FLAGS}
+	@GOOS=windows GOARCH=amd64 go build -o bin/mass-windows-amd64.exe -ldflags=${LD_FLAGS}
 
 .PHONY: install.macos
 install.macos: build.macos
