@@ -100,6 +100,30 @@ func NewCmdEnvironment() *cobra.Command {
 	environmentPreviewCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a environment=preview,region=uswest). Overrides `attributes:` in the config file.")
 	environmentPreviewCmd.Flags().Bool("follow", false, "Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
 
+	environmentForkCmd := &cobra.Command{
+		Use:     "fork [parent-environment] [new-ID]",
+		Short:   "Fork an existing environment",
+		Example: `mass environment fork ecomm-production staging`,
+		Long:    helpdocs.MustRender("environment/fork"),
+		Args:    cobra.ExactArgs(2),
+		RunE:    runEnvironmentFork,
+	}
+	environmentForkCmd.Flags().StringP("name", "n", "", "Environment name (defaults to new-ID if not provided)")
+	environmentForkCmd.Flags().StringP("description", "d", "", "Optional environment description")
+	environmentForkCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a region=uswest)")
+	environmentForkCmd.Flags().Bool("copy-environment-defaults", false, "Copy the parent's default resource connections into the fork")
+	environmentForkCmd.Flags().Bool("copy-secrets", false, "Copy every instance's secrets from the parent into the fork")
+	environmentForkCmd.Flags().Bool("copy-remote-references", false, "Copy every instance's remote references from the parent into the fork")
+
+	environmentDeployCmd := &cobra.Command{
+		Use:     "deploy [environment]",
+		Short:   "Deploy every instance in an environment, in dependency order",
+		Example: `mass environment deploy ecomm-staging`,
+		Long:    helpdocs.MustRender("environment/deploy"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runEnvironmentDeploy,
+	}
+
 	environmentCmd.AddCommand(environmentExportCmd)
 	environmentCmd.AddCommand(environmentGetCmd)
 	environmentCmd.AddCommand(environmentListCmd)
@@ -107,6 +131,8 @@ func NewCmdEnvironment() *cobra.Command {
 	environmentCmd.AddCommand(environmentUpdateCmd)
 	environmentCmd.AddCommand(environmentDefaultCmd)
 	environmentCmd.AddCommand(environmentPreviewCmd)
+	environmentCmd.AddCommand(environmentForkCmd)
+	environmentCmd.AddCommand(environmentDeployCmd)
 
 	return environmentCmd
 }
@@ -441,5 +467,88 @@ func runEnvironmentPreview(cmd *cobra.Command, args []string) error {
 	if follow {
 		return environment.FollowEnvironment(ctx, environment.NewFollowAPI(mdClient), env.ID, os.Stdout)
 	}
+	return nil
+}
+
+func runEnvironmentFork(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	parentID := args[0]
+	newLocalID := args[1]
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+	description, err := cmd.Flags().GetString("description")
+	if err != nil {
+		return err
+	}
+	attrs, err := cmd.Flags().GetStringToString("attributes")
+	if err != nil {
+		return err
+	}
+	copyDefaults, err := cmd.Flags().GetBool("copy-environment-defaults")
+	if err != nil {
+		return err
+	}
+	copySecrets, err := cmd.Flags().GetBool("copy-secrets")
+	if err != nil {
+		return err
+	}
+	copyRefs, err := cmd.Flags().GetBool("copy-remote-references")
+	if err != nil {
+		return err
+	}
+
+	if name == "" {
+		name = newLocalID
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := massdriver.NewClient()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	input := environments.ForkInput{
+		ID:                      newLocalID,
+		Name:                    name,
+		Description:             description,
+		Attributes:              cli.AttributesToAnyMap(attrs),
+		CopyEnvironmentDefaults: copyDefaults,
+		CopySecrets:             copySecrets,
+		CopyRemoteReferences:    copyRefs,
+	}
+
+	env, err := mdClient.Environments.Fork(ctx, parentID, input)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Environment `%s` forked from `%s`\n", env.ID, parentID)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(env.ID))
+	return nil
+}
+
+func runEnvironmentDeploy(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	environmentID := args[0]
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := massdriver.NewClient()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	env, err := mdClient.Environments.Deploy(ctx, environmentID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("🚀 Deploying environment `%s` — instances roll out in dependency order asynchronously\n", env.ID)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(env.ID))
 	return nil
 }
