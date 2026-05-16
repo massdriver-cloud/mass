@@ -87,20 +87,37 @@ func NewCmdEnvironment() *cobra.Command {
 		RunE:  runEnvironmentDefault,
 	}
 
-	environmentPreviewCmd := &cobra.Command{
+	environmentCmd.AddCommand(environmentExportCmd)
+	environmentCmd.AddCommand(environmentGetCmd)
+	environmentCmd.AddCommand(environmentListCmd)
+	environmentCmd.AddCommand(environmentCreateCmd)
+	environmentCmd.AddCommand(environmentUpdateCmd)
+	environmentCmd.AddCommand(environmentDefaultCmd)
+	environmentCmd.AddCommand(newEnvironmentPreviewCmd())
+	environmentCmd.AddCommand(newEnvironmentForkCmd())
+	environmentCmd.AddCommand(newEnvironmentDeployCmd())
+
+	return environmentCmd
+}
+
+func newEnvironmentPreviewCmd() *cobra.Command {
+	c := &cobra.Command{
 		Use:   "preview [ID]",
 		Short: "Converge a preview environment from a YAML config",
 		Long:  helpdocs.MustRender("environment/preview"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEnvironmentPreview,
 	}
-	environmentPreviewCmd.Flags().StringP("file", "f", "preview.yaml", "Path to the preview config YAML")
-	environmentPreviewCmd.Flags().StringP("name", "n", "", "Environment name (defaults to ID if not provided)")
-	environmentPreviewCmd.Flags().StringP("description", "d", "", "Optional environment description")
-	environmentPreviewCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a environment=preview,region=uswest). Overrides `attributes:` in the config file.")
-	environmentPreviewCmd.Flags().Bool("follow", false, "Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
+	c.Flags().StringP("file", "f", "preview.yaml", "Path to the preview config YAML")
+	c.Flags().StringP("name", "n", "", "Environment name (defaults to ID if not provided)")
+	c.Flags().StringP("description", "d", "", "Optional environment description")
+	c.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a environment=preview,region=uswest). Overrides `attributes:` in the config file.")
+	c.Flags().Bool("follow", false, "Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
+	return c
+}
 
-	environmentForkCmd := &cobra.Command{
+func newEnvironmentForkCmd() *cobra.Command {
+	c := &cobra.Command{
 		Use:     "fork [parent-environment] [new-ID]",
 		Short:   "Fork an existing environment",
 		Example: `mass environment fork ecomm-production staging`,
@@ -108,14 +125,17 @@ func NewCmdEnvironment() *cobra.Command {
 		Args:    cobra.ExactArgs(2),
 		RunE:    runEnvironmentFork,
 	}
-	environmentForkCmd.Flags().StringP("name", "n", "", "Environment name (defaults to new-ID if not provided)")
-	environmentForkCmd.Flags().StringP("description", "d", "", "Optional environment description")
-	environmentForkCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a region=uswest)")
-	environmentForkCmd.Flags().Bool("copy-environment-defaults", false, "Copy the parent's default resource connections into the fork")
-	environmentForkCmd.Flags().Bool("copy-secrets", false, "Copy every instance's secrets from the parent into the fork")
-	environmentForkCmd.Flags().Bool("copy-remote-references", false, "Copy every instance's remote references from the parent into the fork")
+	c.Flags().StringP("name", "n", "", "Environment name (defaults to new-ID if not provided)")
+	c.Flags().StringP("description", "d", "", "Optional environment description")
+	c.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a region=uswest)")
+	c.Flags().Bool("copy-environment-defaults", false, "Copy the parent's default resource connections into the fork")
+	c.Flags().Bool("copy-secrets", false, "Copy every instance's secrets from the parent into the fork")
+	c.Flags().Bool("copy-remote-references", false, "Copy every instance's remote references from the parent into the fork")
+	return c
+}
 
-	environmentDeployCmd := &cobra.Command{
+func newEnvironmentDeployCmd() *cobra.Command {
+	c := &cobra.Command{
 		Use:     "deploy [environment]",
 		Short:   "Deploy every instance in an environment, in dependency order",
 		Example: `mass environment deploy ecomm-staging --follow`,
@@ -123,19 +143,8 @@ func NewCmdEnvironment() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runEnvironmentDeploy,
 	}
-	environmentDeployCmd.Flags().Bool("follow", false, "Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
-
-	environmentCmd.AddCommand(environmentExportCmd)
-	environmentCmd.AddCommand(environmentGetCmd)
-	environmentCmd.AddCommand(environmentListCmd)
-	environmentCmd.AddCommand(environmentCreateCmd)
-	environmentCmd.AddCommand(environmentUpdateCmd)
-	environmentCmd.AddCommand(environmentDefaultCmd)
-	environmentCmd.AddCommand(environmentPreviewCmd)
-	environmentCmd.AddCommand(environmentForkCmd)
-	environmentCmd.AddCommand(environmentDeployCmd)
-
-	return environmentCmd
+	c.Flags().Bool("follow", false, "Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
+	return c
 }
 
 func runEnvironmentExport(cmd *cobra.Command, args []string) error {

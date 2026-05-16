@@ -117,7 +117,20 @@ func NewCmdInstance() *cobra.Command {
 	instanceOrphanCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	instanceOrphanCmd.Flags().Bool("delete-state", false, "Also delete the remote Terraform/OpenTofu state files (irreversible)")
 
-	instanceCopyCmd := &cobra.Command{
+	instanceCmd.AddCommand(instanceDeployCmd)
+	instanceCmd.AddCommand(instanceExportCmd)
+	instanceCmd.AddCommand(instanceGetCmd)
+	instanceCmd.AddCommand(instanceListCmd)
+	instanceCmd.AddCommand(instanceVersionCmd)
+	instanceCmd.AddCommand(instanceDestroyCmd)
+	instanceCmd.AddCommand(instanceOrphanCmd)
+	instanceCmd.AddCommand(newInstanceCopyCmd())
+
+	return instanceCmd
+}
+
+func newInstanceCopyCmd() *cobra.Command {
+	c := &cobra.Command{
 		Use:     `copy [source] --to [destination]`,
 		Aliases: []string{"promote"},
 		Short:   "Copy an instance's configuration to another instance of the same component",
@@ -126,22 +139,12 @@ func NewCmdInstance() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInstanceCopy,
 	}
-	instanceCopyCmd.Flags().String("to", "", "Destination instance (required). Must be built from the same component as the source.")
-	instanceCopyCmd.Flags().StringP("overrides", "o", "", "Path to a JSON or YAML file of param overrides deep-merged onto the source params")
-	instanceCopyCmd.Flags().Bool("copy-secrets", false, "Copy secrets from the source instance to the destination")
-	instanceCopyCmd.Flags().Bool("copy-remote-references", false, "Copy remote-reference overrides from the source instance to the destination")
-	_ = instanceCopyCmd.MarkFlagRequired("to")
-
-	instanceCmd.AddCommand(instanceDeployCmd)
-	instanceCmd.AddCommand(instanceExportCmd)
-	instanceCmd.AddCommand(instanceGetCmd)
-	instanceCmd.AddCommand(instanceListCmd)
-	instanceCmd.AddCommand(instanceVersionCmd)
-	instanceCmd.AddCommand(instanceDestroyCmd)
-	instanceCmd.AddCommand(instanceOrphanCmd)
-	instanceCmd.AddCommand(instanceCopyCmd)
-
-	return instanceCmd
+	c.Flags().String("to", "", "Destination instance (required). Must be built from the same component as the source.")
+	c.Flags().StringP("overrides", "o", "", "Path to a JSON or YAML file of param overrides deep-merged onto the source params")
+	c.Flags().Bool("copy-secrets", false, "Copy secrets from the source instance to the destination")
+	c.Flags().Bool("copy-remote-references", false, "Copy remote-reference overrides from the source instance to the destination")
+	_ = c.MarkFlagRequired("to")
+	return c
 }
 
 func runInstanceGet(cmd *cobra.Command, args []string) error {
