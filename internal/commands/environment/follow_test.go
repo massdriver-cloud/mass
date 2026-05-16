@@ -148,9 +148,9 @@ func (e errorAPI) StreamEnvironmentEvents(_ context.Context, _ string) (<-chan t
 	return nil, e.err
 }
 func (errorAPI) ListInstances(_ context.Context, _ string) ([]types.Instance, error) {
-	return nil, nil
+	return []types.Instance{}, nil
 }
 func (errorAPI) GetDeployment(_ context.Context, _ string) (*types.Deployment, error) {
-	return nil, nil
+	return &types.Deployment{}, nil
 }
 func (errorAPI) TailLogs(_ context.Context, _ string, _ io.Writer) error { return nil }
