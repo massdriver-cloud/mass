@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"text/template"
 
@@ -86,12 +87,26 @@ func NewCmdEnvironment() *cobra.Command {
 		RunE:  runEnvironmentDefault,
 	}
 
+	environmentPreviewCmd := &cobra.Command{
+		Use:   "preview [ID]",
+		Short: "Converge a preview environment from a YAML config",
+		Long:  helpdocs.MustRender("environment/preview"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runEnvironmentPreview,
+	}
+	environmentPreviewCmd.Flags().StringP("file", "f", "preview.yaml", "Path to the preview config YAML")
+	environmentPreviewCmd.Flags().StringP("name", "n", "", "Environment name (defaults to ID if not provided)")
+	environmentPreviewCmd.Flags().StringP("description", "d", "", "Optional environment description")
+	environmentPreviewCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a environment=preview,region=uswest). Overrides `attributes:` in the config file.")
+	environmentPreviewCmd.Flags().Bool("follow", false, "Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
+
 	environmentCmd.AddCommand(environmentExportCmd)
 	environmentCmd.AddCommand(environmentGetCmd)
 	environmentCmd.AddCommand(environmentListCmd)
 	environmentCmd.AddCommand(environmentCreateCmd)
 	environmentCmd.AddCommand(environmentUpdateCmd)
 	environmentCmd.AddCommand(environmentDefaultCmd)
+	environmentCmd.AddCommand(environmentPreviewCmd)
 
 	return environmentCmd
 }
@@ -366,5 +381,65 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 	fmt.Printf("✅ Environment `%s` default connection set successfully\n", env.ID)
 	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(env.ID))
 
+	return nil
+}
+
+func runEnvironmentPreview(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	id := args[0]
+	configPath, err := cmd.Flags().GetString("file")
+	if err != nil {
+		return err
+	}
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+	description, err := cmd.Flags().GetString("description")
+	if err != nil {
+		return err
+	}
+	attrs, err := cmd.Flags().GetStringToString("attributes")
+	if err != nil {
+		return err
+	}
+	follow, err := cmd.Flags().GetBool("follow")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	config, configErr := environment.LoadPreviewConfig(configPath)
+	if configErr != nil {
+		return configErr
+	}
+
+	mdClient, mdClientErr := massdriver.NewClient()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	previewOpts := environment.PreviewOptions{
+		ID:          id,
+		Name:        name,
+		Description: description,
+	}
+	if cmd.Flags().Changed("attributes") {
+		previewOpts.Attributes = attrs
+	}
+
+	env, runErr := environment.RunPreview(ctx, environment.NewPreviewAPI(mdClient), config, previewOpts)
+	if runErr != nil {
+		return runErr
+	}
+
+	fmt.Printf("✅ Preview environment `%s` converged\n", env.ID)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(env.ID))
+
+	if follow {
+		return environment.FollowEnvironment(ctx, environment.NewFollowAPI(mdClient), env.ID, os.Stdout)
+	}
 	return nil
 }

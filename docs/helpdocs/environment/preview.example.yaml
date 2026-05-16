@@ -1,0 +1,56 @@
+# Example preview environment config. Drive a converge with:
+#
+#     mass environment preview pr123 -f preview.yaml
+#
+# Every step is idempotent — re-running the command resets the preview env
+# back to the declared state.
+
+# The project the preview env lives in.
+project: demo
+
+# The base env to fork from. The full parent identifier is
+# `<project>-<baseEnvironment>` — `demo-production` here.
+baseEnvironment: production
+
+# Carry the parent env's default resource connections into the fork.
+copyEnvironmentDefaults: true
+
+# Optional. Set environment-scope attributes for ABAC. Required when the org
+# declares attributes at the environment scope. `${VAR}` references are
+# expanded from the process environment before parsing — handy for piping
+# CI metadata in without rewriting the file.
+attributes:
+  region: us-east-1
+  pr: "${GITHUB_PR}"
+
+# Override env-level defaults for specific resource types. `resourceType` is
+# documentation for the human reader; the CLI only needs `resourceId`.
+environmentDefaults:
+  - resourceType: aws-iam-role
+    resourceId: 161aeb95-e1c5-4f8d-803e-ef82087d7ad4
+  - resourceType: aws-vpc
+    resourceId: 1e9fc8a3-f011-433f-b937-b5e525fd753c
+
+# Per-instance overrides. Listed instances with no fields just inherit from
+# the fork's seed.
+instances:
+  chatsvc:
+    version: "latest+dev"       # `+dev` pulls from the development channel
+    params:
+      ingress:
+        enabled: true
+        host: chatty-pr-${GITHUB_PR}.mdawssbx.com
+        path: /
+    secrets:
+      - name: STRIPE_KEY
+        value: FOO
+
+  chatdb:
+    version: "~2.0"            # stable channel
+
+  # listed without overrides — inherit from the fork
+  imported:
+  sessions:
+  sessionsapi:
+  sessionsfn:
+  sharedvpc:
