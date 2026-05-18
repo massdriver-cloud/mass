@@ -27,6 +27,7 @@ Environments can be modeled by application stage (production, staging, developme
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
 * [mass environment create](/cli/commands/mass_environment_create)	 - Create an environment
+* [mass environment decommission](/cli/commands/mass_environment_decommission)	 - Decommission every instance in an environment, in reverse dependency order
 * [mass environment default](/cli/commands/mass_environment_default)	 - Set an environment default connection
 * [mass environment deploy](/cli/commands/mass_environment_deploy)	 - Deploy every instance in an environment, in dependency order
 * [mass environment export](/cli/commands/mass_environment_export)	 - Export an environment from Massdriver

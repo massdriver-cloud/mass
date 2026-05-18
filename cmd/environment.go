@@ -96,6 +96,7 @@ func NewCmdEnvironment() *cobra.Command {
 	environmentCmd.AddCommand(newEnvironmentPreviewCmd())
 	environmentCmd.AddCommand(newEnvironmentForkCmd())
 	environmentCmd.AddCommand(newEnvironmentDeployCmd())
+	environmentCmd.AddCommand(newEnvironmentDecommissionCmd())
 
 	return environmentCmd
 }
@@ -144,6 +145,19 @@ func newEnvironmentDeployCmd() *cobra.Command {
 		RunE:    runEnvironmentDeploy,
 	}
 	c.Flags().Bool("follow", false, "Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
+	return c
+}
+
+func newEnvironmentDecommissionCmd() *cobra.Command {
+	c := &cobra.Command{
+		Use:     "decommission [environment]",
+		Short:   "Decommission every instance in an environment, in reverse dependency order",
+		Example: `mass environment decommission ecomm-pr42 --follow`,
+		Long:    helpdocs.MustRender("environment/decommission"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runEnvironmentDecommission,
+	}
+	c.Flags().Bool("follow", false, "Stream every decommission deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
 	return c
 }
 
@@ -563,6 +577,36 @@ func runEnvironmentDeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("🚀 Deploying environment `%s` — instances roll out in dependency order asynchronously\n", env.ID)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(env.ID))
+
+	if follow {
+		return environment.FollowEnvironment(ctx, environment.NewFollowAPI(mdClient), env.ID, os.Stdout)
+	}
+	return nil
+}
+
+func runEnvironmentDecommission(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	environmentID := args[0]
+	follow, err := cmd.Flags().GetBool("follow")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, mdClientErr := massdriver.NewClient()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	env, err := mdClient.Environments.Decommission(ctx, environmentID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("🔻 Decommissioning environment `%s` — instances tear down in reverse dependency order asynchronously\n", env.ID)
 	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(env.ID))
 
 	if follow {
