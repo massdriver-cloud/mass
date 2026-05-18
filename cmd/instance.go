@@ -124,8 +124,27 @@ func NewCmdInstance() *cobra.Command {
 	instanceCmd.AddCommand(instanceVersionCmd)
 	instanceCmd.AddCommand(instanceDestroyCmd)
 	instanceCmd.AddCommand(instanceOrphanCmd)
+	instanceCmd.AddCommand(newInstanceCopyCmd())
 
 	return instanceCmd
+}
+
+func newInstanceCopyCmd() *cobra.Command {
+	c := &cobra.Command{
+		Use:     `copy [source] --to [destination]`,
+		Aliases: []string{"promote"},
+		Short:   "Copy an instance's configuration to another instance of the same component",
+		Example: `mass instance promote ecomm-staging-db --to ecomm-production-db --copy-secrets`,
+		Long:    helpdocs.MustRender("instance/copy"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runInstanceCopy,
+	}
+	c.Flags().String("to", "", "Destination instance (required). Must be built from the same component as the source.")
+	c.Flags().StringP("overrides", "o", "", "Path to a JSON or YAML file of param overrides deep-merged onto the source params")
+	c.Flags().Bool("copy-secrets", false, "Copy secrets from the source instance to the destination")
+	c.Flags().Bool("copy-remote-references", false, "Copy remote-reference overrides from the source instance to the destination")
+	_ = c.MarkFlagRequired("to")
+	return c
 }
 
 func runInstanceGet(cmd *cobra.Command, args []string) error {
@@ -304,6 +323,58 @@ func readParams(path string) (map[string]any, error) {
 		return nil, err
 	}
 	return params, nil
+}
+
+func runInstanceCopy(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	sourceID := args[0]
+	destinationID, err := cmd.Flags().GetString("to")
+	if err != nil {
+		return err
+	}
+	overridesPath, err := cmd.Flags().GetString("overrides")
+	if err != nil {
+		return err
+	}
+	copySecrets, err := cmd.Flags().GetBool("copy-secrets")
+	if err != nil {
+		return err
+	}
+	copyRefs, err := cmd.Flags().GetBool("copy-remote-references")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	var overrides map[string]any
+	if overridesPath != "" {
+		overrides, err = readParams(overridesPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	mdClient, mdClientErr := massdriver.NewClient()
+	if mdClientErr != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
+	}
+
+	input := instances.CopyInput{
+		Overrides:            overrides,
+		CopySecrets:          copySecrets,
+		CopyRemoteReferences: copyRefs,
+	}
+
+	inst, err := mdClient.Instances.Copy(ctx, sourceID, destinationID, input)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Instance `%s` configuration copied to `%s`\n", sourceID, destinationID)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(inst.ID))
+	return nil
 }
 
 func runInstanceExport(cmd *cobra.Command, args []string) error {
