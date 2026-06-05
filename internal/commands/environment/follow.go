@@ -42,7 +42,7 @@ func NewFollowAPI(c *massdriver.Client) FollowAPI { return sdkFollowAPI{c: c} }
 type sdkFollowAPI struct{ c *massdriver.Client }
 
 func (s sdkFollowAPI) ListInstances(ctx context.Context, environmentID string) ([]types.Instance, error) {
-	return s.c.Instances.List(ctx, instances.ListInput{EnvironmentID: environmentID})
+	return types.Collect(s.c.Instances.Iter(ctx, instances.ListInput{EnvironmentID: environmentID}))
 }
 
 func (s sdkFollowAPI) StreamEnvironmentEvents(ctx context.Context, environmentID string) (<-chan types.Event, error) {

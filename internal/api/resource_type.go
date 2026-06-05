@@ -50,8 +50,13 @@ const getResourceTypeQuery = `query getResourceType($organizationId: ID!, $id: I
   }
 }`
 
-const listResourceTypesQuery = `query listResourceTypes($organizationId: ID!) {
-  resourceTypes(organizationId: $organizationId) {
+// resourceTypesPageSize is the per-request page size for the ListResourceTypes
+// page-walk. 100 is the server's documented max, minimizing round-trips; the
+// value also keeps the cursor arg non-null (see ListResourceTypes).
+const resourceTypesPageSize = 100
+
+const listResourceTypesQuery = `query listResourceTypes($organizationId: ID!, $cursor: Cursor) {
+  resourceTypes(organizationId: $organizationId, cursor: $cursor) {
     items {
       id
       name
@@ -59,6 +64,10 @@ const listResourceTypesQuery = `query listResourceTypes($organizationId: ID!) {
       connectionOrientation
       createdAt
       updatedAt
+    }
+    cursor {
+      next
+      previous
     }
   }
 }`
@@ -121,27 +130,59 @@ func GetResourceType(ctx context.Context, mdClient *massdriver.Client, name stri
 	return resp.ResourceType, nil
 }
 
-// ListResourceTypes fetches all resource types in the configured organization.
+// ListResourceTypes fetches every resource type in the configured organization.
 // The legacy CLI supported a filter argument; the few callsites that survive
 // the v2 migration only need the unfiltered list.
+//
+// Resource types aren't in the SDK yet, so the cursor page-walk the SDK does for
+// its own list endpoints is implemented here by hand: the server returns one
+// page at a time, so we follow cursor.next until it's empty and accumulate every
+// page. (The prior version requested only `items` with no cursor, silently
+// truncating the result to the server's default first page.)
 func ListResourceTypes(ctx context.Context, mdClient *massdriver.Client) ([]ResourceType, error) {
 	cfg := mdClient.Config()
-	var resp struct {
-		ResourceTypes struct {
-			Items []ResourceType `json:"items"`
-		} `json:"resourceTypes"`
+	client := gqlClient(mdClient)
+
+	var all []ResourceType
+	after := ""
+	for {
+		var resp struct {
+			ResourceTypes struct {
+				Items  []ResourceType `json:"items"`
+				Cursor struct {
+					Next     string `json:"next"`
+					Previous string `json:"previous"`
+				} `json:"cursor"`
+			} `json:"resourceTypes"`
+		}
+		req := &graphql.Request{
+			OpName: "listResourceTypes",
+			Query:  listResourceTypesQuery,
+			Variables: map[string]any{
+				"organizationId": cfg.OrganizationID,
+				// Always send an explicit page size: the server returns 500 on a
+				// `cursor: null` arg, which is what NewCursor(0, "") would
+				// produce on the first request. A positive limit makes NewCursor
+				// emit `{limit, next}` instead. `after` is the prior page's next
+				// cursor ("" on the first request).
+				"cursor": scalars.NewCursor(resourceTypesPageSize, after),
+			},
+		}
+		if err := client.MakeRequest(ctx, req, &graphql.Response{Data: &resp}); err != nil {
+			return nil, fmt.Errorf("list resource types: %w", err)
+		}
+		all = append(all, resp.ResourceTypes.Items...)
+
+		// Stop at the last page. The `next == after` guard is a belt-and-braces
+		// defense against a server that echoes the same cursor, which would
+		// otherwise loop forever.
+		next := resp.ResourceTypes.Cursor.Next
+		if next == "" || next == after {
+			break
+		}
+		after = next
 	}
-	req := &graphql.Request{
-		OpName: "listResourceTypes",
-		Query:  listResourceTypesQuery,
-		Variables: map[string]any{
-			"organizationId": cfg.OrganizationID,
-		},
-	}
-	if err := gqlClient(mdClient).MakeRequest(ctx, req, &graphql.Response{Data: &resp}); err != nil {
-		return nil, fmt.Errorf("list resource types: %w", err)
-	}
-	return resp.ResourceTypes.Items, nil
+	return all, nil
 }
 
 // PublishResourceType registers a resource-type schema.

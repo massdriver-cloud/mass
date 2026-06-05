@@ -31,7 +31,7 @@ func ExportEnvironment(ctx context.Context, mdClient *massdriver.Client, env *ty
 
 	// Instances aren't embedded on the environment record any more; pull them
 	// for this env via the instances service.
-	slim, err := mdClient.Instances.List(ctx, instances.ListInput{EnvironmentID: env.ID})
+	slim, err := types.Collect(mdClient.Instances.Iter(ctx, instances.ListInput{EnvironmentID: env.ID}))
 	if err != nil {
 		return fmt.Errorf("failed to list instances for environment %s: %w", env.ID, err)
 	}

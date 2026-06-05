@@ -42,11 +42,13 @@ func NewCmdType() *cobra.Command {
 	typeGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	typeListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List resource types",
-		Long:  helpdocs.MustRender("type/list"),
-		RunE:  runTypeList,
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List resource types",
+		Long:    helpdocs.MustRender("type/list"),
+		RunE:    runTypeList,
 	}
+	typeListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
 
 	typePublishCmd := &cobra.Command{
 		Use:   "publish [resource-type file]",
@@ -135,6 +137,11 @@ func runTypePublish(cmd *cobra.Command, args []string) error {
 
 func runTypeList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
+
+	output, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
 	cmd.SilenceUsage = true
 
 	mdClient, err := massdriver.NewClient()
@@ -143,16 +150,28 @@ func runTypeList(cmd *cobra.Command, args []string) error {
 	}
 
 	resourceTypes, err := resourcetype.List(ctx, mdClient)
-
-	tbl := cli.NewTable("ID", "Name", "Updated At")
-
-	for _, rt := range resourceTypes {
-		tbl.AddRow(rt.ID, rt.Name, rt.UpdatedAt)
+	if err != nil {
+		return err
 	}
 
-	tbl.Print()
+	switch output {
+	case "json":
+		jsonBytes, marshalErr := json.MarshalIndent(resourceTypes, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal resource types to JSON: %w", marshalErr)
+		}
+		fmt.Println(string(jsonBytes))
+	case "table":
+		tbl := cli.NewTable("ID", "Name", "Updated At")
+		for _, rt := range resourceTypes {
+			tbl.AddRow(rt.ID, rt.Name, rt.UpdatedAt)
+		}
+		tbl.Print()
+	default:
+		return fmt.Errorf("unsupported output format: %s", output)
+	}
 
-	return err
+	return nil
 }
 
 func renderType(restype *resourcetype.ResourceType) error {

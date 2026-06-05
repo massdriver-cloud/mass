@@ -46,8 +46,9 @@ func NewCmdRepository() *cobra.Command {
 
 	listInput := repositoryListInput{}
 	repositoryListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List OCI repositories",
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List OCI repositories",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 			return runRepositoryList(&listInput)
@@ -128,24 +129,30 @@ func runRepositoryList(input *repositoryListInput) error {
 		return buildErr
 	}
 
-	repos, err := mdClient.OciRepos.List(ctx, listInput)
-	if err != nil {
-		return fmt.Errorf("failed to list repositories: %w", err)
-	}
+	seq := mdClient.OciRepos.Iter(ctx, listInput)
 
 	switch input.output {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(repos, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal repositories to JSON: %w", err)
+		// JSON output is consumed by scripts that expect a single document, so
+		// buffer the full result set before marshaling.
+		repos, collectErr := types.Collect(seq)
+		if collectErr != nil {
+			return fmt.Errorf("failed to list repositories: %w", collectErr)
+		}
+		jsonBytes, marshalErr := json.MarshalIndent(repos, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal repositories to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "table":
-		tbl := cli.NewTable("Name", "Type", "Latest", "Created At")
-		for _, repo := range repos {
-			tbl.AddRow(repo.Name, artifactTypeLabel(repo.ArtifactType), repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05"))
-		}
-		tbl.Print()
+		// Interactive pager on a TTY, streamed table otherwise — pages fetched
+		// on demand rather than buffering every repository.
+		return cli.Paginate(seq, cli.PagerConfig[ocirepos.OciRepo]{
+			Columns: []string{"Name", "Type", "Latest", "Created At"},
+			Row: func(repo ocirepos.OciRepo) []string {
+				return []string{repo.Name, artifactTypeLabel(repo.ArtifactType), repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05")}
+			},
+		})
 	default:
 		return fmt.Errorf("unsupported output format: %s", input.output)
 	}

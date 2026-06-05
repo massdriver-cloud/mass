@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
@@ -14,6 +15,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/resource"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/resources"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
@@ -106,13 +108,107 @@ func NewCmdResource() *cobra.Command {
 	}
 	resourceDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 
+	// List
+	resourceListCmd := &cobra.Command{
+		Use:     "list",
+		Short:   "List resources",
+		Aliases: []string{"ls"},
+		Long:    helpdocs.MustRender("resource/list"),
+		RunE:    runResourceList,
+		Example: `  # List all resources
+  mass resource list
+
+  # Search and filter
+  mass resource list --search database
+  mass resource list --type aws-iam-role --origin provisioned
+  mass resource list --environment ecomm-prod -o json`,
+	}
+	resourceListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
+	resourceListCmd.Flags().StringP("search", "s", "", "Full-text search across resource name")
+	resourceListCmd.Flags().StringP("type", "t", "", "Filter by resource type id (e.g. aws-iam-role)")
+	resourceListCmd.Flags().String("origin", "", "Filter by origin (imported, provisioned). Empty matches both")
+	resourceListCmd.Flags().StringP("environment", "e", "", "Limit to provisioned resources in an environment")
+	resourceListCmd.Flags().String("sort", "", "Sort field (name, created_at)")
+	resourceListCmd.Flags().String("order", "asc", "Sort order (asc, desc)")
+
 	resourceCmd.AddCommand(resourceCreateCmd)
 	resourceCmd.AddCommand(resourceGetCmd)
 	resourceCmd.AddCommand(resourceDownloadCmd)
 	resourceCmd.AddCommand(resourceUpdateCmd)
 	resourceCmd.AddCommand(resourceDeleteCmd)
+	resourceCmd.AddCommand(resourceListCmd)
 
 	return resourceCmd
+}
+
+func runResourceList(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	output, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+	search, _ := cmd.Flags().GetString("search")
+	resourceType, _ := cmd.Flags().GetString("type")
+	origin, _ := cmd.Flags().GetString("origin")
+	environmentID, _ := cmd.Flags().GetString("environment")
+	sortField, _ := cmd.Flags().GetString("sort")
+	sortOrder, _ := cmd.Flags().GetString("order")
+
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	listInput := resources.ListInput{
+		Search:        search,
+		ResourceType:  resourceType,
+		EnvironmentID: environmentID,
+	}
+	if origin != "" {
+		listInput.Origin = resources.Origin(strings.ToUpper(origin))
+	}
+	if sortField != "" {
+		listInput.SortBy = resources.SortByName
+		if strings.EqualFold(sortField, "created_at") {
+			listInput.SortBy = resources.SortByCreatedAt
+		}
+		listInput.SortOrder = resources.SortAsc
+		if strings.EqualFold(sortOrder, "desc") {
+			listInput.SortOrder = resources.SortDesc
+		}
+	}
+
+	seq := mdClient.Resources.Iter(ctx, listInput)
+
+	switch output {
+	case "json":
+		res, collectErr := types.Collect(seq)
+		if collectErr != nil {
+			return collectErr
+		}
+		jsonBytes, marshalErr := json.MarshalIndent(res, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal resources to JSON: %w", marshalErr)
+		}
+		fmt.Println(string(jsonBytes))
+		return nil
+	case "table":
+		return cli.Paginate(seq, cli.PagerConfig[resources.Resource]{
+			Columns: []string{"ID", "Name", "Type", "Origin", "Created At"},
+			Row: func(r resources.Resource) []string {
+				typeName := ""
+				if r.ResourceType != nil {
+					typeName = r.ResourceType.Name
+				}
+				return []string{r.ID, r.Name, typeName, r.Origin, r.CreatedAt.Format("2006-01-02 15:04:05")}
+			},
+		})
+	default:
+		return fmt.Errorf("unsupported output format: %s", output)
+	}
 }
 
 func runResourceCreate(cmd *cobra.Command, args []string) error {

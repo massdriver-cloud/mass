@@ -51,12 +51,15 @@ func NewCmdEnvironment() *cobra.Command {
 	environmentGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	environmentListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List environments",
-		Long:  helpdocs.MustRender("environment/list"),
-		Args:  cobra.ExactArgs(1),
-		RunE:  runEnvironmentList,
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List environments",
+		Long:    helpdocs.MustRender("environment/list"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runEnvironmentList,
 	}
+	environmentListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
+	environmentListCmd.Flags().StringSlice("id", nil, "Filter to specific environment IDs (repeatable)")
 
 	environmentCreateCmd := &cobra.Command{
 		Use:   "create [ID]",
@@ -220,6 +223,12 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 
 	projectID := args[0]
 
+	output, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+	ids, _ := cmd.Flags().GetStringSlice("id")
+
 	cmd.SilenceUsage = true
 
 	mdClient, err := massdriver.NewClient()
@@ -227,14 +236,9 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	envs, err := mdClient.Environments.List(ctx, environments.ListInput{ProjectID: projectID})
-	if err != nil {
-		return err
-	}
+	seq := mdClient.Environments.Iter(ctx, environments.ListInput{ProjectID: projectID, IDs: ids})
 
-	tbl := cli.NewTable("ID", "Name", "Description", "Monthly $", "Daily $")
-
-	for _, env := range envs {
+	row := func(env environments.Environment) []string {
 		monthly := ""
 		daily := ""
 		if env.Cost.MonthlyAverage.Amount != nil {
@@ -243,13 +247,29 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 		if env.Cost.DailyAverage.Amount != nil {
 			daily = fmt.Sprintf("%v", *env.Cost.DailyAverage.Amount)
 		}
-		description := cli.TruncateString(env.Description, 60)
-		tbl.AddRow(env.ID, env.Name, description, monthly, daily)
+		return []string{env.ID, env.Name, cli.TruncateString(env.Description, 60), monthly, daily}
 	}
 
-	tbl.Print()
-
-	return nil
+	switch output {
+	case "json":
+		envs, collectErr := types.Collect(seq)
+		if collectErr != nil {
+			return collectErr
+		}
+		jsonBytes, marshalErr := json.MarshalIndent(envs, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal environments to JSON: %w", marshalErr)
+		}
+		fmt.Println(string(jsonBytes))
+		return nil
+	case "table":
+		return cli.Paginate(seq, cli.PagerConfig[environments.Environment]{
+			Columns: []string{"ID", "Name", "Description", "Monthly $", "Daily $"},
+			Row:     row,
+		})
+	default:
+		return fmt.Errorf("unsupported output format: %s", output)
+	}
 }
 
 func renderEnvironment(ctx context.Context, mdClient *massdriver.Client, env *environments.Environment) error {
@@ -265,7 +285,7 @@ func renderEnvironment(ctx context.Context, mdClient *massdriver.Client, env *en
 
 	// Instances aren't embedded on the environment record returned by
 	// Environments.Get; fetch them separately so the template can render them.
-	insts, err := mdClient.Instances.List(ctx, instances.ListInput{EnvironmentID: env.ID})
+	insts, err := types.Collect(mdClient.Instances.Iter(ctx, instances.ListInput{EnvironmentID: env.ID}))
 	if err != nil {
 		return fmt.Errorf("failed to list instances: %w", err)
 	}
