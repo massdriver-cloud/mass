@@ -51,7 +51,7 @@ func NewCmdRepository() *cobra.Command {
 		Short:   "List OCI repositories",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
-			return runRepositoryList(&listInput)
+			return runRepositoryList(&listInput, cmd.Flags().Changed("order"))
 		},
 	}
 	repositoryListCmd.Flags().StringVarP(&listInput.name, "name", "n", "", "Filter by exact repository name")
@@ -116,7 +116,7 @@ type repositoryListInput struct {
 	output    string
 }
 
-func runRepositoryList(input *repositoryListInput) error {
+func runRepositoryList(input *repositoryListInput, orderChanged bool) error {
 	ctx := context.Background()
 
 	mdClient, err := massdriver.NewClient()
@@ -124,7 +124,7 @@ func runRepositoryList(input *repositoryListInput) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	listInput, buildErr := buildOciReposListInput(input)
+	listInput, buildErr := buildOciReposListInput(input, orderChanged)
 	if buildErr != nil {
 		return buildErr
 	}
@@ -160,7 +160,7 @@ func runRepositoryList(input *repositoryListInput) error {
 	return nil
 }
 
-func buildOciReposListInput(input *repositoryListInput) (ocirepos.ListInput, error) {
+func buildOciReposListInput(input *repositoryListInput, orderChanged bool) (ocirepos.ListInput, error) {
 	out := ocirepos.ListInput{
 		Search: input.search,
 	}
@@ -182,20 +182,42 @@ func buildOciReposListInput(input *repositoryListInput) (ocirepos.ListInput, err
 		out.NameStartsWith = input.prefix
 	}
 
-	if input.sortField != "" {
-		field := ocirepos.SortByName
-		if strings.EqualFold(input.sortField, "created_at") {
-			field = ocirepos.SortByCreatedAt
+	if input.sortField != "" || orderChanged {
+		field, fieldErr := parseRepoSortField(input.sortField)
+		if fieldErr != nil {
+			return out, fieldErr
 		}
-		order := ocirepos.SortAsc
-		if strings.EqualFold(input.sortOrder, "desc") {
-			order = ocirepos.SortDesc
+		order, orderErr := parseRepoSortOrder(input.sortOrder)
+		if orderErr != nil {
+			return out, orderErr
 		}
 		out.SortBy = field
 		out.SortOrder = order
 	}
 
 	return out, nil
+}
+
+func parseRepoSortField(s string) (ocirepos.SortField, error) {
+	switch strings.ToLower(s) {
+	case "", "name":
+		return ocirepos.SortByName, nil
+	case "created_at":
+		return ocirepos.SortByCreatedAt, nil
+	default:
+		return "", fmt.Errorf("unknown sort field %q (valid: name, created_at)", s)
+	}
+}
+
+func parseRepoSortOrder(s string) (ocirepos.SortOrder, error) {
+	switch strings.ToLower(s) {
+	case "", "asc":
+		return ocirepos.SortAsc, nil
+	case "desc":
+		return ocirepos.SortDesc, nil
+	default:
+		return "", fmt.Errorf("unknown sort order %q (valid: asc, desc)", s)
+	}
 }
 
 func resolveArtifactType(s string) (ocirepos.ArtifactType, error) {

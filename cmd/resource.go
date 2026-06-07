@@ -141,6 +141,28 @@ func NewCmdResource() *cobra.Command {
 	return resourceCmd
 }
 
+func parseResourceSortField(s string) (resources.SortField, error) {
+	switch strings.ToLower(s) {
+	case "", "name":
+		return resources.SortByName, nil
+	case "created_at":
+		return resources.SortByCreatedAt, nil
+	default:
+		return "", fmt.Errorf("unknown sort field %q (valid: name, created_at)", s)
+	}
+}
+
+func parseSortOrder(s string) (resources.SortOrder, error) {
+	switch strings.ToLower(s) {
+	case "", "asc":
+		return resources.SortAsc, nil
+	case "desc":
+		return resources.SortDesc, nil
+	default:
+		return "", fmt.Errorf("unknown sort order %q (valid: asc, desc)", s)
+	}
+}
+
 func runResourceList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
@@ -170,15 +192,17 @@ func runResourceList(cmd *cobra.Command, args []string) error {
 	if origin != "" {
 		listInput.Origin = resources.Origin(strings.ToUpper(origin))
 	}
-	if sortField != "" {
-		listInput.SortBy = resources.SortByName
-		if strings.EqualFold(sortField, "created_at") {
-			listInput.SortBy = resources.SortByCreatedAt
+	if sortField != "" || cmd.Flags().Changed("order") {
+		sortBy, sortByErr := parseResourceSortField(sortField)
+		if sortByErr != nil {
+			return sortByErr
 		}
-		listInput.SortOrder = resources.SortAsc
-		if strings.EqualFold(sortOrder, "desc") {
-			listInput.SortOrder = resources.SortDesc
+		order, orderErr := parseSortOrder(sortOrder)
+		if orderErr != nil {
+			return orderErr
 		}
+		listInput.SortBy = sortBy
+		listInput.SortOrder = order
 	}
 
 	seq := mdClient.Resources.Iter(ctx, listInput)
@@ -203,7 +227,7 @@ func runResourceList(cmd *cobra.Command, args []string) error {
 				if r.ResourceType != nil {
 					typeName = r.ResourceType.Name
 				}
-				return []string{r.ID, r.Name, typeName, r.Origin, r.CreatedAt.Format("2006-01-02 15:04:05")}
+				return []string{r.ID, r.Name, typeName, strings.ToLower(r.Origin), r.CreatedAt.Format("2006-01-02 15:04:05")}
 			},
 		})
 	default:

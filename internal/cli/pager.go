@@ -99,6 +99,7 @@ type pagerModel[T any] struct {
 	next     func() (T, error, bool)
 	rowFn    func(T) []string
 	columns  []string
+	cols     []table.Column // applied column widths; used to truncate row cells
 	pageSize int
 
 	loaded      int
@@ -180,11 +181,12 @@ func (m pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		if !m.colsApplied && len(msg.rows) > 0 {
-			m.table.SetColumns(sizeColumns(m.columns, msg.rows))
+			m.cols = sizeColumns(m.columns, msg.rows)
+			m.table.SetColumns(m.cols)
 			m.colsApplied = true
 		}
 		if len(msg.rows) > 0 {
-			m.table.SetRows(append(m.table.Rows(), msg.rows...))
+			m.table.SetRows(append(m.table.Rows(), truncateRows(msg.rows, m.cols)...))
 			m.loaded = len(m.table.Rows())
 		}
 		if msg.done {
@@ -263,6 +265,33 @@ func sizeColumns(headers []string, sample []table.Row) []table.Column {
 		cols[i] = table.Column{Title: h, Width: w + 2}
 	}
 	return cols
+}
+
+// truncateRows clips each cell to its column's data width, appending "…" when
+// the value was longer. Without this, rows from later batches (or any cell wider
+// than the sampled max) would overflow the column and push the table past the
+// terminal edge.
+func truncateRows(rows []table.Row, cols []table.Column) []table.Row {
+	if len(cols) == 0 {
+		return rows
+	}
+	out := make([]table.Row, len(rows))
+	for i, r := range rows {
+		nr := make(table.Row, len(r))
+		for j, cell := range r {
+			if j < len(cols) {
+				w := cols[j].Width - 2 // strip the +2 padding sizeColumns added
+				if w < 1 {
+					w = 1
+				}
+				nr[j] = runewidth.Truncate(cell, w, "…")
+			} else {
+				nr[j] = cell
+			}
+		}
+		out[i] = nr
+	}
+	return out
 }
 
 // runInteractivePager drives the bubbletea program. It owns the iter.Pull2
