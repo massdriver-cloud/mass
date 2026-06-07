@@ -63,7 +63,8 @@ mass bundle template list [flags]
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help            help for list
+  -o, --output string   Output format (text, json) (default "text")
 ```
 
 ### SEE ALSO

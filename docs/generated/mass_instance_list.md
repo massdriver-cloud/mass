@@ -41,7 +41,11 @@ mass instance list ecomm-prod
 ### Options
 
 ```
-  -h, --help   help for list
+      --bundle string   Filter by bundle version (name@version) or release channel (name@latest)
+  -h, --help            help for list
+  -o, --output string   Output format (table, json) (default "table")
+      --repo string     Filter by OCI repo name (matches all versions of a bundle)
+      --status string   Filter by lifecycle status (initialized, provisioned, decommissioned, failed)
 ```
 
 ### SEE ALSO

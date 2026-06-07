@@ -12,7 +12,7 @@ Set instance version
 
 # Set instance version
 
-Set the version or release channel for an instance in Massdriver.
+Set the version for an instance in Massdriver.
 
 ## Examples
 
@@ -22,18 +22,7 @@ Set the version for an instance using the `slug@version` format:
 mass instance version api-prod-db@latest
 ```
 
-Set the version with a specific release channel:
-
-```shell
-mass instance version api-prod-db@latest --release-channel development
-```
-
 The `slug` can be found in the instance info panel. The instance slug is a combination of the `<project-slug>-<env-slug>-<manifest-slug>`.
-
-## Release Channels
-
-- `stable` (default): Instance receives only stable releases
-- `development`: Instance receives both stable and development releases
 
 ## Version Format
 
@@ -50,14 +39,13 @@ mass instance version <instance-id>@<version> [flags]
 ### Examples
 
 ```
-mass instance version api-prod-db@latest --release-channel development
+mass instance version api-prod-db@latest
 ```
 
 ### Options
 
 ```
-  -h, --help                     help for version
-      --release-channel string   Release strategy (stable or development) (default "stable")
+  -h, --help   help for version
 ```
 
 ### SEE ALSO

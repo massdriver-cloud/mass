@@ -44,8 +44,13 @@ mass deployment list ecomm-prod-db --limit 25
 ### Options
 
 ```
-  -h, --help        help for list
-  -n, --limit int   Maximum number of deployments to return (max 100) (default 10)
+      --action string   Filter by action (provision, decommission, plan)
+      --bundle string   Filter by bundle version (name@version) or release channel (name@latest)
+  -h, --help            help for list
+  -n, --limit int       Maximum number of deployments to return (max 100) (default 10)
+  -o, --output string   Output format (table, json) (default "table")
+      --repo string     Filter by OCI repo name
+      --status string   Filter by status (pending, approved, running, completed, failed, aborted, rejected, proposed)
 ```
 
 ### SEE ALSO
