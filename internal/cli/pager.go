@@ -126,7 +126,7 @@ func newPagerModel[T any](next func() (T, error, bool), cfg PagerConfig[T]) page
 	)
 	styles := table.DefaultStyles()
 	styles.Header = styles.Header.Bold(true).Foreground(lipgloss.Color("12")).BorderBottom(true)
-	styles.Selected = styles.Selected.Bold(true).Foreground(lipgloss.Color("0")).Background(lipgloss.Color("12"))
+	styles.Selected = styles.Selected.Bold(true).Foreground(lipgloss.Color("15")).Background(lipgloss.Color("12"))
 	t.SetStyles(styles)
 
 	return pagerModel[T]{
