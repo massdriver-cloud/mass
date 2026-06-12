@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
 	"name": "Go",
-	"image": "mcr.microsoft.com/devcontainers/go:1.24-bookworm",
+	"image": "mcr.microsoft.com/devcontainers/go:1.25-bookworm",
 	"runArgs": [
 		"--cap-add=SYS_PTRACE",
 		"--security-opt",
