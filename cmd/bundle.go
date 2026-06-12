@@ -62,9 +62,10 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 	var bundleListInput bundleList
 
 	bundleListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List bundles in your organization",
-		Long:  helpdocs.MustRender("bundle/list"),
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List bundles in your organization",
+		Long:    helpdocs.MustRender("bundle/list"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 			return runBundleList(&bundleListInput)
@@ -158,11 +159,13 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 	}
 
 	bundleTemplateListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List bundle templates",
-		Long:  helpdocs.MustRender("bundle/template-list"),
-		RunE:  runBundleTemplateList,
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List bundle templates",
+		Long:    helpdocs.MustRender("bundle/template-list"),
+		RunE:    runBundleTemplateList,
 	}
+	bundleTemplateListCmd.Flags().StringP("output", "o", "text", "Output format (text, json)")
 
 	bundleCreateCmd := &cobra.Command{
 		Use:     "create <name>",
@@ -207,19 +210,34 @@ func runBundleCreate(cmd *cobra.Command, args []string) error {
 }
 
 func runBundleTemplateList(cmd *cobra.Command, args []string) error {
+	output, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+
 	templateList, err := templates.List()
 	if err != nil {
 		return err
 	}
 
-	if len(templateList) == 0 {
-		fmt.Println("No templates found.")
-		return nil
-	}
-
-	fmt.Println("Available templates:")
-	for _, tmpl := range templateList {
-		fmt.Printf("  %s\n", tmpl)
+	switch output {
+	case "json":
+		jsonBytes, marshalErr := json.MarshalIndent(templateList, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal templates to JSON: %w", marshalErr)
+		}
+		fmt.Println(string(jsonBytes))
+	case "text":
+		if len(templateList) == 0 {
+			fmt.Println("No templates found.")
+			return nil
+		}
+		fmt.Println("Available templates:")
+		for _, tmpl := range templateList {
+			fmt.Printf("  %s\n", tmpl)
+		}
+	default:
+		return fmt.Errorf("unsupported output format: %s", output)
 	}
 	return nil
 }
@@ -522,24 +540,26 @@ func runBundleList(input *bundleList) error {
 		}
 	}
 
-	repos, err := mdClient.OciRepos.List(ctx, listInput)
-	if err != nil {
-		return fmt.Errorf("failed to list bundles: %w", err)
-	}
+	seq := mdClient.OciRepos.Iter(ctx, listInput)
 
 	switch input.output {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(repos, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal bundles to JSON: %w", err)
+		repos, collectErr := types.Collect(seq)
+		if collectErr != nil {
+			return fmt.Errorf("failed to list bundles: %w", collectErr)
+		}
+		jsonBytes, marshalErr := json.MarshalIndent(repos, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal bundles to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "table":
-		tbl := cli.NewTable("Name", "Latest", "Created At")
-		for _, repo := range repos {
-			tbl.AddRow(repo.Name, repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05"))
-		}
-		tbl.Print()
+		return cli.Paginate(seq, cli.PagerConfig[ocirepos.OciRepo]{
+			Columns: []string{"Name", "Latest", "Created At"},
+			Row: func(repo ocirepos.OciRepo) []string {
+				return []string{repo.Name, repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05")}
+			},
+		})
 	default:
 		return fmt.Errorf("unsupported output format: %s", input.output)
 	}

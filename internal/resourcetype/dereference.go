@@ -204,7 +204,7 @@ func dereferenceFilePathRef(hydratedSchema map[string]any, schema map[string]any
 func getValue(anyVal any) reflect.Value {
 	val := reflect.ValueOf(anyVal)
 
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 

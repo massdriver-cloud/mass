@@ -105,6 +105,10 @@ func NewCmdInstance() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInstanceList,
 	}
+	instanceListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
+	instanceListCmd.Flags().String("status", "", "Filter by lifecycle status (initialized, provisioned, decommissioned, failed)")
+	instanceListCmd.Flags().String("repo", "", "Filter by OCI repo name (matches all versions of a bundle)")
+	instanceListCmd.Flags().String("bundle", "", "Filter by bundle version (name@version) or release channel (name@latest)")
 
 	instanceOrphanCmd := &cobra.Command{
 		Use:     `orphan <project>-<env>-<manifest>`,
@@ -475,6 +479,14 @@ func runInstanceList(cmd *cobra.Command, args []string) error {
 
 	environmentID := args[0]
 
+	output, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+	status, _ := cmd.Flags().GetString("status")
+	repo, _ := cmd.Flags().GetString("repo")
+	bundle, _ := cmd.Flags().GetString("bundle")
+
 	cmd.SilenceUsage = true
 
 	mdClient, err := massdriver.NewClient()
@@ -482,26 +494,45 @@ func runInstanceList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	insts, err := mdClient.Instances.List(ctx, instances.ListInput{EnvironmentID: environmentID})
-	if err != nil {
-		return err
+	listInput := instances.ListInput{
+		EnvironmentID: environmentID,
+		OciRepoName:   repo,
+		BundleID:      bundle,
+	}
+	if status != "" {
+		listInput.Status = instances.Status(strings.ToUpper(status))
 	}
 
-	tbl := cli.NewTable("ID", "Name", "Bundle", "Status")
+	seq := mdClient.Instances.Iter(ctx, listInput)
 
-	for _, inst := range insts {
-		componentName := ""
-		if inst.Component != nil {
-			componentName = inst.Component.Name
+	switch output {
+	case "json":
+		insts, collectErr := types.Collect(seq)
+		if collectErr != nil {
+			return collectErr
 		}
-		bundleName := ""
-		if inst.Bundle != nil {
-			bundleName = inst.Bundle.Name
+		jsonBytes, marshalErr := json.MarshalIndent(insts, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal instances to JSON: %w", marshalErr)
 		}
-		tbl.AddRow(inst.ID, componentName, bundleName, inst.Status)
+		fmt.Println(string(jsonBytes))
+		return nil
+	case "table":
+		return cli.Paginate(seq, cli.PagerConfig[instances.Instance]{
+			Columns: []string{"ID", "Name", "Bundle", "Status"},
+			Row: func(inst instances.Instance) []string {
+				componentName := ""
+				if inst.Component != nil {
+					componentName = inst.Component.Name
+				}
+				bundleName := ""
+				if inst.Bundle != nil {
+					bundleName = inst.Bundle.Name
+				}
+				return []string{inst.ID, componentName, bundleName, inst.Status}
+			},
+		})
+	default:
+		return fmt.Errorf("unsupported output format: %s", output)
 	}
-
-	tbl.Print()
-
-	return nil
 }

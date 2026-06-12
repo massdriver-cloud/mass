@@ -17,6 +17,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/commands/project"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/projects"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
@@ -50,11 +51,13 @@ func NewCmdProject() *cobra.Command {
 	projectGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	projectListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List projects",
-		Long:  helpdocs.MustRender("project/list"),
-		RunE:  runProjectList,
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List projects",
+		Long:    helpdocs.MustRender("project/list"),
+		RunE:    runProjectList,
 	}
+	projectListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
 
 	projectCreateCmd := &cobra.Command{
 		Use:   "create [slug]",
@@ -152,34 +155,50 @@ func runProjectExport(cmd *cobra.Command, args []string) error {
 func runProjectList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
+	output, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+
 	mdClient, err := massdriver.NewClient()
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	projectList, err := mdClient.Projects.List(ctx, projects.ListInput{})
-	if err != nil {
-		return err
-	}
+	seq := mdClient.Projects.Iter(ctx, projects.ListInput{})
 
-	tbl := cli.NewTable("ID/Slug", "Name", "Description", "Monthly $", "Daily $")
-
-	for _, p := range projectList {
-		monthly := ""
-		daily := ""
-		if p.Cost.MonthlyAverage.Amount != nil {
-			monthly = fmt.Sprintf("%v", *p.Cost.MonthlyAverage.Amount)
+	switch output {
+	case "json":
+		projectList, collectErr := types.Collect(seq)
+		if collectErr != nil {
+			return collectErr
 		}
-		if p.Cost.DailyAverage.Amount != nil {
-			daily = fmt.Sprintf("%v", *p.Cost.DailyAverage.Amount)
+		jsonBytes, marshalErr := json.MarshalIndent(projectList, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal projects to JSON: %w", marshalErr)
 		}
-		description := cli.TruncateString(p.Description, 60)
-		tbl.AddRow(p.ID, p.Name, description, monthly, daily)
+		fmt.Println(string(jsonBytes))
+		return nil
+	case "table":
+		// Stream pages on demand: interactive pager when attached to a terminal,
+		// plain streamed table otherwise. Avoids buffering every project up front.
+		return cli.Paginate(seq, cli.PagerConfig[projects.Project]{
+			Columns: []string{"ID/Slug", "Name", "Description", "Monthly $", "Daily $"},
+			Row: func(p projects.Project) []string {
+				monthly := ""
+				daily := ""
+				if p.Cost.MonthlyAverage.Amount != nil {
+					monthly = fmt.Sprintf("%v", *p.Cost.MonthlyAverage.Amount)
+				}
+				if p.Cost.DailyAverage.Amount != nil {
+					daily = fmt.Sprintf("%v", *p.Cost.DailyAverage.Amount)
+				}
+				return []string{p.ID, p.Name, cli.TruncateString(p.Description, 60), monthly, daily}
+			},
+		})
+	default:
+		return fmt.Errorf("unsupported output format: %s", output)
 	}
-
-	tbl.Print()
-
-	return nil
 }
 
 func renderProject(p *projects.Project) error {

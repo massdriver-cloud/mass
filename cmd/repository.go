@@ -46,11 +46,12 @@ func NewCmdRepository() *cobra.Command {
 
 	listInput := repositoryListInput{}
 	repositoryListCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List OCI repositories",
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List OCI repositories",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
-			return runRepositoryList(&listInput)
+			return runRepositoryList(&listInput, cmd.Flags().Changed("order"))
 		},
 	}
 	repositoryListCmd.Flags().StringVarP(&listInput.name, "name", "n", "", "Filter by exact repository name")
@@ -115,7 +116,7 @@ type repositoryListInput struct {
 	output    string
 }
 
-func runRepositoryList(input *repositoryListInput) error {
+func runRepositoryList(input *repositoryListInput, orderChanged bool) error {
 	ctx := context.Background()
 
 	mdClient, err := massdriver.NewClient()
@@ -123,29 +124,35 @@ func runRepositoryList(input *repositoryListInput) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	listInput, buildErr := buildOciReposListInput(input)
+	listInput, buildErr := buildOciReposListInput(input, orderChanged)
 	if buildErr != nil {
 		return buildErr
 	}
 
-	repos, err := mdClient.OciRepos.List(ctx, listInput)
-	if err != nil {
-		return fmt.Errorf("failed to list repositories: %w", err)
-	}
+	seq := mdClient.OciRepos.Iter(ctx, listInput)
 
 	switch input.output {
 	case "json":
-		jsonBytes, err := json.MarshalIndent(repos, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal repositories to JSON: %w", err)
+		// JSON output is consumed by scripts that expect a single document, so
+		// buffer the full result set before marshaling.
+		repos, collectErr := types.Collect(seq)
+		if collectErr != nil {
+			return fmt.Errorf("failed to list repositories: %w", collectErr)
+		}
+		jsonBytes, marshalErr := json.MarshalIndent(repos, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal repositories to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "table":
-		tbl := cli.NewTable("Name", "Type", "Latest", "Created At")
-		for _, repo := range repos {
-			tbl.AddRow(repo.Name, artifactTypeLabel(repo.ArtifactType), repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05"))
-		}
-		tbl.Print()
+		// Interactive pager on a TTY, streamed table otherwise — pages fetched
+		// on demand rather than buffering every repository.
+		return cli.Paginate(seq, cli.PagerConfig[ocirepos.OciRepo]{
+			Columns: []string{"Name", "Type", "Latest", "Created At"},
+			Row: func(repo ocirepos.OciRepo) []string {
+				return []string{repo.Name, artifactTypeLabel(repo.ArtifactType), repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05")}
+			},
+		})
 	default:
 		return fmt.Errorf("unsupported output format: %s", input.output)
 	}
@@ -153,7 +160,7 @@ func runRepositoryList(input *repositoryListInput) error {
 	return nil
 }
 
-func buildOciReposListInput(input *repositoryListInput) (ocirepos.ListInput, error) {
+func buildOciReposListInput(input *repositoryListInput, orderChanged bool) (ocirepos.ListInput, error) {
 	out := ocirepos.ListInput{
 		Search: input.search,
 	}
@@ -175,20 +182,42 @@ func buildOciReposListInput(input *repositoryListInput) (ocirepos.ListInput, err
 		out.NameStartsWith = input.prefix
 	}
 
-	if input.sortField != "" {
-		field := ocirepos.SortByName
-		if strings.EqualFold(input.sortField, "created_at") {
-			field = ocirepos.SortByCreatedAt
+	if input.sortField != "" || orderChanged {
+		field, fieldErr := parseRepoSortField(input.sortField)
+		if fieldErr != nil {
+			return out, fieldErr
 		}
-		order := ocirepos.SortAsc
-		if strings.EqualFold(input.sortOrder, "desc") {
-			order = ocirepos.SortDesc
+		order, orderErr := parseRepoSortOrder(input.sortOrder)
+		if orderErr != nil {
+			return out, orderErr
 		}
 		out.SortBy = field
 		out.SortOrder = order
 	}
 
 	return out, nil
+}
+
+func parseRepoSortField(s string) (ocirepos.SortField, error) {
+	switch strings.ToLower(s) {
+	case "", "name":
+		return ocirepos.SortByName, nil
+	case "created_at":
+		return ocirepos.SortByCreatedAt, nil
+	default:
+		return "", fmt.Errorf("unknown sort field %q (valid: name, created_at)", s)
+	}
+}
+
+func parseRepoSortOrder(s string) (ocirepos.SortOrder, error) {
+	switch strings.ToLower(s) {
+	case "", "asc":
+		return ocirepos.SortAsc, nil
+	case "desc":
+		return ocirepos.SortDesc, nil
+	default:
+		return "", fmt.Errorf("unknown sort order %q (valid: asc, desc)", s)
+	}
 }
 
 func resolveArtifactType(s string) (ocirepos.ArtifactType, error) {

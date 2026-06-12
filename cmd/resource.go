@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/charmbracelet/glamour"
@@ -14,6 +15,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/resource"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/resources"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +31,17 @@ func NewCmdResource() *cobra.Command {
 		Long:  helpdocs.MustRender("resource"),
 	}
 
-	// Create
+	resourceCmd.AddCommand(newResourceCreateCmd())
+	resourceCmd.AddCommand(newResourceGetCmd())
+	resourceCmd.AddCommand(newResourceDownloadCmd())
+	resourceCmd.AddCommand(newResourceUpdateCmd())
+	resourceCmd.AddCommand(newResourceDeleteCmd())
+	resourceCmd.AddCommand(newResourceListCmd())
+
+	return resourceCmd
+}
+
+func newResourceCreateCmd() *cobra.Command {
 	resourceCreateCmd := &cobra.Command{
 		Use:     `create`,
 		Short:   "Create a resource",
@@ -43,8 +55,10 @@ func NewCmdResource() *cobra.Command {
 	_ = resourceCreateCmd.MarkFlagRequired("name")
 	_ = resourceCreateCmd.MarkFlagRequired("type")
 	_ = resourceCreateCmd.MarkFlagRequired("file")
+	return resourceCreateCmd
+}
 
-	// Get
+func newResourceGetCmd() *cobra.Command {
 	resourceGetCmd := &cobra.Command{
 		Use:   "get [resource-id]",
 		Short: "Get an resource from Massdriver",
@@ -59,8 +73,10 @@ func NewCmdResource() *cobra.Command {
   mass resource get api-prod-grpcapi-host -o json`,
 	}
 	resourceGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
+	return resourceGetCmd
+}
 
-	// Download
+func newResourceDownloadCmd() *cobra.Command {
 	resourceDownloadCmd := &cobra.Command{
 		Use:   "download [resource-id]",
 		Short: "Download an resource in the specified format",
@@ -75,8 +91,10 @@ func NewCmdResource() *cobra.Command {
   mass resource download network-useast1-vpc-network -f yaml`,
 	}
 	resourceDownloadCmd.Flags().StringP("format", "f", "json", "Download format (json, yaml, etc.)")
+	return resourceDownloadCmd
+}
 
-	// Update
+func newResourceUpdateCmd() *cobra.Command {
 	resourceUpdateCmd := &cobra.Command{
 		Use:   "update [resource-id]",
 		Short: "Update an imported resource",
@@ -92,7 +110,10 @@ func NewCmdResource() *cobra.Command {
 	resourceUpdateCmd.Flags().StringP("name", "n", "", "New resource name")
 	resourceUpdateCmd.Flags().StringP("file", "f", "", "Resource payload file")
 	_ = resourceUpdateCmd.MarkFlagRequired("file")
+	return resourceUpdateCmd
+}
 
+func newResourceDeleteCmd() *cobra.Command {
 	resourceDeleteCmd := &cobra.Command{
 		Use:   "delete [resource-id]",
 		Short: "Delete a resource",
@@ -105,14 +126,126 @@ func NewCmdResource() *cobra.Command {
   mass resource delete 12345678-1234-1234-1234-123456789012 --force`,
 	}
 	resourceDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	return resourceDeleteCmd
+}
 
-	resourceCmd.AddCommand(resourceCreateCmd)
-	resourceCmd.AddCommand(resourceGetCmd)
-	resourceCmd.AddCommand(resourceDownloadCmd)
-	resourceCmd.AddCommand(resourceUpdateCmd)
-	resourceCmd.AddCommand(resourceDeleteCmd)
+func newResourceListCmd() *cobra.Command {
+	resourceListCmd := &cobra.Command{
+		Use:     "list",
+		Short:   "List resources",
+		Aliases: []string{"ls"},
+		Long:    helpdocs.MustRender("resource/list"),
+		RunE:    runResourceList,
+		Example: `  # List all resources
+  mass resource list
 
-	return resourceCmd
+  # Search and filter
+  mass resource list --search database
+  mass resource list --type aws-iam-role --origin provisioned
+  mass resource list --environment ecomm-prod -o json`,
+	}
+	resourceListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
+	resourceListCmd.Flags().StringP("search", "s", "", "Full-text search across resource name")
+	resourceListCmd.Flags().StringP("type", "t", "", "Filter by resource type id (e.g. aws-iam-role)")
+	resourceListCmd.Flags().String("origin", "", "Filter by origin (imported, provisioned). Empty matches both")
+	resourceListCmd.Flags().StringP("environment", "e", "", "Limit to provisioned resources in an environment")
+	resourceListCmd.Flags().String("sort", "", "Sort field (name, created_at)")
+	resourceListCmd.Flags().String("order", "asc", "Sort order (asc, desc)")
+	return resourceListCmd
+}
+
+func parseResourceSortField(s string) (resources.SortField, error) {
+	switch strings.ToLower(s) {
+	case "", "name":
+		return resources.SortByName, nil
+	case "created_at":
+		return resources.SortByCreatedAt, nil
+	default:
+		return "", fmt.Errorf("unknown sort field %q (valid: name, created_at)", s)
+	}
+}
+
+func parseSortOrder(s string) (resources.SortOrder, error) {
+	switch strings.ToLower(s) {
+	case "", "asc":
+		return resources.SortAsc, nil
+	case "desc":
+		return resources.SortDesc, nil
+	default:
+		return "", fmt.Errorf("unknown sort order %q (valid: asc, desc)", s)
+	}
+}
+
+func runResourceList(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	output, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+	search, _ := cmd.Flags().GetString("search")
+	resourceType, _ := cmd.Flags().GetString("type")
+	origin, _ := cmd.Flags().GetString("origin")
+	environmentID, _ := cmd.Flags().GetString("environment")
+	sortField, _ := cmd.Flags().GetString("sort")
+	sortOrder, _ := cmd.Flags().GetString("order")
+
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	listInput := resources.ListInput{
+		Search:        search,
+		ResourceType:  resourceType,
+		EnvironmentID: environmentID,
+	}
+	if origin != "" {
+		listInput.Origin = resources.Origin(strings.ToUpper(origin))
+	}
+	if sortField != "" || cmd.Flags().Changed("order") {
+		sortBy, sortByErr := parseResourceSortField(sortField)
+		if sortByErr != nil {
+			return sortByErr
+		}
+		order, orderErr := parseSortOrder(sortOrder)
+		if orderErr != nil {
+			return orderErr
+		}
+		listInput.SortBy = sortBy
+		listInput.SortOrder = order
+	}
+
+	seq := mdClient.Resources.Iter(ctx, listInput)
+
+	switch output {
+	case "json":
+		res, collectErr := types.Collect(seq)
+		if collectErr != nil {
+			return collectErr
+		}
+		jsonBytes, marshalErr := json.MarshalIndent(res, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal resources to JSON: %w", marshalErr)
+		}
+		fmt.Println(string(jsonBytes))
+		return nil
+	case "table":
+		return cli.Paginate(seq, cli.PagerConfig[resources.Resource]{
+			Columns: []string{"ID", "Name", "Type", "Origin", "Created At"},
+			Row: func(r resources.Resource) []string {
+				typeName := ""
+				if r.ResourceType != nil {
+					typeName = r.ResourceType.Name
+				}
+				return []string{r.ID, r.Name, typeName, strings.ToLower(r.Origin), r.CreatedAt.Format("2006-01-02 15:04:05")}
+			},
+		})
+	default:
+		return fmt.Errorf("unsupported output format: %s", output)
+	}
 }
 
 func runResourceCreate(cmd *cobra.Command, args []string) error {

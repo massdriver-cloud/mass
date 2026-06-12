@@ -44,6 +44,5 @@ Configure and deploying infrastructure and applications.
 * [mass resource](/cli/commands/mass_resource)	 - Manage resources
 * [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management
 * [mass schema](/cli/commands/mass_schema)	 - Manage JSON Schemas
-* [mass server](/cli/commands/mass_server)	 - Start the bundle development server
 * [mass version](/cli/commands/mass_version)	 - Version of Mass CLI
 * [mass whoami](/cli/commands/mass_whoami)	 - Show the currently authenticated user or service account

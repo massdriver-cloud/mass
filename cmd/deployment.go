@@ -57,6 +57,11 @@ func NewCmdDeployment() *cobra.Command {
 		RunE:    runDeploymentList,
 	}
 	deploymentListCmd.Flags().IntP("limit", "n", 10, "Maximum number of deployments to return (max 100)")
+	deploymentListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
+	deploymentListCmd.Flags().String("status", "", "Filter by status (pending, approved, running, completed, failed, aborted, rejected, proposed)")
+	deploymentListCmd.Flags().String("action", "", "Filter by action (provision, decommission, plan)")
+	deploymentListCmd.Flags().String("repo", "", "Filter by OCI repo name")
+	deploymentListCmd.Flags().String("bundle", "", "Filter by bundle version (name@version) or release channel (name@latest)")
 
 	deploymentLogsCmd := &cobra.Command{
 		Use:     "logs <deployment-id>",
@@ -129,6 +134,11 @@ func runDeploymentList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	status, _ := cmd.Flags().GetString("status")
+	action, _ := cmd.Flags().GetString("action")
+	repo, _ := cmd.Flags().GetString("repo")
+	bundle, _ := cmd.Flags().GetString("bundle")
+	output, _ := cmd.Flags().GetString("output")
 	cmd.SilenceUsage = true
 
 	mdClient, err := massdriver.NewClient()
@@ -136,29 +146,51 @@ func runDeploymentList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	// SDK's List auto-paginates without a total cap; we want a total cap, so
+	// SDK's Iter auto-paginates without a total cap; we want a total cap, so
 	// drive Iter and stop after `limit` items.
 	listInput := deployments.ListInput{
-		InstanceID: instanceID,
-		SortBy:     deployments.SortByCreatedAt,
-		SortOrder:  deployments.SortDesc,
+		InstanceID:  instanceID,
+		OciRepoName: repo,
+		BundleID:    bundle,
+		SortBy:      deployments.SortByCreatedAt,
+		SortOrder:   deployments.SortDesc,
+	}
+	if status != "" {
+		listInput.Status = deployments.Status(strings.ToUpper(status))
+	}
+	if action != "" {
+		listInput.Action = deployments.Action(strings.ToUpper(action))
 	}
 
-	tbl := cli.NewTable("ID", "Action", "Status", "Version", "Created At", "By", "Message")
-	count := 0
+	deps := make([]deployments.Deployment, 0, limit)
 	for d, iterErr := range mdClient.Deployments.Iter(ctx, listInput) {
 		if iterErr != nil {
 			return iterErr
 		}
-		if limit > 0 && count >= limit {
+		if limit > 0 && len(deps) >= limit {
 			break
 		}
-		tbl.AddRow(d.ID, d.Action, d.Status, d.Version, d.CreatedAt, d.DeployedBy, cli.TruncateString(d.Message, 40))
-		count++
+		deps = append(deps, d)
 	}
-	tbl.Print()
 
-	return nil
+	switch output {
+	case "json":
+		jsonBytes, marshalErr := json.MarshalIndent(deps, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal deployments to JSON: %w", marshalErr)
+		}
+		fmt.Println(string(jsonBytes))
+		return nil
+	case "table":
+		tbl := cli.NewTable("ID", "Action", "Status", "Version", "Created At", "By", "Message")
+		for _, d := range deps {
+			tbl.AddRow(d.ID, d.Action, d.Status, d.Version, d.CreatedAt, d.DeployedBy, cli.TruncateString(d.Message, 40))
+		}
+		tbl.Print()
+		return nil
+	default:
+		return fmt.Errorf("unsupported output format: %s", output)
+	}
 }
 
 func runDeploymentLogs(cmd *cobra.Command, args []string) error {

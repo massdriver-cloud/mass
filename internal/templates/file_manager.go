@@ -102,6 +102,7 @@ func (f *fileManager) renderFile(template []byte) ([]byte, error) {
 }
 
 func (f *fileManager) writeToFile(outputPath string, outBytes []byte) error {
+	// #nosec G703 -- outputPath is intentionally derived from the user-supplied write directory; writing rendered template files there is this function's purpose
 	return os.WriteFile(outputPath, outBytes, 0600)
 }
 

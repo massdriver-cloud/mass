@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,13 +24,13 @@ func NewCmdSchema() *cobra.Command {
 	}
 
 	schemaDereferenceCmd := &cobra.Command{
-		Use:   "dereference",
+		Use:   "dereference [file]",
 		Short: "Dereferences a JSON Schema",
 		Long:  helpdocs.MustRender("schema/dereference"),
+		Args:  cobra.MaximumNArgs(1),
 		RunE:  runSchemaDereference,
 	}
 	schemaDereferenceCmd.Flags().StringP("file", "f", "", "Path to JSON document")
-	_ = schemaDereferenceCmd.MarkFlagRequired("file")
 
 	schemaValidateCmd := &cobra.Command{
 		Use:   "validate",
@@ -51,6 +52,16 @@ func NewCmdSchema() *cobra.Command {
 func runSchemaDereference(cmd *cobra.Command, args []string) error {
 	schemaPath, _ := cmd.Flags().GetString("file")
 	cmd.SilenceUsage = true
+
+	if schemaPath != "" && len(args) > 0 {
+		return errors.New("a schema file must be provided via either the -f flag or a positional argument, not both")
+	}
+	if len(args) > 0 {
+		schemaPath = args[0]
+	}
+	if schemaPath == "" {
+		return errors.New("a schema file must be provided via the -f flag or as a positional argument")
+	}
 
 	schemaFile, openErr := os.Open(schemaPath)
 	if openErr != nil {

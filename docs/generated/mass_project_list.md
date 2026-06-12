@@ -35,7 +35,8 @@ mass project list [flags]
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help            help for list
+  -o, --output string   Output format (table, json) (default "table")
 ```
 
 ### SEE ALSO

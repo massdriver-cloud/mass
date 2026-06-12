@@ -35,7 +35,9 @@ mass environment list [flags]
 ### Options
 
 ```
-  -h, --help   help for list
+  -h, --help            help for list
+      --id strings      Filter to specific environment IDs (repeatable)
+  -o, --output string   Output format (table, json) (default "table")
 ```
 
 ### SEE ALSO
