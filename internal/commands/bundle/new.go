@@ -82,11 +82,11 @@ params:
 	} else {
 		sb.WriteString("  required:\n")
 		for _, conn := range data.Connections {
-			sb.WriteString(fmt.Sprintf("    - %s\n", conn.Name))
+			fmt.Fprintf(&sb, "    - %s\n", conn.Name)
 		}
 		sb.WriteString("  properties:\n")
 		for _, conn := range data.Connections {
-			sb.WriteString(fmt.Sprintf("    %s:\n      $ref: %s\n", conn.Name, conn.ResourceType))
+			fmt.Fprintf(&sb, "    %s:\n      $ref: %s\n", conn.Name, conn.ResourceType)
 		}
 	}
 	yaml += sb.String()

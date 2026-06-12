@@ -30,7 +30,7 @@ cat resource-type.json | mass schema dereference -f -
 
 
 ```
-mass schema dereference [flags]
+mass schema dereference [file] [flags]
 ```
 
 ### Options

@@ -272,13 +272,13 @@ func (b *Bundle) LintInputsMatchProvisioner() LintResult {
 
 		if len(missingMassdriverInputs) > 0 || len(missingProvisionerInputs) > 0 {
 			var sb strings.Builder
-			sb.WriteString(fmt.Sprintf("missing inputs detected in step %s:\n", step.Path))
+			fmt.Fprintf(&sb, "missing inputs detected in step %s:\n", step.Path)
 
 			for _, p := range missingMassdriverInputs {
-				sb.WriteString(fmt.Sprintf("\t- input \"%s\" declared in IaC but missing massdriver.yaml declaration\n", p))
+				fmt.Fprintf(&sb, "\t- input \"%s\" declared in IaC but missing massdriver.yaml declaration\n", p)
 			}
 			for _, v := range missingProvisionerInputs {
-				sb.WriteString(fmt.Sprintf("\t- input \"%s\" declared in massdriver.yaml but missing IaC declaration\n", v))
+				fmt.Fprintf(&sb, "\t- input \"%s\" declared in massdriver.yaml but missing IaC declaration\n", v)
 			}
 
 			result.AddWarning("param-mismatch", sb.String())

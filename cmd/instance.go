@@ -529,7 +529,7 @@ func runInstanceList(cmd *cobra.Command, args []string) error {
 				if inst.Bundle != nil {
 					bundleName = inst.Bundle.Name
 				}
-				return []string{inst.ID, componentName, bundleName, string(inst.Status)}
+				return []string{inst.ID, componentName, bundleName, inst.Status}
 			},
 		})
 	default:

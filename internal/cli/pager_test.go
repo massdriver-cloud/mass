@@ -1,4 +1,4 @@
-package cli
+package cli_test
 
 import (
 	"errors"
@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/bubbles/table"
+	"github.com/massdriver-cloud/mass/internal/cli"
 )
 
 type pagerRow struct {
@@ -32,8 +33,8 @@ func seqOf(items []pagerRow, errAt int) iter.Seq2[pagerRow, error] {
 	}
 }
 
-func pagerConfig(out *os.File) PagerConfig[pagerRow] {
-	return PagerConfig[pagerRow]{
+func pagerConfig(out *os.File) cli.PagerConfig[pagerRow] {
+	return cli.PagerConfig[pagerRow]{
 		Columns: []string{"ID", "Name"},
 		Row:     func(r pagerRow) []string { return []string{r.id, r.name} },
 		Out:     out,
@@ -59,7 +60,7 @@ func TestPaginateNonInteractiveStreamsAllRows(t *testing.T) {
 		{"proj-3", "Charlie"},
 	}
 
-	if err := Paginate(seqOf(items, -1), pagerConfig(out)); err != nil {
+	if err := cli.Paginate(seqOf(items, -1), pagerConfig(out)); err != nil {
 		t.Fatalf("Paginate returned error: %v", err)
 	}
 
@@ -79,7 +80,7 @@ func TestPaginateNonInteractivePropagatesError(t *testing.T) {
 	out := tempFile(t)
 	items := []pagerRow{{"proj-1", "Alpha"}, {"proj-2", "Bravo"}}
 
-	err := Paginate(seqOf(items, 1), pagerConfig(out))
+	err := cli.Paginate(seqOf(items, 1), pagerConfig(out))
 	if err == nil {
 		t.Fatal("expected error from failed page fetch, got nil")
 	}
@@ -96,22 +97,22 @@ func TestTruncateRowsClipsWideCellsAndPreservesNarrow(t *testing.T) {
 		{Title: "Name", Width: 8},
 	}
 	rows := []table.Row{
-		{"short", "ok"},                            // ID overflows by 1, Name fits
-		{"abc", "this name is way too long"},       // Name overflows
-		{"fits", "fine"},                           // both fit
+		{"short", "ok"},                      // ID overflows by 1, Name fits
+		{"abc", "this name is way too long"}, // Name overflows
+		{"fits", "fine"},                     // both fit
 	}
 
-	got := truncateRows(rows, cols)
+	got := cli.TruncateRows(rows, cols)
 	if len(got) != len(rows) {
 		t.Fatalf("expected %d rows, got %d", len(rows), len(got))
 	}
 
-	checkWidth := func(t *testing.T, cell string, max int) {
+	checkWidth := func(t *testing.T, cell string, maxWidth int) {
 		t.Helper()
 		// Each rune of "…" is one cell wide; runewidth.Truncate guarantees
-		// output width <= max.
-		if w := len([]rune(cell)); w > max {
-			t.Errorf("cell %q has rune-width %d, exceeds limit %d", cell, w, max)
+		// output width <= maxWidth.
+		if w := len([]rune(cell)); w > maxWidth {
+			t.Errorf("cell %q has rune-width %d, exceeds limit %d", cell, w, maxWidth)
 		}
 	}
 
@@ -128,17 +129,17 @@ func TestTruncateRowsClipsWideCellsAndPreservesNarrow(t *testing.T) {
 
 func TestTruncateRowsHandlesNoColumns(t *testing.T) {
 	rows := []table.Row{{"a", "b"}}
-	got := truncateRows(rows, nil)
+	got := cli.TruncateRows(rows, nil)
 	if len(got) != 1 || got[0][0] != "a" || got[0][1] != "b" {
 		t.Errorf("expected rows passthrough when cols is nil, got %v", got)
 	}
 }
 
 func TestIsInteractiveFalseForFile(t *testing.T) {
-	if IsInteractive(tempFile(t)) {
+	if cli.IsInteractive(tempFile(t)) {
 		t.Error("a regular file should not be reported as interactive")
 	}
-	if IsInteractive(nil) {
+	if cli.IsInteractive(nil) {
 		t.Error("nil file should not be reported as interactive")
 	}
 }

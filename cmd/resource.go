@@ -31,7 +31,17 @@ func NewCmdResource() *cobra.Command {
 		Long:  helpdocs.MustRender("resource"),
 	}
 
-	// Create
+	resourceCmd.AddCommand(newResourceCreateCmd())
+	resourceCmd.AddCommand(newResourceGetCmd())
+	resourceCmd.AddCommand(newResourceDownloadCmd())
+	resourceCmd.AddCommand(newResourceUpdateCmd())
+	resourceCmd.AddCommand(newResourceDeleteCmd())
+	resourceCmd.AddCommand(newResourceListCmd())
+
+	return resourceCmd
+}
+
+func newResourceCreateCmd() *cobra.Command {
 	resourceCreateCmd := &cobra.Command{
 		Use:     `create`,
 		Short:   "Create a resource",
@@ -45,8 +55,10 @@ func NewCmdResource() *cobra.Command {
 	_ = resourceCreateCmd.MarkFlagRequired("name")
 	_ = resourceCreateCmd.MarkFlagRequired("type")
 	_ = resourceCreateCmd.MarkFlagRequired("file")
+	return resourceCreateCmd
+}
 
-	// Get
+func newResourceGetCmd() *cobra.Command {
 	resourceGetCmd := &cobra.Command{
 		Use:   "get [resource-id]",
 		Short: "Get an resource from Massdriver",
@@ -61,8 +73,10 @@ func NewCmdResource() *cobra.Command {
   mass resource get api-prod-grpcapi-host -o json`,
 	}
 	resourceGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
+	return resourceGetCmd
+}
 
-	// Download
+func newResourceDownloadCmd() *cobra.Command {
 	resourceDownloadCmd := &cobra.Command{
 		Use:   "download [resource-id]",
 		Short: "Download an resource in the specified format",
@@ -77,8 +91,10 @@ func NewCmdResource() *cobra.Command {
   mass resource download network-useast1-vpc-network -f yaml`,
 	}
 	resourceDownloadCmd.Flags().StringP("format", "f", "json", "Download format (json, yaml, etc.)")
+	return resourceDownloadCmd
+}
 
-	// Update
+func newResourceUpdateCmd() *cobra.Command {
 	resourceUpdateCmd := &cobra.Command{
 		Use:   "update [resource-id]",
 		Short: "Update an imported resource",
@@ -94,7 +110,10 @@ func NewCmdResource() *cobra.Command {
 	resourceUpdateCmd.Flags().StringP("name", "n", "", "New resource name")
 	resourceUpdateCmd.Flags().StringP("file", "f", "", "Resource payload file")
 	_ = resourceUpdateCmd.MarkFlagRequired("file")
+	return resourceUpdateCmd
+}
 
+func newResourceDeleteCmd() *cobra.Command {
 	resourceDeleteCmd := &cobra.Command{
 		Use:   "delete [resource-id]",
 		Short: "Delete a resource",
@@ -107,8 +126,10 @@ func NewCmdResource() *cobra.Command {
   mass resource delete 12345678-1234-1234-1234-123456789012 --force`,
 	}
 	resourceDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	return resourceDeleteCmd
+}
 
-	// List
+func newResourceListCmd() *cobra.Command {
 	resourceListCmd := &cobra.Command{
 		Use:     "list",
 		Short:   "List resources",
@@ -130,15 +151,7 @@ func NewCmdResource() *cobra.Command {
 	resourceListCmd.Flags().StringP("environment", "e", "", "Limit to provisioned resources in an environment")
 	resourceListCmd.Flags().String("sort", "", "Sort field (name, created_at)")
 	resourceListCmd.Flags().String("order", "asc", "Sort order (asc, desc)")
-
-	resourceCmd.AddCommand(resourceCreateCmd)
-	resourceCmd.AddCommand(resourceGetCmd)
-	resourceCmd.AddCommand(resourceDownloadCmd)
-	resourceCmd.AddCommand(resourceUpdateCmd)
-	resourceCmd.AddCommand(resourceDeleteCmd)
-	resourceCmd.AddCommand(resourceListCmd)
-
-	return resourceCmd
+	return resourceListCmd
 }
 
 func parseResourceSortField(s string) (resources.SortField, error) {
