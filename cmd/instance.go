@@ -37,19 +37,7 @@ func NewCmdInstance() *cobra.Command {
 		Long:    helpdocs.MustRender("instance"),
 	}
 
-	instanceDeployCmd := &cobra.Command{
-		Use:     `deploy <project>-<env>-<manifest>`,
-		Short:   "Deploy instances",
-		Example: `mass instance deploy ecomm-prod-vpc`,
-		Long:    helpdocs.MustRender("instance/deploy"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceDeploy,
-	}
-	instanceDeployCmd.Flags().StringP("message", "m", "", "Add a message when deploying")
-	instanceDeployCmd.Flags().StringP("params", "p", "", "Path to params json, tfvars or yaml file. Use '-' to read from stdin. When provided, the full configuration is replaced. Supports bash interpolation.")
-	instanceDeployCmd.Flags().StringArrayP("patch", "P", []string{}, "Patch the last deployed configuration using a JQ expression. Can be specified multiple times.")
-	instanceDeployCmd.Flags().BoolP("follow", "f", false, "Stream the deployment's logs to stdout until it completes")
-	instanceDeployCmd.MarkFlagsMutuallyExclusive("params", "patch")
+	instanceDeployCmd := newInstanceDeployCmd()
 
 	instanceExportCmd := &cobra.Command{
 		Use:     `export <project>-<env>-<manifest>`,
@@ -131,6 +119,26 @@ func NewCmdInstance() *cobra.Command {
 	instanceCmd.AddCommand(newInstanceCopyCmd())
 
 	return instanceCmd
+}
+
+func newInstanceDeployCmd() *cobra.Command {
+	c := &cobra.Command{
+		Use:     `deploy <project>-<env>-<manifest>`,
+		Short:   "Deploy instances",
+		Example: `mass instance deploy ecomm-prod-vpc`,
+		Long:    helpdocs.MustRender("instance/deploy"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runInstanceDeploy,
+	}
+	c.Flags().StringP("message", "m", "", "Add a message when deploying")
+	c.Flags().StringP("params", "p", "", "Path to params json, tfvars or yaml file. Use '-' to read from stdin. When provided, the full configuration is replaced. Supports bash interpolation.")
+	c.Flags().StringArrayP("patch", "P", []string{}, "Patch the last deployed configuration using a JQ expression. Can be specified multiple times.")
+	c.Flags().Bool("plan", false, "Run a dry-run plan (preview changes) instead of provisioning")
+	c.Flags().Bool("propose", false, "Create the deployment in PROPOSED status, awaiting approval before it runs")
+	c.Flags().BoolP("follow", "f", false, "Stream the deployment's logs to stdout until it completes")
+	c.MarkFlagsMutuallyExclusive("params", "patch")
+	c.MarkFlagsMutuallyExclusive("plan", "propose")
+	return c
 }
 
 func newInstanceCopyCmd() *cobra.Command {
@@ -232,15 +240,46 @@ func renderInstance(inst *types.Instance) error {
 	return nil
 }
 
+// resolveDeployAction maps the invoked command and its flags to a deployment
+// action: `destroy` decommissions, `deploy --plan` runs a dry-run plan, and
+// plain `deploy` provisions.
+func resolveDeployAction(cmd *cobra.Command) deployments.Action {
+	if cmd.Name() == "destroy" {
+		return deployments.ActionDecommission
+	}
+	if plan, _ := cmd.Flags().GetBool("plan"); plan {
+		return deployments.ActionPlan
+	}
+	return deployments.ActionProvision
+}
+
+// confirmDecommission prompts for typed confirmation before a decommission,
+// unless --force was passed. It returns whether the caller should proceed.
+func confirmDecommission(cmd *cobra.Command, name string) (bool, error) {
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return false, err
+	}
+	if force {
+		return true, nil
+	}
+	fmt.Printf("WARNING: This will permanently decommission instance `%s` and all its resources.\n", name)
+	fmt.Printf("Type `%s` to confirm decommission: ", name)
+	reader := bufio.NewReader(os.Stdin)
+	answer, _ := reader.ReadString('\n')
+	if strings.TrimSpace(answer) != name {
+		fmt.Println("Decommission cancelled.")
+		return false, nil
+	}
+	return true, nil
+}
+
 func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	name := args[0]
 
-	action := deployments.ActionProvision
-	if cmd.Name() == "destroy" {
-		action = deployments.ActionDecommission
-	}
+	action := resolveDeployAction(cmd)
 
 	msg, err := cmd.Flags().GetString("message")
 	if err != nil {
@@ -262,12 +301,18 @@ func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// propose is only defined on the deploy command; destroy returns false here.
+	propose, _ := cmd.Flags().GetBool("propose")
+
 	opts := instance.DeployOptions{
 		Action:       action,
 		Message:      msg,
 		PatchQueries: patchQueries,
+		Propose:      propose,
 	}
-	if follow {
+	// A proposed deployment doesn't run until it's approved, so there are no
+	// logs to follow.
+	if follow && !propose {
 		opts.LogWriter = os.Stdout
 	}
 
@@ -280,19 +325,12 @@ func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if action == deployments.ActionDecommission {
-		force, forceErr := cmd.Flags().GetBool("force")
-		if forceErr != nil {
-			return forceErr
+		proceed, confirmErr := confirmDecommission(cmd, name)
+		if confirmErr != nil {
+			return confirmErr
 		}
-		if !force {
-			fmt.Printf("WARNING: This will permanently decommission instance `%s` and all its resources.\n", name)
-			fmt.Printf("Type `%s` to confirm decommission: ", name)
-			reader := bufio.NewReader(os.Stdin)
-			answer, _ := reader.ReadString('\n')
-			if strings.TrimSpace(answer) != name {
-				fmt.Println("Decommission cancelled.")
-				return nil
-			}
+		if !proceed {
+			return nil
 		}
 	}
 
@@ -303,16 +341,38 @@ func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	if _, err = instance.RunDeploy(ctx, instance.NewDeployAPI(mdClient), name, opts); err != nil {
+	deployment, err := instance.RunDeploy(ctx, instance.NewDeployAPI(mdClient), name, opts)
+	if err != nil {
 		return err
 	}
 
-	if action == deployments.ActionDecommission {
-		fmt.Printf("✅ Instance `%s` decommission started\n", name)
-		fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(name))
+	reportDeployOutcome(ctx, mdClient, action, name, propose, deployment)
+	return nil
+}
+
+// reportDeployOutcome prints the user-facing summary after a deployment is
+// created. Provision runs report their progress via the status-polling /
+// log-follow output, so they get no extra line here.
+func reportDeployOutcome(ctx context.Context, mdClient *massdriver.Client, action deployments.Action, name string, propose bool, deployment *types.Deployment) {
+	url := mdClient.URLs.Helper(ctx).InstanceURL(name)
+
+	if propose {
+		fmt.Printf("✅ Deployment `%s` proposed for instance `%s` (awaiting approval)\n", deployment.ID, name)
+		fmt.Printf("   Approve with: mass deployment approve %s\n", deployment.ID)
+		fmt.Printf("   Reject with:  mass deployment reject %s\n", deployment.ID)
+		fmt.Printf("🔗 %s\n", url)
+		return
 	}
 
-	return nil
+	switch action {
+	case deployments.ActionDecommission:
+		fmt.Printf("✅ Instance `%s` decommission started\n", name)
+		fmt.Printf("🔗 %s\n", url)
+	case deployments.ActionPlan:
+		fmt.Printf("✅ Plan started for instance `%s` (dry run — no changes are applied)\n", name)
+		fmt.Printf("🔗 %s\n", url)
+	case deployments.ActionProvision:
+	}
 }
 
 func readParams(path string) (map[string]any, error) {

@@ -32,7 +32,7 @@ var deploymentTemplates embed.FS
 func NewCmdDeployment() *cobra.Command {
 	deploymentCmd := &cobra.Command{
 		Use:     "deployment",
-		Aliases: []string{"dep"},
+		Aliases: []string{"dep", "deploy"},
 		Short:   "Manage deployments",
 		Long:    helpdocs.MustRender("deployment"),
 	}
@@ -82,10 +82,30 @@ func NewCmdDeployment() *cobra.Command {
 	}
 	deploymentAbortCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 
+	deploymentApproveCmd := &cobra.Command{
+		Use:     "approve <deployment-id>",
+		Short:   "Approve a proposed deployment, releasing it to run",
+		Example: `mass deployment approve 12345678-1234-1234-1234-123456789012`,
+		Long:    helpdocs.MustRender("deployment/approve"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runDeploymentApprove,
+	}
+
+	deploymentRejectCmd := &cobra.Command{
+		Use:     "reject <deployment-id>",
+		Short:   "Reject a proposed deployment, discarding it permanently",
+		Example: `mass deployment reject 12345678-1234-1234-1234-123456789012`,
+		Long:    helpdocs.MustRender("deployment/reject"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runDeploymentReject,
+	}
+
 	deploymentCmd.AddCommand(deploymentGetCmd)
 	deploymentCmd.AddCommand(deploymentListCmd)
 	deploymentCmd.AddCommand(deploymentLogsCmd)
 	deploymentCmd.AddCommand(deploymentAbortCmd)
+	deploymentCmd.AddCommand(deploymentApproveCmd)
+	deploymentCmd.AddCommand(deploymentRejectCmd)
 
 	return deploymentCmd
 }
@@ -262,6 +282,44 @@ func runDeploymentAbort(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("✅ Deployment `%s` aborted (status: %s)\n", aborted.ID, aborted.Status)
+	return nil
+}
+
+func runDeploymentApprove(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	deploymentID := args[0]
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	approved, err := mdClient.Deployments.Approve(ctx, deploymentID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Deployment `%s` approved (status: %s)\n", approved.ID, approved.Status)
+	return nil
+}
+
+func runDeploymentReject(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	deploymentID := args[0]
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	rejected, err := mdClient.Deployments.Reject(ctx, deploymentID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Deployment `%s` rejected (status: %s)\n", rejected.ID, rejected.Status)
 	return nil
 }
 
