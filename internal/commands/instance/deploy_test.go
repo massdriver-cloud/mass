@@ -23,6 +23,10 @@ type fakeDeployAPI struct {
 	gotCreateInput  deployments.CreateInput
 	gotCreateInstID string
 
+	proposeErr      error
+	gotProposeInput deployments.ProposeInput
+	proposeCalled   bool
+
 	finalDeployment  *types.Deployment
 	getDeploymentErr error
 }
@@ -44,6 +48,16 @@ func (f *fakeDeployAPI) CreateDeployment(_ context.Context, instanceID string, i
 	f.gotCreateInput = in
 	if f.createErr != nil {
 		return nil, f.createErr
+	}
+	return f.deployment, nil
+}
+
+func (f *fakeDeployAPI) ProposeDeployment(_ context.Context, instanceID string, in deployments.ProposeInput) (*types.Deployment, error) {
+	f.proposeCalled = true
+	f.gotCreateInstID = instanceID
+	f.gotProposeInput = in
+	if f.proposeErr != nil {
+		return nil, f.proposeErr
 	}
 	return f.deployment, nil
 }
@@ -156,6 +170,60 @@ func TestRunDeployWithDecommissionAction(t *testing.T) {
 	wantParams := map[string]any{"size": "small"}
 	if !reflect.DeepEqual(api.gotCreateInput.Params, wantParams) {
 		t.Errorf("got params %v, wanted %v", api.gotCreateInput.Params, wantParams)
+	}
+}
+
+func TestRunDeployWithPlanAction(t *testing.T) {
+	api := newDeployFake(map[string]any{"size": "small"}, "COMPLETED")
+	instance.DeploymentStatusSleep = 0 //nolint:reassign // intentionally overriding sleep duration in tests
+
+	_, err := instance.RunDeploy(t.Context(), api, "ecomm-prod-cache", instance.DeployOptions{
+		Action: deployments.ActionPlan,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if api.gotCreateInput.Action != deployments.ActionPlan {
+		t.Errorf("expected action PLAN, got %q", api.gotCreateInput.Action)
+	}
+
+	wantParams := map[string]any{"size": "small"}
+	if !reflect.DeepEqual(api.gotCreateInput.Params, wantParams) {
+		t.Errorf("got params %v, wanted %v", api.gotCreateInput.Params, wantParams)
+	}
+}
+
+func TestRunDeployProposeDoesNotPoll(t *testing.T) {
+	api := newDeployFake(map[string]any{"size": "small"}, "COMPLETED")
+	api.deployment = &types.Deployment{ID: "dep-1", Status: "PROPOSED"}
+	// A poll would panic here: finalDeployment is set, but GetDeployment must
+	// never be reached on the propose path.
+	api.finalDeployment = nil
+
+	dep, err := instance.RunDeploy(t.Context(), api, "ecomm-prod-cache", instance.DeployOptions{
+		Action:  deployments.ActionProvision,
+		Message: "please review",
+		Propose: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !api.proposeCalled {
+		t.Error("expected ProposeDeployment to be called")
+	}
+	if api.gotCreateInput.Action != "" {
+		t.Errorf("expected CreateDeployment not to be called, got action %q", api.gotCreateInput.Action)
+	}
+	if api.gotProposeInput.Action != deployments.ActionProvision {
+		t.Errorf("expected proposed action PROVISION, got %q", api.gotProposeInput.Action)
+	}
+	if api.gotProposeInput.Message != "please review" {
+		t.Errorf("got message %q, wanted %q", api.gotProposeInput.Message, "please review")
+	}
+	if dep.Status != "PROPOSED" {
+		t.Errorf("got status %s, wanted PROPOSED", dep.Status)
 	}
 }
 

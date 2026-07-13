@@ -27,6 +27,7 @@ var DeploymentTimeout = time.Duration(5) * time.Minute
 type DeployAPI interface {
 	GetInstance(ctx context.Context, id string) (*types.Instance, error)
 	CreateDeployment(ctx context.Context, instanceID string, in deployments.CreateInput) (*types.Deployment, error)
+	ProposeDeployment(ctx context.Context, instanceID string, in deployments.ProposeInput) (*types.Deployment, error)
 	GetDeployment(ctx context.Context, id string) (*types.Deployment, error)
 	TailLogs(ctx context.Context, deploymentID string, w io.Writer) error
 }
@@ -42,6 +43,10 @@ func (s sdkDeployAPI) GetInstance(ctx context.Context, id string) (*types.Instan
 
 func (s sdkDeployAPI) CreateDeployment(ctx context.Context, instanceID string, in deployments.CreateInput) (*types.Deployment, error) {
 	return s.c.Deployments.Create(ctx, instanceID, in)
+}
+
+func (s sdkDeployAPI) ProposeDeployment(ctx context.Context, instanceID string, in deployments.ProposeInput) (*types.Deployment, error) {
+	return s.c.Deployments.Propose(ctx, instanceID, in)
 }
 
 func (s sdkDeployAPI) GetDeployment(ctx context.Context, id string) (*types.Deployment, error) {
@@ -62,6 +67,11 @@ type DeployOptions struct {
 	Params map[string]any
 	// PatchQueries are jq expressions applied to the resolved params prior to deploy.
 	PatchQueries []string
+	// Propose, when true, creates the deployment in PROPOSED status (awaiting
+	// approval) instead of running it immediately. RunDeploy returns as soon as
+	// the proposal is created and does not poll or stream logs. Not valid with
+	// ActionPlan (plans are non-destructive and need no approval gate).
+	Propose bool
 	// LogWriter, when non-nil, switches deployment-status output for live log
 	// streaming via the GraphQL subscriptions API. The status-polling chatter
 	// is suppressed; only log lines and the final outcome are written.
@@ -86,6 +96,16 @@ func RunDeploy(ctx context.Context, api DeployAPI, name string, opts DeployOptio
 	action := opts.Action
 	if action == "" {
 		action = deployments.ActionProvision
+	}
+
+	// A proposed deployment sits in PROPOSED until it is approved, so there's
+	// nothing to poll or stream — return the created proposal directly.
+	if opts.Propose {
+		return api.ProposeDeployment(ctx, inst.ID, deployments.ProposeInput{
+			Action:  action,
+			Message: opts.Message,
+			Params:  params,
+		})
 	}
 
 	deployment, err := api.CreateDeployment(ctx, inst.ID, deployments.CreateInput{

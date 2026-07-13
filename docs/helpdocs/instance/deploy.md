@@ -43,3 +43,16 @@ Patch the last deployed configuration with one or more JQ expressions:
 mass instance deploy ecomm-prod-db --patch='.version = "13.4"'
 mass instance deploy ecomm-prod-db --patch='.version = "13.4"' --patch='.size = "large"'
 ```
+
+Run a dry-run plan to preview changes without provisioning. `--plan` combines with `--params`/`--patch` to preview a proposed configuration, and with `--follow` to stream the plan output:
+
+```shell
+mass instance deploy ecomm-prod-db --plan
+mass instance deploy ecomm-prod-db --plan --patch='.version = "13.4"' --follow
+```
+
+Propose a deployment for approval instead of running it immediately. The deployment is created in `PROPOSED` status and runs only once approved with `mass deployment approve` (or discarded with `mass deployment reject`). `--plan` and `--propose` cannot be combined:
+
+```shell
+mass instance deploy ecomm-prod-db --propose --message "bump db to 13.4" --patch='.version = "13.4"'
+```
