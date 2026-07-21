@@ -98,6 +98,7 @@ func NewCmdEnvironment() *cobra.Command {
 	environmentCmd.AddCommand(environmentUpdateCmd)
 	environmentCmd.AddCommand(newEnvironmentDeleteCmd())
 	environmentCmd.AddCommand(environmentDefaultCmd)
+	environmentCmd.AddCommand(newEnvironmentCompareCmd())
 	environmentCmd.AddCommand(newEnvironmentPreviewCmd())
 	environmentCmd.AddCommand(newEnvironmentForkCmd())
 	environmentCmd.AddCommand(newEnvironmentDeployCmd())
@@ -116,6 +117,21 @@ func newEnvironmentDeleteCmd() *cobra.Command {
 		RunE:    runEnvironmentDelete,
 	}
 	c.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	return c
+}
+
+func newEnvironmentCompareCmd() *cobra.Command {
+	c := &cobra.Command{
+		Use:     "compare [source-environment] [target-environment]",
+		Aliases: []string{"diff"},
+		Short:   "Compare two environments instance-by-instance",
+		Example: `mass environment compare ecomm-staging ecomm-production`,
+		Long:    helpdocs.MustRender("environment/compare"),
+		Args:    cobra.ExactArgs(2),
+		RunE:    runEnvironmentCompare,
+	}
+	c.Flags().StringP("output", "o", "text", "Output format (text or json)")
+	c.Flags().Bool("all", false, "Show unchanged params and matching instances too (default shows only differences)")
 	return c
 }
 
@@ -692,4 +708,79 @@ func runEnvironmentDecommission(cmd *cobra.Command, args []string) error {
 		return environment.FollowEnvironment(ctx, environment.NewFollowAPI(mdClient), env.ID, os.Stdout)
 	}
 	return nil
+}
+
+//nolint:dupl // parallel compare-command shape with runDeploymentCompare; consolidating would couple unrelated commands
+func runEnvironmentCompare(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	sourceID := args[0]
+	targetID := args[1]
+
+	outputFormat, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+	showAll, err := cmd.Flags().GetBool("all")
+	if err != nil {
+		return err
+	}
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	cmp, err := mdClient.Environments.Compare(ctx, sourceID, targetID)
+	if err != nil {
+		return err
+	}
+
+	switch outputFormat {
+	case "json":
+		jsonBytes, marshalErr := json.MarshalIndent(cmp, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal comparison to JSON: %w", marshalErr)
+		}
+		fmt.Println(string(jsonBytes))
+		return nil
+	case "text":
+		printEnvironmentComparison(cmp, showAll)
+		return nil
+	default:
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
+}
+
+func printEnvironmentComparison(cmp *types.EnvironmentComparison, showAll bool) {
+	fmt.Println("Comparing environments:")
+	fmt.Printf("  source: %s (%s)\n", cmp.Source.ID, cmp.Source.Name)
+	fmt.Printf("  target: %s (%s)\n\n", cmp.Target.ID, cmp.Target.Name)
+
+	changed := 0
+	for _, ic := range cmp.Instances {
+		if !ic.Equal {
+			changed++
+		}
+		if ic.Equal && !showAll {
+			continue
+		}
+
+		fmt.Printf("── %s ──\n", ic.Component.Name)
+		switch {
+		case ic.Source == nil:
+			fmt.Println("  (only in target)")
+		case ic.Target == nil:
+			fmt.Println("  (only in source)")
+		}
+		fmt.Printf("  bundle version: %s\n", formatVersionComparison(ic.Version))
+		printParamComparisons(ic.Params, showAll)
+		fmt.Println()
+	}
+
+	if changed == 0 {
+		fmt.Println("Environments identical.")
+	} else {
+		fmt.Printf("%d instance(s) differ.\n", changed)
+	}
 }

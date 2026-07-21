@@ -100,12 +100,25 @@ func NewCmdDeployment() *cobra.Command {
 		RunE:    runDeploymentReject,
 	}
 
+	deploymentCompareCmd := &cobra.Command{
+		Use:     "compare <source-deployment-id> <target-deployment-id>",
+		Aliases: []string{"diff"},
+		Short:   "Compare two deployments' bundle version and params",
+		Example: `mass deployment compare 1111... 2222...`,
+		Long:    helpdocs.MustRender("deployment/compare"),
+		Args:    cobra.ExactArgs(2),
+		RunE:    runDeploymentCompare,
+	}
+	deploymentCompareCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
+	deploymentCompareCmd.Flags().Bool("all", false, "Show unchanged params too (default shows only differences)")
+
 	deploymentCmd.AddCommand(deploymentGetCmd)
 	deploymentCmd.AddCommand(deploymentListCmd)
 	deploymentCmd.AddCommand(deploymentLogsCmd)
 	deploymentCmd.AddCommand(deploymentAbortCmd)
 	deploymentCmd.AddCommand(deploymentApproveCmd)
 	deploymentCmd.AddCommand(deploymentRejectCmd)
+	deploymentCmd.AddCommand(deploymentCompareCmd)
 
 	return deploymentCmd
 }
@@ -242,6 +255,64 @@ func runDeploymentLogs(cmd *cobra.Command, args []string) error {
 		return tailErr
 	}
 	return nil
+}
+
+//nolint:dupl // parallel compare-command shape with runEnvironmentCompare; consolidating would couple unrelated commands
+func runDeploymentCompare(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	sourceID := args[0]
+	targetID := args[1]
+
+	outputFormat, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+	showAll, err := cmd.Flags().GetBool("all")
+	if err != nil {
+		return err
+	}
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	cmp, err := mdClient.Deployments.Compare(ctx, sourceID, targetID)
+	if err != nil {
+		return err
+	}
+
+	switch outputFormat {
+	case "json":
+		jsonBytes, marshalErr := json.MarshalIndent(cmp, "", "  ")
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal comparison to JSON: %w", marshalErr)
+		}
+		fmt.Println(string(jsonBytes))
+		return nil
+	case "text":
+		printDeploymentComparison(cmp, showAll)
+		return nil
+	default:
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
+}
+
+func printDeploymentComparison(cmp *types.DeploymentComparison, showAll bool) {
+	fmt.Println("Comparing deployments:")
+	fmt.Printf("  source: %s (%s)\n", cmp.Source.ID, cmp.Source.Status)
+	fmt.Printf("  target: %s (%s)\n\n", cmp.Target.ID, cmp.Target.Status)
+
+	fmt.Printf("Bundle version: %s\n\n", formatVersionComparison(cmp.Version))
+
+	diffs := printParamComparisons(cmp.Params, showAll)
+	fmt.Println()
+	if diffs == 0 {
+		fmt.Println("Params identical.")
+	} else {
+		fmt.Printf("%d param(s) differ.\n", diffs)
+	}
 }
 
 // signalContext returns a derived context that cancels on SIGINT/SIGTERM, so

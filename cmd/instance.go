@@ -117,8 +117,53 @@ func NewCmdInstance() *cobra.Command {
 	instanceCmd.AddCommand(instanceDestroyCmd)
 	instanceCmd.AddCommand(instanceOrphanCmd)
 	instanceCmd.AddCommand(newInstanceCopyCmd())
+	instanceCmd.AddCommand(newInstanceRollbackCmd())
+	instanceCmd.AddCommand(newInstanceRemoteReferenceCmd())
 
 	return instanceCmd
+}
+
+func newInstanceRollbackCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     `rollback <deployment-id>`,
+		Short:   "Propose rolling an instance back to a past completed deployment",
+		Example: `mass instance rollback 12345678-1234-1234-1234-123456789012`,
+		Long:    helpdocs.MustRender("instance/rollback"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runInstanceRollback,
+	}
+}
+
+func newInstanceRemoteReferenceCmd() *cobra.Command {
+	c := &cobra.Command{
+		Use:     "remote-reference",
+		Aliases: []string{"remote-ref"},
+		Short:   "Manage an instance's remote-reference connection overrides",
+		Long:    helpdocs.MustRender("instance/remote-reference"),
+	}
+
+	setCmd := &cobra.Command{
+		Use:     "set <instance-id> <field> <resource-id>",
+		Short:   "Override a connection slot with a resource from another project",
+		Example: `mass instance remote-reference set ecomm-prod-api database ecomm-prod-db.postgres`,
+		Long:    helpdocs.MustRender("instance/remote-reference-set"),
+		Args:    cobra.ExactArgs(3),
+		RunE:    runInstanceRemoteReferenceSet,
+	}
+
+	removeCmd := &cobra.Command{
+		Use:     "remove <instance-id> <field>",
+		Aliases: []string{"rm", "unset"},
+		Short:   "Remove a connection slot override, reverting to the blueprint wiring",
+		Example: `mass instance remote-reference remove ecomm-prod-api database`,
+		Long:    helpdocs.MustRender("instance/remote-reference-remove"),
+		Args:    cobra.ExactArgs(2),
+		RunE:    runInstanceRemoteReferenceRemove,
+	}
+
+	c.AddCommand(setCmd)
+	c.AddCommand(removeCmd)
+	return c
 }
 
 func newInstanceDeployCmd() *cobra.Command {
@@ -531,6 +576,72 @@ func runInstanceOrphan(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("✅ Instance `%s` orphaned (status: %s)\n", orphaned.ID, orphaned.Status)
 	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(orphaned.ID))
+	return nil
+}
+
+func runInstanceRollback(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	deploymentID := args[0]
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	proposed, err := mdClient.Deployments.Rollback(ctx, deploymentID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Rollback to deployment `%s` proposed as deployment `%s` (awaiting approval)\n", deploymentID, proposed.ID)
+	fmt.Printf("   Approve with: mass deployment approve %s\n", proposed.ID)
+	fmt.Printf("   Reject with:  mass deployment reject %s\n", proposed.ID)
+	if proposed.Instance != nil {
+		fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(proposed.Instance.ID))
+	}
+	return nil
+}
+
+func runInstanceRemoteReferenceSet(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	instanceID := args[0]
+	field := args[1]
+	resourceID := args[2]
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	ref, err := mdClient.Instances.SetRemoteReference(ctx, instanceID, resourceID, field)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Instance `%s` field `%s` now references resource `%s`\n", instanceID, ref.Field, ref.Resource.ID)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(instanceID))
+	return nil
+}
+
+func runInstanceRemoteReferenceRemove(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+	instanceID := args[0]
+	field := args[1]
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	if _, err := mdClient.Instances.RemoveRemoteReference(ctx, instanceID, field); err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Instance `%s` field `%s` remote reference removed (reverted to blueprint wiring)\n", instanceID, field)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).InstanceURL(instanceID))
 	return nil
 }
 

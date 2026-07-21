@@ -37,4 +37,6 @@ Instances are used to:
 * [mass instance get](/cli/commands/mass_instance_get)	 - Get an instance
 * [mass instance list](/cli/commands/mass_instance_list)	 - List instances in an environment
 * [mass instance orphan](/cli/commands/mass_instance_orphan)	 - Orphan an instance (reset to INITIALIZED, optionally clearing state locks)
+* [mass instance remote-reference](/cli/commands/mass_instance_remote-reference)	 - Manage an instance's remote-reference connection overrides
+* [mass instance rollback](/cli/commands/mass_instance_rollback)	 - Propose rolling an instance back to a past completed deployment
 * [mass instance version](/cli/commands/mass_instance_version)	 - Set instance version
