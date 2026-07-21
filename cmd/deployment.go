@@ -238,14 +238,6 @@ func runDeploymentLogs(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	return streamDeploymentLogs(ctx, mdClient, deploymentID)
-}
-
-// streamDeploymentLogs tails a deployment's logs to stdout until it reaches a
-// terminal status or ctx is cancelled. When streaming isn't available (no
-// personal access token) it falls back to a one-shot dump of the static logs
-// so the caller still sees the available history.
-func streamDeploymentLogs(ctx context.Context, mdClient *massdriver.Client, deploymentID string) error {
 	// TailLogs collapses backfill + terminal-check + live streaming into one call.
 	tailErr := mdClient.Deployments.TailLogs(ctx, deploymentID, os.Stdout)
 	if errors.Is(tailErr, deployments.ErrStreamingRequiresPAT) {
