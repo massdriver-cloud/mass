@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"embed"
@@ -95,6 +96,7 @@ func NewCmdEnvironment() *cobra.Command {
 	environmentCmd.AddCommand(environmentListCmd)
 	environmentCmd.AddCommand(environmentCreateCmd)
 	environmentCmd.AddCommand(environmentUpdateCmd)
+	environmentCmd.AddCommand(newEnvironmentDeleteCmd())
 	environmentCmd.AddCommand(environmentDefaultCmd)
 	environmentCmd.AddCommand(newEnvironmentPreviewCmd())
 	environmentCmd.AddCommand(newEnvironmentForkCmd())
@@ -102,6 +104,19 @@ func NewCmdEnvironment() *cobra.Command {
 	environmentCmd.AddCommand(newEnvironmentDecommissionCmd())
 
 	return environmentCmd
+}
+
+func newEnvironmentDeleteCmd() *cobra.Command {
+	c := &cobra.Command{
+		Use:     "delete [environment]",
+		Short:   "Delete an environment",
+		Example: `mass environment delete ecomm-staging`,
+		Long:    helpdocs.MustRender("environment/delete"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runEnvironmentDelete,
+	}
+	c.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	return c
 }
 
 func newEnvironmentPreviewCmd() *cobra.Command {
@@ -423,6 +438,50 @@ func runEnvironmentUpdate(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("✅ Environment `%s` updated\n", updated.ID)
 	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).EnvironmentURL(updated.ID))
+	return nil
+}
+
+func runEnvironmentDelete(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	environmentID := args[0]
+	force, err := cmd.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	env, err := mdClient.Environments.Get(ctx, environmentID)
+	if err != nil {
+		return fmt.Errorf("error getting environment: %w", err)
+	}
+
+	// Prompt for confirmation - requires typing the environment ID unless --force is used
+	if !force {
+		fmt.Printf("WARNING: This will permanently delete environment `%s`.\n", env.ID)
+		fmt.Printf("Type `%s` to confirm deletion: ", env.ID)
+		reader := bufio.NewReader(os.Stdin)
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(answer)
+
+		if answer != env.ID {
+			fmt.Println("Deletion cancelled.")
+			return nil
+		}
+	}
+
+	deleted, err := mdClient.Environments.Delete(ctx, environmentID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Environment `%s` deleted successfully\n", deleted.ID)
 	return nil
 }
 
