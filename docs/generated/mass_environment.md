@@ -26,6 +26,7 @@ Environments can be modeled by application stage (production, staging, developme
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
+* [mass environment compare](/cli/commands/mass_environment_compare)	 - Compare two environments instance-by-instance
 * [mass environment create](/cli/commands/mass_environment_create)	 - Create an environment
 * [mass environment decommission](/cli/commands/mass_environment_decommission)	 - Decommission every instance in an environment, in reverse dependency order
 * [mass environment default](/cli/commands/mass_environment_default)	 - Set an environment default connection

@@ -36,7 +36,9 @@ mass project list [flags]
 
 ```
   -h, --help            help for list
+      --name string     Filter to projects whose name exactly matches
   -o, --output string   Output format (table, json) (default "table")
+      --search string   Free-text search across project name and description
 ```
 
 ### SEE ALSO

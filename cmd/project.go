@@ -58,6 +58,8 @@ func NewCmdProject() *cobra.Command {
 		RunE:    runProjectList,
 	}
 	projectListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
+	projectListCmd.Flags().String("name", "", "Filter to projects whose name exactly matches")
+	projectListCmd.Flags().String("search", "", "Free-text search across project name and description")
 
 	projectCreateCmd := &cobra.Command{
 		Use:   "create [slug]",
@@ -89,12 +91,25 @@ func NewCmdProject() *cobra.Command {
 	}
 	projectDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 
+	projectCloneCmd := &cobra.Command{
+		Use:     "clone [source-project] [new-id]",
+		Short:   "Clone a project's blueprint into a new project",
+		Example: `mass project clone ecomm ecomm-copy`,
+		Long:    helpdocs.MustRender("project/clone"),
+		Args:    cobra.ExactArgs(2),
+		RunE:    runProjectClone,
+	}
+	projectCloneCmd.Flags().StringP("name", "n", "", "New project name (defaults to new-id if not provided)")
+	projectCloneCmd.Flags().StringP("description", "d", "", "Optional project description")
+	projectCloneCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes for ABAC (e.g. -a team=ops,system=api)")
+
 	projectCmd.AddCommand(projectExportCmd)
 	projectCmd.AddCommand(projectGetCmd)
 	projectCmd.AddCommand(projectListCmd)
 	projectCmd.AddCommand(projectCreateCmd)
 	projectCmd.AddCommand(projectUpdateCmd)
 	projectCmd.AddCommand(projectDeleteCmd)
+	projectCmd.AddCommand(projectCloneCmd)
 
 	return projectCmd
 }
@@ -159,13 +174,15 @@ func runProjectList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	name, _ := cmd.Flags().GetString("name")
+	search, _ := cmd.Flags().GetString("search")
 
 	mdClient, err := massdriver.NewClient()
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	seq := mdClient.Projects.Iter(ctx, projects.ListInput{})
+	seq := mdClient.Projects.Iter(ctx, projects.ListInput{Name: name, Search: search})
 
 	switch output {
 	case "json":
@@ -271,6 +288,51 @@ func runProjectCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("✅ Project `%s` created successfully\n", proj.ID)
+	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).ProjectURL(proj.ID))
+	return nil
+}
+
+func runProjectClone(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	sourceID := args[0]
+	newID := args[1]
+	name, err := cmd.Flags().GetString("name")
+	if err != nil {
+		return err
+	}
+	if name == "" {
+		name = newID
+	}
+	description, err := cmd.Flags().GetString("description")
+	if err != nil {
+		return err
+	}
+	attrs, err := cmd.Flags().GetStringToString("attributes")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	input := projects.CloneInput{
+		ID:          newID,
+		Name:        name,
+		Description: description,
+		Attributes:  cli.AttributesToAnyMap(attrs),
+	}
+
+	proj, err := mdClient.Projects.Clone(ctx, sourceID, input)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Project `%s` cloned from `%s`\n", proj.ID, sourceID)
 	fmt.Printf("🔗 %s\n", mdClient.URLs.Helper(ctx).ProjectURL(proj.ID))
 	return nil
 }

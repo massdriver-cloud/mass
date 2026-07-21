@@ -35,6 +35,7 @@ Use these commands to inspect and manage deployments:
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
 * [mass deployment abort](/cli/commands/mass_deployment_abort)	 - Abort a pending, approved, or running deployment
 * [mass deployment approve](/cli/commands/mass_deployment_approve)	 - Approve a proposed deployment, releasing it to run
+* [mass deployment compare](/cli/commands/mass_deployment_compare)	 - Compare two deployments' bundle version and params
 * [mass deployment get](/cli/commands/mass_deployment_get)	 - Get a deployment by ID
 * [mass deployment list](/cli/commands/mass_deployment_list)	 - List deployments for an instance (most recent first)
 * [mass deployment logs](/cli/commands/mass_deployment_logs)	 - Stream the log output from a deployment
