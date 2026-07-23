@@ -15,6 +15,7 @@ import (
 
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/internal/cli"
+	cmdrepository "github.com/massdriver-cloud/mass/internal/commands/repository"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/ocirepos"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
@@ -24,24 +25,12 @@ import (
 //go:embed templates/repository.get.md.tmpl
 var repositoryTemplates embed.FS
 
-// artifactTypeAliases maps the user-facing --type flag values to the SDK's
-// typed artifact-type enum. Today only "bundle" is supported by the platform.
-var artifactTypeAliases = map[string]ocirepos.ArtifactType{
-	"bundle": ocirepos.ArtifactTypeBundle,
-}
-
-// artifactTypeLabels is the reverse lookup for table/output rendering — turns
-// the SDK's typed enum back into the friendly name the user typed.
-var artifactTypeLabels = map[ocirepos.ArtifactType]string{
-	ocirepos.ArtifactTypeBundle: "bundle",
-}
-
 // NewCmdRepository returns a cobra command for managing OCI repositories.
 func NewCmdRepository() *cobra.Command {
 	repositoryCmd := &cobra.Command{
 		Use:     "repository",
 		Aliases: []string{"repo"},
-		Short:   "Manage OCI repositories (bundles and, in future, resource types and provisioners)",
+		Short:   "Manage OCI repositories (bundles and resource types)",
 	}
 
 	listInput := repositoryListInput{}
@@ -57,7 +46,7 @@ func NewCmdRepository() *cobra.Command {
 	repositoryListCmd.Flags().StringVarP(&listInput.name, "name", "n", "", "Filter by exact repository name")
 	repositoryListCmd.Flags().StringVar(&listInput.prefix, "prefix", "", "Filter by repository name prefix")
 	repositoryListCmd.Flags().StringVarP(&listInput.search, "search", "s", "", "Full-text search across name, readme, and changelog")
-	repositoryListCmd.Flags().StringVarP(&listInput.kind, "type", "t", "", "Filter by artifact type (bundle)")
+	repositoryListCmd.Flags().StringVarP(&listInput.kind, "type", "t", "", "Filter by artifact type (bundle, resource-type)")
 	repositoryListCmd.Flags().StringVar(&listInput.sortField, "sort", "", "Sort field (name, created_at)")
 	repositoryListCmd.Flags().StringVar(&listInput.sortOrder, "order", "asc", "Sort order (asc, desc)")
 	repositoryListCmd.Flags().StringVarP(&listInput.output, "output", "o", "table", "Output format (table, json)")
@@ -77,7 +66,7 @@ func NewCmdRepository() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE:  runRepositoryCreate,
 	}
-	repositoryCreateCmd.Flags().StringP("type", "t", "", "Artifact type (bundle)")
+	repositoryCreateCmd.Flags().StringP("type", "t", "", "Artifact type (bundle, resource-type)")
 	repositoryCreateCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes (e.g. -a owner=data,service=database)")
 	_ = repositoryCreateCmd.MarkFlagRequired("type")
 
@@ -150,7 +139,7 @@ func runRepositoryList(input *repositoryListInput, orderChanged bool) error {
 		return cli.Paginate(seq, cli.PagerConfig[ocirepos.OciRepo]{
 			Columns: []string{"Name", "Type", "Latest", "Created At"},
 			Row: func(repo ocirepos.OciRepo) []string {
-				return []string{repo.Name, artifactTypeLabel(repo.ArtifactType), repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05")}
+				return []string{repo.Name, cmdrepository.ArtifactTypeLabel(repo.ArtifactType), repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05")}
 			},
 		})
 	default:
@@ -166,7 +155,7 @@ func buildOciReposListInput(input *repositoryListInput, orderChanged bool) (ocir
 	}
 
 	if input.kind != "" {
-		artifactType, resolveErr := resolveArtifactType(input.kind)
+		artifactType, resolveErr := cmdrepository.ResolveArtifactType(input.kind)
 		if resolveErr != nil {
 			return out, resolveErr
 		}
@@ -218,20 +207,6 @@ func parseRepoSortOrder(s string) (ocirepos.SortOrder, error) {
 	default:
 		return "", fmt.Errorf("unknown sort order %q (valid: asc, desc)", s)
 	}
-}
-
-func resolveArtifactType(s string) (ocirepos.ArtifactType, error) {
-	if at, ok := artifactTypeAliases[strings.ToLower(s)]; ok {
-		return at, nil
-	}
-	return "", fmt.Errorf("unknown artifact type %q (valid: bundle)", s)
-}
-
-func artifactTypeLabel(at ocirepos.ArtifactType) string {
-	if label, ok := artifactTypeLabels[at]; ok {
-		return label
-	}
-	return string(at)
 }
 
 func runRepositoryGet(cmd *cobra.Command, args []string) error {
@@ -300,7 +275,7 @@ func renderRepository(repo *ocirepos.OciRepo, tagCount int) error {
 		FormatTime func(time.Time) string
 	}{
 		OciRepo:    repo,
-		TypeLabel:  artifactTypeLabel(repo.ArtifactType),
+		TypeLabel:  cmdrepository.ArtifactTypeLabel(repo.ArtifactType),
 		ShownTags:  tags,
 		TotalTags:  len(repo.Tags),
 		Truncated:  tagCount > 0 && len(repo.Tags) > tagCount,
@@ -351,13 +326,9 @@ func runRepositoryCreate(cmd *cobra.Command, args []string) error {
 // `mass bundle create`. It resolves the friendly type name into the
 // ArtifactType enum, calls the SDK, and prints a success line.
 func createOciRepoCommon(ctx context.Context, mdClient *massdriver.Client, name, typeFlag string, attrs map[string]string) error {
-	artifactType, resolveErr := resolveArtifactType(typeFlag)
+	artifactType, resolveErr := cmdrepository.ResolveArtifactType(typeFlag)
 	if resolveErr != nil {
-		valid := make([]string, 0, len(artifactTypeAliases))
-		for k := range artifactTypeAliases {
-			valid = append(valid, k)
-		}
-		return fmt.Errorf("unknown artifact type %q (valid: %s)", typeFlag, strings.Join(valid, ", "))
+		return resolveErr
 	}
 
 	created, err := mdClient.OciRepos.Create(ctx, ocirepos.CreateInput{
@@ -369,7 +340,7 @@ func createOciRepoCommon(ctx context.Context, mdClient *massdriver.Client, name,
 		return err
 	}
 
-	fmt.Printf("✅ Repository `%s` created (type: %s)\n", created.Name, artifactTypeLabel(created.ArtifactType))
+	fmt.Printf("✅ Repository `%s` created (type: %s)\n", created.Name, cmdrepository.ArtifactTypeLabel(created.ArtifactType))
 	return nil
 }
 

@@ -22,4 +22,4 @@ mass repository get <name> [flags]
 
 ### SEE ALSO
 
-* [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and, in future, resource types and provisioners)
+* [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and resource types)

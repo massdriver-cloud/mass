@@ -17,9 +17,9 @@ mass repository create <name> [flags]
 ```
   -a, --attributes stringToString   Custom attributes (e.g. -a owner=data,service=database) (default [])
   -h, --help                        help for create
-  -t, --type string                 Artifact type (bundle)
+  -t, --type string                 Artifact type (bundle, resource-type)
 ```
 
 ### SEE ALSO
 
-* [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and, in future, resource types and provisioners)
+* [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and resource types)
