@@ -22,9 +22,9 @@ mass repository list [flags]
       --prefix string   Filter by repository name prefix
   -s, --search string   Full-text search across name, readme, and changelog
       --sort string     Sort field (name, created_at)
-  -t, --type string     Filter by artifact type (bundle)
+  -t, --type string     Filter by artifact type (bundle, resource-type)
 ```
 
 ### SEE ALSO
 
-* [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and, in future, resource types and provisioners)
+* [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and resource types)

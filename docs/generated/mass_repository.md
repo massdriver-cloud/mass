@@ -6,7 +6,7 @@ sidebar_label: Mass Repository
 ---
 ## mass repository
 
-Manage OCI repositories (bundles and, in future, resource types and provisioners)
+Manage OCI repositories (bundles and resource types)
 
 ### Options
 

@@ -40,7 +40,7 @@ Configure and deploying infrastructure and applications.
 * [mass environment](/cli/commands/mass_environment)	 - Environment management
 * [mass instance](/cli/commands/mass_instance)	 - Manage instances of IaC deployed in environments.
 * [mass project](/cli/commands/mass_project)	 - Project management
-* [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and, in future, resource types and provisioners)
+* [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and resource types)
 * [mass resource](/cli/commands/mass_resource)	 - Manage resources
 * [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management
 * [mass schema](/cli/commands/mass_schema)	 - Manage JSON Schemas
