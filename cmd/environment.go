@@ -6,6 +6,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -424,7 +425,7 @@ func runEnvironmentUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") && !cmd.Flags().Changed("attributes") {
-		return fmt.Errorf("nothing to update: set at least one of --name, --description, or --attributes")
+		return errors.New("nothing to update: set at least one of --name, --description, or --attributes")
 	}
 
 	// Only send fields whose flags were explicitly set. Nil pointers (and a
