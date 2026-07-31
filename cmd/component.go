@@ -159,28 +159,21 @@ func runComponentUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	current, err := mdClient.Components.Get(ctx, componentID)
-	if err != nil {
-		return fmt.Errorf("error getting component: %w", err)
+	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") && !cmd.Flags().Changed("attributes") {
+		return fmt.Errorf("nothing to update: set at least one of --name, --description, or --attributes")
 	}
 
-	if !cmd.Flags().Changed("name") {
-		name = current.Name
+	// Only send fields whose flags were explicitly set. Nil pointers (and a
+	// nil Attributes map) leave the corresponding values unchanged at the server.
+	input := components.UpdateInput{}
+	if cmd.Flags().Changed("name") {
+		input.Name = &name
 	}
-	if !cmd.Flags().Changed("description") {
-		description = current.Description
+	if cmd.Flags().Changed("description") {
+		input.Description = &description
 	}
-	var attributes map[string]any
 	if cmd.Flags().Changed("attributes") {
-		attributes = cli.AttributesToAnyMap(attrs)
-	} else {
-		attributes = current.Attributes
-	}
-
-	input := components.UpdateInput{
-		Name:        name,
-		Description: description,
-		Attributes:  attributes,
+		input.Attributes = cli.AttributesToAnyMap(attrs)
 	}
 
 	updated, err := mdClient.Components.Update(ctx, componentID, input)

@@ -362,30 +362,21 @@ func runProjectUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	// Fetch current state so unset flags retain their existing values rather
-	// than blanking the field at the server.
-	current, err := mdClient.Projects.Get(ctx, projectID)
-	if err != nil {
-		return fmt.Errorf("error getting project: %w", err)
+	if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("description") && !cmd.Flags().Changed("attributes") {
+		return fmt.Errorf("nothing to update: set at least one of --name, --description, or --attributes")
 	}
 
-	if !cmd.Flags().Changed("name") {
-		name = current.Name
+	// Only send fields whose flags were explicitly set. Nil pointers (and a
+	// nil Attributes map) leave the corresponding values unchanged at the server.
+	input := projects.UpdateInput{}
+	if cmd.Flags().Changed("name") {
+		input.Name = &name
 	}
-	if !cmd.Flags().Changed("description") {
-		description = current.Description
+	if cmd.Flags().Changed("description") {
+		input.Description = &description
 	}
-	var attributes map[string]any
 	if cmd.Flags().Changed("attributes") {
-		attributes = cli.AttributesToAnyMap(attrs)
-	} else {
-		attributes = current.Attributes
-	}
-
-	input := projects.UpdateInput{
-		Name:        name,
-		Description: description,
-		Attributes:  attributes,
+		input.Attributes = cli.AttributesToAnyMap(attrs)
 	}
 
 	updated, err := mdClient.Projects.Update(ctx, projectID, input)
