@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/massdriver-cloud/mass/internal/bundle"
+	"github.com/massdriver-cloud/mass/internal/oci"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"oras.land/oras-go/v2/content/file"
@@ -88,12 +88,12 @@ func (dbf *DefaultBundleFetcher) FetchBundle(ctx context.Context, bundleName, ve
 	}
 	defer store.Close()
 
-	puller := &bundle.Puller{
+	puller := &oci.Puller{
 		Target: store,
 		Repo:   repo,
 	}
 
-	_, pullErr := puller.PullBundle(ctx, version)
+	_, pullErr := puller.Pull(ctx, version)
 	return pullErr
 }
 

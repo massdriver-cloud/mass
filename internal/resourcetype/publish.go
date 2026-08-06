@@ -4,40 +4,173 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/jsonschema"
+	"github.com/massdriver-cloud/mass/internal/oci"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"oras.land/oras-go/v2/content/memory"
 )
 
-// Publish reads, validates, and publishes a resource type from path to the Massdriver API.
-func Publish(ctx context.Context, mdClient *massdriver.Client, path string) (*ResourceType, error) {
-	rt, readErr := Read(ctx, mdClient, path)
-	if readErr != nil {
-		return nil, fmt.Errorf("failed to read resource type: %w", readErr)
+// ArtifactType is the OCI artifact-type media type for resource types.
+const ArtifactType = "application/vnd.massdriver.resource-type.v1+json"
+
+// allowedFiles is the subset of top-level files (matched case-insensitively by
+// name) that may be packaged into a resource type artifact. Everything else at
+// the top level is silently skipped.
+var allowedFiles = map[string]bool{
+	"massdriver.yaml": true,
+	"readme.md":       true,
+	"changelog.md":    true,
+	"icon.svg":        true,
+	"icon.png":        true,
+	"icon.jpg":        true,
+	"icon.jpeg":       true,
+}
+
+// allowedDirs are the subdirectories a massdriver.yaml may reference (UI
+// instructions and export templates); their contents are packaged too.
+var allowedDirs = []string{"instructions/", "exports/"}
+
+// packageKeep is the keep predicate used when packaging a resource type. It
+// admits the allowlisted top-level files plus anything under the referenced
+// instruction/export directories.
+func packageKeep(relPath string) bool {
+	for _, dir := range allowedDirs {
+		if strings.HasPrefix(relPath, dir) {
+			return true
+		}
+	}
+	if strings.Contains(relPath, "/") {
+		return false
+	}
+	return allowedFiles[strings.ToLower(relPath)]
+}
+
+// Publish validates a resource type located at path and pushes it to its OCI
+// repository. path may be a directory containing a massdriver.yaml, or the
+// massdriver.yaml itself. It returns the resource type name and the published
+// version.
+func Publish(ctx context.Context, mdClient *massdriver.Client, path string) (string, string, error) {
+	mdYamlPath, srcDir, resolveErr := resolvePublishPath(path)
+	if resolveErr != nil {
+		return "", "", resolveErr
 	}
 
-	// validate resource type against JSON Schema meta-schema
-	// and resource type schema
+	config, configErr := ReadConfig(mdYamlPath)
+	if configErr != nil {
+		return "", "", fmt.Errorf("failed to read massdriver.yaml: %w", configErr)
+	}
+	if config.Name == "" {
+		return "", "", fmt.Errorf("name is required in %s", mdYamlPath)
+	}
+	if config.Version == "" {
+		return "", "", fmt.Errorf("version is required in %s", mdYamlPath)
+	}
+
+	// Fail fast on a duplicate version before the network-heavy schema
+	// dereference and validation.
+	if versionErr := checkDuplicateVersion(ctx, mdClient, config.Name, config.Version); versionErr != nil {
+		return "", "", versionErr
+	}
+
+	if validateErr := validateSchema(ctx, mdClient, mdYamlPath); validateErr != nil {
+		return "", "", validateErr
+	}
+
+	repo, repoErr := mdClient.OciRepos.Target(config.Name)
+	if repoErr != nil {
+		return "", "", fmt.Errorf("getting repository: %w", repoErr)
+	}
+
+	publisher := &oci.Publisher{
+		Store: memory.New(),
+		Repo:  repo,
+	}
+
+	if _, packageErr := publisher.Package(ctx, srcDir, config.Version, ArtifactType, packageKeep); packageErr != nil {
+		return "", "", fmt.Errorf("packaging resource type: %w", packageErr)
+	}
+
+	if publishErr := publisher.Publish(ctx, config.Version); publishErr != nil {
+		return "", "", fmt.Errorf("publishing resource type: %w", publishErr)
+	}
+
+	return config.Name, config.Version, nil
+}
+
+// resolvePublishPath resolves the publish target into the massdriver.yaml path
+// and its containing directory, rejecting raw JSON schema files with a pointer
+// to the convert command.
+func resolvePublishPath(path string) (mdYamlPath string, srcDir string, err error) {
+	info, statErr := os.Stat(path)
+	if statErr != nil {
+		return "", "", fmt.Errorf("failed to read resource type path: %w", statErr)
+	}
+
+	if info.IsDir() {
+		md := filepath.Join(path, "massdriver.yaml")
+		if _, mdErr := os.Stat(md); mdErr != nil {
+			return "", "", fmt.Errorf("no massdriver.yaml found in %s", path)
+		}
+		return md, path, nil
+	}
+
+	if filepath.Base(path) == "massdriver.yaml" {
+		return path, filepath.Dir(path), nil
+	}
+
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".json", ".yaml", ".yml":
+		return "", "", fmt.Errorf("publishing a raw JSON schema is no longer supported; run `mass resource-type convert %s` to migrate it to a massdriver.yaml", path)
+	default:
+		return "", "", fmt.Errorf("unsupported resource type path: %s (expected a directory or massdriver.yaml)", path)
+	}
+}
+
+// validateSchema builds and dereferences the resource type, then validates it
+// against the resource type schema and the JSON Schema meta-schema.
+func validateSchema(ctx context.Context, mdClient *massdriver.Client, mdYamlPath string) error {
+	rt, readErr := Read(ctx, mdClient, mdYamlPath)
+	if readErr != nil {
+		return fmt.Errorf("failed to read resource type: %w", readErr)
+	}
+
 	cfg := mdClient.Config()
 	rtSchemaURL, err := url.JoinPath(cfg.URL, "json-schemas", "resource-type.json")
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct resource type schema URL: %w", err)
+		return fmt.Errorf("failed to construct resource type schema URL: %w", err)
 	}
-	err = validateResourceType(rt, rtSchemaURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to validate resource type schema: %w", err)
-	}
-	metaSchemaURL, err := url.JoinPath(cfg.URL, "json-schemas", "draft-7.json")
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct meta schema URL: %w", err)
-	}
-	err = validateResourceType(rt, metaSchemaURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to validate resource type against meta schema: %w", err)
+	if validateErr := validateResourceType(rt, rtSchemaURL); validateErr != nil {
+		return fmt.Errorf("failed to validate resource type schema: %w", validateErr)
 	}
 
-	return api.PublishResourceType(ctx, mdClient, api.PublishResourceTypeInput{Schema: rt})
+	metaSchemaURL, err := url.JoinPath(cfg.URL, "json-schemas", "draft-7.json")
+	if err != nil {
+		return fmt.Errorf("failed to construct meta schema URL: %w", err)
+	}
+	if validateErr := validateResourceType(rt, metaSchemaURL); validateErr != nil {
+		return fmt.Errorf("failed to validate resource type against meta schema: %w", validateErr)
+	}
+
+	return nil
+}
+
+// checkDuplicateVersion fails locally if version has already been published,
+// matching the immutability the API enforces.
+func checkDuplicateVersion(ctx context.Context, mdClient *massdriver.Client, name, version string) error {
+	repo, err := mdClient.OciRepos.Get(ctx, name)
+	if err != nil {
+		return fmt.Errorf("fetching OCI repo: %w", err)
+	}
+	for _, t := range repo.Tags {
+		if t.Tag == version {
+			return fmt.Errorf("version %s already exists for resource type %s", version, name)
+		}
+	}
+	return nil
 }
 
 func validateResourceType(rt map[string]any, schemaURL string) error {

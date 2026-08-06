@@ -45,6 +45,7 @@ mass resource-type get [resource-type] [flags]
 ```
   -h, --help            help for get
   -o, --output string   Output format (text or json) (default "text")
+      --schema          With -o json, output only the resolved JSON schema
 ```
 
 ### SEE ALSO

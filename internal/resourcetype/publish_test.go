@@ -1,88 +1,54 @@
 package resourcetype_test
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql/gqltest"
 )
 
-func TestPublish(t *testing.T) {
-	type test struct {
-		name string
-		path string
+// TestPublishValidation covers the local validation Publish performs before it
+// touches the OCI registry: rejecting raw schema files (pointing at convert)
+// and requiring name/version in the massdriver.yaml. These paths short-circuit
+// before the massdriver client is used, so a nil client is fine.
+func TestPublishValidation(t *testing.T) {
+	dir := t.TempDir()
+
+	rawJSON := filepath.Join(dir, "schema.json")
+	if err := os.WriteFile(rawJSON, []byte("{}"), 0600); err != nil {
+		t.Fatal(err)
 	}
-	tests := []test{
-		{
-			name: "simple json",
-			path: "testdata/simple-resource.json",
-		},
-		{
-			name: "massdriver.yaml format",
-			path: "testdata/massdriver-yaml-simple/massdriver.yaml",
-		},
-		{
-			name: "massdriver.yaml with instructions and exports",
-			path: "testdata/massdriver-yaml-resource/massdriver.yaml",
-		},
+	noVersionDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(noVersionDir, "massdriver.yaml"), []byte("name: foo\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	noNameDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(noNameDir, "massdriver.yaml"), []byte("version: 1.0.0\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	emptyDir := t.TempDir()
+
+	tests := []struct {
+		name     string
+		path     string
+		contains string
+	}{
+		{name: "raw JSON schema rejected", path: rawJSON, contains: "convert"},
+		{name: "directory without massdriver.yaml", path: emptyDir, contains: "no massdriver.yaml"},
+		{name: "missing version", path: noVersionDir, contains: "version is required"},
+		{name: "missing name", path: noNameDir, contains: "name is required"},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resourceTypeSchema, err := os.ReadFile("testdata/resourcetype-schema.json")
-			if err != nil {
-				t.Fatalf("failed to read resource type schema: %v", err)
+			_, _, err := resourcetype.Publish(t.Context(), nil, tc.path)
+			if err == nil {
+				t.Fatalf("expected an error, got nil")
 			}
-			metaSchema, err := os.ReadFile("testdata/draft-7.json")
-			if err != nil {
-				t.Fatalf("failed to read meta schema: %v", err)
-			}
-
-			// Start mock HTTP server (serves the meta-schema and the resource-type
-			// JSON Schema that Publish() validates the input against).
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				switch r.URL.Path {
-				case "/json-schemas/resource-type.json":
-					_, _ = w.Write(resourceTypeSchema)
-				case "/json-schemas/draft-7.json":
-					_, _ = w.Write(metaSchema)
-				default:
-					http.NotFound(w, r)
-				}
-			}))
-			defer server.Close()
-
-			mock := gqltest.NewClient(
-				gqltest.RespondWithData(map[string]any{
-					"publishResourceType": map[string]any{
-						"result": map[string]any{
-							"id":   "123-456",
-							"name": "massdriver/test-schema",
-						},
-						"successful": true,
-					},
-				}),
-			)
-			t.Cleanup(api.SetTransportForTest(mock))
-
-			mdClient, err := massdriver.NewClient(
-				massdriver.WithGQLClient(mock),
-				massdriver.WithBaseURL(server.URL),
-				massdriver.WithOrganizationID("test-org"),
-			)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			_, err = resourcetype.Publish(t.Context(), mdClient, tc.path)
-			if err != nil {
-				t.Fatalf("%v, unexpected error", err)
+			if !strings.Contains(err.Error(), tc.contains) {
+				t.Fatalf("expected error to contain %q, got: %v", tc.contains, err)
 			}
 		})
 	}

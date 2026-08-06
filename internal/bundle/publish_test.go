@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
+	"github.com/massdriver-cloud/mass/internal/oci"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2/content/memory"
 )
@@ -38,14 +39,19 @@ func TestPackageBundle(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			memStore := memory.New()
 
-			p := bundle.Publisher{
+			p := oci.Publisher{
 				Store: memStore,
 			}
 
+			keep, keepErr := bundle.PackageKeep(tc.bundleDir)
+			if keepErr != nil {
+				t.Fatalf("PackageKeep failed: %v", keepErr)
+			}
+
 			tag := "test-tag"
-			desc, err := p.PackageBundle(t.Context(), tc.bundleDir, tag)
+			desc, err := p.Package(t.Context(), tc.bundleDir, tag, bundle.ArtifactType, keep)
 			if err != nil {
-				t.Fatalf("PackageBundle failed: %v", err)
+				t.Fatalf("Package failed: %v", err)
 			}
 
 			// Fetch and parse the manifest

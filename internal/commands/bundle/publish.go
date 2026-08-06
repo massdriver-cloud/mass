@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
+	"github.com/massdriver-cloud/mass/internal/oci"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 
@@ -30,14 +31,19 @@ func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *massdriver.Clie
 		return fmt.Errorf("getting repository: %w", repoErr)
 	}
 	store := memory.New()
-	publisher := &bundle.Publisher{
+	publisher := &oci.Publisher{
 		Store: store,
 		Repo:  repo,
 	}
 
 	fmt.Printf("Packaging bundle %s...\n", printBundleName)
 
-	manifestDescriptor, packageErr := publisher.PackageBundle(ctx, buildFromDir, version)
+	keep, keepErr := bundle.PackageKeep(buildFromDir)
+	if keepErr != nil {
+		return fmt.Errorf("packaging bundle: %w", keepErr)
+	}
+
+	manifestDescriptor, packageErr := publisher.Package(ctx, buildFromDir, version, bundle.ArtifactType, keep)
 	if packageErr != nil {
 		return fmt.Errorf("packaging bundle: %w", packageErr)
 	}
@@ -45,7 +51,7 @@ func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *massdriver.Clie
 	fmt.Printf("Package %s created with digest: %s\n", printBundleName, manifestDescriptor.Digest)
 	fmt.Printf("Pushing %s to package manager...\n", printBundleName)
 
-	publishErr := publisher.PublishBundle(ctx, version)
+	publishErr := publisher.Publish(ctx, version)
 	if publishErr != nil {
 		return fmt.Errorf("publishing bundle: %w", publishErr)
 	}

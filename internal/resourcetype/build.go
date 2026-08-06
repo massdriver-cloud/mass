@@ -13,18 +13,19 @@ import (
 // This is an experimental format that provides a more ergonomic authoring experience.
 type MassdriverYAML struct {
 	Name    string         `yaml:"name"`
-	Label   string         `yaml:"label"`
-	Icon    string         `yaml:"icon"`
-	UI      *UIConfig      `yaml:"ui"`
-	Exports []ExportConfig `yaml:"exports"`
+	Version string         `yaml:"version,omitempty"`
+	Label   string         `yaml:"label,omitempty"`
+	Icon    string         `yaml:"icon,omitempty"`
+	UI      *UIConfig      `yaml:"ui,omitempty"`
+	Exports []ExportConfig `yaml:"exports,omitempty"`
 	Schema  map[string]any `yaml:"schema"`
 }
 
 // UIConfig represents the UI configuration section
 type UIConfig struct {
-	ConnectionOrientation   string              `yaml:"connectionOrientation"`
-	EnvironmentDefaultGroup string              `yaml:"environmentDefaultGroup"`
-	Instructions            []InstructionConfig `yaml:"instructions"`
+	ConnectionOrientation   string              `yaml:"connectionOrientation,omitempty"`
+	EnvironmentDefaultGroup string              `yaml:"environmentDefaultGroup,omitempty"`
+	Instructions            []InstructionConfig `yaml:"instructions,omitempty"`
 }
 
 // InstructionConfig represents an instruction file reference
@@ -41,9 +42,9 @@ type ExportConfig struct {
 	TemplateLang       string `yaml:"templateLang"`
 }
 
-// Build reads a massdriver.yaml file and builds it into the resource type
-// format expected by the Massdriver API.
-func Build(path string) (map[string]any, error) {
+// ReadConfig reads and parses a massdriver.yaml resource type file into its
+// structured form without dereferencing or building the schema.
+func ReadConfig(path string) (*MassdriverYAML, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read massdriver.yaml: %w", err)
@@ -52,6 +53,17 @@ func Build(path string) (map[string]any, error) {
 	var config MassdriverYAML
 	if err := yaml.Unmarshal(content, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse massdriver.yaml: %w", err)
+	}
+
+	return &config, nil
+}
+
+// Build reads a massdriver.yaml file and builds it into the resource type
+// format expected by the Massdriver API.
+func Build(path string) (map[string]any, error) {
+	config, err := ReadConfig(path)
+	if err != nil {
+		return nil, err
 	}
 
 	baseDir := filepath.Dir(path)
