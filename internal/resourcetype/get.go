@@ -1,26 +1,25 @@
-// Package resourcetype provides CLI helpers around resource-type operations.
-//
-// The underlying GraphQL surface lives in [github.com/massdriver-cloud/mass/internal/api],
-// a temporary holding pen for ops not yet exposed by the Massdriver SDK. When
-// the SDK adds native resource-type support this package collapses to thin
-// wrappers over the SDK and `internal/api` is deleted.
+// Package resourcetype provides CLI helpers around resource-type operations,
+// thin wrappers over the Massdriver SDK's resource-type and OCI-repo services.
 package resourcetype
 
 import (
 	"context"
 	"encoding/json"
 
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/ocirepos"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/resourcetypes"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
-// ResourceType is an alias of [api.ResourceType] so consumers stay decoupled
-// from the holding-pen package import.
-type ResourceType = api.ResourceType
+// ResourceType is an alias of the SDK's resource-type record so consumers stay
+// decoupled from the SDK import path.
+type ResourceType = resourcetypes.ResourceType
 
-// Get retrieves a resource type by name from the Massdriver API.
+// Get retrieves a resource type by name (optionally `name@version`) from
+// Massdriver, including its resolved JSON schema.
 func Get(ctx context.Context, mdClient *massdriver.Client, resourceTypeName string) (*ResourceType, error) {
-	return api.GetResourceType(ctx, mdClient, resourceTypeName)
+	return mdClient.ResourceTypes.Get(ctx, resourceTypeName)
 }
 
 // GetAsMap retrieves a resource type and returns it as a generic map.
@@ -40,7 +39,28 @@ func GetAsMap(ctx context.Context, mdClient *massdriver.Client, resourceTypeName
 	return result, unmarshalErr
 }
 
-// List returns every resource type in the configured organization.
+// List returns every resource type in the configured organization, sourced from
+// the OCI repository catalog filtered to resource-type artifacts. The returned
+// records carry only catalog metadata (ID, name, icon, timestamps); use [Get]
+// to fetch a single resource type's schema.
 func List(ctx context.Context, mdClient *massdriver.Client) ([]ResourceType, error) {
-	return api.ListResourceTypes(ctx, mdClient)
+	seq := mdClient.OciRepos.Iter(ctx, ocirepos.ListInput{
+		ArtifactType: ocirepos.ArtifactTypeResourceType,
+	})
+	repos, collectErr := types.Collect(seq)
+	if collectErr != nil {
+		return nil, collectErr
+	}
+
+	resourceTypes := make([]ResourceType, len(repos))
+	for i, repo := range repos {
+		resourceTypes[i] = ResourceType{
+			ID:        repo.ID,
+			Name:      repo.Name,
+			Icon:      repo.Icon,
+			CreatedAt: repo.CreatedAt,
+			UpdatedAt: repo.UpdatedAt,
+		}
+	}
+	return resourceTypes, nil
 }

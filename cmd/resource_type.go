@@ -20,6 +20,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/ocirepos"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
 )
 
@@ -263,24 +264,28 @@ func runTypeList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	resourceTypes, err := resourcetype.List(ctx, mdClient)
-	if err != nil {
-		return err
-	}
+	seq := mdClient.OciRepos.Iter(ctx, ocirepos.ListInput{
+		ArtifactType: ocirepos.ArtifactTypeResourceType,
+	})
 
 	switch output {
 	case "json":
-		jsonBytes, marshalErr := json.MarshalIndent(resourceTypes, "", "  ")
+		repos, collectErr := types.Collect(seq)
+		if collectErr != nil {
+			return fmt.Errorf("failed to list resource types: %w", collectErr)
+		}
+		jsonBytes, marshalErr := json.MarshalIndent(repos, "", "  ")
 		if marshalErr != nil {
 			return fmt.Errorf("failed to marshal resource types to JSON: %w", marshalErr)
 		}
 		fmt.Println(string(jsonBytes))
 	case "table":
-		tbl := cli.NewTable("ID", "Name", "Updated At")
-		for _, rt := range resourceTypes {
-			tbl.AddRow(rt.ID, rt.Name, rt.UpdatedAt)
-		}
-		tbl.Print()
+		return cli.Paginate(seq, cli.PagerConfig[ocirepos.OciRepo]{
+			Columns: []string{"Name", "Latest", "Created At"},
+			Row: func(repo ocirepos.OciRepo) []string {
+				return []string{repo.Name, repo.LatestTag, repo.CreatedAt.Format("2006-01-02 15:04:05")}
+			},
+		})
 	default:
 		return fmt.Errorf("unsupported output format: %s", output)
 	}
