@@ -1,9 +1,27 @@
 package resourcetype //nolint:testpackage // needs access to unexported packageKeep
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestPackageKeep(t *testing.T) {
-	keep := []string{
+	config := &MassdriverYAML{
+		UI: &UIConfig{
+			Instructions: []InstructionConfig{
+				{Label: "CLI", Path: "./docs/cli.md"},
+				{Label: "Console", Path: "instructions/console.md"},
+			},
+		},
+		Exports: []ExportConfig{
+			{DownloadButtonText: "Config", TemplatePath: "./templates/config.yaml.liquid"},
+		},
+	}
+	keep := packageKeep(config)
+
+	admit := []string{
 		"massdriver.yaml",
 		"README.md",
 		"readme.md",
@@ -12,28 +30,93 @@ func TestPackageKeep(t *testing.T) {
 		"icon.png",
 		"icon.jpg",
 		"icon.jpeg",
-		"instructions/cli.md",
-		"instructions/nested/deep.md",
-		"exports/config.yaml.liquid",
+		"docs/cli.md",                  // referenced instruction, arbitrary dir
+		"instructions/console.md",      // referenced instruction
+		"templates/config.yaml.liquid", // referenced export template
 	}
-	drop := []string{
+	skip := []string{
 		"main.tf",
 		"schema-params.json",
 		"icon.gif",
 		".mdignore",
-		"instructions", // the bare name, not a file under the dir
-		"docs/readme.md",
+		"docs/other.md",       // unreferenced file in a referenced dir
+		"instructions/cli.md", // not the referenced instruction path
 		"secrets/key.pem",
 	}
 
-	for _, f := range keep {
-		if !packageKeep(f) {
-			t.Errorf("packageKeep(%q) = false, want true", f)
+	for _, f := range admit {
+		if !keep(f) {
+			t.Errorf("keep(%q) = false, want true", f)
 		}
 	}
-	for _, f := range drop {
-		if packageKeep(f) {
-			t.Errorf("packageKeep(%q) = true, want false", f)
+	for _, f := range skip {
+		if keep(f) {
+			t.Errorf("keep(%q) = true, want false", f)
 		}
 	}
+}
+
+func TestPackageKeepNoReferences(t *testing.T) {
+	keep := packageKeep(&MassdriverYAML{})
+	if !keep("massdriver.yaml") {
+		t.Error("massdriver.yaml should always be kept")
+	}
+	if keep("instructions/cli.md") {
+		t.Error("nothing under instructions/ should be kept when unreferenced")
+	}
+}
+
+func TestValidateReferencedFiles(t *testing.T) {
+	srcDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(srcDir, "docs"), 0750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "docs", "cli.md"), []byte("x"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "tmpl.liquid"), []byte("x"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	uiWith := func(path string) *UIConfig {
+		return &UIConfig{Instructions: []InstructionConfig{{Label: "L", Path: path}}}
+	}
+
+	t.Run("all references present and inside the tree", func(t *testing.T) {
+		config := &MassdriverYAML{
+			UI:      uiWith("./docs/cli.md"),
+			Exports: []ExportConfig{{TemplatePath: "tmpl.liquid"}},
+		}
+		if err := validateReferencedFiles(config, srcDir); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("missing file is rejected", func(t *testing.T) {
+		err := validateReferencedFiles(&MassdriverYAML{UI: uiWith("./docs/missing.md")}, srcDir)
+		if err == nil || !strings.Contains(err.Error(), "not found") {
+			t.Fatalf("want not-found error, got: %v", err)
+		}
+	})
+
+	t.Run("path escaping the directory is rejected", func(t *testing.T) {
+		err := validateReferencedFiles(&MassdriverYAML{UI: uiWith("../secret.md")}, srcDir)
+		if err == nil || !strings.Contains(err.Error(), "inside the resource type directory") {
+			t.Fatalf("want outside-directory error, got: %v", err)
+		}
+	})
+
+	t.Run("absolute path is rejected", func(t *testing.T) {
+		err := validateReferencedFiles(&MassdriverYAML{Exports: []ExportConfig{{TemplatePath: "/etc/passwd"}}}, srcDir)
+		if err == nil || !strings.Contains(err.Error(), "inside the resource type directory") {
+			t.Fatalf("want outside-directory error, got: %v", err)
+		}
+	})
+
+	t.Run("directory reference is rejected", func(t *testing.T) {
+		err := validateReferencedFiles(&MassdriverYAML{UI: uiWith("./docs")}, srcDir)
+		if err == nil || !strings.Contains(err.Error(), "is a directory") {
+			t.Fatalf("want is-a-directory error, got: %v", err)
+		}
+	})
 }

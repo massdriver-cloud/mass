@@ -17,8 +17,8 @@ mass resource-type publish [path]
 
 `path` is a directory containing a `massdriver.yaml` (defaults to the current
 directory). Only `massdriver.yaml`, `readme`, `changelog`, icon files, and the
-`instructions/` and `exports/` directories referenced by the `massdriver.yaml`
-are included in the published artifact.
+instruction/export template files referenced by the `massdriver.yaml` are
+included in the published artifact.
 
 ## Examples
 

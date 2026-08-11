@@ -30,23 +30,83 @@ var allowedFiles = map[string]bool{
 	"icon.jpeg":       true,
 }
 
-// allowedDirs are the subdirectories a massdriver.yaml may reference (UI
-// instructions and export templates); their contents are packaged too.
-var allowedDirs = []string{"instructions/", "exports/"}
-
-// packageKeep is the keep predicate used when packaging a resource type. It
-// admits the allowlisted top-level files plus anything under the referenced
-// instruction/export directories.
-func packageKeep(relPath string) bool {
-	for _, dir := range allowedDirs {
-		if strings.HasPrefix(relPath, dir) {
-			return true
+// referencedPaths returns the raw instruction and export template file
+// references declared in a massdriver.yaml, in declaration order.
+func referencedPaths(config *MassdriverYAML) []string {
+	var refs []string
+	if config.UI != nil {
+		for _, inst := range config.UI.Instructions {
+			refs = append(refs, inst.Path)
 		}
 	}
-	if strings.Contains(relPath, "/") {
-		return false
+	for _, exp := range config.Exports {
+		refs = append(refs, exp.TemplatePath)
 	}
-	return allowedFiles[strings.ToLower(relPath)]
+	return refs
+}
+
+// packageKeep builds the keep predicate used when packaging a resource type.
+// It admits the allowlisted top-level files plus the exact instruction and
+// export template files the massdriver.yaml references (wherever they live in
+// the directory tree), and silently skips everything else.
+func packageKeep(config *MassdriverYAML) func(relPath string) bool {
+	referenced := map[string]bool{}
+	for _, p := range referencedPaths(config) {
+		if norm := normalizeRel(p); norm != "" {
+			referenced[norm] = true
+		}
+	}
+
+	return func(relPath string) bool {
+		if referenced[relPath] {
+			return true
+		}
+		if strings.Contains(relPath, "/") {
+			return false
+		}
+		return allowedFiles[strings.ToLower(relPath)]
+	}
+}
+
+// validateReferencedFiles ensures every instruction/export file the
+// massdriver.yaml references resolves to a real file inside srcDir. References
+// that are absolute, escape the directory, or don't exist would be dropped by
+// the packager and produce a silently incomplete artifact, so they're rejected
+// up front.
+func validateReferencedFiles(config *MassdriverYAML, srcDir string) error {
+	for _, ref := range referencedPaths(config) {
+		if ref == "" {
+			continue
+		}
+		norm := normalizeRel(ref)
+		if norm == "" {
+			return fmt.Errorf("referenced file %q must live inside the resource type directory (absolute paths and paths outside the directory can't be packaged)", ref)
+		}
+		info, statErr := os.Stat(filepath.Join(srcDir, norm))
+		if statErr != nil {
+			return fmt.Errorf("referenced file %q was not found in the resource type directory: %w", ref, statErr)
+		}
+		if info.IsDir() {
+			return fmt.Errorf("referenced file %q is a directory, not a file", ref)
+		}
+	}
+	return nil
+}
+
+// normalizeRel converts a massdriver.yaml file reference (relative to the
+// massdriver.yaml, e.g. "./instructions/cli.md") into the slash-separated,
+// cleaned form the packager's keep predicate receives. Empty and non-local
+// (absolute or parent-escaping) references return "" since they can't match a
+// file walked under the resource type directory.
+func normalizeRel(p string) string {
+	if p == "" {
+		return ""
+	}
+	cleaned := filepath.ToSlash(filepath.Clean(p))
+	if cleaned == "." || filepath.IsAbs(cleaned) || strings.HasPrefix(cleaned, "../") {
+		return ""
+	}
+	return cleaned
 }
 
 // Publish validates a resource type located at path and pushes it to its OCI
@@ -70,6 +130,12 @@ func Publish(ctx context.Context, mdClient *massdriver.Client, path string) (str
 		return "", "", fmt.Errorf("version is required in %s", mdYamlPath)
 	}
 
+	// Referenced instruction/export files must live inside the packaged
+	// directory, otherwise the artifact would ship incomplete.
+	if refErr := validateReferencedFiles(config, srcDir); refErr != nil {
+		return "", "", refErr
+	}
+
 	// Fail fast on a duplicate version before the network-heavy schema
 	// dereference and validation.
 	if versionErr := checkDuplicateVersion(ctx, mdClient, config.Name, config.Version); versionErr != nil {
@@ -90,7 +156,7 @@ func Publish(ctx context.Context, mdClient *massdriver.Client, path string) (str
 		Repo:  repo,
 	}
 
-	if _, packageErr := publisher.Package(ctx, srcDir, config.Version, ArtifactType, packageKeep); packageErr != nil {
+	if _, packageErr := publisher.Package(ctx, srcDir, config.Version, ArtifactType, packageKeep(config)); packageErr != nil {
 		return "", "", fmt.Errorf("packaging resource type: %w", packageErr)
 	}
 
