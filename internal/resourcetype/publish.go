@@ -58,13 +58,7 @@ func packageKeep(config *MassdriverYAML) func(relPath string) bool {
 	}
 
 	return func(relPath string) bool {
-		if referenced[relPath] {
-			return true
-		}
-		if strings.Contains(relPath, "/") {
-			return false
-		}
-		return allowedFiles[strings.ToLower(relPath)]
+		return referenced[relPath] || allowedFiles[strings.ToLower(relPath)]
 	}
 }
 
