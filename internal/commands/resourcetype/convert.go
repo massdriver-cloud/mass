@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/massdriver-cloud/mass/internal/resourcetype"
 	"gopkg.in/yaml.v3"
 )
 
@@ -17,18 +18,18 @@ import (
 // publishing.
 const placeholderVersion = "0.0.0"
 
-// ConvertResult describes the files a Convert call produced.
+// ConvertResult describes the files a RunConvert call produced.
 type ConvertResult struct {
 	MassdriverYAML string   // path to the written massdriver.yaml
 	ExtraFiles     []string // paths to extracted instruction/export files
 }
 
-// Convert reads a raw JSON (or YAML) resource type schema at schemaPath and
+// RunConvert reads a raw JSON (or YAML) resource type schema at schemaPath and
 // writes an equivalent massdriver.yaml. Inlined instruction/export content is
 // extracted back out to referenced files. outputPath is the massdriver.yaml to
 // write; when empty it defaults to a massdriver.yaml alongside schemaPath.
 // Existing files are not overwritten unless force is set.
-func Convert(schemaPath, outputPath string, force bool) (*ConvertResult, error) {
+func RunConvert(schemaPath, outputPath string, force bool) (*ConvertResult, error) {
 	raw, readErr := readRawSchema(schemaPath)
 	if readErr != nil {
 		return nil, readErr
@@ -104,11 +105,12 @@ func readRawSchema(path string) (map[string]any, error) {
 	return raw, nil
 }
 
-// reverseBuild is the inverse of [Build]: it lifts the `$md` block back into the
-// massdriver.yaml fields, extracts inlined instruction/export content into files
-// keyed by their relative path, and moves the remaining keys under `schema`.
-func reverseBuild(raw map[string]any) (*MassdriverYAML, map[string][]byte) {
-	config := &MassdriverYAML{Version: placeholderVersion}
+// reverseBuild is the inverse of resourcetype.Build: it lifts the `$md` block
+// back into the massdriver.yaml fields, extracts inlined instruction/export
+// content into files keyed by their relative path, and moves the remaining keys
+// under `schema`.
+func reverseBuild(raw map[string]any) (*resourcetype.MassdriverYAML, map[string][]byte) {
+	config := &resourcetype.MassdriverYAML{Version: placeholderVersion}
 	extraFiles := map[string][]byte{}
 
 	if md, ok := raw["$md"].(map[string]any); ok {
@@ -138,8 +140,8 @@ func reverseBuild(raw map[string]any) (*MassdriverYAML, map[string][]byte) {
 	return config, extraFiles
 }
 
-func reverseUI(uiRaw map[string]any, extraFiles map[string][]byte) *UIConfig {
-	ui := &UIConfig{
+func reverseUI(uiRaw map[string]any, extraFiles map[string][]byte) *resourcetype.UIConfig {
+	ui := &resourcetype.UIConfig{
 		ConnectionOrientation:   asString(uiRaw["connectionOrientation"]),
 		EnvironmentDefaultGroup: asString(uiRaw["environmentDefaultGroup"]),
 	}
@@ -154,9 +156,9 @@ func reverseUI(uiRaw map[string]any, extraFiles map[string][]byte) *UIConfig {
 			continue
 		}
 		label := asString(inst["label"])
-		rel := uniqueRel(extraFiles, "instructions", slugify(label, i), "md", i)
+		rel := uniqueRel(extraFiles, "instructions", sanitize(label, i), "md")
 		extraFiles[rel] = []byte(asString(inst["content"]))
-		ui.Instructions = append(ui.Instructions, InstructionConfig{
+		ui.Instructions = append(ui.Instructions, resourcetype.InstructionConfig{
 			Label: label,
 			Path:  "./" + rel,
 		})
@@ -164,8 +166,8 @@ func reverseUI(uiRaw map[string]any, extraFiles map[string][]byte) *UIConfig {
 	return ui
 }
 
-func reverseExports(exportsRaw []any, extraFiles map[string][]byte) []ExportConfig {
-	var exports []ExportConfig
+func reverseExports(exportsRaw []any, extraFiles map[string][]byte) []resourcetype.ExportConfig {
+	var exports []resourcetype.ExportConfig
 	for i, expRaw := range exportsRaw {
 		exp, ok := expRaw.(map[string]any)
 		if !ok {
@@ -176,9 +178,9 @@ func reverseExports(exportsRaw []any, extraFiles map[string][]byte) []ExportConf
 		if ext == "" {
 			ext = "tmpl"
 		}
-		rel := uniqueRel(extraFiles, "exports", slugify(asString(exp["downloadButtonText"]), i), ext, i)
+		rel := uniqueRel(extraFiles, "exports", sanitize(asString(exp["downloadButtonText"]), i), ext)
 		extraFiles[rel] = []byte(asString(exp["template"]))
-		exports = append(exports, ExportConfig{
+		exports = append(exports, resourcetype.ExportConfig{
 			DownloadButtonText: asString(exp["downloadButtonText"]),
 			FileFormat:         asString(exp["fileFormat"]),
 			TemplatePath:       "./" + rel,
@@ -188,14 +190,18 @@ func reverseExports(exportsRaw []any, extraFiles map[string][]byte) []ExportConf
 	return exports
 }
 
-// uniqueRel builds "<dir>/<slug>.<ext>", appending the item index if that path
-// was already taken so two items with the same label don't clobber each other.
-func uniqueRel(extraFiles map[string][]byte, dir, slug, ext string, index int) string {
-	rel := fmt.Sprintf("%s/%s.%s", dir, slug, ext)
-	if _, taken := extraFiles[rel]; !taken {
-		return rel
+// uniqueRel builds "<dir>/<name>.<ext>", appending an incrementing numeric
+// suffix until the path is unused, so two items that reduce to the same name
+// don't clobber each other's extracted file.
+func uniqueRel(extraFiles map[string][]byte, dir, name, ext string) string {
+	base := fmt.Sprintf("%s/%s", dir, name)
+	rel := base + "." + ext
+	for n := 2; ; n++ {
+		if _, taken := extraFiles[rel]; !taken {
+			return rel
+		}
+		rel = fmt.Sprintf("%s-%d.%s", base, n, ext)
 	}
-	return fmt.Sprintf("%s/%s-%d.%s", dir, slug, index+1, ext)
 }
 
 func asString(v any) string {
@@ -205,15 +211,15 @@ func asString(v any) string {
 	return ""
 }
 
-var nonSlugChars = regexp.MustCompile(`[^a-z0-9]+`)
+var nonFilenameChars = regexp.MustCompile(`[^a-z0-9]+`)
 
-// slugify turns a human label into a filesystem-friendly slug, falling back to
+// sanitize turns a human label into a filesystem-friendly name, falling back to
 // an index-based name when the label has no usable characters.
-func slugify(label string, index int) string {
-	slug := nonSlugChars.ReplaceAllString(strings.ToLower(label), "-")
-	slug = strings.Trim(slug, "-")
-	if slug == "" {
+func sanitize(label string, index int) string {
+	name := nonFilenameChars.ReplaceAllString(strings.ToLower(label), "-")
+	name = strings.Trim(name, "-")
+	if name == "" {
 		return strconv.Itoa(index + 1)
 	}
-	return slug
+	return name
 }

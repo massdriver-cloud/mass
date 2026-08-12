@@ -9,6 +9,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ArtifactType is the OCI artifact-type media type for resource types.
+const ArtifactType = "application/vnd.massdriver.resource-type.v1+json"
+
 // MassdriverYAML represents the structure of a massdriver.yaml resource type file.
 // This is an experimental format that provides a more ergonomic authoring experience.
 type MassdriverYAML struct {

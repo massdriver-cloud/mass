@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/internal/cli"
+	cmdresourcetype "github.com/massdriver-cloud/mass/internal/commands/resourcetype"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
@@ -197,7 +198,7 @@ func runTypePublish(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	name, version, publishErr := resourcetype.Publish(ctx, mdClient, path)
+	name, version, publishErr := cmdresourcetype.RunPublish(ctx, mdClient, path)
 	if publishErr != nil {
 		return fmt.Errorf("error publishing resource type: %w", publishErr)
 	}
@@ -236,7 +237,7 @@ func runTypePull(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	tag, digest, pullErr := resourcetype.Pull(ctx, mdClient, name, version, directory)
+	tag, digest, pullErr := cmdresourcetype.RunPull(ctx, mdClient, name, version, directory)
 	if pullErr != nil {
 		return fmt.Errorf("error pulling resource type: %w", pullErr)
 	}
@@ -316,8 +317,8 @@ func runTypeDelete(cmd *cobra.Command, args []string) error {
 
 	// Fail before the confirmation prompt if the repo is immutable (has published
 	// versions) — no point making the user type the name for a delete that can't
-	// succeed. resourcetype.Delete re-checks to guard against a version being
-	// published during the prompt.
+	// succeed. RunDelete re-checks to guard against a version being published
+	// during the prompt.
 	if len(repo.Tags) > 0 {
 		return fmt.Errorf("resource type %s has published versions and is immutable; its repository cannot be deleted", repo.Name)
 	}
@@ -335,7 +336,7 @@ func runTypeDelete(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	deleted, deleteErr := resourcetype.Delete(ctx, mdClient, name)
+	deleted, deleteErr := cmdresourcetype.RunDelete(ctx, mdClient, name)
 	if deleteErr != nil {
 		return fmt.Errorf("error deleting resource type: %w", deleteErr)
 	}
@@ -356,7 +357,7 @@ func runTypeConvert(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	result, convertErr := resourcetype.Convert(schemaPath, output, force)
+	result, convertErr := cmdresourcetype.RunConvert(schemaPath, output, force)
 	if convertErr != nil {
 		return fmt.Errorf("error converting resource type: %w", convertErr)
 	}

@@ -1,21 +1,23 @@
-package resourcetype //nolint:testpackage // needs access to unexported packageKeep
+package resourcetype //nolint:testpackage // needs access to unexported packageKeep/validateReferencedFiles
 
 import (
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	rtype "github.com/massdriver-cloud/mass/internal/resourcetype"
 )
 
 func TestPackageKeep(t *testing.T) {
-	config := &MassdriverYAML{
-		UI: &UIConfig{
-			Instructions: []InstructionConfig{
+	config := &rtype.MassdriverYAML{
+		UI: &rtype.UIConfig{
+			Instructions: []rtype.InstructionConfig{
 				{Label: "CLI", Path: "./docs/cli.md"},
 				{Label: "Console", Path: "instructions/console.md"},
 			},
 		},
-		Exports: []ExportConfig{
+		Exports: []rtype.ExportConfig{
 			{DownloadButtonText: "Config", TemplatePath: "./templates/config.yaml.liquid"},
 		},
 	}
@@ -57,7 +59,7 @@ func TestPackageKeep(t *testing.T) {
 }
 
 func TestPackageKeepNoReferences(t *testing.T) {
-	keep := packageKeep(&MassdriverYAML{})
+	keep := packageKeep(&rtype.MassdriverYAML{})
 	if !keep("massdriver.yaml") {
 		t.Error("massdriver.yaml should always be kept")
 	}
@@ -78,14 +80,14 @@ func TestValidateReferencedFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	uiWith := func(path string) *UIConfig {
-		return &UIConfig{Instructions: []InstructionConfig{{Label: "L", Path: path}}}
+	uiWith := func(path string) *rtype.UIConfig {
+		return &rtype.UIConfig{Instructions: []rtype.InstructionConfig{{Label: "L", Path: path}}}
 	}
 
 	t.Run("all references present and inside the tree", func(t *testing.T) {
-		config := &MassdriverYAML{
+		config := &rtype.MassdriverYAML{
 			UI:      uiWith("./docs/cli.md"),
-			Exports: []ExportConfig{{TemplatePath: "tmpl.liquid"}},
+			Exports: []rtype.ExportConfig{{TemplatePath: "tmpl.liquid"}},
 		}
 		if err := validateReferencedFiles(config, srcDir); err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -93,28 +95,28 @@ func TestValidateReferencedFiles(t *testing.T) {
 	})
 
 	t.Run("missing file is rejected", func(t *testing.T) {
-		err := validateReferencedFiles(&MassdriverYAML{UI: uiWith("./docs/missing.md")}, srcDir)
+		err := validateReferencedFiles(&rtype.MassdriverYAML{UI: uiWith("./docs/missing.md")}, srcDir)
 		if err == nil || !strings.Contains(err.Error(), "not found") {
 			t.Fatalf("want not-found error, got: %v", err)
 		}
 	})
 
 	t.Run("path escaping the directory is rejected", func(t *testing.T) {
-		err := validateReferencedFiles(&MassdriverYAML{UI: uiWith("../secret.md")}, srcDir)
+		err := validateReferencedFiles(&rtype.MassdriverYAML{UI: uiWith("../secret.md")}, srcDir)
 		if err == nil || !strings.Contains(err.Error(), "inside the resource type directory") {
 			t.Fatalf("want outside-directory error, got: %v", err)
 		}
 	})
 
 	t.Run("absolute path is rejected", func(t *testing.T) {
-		err := validateReferencedFiles(&MassdriverYAML{Exports: []ExportConfig{{TemplatePath: "/etc/passwd"}}}, srcDir)
+		err := validateReferencedFiles(&rtype.MassdriverYAML{Exports: []rtype.ExportConfig{{TemplatePath: "/etc/passwd"}}}, srcDir)
 		if err == nil || !strings.Contains(err.Error(), "inside the resource type directory") {
 			t.Fatalf("want outside-directory error, got: %v", err)
 		}
 	})
 
 	t.Run("directory reference is rejected", func(t *testing.T) {
-		err := validateReferencedFiles(&MassdriverYAML{UI: uiWith("./docs")}, srcDir)
+		err := validateReferencedFiles(&rtype.MassdriverYAML{UI: uiWith("./docs")}, srcDir)
 		if err == nil || !strings.Contains(err.Error(), "is a directory") {
 			t.Fatalf("want is-a-directory error, got: %v", err)
 		}

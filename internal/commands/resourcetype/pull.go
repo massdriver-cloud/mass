@@ -9,10 +9,10 @@ import (
 	"oras.land/oras-go/v2/content/file"
 )
 
-// Pull downloads a resource type from its OCI repository into directory,
+// RunPull downloads a resource type from its OCI repository into directory,
 // resolving version to a concrete tag. It returns the resolved tag and the
 // pulled manifest digest.
-func Pull(ctx context.Context, mdClient *massdriver.Client, name, version, directory string) (string, string, error) {
+func RunPull(ctx context.Context, mdClient *massdriver.Client, name, version, directory string) (string, string, error) {
 	repo, repoErr := mdClient.OciRepos.Target(name)
 	if repoErr != nil {
 		return "", "", repoErr

@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/resourcetype"
+	cmdresourcetype "github.com/massdriver-cloud/mass/internal/commands/resourcetype"
 )
 
-// TestPublishValidation covers the local validation Publish performs before it
-// touches the OCI registry: rejecting raw schema files (pointing at convert)
-// and requiring name/version in the massdriver.yaml. These paths short-circuit
-// before the massdriver client is used, so a nil client is fine.
-func TestPublishValidation(t *testing.T) {
+// TestRunPublishValidation covers the local validation RunPublish performs
+// before it touches the OCI registry: rejecting raw schema files (pointing at
+// convert) and requiring name/version in the massdriver.yaml. These paths
+// short-circuit before the massdriver client is used, so a nil client is fine.
+func TestRunPublishValidation(t *testing.T) {
 	dir := t.TempDir()
 
 	rawJSON := filepath.Join(dir, "schema.json")
@@ -43,7 +43,7 @@ func TestPublishValidation(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := resourcetype.Publish(t.Context(), nil, tc.path)
+			_, _, err := cmdresourcetype.RunPublish(t.Context(), nil, tc.path)
 			if err == nil {
 				t.Fatalf("expected an error, got nil")
 			}

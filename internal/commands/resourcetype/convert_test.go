@@ -5,16 +5,17 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/resourcetype"
+	cmdresourcetype "github.com/massdriver-cloud/mass/internal/commands/resourcetype"
+	rtype "github.com/massdriver-cloud/mass/internal/resourcetype"
 	"gopkg.in/yaml.v3"
 )
 
-func TestConvert(t *testing.T) {
+func TestRunConvert(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "massdriver.yaml")
 
-	result, err := resourcetype.Convert("testdata/simple-resource.json", out, false)
+	result, err := cmdresourcetype.RunConvert("testdata/simple-resource.json", out, false)
 	if err != nil {
-		t.Fatalf("Convert failed: %v", err)
+		t.Fatalf("RunConvert failed: %v", err)
 	}
 	if result.MassdriverYAML != out {
 		t.Errorf("MassdriverYAML = %q, want %q", result.MassdriverYAML, out)
@@ -25,7 +26,7 @@ func TestConvert(t *testing.T) {
 		t.Fatalf("reading output: %v", readErr)
 	}
 
-	var config resourcetype.MassdriverYAML
+	var config rtype.MassdriverYAML
 	if unmarshalErr := yaml.Unmarshal(data, &config); unmarshalErr != nil {
 		t.Fatalf("output is not valid massdriver.yaml: %v", unmarshalErr)
 	}
@@ -36,7 +37,6 @@ func TestConvert(t *testing.T) {
 	if config.Version == "" {
 		t.Error("expected a placeholder version to be written")
 	}
-	// The $md block must be lifted out of the schema.
 	if _, ok := config.Schema["$md"]; ok {
 		t.Error("schema should not contain the $md block after conversion")
 	}
@@ -45,14 +45,17 @@ func TestConvert(t *testing.T) {
 	}
 }
 
-func TestConvertDistinctFilesForDuplicateLabels(t *testing.T) {
+func TestRunConvertDistinctFilesForDuplicateLabels(t *testing.T) {
 	dir := t.TempDir()
+	// Labels crafted to trip the old (buggy) unique-path logic: the third
+	// instruction's fallback name collided with the first's.
 	raw := `{
   "$md": {
     "name": "dup",
     "ui": { "instructions": [
-      { "label": "Setup", "content": "first" },
-      { "label": "Setup", "content": "second" }
+      { "label": "a 3", "content": "first" },
+      { "label": "a", "content": "second" },
+      { "label": "a", "content": "third" }
     ] }
   },
   "type": "object"
@@ -63,12 +66,12 @@ func TestConvertDistinctFilesForDuplicateLabels(t *testing.T) {
 	}
 	out := filepath.Join(dir, "out", "massdriver.yaml")
 
-	result, err := resourcetype.Convert(schemaPath, out, false)
+	result, err := cmdresourcetype.RunConvert(schemaPath, out, false)
 	if err != nil {
-		t.Fatalf("Convert failed: %v", err)
+		t.Fatalf("RunConvert failed: %v", err)
 	}
-	if len(result.ExtraFiles) != 2 {
-		t.Fatalf("expected 2 distinct instruction files, got %d: %v", len(result.ExtraFiles), result.ExtraFiles)
+	if len(result.ExtraFiles) != 3 {
+		t.Fatalf("expected 3 distinct instruction files, got %d: %v", len(result.ExtraFiles), result.ExtraFiles)
 	}
 
 	contents := map[string]bool{}
@@ -79,22 +82,24 @@ func TestConvertDistinctFilesForDuplicateLabels(t *testing.T) {
 		}
 		contents[string(data)] = true
 	}
-	if !contents["first"] || !contents["second"] {
-		t.Errorf("both instruction contents should be preserved, got: %v", contents)
+	for _, want := range []string{"first", "second", "third"} {
+		if !contents[want] {
+			t.Errorf("instruction content %q was lost to a filename collision, got: %v", want, contents)
+		}
 	}
 }
 
-func TestConvertRefusesToClobber(t *testing.T) {
+func TestRunConvertRefusesToClobber(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "massdriver.yaml")
 	if err := os.WriteFile(out, []byte("existing"), 0600); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := resourcetype.Convert("testdata/simple-resource.json", out, false); err == nil {
+	if _, err := cmdresourcetype.RunConvert("testdata/simple-resource.json", out, false); err == nil {
 		t.Fatal("expected an error when the output file already exists")
 	}
 
-	if _, err := resourcetype.Convert("testdata/simple-resource.json", out, true); err != nil {
+	if _, err := cmdresourcetype.RunConvert("testdata/simple-resource.json", out, true); err != nil {
 		t.Fatalf("expected --force to overwrite, got: %v", err)
 	}
 }

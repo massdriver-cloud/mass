@@ -1,3 +1,6 @@
+// Package resourcetype holds the testable logic behind the `mass resource-type`
+// commands. The cobra wiring lives in the top-level cmd package; generalized,
+// reusable resource-type logic lives in internal/resourcetype.
 package resourcetype
 
 import (
@@ -10,12 +13,10 @@ import (
 
 	"github.com/massdriver-cloud/mass/internal/jsonschema"
 	"github.com/massdriver-cloud/mass/internal/oci"
+	"github.com/massdriver-cloud/mass/internal/resourcetype"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"oras.land/oras-go/v2/content/memory"
 )
-
-// ArtifactType is the OCI artifact-type media type for resource types.
-const ArtifactType = "application/vnd.massdriver.resource-type.v1+json"
 
 // allowedFiles is the subset of top-level files (matched case-insensitively by
 // name) that may be packaged into a resource type artifact. Everything else at
@@ -32,7 +33,7 @@ var allowedFiles = map[string]bool{
 
 // referencedPaths returns the raw instruction and export template file
 // references declared in a massdriver.yaml, in declaration order.
-func referencedPaths(config *MassdriverYAML) []string {
+func referencedPaths(config *resourcetype.MassdriverYAML) []string {
 	var refs []string
 	if config.UI != nil {
 		for _, inst := range config.UI.Instructions {
@@ -49,7 +50,7 @@ func referencedPaths(config *MassdriverYAML) []string {
 // It admits the allowlisted top-level files plus the exact instruction and
 // export template files the massdriver.yaml references (wherever they live in
 // the directory tree), and silently skips everything else.
-func packageKeep(config *MassdriverYAML) func(relPath string) bool {
+func packageKeep(config *resourcetype.MassdriverYAML) func(relPath string) bool {
 	referenced := map[string]bool{}
 	for _, p := range referencedPaths(config) {
 		if norm := normalizeRel(p); norm != "" {
@@ -67,7 +68,7 @@ func packageKeep(config *MassdriverYAML) func(relPath string) bool {
 // that are absolute, escape the directory, or don't exist would be dropped by
 // the packager and produce a silently incomplete artifact, so they're rejected
 // up front.
-func validateReferencedFiles(config *MassdriverYAML, srcDir string) error {
+func validateReferencedFiles(config *resourcetype.MassdriverYAML, srcDir string) error {
 	for _, ref := range referencedPaths(config) {
 		if ref == "" {
 			continue
@@ -103,17 +104,17 @@ func normalizeRel(p string) string {
 	return cleaned
 }
 
-// Publish validates a resource type located at path and pushes it to its OCI
+// RunPublish validates a resource type located at path and pushes it to its OCI
 // repository. path may be a directory containing a massdriver.yaml, or the
 // massdriver.yaml itself. It returns the resource type name and the published
 // version.
-func Publish(ctx context.Context, mdClient *massdriver.Client, path string) (string, string, error) {
+func RunPublish(ctx context.Context, mdClient *massdriver.Client, path string) (string, string, error) {
 	mdYamlPath, srcDir, resolveErr := resolvePublishPath(path)
 	if resolveErr != nil {
 		return "", "", resolveErr
 	}
 
-	config, configErr := ReadConfig(mdYamlPath)
+	config, configErr := resourcetype.ReadConfig(mdYamlPath)
 	if configErr != nil {
 		return "", "", fmt.Errorf("failed to read massdriver.yaml: %w", configErr)
 	}
@@ -150,7 +151,7 @@ func Publish(ctx context.Context, mdClient *massdriver.Client, path string) (str
 		Repo:  repo,
 	}
 
-	if _, packageErr := publisher.Package(ctx, srcDir, config.Version, ArtifactType, packageKeep(config)); packageErr != nil {
+	if _, packageErr := publisher.Package(ctx, srcDir, config.Version, resourcetype.ArtifactType, packageKeep(config)); packageErr != nil {
 		return "", "", fmt.Errorf("packaging resource type: %w", packageErr)
 	}
 
@@ -193,7 +194,7 @@ func resolvePublishPath(path string) (mdYamlPath string, srcDir string, err erro
 // validateSchema builds and dereferences the resource type, then validates it
 // against the resource type schema and the JSON Schema meta-schema.
 func validateSchema(ctx context.Context, mdClient *massdriver.Client, mdYamlPath string) error {
-	rt, readErr := Read(ctx, mdClient, mdYamlPath)
+	rt, readErr := resourcetype.Read(ctx, mdClient, mdYamlPath)
 	if readErr != nil {
 		return fmt.Errorf("failed to read resource type: %w", readErr)
 	}

@@ -8,11 +8,11 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/ocirepos"
 )
 
-// Delete removes a resource type's OCI repository. Because published versions
+// RunDelete removes a resource type's OCI repository. Because published versions
 // are immutable, deletion is refused locally when the repository already has
 // tags. UX (confirmation prompt, success message) is the caller's
-// responsibility — see [cmd.runTypeDelete].
-func Delete(ctx context.Context, mdClient *massdriver.Client, name string) (*ocirepos.OciRepo, error) {
+// responsibility — see cmd.runTypeDelete.
+func RunDelete(ctx context.Context, mdClient *massdriver.Client, name string) (*ocirepos.OciRepo, error) {
 	repo, getErr := mdClient.OciRepos.Get(ctx, name)
 	if getErr != nil {
 		return nil, fmt.Errorf("fetching OCI repo: %w", getErr)
