@@ -416,10 +416,6 @@ linters:
     # Allow unused params at the cobra command level
     - linters: [revive]
       text: "unused-parameter: parameter ('cmd'|'args') seems to be unused, consider removing or renaming it as _"
-    # 'api' is a domain-appropriate package name for this layer; revive flags it as "meaningless"
-    - linters: [revive]
-      text: "var-naming: avoid meaningless package names"
-      path: "internal/api/"
     - path: "_test\\.go"
       linters:
         - revive

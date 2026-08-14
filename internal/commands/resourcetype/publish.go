@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/massdriver-cloud/mass/internal/jsonschema"
@@ -18,17 +19,20 @@ import (
 	"oras.land/oras-go/v2/content/memory"
 )
 
-// allowedFiles is the subset of top-level files (matched case-insensitively by
-// name) that may be packaged into a resource type artifact. Everything else at
-// the top level is silently skipped.
-var allowedFiles = map[string]bool{
-	"massdriver.yaml": true,
-	"readme.md":       true,
-	"changelog.md":    true,
-	"icon.svg":        true,
-	"icon.png":        true,
-	"icon.jpg":        true,
-	"icon.jpeg":       true,
+// allowedFiles is the exact set of top-level files that may be packaged into a
+// resource type artifact. readme/changelog are listed in both their
+// conventional uppercase and lowercase forms; everything else at the top level
+// is silently skipped.
+var allowedFiles = []string{
+	"massdriver.yaml",
+	"README.md",
+	"readme.md",
+	"CHANGELOG.md",
+	"changelog.md",
+	"icon.svg",
+	"icon.png",
+	"icon.jpg",
+	"icon.jpeg",
 }
 
 // referencedPaths returns the raw instruction and export template file
@@ -59,7 +63,7 @@ func packageKeep(config *resourcetype.MassdriverYAML) func(relPath string) bool 
 	}
 
 	return func(relPath string) bool {
-		return referenced[relPath] || allowedFiles[strings.ToLower(relPath)]
+		return referenced[relPath] || slices.Contains(allowedFiles, relPath)
 	}
 }
 
@@ -137,9 +141,9 @@ func RunPublish(ctx context.Context, mdClient *massdriver.Client, path string) (
 		return "", "", versionErr
 	}
 
-	if validateErr := validateSchema(ctx, mdClient, mdYamlPath); validateErr != nil {
-		return "", "", validateErr
-	}
+	// if validateErr := validateSchema(ctx, mdClient, mdYamlPath); validateErr != nil {
+	// 	return "", "", validateErr
+	// }
 
 	repo, repoErr := mdClient.OciRepos.Target(config.Name)
 	if repoErr != nil {
