@@ -141,9 +141,9 @@ func RunPublish(ctx context.Context, mdClient *massdriver.Client, path string) (
 		return "", "", versionErr
 	}
 
-	// if validateErr := validateSchema(ctx, mdClient, mdYamlPath); validateErr != nil {
-	// 	return "", "", validateErr
-	// }
+	if validateErr := validateSchema(ctx, mdClient, mdYamlPath); validateErr != nil {
+		return "", "", validateErr
+	}
 
 	repo, repoErr := mdClient.OciRepos.Target(config.Name)
 	if repoErr != nil {
