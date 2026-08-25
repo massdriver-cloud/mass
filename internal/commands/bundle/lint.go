@@ -5,20 +5,13 @@ import (
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
-
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 )
 
 // RunLint runs all lint checks on the bundle and returns the combined result.
-func RunLint(b *bundle.Bundle, mdClient *massdriver.Client) bundle.LintResult {
+func RunLint(b *bundle.Bundle) bundle.LintResult {
 	fmt.Println("Checking massdriver.yaml for errors...")
 
 	var allResults bundle.LintResult
-
-	// Schema validation
-	schemaResult := b.LintSchema(mdClient.Config().URL)
-	allResults.Merge(schemaResult)
-	printLintResult("Schema validation", schemaResult)
 
 	// Parameter and connection collision check
 	collisionResult := b.LintParamsConnectionsNameCollision()

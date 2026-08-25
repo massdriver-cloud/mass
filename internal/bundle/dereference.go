@@ -19,19 +19,16 @@ type SchemaResolver func(ctx context.Context, name string) (map[string]any, erro
 // tests.
 func (b *Bundle) DereferenceSchemas(path string, resolver SchemaResolver) error {
 	cwd := filepath.Dir(path)
+	b.hydrateDependencySchema()
 
-	// The stripID is a hack to get around the issue of the UI choking if the params schema has 2 or more of the same $id in it.
-	// We need the "$id" in artifacts and connections, but we need to strip it out of params and ui schemas, hence the conditional.
-	// This logic should be removed when we have a better solution for this in the UI/API - probably after resource types are in OCI
+	// stripID drops "$id" from the params schema; dependencies keep it.
 	tasks := []struct {
 		schema  *map[string]any
 		label   string
 		stripID bool
 	}{
-		{schema: &b.Artifacts, label: "artifacts", stripID: false},
 		{schema: &b.Params, label: "params", stripID: true},
-		{schema: &b.Connections, label: "connections", stripID: false},
-		{schema: &b.UI, label: "ui", stripID: true},
+		{schema: &b.dependencySchema, label: "dependencies", stripID: false},
 	}
 
 	for _, task := range tasks {

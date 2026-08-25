@@ -397,12 +397,17 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
+	// Schema validation runs before dereferencing, which assumes a valid bundle.
+	if err = cmdbundle.ValidateSchema(unmarshalledBundle, mdClient.Config().URL); err != nil {
+		return err
+	}
+
 	err = unmarshalledBundle.DereferenceSchemas(bundleDirectory, resourcetype.NewMassdriverResolver(mdClient))
 	if err != nil {
 		return err
 	}
 
-	results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
+	results := cmdbundle.RunLint(unmarshalledBundle)
 
 	switch {
 	case results.HasErrors():
@@ -452,13 +457,18 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
+	// Schema validation runs before Build, which dereferences and assumes a valid bundle.
+	if err = cmdbundle.ValidateSchema(unmarshalledBundle, mdClient.Config().URL); err != nil {
+		return err
+	}
+
 	err = unmarshalledBundle.Build(bundleDirectory, resourcetype.NewMassdriverResolver(mdClient))
 	if err != nil {
 		return err
 	}
 
 	if !skipLint {
-		results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
+		results := cmdbundle.RunLint(unmarshalledBundle)
 
 		switch {
 		case results.HasErrors():

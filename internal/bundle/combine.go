@@ -4,14 +4,14 @@ import (
 	"maps"
 )
 
-// CombineParamsConnsMetadata merges the bundle's params, connections, and metadata schemas into one map.
+// CombineParamsConnsMetadata merges the bundle's params, dependencies, and metadata schemas into one map.
 func (b *Bundle) CombineParamsConnsMetadata() map[string]any {
 	combined := map[string]any{
 		"properties": map[string]any{},
 		"required":   []any{},
 	}
 
-	for _, sch := range []map[string]any{b.Params, b.Connections, MetadataSchema} {
+	for _, sch := range []map[string]any{b.Params, b.dependencySchema, MetadataSchema} {
 		if _, exists := sch["properties"]; exists {
 			combinedProps, ok1 := combined["properties"].(map[string]any)
 			schProps, ok2 := sch["properties"].(map[string]any)

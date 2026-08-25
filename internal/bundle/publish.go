@@ -36,10 +36,6 @@ func getIgnores(ignorePath string) (*ignore.GitIgnore, error) {
 		"!/readme.md",
 		"!/README.md",
 		"!/CHANGELOG.md",
-		"!/schema-artifacts.json",
-		"!/schema-connections.json",
-		"!/schema-params.json",
-		"!/schema-ui.json",
 
 		// Do NOT ignore directories (preserve all dirs)
 		"!/*/",

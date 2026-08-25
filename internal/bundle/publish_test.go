@@ -23,14 +23,10 @@ func TestPackageBundle(t *testing.T) {
 			name:      "basic bundle",
 			bundleDir: "testdata/publish/simple",
 			expectedLayers: map[string]packageLayer{
-				"massdriver.yaml":         {MimeType: "application/yaml"},
-				"operator.md":             {MimeType: "text/markdown"},
-				"README.md":               {MimeType: "text/markdown"},
-				"schema-artifacts.json":   {MimeType: "application/json"},
-				"schema-connections.json": {MimeType: "application/json"},
-				"schema-params.json":      {MimeType: "application/json"},
-				"schema-ui.json":          {MimeType: "application/json"},
-				"src/main.tf":             {MimeType: "application/hcl"},
+				"massdriver.yaml": {MimeType: "application/yaml"},
+				"operator.md":     {MimeType: "text/markdown"},
+				"README.md":       {MimeType: "text/markdown"},
+				"src/main.tf":     {MimeType: "application/hcl"},
 			},
 		},
 	}

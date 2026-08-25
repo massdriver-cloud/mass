@@ -156,8 +156,8 @@ func (b *Bundle) LintParamsConnectionsNameCollision() LintResult {
 
 	if b.Params != nil {
 		if params, ok := b.Params["properties"]; ok {
-			if b.Connections != nil {
-				if connections, connectionsOk := b.Connections["properties"]; connectionsOk {
+			if b.dependencySchema != nil {
+				if connections, connectionsOk := b.dependencySchema["properties"]; connectionsOk {
 					paramsMap, paramsMapOk := params.(map[string]any)
 					connectionsMap, connectionsMapOk := connections.(map[string]any)
 					if paramsMapOk && connectionsMapOk {

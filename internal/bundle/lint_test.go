@@ -113,6 +113,9 @@ func TestLintParamsConnectionsNameCollision(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.bun.DereferenceSchemas(".", stubResolver(nil)); err != nil {
+				t.Fatal(err)
+			}
 			got := tc.bun.LintParamsConnectionsNameCollision()
 
 			assert.ElementsMatch(t, tc.want.Issues, got.Issues)
@@ -240,6 +243,9 @@ func TestLintInputsMatchProvisioner(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
+				if err := tc.bun.DereferenceSchemas(".", stubResolver(nil)); err != nil {
+					t.Fatal(err)
+				}
 				got := tc.bun.LintInputsMatchProvisioner()
 
 				assert.ElementsMatch(t, tc.want.Issues, got.Issues)
