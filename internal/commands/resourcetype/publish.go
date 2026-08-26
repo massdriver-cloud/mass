@@ -14,6 +14,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/internal/jsonschema"
 	"github.com/massdriver-cloud/mass/internal/oci"
+	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"oras.land/oras-go/v2/content/memory"
@@ -126,7 +127,8 @@ func RunPublish(ctx context.Context, mdClient *massdriver.Client, path string) (
 		return "", "", fmt.Errorf("name is required in %s", mdYamlPath)
 	}
 	if config.Version == "" {
-		return "", "", fmt.Errorf("version is required in %s", mdYamlPath)
+		fmt.Println(prettylogs.Orange("Warning: the 'version' field in massdriver.yaml is empty. This disables all versioning capabilities."))
+		config.Version = "0.0.0"
 	}
 
 	// Referenced instruction/export files must live inside the packaged
@@ -226,6 +228,10 @@ func validateSchema(ctx context.Context, mdClient *massdriver.Client, mdYamlPath
 // checkDuplicateVersion fails locally if version has already been published,
 // matching the immutability the API enforces.
 func checkDuplicateVersion(ctx context.Context, mdClient *massdriver.Client, name, version string) error {
+	// 0.0.0 is the unversioned/dev tag — always republishable, matching bundles.
+	if version == "0.0.0" {
+		return nil
+	}
 	repo, err := mdClient.OciRepos.Get(ctx, name)
 	if err != nil {
 		return fmt.Errorf("fetching OCI repo: %w", err)

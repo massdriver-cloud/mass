@@ -76,7 +76,7 @@ func NewCmdType() *cobra.Command {
 	}
 
 	typePullCmd := &cobra.Command{
-		Use:   "pull <resource-type>",
+		Use:   "pull <resource-type>[@<version>]",
 		Short: "Pull a resource type from Massdriver to a local directory",
 		Long:  helpdocs.MustRender("type/pull"),
 		Args:  cobra.ExactArgs(1),
@@ -84,7 +84,6 @@ func NewCmdType() *cobra.Command {
 	}
 	typePullCmd.Flags().StringP("directory", "d", "", "Directory to output the resource type. Defaults to the resource type name.")
 	typePullCmd.Flags().BoolP("force", "f", false, "Force pull even if the directory already exists. This will overwrite existing files.")
-	typePullCmd.Flags().StringP("version", "v", "latest", "Resource type version or release channel")
 
 	typeDeleteCmd := &cobra.Command{
 		Use:   "delete [resource-type]",
@@ -211,12 +210,17 @@ func runTypePull(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	name := args[0]
+	version := "latest"
+	if n, ref, found := strings.Cut(name, "@"); found {
+		name = n
+		version = ref
+	}
+
 	directory, _ := cmd.Flags().GetString("directory")
 	if directory == "" {
 		directory = name
 	}
 	force, _ := cmd.Flags().GetBool("force")
-	version, _ := cmd.Flags().GetString("version")
 	cmd.SilenceUsage = true
 
 	// Warn before overwriting an existing resource type in the target directory.

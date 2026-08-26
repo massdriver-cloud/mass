@@ -6,8 +6,11 @@ directory.
 ## Usage
 
 ```bash
-mass resource-type pull <resource-type> [flags]
+mass resource-type pull <resource-type>[@<version>] [flags]
 ```
+
+The version can be an exact version, a release channel (e.g. `~1.2`), or
+`latest`. When omitted, the latest version is pulled.
 
 ## Examples
 
@@ -16,5 +19,5 @@ mass resource-type pull <resource-type> [flags]
 mass resource-type pull my-resource-type
 
 # Pull a specific version into a specific directory
-mass resource-type pull my-resource-type --version 1.2.0 --directory ./out
+mass resource-type pull my-resource-type@1.2.0 --directory ./out
 ```
