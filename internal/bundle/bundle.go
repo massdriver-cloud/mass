@@ -79,8 +79,7 @@ type Bundle struct {
 	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty" mapstructure:"app"`
 
 	// Resources and Dependencies are the current input terms. Artifacts and
-	// Connections are their deprecated predecessors, accepted only at version
-	// 0.0.0.
+	// Connections are their deprecated predecessors.
 	Resources    map[string]Resource   `json:"resources,omitempty" yaml:"resources,omitempty" mapstructure:"resources"`
 	Dependencies map[string]Dependency `json:"dependencies,omitempty" yaml:"dependencies,omitempty" mapstructure:"dependencies"`
 
@@ -164,11 +163,11 @@ func parseMetadataSchema() map[string]any {
 	return metadata
 }
 
-// normalizeInputs validates the `resources`/`dependencies` blocks and enforces
-// the rules around the legacy `artifacts`/`connections` terms: the two forms of a
-// slot are mutually exclusive, and the legacy terms are only usable at version
-// 0.0.0 (warn there, error at any real version). It does not write into the
-// legacy fields — the dependency schema is hydrated separately.
+// normalizeInputs reconciles the input blocks: the two forms of a slot
+// (`connections`/`dependencies` and `artifacts`/`resources`) are mutually
+// exclusive, and using a legacy `connections`/`artifacts` block warns that it's
+// deprecated. It does not write into the legacy fields — the dependency schema
+// is hydrated separately.
 func (b *Bundle) normalizeInputs() error {
 	hasArtifacts := b.Artifacts != nil
 	hasConnections := b.Connections != nil
@@ -182,27 +181,13 @@ func (b *Bundle) normalizeInputs() error {
 		return errors.New("cannot set both 'artifacts' and 'resources'; use 'resources'")
 	}
 	if hasConnections {
-		if err := b.checkDeprecatedTerm("connections", "dependencies"); err != nil {
-			return err
-		}
+		fmt.Println(prettylogs.Orange("Warning: the 'connections' field is deprecated; migrate to 'dependencies'. The legacy term does not support versioned resource types"))
 	}
 	if hasArtifacts {
-		if err := b.checkDeprecatedTerm("artifacts", "resources"); err != nil {
-			return err
-		}
+		fmt.Println(prettylogs.Orange("Warning: the 'artifacts' field is deprecated; migrate to 'resources'. The legacy term does not support versioned resource types"))
 	}
 
 	b.hydrateDependencySchema()
-	return nil
-}
-
-// checkDeprecatedTerm enforces that a legacy term (artifacts/connections) is only
-// usable at version 0.0.0: it warns at 0.0.0 and errors at any real version.
-func (b *Bundle) checkDeprecatedTerm(oldTerm, newTerm string) error {
-	if b.Version != "0.0.0" {
-		return fmt.Errorf("the '%s' field is deprecated and doesn't support versioning; migrate to '%s' to publish version %s", oldTerm, newTerm, b.Version)
-	}
-	fmt.Println(prettylogs.Orange(fmt.Sprintf("Warning: the '%s' field is deprecated; migrate to '%s'. The legacy term does not support versioned resource types", oldTerm, newTerm)))
 	return nil
 }
 

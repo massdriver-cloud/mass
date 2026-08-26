@@ -109,19 +109,17 @@ func TestNormalizeInputs(t *testing.T) {
 		}
 	})
 
-	t.Run("legacy connections at a real version are rejected", func(t *testing.T) {
+	t.Run("legacy connections warn but are accepted at any version", func(t *testing.T) {
 		b := &Bundle{Version: "1.0.0", Connections: map[string]any{"properties": map[string]any{}}}
-		err := b.normalizeInputs()
-		if err == nil || !strings.Contains(err.Error(), "deprecated") {
-			t.Fatalf("want deprecation error at real version, got: %v", err)
+		if err := b.normalizeInputs(); err != nil {
+			t.Fatalf("legacy connections should be accepted (with a warning), got: %v", err)
 		}
 	})
 
-	t.Run("legacy artifacts at a real version are rejected", func(t *testing.T) {
+	t.Run("legacy artifacts warn but are accepted at any version", func(t *testing.T) {
 		b := &Bundle{Version: "2.1.0", Artifacts: map[string]any{"properties": map[string]any{}}}
-		err := b.normalizeInputs()
-		if err == nil || !strings.Contains(err.Error(), "deprecated") {
-			t.Fatalf("want deprecation error at real version, got: %v", err)
+		if err := b.normalizeInputs(); err != nil {
+			t.Fatalf("legacy artifacts should be accepted (with a warning), got: %v", err)
 		}
 	})
 
