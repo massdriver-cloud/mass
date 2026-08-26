@@ -89,6 +89,109 @@ func TestRunConvertDistinctFilesForDuplicateLabels(t *testing.T) {
 	}
 }
 
+// TestRunConvertRoundTrip converts a realistic raw schema and rebuilds it with
+// resourcetype.Build, verifying that instruction/export content is extracted and
+// restored and that numeric constraints survive (a regression guard for the
+// json-float64 corruption that turned integers into scientific notation).
+func TestRunConvertRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	raw := `{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$md": {
+    "name": "roundtrip",
+    "label": "Round Trip",
+    "icon": "https://example.com/icon.svg",
+    "ui": {
+      "connectionOrientation": "environmentDefault",
+      "instructions": [
+        { "label": "CLI Setup", "content": "step one\nstep two" }
+      ]
+    },
+    "export": [
+      { "downloadButtonText": "Download", "fileFormat": "yaml", "template": "key: {{ .val }}", "templateLang": "liquid" }
+    ]
+  },
+  "type": "object",
+  "required": ["token"],
+  "properties": {
+    "token": { "type": "string" },
+    "count": { "type": "integer", "minimum": 2, "default": 1000000 }
+  }
+}`
+	schemaPath := filepath.Join(dir, "raw.json")
+	if err := os.WriteFile(schemaPath, []byte(raw), 0600); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(dir, "bundle", "massdriver.yaml")
+
+	if _, err := cmdresourcetype.RunConvert(schemaPath, out, false); err != nil {
+		t.Fatalf("RunConvert failed: %v", err)
+	}
+
+	built, err := rtype.Build(out)
+	if err != nil {
+		t.Fatalf("rebuilding the converted massdriver.yaml failed: %v", err)
+	}
+
+	md, ok := built["$md"].(map[string]any)
+	if !ok {
+		t.Fatalf("$md missing from rebuilt schema: %#v", built)
+	}
+	if md["name"] != "roundtrip" {
+		t.Errorf("name = %v, want roundtrip", md["name"])
+	}
+
+	// Instruction content extracted to a file and restored on rebuild.
+	ui, _ := md["ui"].(map[string]any)
+	instructions, _ := ui["instructions"].([]map[string]any)
+	if len(instructions) != 1 || instructions[0]["content"] != "step one\nstep two" {
+		t.Errorf("instruction content not restored: %#v", instructions)
+	}
+
+	// Export template extracted to a file and restored on rebuild.
+	exports, _ := md["export"].([]map[string]any)
+	if len(exports) != 1 || exports[0]["template"] != "key: {{ .val }}" {
+		t.Errorf("export template not restored: %#v", exports)
+	}
+
+	// Numeric fidelity: the large integer default must round-trip as an int,
+	// not a float rendered in scientific notation.
+	props, _ := built["properties"].(map[string]any)
+	count, _ := props["count"].(map[string]any)
+	if d, ok := count["default"].(int); !ok || d != 1000000 {
+		t.Errorf("count.default = %#v (%T), want int 1000000", count["default"], count["default"])
+	}
+}
+
+func TestRunConvertYAMLInput(t *testing.T) {
+	dir := t.TempDir()
+	raw := "$md:\n  name: from-yaml\ntype: object\nproperties:\n  token:\n    type: string\n"
+	schemaPath := filepath.Join(dir, "raw.yaml")
+	if err := os.WriteFile(schemaPath, []byte(raw), 0600); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(dir, "massdriver.yaml")
+
+	if _, err := cmdresourcetype.RunConvert(schemaPath, out, false); err != nil {
+		t.Fatalf("RunConvert failed for YAML input: %v", err)
+	}
+
+	data, readErr := os.ReadFile(out)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	var config rtype.MassdriverYAML
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		t.Fatalf("output is not valid massdriver.yaml: %v", err)
+	}
+	if config.Name != "from-yaml" {
+		t.Errorf("name = %q, want from-yaml", config.Name)
+	}
+	if _, ok := config.Schema["properties"]; !ok {
+		t.Error("schema should retain properties from YAML input")
+	}
+}
+
 func TestRunConvertRefusesToClobber(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "massdriver.yaml")
 	if err := os.WriteFile(out, []byte("existing"), 0600); err != nil {

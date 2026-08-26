@@ -1,7 +1,6 @@
 package resourcetype
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -84,23 +83,24 @@ func RunConvert(schemaPath, outputPath string, force bool) (*ConvertResult, erro
 }
 
 func readRawSchema(path string) (map[string]any, error) {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".json", ".yaml", ".yml":
+	default:
+		return nil, fmt.Errorf("unsupported schema file extension: %s (expected .json, .yaml, or .yml)", filepath.Ext(path))
+	}
+
 	data, readErr := os.ReadFile(path)
 	if readErr != nil {
 		return nil, fmt.Errorf("failed to read schema: %w", readErr)
 	}
 
+	// JSON is valid YAML, so both go through yaml.v3. This preserves integers as
+	// int; encoding/json would coerce every number to float64, which corrupts
+	// large integers and re-emits them in scientific notation (e.g. 1000000 ->
+	// 1e+06) when the schema is marshalled back out.
 	var raw map[string]any
-	switch strings.ToLower(filepath.Ext(path)) {
-	case ".json":
-		if err := json.Unmarshal(data, &raw); err != nil {
-			return nil, fmt.Errorf("failed to parse JSON schema: %w", err)
-		}
-	case ".yaml", ".yml":
-		if err := yaml.Unmarshal(data, &raw); err != nil {
-			return nil, fmt.Errorf("failed to parse YAML schema: %w", err)
-		}
-	default:
-		return nil, fmt.Errorf("unsupported schema file extension: %s (expected .json, .yaml, or .yml)", filepath.Ext(path))
+	if err := yaml.Unmarshal(data, &raw); err != nil {
+		return nil, fmt.Errorf("failed to parse schema: %w", err)
 	}
 	return raw, nil
 }
