@@ -18,9 +18,6 @@ The resource type is authored as a `massdriver.yaml` file, which must include a
 `version` field. Publishing is immutable: a version that already exists cannot be
 republished.
 
-Raw JSON schema publishing is no longer supported. If you have a raw JSON schema,
-convert it first with `mass resource-type convert`.
-
 ## Usage
 
 ```bash
@@ -42,9 +39,35 @@ mass resource-type publish
 mass resource-type publish ./my-resource-type
 ```
 
+## Publishing a raw JSON schema (deprecated)
+
+`path` may also point at a raw JSON (or YAML) schema file, the format that
+predates `massdriver.yaml`:
+
+```bash
+mass resource-type publish ./my-resource-type.json
+```
+
+This is **deprecated** and will be removed in a future release. A raw schema has
+no version of its own, so it is published as the resource type's unversioned
+`0.0.0` document and cannot participate in resource type versioning.
+
+Migrate with `mass resource-type convert`, which writes an equivalent
+`massdriver.yaml` alongside the schema:
+
+```bash
+mass resource-type convert ./my-resource-type.json
+```
+
 
 ```
 mass resource-type publish [path] [flags]
+```
+
+### Examples
+
+```
+mass resource-type publish ./my-resource-type
 ```
 
 ### Options

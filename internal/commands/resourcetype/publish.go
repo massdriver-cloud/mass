@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/jsonschema"
 	"github.com/massdriver-cloud/mass/internal/oci"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
@@ -109,15 +110,20 @@ func normalizeRel(p string) string {
 	return cleaned
 }
 
-// RunPublish validates a resource type located at path and pushes it to its OCI
-// repository. path may be a directory containing a massdriver.yaml, or the
-// massdriver.yaml itself. It returns the resource type name and the published
-// version.
+// RunPublish validates a resource type located at path and publishes it. path
+// may be a directory containing a massdriver.yaml, the massdriver.yaml itself,
+// or — via the deprecated legacy path — a raw JSON/YAML schema file. It returns
+// the resource type name and the published version.
 func RunPublish(ctx context.Context, mdClient *massdriver.Client, path string) (string, string, error) {
-	mdYamlPath, srcDir, resolveErr := resolvePublishPath(path)
+	target, resolveErr := resolvePublishPath(path)
 	if resolveErr != nil {
 		return "", "", resolveErr
 	}
+	if target.legacy {
+		return publishLegacySchema(ctx, mdClient, target.path)
+	}
+
+	mdYamlPath, srcDir := target.path, target.srcDir
 
 	config, configErr := resourcetype.ReadConfig(mdYamlPath)
 	if configErr != nil {
@@ -168,33 +174,93 @@ func RunPublish(ctx context.Context, mdClient *massdriver.Client, path string) (
 	return config.Name, config.Version, nil
 }
 
-// resolvePublishPath resolves the publish target into the massdriver.yaml path
-// and its containing directory, rejecting raw JSON schema files with a pointer
-// to the convert command.
-func resolvePublishPath(path string) (mdYamlPath string, srcDir string, err error) {
+// publishTarget is the resolved shape of a publish argument: either a
+// massdriver.yaml plus the directory to package (the OCI flow), or a raw
+// JSON/YAML schema file (the deprecated legacy flow).
+type publishTarget struct {
+	// path is the massdriver.yaml, or the raw schema file when legacy is set.
+	path string
+	// srcDir is the directory packaged into the OCI artifact. Unused when
+	// legacy is set — the legacy mutation publishes a schema document, not a
+	// directory.
+	srcDir string
+	legacy bool
+}
+
+// resolvePublishPath resolves the publish target. A directory or massdriver.yaml
+// takes the OCI flow; a bare .json/.yaml/.yml schema file takes the deprecated
+// legacy flow.
+func resolvePublishPath(path string) (publishTarget, error) {
 	info, statErr := os.Stat(path)
 	if statErr != nil {
-		return "", "", fmt.Errorf("failed to read resource type path: %w", statErr)
+		return publishTarget{}, fmt.Errorf("failed to read resource type path: %w", statErr)
 	}
 
 	if info.IsDir() {
 		md := filepath.Join(path, "massdriver.yaml")
 		if _, mdErr := os.Stat(md); mdErr != nil {
-			return "", "", fmt.Errorf("no massdriver.yaml found in %s", path)
+			return publishTarget{}, fmt.Errorf("no massdriver.yaml found in %s", path)
 		}
-		return md, path, nil
+		return publishTarget{path: md, srcDir: path}, nil
 	}
 
 	if filepath.Base(path) == "massdriver.yaml" {
-		return path, filepath.Dir(path), nil
+		return publishTarget{path: path, srcDir: filepath.Dir(path)}, nil
 	}
 
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".json", ".yaml", ".yml":
-		return "", "", fmt.Errorf("publishing a raw JSON schema is no longer supported; run `mass resource-type convert %s` to migrate it to a massdriver.yaml", path)
+		return publishTarget{path: path, legacy: true}, nil
 	default:
-		return "", "", fmt.Errorf("unsupported resource type path: %s (expected a directory or massdriver.yaml)", path)
+		return publishTarget{}, fmt.Errorf("unsupported resource type path: %s (expected a directory, a massdriver.yaml, or a JSON schema file)", path)
 	}
+}
+
+// publishLegacySchema publishes a raw JSON/YAML schema document through the
+// deprecated `publishResourceType` mutation. The schema has no version of its
+// own, so the API stores it as the resource type's unversioned 0.0.0 document —
+// which is why this flow can't participate in resource type versioning and is
+// on its way out.
+func publishLegacySchema(ctx context.Context, mdClient *massdriver.Client, path string) (string, string, error) {
+	// Warn before any work so the notice lands whether or not the publish
+	// itself succeeds.
+	warnLegacySchema(path)
+
+	rt, readErr := resourcetype.Read(ctx, mdClient, path)
+	if readErr != nil {
+		return "", "", fmt.Errorf("failed to read resource type: %w", readErr)
+	}
+
+	if validateErr := validateBuiltSchema(mdClient, rt); validateErr != nil {
+		return "", "", validateErr
+	}
+
+	published, publishErr := api.PublishResourceType(ctx, mdClient, api.PublishResourceTypeInput{Schema: rt})
+	if publishErr != nil {
+		return "", "", publishErr
+	}
+
+	version := published.Version
+	if version == "" {
+		version = legacySchemaVersion
+	}
+	return published.Name, version, nil
+}
+
+// legacySchemaVersion is the unversioned document the legacy mutation writes to.
+// Used only as a display fallback if the API omits the version in its response.
+const legacySchemaVersion = "0.0.0"
+
+// warnLegacySchema tells the user their raw JSON schema is on a deprecated,
+// unversioned path and points them at `resource-type convert`.
+// Printed as separate lines rather than one multi-line string: lipgloss pads
+// every line of a styled block to the width of its longest line, which leaves
+// ragged trailing whitespace once a long file path is interpolated in.
+func warnLegacySchema(path string) {
+	fmt.Println(prettylogs.Orange("Warning: this resource type is a raw JSON schema. That format is deprecated, does not support"))
+	fmt.Println(prettylogs.Orange("versioning, and will be removed in a future release. Migrate it to the massdriver.yaml"))
+	fmt.Println(prettylogs.Orange("format, which supports versioning, by running:"))
+	fmt.Println(prettylogs.Orange(fmt.Sprintf("    mass resource-type convert %s", path)))
 }
 
 // validateSchema builds and dereferences the resource type, then validates it
@@ -204,7 +270,12 @@ func validateSchema(ctx context.Context, mdClient *massdriver.Client, mdYamlPath
 	if readErr != nil {
 		return fmt.Errorf("failed to read resource type: %w", readErr)
 	}
+	return validateBuiltSchema(mdClient, rt)
+}
 
+// validateBuiltSchema validates an already read-and-dereferenced resource type
+// against the resource type schema and the JSON Schema meta-schema.
+func validateBuiltSchema(mdClient *massdriver.Client, rt map[string]any) error {
 	cfg := mdClient.Config()
 	rtSchemaURL, err := url.JoinPath(cfg.URL, "json-schemas", "resource-type.json")
 	if err != nil {

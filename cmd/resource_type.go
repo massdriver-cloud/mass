@@ -71,6 +71,7 @@ func NewCmdType() *cobra.Command {
 		Aliases: []string{"push"},
 		Short:   "Publish a resource type to Massdriver",
 		Long:    helpdocs.MustRender("type/publish"),
+		Example: `mass resource-type publish ./my-resource-type`,
 		Args:    cobra.MaximumNArgs(1),
 		RunE:    runTypePublish,
 	}

@@ -1,0 +1,9 @@
+{
+  "features": {
+    "ghcr.io/guiyomh/features/golangci-lint:0": {
+      "version": "0.1.2",
+      "resolved": "ghcr.io/guiyomh/features/golangci-lint@sha256:6a8e1856aedb04681f0a81b974721ab86140058f4992c02c81c204be755474f2",
+      "integrity": "sha256:6a8e1856aedb04681f0a81b974721ab86140058f4992c02c81c204be755474f2"
+    }
+  }
+}

@@ -10,15 +10,15 @@ import (
 )
 
 // TestRunPublishValidation covers the local validation RunPublish performs
-// before it touches the OCI registry: rejecting raw schema files (pointing at
-// convert) and requiring a name in the massdriver.yaml. These paths
-// short-circuit before the massdriver client is used, so a nil client is fine.
-// (A missing version is not an error — it warns and defaults to 0.0.0.)
+// before it touches the OCI registry: rejecting unsupported file types and
+// requiring a name in the massdriver.yaml. These paths short-circuit before the
+// massdriver client is used, so a nil client is fine. (A missing version is not
+// an error — it warns and defaults to 0.0.0.)
 func TestRunPublishValidation(t *testing.T) {
 	dir := t.TempDir()
 
-	rawJSON := filepath.Join(dir, "schema.json")
-	if err := os.WriteFile(rawJSON, []byte("{}"), 0600); err != nil {
+	unsupported := filepath.Join(dir, "schema.txt")
+	if err := os.WriteFile(unsupported, []byte("{}"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	noNameDir := t.TempDir()
@@ -32,7 +32,7 @@ func TestRunPublishValidation(t *testing.T) {
 		path     string
 		contains string
 	}{
-		{name: "raw JSON schema rejected", path: rawJSON, contains: "convert"},
+		{name: "unsupported file type", path: unsupported, contains: "unsupported resource type path"},
 		{name: "directory without massdriver.yaml", path: emptyDir, contains: "no massdriver.yaml"},
 		{name: "missing name", path: noNameDir, contains: "name is required"},
 	}
