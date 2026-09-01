@@ -24,10 +24,10 @@ republished.
 mass resource-type publish [path]
 ```
 
-`path` is a directory containing a `massdriver.yaml` (defaults to the current
-directory). Only `massdriver.yaml`, `readme`, `changelog`, icon files, and the
-instruction/export template files referenced by the `massdriver.yaml` are
-included in the published artifact.
+`path` is a directory containing a `massdriver.yaml`, or the `massdriver.yaml`
+itself (defaults to the current directory). Only `massdriver.yaml`, `readme`,
+`changelog`, icon files, and the instruction/export template files referenced
+by the `massdriver.yaml` are included in the published artifact.
 
 ## Examples
 
@@ -37,6 +37,9 @@ mass resource-type publish
 
 # Publish a resource type from a specific directory
 mass resource-type publish ./my-resource-type
+
+# Or point directly at the massdriver.yaml
+mass resource-type publish ./my-resource-type/massdriver.yaml
 ```
 
 ## Publishing a raw JSON schema (deprecated)
