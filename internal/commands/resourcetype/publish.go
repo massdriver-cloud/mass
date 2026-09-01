@@ -257,9 +257,7 @@ const legacySchemaVersion = "0.0.0"
 // every line of a styled block to the width of its longest line, which leaves
 // ragged trailing whitespace once a long file path is interpolated in.
 func warnLegacySchema(path string) {
-	fmt.Println(prettylogs.Orange("Warning: this resource type is a raw JSON schema. That format is deprecated, does not support"))
-	fmt.Println(prettylogs.Orange("versioning, and will be removed in a future release. Migrate it to the massdriver.yaml"))
-	fmt.Println(prettylogs.Orange("format, which supports versioning, by running:"))
+	fmt.Println(prettylogs.Orange("Warning: this resource type is a raw JSON schema. That format is deprecated, does not support versioning, and will be removed in a future release. Migrate it to the massdriver.yaml format, which supports versioning, by running:"))
 	fmt.Println(prettylogs.Orange(fmt.Sprintf("    mass resource-type convert %s", path)))
 }
 
