@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/BurntSushi/toml v1.5.0
+	github.com/Khan/genqlient v0.8.1
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.2.3
 	github.com/charmbracelet/glamour v1.0.0
@@ -14,7 +15,7 @@ require (
 	github.com/itchyny/gojq v0.12.16
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/airlock v0.0.10
-	github.com/massdriver-cloud/massdriver-sdk-go v0.2.19
+	github.com/massdriver-cloud/massdriver-sdk-go v0.3.2
 	github.com/mattn/go-runewidth v0.0.24
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/osteele/liquid v1.7.0
@@ -35,7 +36,6 @@ require (
 
 require (
 	github.com/Checkmarx/kics/v2 v2.1.20 // indirect
-	github.com/Khan/genqlient v0.8.1 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/alecthomas/chroma/v2 v2.26.1 // indirect
