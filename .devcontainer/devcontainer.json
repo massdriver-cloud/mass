@@ -8,8 +8,10 @@
 		"seccomp=unconfined"
 	],
 	"features": {
-		// Pins golangci-lint to match version expected by .golangci.yaml
-		"ghcr.io/guiyomh/features/golangci-lint:0": {}
+		// Keep in lockstep with the version CI runs (.github/workflows/lint.yaml).
+		"ghcr.io/guiyomh/features/golangci-lint:0": {
+			"version": "2.12"
+		}
 	},
 	"customizations": {
 		"vscode": {
