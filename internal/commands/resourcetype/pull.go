@@ -9,9 +9,7 @@ import (
 	"oras.land/oras-go/v2/content/file"
 )
 
-// RunPull downloads a resource type from its OCI repository into directory,
-// resolving version to a concrete tag. It returns the resolved tag and the
-// pulled manifest digest.
+// RunPull returns the resolved tag and the pulled manifest digest.
 func RunPull(ctx context.Context, mdClient *massdriver.Client, name, version, directory string) (string, string, error) {
 	repo, repoErr := mdClient.OciRepos.Target(name)
 	if repoErr != nil {
@@ -36,14 +34,12 @@ func RunPull(ctx context.Context, mdClient *massdriver.Client, name, version, di
 
 	descriptor, pullErr := puller.Pull(ctx, tag)
 	if pullErr != nil {
-		return "", "", fmt.Errorf("failed to pull resource type: %w", pullErr)
+		return "", "", fmt.Errorf("failed to pull resource type (legacy raw-schema resource types can't be pulled): %w", pullErr)
 	}
 
 	return tag, descriptor.Digest.String(), nil
 }
 
-// resolveTag maps a user-supplied version (a concrete tag, a release channel
-// name, or "latest") to a concrete OCI tag.
 func resolveTag(ctx context.Context, mdClient *massdriver.Client, name, version string) (string, error) {
 	repo, getErr := mdClient.OciRepos.Get(ctx, name)
 	if getErr != nil {
@@ -51,8 +47,7 @@ func resolveTag(ctx context.Context, mdClient *massdriver.Client, name, version 
 	}
 
 	if version == "" || version == "latest" {
-		// Prefer the "latest" release channel; otherwise fall back to the newest
-		// tag (the Get query returns tags sorted by version, descending).
+		// Get returns tags sorted by version, descending.
 		if repo.LatestTag != "" {
 			return repo.LatestTag, nil
 		}

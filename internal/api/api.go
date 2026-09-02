@@ -1,12 +1,7 @@
-// Package api is a holding pen for GraphQL operations the massdriver-sdk-go
-// doesn't expose. Today that's the single deprecated `publishResourceType`
-// mutation, which backs `mass resource-type publish` for raw JSON schema files.
-//
-// The SDK deliberately omits it: resource types are OCI-hosted now, and the
-// mutation is a transitional shim the API marks `@deprecated`. It survives here
-// only so customers whose pipelines still publish raw JSON schemas keep working
-// until they migrate with `mass resource-type convert`. When that mutation is
-// removed server-side, delete this package.
+// Package api is a holding pen for GraphQL operations the SDK doesn't expose —
+// today just the deprecated `publishResourceType` mutation, kept so pipelines
+// publishing raw JSON schemas keep working. Delete this package when the API
+// drops the mutation.
 package api
 
 import (

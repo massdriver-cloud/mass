@@ -1,9 +1,12 @@
 package repository_test
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/commands/repository"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/ocirepos"
 )
 
@@ -30,6 +33,22 @@ func TestArtifactTypeRoundTrip(t *testing.T) {
 			}
 			if label := repository.ArtifactTypeLabel(at); label != tc.alias {
 				t.Errorf("ArtifactTypeLabel(%q) = %q, want %q", at, label, tc.alias)
+			}
+		})
+	}
+}
+
+// The create commands pass the enum, not the alias; only accepting aliases
+// broke `resource-type create` outright.
+func TestResolveArtifactTypeAcceptsSDKEnum(t *testing.T) {
+	for _, enum := range []ocirepos.ArtifactType{ocirepos.ArtifactTypeBundle, ocirepos.ArtifactTypeResourceType} {
+		t.Run(string(enum), func(t *testing.T) {
+			got, err := repository.ResolveArtifactType(string(enum))
+			if err != nil {
+				t.Fatalf("ResolveArtifactType(%q) returned error: %v", enum, err)
+			}
+			if got != enum {
+				t.Errorf("ResolveArtifactType(%q) = %q, want %q", enum, got, enum)
 			}
 		})
 	}
@@ -62,5 +81,19 @@ func TestResolveArtifactTypeUnknown(t *testing.T) {
 func TestArtifactTypeLabelFallback(t *testing.T) {
 	if got := repository.ArtifactTypeLabel(ocirepos.ArtifactType("SOMETHING_NEW")); got != "SOMETHING_NEW" {
 		t.Errorf("ArtifactTypeLabel fallback = %q, want %q", got, "SOMETHING_NEW")
+	}
+}
+
+func TestNotFoundHint(t *testing.T) {
+	notFound := fmt.Errorf("get oci repo x: %w", gql.ErrNotFound)
+	got := repository.NotFoundHint(notFound, "resource-type", "aws-s3-bucket")
+	want := `resource-type "aws-s3-bucket" does not exist. Create it with: mass resource-type create aws-s3-bucket`
+	if got.Error() != want {
+		t.Errorf("NotFoundHint = %q, want %q", got, want)
+	}
+
+	other := errors.New("network unreachable")
+	if !errors.Is(repository.NotFoundHint(other, "bundle", "x"), other) {
+		t.Error("non-not-found errors must pass through unchanged")
 	}
 }

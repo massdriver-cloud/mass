@@ -45,8 +45,7 @@ type ExportConfig struct {
 	TemplateLang       string `yaml:"templateLang"`
 }
 
-// ReadConfig reads and parses a massdriver.yaml resource type file into its
-// structured form without dereferencing or building the schema.
+// ReadConfig parses a massdriver.yaml without dereferencing or building it.
 func ReadConfig(path string) (*MassdriverYAML, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -61,8 +60,7 @@ func ReadConfig(path string) (*MassdriverYAML, error) {
 	return &config, nil
 }
 
-// Build reads a massdriver.yaml file and builds it into the resource type
-// format expected by the Massdriver API.
+// Build converts a massdriver.yaml into the format the API expects.
 func Build(path string) (map[string]any, error) {
 	config, err := ReadConfig(path)
 	if err != nil {

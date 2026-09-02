@@ -10,9 +10,7 @@ import (
 
 func boolPtr(b bool) *bool { return &b }
 
-// TestUnmarshalDependencyResourceVariants covers the three ways `dependencies`
-// and `resources` can be "empty": missing entirely, present-but-null, and an
-// empty object. All must unmarshal cleanly to an empty dependency schema.
+// Missing, present-but-null, and empty-object must all unmarshal cleanly.
 func TestUnmarshalDependencyResourceVariants(t *testing.T) {
 	const base = "name: example\ndescription: a bundle\nversion: 1.0.0\nsteps:\n  - path: src\n    provisioner: terraform\nparams:\n  properties: {}\nui: {}\n"
 	cases := map[string]string{

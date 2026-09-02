@@ -49,15 +49,13 @@ type Secret struct {
 	Description string `json:"description,omitempty" yaml:"description,omitempty" mapstructure:"description"`
 }
 
-// Resource is one entry in a bundle's `resources` block — a resource the bundle
-// produces.
+// Resource is one entry in a bundle's `resources` block.
 type Resource struct {
 	ResourceType string `json:"resource_type,omitempty" yaml:"resource_type,omitempty" mapstructure:"resource_type"`
 	Required     *bool  `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
 }
 
-// Dependency is one entry in a bundle's `dependencies` block — a resource the
-// bundle depends on.
+// Dependency is one entry in a bundle's `dependencies` block.
 type Dependency struct {
 	ResourceType string `json:"resource_type,omitempty" yaml:"resource_type,omitempty" mapstructure:"resource_type"`
 	Required     *bool  `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
@@ -83,9 +81,7 @@ type Bundle struct {
 	Resources    map[string]Resource   `json:"resources,omitempty" yaml:"resources,omitempty" mapstructure:"resources"`
 	Dependencies map[string]Dependency `json:"dependencies,omitempty" yaml:"dependencies,omitempty" mapstructure:"dependencies"`
 
-	// dependencySchema is the canonical JSON-schema form of the bundle's
-	// dependencies (from Dependencies or the legacy Connections block), hydrated
-	// on demand and dereferenced in place by DereferenceSchemas.
+	// Canonical JSON-schema form of the dependencies, hydrated on demand.
 	dependencySchema map[string]any
 }
 
@@ -163,11 +159,8 @@ func parseMetadataSchema() map[string]any {
 	return metadata
 }
 
-// normalizeInputs reconciles the input blocks: the two forms of a slot
-// (`connections`/`dependencies` and `artifacts`/`resources`) are mutually
-// exclusive, and using a legacy `connections`/`artifacts` block warns that it's
-// deprecated. It does not write into the legacy fields — the dependency schema
-// is hydrated separately.
+// The two forms of a slot are mutually exclusive; the legacy one warns. Legacy
+// fields are not written to — the dependency schema is hydrated separately.
 func (b *Bundle) normalizeInputs() error {
 	hasArtifacts := b.Artifacts != nil
 	hasConnections := b.Connections != nil
@@ -191,10 +184,8 @@ func (b *Bundle) normalizeInputs() error {
 	return nil
 }
 
-// hydrateDependencySchema builds dependencySchema — the canonical JSON-schema map
-// ({properties: {name: {$ref}}, required: [...]}) that downstream code (schema
-// dereferencing, provisioner input generation, lint) reads for dependencies. It
-// is sourced from `dependencies` (new) or the legacy `connections` block.
+// Builds the canonical dependency schema every downstream reader uses, from
+// `dependencies` or the legacy `connections` block.
 func (b *Bundle) hydrateDependencySchema() {
 	switch {
 	case len(b.Dependencies) > 0:
@@ -209,9 +200,7 @@ func (b *Bundle) hydrateDependencySchema() {
 	}
 }
 
-// dependenciesToSchema converts a `dependencies` map into the canonical JSON
-// schema. Per-entry validation (resource_type/required presence) is handled by
-// bundle schema validation, before dereferencing.
+// Per-entry validation happens earlier, during bundle schema validation.
 func dependenciesToSchema(deps map[string]Dependency) map[string]any {
 	properties := map[string]any{}
 	required := []any{}

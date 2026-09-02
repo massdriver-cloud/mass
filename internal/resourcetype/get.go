@@ -1,5 +1,4 @@
-// Package resourcetype provides CLI helpers around resource-type operations,
-// thin wrappers over the Massdriver SDK's resource-type and OCI-repo services.
+// Package resourcetype wraps the SDK's resource-type and OCI-repo services.
 package resourcetype
 
 import (
@@ -12,12 +11,10 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
-// ResourceType is an alias of the SDK's resource-type record so consumers stay
-// decoupled from the SDK import path.
+// ResourceType aliases the SDK record so consumers skip the SDK import path.
 type ResourceType = resourcetypes.ResourceType
 
-// Get retrieves a resource type by name (optionally `name@version`) from
-// Massdriver, including its resolved JSON schema.
+// Get retrieves a resource type by name (optionally `name@version`).
 func Get(ctx context.Context, mdClient *massdriver.Client, resourceTypeName string) (*ResourceType, error) {
 	return mdClient.ResourceTypes.Get(ctx, resourceTypeName)
 }
@@ -39,10 +36,7 @@ func GetAsMap(ctx context.Context, mdClient *massdriver.Client, resourceTypeName
 	return result, unmarshalErr
 }
 
-// List returns every resource type in the configured organization, sourced from
-// the OCI repository catalog filtered to resource-type artifacts. The returned
-// records carry only catalog metadata (ID, name, icon, timestamps); use [Get]
-// to fetch a single resource type's schema.
+// List returns catalog metadata only (no schema); use [Get] for one type.
 func List(ctx context.Context, mdClient *massdriver.Client) ([]ResourceType, error) {
 	seq := mdClient.OciRepos.Iter(ctx, ocirepos.ListInput{
 		ArtifactType: ocirepos.ArtifactTypeResourceType,

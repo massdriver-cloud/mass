@@ -50,8 +50,6 @@ func TestGet(t *testing.T) {
 	}
 }
 
-// TestList verifies List sources from the OCI-repo catalog filtered to
-// resource-type artifacts and maps each repo into a ResourceType.
 func TestList(t *testing.T) {
 	mdClient := newMockClient(t, gqltest.RespondWithData(map[string]any{
 		"ociRepos": map[string]any{

@@ -12,9 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// placeholderVersion is written into the converted massdriver.yaml since a raw
-// JSON schema carries no version. The author must set a real version before
-// publishing.
+// A raw JSON schema carries no version; the author must set a real one.
 const placeholderVersion = "0.0.0"
 
 // ConvertResult describes the files a RunConvert call produced.
@@ -23,11 +21,9 @@ type ConvertResult struct {
 	ExtraFiles     []string // paths to extracted instruction/export files
 }
 
-// RunConvert reads a raw JSON (or YAML) resource type schema at schemaPath and
-// writes an equivalent massdriver.yaml. Inlined instruction/export content is
-// extracted back out to referenced files. outputPath is the massdriver.yaml to
-// write; when empty it defaults to a massdriver.yaml alongside schemaPath.
-// Existing files are not overwritten unless force is set.
+// RunConvert writes an equivalent massdriver.yaml for the raw schema at
+// schemaPath, extracting inlined instruction/export content back out to files.
+// outputPath defaults to a massdriver.yaml alongside schemaPath.
 func RunConvert(schemaPath, outputPath string, force bool) (*ConvertResult, error) {
 	raw, readErr := readRawSchema(schemaPath)
 	if readErr != nil {
@@ -46,7 +42,6 @@ func RunConvert(schemaPath, outputPath string, force bool) (*ConvertResult, erro
 		return nil, fmt.Errorf("failed to marshal massdriver.yaml: %w", marshalErr)
 	}
 
-	// Refuse to clobber anything unless forced.
 	targets := []string{outputPath}
 	for rel := range extraFiles {
 		targets = append(targets, filepath.Join(outputDir, rel))
@@ -94,10 +89,8 @@ func readRawSchema(path string) (map[string]any, error) {
 		return nil, fmt.Errorf("failed to read schema: %w", readErr)
 	}
 
-	// JSON is valid YAML, so both go through yaml.v3. This preserves integers as
-	// int; encoding/json would coerce every number to float64, which corrupts
-	// large integers and re-emits them in scientific notation (e.g. 1000000 ->
-	// 1e+06) when the schema is marshalled back out.
+	// Both go through yaml.v3 to preserve integers as int; encoding/json coerces
+	// every number to float64, re-emitting 1000000 as 1e+06 on the way out.
 	var raw map[string]any
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("failed to parse schema: %w", err)
@@ -105,10 +98,7 @@ func readRawSchema(path string) (map[string]any, error) {
 	return raw, nil
 }
 
-// reverseBuild is the inverse of resourcetype.Build: it lifts the `$md` block
-// back into the massdriver.yaml fields, extracts inlined instruction/export
-// content into files keyed by their relative path, and moves the remaining keys
-// under `schema`.
+// reverseBuild is the inverse of resourcetype.Build.
 func reverseBuild(raw map[string]any) (*resourcetype.MassdriverYAML, map[string][]byte) {
 	config := &resourcetype.MassdriverYAML{Version: placeholderVersion}
 	extraFiles := map[string][]byte{}
@@ -190,9 +180,7 @@ func reverseExports(exportsRaw []any, extraFiles map[string][]byte) []resourcety
 	return exports
 }
 
-// uniqueRel builds "<dir>/<name>.<ext>", appending an incrementing numeric
-// suffix until the path is unused, so two items that reduce to the same name
-// don't clobber each other's extracted file.
+// Suffixes until unused, so two items reducing to the same name don't collide.
 func uniqueRel(extraFiles map[string][]byte, dir, name, ext string) string {
 	base := fmt.Sprintf("%s/%s", dir, name)
 	rel := base + "." + ext
@@ -213,8 +201,7 @@ func asString(v any) string {
 
 var nonFilenameChars = regexp.MustCompile(`[^a-z0-9]+`)
 
-// sanitize turns a human label into a filesystem-friendly name, falling back to
-// an index-based name when the label has no usable characters.
+// Falls back to an index when the label has no usable characters.
 func sanitize(label string, index int) string {
 	name := nonFilenameChars.ReplaceAllString(strings.ToLower(label), "-")
 	name = strings.Trim(name, "-")

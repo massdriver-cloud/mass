@@ -47,8 +47,7 @@ func TestRunConvert(t *testing.T) {
 
 func TestRunConvertDistinctFilesForDuplicateLabels(t *testing.T) {
 	dir := t.TempDir()
-	// Labels crafted to trip the old (buggy) unique-path logic: the third
-	// instruction's fallback name collided with the first's.
+	// Crafted so the third instruction's fallback name collides with the first.
 	raw := `{
   "$md": {
     "name": "dup",
@@ -89,10 +88,8 @@ func TestRunConvertDistinctFilesForDuplicateLabels(t *testing.T) {
 	}
 }
 
-// TestRunConvertRoundTrip converts a realistic raw schema and rebuilds it with
-// resourcetype.Build, verifying that instruction/export content is extracted and
-// restored and that numeric constraints survive (a regression guard for the
-// json-float64 corruption that turned integers into scientific notation).
+// Guards the json-float64 corruption that turned integers into scientific
+// notation.
 func TestRunConvertRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	raw := `{
@@ -141,21 +138,18 @@ func TestRunConvertRoundTrip(t *testing.T) {
 		t.Errorf("name = %v, want roundtrip", md["name"])
 	}
 
-	// Instruction content extracted to a file and restored on rebuild.
 	ui, _ := md["ui"].(map[string]any)
 	instructions, _ := ui["instructions"].([]map[string]any)
 	if len(instructions) != 1 || instructions[0]["content"] != "step one\nstep two" {
 		t.Errorf("instruction content not restored: %#v", instructions)
 	}
 
-	// Export template extracted to a file and restored on rebuild.
 	exports, _ := md["export"].([]map[string]any)
 	if len(exports) != 1 || exports[0]["template"] != "key: {{ .val }}" {
 		t.Errorf("export template not restored: %#v", exports)
 	}
 
-	// Numeric fidelity: the large integer default must round-trip as an int,
-	// not a float rendered in scientific notation.
+	// Must round-trip as an int, not a float in scientific notation.
 	props, _ := built["properties"].(map[string]any)
 	count, _ := props["count"].(map[string]any)
 	if d, ok := count["default"].(int); !ok || d != 1000000 {

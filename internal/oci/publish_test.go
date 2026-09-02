@@ -15,8 +15,6 @@ import (
 	"oras.land/oras-go/v2/content/memory"
 )
 
-// writeTree materializes a path->contents map under a fresh temp dir,
-// creating parent directories as needed.
 func writeTree(t *testing.T, files map[string]string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -32,7 +30,6 @@ func writeTree(t *testing.T, files map[string]string) string {
 	return dir
 }
 
-// fetchManifest resolves a descriptor into a decoded OCI manifest.
 func fetchManifest(t *testing.T, ctx context.Context, store oras.Target, desc ocispec.Descriptor) ocispec.Manifest {
 	t.Helper()
 	rc, err := store.Fetch(ctx, desc)
@@ -47,7 +44,6 @@ func fetchManifest(t *testing.T, ctx context.Context, store oras.Target, desc oc
 	return manifest
 }
 
-// layerTitles maps each layer's file title to its descriptor.
 func layerTitles(manifest ocispec.Manifest) map[string]ocispec.Descriptor {
 	titles := map[string]ocispec.Descriptor{}
 	for _, l := range manifest.Layers {
@@ -56,9 +52,7 @@ func layerTitles(manifest ocispec.Manifest) map[string]ocispec.Descriptor {
 	return titles
 }
 
-// countingTarget records how many content layers (descriptors carrying a file
-// title) were pushed, so deduplication can be asserted directly rather than
-// inferred from the manifest.
+// countingTarget counts pushes of file layers so dedup can be asserted directly.
 type countingTarget struct {
 	oras.Target
 	filePushes int
@@ -71,9 +65,6 @@ func (c *countingTarget) Push(ctx context.Context, desc ocispec.Descriptor, r io
 	return c.Target.Push(ctx, desc, r)
 }
 
-// TestPackage covers the core packaging contract: the keep predicate decides
-// what ships, nested files keep slash-separated relative titles, and the
-// artifact type lands on the manifest under the requested tag.
 func TestPackage(t *testing.T) {
 	srcDir := writeTree(t, map[string]string{
 		"massdriver.yaml":      "name: aws-s3-bucket\nversion: 1.0.0\n",
@@ -130,7 +121,6 @@ func TestPackage(t *testing.T) {
 		t.Errorf("massdriver.yaml MediaType = %q, want application/yaml", got)
 	}
 
-	// The manifest must be reachable by the tag Package assigned.
 	resolved, resolveErr := store.Resolve(t.Context(), "1.0.0")
 	if resolveErr != nil {
 		t.Fatalf("resolving tag: %v", resolveErr)
@@ -140,8 +130,6 @@ func TestPackage(t *testing.T) {
 	}
 }
 
-// TestPackageNilKeep pins that a nil predicate means "include everything",
-// which is the documented contract for callers that don't filter.
 func TestPackageNilKeep(t *testing.T) {
 	srcDir := writeTree(t, map[string]string{
 		"massdriver.yaml": "name: test\n",
@@ -164,10 +152,8 @@ func TestPackageNilKeep(t *testing.T) {
 	}
 }
 
-// TestPackageDeduplicatesIdenticalContent pins the blob-reuse behavior: two
-// files with identical bytes are pushed once but still produce two manifest
-// layers, so both paths unpack on pull. A regression here either bloats the
-// artifact or silently drops one of the files.
+// Identical bytes are pushed once but still get a layer each, so both paths
+// unpack on pull. Breaking this bloats the artifact or drops a file.
 func TestPackageDeduplicatesIdenticalContent(t *testing.T) {
 	srcDir := writeTree(t, map[string]string{
 		"icon.svg":            "<svg/>",
@@ -197,9 +183,7 @@ func TestPackageDeduplicatesIdenticalContent(t *testing.T) {
 	}
 }
 
-// TestPackageExtensionlessFile documents what happens to files the mime table
-// doesn't cover (LICENSE, Dockerfile). They still ship; only the media type is
-// empty.
+// Files the mime table doesn't cover still ship, with an empty media type.
 func TestPackageExtensionlessFile(t *testing.T) {
 	srcDir := writeTree(t, map[string]string{"LICENSE": "MIT"})
 
@@ -217,8 +201,6 @@ func TestPackageExtensionlessFile(t *testing.T) {
 	}
 }
 
-// TestPackageMissingSourceDir ensures a bad source path surfaces as an error
-// rather than an empty, successfully-published artifact.
 func TestPackageMissingSourceDir(t *testing.T) {
 	publisher := &oci.Publisher{Store: memory.New()}
 	_, err := publisher.Package(t.Context(), filepath.Join(t.TempDir(), "nope"), "1.0.0", "application/vnd.massdriver.bundle.v1+json", nil)
@@ -227,8 +209,6 @@ func TestPackageMissingSourceDir(t *testing.T) {
 	}
 }
 
-// TestPublish covers the store->repo copy, including that layer content
-// survives the round trip.
 func TestPublish(t *testing.T) {
 	srcDir := writeTree(t, map[string]string{"massdriver.yaml": "name: aws-s3-bucket\n"})
 
@@ -263,8 +243,6 @@ func TestPublish(t *testing.T) {
 	}
 }
 
-// TestPublishUntaggedManifest guards the ordering contract: publishing a tag
-// that was never packaged must fail rather than push a partial artifact.
 func TestPublishUntaggedManifest(t *testing.T) {
 	publisher := &oci.Publisher{Store: memory.New(), Repo: memory.New()}
 	if err := publisher.Publish(t.Context(), "1.0.0"); err == nil {
@@ -284,7 +262,6 @@ func TestMimeTypeFromExtension(t *testing.T) {
 		{ext: ".tf", want: "application/hcl"},
 		{ext: ".svg", want: "image/svg+xml"},
 		{ext: ".png", want: "image/png"},
-		// Unknown and extensionless inputs fall back to the empty string.
 		{ext: ".xyz", want: ""},
 		{ext: "", want: ""},
 	}

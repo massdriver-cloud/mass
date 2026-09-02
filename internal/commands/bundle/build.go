@@ -12,8 +12,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 )
 
-// RunBuild validates the bundle against the Massdriver bundle schema, then builds
-// it at buildPath.
+// RunBuild validates the bundle, then builds it at buildPath.
 func RunBuild(buildPath string, b *bundle.Bundle, mdClient *massdriver.Client) error {
 	if err := ValidateSchema(b, mdClient.Config().URL); err != nil {
 		return err
@@ -21,11 +20,8 @@ func RunBuild(buildPath string, b *bundle.Bundle, mdClient *massdriver.Client) e
 	return b.Build(buildPath, resourcetype.NewMassdriverResolver(mdClient))
 }
 
-// ValidateSchema fetches the bundle schema from the Massdriver API and validates
-// the bundle against it. It must run before dereferencing, which assumes a
-// schema-valid bundle. A fetch failure or any validation error is returned so the
-// caller can halt — the API is the authority on the bundle format, and a build
-// that can't reach it can't generate correct inputs anyway.
+// ValidateSchema must run before dereferencing, which assumes a schema-valid
+// bundle. A fetch failure halts the build — the API owns the bundle format.
 func ValidateSchema(b *bundle.Bundle, serverURL string) error {
 	result := b.LintSchema(serverURL)
 	if !result.HasErrors() {

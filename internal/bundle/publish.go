@@ -11,9 +11,7 @@ import (
 // ArtifactType is the OCI artifact-type media type for bundles.
 const ArtifactType = "application/vnd.massdriver.bundle.v1+json"
 
-// PackageKeep returns the keep predicate used when packaging a bundle. It honors
-// a bundle's optional .mdignore file, falling back to a default allowlist that
-// only lets the expected bundle files through.
+// PackageKeep honors an optional .mdignore, falling back to an allowlist.
 func PackageKeep(bundleDir string) (func(relPath string) bool, error) {
 	ignoreMatcher, ignoreErr := getIgnores(filepath.Join(bundleDir, ".mdignore"))
 	if ignoreErr != nil {

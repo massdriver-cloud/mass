@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
+	"github.com/massdriver-cloud/mass/internal/commands/repository"
 	"github.com/massdriver-cloud/mass/internal/oci"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
@@ -70,7 +71,7 @@ func RunPublish(ctx context.Context, b *bundle.Bundle, mdClient *massdriver.Clie
 func getVersion(ctx context.Context, mdClient *massdriver.Client, b *bundle.Bundle, developmentRelease bool) (string, error) {
 	repo, err := mdClient.OciRepos.Get(ctx, b.Name)
 	if err != nil {
-		return "", fmt.Errorf("fetching OCI repo: %w", err)
+		return "", repository.NotFoundHint(err, "bundle", b.Name)
 	}
 	tagNames := make([]string, len(repo.Tags))
 	for i, t := range repo.Tags {

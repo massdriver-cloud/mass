@@ -7,10 +7,8 @@ import (
 	"testing"
 )
 
-// TestResolvePublishPath pins which publish argument shapes take the OCI flow
-// and which fall back to the deprecated raw-schema flow. Getting this wrong
-// either breaks customers still publishing JSON schemas or silently pushes a
-// massdriver.yaml through the unversioned legacy mutation.
+// Getting this wrong either breaks customers still publishing JSON schemas or
+// pushes a massdriver.yaml through the unversioned legacy mutation.
 func TestResolvePublishPath(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name string) string {

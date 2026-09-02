@@ -9,9 +9,6 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql/gqltest"
 )
 
-// newTestClient returns a *massdriver.Client with a resolved config (no
-// credentials needed) plus the gqltest mock installed as the api package's
-// transport for the duration of the test.
 func newTestClient(t *testing.T, responses ...gqltest.Response) (*massdriver.Client, *gqltest.Client) {
 	t.Helper()
 
@@ -71,9 +68,8 @@ func TestPublishResourceType(t *testing.T) {
 	}
 }
 
-// The schema arrives as a GraphQL `Map!` scalar, whose wire form is a
-// JSON-encoded string rather than a nested object. Assert the encoding so a
-// change to the scalar helper can't silently ship a payload the API rejects.
+// The `Map!` scalar's wire form is a JSON-encoded string, not a nested object.
+// Getting it wrong ships a payload the API rejects.
 func TestPublishResourceTypeEncodesSchemaAsScalar(t *testing.T) {
 	mdClient, mock := newTestClient(t, gqltest.RespondWithData(map[string]any{
 		"publishResourceType": map[string]any{

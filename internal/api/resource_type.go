@@ -17,8 +17,6 @@ type PublishResourceTypeInput struct {
 	Schema map[string]any `json:"schema"`
 }
 
-// resourceTypeMutationResult is the wrapped payload the resource-type mutation
-// returns.
 type resourceTypeMutationResult struct {
 	Result     *resourcetypes.ResourceType `json:"result"`
 	Successful bool                        `json:"successful"`
@@ -46,14 +44,9 @@ const publishResourceTypeMutation = `mutation publishResourceType($organizationI
   }
 }`
 
-// PublishResourceType upserts a resource type from a raw JSON Schema document.
-//
-// It wraps the API's transitional `publishResourceType` mutation, which the
-// server marks deprecated: the schema is stored as the resource type's
-// unversioned `0.0.0` document, so it can't participate in versioning. It backs
-// the legacy branch of `mass resource-type publish` only — the massdriver.yaml
-// path publishes through OCI instead (see
-// internal/commands/resourcetype.RunPublish). No new callers.
+// PublishResourceType upserts a resource type from a raw JSON Schema document
+// via the deprecated mutation, which stores it as the unversioned 0.0.0
+// document. No new callers — the massdriver.yaml path publishes through OCI.
 func PublishResourceType(ctx context.Context, mdClient *massdriver.Client, input PublishResourceTypeInput) (*resourcetypes.ResourceType, error) {
 	cfg := mdClient.Config()
 

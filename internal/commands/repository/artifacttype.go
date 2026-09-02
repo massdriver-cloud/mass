@@ -4,10 +4,12 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/ocirepos"
 )
 
@@ -26,9 +28,11 @@ var artifactTypeLabels = map[ocirepos.ArtifactType]string{
 }
 
 // ResolveArtifactType converts a user-facing alias (e.g. "bundle",
-// "resource-type") into the SDK's typed enum. Matching is case-insensitive.
+// "resource-type") into the SDK's typed enum. Matching is case-insensitive;
+// underscores match hyphens so the SDK's own "RESOURCE_TYPE" resolves too.
 func ResolveArtifactType(s string) (ocirepos.ArtifactType, error) {
-	if at, ok := artifactTypeAliases[strings.ToLower(s)]; ok {
+	normalized := strings.ReplaceAll(strings.ToLower(s), "_", "-")
+	if at, ok := artifactTypeAliases[normalized]; ok {
 		return at, nil
 	}
 	return "", fmt.Errorf("unknown artifact type %q (valid: %s)", s, strings.Join(ValidArtifactTypes(), ", "))
@@ -52,4 +56,12 @@ func ValidArtifactTypes() []string {
 	}
 	sort.Strings(valid)
 	return valid
+}
+
+// NotFoundHint replaces a not-found error with one naming the create command.
+func NotFoundHint(err error, artifactType, name string) error {
+	if !errors.Is(err, gql.ErrNotFound) {
+		return err
+	}
+	return fmt.Errorf("%s %q does not exist. Create it with: mass %s create %s", artifactType, name, artifactType, name)
 }

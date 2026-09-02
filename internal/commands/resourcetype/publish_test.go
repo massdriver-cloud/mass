@@ -12,11 +12,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql/gqltest"
 )
 
-// TestRunPublishValidation covers the local validation RunPublish performs
-// before it touches the OCI registry: rejecting unsupported file types and
-// requiring a name in the massdriver.yaml. These paths short-circuit before the
-// massdriver client is used, so a nil client is fine. (A missing version is not
-// an error — it warns and defaults to 0.0.0.)
+// These paths short-circuit before the client is used, so a nil client is fine.
 func TestRunPublishValidation(t *testing.T) {
 	dir := t.TempDir()
 
@@ -53,10 +49,8 @@ func TestRunPublishValidation(t *testing.T) {
 	}
 }
 
-// schemaDir writes the two json-schemas documents RunPublish validates
-// against and returns a file:// base URL pointing at them. The schema loader
-// handles file:// the same as https://, so this exercises the real validation
-// path without standing up an HTTP server.
+// schemaDir returns a file:// base URL serving the json-schemas RunPublish
+// validates against. The loader treats file:// like https://.
 func schemaDir(t *testing.T, resourceTypeSchema map[string]any) string {
 	t.Helper()
 
@@ -79,8 +73,6 @@ func schemaDir(t *testing.T, resourceTypeSchema map[string]any) string {
 	return "file://" + dir
 }
 
-// legacyClient wires a client at the schema directory with the gql mock
-// installed as both the SDK and api-package transport.
 func legacyClient(t *testing.T, baseURL string, responses ...gqltest.Response) *massdriver.Client {
 	t.Helper()
 
@@ -98,9 +90,6 @@ func legacyClient(t *testing.T, baseURL string, responses ...gqltest.Response) *
 	return mdClient
 }
 
-// captureStdout runs fn with os.Stdout pointed at a temp file and returns what
-// it printed. The deprecation notice is the whole point of the legacy path, so
-// it has to be asserted on.
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 
@@ -138,10 +127,7 @@ const legacySchemaJSON = `{
   "properties": {"arn": {"type": "string"}}
 }`
 
-// TestRunPublishLegacySchema covers the deprecated raw-schema flow end to end:
-// it must route away from OCI, validate, publish through the legacy mutation,
-// and warn the user. This path was dropped and re-added once already (commit
-// 1e16b3b), so it is pinned here.
+// The legacy path was dropped and re-added once already (1e16b3b).
 func TestRunPublishLegacySchema(t *testing.T) {
 	path := writeSchema(t, "aws-iam-role.json", legacySchemaJSON)
 
@@ -149,9 +135,10 @@ func TestRunPublishLegacySchema(t *testing.T) {
 		"publishResourceType": map[string]any{
 			"successful": true,
 			"messages":   []any{},
+			// The API returns the label in `name`, the identifier in `id`.
 			"result": map[string]any{
 				"id":      "aws-iam-role@0.0.0",
-				"name":    "aws-iam-role",
+				"name":    "AWS IAM Role",
 				"version": "0.0.0",
 			},
 		},
@@ -167,10 +154,8 @@ func TestRunPublishLegacySchema(t *testing.T) {
 		t.Fatalf("RunPublish returned an error: %v", publishErr)
 	}
 	if name != "aws-iam-role" {
-		t.Errorf("name = %q, want aws-iam-role", name)
+		t.Errorf("name = %q, want aws-iam-role (the identifier, not the label)", name)
 	}
-	// A raw schema has no version of its own; the API stores it as the
-	// unversioned 0.0.0 document.
 	if version != "0.0.0" {
 		t.Errorf("version = %q, want 0.0.0", version)
 	}
@@ -182,9 +167,7 @@ func TestRunPublishLegacySchema(t *testing.T) {
 	}
 }
 
-// repoWithTags builds a client whose OciRepos.Get returns a repository carrying
-// the given published tags. Get selects tags through a paginated `items`
-// envelope, which is the shape the SDK unwraps.
+// Get returns tags through a paginated `items` envelope.
 func repoWithTags(t *testing.T, name string, tags ...string) *massdriver.Client {
 	t.Helper()
 
@@ -215,9 +198,6 @@ func newMockClient(t *testing.T, responses ...gqltest.Response) *massdriver.Clie
 	return mdClient
 }
 
-// TestCheckDuplicateVersion pins the local half of publish immutability. Too
-// strict and valid publishes are blocked before they reach the API; too loose
-// and the user only learns of the collision after the packaging work.
 func TestCheckDuplicateVersion(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -245,10 +225,10 @@ func TestCheckDuplicateVersion(t *testing.T) {
 			wantPass: true,
 		},
 		{
-			name:    "api failure is surfaced",
+			name:    "unrelated api failure passes through",
 			client:  func(t *testing.T) *massdriver.Client { return newMockClient(t, gqltest.RespondWithError("boom")) },
 			version: "1.0.0",
-			wantErr: "fetching OCI repo",
+			wantErr: "boom",
 		},
 	}
 
@@ -271,11 +251,9 @@ func TestCheckDuplicateVersion(t *testing.T) {
 	}
 }
 
-// TestCheckDuplicateVersionDevTagSkipsAPI pins that 0.0.0 is always
-// republishable. The nil client is the assertion: if the carve-out ever stops
-// short-circuiting, this panics rather than silently costing a round trip.
+// The nil client is the assertion: losing the short-circuit panics here.
 func TestCheckDuplicateVersionDevTagSkipsAPI(t *testing.T) {
 	if err := checkDuplicateVersion(t.Context(), nil, "aws-s3-bucket", "0.0.0"); err != nil {
-		t.Fatalf("0.0.0 should always be republishable, got: %v", err)
+		t.Fatalf("0.0.0 should skip the duplicate check, got: %v", err)
 	}
 }

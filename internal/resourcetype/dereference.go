@@ -37,10 +37,8 @@ func NewMassdriverResolver(c *massdriver.Client) func(context.Context, string) (
 // relativeFilePathPattern only accepts relative file path prefixes "./" and "../"
 var relativeFilePathPattern = regexp.MustCompile(`^(\.\/|\.\.\/)`)
 
-// massdriverResourceTypePattern matches a resource-type ref, optionally
-// namespaced (owner/name) and optionally version-pinned. The version accepts
-// semver (@1.2.3), channels (@~1, @~1.2), and named releases (@latest,
-// @latest+dev). The full string is passed through to the resolver.
+// Matches a resource-type ref: optionally namespaced, optionally version-pinned
+// with semver (@1.2.3), a channel (@~1.2), or a named release (@latest+dev).
 var massdriverResourceTypePattern = regexp.MustCompile(`^[a-zA-Z0-9-]+(\/[a-zA-Z0-9-]+)?(@[a-zA-Z0-9._~+-]+)?$`)
 var httpPattern = regexp.MustCompile(`^(http|https)://`)
 var fragmentPattern = regexp.MustCompile(`^#`)

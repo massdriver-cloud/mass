@@ -224,7 +224,6 @@ func runTypePull(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 	cmd.SilenceUsage = true
 
-	// Warn before overwriting an existing resource type in the target directory.
 	mdYamlPath := filepath.Join(directory, "massdriver.yaml")
 	if _, statErr := os.Stat(mdYamlPath); statErr == nil && !force {
 		fmt.Printf("Resource type already exists at %s. Continuing will overwrite its contents. Continue? (y/N): ", mdYamlPath)
@@ -314,16 +313,12 @@ func runTypeDelete(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	// Confirm the repository exists (and surface its canonical name) before prompting.
 	repo, getErr := mdClient.OciRepos.Get(ctx, name)
 	if getErr != nil {
 		return fmt.Errorf("error getting resource type: %w", getErr)
 	}
 
-	// Fail before the confirmation prompt if the repo is immutable (has published
-	// versions) — no point making the user type the name for a delete that can't
-	// succeed. RunDelete re-checks to guard against a version being published
-	// during the prompt.
+	// RunDelete re-checks, guarding against a publish during the prompt.
 	if len(repo.Tags) > 0 {
 		return fmt.Errorf("resource type %s has published versions and is immutable; its repository cannot be deleted", repo.Name)
 	}

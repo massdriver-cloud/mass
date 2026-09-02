@@ -1,8 +1,6 @@
-// Package oci contains the raw OCI packaging, publishing, and pulling logic
-// shared by bundles and resource types. Callers supply the artifact-type media
-// type and a per-file keep predicate; everything else (walking the directory,
-// pushing layers, packing the manifest, copying to/from the remote repo) is
-// identical across artifact kinds and lives here.
+// Package oci holds the OCI packaging, publishing, and pulling logic shared by
+// bundles and resource types. Callers supply the artifact-type media type and a
+// per-file keep predicate; the rest is identical across artifact kinds.
 package oci
 
 import (
@@ -17,24 +15,21 @@ import (
 	"oras.land/oras-go/v2/content"
 )
 
-// Publisher packages a local directory into an OCI store and pushes it to a
-// remote repository.
+// Publisher packages a local directory and pushes it to a remote repository.
 type Publisher struct {
 	Store oras.Target
 	Repo  oras.Target
 }
 
-// Publish copies the packaged manifest from the local store to the remote
-// repository under tag.
+// Publish copies the packaged manifest to the remote repository under tag.
 func (p *Publisher) Publish(ctx context.Context, tag string) error {
 	_, copyErr := oras.Copy(ctx, p.Store, tag, p.Repo, tag, oras.DefaultCopyOptions)
 	return copyErr
 }
 
-// Package walks srcDir and pushes every file for which keep returns true into
-// the store, then packs and tags a manifest of the given artifactType. A nil
-// keep predicate includes every file. Paths passed to keep are slash-separated
-// and relative to srcDir.
+// Package pushes every file in srcDir for which keep returns true, then packs
+// and tags a manifest. A nil keep includes everything. Paths passed to keep are
+// slash-separated and relative to srcDir.
 func (p *Publisher) Package(ctx context.Context, srcDir, tag, artifactType string, keep func(relPath string) bool) (ocispec.Descriptor, error) {
 	var layers []ocispec.Descriptor
 	pushedDigests := make(map[string]string)
@@ -89,7 +84,7 @@ type Puller struct {
 	Repo   oras.Target
 }
 
-// Pull copies the artifact at tag from the remote repository into the target.
+// Pull copies the artifact at tag into the target.
 func (p *Puller) Pull(ctx context.Context, tag string) (ocispec.Descriptor, error) {
 	return oras.Copy(ctx, p.Repo, tag, p.Target, tag, oras.DefaultCopyOptions)
 }
@@ -117,8 +112,8 @@ func addFileToStore(ctx context.Context, store content.Pusher, filePath, relativ
 	return &descriptor, nil
 }
 
-// MimeTypeFromExtension returns the media type for a file extension (including
-// the leading dot), or the empty string when unknown.
+// MimeTypeFromExtension maps an extension (with leading dot) to a media type,
+// or "" when unknown.
 func MimeTypeFromExtension(ext string) string {
 	if mimeType, exists := mimeTypesFromExt[ext]; exists {
 		return mimeType
