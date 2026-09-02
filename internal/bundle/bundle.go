@@ -3,6 +3,7 @@ package bundle
 import (
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -33,6 +34,33 @@ type Step struct {
 	Config       map[string]any `json:"config,omitempty" yaml:"config,omitempty" mapstructure:"config"`
 }
 
+// AppSpec defines the application-specific configuration for environment variables, policies, and secrets.
+type AppSpec struct {
+	Envs     map[string]string `json:"envs" yaml:"envs" mapstructure:"envs"`
+	Policies []string          `json:"policies" yaml:"policies" mapstructure:"policies"`
+	Secrets  map[string]Secret `json:"secrets" yaml:"secrets" mapstructure:"secrets"`
+}
+
+// Secret describes a secret that the bundle expects to be injected at runtime.
+type Secret struct {
+	Required    bool   `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
+	JSON        bool   `json:"json,omitempty" yaml:"json,omitempty" mapstructure:"json"`
+	Title       string `json:"title,omitempty" yaml:"title,omitempty" mapstructure:"title"`
+	Description string `json:"description,omitempty" yaml:"description,omitempty" mapstructure:"description"`
+}
+
+// Resource is one entry in a bundle's `resources` block.
+type Resource struct {
+	ResourceType string `json:"resource_type,omitempty" yaml:"resource_type,omitempty" mapstructure:"resource_type"`
+	Required     *bool  `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
+}
+
+// Dependency is one entry in a bundle's `dependencies` block.
+type Dependency struct {
+	ResourceType string `json:"resource_type,omitempty" yaml:"resource_type,omitempty" mapstructure:"resource_type"`
+	Required     *bool  `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
+}
+
 // Bundle represents a Massdriver bundle definition parsed from massdriver.yaml.
 type Bundle struct {
 	Name        string         `json:"name,omitempty" yaml:"name,omitempty" mapstructure:"name"`
@@ -47,21 +75,14 @@ type Bundle struct {
 	Connections map[string]any `json:"connections,omitempty" yaml:"connections,omitempty" mapstructure:"connections"`
 	UI          map[string]any `json:"ui,omitempty" yaml:"ui,omitempty" mapstructure:"ui"`
 	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty" mapstructure:"app"`
-}
 
-// AppSpec defines the application-specific configuration for environment variables, policies, and secrets.
-type AppSpec struct {
-	Envs     map[string]string `json:"envs" yaml:"envs" mapstructure:"envs"`
-	Policies []string          `json:"policies" yaml:"policies" mapstructure:"policies"`
-	Secrets  map[string]Secret `json:"secrets" yaml:"secrets" mapstructure:"secrets"`
-}
+	// Resources and Dependencies are the current input terms. Artifacts and
+	// Connections are their deprecated predecessors.
+	Resources    map[string]Resource   `json:"resources,omitempty" yaml:"resources,omitempty" mapstructure:"resources"`
+	Dependencies map[string]Dependency `json:"dependencies,omitempty" yaml:"dependencies,omitempty" mapstructure:"dependencies"`
 
-// Secret describes a secret that the bundle expects to be injected at runtime.
-type Secret struct {
-	Required    bool   `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
-	JSON        bool   `json:"json,omitempty" yaml:"json,omitempty" mapstructure:"json"`
-	Title       string `json:"title,omitempty" yaml:"title,omitempty" mapstructure:"title"`
-	Description string `json:"description,omitempty" yaml:"description,omitempty" mapstructure:"description"`
+	// Canonical JSON-schema form of the dependencies, hydrated on demand.
+	dependencySchema map[string]any
 }
 
 // Unmarshal reads and parses the massdriver.yaml file from the given directory into a Bundle.
@@ -87,21 +108,8 @@ func Unmarshal(readDirectory string) (*Bundle, error) {
 	applyAppBlockDefaults(unmarshalledBundle)
 	applyStepDefaults(unmarshalledBundle)
 
-	// This looks weird but we have to be careful we don't overwrite things that do exist in the bundle file
-	if unmarshalledBundle.Connections == nil {
-		unmarshalledBundle.Connections = make(map[string]any)
-	}
-
-	if unmarshalledBundle.Connections["properties"] == nil {
-		unmarshalledBundle.Connections["properties"] = make(map[string]any)
-	}
-
-	if unmarshalledBundle.Artifacts == nil {
-		unmarshalledBundle.Artifacts = make(map[string]any)
-	}
-
-	if unmarshalledBundle.Artifacts["properties"] == nil {
-		unmarshalledBundle.Artifacts["properties"] = make(map[string]any)
+	if err := unmarshalledBundle.normalizeInputs(); err != nil {
+		return nil, err
 	}
 
 	if transformationErr := ApplyTransformations(unmarshalledBundle.Params, paramsTransformations); transformationErr != nil {
@@ -149,4 +157,58 @@ func parseMetadataSchema() map[string]any {
 	}
 
 	return metadata
+}
+
+// The two forms of a slot are mutually exclusive; the legacy one warns. Legacy
+// fields are not written to — the dependency schema is hydrated separately.
+func (b *Bundle) normalizeInputs() error {
+	hasArtifacts := b.Artifacts != nil
+	hasConnections := b.Connections != nil
+	hasResources := b.Resources != nil
+	hasDependencies := b.Dependencies != nil
+
+	if hasConnections && hasDependencies {
+		return errors.New("cannot set both 'connections' and 'dependencies'; use 'dependencies'")
+	}
+	if hasArtifacts && hasResources {
+		return errors.New("cannot set both 'artifacts' and 'resources'; use 'resources'")
+	}
+	if hasConnections {
+		fmt.Println(prettylogs.Orange("Warning: the 'connections' field is deprecated; migrate to 'dependencies'. The legacy term does not support versioned resource types"))
+	}
+	if hasArtifacts {
+		fmt.Println(prettylogs.Orange("Warning: the 'artifacts' field is deprecated; migrate to 'resources'. The legacy term does not support versioned resource types"))
+	}
+
+	b.hydrateDependencySchema()
+	return nil
+}
+
+// Builds the canonical dependency schema every downstream reader uses, from
+// `dependencies` or the legacy `connections` block.
+func (b *Bundle) hydrateDependencySchema() {
+	switch {
+	case len(b.Dependencies) > 0:
+		b.dependencySchema = dependenciesToSchema(b.Dependencies)
+	case b.Connections != nil:
+		if _, ok := b.Connections["properties"].(map[string]any); !ok {
+			b.Connections["properties"] = map[string]any{}
+		}
+		b.dependencySchema = b.Connections
+	default:
+		b.dependencySchema = map[string]any{"properties": map[string]any{}}
+	}
+}
+
+// Per-entry validation happens earlier, during bundle schema validation.
+func dependenciesToSchema(deps map[string]Dependency) map[string]any {
+	properties := map[string]any{}
+	required := []any{}
+	for name, dep := range deps {
+		properties[name] = map[string]any{"$ref": dep.ResourceType}
+		if dep.Required != nil && *dep.Required {
+			required = append(required, name)
+		}
+	}
+	return map[string]any{"properties": properties, "required": required}
 }

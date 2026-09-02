@@ -143,14 +143,13 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 	bundleGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	bundlePullCmd := &cobra.Command{
-		Use:   "pull <bundle-name>",
+		Use:   "pull <bundle-name>[@<version>]",
 		Short: "Pull bundle from Massdriver to local directory",
 		Args:  cobra.ExactArgs(1),
 		RunE:  runBundlePull,
 	}
 	bundlePullCmd.Flags().StringP("directory", "d", "", "Directory to output the bundle. Defaults to bundle name.")
 	bundlePullCmd.Flags().BoolP("force", "f", false, "Force pull even if the directory already exists. This will overwrite existing files.")
-	bundlePullCmd.Flags().StringP("version", "v", "latest", "Bundle version or release channel")
 
 	bundleTemplateCmd := &cobra.Command{
 		Use:   "template",
@@ -397,12 +396,17 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
+	// Schema validation runs before dereferencing, which assumes a valid bundle.
+	if err = cmdbundle.ValidateSchema(unmarshalledBundle, mdClient.Config().URL); err != nil {
+		return err
+	}
+
 	err = unmarshalledBundle.DereferenceSchemas(bundleDirectory, resourcetype.NewMassdriverResolver(mdClient))
 	if err != nil {
 		return err
 	}
 
-	results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
+	results := cmdbundle.RunLint(unmarshalledBundle)
 
 	switch {
 	case results.HasErrors():
@@ -452,13 +456,18 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
+	// Schema validation runs before Build, which dereferences and assumes a valid bundle.
+	if err = cmdbundle.ValidateSchema(unmarshalledBundle, mdClient.Config().URL); err != nil {
+		return err
+	}
+
 	err = unmarshalledBundle.Build(bundleDirectory, resourcetype.NewMassdriverResolver(mdClient))
 	if err != nil {
 		return err
 	}
 
 	if !skipLint {
-		results := cmdbundle.RunLint(unmarshalledBundle, mdClient)
+		results := cmdbundle.RunLint(unmarshalledBundle)
 
 		switch {
 		case results.HasErrors():
@@ -482,12 +491,17 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	bundleName := args[0]
+	version := "latest"
+	if name, ref, found := strings.Cut(bundleName, "@"); found {
+		bundleName = name
+		version = ref
+	}
+
 	directory, _ := cmd.Flags().GetString("directory")
 	if directory == "" {
 		directory = bundleName
 	}
 	force, _ := cmd.Flags().GetBool("force")
-	version, _ := cmd.Flags().GetString("version")
 	cmd.SilenceUsage = true
 
 	// Check if bundle exists in the specified directory and if so prompt the user

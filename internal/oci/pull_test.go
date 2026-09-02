@@ -1,11 +1,11 @@
-package bundle_test
+package oci_test
 
 import (
 	"bytes"
 	"encoding/json"
 	"testing"
 
-	"github.com/massdriver-cloud/mass/internal/bundle"
+	"github.com/massdriver-cloud/mass/internal/oci"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	oras "oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content"
@@ -77,11 +77,11 @@ func TestPull(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			puller := &bundle.Puller{
+			puller := &oci.Puller{
 				Target: tc.target,
 				Repo:   tc.repo,
 			}
-			desc, pullErr := puller.PullBundle(t.Context(), tc.tag)
+			desc, pullErr := puller.Pull(t.Context(), tc.tag)
 			if (pullErr != nil) != tc.wantErr {
 				t.Fatalf("unexpected error = %v, wantErr %v", pullErr, tc.wantErr)
 			}

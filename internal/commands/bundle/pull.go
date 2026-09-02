@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/massdriver-cloud/mass/internal/bundle"
+	"github.com/massdriver-cloud/mass/internal/oci"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"oras.land/oras-go/v2/content/file"
@@ -36,12 +36,12 @@ func RunPull(ctx context.Context, mdClient *massdriver.Client, bundleName string
 	}
 	defer store.Close()
 
-	puller := &bundle.Puller{
+	puller := &oci.Puller{
 		Target: store,
 		Repo:   repo,
 	}
 
-	descriptor, pullErr := puller.PullBundle(ctx, tag)
+	descriptor, pullErr := puller.Pull(ctx, tag)
 	if pullErr != nil {
 		return fmt.Errorf("failed to pull bundle: %w", pullErr)
 	}

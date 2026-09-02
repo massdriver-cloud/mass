@@ -9,7 +9,7 @@ sidebar_label: Mass Bundle Pull
 Pull bundle from Massdriver to local directory
 
 ```
-mass bundle pull <bundle-name> [flags]
+mass bundle pull <bundle-name>[@<version>] [flags]
 ```
 
 ### Options
@@ -18,7 +18,6 @@ mass bundle pull <bundle-name> [flags]
   -d, --directory string   Directory to output the bundle. Defaults to bundle name.
   -f, --force              Force pull even if the directory already exists. This will overwrite existing files.
   -h, --help               help for pull
-  -v, --version string     Bundle version or release channel (default "latest")
 ```
 
 ### SEE ALSO

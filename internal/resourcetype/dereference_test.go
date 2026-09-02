@@ -115,6 +115,41 @@ func TestDereferenceSchema(t *testing.T) {
 				"foo": "bar",
 			},
 		},
+		{
+			Name:  "Dereferences exact-version ref",
+			Input: jsonDecode(`{"$ref": "massdriver/test-schema@1.2.3"}`),
+			Expected: map[string]any{
+				"foo": "bar",
+			},
+		},
+		{
+			Name:  "Dereferences patch-channel ref",
+			Input: jsonDecode(`{"$ref": "test-schema@~1.2"}`),
+			Expected: map[string]any{
+				"foo": "bar",
+			},
+		},
+		{
+			Name:  "Dereferences minor-channel ref",
+			Input: jsonDecode(`{"$ref": "test-schema@~1"}`),
+			Expected: map[string]any{
+				"foo": "bar",
+			},
+		},
+		{
+			Name:  "Dereferences latest ref",
+			Input: jsonDecode(`{"$ref": "test-schema@latest"}`),
+			Expected: map[string]any{
+				"foo": "bar",
+			},
+		},
+		{
+			Name:  "Dereferences latest+dev ref",
+			Input: jsonDecode(`{"$ref": "test-schema@latest+dev"}`),
+			Expected: map[string]any{
+				"foo": "bar",
+			},
+		},
 	}
 
 	// A stub resolver that pretends every massdriver ref points at the same

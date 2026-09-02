@@ -1,7 +1,7 @@
-// Package api is a temporary holding pen for GraphQL operations that the
-// massdriver-sdk-go doesn't expose yet. Today this is just the resource-type
-// surface (Get / List / Publish / Delete). When the SDK grows native support
-// the corresponding files here disappear; once the package is empty, delete it.
+// Package api is a holding pen for GraphQL operations the SDK doesn't expose —
+// today just the deprecated `publishResourceType` mutation, kept so pipelines
+// publishing raw JSON schemas keep working. Delete this package when the API
+// drops the mutation.
 package api
 
 import (

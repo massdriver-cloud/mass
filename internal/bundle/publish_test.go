@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
+	"github.com/massdriver-cloud/mass/internal/oci"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2/content/memory"
 )
@@ -22,14 +23,10 @@ func TestPackageBundle(t *testing.T) {
 			name:      "basic bundle",
 			bundleDir: "testdata/publish/simple",
 			expectedLayers: map[string]packageLayer{
-				"massdriver.yaml":         {MimeType: "application/yaml"},
-				"operator.md":             {MimeType: "text/markdown"},
-				"README.md":               {MimeType: "text/markdown"},
-				"schema-artifacts.json":   {MimeType: "application/json"},
-				"schema-connections.json": {MimeType: "application/json"},
-				"schema-params.json":      {MimeType: "application/json"},
-				"schema-ui.json":          {MimeType: "application/json"},
-				"src/main.tf":             {MimeType: "application/hcl"},
+				"massdriver.yaml": {MimeType: "application/yaml"},
+				"operator.md":     {MimeType: "text/markdown"},
+				"README.md":       {MimeType: "text/markdown"},
+				"src/main.tf":     {MimeType: "application/hcl"},
 			},
 		},
 	}
@@ -38,14 +35,19 @@ func TestPackageBundle(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			memStore := memory.New()
 
-			p := bundle.Publisher{
+			p := oci.Publisher{
 				Store: memStore,
 			}
 
+			keep, keepErr := bundle.PackageKeep(tc.bundleDir)
+			if keepErr != nil {
+				t.Fatalf("PackageKeep failed: %v", keepErr)
+			}
+
 			tag := "test-tag"
-			desc, err := p.PackageBundle(t.Context(), tc.bundleDir, tag)
+			desc, err := p.Package(t.Context(), tc.bundleDir, tag, bundle.ArtifactType, keep)
 			if err != nil {
-				t.Fatalf("PackageBundle failed: %v", err)
+				t.Fatalf("Package failed: %v", err)
 			}
 
 			// Fetch and parse the manifest

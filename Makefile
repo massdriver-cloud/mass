@@ -54,15 +54,15 @@ build:
 
 .PHONY: build.macos
 build.macos: bin
-	@GOOS=darwin GOARCH=arm64 go build -o bin/mass-darwin-arm64 -ldflags=${LD_FLAGS}
+	@CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o bin/mass-darwin-arm64 -ldflags=${LD_FLAGS}
 
 .PHONY: build.linux
 build.linux: bin
-	@GOOS=linux GOARCH=amd64 go build -o bin/mass-linux-amd64 -ldflags=${LD_FLAGS}
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/mass-linux-amd64 -ldflags=${LD_FLAGS}
 
 .PHONY: build.windows
 build.windows: bin
-	@GOOS=windows GOARCH=amd64 go build -o bin/mass-windows-amd64.exe -ldflags=${LD_FLAGS}
+	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o bin/mass-windows-amd64.exe -ldflags=${LD_FLAGS}
 
 .PHONY: install.macos
 install.macos: build.macos
