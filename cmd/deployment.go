@@ -18,7 +18,6 @@ import (
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
@@ -133,7 +132,7 @@ func runDeploymentGet(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -174,7 +173,7 @@ func runDeploymentList(cmd *cobra.Command, args []string) error {
 	output, _ := cmd.Flags().GetString("output")
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -233,7 +232,7 @@ func runDeploymentLogs(cmd *cobra.Command, args []string) error {
 	ctx, cancel := signalContext(context.Background())
 	defer cancel()
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -273,7 +272,7 @@ func runDeploymentCompare(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -342,7 +341,7 @@ func runDeploymentAbort(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -361,7 +360,7 @@ func runDeploymentApprove(cmd *cobra.Command, args []string) error {
 	deploymentID := args[0]
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -380,7 +379,7 @@ func runDeploymentReject(cmd *cobra.Command, args []string) error {
 	deploymentID := args[0]
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}

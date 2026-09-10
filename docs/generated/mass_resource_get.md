@@ -78,6 +78,12 @@ mass resource get [resource-id] [flags]
   -o, --output string   Output format (text or json) (default "text")
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource](/cli/commands/mass_resource)	 - Manage resources

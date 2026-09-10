@@ -34,6 +34,12 @@ mass resource create [flags]
   -t, --type string   Resource type
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource](/cli/commands/mass_resource)	 - Manage resources

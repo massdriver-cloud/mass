@@ -45,6 +45,12 @@ mass deployment get 12345678-1234-1234-1234-123456789012
   -o, --output string   Output format (text or json) (default "text")
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass deployment](/cli/commands/mass_deployment)	 - Manage deployments

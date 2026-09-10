@@ -45,6 +45,12 @@ mass component remove ecomm-db
   -h, --help   help for remove
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass component](/cli/commands/mass_component)	 - Manage components in a project's blueprint

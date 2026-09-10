@@ -27,6 +27,12 @@ mass component update ecomm-db --name "Primary DB" -a priority=high
   -n, --name string                 New display name
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass component](/cli/commands/mass_component)	 - Manage components in a project's blueprint

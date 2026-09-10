@@ -115,6 +115,12 @@ mass bundle new [flags]
   -t, --template-name string      Name of the bundle template to use. Setting this along with --name will disable the interactive prompt.
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass bundle](/cli/commands/mass_bundle)	 - Generate and publish bundles

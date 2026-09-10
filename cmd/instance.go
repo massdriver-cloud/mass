@@ -214,7 +214,7 @@ func runInstanceGet(cmd *cobra.Command, args []string) error {
 
 	instanceID := args[0]
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -381,7 +381,7 @@ func runInstanceDeploy(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -465,7 +465,7 @@ func runInstanceCopy(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	mdClient, mdClientErr := massdriver.NewClient()
+	mdClient, mdClientErr := newMassdriverClient(cmd)
 	if mdClientErr != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
@@ -493,7 +493,7 @@ func runInstanceExport(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -519,7 +519,7 @@ func runInstanceVersion(cmd *cobra.Command, args []string) error {
 	instanceID := parts[0]
 	version := parts[1]
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -564,7 +564,7 @@ func runInstanceOrphan(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -584,7 +584,7 @@ func runInstanceRollback(cmd *cobra.Command, args []string) error {
 	deploymentID := args[0]
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -610,7 +610,7 @@ func runInstanceRemoteReferenceSet(cmd *cobra.Command, args []string) error {
 	resourceID := args[2]
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -631,7 +631,7 @@ func runInstanceRemoteReferenceRemove(cmd *cobra.Command, args []string) error {
 	field := args[1]
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -660,7 +660,7 @@ func runInstanceList(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}

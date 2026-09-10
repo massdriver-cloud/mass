@@ -51,6 +51,12 @@ mass instance rollback 12345678-1234-1234-1234-123456789012
   -h, --help   help for rollback
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass instance](/cli/commands/mass_instance)	 - Manage instances of IaC deployed in environments.

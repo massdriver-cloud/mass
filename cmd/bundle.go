@@ -68,7 +68,7 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 		Long:    helpdocs.MustRender("bundle/list"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
-			return runBundleList(&bundleListInput)
+			return runBundleList(cmd, &bundleListInput)
 		},
 	}
 	bundleListCmd.Flags().StringVarP(&bundleListInput.search, "search", "s", "", "Search bundles by name, readme, and changelog")
@@ -111,7 +111,7 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 		Long:  helpdocs.MustRender("bundle/new"),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
-			return runBundleNew(&bundleNewInput)
+			return runBundleNew(cmd, &bundleNewInput)
 		},
 	}
 	bundleNewCmd.Flags().StringVarP(&bundleNewInput.name, "name", "n", "", "Name of the new bundle. Setting this along with --template-name will disable the interactive prompt.")
@@ -200,7 +200,7 @@ func runBundleCreate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -280,14 +280,14 @@ func runBundleNewFlags(input *bundleNew) (*templates.TemplateData, error) {
 	return templateData, nil
 }
 
-func runBundleNew(input *bundleNew) error {
+func runBundleNew(cmd *cobra.Command, input *bundleNew) error {
 	ctx := context.Background()
 
 	var templateData *templates.TemplateData
 	var runErr error
 	if input.name == "" || input.templateName == "" {
 		// run the interactive prompt
-		mdClient, err := massdriver.NewClient()
+		mdClient, err := newMassdriverClient(cmd)
 		if err != nil {
 			return fmt.Errorf("error initializing massdriver client: %w", err)
 		}
@@ -357,7 +357,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -391,7 +391,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -451,7 +451,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -517,7 +517,7 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -530,10 +530,10 @@ func runBundlePull(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runBundleList(input *bundleList) error {
+func runBundleList(cmd *cobra.Command, input *bundleList) error {
 	ctx := context.Background()
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -595,7 +595,7 @@ func runBundleGet(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}

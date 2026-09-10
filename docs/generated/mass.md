@@ -27,7 +27,8 @@ Configure and deploying infrastructure and applications.
 ### Options
 
 ```
-  -h, --help   help for mass
+  -h, --help             help for mass
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
 ```
 
 ### SEE ALSO
@@ -35,6 +36,7 @@ Configure and deploying infrastructure and applications.
 * [mass bundle](/cli/commands/mass_bundle)	 - Generate and publish bundles
 * [mass completion](/cli/commands/mass_completion)	 - Generate the autocompletion script for the specified shell
 * [mass component](/cli/commands/mass_component)	 - Manage components in a project's blueprint
+* [mass config](/cli/commands/mass_config)	 - Manage CLI configuration profiles
 * [mass deployment](/cli/commands/mass_deployment)	 - Manage deployments
 * [mass docs](/cli/commands/mass_docs)	 - Gen docs
 * [mass environment](/cli/commands/mass_environment)	 - Environment management

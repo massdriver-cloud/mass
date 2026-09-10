@@ -43,6 +43,12 @@ mass deployment logs 12345678-1234-1234-1234-123456789012
   -h, --help   help for logs
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass deployment](/cli/commands/mass_deployment)	 - Manage deployments

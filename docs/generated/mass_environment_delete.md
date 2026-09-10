@@ -60,6 +60,12 @@ mass environment delete ecomm-staging
   -h, --help    help for delete
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass environment](/cli/commands/mass_environment)	 - Environment management

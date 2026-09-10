@@ -29,6 +29,12 @@ mass resource delete [resource-id] [flags]
   -h, --help    help for delete
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource](/cli/commands/mass_resource)	 - Manage resources

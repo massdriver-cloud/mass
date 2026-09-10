@@ -69,6 +69,12 @@ mass schema validate [flags]
   -s, --schema string     Path to JSON Schema (default "./schema.json")
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass schema](/cli/commands/mass_schema)	 - Manage JSON Schemas

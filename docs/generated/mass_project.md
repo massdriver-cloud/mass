@@ -23,6 +23,12 @@ A project can encompass many environments (permanent or ephemeral) and manages t
   -h, --help   help for project
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI

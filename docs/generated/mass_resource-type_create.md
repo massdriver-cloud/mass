@@ -50,6 +50,12 @@ mass resource-type create my-resource-type -a owner=data,service=database
   -h, --help                        help for create
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management

@@ -80,6 +80,12 @@ mass resource list [flags]
   -t, --type string          Filter by resource type id (e.g. aws-iam-role)
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource](/cli/commands/mass_resource)	 - Manage resources

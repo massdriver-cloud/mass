@@ -34,6 +34,12 @@ mass completion fish [flags]
       --no-descriptions   disable completion descriptions
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass completion](/cli/commands/mass_completion)	 - Generate the autocompletion script for the specified shell

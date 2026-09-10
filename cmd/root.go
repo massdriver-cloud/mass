@@ -33,8 +33,11 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	rootCmd.PersistentFlags().String("profile", "", "Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)")
+
 	rootCmd.AddCommand(NewCmdBundle())
 	rootCmd.AddCommand(NewCmdComponent())
+	rootCmd.AddCommand(NewCmdConfig())
 	rootCmd.AddCommand(NewCmdDeployment())
 	rootCmd.AddCommand(NewCmdDocs())
 	rootCmd.AddCommand(NewCmdEnvironment())

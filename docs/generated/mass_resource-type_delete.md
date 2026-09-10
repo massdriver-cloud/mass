@@ -63,6 +63,12 @@ mass resource-type delete [resource-type] [flags]
   -h, --help    help for delete
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management

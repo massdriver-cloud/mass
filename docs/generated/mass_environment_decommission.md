@@ -75,6 +75,12 @@ mass environment decommission ecomm-pr42 --follow
   -h, --help     help for decommission
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass environment](/cli/commands/mass_environment)	 - Environment management

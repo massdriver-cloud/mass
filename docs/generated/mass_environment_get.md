@@ -43,6 +43,12 @@ mass environment get [environment] [flags]
   -o, --output string   Output format (text or json) (default "text")
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass environment](/cli/commands/mass_environment)	 - Environment management

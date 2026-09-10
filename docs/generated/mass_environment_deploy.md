@@ -65,6 +65,12 @@ mass environment deploy ecomm-staging --follow
   -h, --help     help for deploy
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass environment](/cli/commands/mass_environment)	 - Environment management

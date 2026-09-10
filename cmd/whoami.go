@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/viewer"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +31,7 @@ func runWhoami(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}

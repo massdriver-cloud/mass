@@ -20,6 +20,12 @@ mass bundle pull <bundle-name>[@<version>] [flags]
   -h, --help               help for pull
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass bundle](/cli/commands/mass_bundle)	 - Generate and publish bundles

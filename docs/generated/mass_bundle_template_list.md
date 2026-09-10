@@ -67,6 +67,12 @@ mass bundle template list [flags]
   -o, --output string   Output format (text, json) (default "text")
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass bundle template](/cli/commands/mass_bundle_template)	 - Application template development tools
