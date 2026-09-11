@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/charmbracelet/glamour"
+	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/internal/cli"
+	"github.com/massdriver-cloud/mass/internal/commands/grants"
 	cmdrepository "github.com/massdriver-cloud/mass/internal/commands/repository"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/ocirepos"
@@ -91,6 +93,7 @@ func NewCmdRepository() *cobra.Command {
 	repositoryCmd.AddCommand(repositoryCreateCmd)
 	repositoryCmd.AddCommand(repositoryUpdateCmd)
 	repositoryCmd.AddCommand(repositoryDeleteCmd)
+	repositoryCmd.AddCommand(newRepositoryGrantCmd())
 
 	return repositoryCmd
 }
@@ -417,5 +420,134 @@ func runRepositoryDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Repository %s deleted successfully\n", deleted.Name)
+	return nil
+}
+
+type repositoryGrantCreateInput struct {
+	conditions     []string
+	conditionsFile string
+	allProjects    bool
+	action         string
+}
+
+//nolint:dupl // parallel command trees per recipient kind, not redundant logic
+func newRepositoryGrantCmd() *cobra.Command {
+	repositoryGrantCmd := &cobra.Command{
+		Use:     "grant",
+		Aliases: []string{"grants"},
+		Short:   "Manage sharing grants on an OCI repository",
+		Long:    helpdocs.MustRender("repository/grant"),
+	}
+
+	createInput := repositoryGrantCreateInput{}
+	repositoryGrantCreateCmd := &cobra.Command{
+		Use:   "create <name>",
+		Short: "Share a repository with recipient projects",
+		Long:  helpdocs.MustRender("repository/grant-create"),
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+			return runRepositoryGrantCreate(args[0], &createInput)
+		},
+	}
+	repositoryGrantCreateCmd.Flags().StringArrayVar(&createInput.conditions, "condition", nil, "Recipient project attribute condition; repeat a key to accept a set of values, or write key=* to accept any value")
+	repositoryGrantCreateCmd.Flags().StringVar(&createInput.conditionsFile, "conditions-file", "", "Read recipient conditions from a JSON file")
+	repositoryGrantCreateCmd.Flags().BoolVar(&createInput.allProjects, "all-projects", false, "Share with every project in the organization")
+	repositoryGrantCreateCmd.Flags().StringVar(&createInput.action, "action", "", "Action to grant (default "+grants.ActionRepoPull+")")
+
+	repositoryGrantListCmd := &cobra.Command{
+		Use:     "list <name>",
+		Aliases: []string{"ls"},
+		Short:   "List the sharing grants on a repository",
+		Long:    helpdocs.MustRender("repository/grant-list"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runRepositoryGrantList,
+	}
+	repositoryGrantListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
+
+	repositoryGrantDeleteCmd := &cobra.Command{
+		Use:   "delete <grant-id>",
+		Short: "Revoke a sharing grant by id",
+		Long:  helpdocs.MustRender("repository/grant-delete"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runRepositoryGrantDelete,
+	}
+
+	repositoryGrantCmd.AddCommand(repositoryGrantCreateCmd)
+	repositoryGrantCmd.AddCommand(repositoryGrantListCmd)
+	repositoryGrantCmd.AddCommand(repositoryGrantDeleteCmd)
+
+	return repositoryGrantCmd
+}
+
+func runRepositoryGrantCreate(name string, input *repositoryGrantCreateInput) error {
+	ctx := context.Background()
+
+	action, err := grants.ResolveRepoAction(input.action)
+	if err != nil {
+		return err
+	}
+	conditions, err := grants.ResolveConditions(input.conditions, input.conditionsFile, input.allProjects, "all-projects")
+	if err != nil {
+		return err
+	}
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	grant, err := mdClient.OciRepos.CreateGrant(ctx, name, ocirepos.CreateGrantInput{
+		Action:              action,
+		RecipientConditions: conditions,
+	})
+	if err != nil {
+		return grants.NotFoundHint(err, "repository", name)
+	}
+
+	fmt.Printf("✅ Repository `%s` shared as `%s` with %s (grant %s)\n", name, grant.Action, grants.FormatConditions(grant.RecipientConditions), grant.ID)
+	return nil
+}
+
+func runRepositoryGrantList(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	name := args[0]
+	outputFormat, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	seq := mdClient.OciRepos.IterGrants(ctx, name, ocirepos.ListGrantsInput{})
+	return grants.NotFoundHint(grants.Render(seq, outputFormat, os.Stdout), "repository", name)
+}
+
+func runRepositoryGrantDelete(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	grantID := args[0]
+	cmd.SilenceUsage = true
+
+	if validateErr := grants.ValidateGrantID(grantID, "mass repository grant list <name>"); validateErr != nil {
+		return validateErr
+	}
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	if deleteErr := mdClient.OciRepos.DeleteGrant(ctx, grantID); deleteErr != nil {
+		return deleteErr
+	}
+
+	fmt.Printf("Grant %s deleted successfully\n", grantID)
 	return nil
 }

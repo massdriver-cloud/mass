@@ -31,12 +31,6 @@ mass component unlink ecomm-db.authentication ecomm-app.database
 mass component unlink <from-component>.<from-field> <to-component>.<to-field> [flags]
 ```
 
-### Examples
-
-```
-mass component unlink ecomm-db.authentication ecomm-app.database
-```
-
 ### Options
 
 ```

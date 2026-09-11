@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/internal/cli"
+	"github.com/massdriver-cloud/mass/internal/commands/grants"
 	"github.com/massdriver-cloud/mass/internal/commands/resource"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/resources"
@@ -37,6 +38,7 @@ func NewCmdResource() *cobra.Command {
 	resourceCmd.AddCommand(newResourceUpdateCmd())
 	resourceCmd.AddCommand(newResourceDeleteCmd())
 	resourceCmd.AddCommand(newResourceListCmd())
+	resourceCmd.AddCommand(newResourceGrantCmd())
 
 	return resourceCmd
 }
@@ -65,12 +67,6 @@ func newResourceGetCmd() *cobra.Command {
 		Long:  helpdocs.MustRender("resource/get"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runResourceGet,
-		Example: `  # Get resource using UUID (imported resources)
-  mass resource get 12345678-1234-1234-1234-123456789012
-
-  # Get resource using friendly slug (provisioned resources)
-  mass resource get api-prod-database-connection
-  mass resource get api-prod-grpcapi-host -o json`,
 	}
 	resourceGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 	return resourceGetCmd
@@ -83,12 +79,6 @@ func newResourceDownloadCmd() *cobra.Command {
 		Long:  helpdocs.MustRender("resource/download"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runResourceDownload,
-		Example: `  # Download resource using UUID (imported resources)
-  mass resource download 12345678-1234-1234-1234-123456789012
-
-  # Download resource using friendly slug (provisioned resources)
-  mass resource download api-prod-database-connection
-  mass resource download network-useast1-vpc-network -f yaml`,
 	}
 	resourceDownloadCmd.Flags().StringP("format", "f", "json", "Download format (json, yaml, etc.)")
 	return resourceDownloadCmd
@@ -101,11 +91,6 @@ func newResourceUpdateCmd() *cobra.Command {
 		Long:  helpdocs.MustRender("resource/update"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runResourceUpdate,
-		Example: `  # Update resource payload
-  mass resource update 12345678-1234-1234-1234-123456789012 -f resource.json
-
-  # Update resource payload and rename
-  mass resource update 12345678-1234-1234-1234-123456789012 -f resource.json -n new-name`,
 	}
 	resourceUpdateCmd.Flags().StringP("name", "n", "", "New resource name")
 	resourceUpdateCmd.Flags().StringP("file", "f", "", "Resource payload file")
@@ -117,13 +102,9 @@ func newResourceDeleteCmd() *cobra.Command {
 	resourceDeleteCmd := &cobra.Command{
 		Use:   "delete [resource-id]",
 		Short: "Delete a resource",
+		Long:  helpdocs.MustRender("resource/delete"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runResourceDelete,
-		Example: `  # Delete an imported resource
-  mass resource delete 12345678-1234-1234-1234-123456789012
-
-  # Skip the confirmation prompt
-  mass resource delete 12345678-1234-1234-1234-123456789012 --force`,
 	}
 	resourceDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	return resourceDeleteCmd
@@ -136,13 +117,6 @@ func newResourceListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Long:    helpdocs.MustRender("resource/list"),
 		RunE:    runResourceList,
-		Example: `  # List all resources
-  mass resource list
-
-  # Search and filter
-  mass resource list --search database
-  mass resource list --type aws-iam-role --origin provisioned
-  mass resource list --environment ecomm-prod -o json`,
 	}
 	resourceListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
 	resourceListCmd.Flags().StringP("search", "s", "", "Full-text search across resource name")
@@ -450,5 +424,134 @@ func renderResource(res *types.Resource) error {
 	}
 
 	fmt.Print(out)
+	return nil
+}
+
+type resourceGrantCreateInput struct {
+	conditions      []string
+	conditionsFile  string
+	allEnvironments bool
+	action          string
+}
+
+//nolint:dupl // parallel command trees per recipient kind, not redundant logic
+func newResourceGrantCmd() *cobra.Command {
+	resourceGrantCmd := &cobra.Command{
+		Use:     "grant",
+		Aliases: []string{"grants"},
+		Short:   "Manage sharing grants on a resource",
+		Long:    helpdocs.MustRender("resource/grant"),
+	}
+
+	createInput := resourceGrantCreateInput{}
+	resourceGrantCreateCmd := &cobra.Command{
+		Use:   "create <resource-id>",
+		Short: "Share a resource with recipient environments",
+		Long:  helpdocs.MustRender("resource/grant-create"),
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+			return runResourceGrantCreate(args[0], &createInput)
+		},
+	}
+	resourceGrantCreateCmd.Flags().StringArrayVar(&createInput.conditions, "condition", nil, "Recipient environment attribute condition; repeat a key to accept a set of values, or write key=* to accept any value")
+	resourceGrantCreateCmd.Flags().StringVar(&createInput.conditionsFile, "conditions-file", "", "Read recipient conditions from a JSON file")
+	resourceGrantCreateCmd.Flags().BoolVar(&createInput.allEnvironments, "all-environments", false, "Share with every environment in the organization")
+	resourceGrantCreateCmd.Flags().StringVar(&createInput.action, "action", "", "Action to grant (default "+grants.ActionResourceExport+")")
+
+	resourceGrantListCmd := &cobra.Command{
+		Use:     "list <resource-id>",
+		Aliases: []string{"ls"},
+		Short:   "List the sharing grants on a resource",
+		Long:    helpdocs.MustRender("resource/grant-list"),
+		Args:    cobra.ExactArgs(1),
+		RunE:    runResourceGrantList,
+	}
+	resourceGrantListCmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
+
+	resourceGrantDeleteCmd := &cobra.Command{
+		Use:   "delete <grant-id>",
+		Short: "Revoke a sharing grant by id",
+		Long:  helpdocs.MustRender("resource/grant-delete"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runResourceGrantDelete,
+	}
+
+	resourceGrantCmd.AddCommand(resourceGrantCreateCmd)
+	resourceGrantCmd.AddCommand(resourceGrantListCmd)
+	resourceGrantCmd.AddCommand(resourceGrantDeleteCmd)
+
+	return resourceGrantCmd
+}
+
+func runResourceGrantCreate(resourceID string, input *resourceGrantCreateInput) error {
+	ctx := context.Background()
+
+	action, err := grants.ResolveResourceAction(input.action)
+	if err != nil {
+		return err
+	}
+	conditions, err := grants.ResolveConditions(input.conditions, input.conditionsFile, input.allEnvironments, "all-environments")
+	if err != nil {
+		return err
+	}
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	grant, err := mdClient.Resources.CreateGrant(ctx, resourceID, resources.CreateGrantInput{
+		Action:              action,
+		RecipientConditions: conditions,
+	})
+	if err != nil {
+		return grants.NotFoundHint(err, "resource", resourceID)
+	}
+
+	fmt.Printf("✅ Resource `%s` shared as `%s` with %s (grant %s)\n", resourceID, grant.Action, grants.FormatConditions(grant.RecipientConditions), grant.ID)
+	return nil
+}
+
+func runResourceGrantList(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	resourceID := args[0]
+	outputFormat, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return err
+	}
+
+	cmd.SilenceUsage = true
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	seq := mdClient.Resources.IterGrants(ctx, resourceID, resources.ListGrantsInput{})
+	return grants.NotFoundHint(grants.Render(seq, outputFormat, os.Stdout), "resource", resourceID)
+}
+
+func runResourceGrantDelete(cmd *cobra.Command, args []string) error {
+	ctx := context.Background()
+
+	grantID := args[0]
+	cmd.SilenceUsage = true
+
+	if validateErr := grants.ValidateGrantID(grantID, "mass resource grant list <resource-id>"); validateErr != nil {
+		return validateErr
+	}
+
+	mdClient, err := massdriver.NewClient()
+	if err != nil {
+		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	if deleteErr := mdClient.Resources.DeleteGrant(ctx, grantID); deleteErr != nil {
+		return deleteErr
+	}
+
+	fmt.Printf("Grant %s deleted successfully\n", grantID)
 	return nil
 }

@@ -33,12 +33,6 @@ mass component remove ecomm-db
 mass component remove <component-id> [flags]
 ```
 
-### Examples
-
-```
-mass component remove ecomm-db
-```
-
 ### Options
 
 ```

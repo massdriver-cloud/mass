@@ -44,12 +44,6 @@ mass deployment abort 12345678-1234-1234-1234-123456789012 --force
 mass deployment abort <deployment-id> [flags]
 ```
 
-### Examples
-
-```
-mass deployment abort 12345678-1234-1234-1234-123456789012 --force
-```
-
 ### Options
 
 ```

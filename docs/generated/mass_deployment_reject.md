@@ -33,12 +33,6 @@ mass deployment reject 12345678-1234-1234-1234-123456789012
 mass deployment reject <deployment-id> [flags]
 ```
 
-### Examples
-
-```
-mass deployment reject 12345678-1234-1234-1234-123456789012
-```
-
 ### Options
 
 ```

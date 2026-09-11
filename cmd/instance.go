@@ -40,12 +40,11 @@ func NewCmdInstance() *cobra.Command {
 	instanceDeployCmd := newInstanceDeployCmd()
 
 	instanceExportCmd := &cobra.Command{
-		Use:     `export <project>-<env>-<manifest>`,
-		Short:   "Export instances",
-		Example: `mass instance export ecomm-prod-vpc`,
-		Long:    helpdocs.MustRender("instance/export"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceExport,
+		Use:   `export <project>-<env>-<manifest>`,
+		Short: "Export instances",
+		Long:  helpdocs.MustRender("instance/export"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runInstanceExport,
 	}
 
 	// instance and infra are the same, lets reuse a get command/template here.
@@ -53,7 +52,6 @@ func NewCmdInstance() *cobra.Command {
 		Use:     `get  <project>-<env>-<manifest>`,
 		Short:   "Get an instance",
 		Aliases: []string{"g"},
-		Example: `mass instance get ecomm-prod-vpc`,
 		Long:    helpdocs.MustRender("instance/get"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInstanceGet,
@@ -61,21 +59,19 @@ func NewCmdInstance() *cobra.Command {
 	instanceGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
 	instanceVersionCmd := &cobra.Command{
-		Use:     `version <instance-id>@<version>`,
-		Short:   "Set instance version",
-		Example: `mass instance version api-prod-db@latest`,
-		Long:    helpdocs.MustRender("instance/version"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceVersion,
+		Use:   `version <instance-id>@<version>`,
+		Short: "Set instance version",
+		Long:  helpdocs.MustRender("instance/version"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runInstanceVersion,
 	}
 
 	instanceDestroyCmd := &cobra.Command{
-		Use:     `destroy <project>-<env>-<manifest>`,
-		Short:   "Destroy (decommission) an instance",
-		Example: `mass instance destroy api-prod-db --force`,
-		Long:    "Destroy (decommission) an instance. This will permanently delete the instance and all its resources.",
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceDeploy,
+		Use:   `destroy <project>-<env>-<manifest>`,
+		Short: "Destroy (decommission) an instance",
+		Long:  helpdocs.MustRender("instance/destroy"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runInstanceDeploy,
 	}
 	instanceDestroyCmd.Flags().StringP("message", "m", "", "Add a message when decommissioning")
 	instanceDestroyCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
@@ -88,7 +84,6 @@ func NewCmdInstance() *cobra.Command {
 		Use:     `list <project>-<env>`,
 		Short:   "List instances in an environment",
 		Aliases: []string{"ls"},
-		Example: `mass instance list ecomm-prod`,
 		Long:    helpdocs.MustRender("instance/list"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInstanceList,
@@ -99,12 +94,11 @@ func NewCmdInstance() *cobra.Command {
 	instanceListCmd.Flags().String("bundle", "", "Filter by bundle version (name@version) or release channel (name@latest)")
 
 	instanceOrphanCmd := &cobra.Command{
-		Use:     `orphan <project>-<env>-<manifest>`,
-		Short:   "Orphan an instance (reset to INITIALIZED, optionally clearing state locks)",
-		Example: `mass instance orphan api-prod-db --force`,
-		Long:    helpdocs.MustRender("instance/orphan"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceOrphan,
+		Use:   `orphan <project>-<env>-<manifest>`,
+		Short: "Orphan an instance (reset to INITIALIZED, optionally clearing state locks)",
+		Long:  helpdocs.MustRender("instance/orphan"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runInstanceOrphan,
 	}
 	instanceOrphanCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	instanceOrphanCmd.Flags().Bool("delete-state", false, "Also delete the remote Terraform/OpenTofu state files (irreversible)")
@@ -125,12 +119,11 @@ func NewCmdInstance() *cobra.Command {
 
 func newInstanceRollbackCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:     `rollback <deployment-id>`,
-		Short:   "Propose rolling an instance back to a past completed deployment",
-		Example: `mass instance rollback 12345678-1234-1234-1234-123456789012`,
-		Long:    helpdocs.MustRender("instance/rollback"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceRollback,
+		Use:   `rollback <deployment-id>`,
+		Short: "Propose rolling an instance back to a past completed deployment",
+		Long:  helpdocs.MustRender("instance/rollback"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runInstanceRollback,
 	}
 }
 
@@ -143,19 +136,17 @@ func newInstanceRemoteReferenceCmd() *cobra.Command {
 	}
 
 	setCmd := &cobra.Command{
-		Use:     "set <instance-id> <field> <resource-id>",
-		Short:   "Override a connection slot with a resource from another project",
-		Example: `mass instance remote-reference set ecomm-prod-api database ecomm-prod-db.postgres`,
-		Long:    helpdocs.MustRender("instance/remote-reference-set"),
-		Args:    cobra.ExactArgs(3),
-		RunE:    runInstanceRemoteReferenceSet,
+		Use:   "set <instance-id> <field> <resource-id>",
+		Short: "Override a connection slot with a resource from another project",
+		Long:  helpdocs.MustRender("instance/remote-reference-set"),
+		Args:  cobra.ExactArgs(3),
+		RunE:  runInstanceRemoteReferenceSet,
 	}
 
 	removeCmd := &cobra.Command{
 		Use:     "remove <instance-id> <field>",
 		Aliases: []string{"rm", "unset"},
 		Short:   "Remove a connection slot override, reverting to the blueprint wiring",
-		Example: `mass instance remote-reference remove ecomm-prod-api database`,
 		Long:    helpdocs.MustRender("instance/remote-reference-remove"),
 		Args:    cobra.ExactArgs(2),
 		RunE:    runInstanceRemoteReferenceRemove,
@@ -168,12 +159,11 @@ func newInstanceRemoteReferenceCmd() *cobra.Command {
 
 func newInstanceDeployCmd() *cobra.Command {
 	c := &cobra.Command{
-		Use:     `deploy <project>-<env>-<manifest>`,
-		Short:   "Deploy instances",
-		Example: `mass instance deploy ecomm-prod-vpc`,
-		Long:    helpdocs.MustRender("instance/deploy"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runInstanceDeploy,
+		Use:   `deploy <project>-<env>-<manifest>`,
+		Short: "Deploy instances",
+		Long:  helpdocs.MustRender("instance/deploy"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runInstanceDeploy,
 	}
 	c.Flags().StringP("message", "m", "", "Add a message when deploying")
 	c.Flags().StringP("params", "p", "", "Path to params json, tfvars or yaml file. Use '-' to read from stdin. When provided, the full configuration is replaced. Supports bash interpolation.")
@@ -191,7 +181,6 @@ func newInstanceCopyCmd() *cobra.Command {
 		Use:     `copy [source] --to [destination]`,
 		Aliases: []string{"promote"},
 		Short:   "Copy an instance's configuration to another instance of the same component",
-		Example: `mass instance promote ecomm-staging-db --to ecomm-production-db --copy-secrets`,
 		Long:    helpdocs.MustRender("instance/copy"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runInstanceCopy,

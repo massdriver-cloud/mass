@@ -37,12 +37,6 @@ mass resource-type create my-resource-type -a owner=data,service=database
 mass resource-type create <name> [flags]
 ```
 
-### Examples
-
-```
-mass resource-type create my-resource-type -a owner=data,service=database
-```
-
 ### Options
 
 ```

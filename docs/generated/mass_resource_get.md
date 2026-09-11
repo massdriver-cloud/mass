@@ -60,17 +60,6 @@ mass resource get api-prod-grpcapi-host -o json
 mass resource get [resource-id] [flags]
 ```
 
-### Examples
-
-```
-  # Get resource using UUID (imported resources)
-  mass resource get 12345678-1234-1234-1234-123456789012
-
-  # Get resource using friendly slug (provisioned resources)
-  mass resource get api-prod-database-connection
-  mass resource get api-prod-grpcapi-host -o json
-```
-
 ### Options
 
 ```

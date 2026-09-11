@@ -62,12 +62,6 @@ mass environment delete ecomm-pr42
 mass environment decommission [environment] [flags]
 ```
 
-### Examples
-
-```
-mass environment decommission ecomm-pr42 --follow
-```
-
 ### Options
 
 ```

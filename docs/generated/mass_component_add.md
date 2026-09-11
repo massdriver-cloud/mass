@@ -39,12 +39,6 @@ mass component add ecomm aws-rds-cluster --id db \
 mass component add <project-id> <bundle-oci-repo-name> [flags]
 ```
 
-### Examples
-
-```
-mass component add ecomm aws-rds-cluster --id db --name "Primary Database"
-```
-
 ### Options
 
 ```

@@ -65,12 +65,6 @@ mass environment fork ecomm-production staging --copy-environment-defaults
 mass environment fork [parent-environment] [new-ID] [flags]
 ```
 
-### Examples
-
-```
-mass environment fork ecomm-production staging
-```
-
 ### Options
 
 ```

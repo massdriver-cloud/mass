@@ -32,12 +32,6 @@ mass deployment get 12345678-1234-1234-1234-123456789012 --output json
 mass deployment get <deployment-id> [flags]
 ```
 
-### Examples
-
-```
-mass deployment get 12345678-1234-1234-1234-123456789012
-```
-
 ### Options
 
 ```

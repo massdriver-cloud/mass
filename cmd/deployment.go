@@ -38,12 +38,11 @@ func NewCmdDeployment() *cobra.Command {
 	}
 
 	deploymentGetCmd := &cobra.Command{
-		Use:     "get <deployment-id>",
-		Short:   "Get a deployment by ID",
-		Example: `mass deployment get 12345678-1234-1234-1234-123456789012`,
-		Long:    helpdocs.MustRender("deployment/get"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runDeploymentGet,
+		Use:   "get <deployment-id>",
+		Short: "Get a deployment by ID",
+		Long:  helpdocs.MustRender("deployment/get"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runDeploymentGet,
 	}
 	deploymentGetCmd.Flags().StringP("output", "o", "text", "Output format (text or json)")
 
@@ -51,7 +50,6 @@ func NewCmdDeployment() *cobra.Command {
 		Use:     "list <instance-id>",
 		Aliases: []string{"ls"},
 		Short:   "List deployments for an instance (most recent first)",
-		Example: `mass deployment list ecomm-prod-db --limit 25`,
 		Long:    helpdocs.MustRender("deployment/list"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runDeploymentList,
@@ -64,47 +62,42 @@ func NewCmdDeployment() *cobra.Command {
 	deploymentListCmd.Flags().String("bundle", "", "Filter by bundle version (name@version) or release channel (name@latest)")
 
 	deploymentLogsCmd := &cobra.Command{
-		Use:     "logs <deployment-id>",
-		Short:   "Stream the log output from a deployment",
-		Example: `mass deployment logs 12345678-1234-1234-1234-123456789012`,
-		Long:    helpdocs.MustRender("deployment/logs"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runDeploymentLogs,
+		Use:   "logs <deployment-id>",
+		Short: "Stream the log output from a deployment",
+		Long:  helpdocs.MustRender("deployment/logs"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runDeploymentLogs,
 	}
 
 	deploymentAbortCmd := &cobra.Command{
-		Use:     "abort <deployment-id>",
-		Short:   "Abort a pending, approved, or running deployment",
-		Example: `mass deployment abort 12345678-1234-1234-1234-123456789012 --force`,
-		Long:    helpdocs.MustRender("deployment/abort"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runDeploymentAbort,
+		Use:   "abort <deployment-id>",
+		Short: "Abort a pending, approved, or running deployment",
+		Long:  helpdocs.MustRender("deployment/abort"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runDeploymentAbort,
 	}
 	deploymentAbortCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 
 	deploymentApproveCmd := &cobra.Command{
-		Use:     "approve <deployment-id>",
-		Short:   "Approve a proposed deployment, releasing it to run",
-		Example: `mass deployment approve 12345678-1234-1234-1234-123456789012`,
-		Long:    helpdocs.MustRender("deployment/approve"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runDeploymentApprove,
+		Use:   "approve <deployment-id>",
+		Short: "Approve a proposed deployment, releasing it to run",
+		Long:  helpdocs.MustRender("deployment/approve"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runDeploymentApprove,
 	}
 
 	deploymentRejectCmd := &cobra.Command{
-		Use:     "reject <deployment-id>",
-		Short:   "Reject a proposed deployment, discarding it permanently",
-		Example: `mass deployment reject 12345678-1234-1234-1234-123456789012`,
-		Long:    helpdocs.MustRender("deployment/reject"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runDeploymentReject,
+		Use:   "reject <deployment-id>",
+		Short: "Reject a proposed deployment, discarding it permanently",
+		Long:  helpdocs.MustRender("deployment/reject"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runDeploymentReject,
 	}
 
 	deploymentCompareCmd := &cobra.Command{
 		Use:     "compare <source-deployment-id> <target-deployment-id>",
 		Aliases: []string{"diff"},
 		Short:   "Compare two deployments' bundle version and params",
-		Example: `mass deployment compare 1111... 2222...`,
 		Long:    helpdocs.MustRender("deployment/compare"),
 		Args:    cobra.ExactArgs(2),
 		RunE:    runDeploymentCompare,

@@ -55,18 +55,6 @@ mass resource list --environment ecomm-prod -o json
 mass resource list [flags]
 ```
 
-### Examples
-
-```
-  # List all resources
-  mass resource list
-
-  # Search and filter
-  mass resource list --search database
-  mass resource list --type aws-iam-role --origin provisioned
-  mass resource list --environment ecomm-prod -o json
-```
-
 ### Options
 
 ```

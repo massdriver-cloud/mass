@@ -47,12 +47,6 @@ mass environment delete ecomm-staging --force
 mass environment delete [environment] [flags]
 ```
 
-### Examples
-
-```
-mass environment delete ecomm-staging
-```
-
 ### Options
 
 ```

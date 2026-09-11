@@ -39,12 +39,6 @@ mass deployment approve <proposed-deployment-id>
 mass instance rollback <deployment-id> [flags]
 ```
 
-### Examples
-
-```
-mass instance rollback 12345678-1234-1234-1234-123456789012
-```
-
 ### Options
 
 ```

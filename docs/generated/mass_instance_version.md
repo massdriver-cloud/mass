@@ -36,12 +36,6 @@ The version can be:
 mass instance version <instance-id>@<version> [flags]
 ```
 
-### Examples
-
-```
-mass instance version api-prod-db@latest
-```
-
 ### Options
 
 ```

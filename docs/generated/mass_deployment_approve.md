@@ -33,12 +33,6 @@ mass deployment approve 12345678-1234-1234-1234-123456789012
 mass deployment approve <deployment-id> [flags]
 ```
 
-### Examples
-
-```
-mass deployment approve 12345678-1234-1234-1234-123456789012
-```
-
 ### Options
 
 ```

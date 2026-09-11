@@ -41,12 +41,6 @@ mass component link ecomm-db.authentication ecomm-app.database \
 mass component link <from-component>.<from-field> <to-component>.<to-field> [flags]
 ```
 
-### Examples
-
-```
-mass component link ecomm-db.authentication ecomm-app.database --from-version ~1.0 --to-version ~2.0
-```
-
 ### Options
 
 ```

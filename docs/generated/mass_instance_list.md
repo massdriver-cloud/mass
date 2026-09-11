@@ -32,12 +32,6 @@ mass instance list ecomm-prod
 mass instance list <project>-<env> [flags]
 ```
 
-### Examples
-
-```
-mass instance list ecomm-prod
-```
-
 ### Options
 
 ```

@@ -60,17 +60,6 @@ mass resource download 12345678-1234-1234-1234-123456789012 --format json
 mass resource download [resource-id] [flags]
 ```
 
-### Examples
-
-```
-  # Download resource using UUID (imported resources)
-  mass resource download 12345678-1234-1234-1234-123456789012
-
-  # Download resource using friendly slug (provisioned resources)
-  mass resource download api-prod-database-connection
-  mass resource download network-useast1-vpc-network -f yaml
-```
-
 ### Options
 
 ```
