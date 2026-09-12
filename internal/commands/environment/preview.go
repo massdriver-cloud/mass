@@ -38,9 +38,8 @@ type PreviewConfig struct {
 	CopySecrets bool `json:"copySecrets,omitempty"`
 
 	// CopyRemoteReferences fans copyInstance's `copyRemoteReferences: true`
-	// across every package during the fork. The SDK does not yet expose a
-	// per-instance setRemoteReference, so override granularity stops at the
-	// fork-level macro for now.
+	// across every package during the fork. Per-instance `remoteReferences`
+	// overrides in `instances` still apply after this.
 	CopyRemoteReferences bool `json:"copyRemoteReferences,omitempty"`
 
 	// Attributes are key/value labels set on the forked environment. Required
@@ -74,15 +73,24 @@ type DefaultEntry struct {
 // Append `+dev` to pull from the development channel — e.g. `latest+dev` or
 // `~2.0+dev`.
 type InstanceOverride struct {
-	Version string          `json:"version,omitempty"`
-	Params  map[string]any  `json:"params,omitempty"`
-	Secrets []PreviewSecret `json:"secrets,omitempty"`
+	Version          string                   `json:"version,omitempty"`
+	Params           map[string]any           `json:"params,omitempty"`
+	Secrets          []PreviewSecret          `json:"secrets,omitempty"`
+	RemoteReferences []PreviewRemoteReference `json:"remoteReferences,omitempty"`
 }
 
 // PreviewSecret is a single secret override on an instance.
 type PreviewSecret struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+// PreviewRemoteReference binds one of an instance's connection slots to a
+// resource outside the preview env. `resourceId` is either a UUID or
+// `<instance>.<field>`; `field` names the connection slot on the instance.
+type PreviewRemoteReference struct {
+	ResourceID string `json:"resourceId"`
+	Field      string `json:"field"`
 }
 
 // PreviewOptions controls a single invocation of RunPreview.
@@ -107,6 +115,7 @@ type PreviewAPI interface {
 	CopyInstance(ctx context.Context, sourceID, destinationID string, input instances.CopyInput) (*types.Instance, error)
 	UpdateInstance(ctx context.Context, id string, input instances.UpdateInput) (*types.Instance, error)
 	SetInstanceSecret(ctx context.Context, instanceID, name, value string) error
+	SetInstanceRemoteReference(ctx context.Context, instanceID, resourceID, field string) error
 	DeployEnvironment(ctx context.Context, id string) (*types.Environment, error)
 }
 
@@ -137,6 +146,11 @@ func (s sdkPreviewAPI) SetInstanceSecret(ctx context.Context, instanceID, name, 
 	return err
 }
 
+func (s sdkPreviewAPI) SetInstanceRemoteReference(ctx context.Context, instanceID, resourceID, field string) error {
+	_, err := s.c.Instances.SetRemoteReference(ctx, instanceID, resourceID, field)
+	return err
+}
+
 func (s sdkPreviewAPI) DeployEnvironment(ctx context.Context, id string) (*types.Environment, error) {
 	return s.c.Environments.Deploy(ctx, id)
 }
@@ -145,7 +159,7 @@ func (s sdkPreviewAPI) DeployEnvironment(ctx context.Context, id string) (*types
 //
 //  1. Fork the base environment.
 //  2. Pin any environment defaults declared in the config.
-//  3. Apply per-instance overrides (version, params, secrets).
+//  3. Apply per-instance overrides (version, params, secrets, remote references).
 //  4. Trigger a deploy of every instance in dependency order.
 //
 // Every step but (4) is idempotent — re-running the command against the same
@@ -210,7 +224,7 @@ func RunPreview(ctx context.Context, api PreviewAPI, config *PreviewConfig, opts
 // applyInstanceOverride applies the per-instance configuration in `override`
 // to the preview env's instance. Order matters: params first (via copyInstance
 // from the base env's matching instance, so it deep-merges over the parent's
-// values), then version, then secrets.
+// values), then version, then secrets, then remote references.
 func applyInstanceOverride(ctx context.Context, api PreviewAPI, config *PreviewConfig, instanceID, localID string, override InstanceOverride) error {
 	if len(override.Params) > 0 {
 		sourceID := fmt.Sprintf("%s-%s-%s", config.Project, config.BaseEnvironment, localID)
@@ -234,6 +248,13 @@ func applyInstanceOverride(ctx context.Context, api PreviewAPI, config *PreviewC
 		}
 	}
 
+	for _, ref := range override.RemoteReferences {
+		fmt.Printf("🔗 Referencing `%s` as `%s` on `%s`\n", ref.ResourceID, ref.Field, instanceID)
+		if refErr := api.SetInstanceRemoteReference(ctx, instanceID, ref.ResourceID, ref.Field); refErr != nil {
+			return fmt.Errorf("set remote reference %s: %w", ref.Field, refErr)
+		}
+	}
+
 	return nil
 }
 
@@ -249,6 +270,9 @@ func applyInstanceOverride(ctx context.Context, api PreviewAPI, config *PreviewC
 //
 // and pick up `GITHUB_PR` from the CI runner. Undefined variables expand to
 // empty strings, matching `os.ExpandEnv`'s standard behavior.
+//
+// Unknown keys are an error so a typo or a key from an older schema fails
+// loudly instead of silently converging the wrong environment.
 func LoadPreviewConfig(path string) (*PreviewConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -256,7 +280,7 @@ func LoadPreviewConfig(path string) (*PreviewConfig, error) {
 	}
 	expanded := os.ExpandEnv(string(data))
 	cfg := &PreviewConfig{}
-	if unmarshalErr := yaml.Unmarshal([]byte(expanded), cfg); unmarshalErr != nil {
+	if unmarshalErr := yaml.UnmarshalStrict([]byte(expanded), cfg); unmarshalErr != nil {
 		return nil, fmt.Errorf("parse preview config: %w", unmarshalErr)
 	}
 	return cfg, nil
@@ -295,6 +319,14 @@ func validatePreviewConfig(config *PreviewConfig) error {
 		for i, secret := range override.Secrets {
 			if secret.Name == "" {
 				return fmt.Errorf("preview config: instances.%s.secrets[%d]: `name` is required", localID, i)
+			}
+		}
+		for i, ref := range override.RemoteReferences {
+			if ref.ResourceID == "" {
+				return fmt.Errorf("preview config: instances.%s.remoteReferences[%d]: `resourceId` is required", localID, i)
+			}
+			if ref.Field == "" {
+				return fmt.Errorf("preview config: instances.%s.remoteReferences[%d]: `field` is required", localID, i)
 			}
 		}
 	}

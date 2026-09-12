@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -32,6 +33,11 @@ instances:
     secrets:
       - name: STRIPE_KEY
         value: FOO
+    remoteReferences:
+      - resourceId: a1b2c3d4-0000-0000-0000-000000000000
+        field: kubernetes_cluster
+      - resourceId: demo-production-sharedvpc.vpc
+        field: vpc
 
   noOverrides:
 `
@@ -51,6 +57,9 @@ type stubPreviewAPI struct {
 	updateInputs []updateInstanceCall
 
 	setSecretCalls []setSecretCall
+
+	setRemoteReferenceCalls []setRemoteReferenceCall
+	setRemoteReferenceErr   error
 
 	deployed       string
 	deployErr      error
@@ -74,6 +83,10 @@ type updateInstanceCall struct {
 
 type setSecretCall struct {
 	instanceID, name, value string
+}
+
+type setRemoteReferenceCall struct {
+	instanceID, resourceID, field string
 }
 
 func (f *stubPreviewAPI) Fork(_ context.Context, parentID string, input environments.ForkInput) (*types.Environment, error) {
@@ -103,6 +116,11 @@ func (f *stubPreviewAPI) UpdateInstance(_ context.Context, id string, input inst
 func (f *stubPreviewAPI) SetInstanceSecret(_ context.Context, instanceID, name, value string) error {
 	f.setSecretCalls = append(f.setSecretCalls, setSecretCall{instanceID: instanceID, name: name, value: value})
 	return nil
+}
+
+func (f *stubPreviewAPI) SetInstanceRemoteReference(_ context.Context, instanceID, resourceID, field string) error {
+	f.setRemoteReferenceCalls = append(f.setRemoteReferenceCalls, setRemoteReferenceCall{instanceID: instanceID, resourceID: resourceID, field: field})
+	return f.setRemoteReferenceErr
 }
 
 func (f *stubPreviewAPI) DeployEnvironment(_ context.Context, id string) (*types.Environment, error) {
@@ -143,6 +161,45 @@ func TestLoadPreviewConfig_ParsesAllFields(t *testing.T) {
 	}
 	if len(chat.Secrets) != 1 || chat.Secrets[0].Name != "STRIPE_KEY" {
 		t.Errorf("chatdb secrets wrong: %+v", chat.Secrets)
+	}
+	wantRefs := []environment.PreviewRemoteReference{
+		{ResourceID: "a1b2c3d4-0000-0000-0000-000000000000", Field: "kubernetes_cluster"},
+		{ResourceID: "demo-production-sharedvpc.vpc", Field: "vpc"},
+	}
+	if !reflect.DeepEqual(chat.RemoteReferences, wantRefs) {
+		t.Errorf("chatdb remoteReferences = %+v, want %+v", chat.RemoteReferences, wantRefs)
+	}
+}
+
+func TestLoadPreviewConfig_RejectsUnknownKeys(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want string
+	}{
+		{
+			name: "top-level typo",
+			body: "project: demo\nbaseEnviroment: production\n",
+			want: "baseEnviroment",
+		},
+		{
+			name: "instance-level typo",
+			body: "project: demo\nbaseEnvironment: production\ninstances:\n  chatsvc:\n    remoteRefs:\n      - resourceId: x\n        field: y\n",
+			want: "remoteRefs",
+		},
+		{
+			name: "remote reference entry typo",
+			body: "project: demo\nbaseEnvironment: production\ninstances:\n  chatsvc:\n    remoteReferences:\n      - resource: x\n        field: y\n",
+			want: "resource",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := environment.LoadPreviewConfig(writeConfig(t, tt.body))
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Errorf("expected unknown-key error mentioning %q, got %v", tt.want, err)
+			}
+		})
 	}
 }
 
@@ -194,8 +251,66 @@ func TestRunPreview_HappyPath(t *testing.T) {
 	if len(api.setSecretCalls) != 1 || api.setSecretCalls[0].name != "STRIPE_KEY" {
 		t.Errorf("setSecret calls wrong: %+v", api.setSecretCalls)
 	}
+	wantRefs := []setRemoteReferenceCall{
+		{instanceID: "demo-pr123-chatdb", resourceID: "a1b2c3d4-0000-0000-0000-000000000000", field: "kubernetes_cluster"},
+		{instanceID: "demo-pr123-chatdb", resourceID: "demo-production-sharedvpc.vpc", field: "vpc"},
+	}
+	if !reflect.DeepEqual(api.setRemoteReferenceCalls, wantRefs) {
+		t.Errorf("setRemoteReference calls = %+v, want %+v", api.setRemoteReferenceCalls, wantRefs)
+	}
 	if api.deployed != "demo-pr123" {
 		t.Errorf("deployed = %q, want demo-pr123", api.deployed)
+	}
+}
+
+func TestRunPreview_RemoteReferenceValidation(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want string
+	}{
+		{
+			name: "missing resourceId",
+			body: "project: demo\nbaseEnvironment: production\ninstances:\n  chatsvc:\n    remoteReferences:\n      - field: vpc\n",
+			want: "instances.chatsvc.remoteReferences[0]: `resourceId` is required",
+		},
+		{
+			name: "missing field",
+			body: "project: demo\nbaseEnvironment: production\ninstances:\n  chatsvc:\n    remoteReferences:\n      - resourceId: demo-production-sharedvpc.vpc\n",
+			want: "instances.chatsvc.remoteReferences[0]: `field` is required",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := environment.LoadPreviewConfig(writeConfig(t, tt.body))
+			if err != nil {
+				t.Fatalf("LoadPreviewConfig: %v", err)
+			}
+			api := &stubPreviewAPI{}
+			_, runErr := environment.RunPreview(t.Context(), api, cfg, environment.PreviewOptions{ID: "pr1"})
+			if runErr == nil || !strings.Contains(runErr.Error(), tt.want) {
+				t.Errorf("expected %q, got %v", tt.want, runErr)
+			}
+			if api.forkParent != "" {
+				t.Error("fork should not run when validation fails")
+			}
+		})
+	}
+}
+
+func TestRunPreview_PropagatesRemoteReferenceFailure(t *testing.T) {
+	cfg, err := environment.LoadPreviewConfig(writeConfig(t, sampleConfig))
+	if err != nil {
+		t.Fatalf("LoadPreviewConfig: %v", err)
+	}
+
+	api := &stubPreviewAPI{setRemoteReferenceErr: errors.New("resource not found")}
+	_, runErr := environment.RunPreview(t.Context(), api, cfg, environment.PreviewOptions{ID: "pr1"})
+	if runErr == nil || !strings.Contains(runErr.Error(), "set remote reference kubernetes_cluster: resource not found") {
+		t.Errorf("expected remote reference error, got %v", runErr)
+	}
+	if api.deployCallsLen != 0 {
+		t.Error("deploy should not have been called after remote reference failure")
 	}
 }
 
