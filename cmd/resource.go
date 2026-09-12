@@ -14,7 +14,6 @@ import (
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/internal/cli"
 	"github.com/massdriver-cloud/mass/internal/commands/resource"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/resources"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/spf13/cobra"
@@ -192,7 +191,7 @@ func runResourceList(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -265,7 +264,7 @@ func runResourceCreate(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -294,7 +293,7 @@ func runResourceUpdate(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -313,7 +312,7 @@ func runResourceDelete(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -331,7 +330,7 @@ func runResourceGet(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -370,7 +369,7 @@ func runResourceDownload(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}

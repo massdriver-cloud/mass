@@ -19,6 +19,12 @@ mass bundle build [path] [flags]
   -h, --help                      help for build
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass bundle](/cli/commands/mass_bundle)	 - Generate and publish bundles

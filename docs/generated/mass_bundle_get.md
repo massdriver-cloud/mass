@@ -54,6 +54,12 @@ mass bundle get <bundle-name>[@<version>] [flags]
   -o, --output string   Output format (text or json) (default "text")
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass bundle](/cli/commands/mass_bundle)	 - Generate and publish bundles

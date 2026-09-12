@@ -21,6 +21,12 @@ mass environment update [environment] [flags]
   -n, --name string                 New environment name
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass environment](/cli/commands/mass_environment)	 - Environment management

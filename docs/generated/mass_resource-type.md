@@ -27,6 +27,12 @@ Resource types are used to:
   -h, --help   help for resource-type
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI

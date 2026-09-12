@@ -40,7 +40,7 @@ func NewCmdRepository() *cobra.Command {
 		Short:   "List OCI repositories",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
-			return runRepositoryList(&listInput, cmd.Flags().Changed("order"))
+			return runRepositoryList(cmd, &listInput, cmd.Flags().Changed("order"))
 		},
 	}
 	repositoryListCmd.Flags().StringVarP(&listInput.name, "name", "n", "", "Filter by exact repository name")
@@ -105,10 +105,10 @@ type repositoryListInput struct {
 	output    string
 }
 
-func runRepositoryList(input *repositoryListInput, orderChanged bool) error {
+func runRepositoryList(cmd *cobra.Command, input *repositoryListInput, orderChanged bool) error {
 	ctx := context.Background()
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -224,7 +224,7 @@ func runRepositoryGet(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -314,7 +314,7 @@ func runRepositoryCreate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -355,7 +355,7 @@ func runRepositoryUpdate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -394,7 +394,7 @@ func runRepositoryDelete(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}

@@ -55,6 +55,12 @@ mass component link ecomm-db.authentication ecomm-app.database --from-version ~1
       --to-version string     Version constraint for the destination component (default "latest")
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass component](/cli/commands/mass_component)	 - Manage components in a project's blueprint

@@ -55,6 +55,12 @@ mass component add ecomm aws-rds-cluster --id db --name "Primary Database"
   -n, --name string                 Display name (defaults to --id if not provided)
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass component](/cli/commands/mass_component)	 - Manage components in a project's blueprint

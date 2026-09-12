@@ -23,6 +23,12 @@ mass schema validate --schema=my-json-schema.json --document=my-document.json
   -h, --help   help for schema
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass](/cli/commands/mass)	 - Massdriver Cloud CLI

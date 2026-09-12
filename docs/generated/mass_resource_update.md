@@ -44,6 +44,12 @@ mass resource update [resource-id] [flags]
   -n, --name string   New resource name
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource](/cli/commands/mass_resource)	 - Manage resources

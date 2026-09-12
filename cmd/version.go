@@ -6,7 +6,6 @@ import (
 
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/mass/internal/version"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +39,7 @@ func runVersion(cmd *cobra.Command, args []string) {
 
 	// Best-effort: if we can authenticate, show the Massdriver server version too.
 	ctx := context.Background()
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return
 	}

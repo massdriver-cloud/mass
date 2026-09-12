@@ -48,6 +48,12 @@ mass resource-type convert <schema-file> [flags]
   -o, --output string   Path to write the massdriver.yaml (default: alongside the input file)
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management

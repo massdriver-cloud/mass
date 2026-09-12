@@ -203,7 +203,7 @@ func runEnvironmentExport(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -222,7 +222,7 @@ func runEnvironmentGet(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -263,7 +263,7 @@ func runEnvironmentList(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -377,7 +377,7 @@ func runEnvironmentCreate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -419,7 +419,7 @@ func runEnvironmentUpdate(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -462,7 +462,7 @@ func runEnvironmentDelete(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -503,7 +503,7 @@ func runEnvironmentDefault(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -555,7 +555,7 @@ func runEnvironmentPreview(cmd *cobra.Command, args []string) error {
 		return configErr
 	}
 
-	mdClient, mdClientErr := massdriver.NewClient()
+	mdClient, mdClientErr := newMassdriverClient(cmd)
 	if mdClientErr != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
@@ -619,7 +619,7 @@ func runEnvironmentFork(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := massdriver.NewClient()
+	mdClient, mdClientErr := newMassdriverClient(cmd)
 	if mdClientErr != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
@@ -655,7 +655,7 @@ func runEnvironmentDeploy(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := massdriver.NewClient()
+	mdClient, mdClientErr := newMassdriverClient(cmd)
 	if mdClientErr != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
@@ -685,7 +685,7 @@ func runEnvironmentDecommission(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, mdClientErr := massdriver.NewClient()
+	mdClient, mdClientErr := newMassdriverClient(cmd)
 	if mdClientErr != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", mdClientErr)
 	}
@@ -720,7 +720,7 @@ func runEnvironmentCompare(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}

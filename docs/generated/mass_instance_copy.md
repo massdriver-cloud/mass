@@ -83,6 +83,12 @@ mass instance promote ecomm-staging-db --to ecomm-production-db --copy-secrets
       --to string                Destination instance (required). Must be built from the same component as the source.
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass instance](/cli/commands/mass_instance)	 - Manage instances of IaC deployed in environments.

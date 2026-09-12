@@ -21,6 +21,12 @@ mass project update [project] [flags]
   -n, --name string                 New project name
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass project](/cli/commands/mass_project)	 - Project management

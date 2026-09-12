@@ -25,6 +25,12 @@ mass bundle create aws-aurora-postgres -a owner=data,service=database
   -h, --help                        help for create
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass bundle](/cli/commands/mass_bundle)	 - Generate and publish bundles

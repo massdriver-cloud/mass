@@ -11,7 +11,6 @@ import (
 	"github.com/massdriver-cloud/mass/internal/jsonschema"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/mass/internal/resourcetype"
-	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/spf13/cobra"
 )
 
@@ -75,7 +74,7 @@ func runSchemaDereference(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to decode JSON schema: %w", err)
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}

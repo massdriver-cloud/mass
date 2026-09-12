@@ -30,6 +30,12 @@ See `mass instance remote-reference set --help` and `mass instance remote-refere
   -h, --help   help for remote-reference
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass instance](/cli/commands/mass_instance)	 - Manage instances of IaC deployed in environments.

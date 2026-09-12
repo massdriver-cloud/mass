@@ -56,6 +56,12 @@ mass project list [flags]
       --search string   Free-text search across project name and description
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass project](/cli/commands/mass_project)	 - Project management

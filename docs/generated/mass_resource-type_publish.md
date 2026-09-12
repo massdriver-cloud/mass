@@ -79,6 +79,12 @@ mass resource-type publish ./my-resource-type
   -h, --help   help for publish
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management

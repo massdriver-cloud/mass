@@ -53,6 +53,12 @@ mass deployment list ecomm-prod-db --limit 25
       --status string   Filter by status (pending, approved, running, completed, failed, aborted, rejected, proposed)
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass deployment](/cli/commands/mass_deployment)	 - Manage deployments

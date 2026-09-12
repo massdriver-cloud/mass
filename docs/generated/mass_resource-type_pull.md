@@ -47,6 +47,12 @@ mass resource-type pull <resource-type>[@<version>] [flags]
   -h, --help               help for pull
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management

@@ -54,6 +54,12 @@ mass instance remote-reference set ecomm-prod-api database ecomm-prod-db.postgre
   -h, --help   help for set
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass instance remote-reference](/cli/commands/mass_instance_remote-reference)	 - Manage an instance's remote-reference connection overrides
