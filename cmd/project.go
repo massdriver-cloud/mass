@@ -92,12 +92,11 @@ func NewCmdProject() *cobra.Command {
 	projectDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 
 	projectCloneCmd := &cobra.Command{
-		Use:     "clone [source-project] [new-id]",
-		Short:   "Clone a project's blueprint into a new project",
-		Example: `mass project clone ecomm ecomm-copy`,
-		Long:    helpdocs.MustRender("project/clone"),
-		Args:    cobra.ExactArgs(2),
-		RunE:    runProjectClone,
+		Use:   "clone [source-project] [new-id]",
+		Short: "Clone a project's blueprint into a new project",
+		Long:  helpdocs.MustRender("project/clone"),
+		Args:  cobra.ExactArgs(2),
+		RunE:  runProjectClone,
 	}
 	projectCloneCmd.Flags().StringP("name", "n", "", "New project name (defaults to new-id if not provided)")
 	projectCloneCmd.Flags().StringP("description", "d", "", "Optional project description")

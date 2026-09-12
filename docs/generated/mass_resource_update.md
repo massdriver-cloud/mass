@@ -17,23 +17,21 @@ Update the payload of an imported resource. This command only works for imported
 ## Examples
 
 ```shell
-mass resource update <resource-id> -f <file>
-mass resource update <resource-id> -f <file> -n <new-name>
+# Update the resource payload
+mass resource update 12345678-1234-1234-1234-123456789012 -f resource.json
+
+# Update the payload and rename the resource
+mass resource update 12345678-1234-1234-1234-123456789012 -f resource.json -n new-name
 ```
+
+## Options
+
+- `--file, -f`: Path to the JSON file holding the new payload
+- `--name, -n`: New name for the resource
 
 
 ```
 mass resource update [resource-id] [flags]
-```
-
-### Examples
-
-```
-  # Update resource payload
-  mass resource update 12345678-1234-1234-1234-123456789012 -f resource.json
-
-  # Update resource payload and rename
-  mass resource update 12345678-1234-1234-1234-123456789012 -f resource.json -n new-name
 ```
 
 ### Options

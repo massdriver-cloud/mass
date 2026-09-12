@@ -45,17 +45,14 @@ mass environment deploy ecomm-staging
 # Deploy a freshly-forked preview env.
 mass environment fork ecomm-production pr42 --copy-environment-defaults
 mass environment deploy ecomm-pr42
+
+# Stream every instance's logs until the rollout finishes.
+mass environment deploy ecomm-staging --follow
 ```
 
 
 ```
 mass environment deploy [environment] [flags]
-```
-
-### Examples
-
-```
-mass environment deploy ecomm-staging --follow
 ```
 
 ### Options

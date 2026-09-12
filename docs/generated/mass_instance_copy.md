@@ -67,12 +67,6 @@ mass instance copy ecomm-staging-db \
 mass instance copy [source] --to [destination] [flags]
 ```
 
-### Examples
-
-```
-mass instance promote ecomm-staging-db --to ecomm-production-db --copy-secrets
-```
-
 ### Options
 
 ```

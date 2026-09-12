@@ -397,6 +397,14 @@ linters:
         # Omit embedded fields from selector expression.
         # https://staticcheck.dev/docs/checks/#QF1008
         - -QF1008
+        # The doc-comment-form family: a comment on an exported symbol must
+        # begin with its name. Off for the same reason as revive's `exported`
+        # rule above — this module is a binary, not a library, so a comment
+        # here is free-form prose rather than generated API documentation.
+        # https://staticcheck.dev/docs/checks/#ST1020
+        - -ST1020
+        - -ST1021
+        - -ST1022
 
     usetesting:
       # Enable/disable `os.TempDir()` detections.
@@ -417,6 +425,10 @@ linters:
     # Allow unused params at the cobra command level
     - linters: [revive]
       text: "unused-parameter: parameter ('cmd'|'args') seems to be unused, consider removing or renaming it as _"
+    # This module ships a CLI binary, not a library. Nothing here is importable
+    # API, so doc comments are a judgement call rather than a requirement.
+    - linters: [revive]
+      text: "^exported:"
     - path: "_test\\.go"
       linters:
         - revive

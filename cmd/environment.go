@@ -110,12 +110,11 @@ func NewCmdEnvironment() *cobra.Command {
 
 func newEnvironmentDeleteCmd() *cobra.Command {
 	c := &cobra.Command{
-		Use:     "delete [environment]",
-		Short:   "Delete an environment",
-		Example: `mass environment delete ecomm-staging`,
-		Long:    helpdocs.MustRender("environment/delete"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runEnvironmentDelete,
+		Use:   "delete [environment]",
+		Short: "Delete an environment",
+		Long:  helpdocs.MustRender("environment/delete"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runEnvironmentDelete,
 	}
 	c.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	return c
@@ -126,7 +125,6 @@ func newEnvironmentCompareCmd() *cobra.Command {
 		Use:     "compare [source-environment] [target-environment]",
 		Aliases: []string{"diff"},
 		Short:   "Compare two environments instance-by-instance",
-		Example: `mass environment compare ecomm-staging ecomm-production`,
 		Long:    helpdocs.MustRender("environment/compare"),
 		Args:    cobra.ExactArgs(2),
 		RunE:    runEnvironmentCompare,
@@ -154,12 +152,11 @@ func newEnvironmentPreviewCmd() *cobra.Command {
 
 func newEnvironmentForkCmd() *cobra.Command {
 	c := &cobra.Command{
-		Use:     "fork [parent-environment] [new-ID]",
-		Short:   "Fork an existing environment",
-		Example: `mass environment fork ecomm-production staging`,
-		Long:    helpdocs.MustRender("environment/fork"),
-		Args:    cobra.ExactArgs(2),
-		RunE:    runEnvironmentFork,
+		Use:   "fork [parent-environment] [new-ID]",
+		Short: "Fork an existing environment",
+		Long:  helpdocs.MustRender("environment/fork"),
+		Args:  cobra.ExactArgs(2),
+		RunE:  runEnvironmentFork,
 	}
 	c.Flags().StringP("name", "n", "", "Environment name (defaults to new-ID if not provided)")
 	c.Flags().StringP("description", "d", "", "Optional environment description")
@@ -172,12 +169,11 @@ func newEnvironmentForkCmd() *cobra.Command {
 
 func newEnvironmentDeployCmd() *cobra.Command {
 	c := &cobra.Command{
-		Use:     "deploy [environment]",
-		Short:   "Deploy every instance in an environment, in dependency order",
-		Example: `mass environment deploy ecomm-staging --follow`,
-		Long:    helpdocs.MustRender("environment/deploy"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runEnvironmentDeploy,
+		Use:   "deploy [environment]",
+		Short: "Deploy every instance in an environment, in dependency order",
+		Long:  helpdocs.MustRender("environment/deploy"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runEnvironmentDeploy,
 	}
 	c.Flags().Bool("follow", false, "Stream every deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
 	return c
@@ -185,12 +181,11 @@ func newEnvironmentDeployCmd() *cobra.Command {
 
 func newEnvironmentDecommissionCmd() *cobra.Command {
 	c := &cobra.Command{
-		Use:     "decommission [environment]",
-		Short:   "Decommission every instance in an environment, in reverse dependency order",
-		Example: `mass environment decommission ecomm-pr42 --follow`,
-		Long:    helpdocs.MustRender("environment/decommission"),
-		Args:    cobra.ExactArgs(1),
-		RunE:    runEnvironmentDecommission,
+		Use:   "decommission [environment]",
+		Short: "Decommission every instance in an environment, in reverse dependency order",
+		Long:  helpdocs.MustRender("environment/decommission"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runEnvironmentDecommission,
 	}
 	c.Flags().Bool("follow", false, "Stream every decommission deployment's logs to stdout until the rollout completes. Each line is prefixed with the instance id.")
 	return c

@@ -47,12 +47,6 @@ mass environment compare ecomm-staging ecomm-production -o json
 mass environment compare [source-environment] [target-environment] [flags]
 ```
 
-### Examples
-
-```
-mass environment compare ecomm-staging ecomm-production
-```
-
 ### Options
 
 ```

@@ -42,12 +42,6 @@ mass instance remote-reference set ecomm-prod-api database 12345678-1234-1234-12
 mass instance remote-reference set <instance-id> <field> <resource-id> [flags]
 ```
 
-### Examples
-
-```
-mass instance remote-reference set ecomm-prod-api database ecomm-prod-db.postgres
-```
-
 ### Options
 
 ```

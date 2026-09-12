@@ -35,12 +35,6 @@ mass deployment list ecomm-prod-db --limit 50
 mass deployment list <instance-id> [flags]
 ```
 
-### Examples
-
-```
-mass deployment list ecomm-prod-db --limit 25
-```
-
 ### Options
 
 ```

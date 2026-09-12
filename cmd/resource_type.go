@@ -37,12 +37,11 @@ func NewCmdType() *cobra.Command {
 	}
 
 	typeCreateCmd := &cobra.Command{
-		Use:     "create <name>",
-		Short:   "Create a new resource type OCI repository in your organization's catalog",
-		Long:    helpdocs.MustRender("type/create"),
-		Example: `mass resource-type create my-resource-type -a owner=data,service=database`,
-		Args:    cobra.ExactArgs(1),
-		RunE:    runTypeCreate,
+		Use:   "create <name>",
+		Short: "Create a new resource type OCI repository in your organization's catalog",
+		Long:  helpdocs.MustRender("type/create"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runTypeCreate,
 	}
 	typeCreateCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes (e.g. -a owner=data,service=database)")
 
@@ -70,7 +69,6 @@ func NewCmdType() *cobra.Command {
 		Aliases: []string{"push"},
 		Short:   "Publish a resource type to Massdriver",
 		Long:    helpdocs.MustRender("type/publish"),
-		Example: `mass resource-type publish ./my-resource-type`,
 		Args:    cobra.MaximumNArgs(1),
 		RunE:    runTypePublish,
 	}

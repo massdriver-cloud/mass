@@ -67,12 +67,6 @@ mass resource-type convert ./my-resource-type.json
 mass resource-type publish [path] [flags]
 ```
 
-### Examples
-
-```
-mass resource-type publish ./my-resource-type
-```
-
 ### Options
 
 ```

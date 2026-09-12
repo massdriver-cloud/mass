@@ -47,12 +47,6 @@ mass deployment compare 1111... 2222... -o json
 mass deployment compare <source-deployment-id> <target-deployment-id> [flags]
 ```
 
-### Examples
-
-```
-mass deployment compare 1111... 2222...
-```
-
 ### Options
 
 ```

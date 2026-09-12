@@ -41,12 +41,6 @@ mass instance orphan api-prod-db --delete-state
 mass instance orphan <project>-<env>-<manifest> [flags]
 ```
 
-### Examples
-
-```
-mass instance orphan api-prod-db --force
-```
-
 ### Options
 
 ```

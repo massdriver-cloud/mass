@@ -36,12 +36,6 @@ The instance slug can be found by hovering over the bundle in the Massdriver dia
 mass instance get  <project>-<env>-<manifest> [flags]
 ```
 
-### Examples
-
-```
-mass instance get ecomm-prod-vpc
-```
-
 ### Options
 
 ```

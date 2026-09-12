@@ -31,12 +31,6 @@ mass deployment logs 12345678-1234-1234-1234-123456789012
 mass deployment logs <deployment-id> [flags]
 ```
 
-### Examples
-
-```
-mass deployment logs 12345678-1234-1234-1234-123456789012
-```
-
 ### Options
 
 ```

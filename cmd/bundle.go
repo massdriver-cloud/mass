@@ -167,11 +167,11 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 	bundleTemplateListCmd.Flags().StringP("output", "o", "text", "Output format (text, json)")
 
 	bundleCreateCmd := &cobra.Command{
-		Use:     "create <name>",
-		Short:   "Create a new bundle OCI repository in your organization's catalog",
-		Example: `mass bundle create aws-aurora-postgres -a owner=data,service=database`,
-		Args:    cobra.ExactArgs(1),
-		RunE:    runBundleCreate,
+		Use:   "create <name>",
+		Short: "Create a new bundle OCI repository in your organization's catalog",
+		Long:  helpdocs.MustRender("bundle/create"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runBundleCreate,
 	}
 	bundleCreateCmd.Flags().StringToStringP("attributes", "a", nil, "Custom attributes (e.g. -a owner=data,service=database)")
 

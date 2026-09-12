@@ -74,12 +74,6 @@ mass instance deploy ecomm-prod-db --propose --message "bump db to 13.4" --patch
 mass instance deploy <project>-<env>-<manifest> [flags]
 ```
 
-### Examples
-
-```
-mass instance deploy ecomm-prod-vpc
-```
-
 ### Options
 
 ```

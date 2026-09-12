@@ -46,12 +46,6 @@ mass project clone ecomm ecomm-eu -n "Ecomm (EU)" -a region=eu
 mass project clone [source-project] [new-id] [flags]
 ```
 
-### Examples
-
-```
-mass project clone ecomm ecomm-copy
-```
-
 ### Options
 
 ```

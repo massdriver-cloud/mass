@@ -35,12 +35,6 @@ mass instance remote-reference remove ecomm-prod-api database
 mass instance remote-reference remove <instance-id> <field> [flags]
 ```
 
-### Examples
-
-```
-mass instance remote-reference remove ecomm-prod-api database
-```
-
 ### Options
 
 ```

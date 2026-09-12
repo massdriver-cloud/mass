@@ -51,12 +51,6 @@ mass instance export web-prod-app
 mass instance export <project>-<env>-<manifest> [flags]
 ```
 
-### Examples
-
-```
-mass instance export ecomm-prod-vpc
-```
-
 ### Options
 
 ```

@@ -23,12 +23,11 @@ func NewCmdComponent() *cobra.Command {
 	}
 
 	componentAddCmd := &cobra.Command{
-		Use:     "add <project-id> <bundle-oci-repo-name>",
-		Short:   "Add a component to a project's blueprint",
-		Example: `mass component add ecomm aws-rds-cluster --id db --name "Primary Database"`,
-		Long:    helpdocs.MustRender("component/add"),
-		Args:    cobra.ExactArgs(2),
-		RunE:    runComponentAdd,
+		Use:   "add <project-id> <bundle-oci-repo-name>",
+		Short: "Add a component to a project's blueprint",
+		Long:  helpdocs.MustRender("component/add"),
+		Args:  cobra.ExactArgs(2),
+		RunE:  runComponentAdd,
 	}
 	componentAddCmd.Flags().String("id", "", "Short identifier for this component (e.g., db). Max 20 chars, lowercase alphanumeric.")
 	componentAddCmd.Flags().StringP("name", "n", "", "Display name (defaults to --id if not provided)")
@@ -37,11 +36,11 @@ func NewCmdComponent() *cobra.Command {
 	_ = componentAddCmd.MarkFlagRequired("id")
 
 	componentUpdateCmd := &cobra.Command{
-		Use:     "update <component-id>",
-		Short:   "Update a component's name, description, or attributes",
-		Example: `mass component update ecomm-db --name "Primary DB" -a priority=high`,
-		Args:    cobra.ExactArgs(1),
-		RunE:    runComponentUpdate,
+		Use:   "update <component-id>",
+		Short: "Update a component's name, description, or attributes",
+		Long:  helpdocs.MustRender("component/update"),
+		Args:  cobra.ExactArgs(1),
+		RunE:  runComponentUpdate,
 	}
 	componentUpdateCmd.Flags().StringP("name", "n", "", "New display name")
 	componentUpdateCmd.Flags().StringP("description", "d", "", "New description")
@@ -51,30 +50,27 @@ func NewCmdComponent() *cobra.Command {
 		Use:     "remove <component-id>",
 		Aliases: []string{"rm"},
 		Short:   "Remove a component from a project's blueprint",
-		Example: `mass component remove ecomm-db`,
 		Long:    helpdocs.MustRender("component/remove"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runComponentRemove,
 	}
 
 	componentLinkCmd := &cobra.Command{
-		Use:     "link <from-component>.<from-field> <to-component>.<to-field>",
-		Short:   "Link two components in a project's blueprint",
-		Example: `mass component link ecomm-db.authentication ecomm-app.database --from-version ~1.0 --to-version ~2.0`,
-		Long:    helpdocs.MustRender("component/link"),
-		Args:    cobra.ExactArgs(2),
-		RunE:    runComponentLink,
+		Use:   "link <from-component>.<from-field> <to-component>.<to-field>",
+		Short: "Link two components in a project's blueprint",
+		Long:  helpdocs.MustRender("component/link"),
+		Args:  cobra.ExactArgs(2),
+		RunE:  runComponentLink,
 	}
 	componentLinkCmd.Flags().String("from-version", "latest", "Version constraint for the source component")
 	componentLinkCmd.Flags().String("to-version", "latest", "Version constraint for the destination component")
 
 	componentUnlinkCmd := &cobra.Command{
-		Use:     "unlink <from-component>.<from-field> <to-component>.<to-field>",
-		Short:   "Remove a link between two components",
-		Example: `mass component unlink ecomm-db.authentication ecomm-app.database`,
-		Long:    helpdocs.MustRender("component/unlink"),
-		Args:    cobra.ExactArgs(2),
-		RunE:    runComponentUnlink,
+		Use:   "unlink <from-component>.<from-field> <to-component>.<to-field>",
+		Short: "Remove a link between two components",
+		Long:  helpdocs.MustRender("component/unlink"),
+		Args:  cobra.ExactArgs(2),
+		RunE:  runComponentUnlink,
 	}
 
 	componentCmd.AddCommand(componentAddCmd)
