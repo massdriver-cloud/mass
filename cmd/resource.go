@@ -450,7 +450,7 @@ func newResourceGrantCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
-			return runResourceGrantCreate(args[0], &createInput)
+			return runResourceGrantCreate(cmd, args[0], &createInput)
 		},
 	}
 	resourceGrantCreateCmd.Flags().StringArrayVar(&createInput.conditions, "condition", nil, "Recipient environment attribute condition; repeat a key to accept a set of values, or write key=* to accept any value")
@@ -483,7 +483,7 @@ func newResourceGrantCmd() *cobra.Command {
 	return resourceGrantCmd
 }
 
-func runResourceGrantCreate(resourceID string, input *resourceGrantCreateInput) error {
+func runResourceGrantCreate(cmd *cobra.Command, resourceID string, input *resourceGrantCreateInput) error {
 	ctx := context.Background()
 
 	action, err := grants.ResolveResourceAction(input.action)
@@ -495,7 +495,7 @@ func runResourceGrantCreate(resourceID string, input *resourceGrantCreateInput) 
 		return err
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -523,7 +523,7 @@ func runResourceGrantList(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -542,7 +542,7 @@ func runResourceGrantDelete(cmd *cobra.Command, args []string) error {
 		return validateErr
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}

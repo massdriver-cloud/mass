@@ -84,6 +84,12 @@ mass resource grant create <resource-id> [flags]
   -h, --help                     help for create
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass resource grant](/cli/commands/mass_resource_grant)	 - Manage sharing grants on a resource
