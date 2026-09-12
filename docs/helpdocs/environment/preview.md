@@ -88,6 +88,13 @@ instances:
     secrets:
       - name: STRIPE_KEY
         value: FOO
+    # Bind connection slots to resources outside this env. `resourceId` is a
+    # UUID (imported resource) or `<instance>.<field>` (provisioned resource).
+    remoteReferences:
+      - resourceId: 161aeb95-e1c5-4f8d-803e-ef82087d7ad4
+        field: kubernetes_cluster
+      - resourceId: demo-production-chatdb.hostname
+        field: database
 
   # listed without overrides — inherit from the fork
   imported:
