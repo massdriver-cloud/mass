@@ -447,7 +447,7 @@ func newRepositoryGrantCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
-			return runRepositoryGrantCreate(args[0], &createInput)
+			return runRepositoryGrantCreate(cmd, args[0], &createInput)
 		},
 	}
 	repositoryGrantCreateCmd.Flags().StringArrayVar(&createInput.conditions, "condition", nil, "Recipient project attribute condition; repeat a key to accept a set of values, or write key=* to accept any value")
@@ -480,7 +480,7 @@ func newRepositoryGrantCmd() *cobra.Command {
 	return repositoryGrantCmd
 }
 
-func runRepositoryGrantCreate(name string, input *repositoryGrantCreateInput) error {
+func runRepositoryGrantCreate(cmd *cobra.Command, name string, input *repositoryGrantCreateInput) error {
 	ctx := context.Background()
 
 	action, err := grants.ResolveRepoAction(input.action)
@@ -492,7 +492,7 @@ func runRepositoryGrantCreate(name string, input *repositoryGrantCreateInput) er
 		return err
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -520,7 +520,7 @@ func runRepositoryGrantList(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceUsage = true
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
@@ -539,7 +539,7 @@ func runRepositoryGrantDelete(cmd *cobra.Command, args []string) error {
 		return validateErr
 	}
 
-	mdClient, err := massdriver.NewClient()
+	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}

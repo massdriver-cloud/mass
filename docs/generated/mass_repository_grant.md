@@ -38,6 +38,12 @@ mass repository grant delete <grant-id>
   -h, --help   help for grant
 ```
 
+### Options inherited from parent commands
+
+```
+      --profile string   Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)
+```
+
 ### SEE ALSO
 
 * [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and resource types)
