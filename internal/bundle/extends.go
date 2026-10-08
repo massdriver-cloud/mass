@@ -185,7 +185,9 @@ func mergeApp(parent, child map[string]any, ref ParentRef) (map[string]any, []st
 		if err != nil {
 			return nil, nil, err
 		}
-		merged[section] = combined
+		if len(combined) > 0 {
+			merged[section] = combined
+		}
 	}
 
 	policies, _ := parentApp["policies"].([]any)

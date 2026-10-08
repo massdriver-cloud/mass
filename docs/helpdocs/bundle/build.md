@@ -23,7 +23,7 @@ dependencies:
     required: true
 app:
   envs:
-    DB_HOST: .dependencies.db.data.infrastructure.host
+    DB_HOST: .dependencies.db.host
   secrets:
     STRIPE_KEY:
       required: true
