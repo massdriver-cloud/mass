@@ -165,6 +165,7 @@ func copyDocFiles(childDir, buildDir string) error {
 		if err != nil {
 			return err
 		}
+		// #nosec G703 -- name comes from the fixed DocFiles list, not user input
 		if err = os.WriteFile(filepath.Join(buildDir, name), data, 0o600); err != nil {
 			return err
 		}
