@@ -132,7 +132,7 @@ func RunExtends(ctx context.Context, api ExtendsAPI, childDir, buildDir string, 
 		return true, fmt.Errorf("reading parent bundle %s@%s: %w", name, version, err)
 	}
 
-	merged, warnings, err := bundle.MergeExtends(parent, child, bundle.ParentRef{
+	merge, err := bundle.MergeExtends(parent, child, bundle.ParentRef{
 		Name:       name,
 		Constraint: constraint,
 		Version:    version,
@@ -141,19 +141,44 @@ func RunExtends(ctx context.Context, api ExtendsAPI, childDir, buildDir string, 
 	if err != nil {
 		return true, err
 	}
-	for _, w := range warnings {
+	for _, w := range merge.Warnings {
 		fmt.Fprintln(out, prettylogs.Orange("Warning: "+w))
 	}
 
-	mergedBytes, err := yaml.Marshal(merged)
+	mergedBytes, err := yaml.Marshal(merge.Spec)
 	if err != nil {
 		return true, err
 	}
 	if err = os.WriteFile(filepath.Join(buildDir, "massdriver.yaml"), mergedBytes, 0o600); err != nil {
 		return true, err
 	}
+	if err = writeStepResources(buildDir, merge.StepResources); err != nil {
+		return true, err
+	}
 
 	return true, copyDocFiles(childDir, buildDir)
+}
+
+func writeStepResources(buildDir string, resources []bundle.StepResource) error {
+	// Provisioners publish every resource_<field>.jq (or legacy
+	// artifact_<field>.jq) in a step's directory after that step applies.
+	for _, r := range resources {
+		stepDir := filepath.Join(buildDir, r.Step)
+		for _, prefix := range []string{"resource_", "artifact_"} {
+			existing := filepath.Join(stepDir, prefix+r.Field+".jq")
+			if _, err := os.Stat(existing); err == nil {
+				return fmt.Errorf("parent step '%s' already emits resource '%s' (%s)", r.Step, r.Field, prefix+r.Field+".jq")
+			}
+		}
+		if err := os.MkdirAll(stepDir, 0o750); err != nil {
+			return err
+		}
+		// #nosec G703 -- MergeExtends restricts Step to a local path and Field to [A-Za-z0-9_-]
+		if err := os.WriteFile(filepath.Join(stepDir, "resource_"+r.Field+".jq"), []byte(r.Query), 0o600); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func copyDocFiles(childDir, buildDir string) error {

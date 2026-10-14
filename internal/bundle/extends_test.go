@@ -95,12 +95,13 @@ func TestMergeExtends(t *testing.T) {
 	ref := bundle.ParentRef{Name: "lambda", Constraint: "~1.2", Version: "1.2.7", Digest: "sha256:abc"}
 
 	tests := []struct {
-		name         string
-		child        string
-		parent       string
-		wantErr      string
-		wantWarnings []string
-		check        func(t *testing.T, merged map[string]any)
+		name              string
+		child             string
+		parent            string
+		wantErr           string
+		wantWarnings      []string
+		wantStepResources []bundle.StepResource
+		check             func(t *testing.T, merged map[string]any)
 	}{
 		{
 			name: "child identity and additions overlay the parent",
@@ -187,8 +188,79 @@ app:
 		},
 		{
 			name:    "child sets a parent-owned key",
-			child:   "name: app\nversion: 0.1.0\nsteps:\n  - path: src\n    provisioner: helm\nparams:\n  properties: {}\n",
-			wantErr: "remove: params, steps",
+			child:   "name: app\nversion: 0.1.0\nparams:\n  properties: {}\nui: {}\n",
+			wantErr: "remove: params, ui",
+		},
+		{
+			name: "child resource is emitted by a parent step",
+			child: `
+name: billing-api
+version: 0.1.0
+resources:
+  billing:
+    resource_type: billing-api@~1
+    required: true
+steps:
+  - path: src
+    resources:
+      billing: '{url: .outputs.url}'
+`,
+			wantStepResources: []bundle.StepResource{{Step: "src", Field: "billing", Query: "{url: .outputs.url}"}},
+			check: func(t *testing.T, merged map[string]any) {
+				want := mustYAML(t, `
+steps:
+  - path: src
+    provisioner: opentofu
+    resources:
+      billing: '{url: .outputs.url}'
+resources:
+  function:
+    resource_type: aws-lambda@1.0.0
+    required: true
+  billing:
+    resource_type: billing-api@~1
+    required: true
+`)
+				if !reflect.DeepEqual(merged["steps"], want["steps"]) || !reflect.DeepEqual(merged["resources"], want["resources"]) {
+					t.Errorf("steps = %v, resources = %v", merged["steps"], merged["resources"])
+				}
+			},
+		},
+		{
+			name:    "child step overrides the provisioner",
+			child:   "name: app\nversion: 0.1.0\nsteps:\n  - path: src\n    provisioner: helm\n",
+			wantErr: "may only set path and resources; remove: provisioner",
+		},
+		{
+			name:    "child step names a step the parent lacks",
+			child:   "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: chart\n    resources:\n      billing: .outputs\n",
+			wantErr: "step 'chart' is not a step of the parent bundle",
+		},
+		{
+			name:    "resource collides with a parent resource",
+			child:   "name: app\nversion: 0.1.0\nresources:\n  function:\n    resource_type: aws-lambda@1.0.0\n",
+			wantErr: "resource 'function' is already defined by the parent bundle",
+		},
+		{
+			name:    "resource no step emits",
+			child:   "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\n",
+			wantErr: "resource 'billing' is not emitted by any step",
+		},
+		{
+			name:    "step template for an undeclared resource",
+			child:   "name: app\nversion: 0.1.0\nsteps:\n  - path: src\n    resources:\n      billing: .outputs\n",
+			wantErr: "steps[src].resources 'billing' is not declared",
+		},
+		{
+			name:    "step template field unsafe for a file name",
+			child:   "name: app\nversion: 0.1.0\nresources:\n  ../x:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      ../x: .outputs\n",
+			wantErr: "must contain only letters, digits",
+		},
+		{
+			name:              "step template reads dependencies",
+			child:             "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing: '{vpc: .dependencies.network.id}'\n",
+			wantWarnings:      []string{"steps[src].resources.billing reads .dependencies; resource templates receive dependencies as .connections"},
+			wantStepResources: []bundle.StepResource{{Step: "src", Field: "billing", Query: "{vpc: .dependencies.network.id}"}},
 		},
 		{
 			name:    "child omits version",
@@ -261,7 +333,7 @@ app:
 			if tc.parent != "" {
 				parent = tc.parent
 			}
-			merged, warnings, err := bundle.MergeExtends(mustYAML(t, parent), mustYAML(t, tc.child), ref)
+			merge, err := bundle.MergeExtends(mustYAML(t, parent), mustYAML(t, tc.child), ref)
 			if tc.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
 					t.Fatalf("err = %v, want containing %q", err, tc.wantErr)
@@ -271,11 +343,14 @@ app:
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if !reflect.DeepEqual(warnings, tc.wantWarnings) {
-				t.Errorf("warnings = %q, want %q", warnings, tc.wantWarnings)
+			if !reflect.DeepEqual(merge.Warnings, tc.wantWarnings) {
+				t.Errorf("warnings = %q, want %q", merge.Warnings, tc.wantWarnings)
+			}
+			if !reflect.DeepEqual(merge.StepResources, tc.wantStepResources) {
+				t.Errorf("step resources = %+v, want %+v", merge.StepResources, tc.wantStepResources)
 			}
 			if tc.check != nil {
-				tc.check(t, merged)
+				tc.check(t, merge.Spec)
 			}
 		})
 	}

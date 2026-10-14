@@ -35,10 +35,33 @@ The parent supplies `steps`, `params`, `ui`, `resources`, and its IaC. The child
 
 - `name`, `version` (required), `description`, and `source_url`
 - `dependencies`, added to the parent's
+- `resources`, added to the parent's, each emitted by a jq template on one of the parent's steps
 - `app` `envs`, `secrets`, and `policies`, added to the parent's
 - `README.md`, `CHANGELOG.md`, `icon.svg`, and `operator.md`, replacing the parent's
 
-Any other key in the child is an error, as is a dependency, env, or secret name the parent already uses. An `app.envs` expression must reference params and dependencies that exist in the merged bundle.
+Any other key in the child is an error, as is a dependency, resource, env, or secret name the parent already uses. An `app.envs` expression must reference params and dependencies that exist in the merged bundle.
+
+### Emitting resources
+
+A child resource is published by a jq template bound to a parent step by its `path`. After that step applies, the template renders against `.params`, `.connections` (the bundle's dependencies), `.envs`, `.secrets`, and the step's IaC `.outputs`:
+
+```yaml
+resources:
+  billing:
+    resource_type: billing-api@~1
+    required: true
+
+steps:
+  - path: src
+    resources:
+      billing: |
+        {
+          url: .outputs.function_url,
+          region: .params.region
+        }
+```
+
+A child step may set only `path` and `resources`, and its `path` must be a step of the parent. Every child resource needs exactly one template. Output names come from the parent's IaC, so a parent release that renames an output breaks the template at deploy time.
 
 The merged bundle is assembled in `.massdriver/build/`, which is excluded from git. The published `massdriver.yaml` records the resolved parent:
 
