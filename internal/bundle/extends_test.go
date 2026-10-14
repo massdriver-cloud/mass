@@ -95,13 +95,12 @@ func TestMergeExtends(t *testing.T) {
 	ref := bundle.ParentRef{Name: "lambda", Constraint: "~1.2", Version: "1.2.7", Digest: "sha256:abc"}
 
 	tests := []struct {
-		name              string
-		child             string
-		parent            string
-		wantErr           string
-		wantWarnings      []string
-		wantStepResources []bundle.StepResource
-		check             func(t *testing.T, merged map[string]any)
+		name         string
+		child        string
+		parent       string
+		wantErr      string
+		wantWarnings []string
+		check        func(t *testing.T, merged map[string]any)
 	}{
 		{
 			name: "child identity and additions overlay the parent",
@@ -205,7 +204,6 @@ steps:
     resources:
       billing: '{url: .outputs.url}'
 `,
-			wantStepResources: []bundle.StepResource{{Step: "src", Field: "billing", Query: "{url: .outputs.url}"}},
 			check: func(t *testing.T, merged map[string]any) {
 				want := mustYAML(t, `
 steps:
@@ -252,15 +250,9 @@ resources:
 			wantErr: "steps[src].resources 'billing' is not declared",
 		},
 		{
-			name:    "step template field unsafe for a file name",
-			child:   "name: app\nversion: 0.1.0\nresources:\n  ../x:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      ../x: .outputs\n",
-			wantErr: "must contain only letters, digits",
-		},
-		{
-			name:              "step template reads dependencies",
-			child:             "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing: '{vpc: .dependencies.network.id}'\n",
-			wantWarnings:      []string{"steps[src].resources.billing reads .dependencies; resource templates receive dependencies as .connections"},
-			wantStepResources: []bundle.StepResource{{Step: "src", Field: "billing", Query: "{vpc: .dependencies.network.id}"}},
+			name:    "step template is empty",
+			child:   "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing: ''\n",
+			wantErr: "steps[src].resources 'billing' must be a jq template",
 		},
 		{
 			name:    "child omits version",
@@ -333,7 +325,7 @@ resources:
 			if tc.parent != "" {
 				parent = tc.parent
 			}
-			merge, err := bundle.MergeExtends(mustYAML(t, parent), mustYAML(t, tc.child), ref)
+			merged, warnings, err := bundle.MergeExtends(mustYAML(t, parent), mustYAML(t, tc.child), ref)
 			if tc.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
 					t.Fatalf("err = %v, want containing %q", err, tc.wantErr)
@@ -343,14 +335,11 @@ resources:
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if !reflect.DeepEqual(merge.Warnings, tc.wantWarnings) {
-				t.Errorf("warnings = %q, want %q", merge.Warnings, tc.wantWarnings)
-			}
-			if !reflect.DeepEqual(merge.StepResources, tc.wantStepResources) {
-				t.Errorf("step resources = %+v, want %+v", merge.StepResources, tc.wantStepResources)
+			if !reflect.DeepEqual(warnings, tc.wantWarnings) {
+				t.Errorf("warnings = %q, want %q", warnings, tc.wantWarnings)
 			}
 			if tc.check != nil {
-				tc.check(t, merge.Spec)
+				tc.check(t, merged)
 			}
 		})
 	}

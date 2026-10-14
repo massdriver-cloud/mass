@@ -56,11 +56,10 @@ func writeFiles(t *testing.T, dir string, files map[string]string) {
 
 func TestResolveSource(t *testing.T) {
 	parentFiles := map[string]string{
-		"massdriver.yaml":       "name: base\ndescription: The base bundle.\nversion: 1.2.3\nsteps:\n  - path: src\n    provisioner: opentofu\nparams:\n  properties: {}\nui: {}\n",
-		"src/main.tf":           "# parent code\n",
-		"src/artifact_queue.jq": ".outputs.queue\n",
-		"README.md":             "parent readme\n",
-		"icon.svg":              "<svg/>\n",
+		"massdriver.yaml": "name: base\ndescription: The base bundle.\nversion: 1.2.3\nsteps:\n  - path: src\n    provisioner: opentofu\nparams:\n  properties: {}\nui: {}\n",
+		"src/main.tf":     "# parent code\n",
+		"README.md":       "parent readme\n",
+		"icon.svg":        "<svg/>\n",
 	}
 
 	tests := []struct {
@@ -127,23 +126,27 @@ func TestResolveSource(t *testing.T) {
 			},
 		},
 		{
-			name: "step resource templates are written into the parent step",
+			name: "step resource templates stay in massdriver.yaml",
 			childFiles: map[string]string{
 				"massdriver.yaml": "extends: base@~1.2\nname: myapp\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing: '{url: .outputs.url}'\n",
 			},
 			versions: map[string]string{"base@~1.2": "1.2.3"},
 			check: func(t *testing.T, _, sourceDir string) {
-				assertFile(t, sourceDir, "src/resource_billing.jq", "{url: .outputs.url}")
-				assertFile(t, sourceDir, "src/main.tf", "# parent code\n")
+				merged, err := bundle.ReadSpec(sourceDir)
+				if err != nil {
+					t.Fatal(err)
+				}
+				steps, _ := merged["steps"].([]any)
+				step, _ := steps[0].(map[string]any)
+				templates, _ := step["resources"].(map[string]any)
+				if templates["billing"] != "{url: .outputs.url}" {
+					t.Errorf("steps[0].resources = %v", step["resources"])
+				}
+				matches, _ := filepath.Glob(filepath.Join(sourceDir, "src", "*.jq"))
+				if len(matches) != 0 {
+					t.Errorf("jq files written to the build: %v", matches)
+				}
 			},
-		},
-		{
-			name: "step resource template collides with a parent template file",
-			childFiles: map[string]string{
-				"massdriver.yaml": "extends: base@~1.2\nname: myapp\nversion: 0.1.0\nresources:\n  queue:\n    resource_type: sqs@~1\nsteps:\n  - path: src\n    resources:\n      queue: .outputs\n",
-			},
-			versions: map[string]string{"base@~1.2": "1.2.3"},
-			wantErr:  "parent step 'src' already emits resource 'queue' (artifact_queue.jq)",
 		},
 		{
 			name:       "unresolvable parent",

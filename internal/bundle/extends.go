@@ -23,8 +23,6 @@ var childMapKeys = []string{"app", "dependencies", "resources", "steps"}
 
 var childStepKeys = []string{"path", "resources"}
 
-var resourceFieldRegex = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
-
 var legacyInputKeys = []string{"connections", "artifacts"}
 
 var envReferenceRegex = regexp.MustCompile(`\.(params|dependencies|connections)\.([A-Za-z0-9_-]+)`)
@@ -80,36 +78,20 @@ func ParseExtends(spec map[string]any) (name, constraint string, found bool, err
 	return name, constraint, true, nil
 }
 
-// StepResource is a jq template the child binds to one of the parent's steps.
-// The provisioner renders it after that step applies and publishes the result
-// as the resource Field.
-type StepResource struct {
-	Step  string
-	Field string
-	Query string
-}
-
-// Merge is the result of overlaying a child onto its parent. Warnings are
-// non-fatal.
-type Merge struct {
-	Spec          map[string]any
-	StepResources []StepResource
-	Warnings      []string
-}
-
 // MergeExtends overlays a child massdriver.yaml onto its parent's. The parent
 // owns everything that shapes the IaC; the child supplies identity, extra
-// dependencies and resources, and app wiring.
-func MergeExtends(parent, child map[string]any, ref ParentRef) (Merge, error) {
+// dependencies, resources emitted by jq templates on the parent's steps, and
+// app wiring. The returned warnings are non-fatal.
+func MergeExtends(parent, child map[string]any, ref ParentRef) (map[string]any, []string, error) {
 	if err := validateChildKeys(child); err != nil {
-		return Merge{}, err
+		return nil, nil, err
 	}
 	if _, ok := child["version"].(string); !ok {
-		return Merge{}, errors.New("a bundle that extends another must set its own 'version'")
+		return nil, nil, errors.New("a bundle that extends another must set its own 'version'")
 	}
 	for _, key := range legacyInputKeys {
 		if _, ok := parent[key]; ok {
-			return Merge{}, fmt.Errorf("parent %s@%s uses the deprecated '%s' field; it must be republished with 'dependencies' and 'resources' before it can be extended", ref.Name, ref.Version, key)
+			return nil, nil, fmt.Errorf("parent %s@%s uses the deprecated '%s' field; it must be republished with 'dependencies' and 'resources' before it can be extended", ref.Name, ref.Version, key)
 		}
 	}
 
@@ -124,7 +106,7 @@ func MergeExtends(parent, child map[string]any, ref ParentRef) (Merge, error) {
 
 	deps, err := mergeDependencies(parent, child)
 	if err != nil {
-		return Merge{}, err
+		return nil, nil, err
 	}
 	if len(deps) > 0 {
 		merged["dependencies"] = deps
@@ -134,23 +116,23 @@ func MergeExtends(parent, child map[string]any, ref ParentRef) (Merge, error) {
 	childResources, _ := child["resources"].(map[string]any)
 	resources, err := mergeDisjoint(parentResources, childResources, "resource")
 	if err != nil {
-		return Merge{}, err
+		return nil, nil, err
 	}
 	if len(resources) > 0 {
 		merged["resources"] = resources
 	}
 
-	steps, stepResources, warnings, err := mergeSteps(parent, child, childResources)
+	steps, err := mergeSteps(parent, child, childResources)
 	if err != nil {
-		return Merge{}, err
+		return nil, nil, err
 	}
 	if steps != nil {
 		merged["steps"] = steps
 	}
 
-	app, appWarnings, err := mergeApp(parent, child, ref)
+	app, warnings, err := mergeApp(parent, child, ref)
 	if err != nil {
-		return Merge{}, err
+		return nil, nil, err
 	}
 	if app != nil {
 		merged["app"] = app
@@ -158,11 +140,10 @@ func MergeExtends(parent, child map[string]any, ref ParentRef) (Merge, error) {
 
 	envWarnings, err := checkEnvReferences(merged)
 	if err != nil {
-		return Merge{}, err
+		return nil, nil, err
 	}
 
-	warnings = append(warnings, appWarnings...)
-	return Merge{Spec: merged, StepResources: stepResources, Warnings: append(warnings, envWarnings...)}, nil
+	return merged, append(warnings, envWarnings...), nil
 }
 
 func validateChildKeys(child map[string]any) error {
@@ -183,54 +164,56 @@ func validateChildKeys(child map[string]any) error {
 	return fmt.Errorf("a bundle that extends another may only set name, description, version, source_url, app, dependencies, resources, and steps; remove: %s", strings.Join(invalid, ", "))
 }
 
-func mergeSteps(parent, child, childResources map[string]any) ([]any, []StepResource, []string, error) {
+func mergeSteps(parent, child, childResources map[string]any) ([]any, error) {
 	parentSteps, _ := parent["steps"].([]any)
 	childSteps, _ := child["steps"].([]any)
 
 	stepIndex := indexSteps(parentSteps)
 	merged := slices.Clone(parentSteps)
-	var bindings []StepResource
-	var warnings []string
 	bound := map[string]string{}
 
 	for _, s := range childSteps {
 		path, templates, err := validateChildStep(s)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 		i, exists := stepIndex[path]
 		if !exists {
-			return nil, nil, nil, fmt.Errorf("step '%s' is not a step of the parent bundle", path)
+			return nil, fmt.Errorf("step '%s' is not a step of the parent bundle", path)
 		}
-		if !filepath.IsLocal(path) {
-			return nil, nil, nil, fmt.Errorf("step path '%s' must be relative to the bundle", path)
-		}
-
 		for _, field := range sortedKeys(templates) {
-			binding, warning, bindErr := bindStepResource(path, field, templates[field], childResources, bound)
-			if bindErr != nil {
-				return nil, nil, nil, bindErr
-			}
-			if warning != "" {
-				warnings = append(warnings, warning)
+			if err = checkStepTemplate(path, field, templates[field], childResources, bound); err != nil {
+				return nil, err
 			}
 			bound[field] = path
-			bindings = append(bindings, binding)
 		}
 
 		parentStep, _ := merged[i].(map[string]any)
 		if merged[i], err = addStepTemplates(parentStep, path, templates); err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 	}
 
 	for _, field := range sortedKeys(childResources) {
 		if _, ok := bound[field]; !ok {
-			return nil, nil, nil, fmt.Errorf("resource '%s' is not emitted by any step; add a jq template for it under steps[].resources", field)
+			return nil, fmt.Errorf("resource '%s' is not emitted by any step; add a jq template for it under steps[].resources", field)
 		}
 	}
 
-	return merged, bindings, warnings, nil
+	return merged, nil
+}
+
+func checkStepTemplate(path, field string, template any, childResources map[string]any, bound map[string]string) error {
+	if _, declared := childResources[field]; !declared {
+		return fmt.Errorf("steps[%s].resources '%s' is not declared in the bundle's 'resources'", path, field)
+	}
+	if other, dup := bound[field]; dup {
+		return fmt.Errorf("resource '%s' is emitted by both step '%s' and step '%s'", field, other, path)
+	}
+	if query, _ := template.(string); strings.TrimSpace(query) == "" {
+		return fmt.Errorf("steps[%s].resources '%s' must be a jq template", path, field)
+	}
+	return nil
 }
 
 func addStepTemplates(step map[string]any, path string, templates map[string]any) (map[string]any, error) {
@@ -275,27 +258,6 @@ func validateChildStep(s any) (string, map[string]any, error) {
 	path, _ := step["path"].(string)
 	templates, _ := step["resources"].(map[string]any)
 	return path, templates, nil
-}
-
-func bindStepResource(path, field string, template any, childResources map[string]any, bound map[string]string) (StepResource, string, error) {
-	if !resourceFieldRegex.MatchString(field) {
-		return StepResource{}, "", fmt.Errorf("steps[%s].resources '%s' must contain only letters, digits, '_', and '-'", path, field)
-	}
-	if _, declared := childResources[field]; !declared {
-		return StepResource{}, "", fmt.Errorf("steps[%s].resources '%s' is not declared in the bundle's 'resources'", path, field)
-	}
-	if other, dup := bound[field]; dup {
-		return StepResource{}, "", fmt.Errorf("resource '%s' is emitted by both step '%s' and step '%s'", field, other, path)
-	}
-	query, _ := template.(string)
-	if strings.TrimSpace(query) == "" {
-		return StepResource{}, "", fmt.Errorf("steps[%s].resources '%s' must be a jq template", path, field)
-	}
-	var warning string
-	if strings.Contains(query, ".dependencies.") {
-		warning = fmt.Sprintf("steps[%s].resources.%s reads .dependencies; resource templates receive dependencies as .connections", path, field)
-	}
-	return StepResource{Step: path, Field: field, Query: query}, warning, nil
 }
 
 func mergeDependencies(parent, child map[string]any) (map[string]any, error) {

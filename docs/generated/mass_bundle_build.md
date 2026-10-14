@@ -55,7 +55,7 @@ Any other key in the child is an error, as is a dependency, resource, env, or se
 
 ### Emitting resources
 
-A child resource is published by a jq template bound to a parent step by its `path`. After that step applies, the template renders against `.params`, `.connections` (the bundle's dependencies), `.envs`, `.secrets`, and the step's IaC `.outputs`:
+A child resource is published by a jq template bound to a parent step by its `path`. The template renders after that step applies, and can read the step's IaC `.outputs`:
 
 ```yaml
 resources:
