@@ -19,10 +19,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 1.26
-      - uses: goreleaser/goreleaser-action@v5
+      - uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
-          version: v1.26.0
+          version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
