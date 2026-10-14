@@ -8,7 +8,7 @@ Builds, lints, and publishes a bundle to your organization's catalog. The bundle
 mass bundle publish [path] [flags]
 ```
 
-A bundle that sets `extends` is merged with the newest parent version matching its constraint and published as a single bundle containing the parent's IaC. See `mass bundle build --help`.
+A bundle that sets `extends` is merged with the newest matching parent and published as a single bundle. See [Extending Bundles](https://docs.massdriver.cloud/bundle-development/extending-bundles).
 
 ## Flags
 

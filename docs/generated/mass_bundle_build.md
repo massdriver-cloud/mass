@@ -20,70 +20,7 @@ Validates `massdriver.yaml`, dereferences its schemas, and generates IaC input d
 mass bundle build [path] [flags]
 ```
 
-## Extending a bundle
-
-A bundle can reuse another bundle's IaC by naming it in `extends`. The child keeps one file; the parent's platform team keeps the code.
-
-```yaml
-extends: lambda@~1.2
-name: payments-api
-description: Handles card captures.
-version: 0.1.0
-dependencies:
-  db:
-    resource_type: postgres@~1
-    required: true
-app:
-  envs:
-    DB_HOST: .dependencies.db.host
-  secrets:
-    STRIPE_KEY:
-      required: true
-```
-
-The constraint resolves to the newest matching parent version at build time (`~1.2`, `~1`, `latest`, or an exact version; append `+dev` to include development releases). The parent must be in your organization, and you need `repo:pull` on it.
-
-The parent supplies `steps`, `params`, `ui`, `resources`, and its IaC. The child supplies:
-
-- `name`, `version` (required), `description`, and `source_url`
-- `dependencies`, added to the parent's
-- `resources`, added to the parent's, each emitted by a jq template on one of the parent's steps
-- `app` `envs`, `secrets`, and `policies`, added to the parent's
-- `README.md`, `CHANGELOG.md`, `icon.svg`, and `operator.md`, replacing the parent's
-
-Any other key in the child is an error, as is a dependency, resource, env, or secret name the parent already uses. An `app.envs` expression must reference params and dependencies that exist in the merged bundle.
-
-### Emitting resources
-
-A child resource is published by a jq template bound to a parent step by its `path`. The template renders after that step applies, and can read the step's IaC `.outputs`:
-
-```yaml
-resources:
-  billing:
-    resource_type: billing-api@~1
-    required: true
-
-steps:
-  - path: src
-    resources:
-      billing: |
-        {
-          url: .outputs.function_url,
-          region: .params.region
-        }
-```
-
-A child step may set only `path` and `resources`, and its `path` must be a step of the parent. Every child resource needs exactly one template. Output names come from the parent's IaC, so a parent release that renames an output breaks the template at deploy time.
-
-The merged bundle is assembled in `.massdriver/build/`, which is excluded from git. The published `massdriver.yaml` records the resolved parent:
-
-```yaml
-extends:
-  name: lambda
-  constraint: ~1.2
-  version: 1.2.7
-  digest: sha256:...
-```
+A bundle that sets `extends: <bundle>@<constraint>` is merged with the newest matching parent and assembled in `.massdriver/build/`. See [Extending Bundles](https://docs.massdriver.cloud/bundle-development/extending-bundles).
 
 ## Flags
 
