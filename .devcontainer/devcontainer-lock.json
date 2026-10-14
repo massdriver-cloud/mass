@@ -1,5 +1,10 @@
 {
   "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "1.1.3",
+      "resolved": "ghcr.io/devcontainers/features/github-cli@sha256:bd7ab48a832228f633239277552c30b353867fef2e5b037e064b4e64f0b843f2",
+      "integrity": "sha256:bd7ab48a832228f633239277552c30b353867fef2e5b037e064b4e64f0b843f2"
+    },
     "ghcr.io/guiyomh/features/golangci-lint:0": {
       "version": "0.1.2",
       "resolved": "ghcr.io/guiyomh/features/golangci-lint@sha256:6a8e1856aedb04681f0a81b974721ab86140058f4992c02c81c204be755474f2",
