@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
 	"name": "Go",
-	"image": "mcr.microsoft.com/devcontainers/go:1.25-bookworm",
+	"image": "mcr.microsoft.com/devcontainers/go:1.26-bookworm",
 	"runArgs": [
 		"--cap-add=SYS_PTRACE",
 		"--security-opt",
@@ -11,7 +11,8 @@
 		// Keep in lockstep with the version CI runs (.github/workflows/lint.yaml).
 		"ghcr.io/guiyomh/features/golangci-lint:0": {
 			"version": "2.12"
-		}
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
 	},
 	"customizations": {
 		"vscode": {
@@ -30,5 +31,9 @@
 		}
 	},
 	// "forwardPorts": [],
+	"mounts": [
+		"source=claude-code-config-${devcontainerId},target=/home/vscode/.claude,type=volume"
+	],
+	"postCreateCommand": "sudo chown vscode:vscode /home/vscode/.claude",
 	"remoteUser": "vscode"
 }
