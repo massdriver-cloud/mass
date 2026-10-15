@@ -202,7 +202,8 @@ resources:
 steps:
   - path: src
     resources:
-      billing: '{url: .outputs.url}'
+      billing:
+        template: '{url: .outputs.url}'
 `,
 			check: func(t *testing.T, merged map[string]any) {
 				want := mustYAML(t, `
@@ -210,7 +211,8 @@ steps:
   - path: src
     provisioner: opentofu
     resources:
-      billing: '{url: .outputs.url}'
+      billing:
+        template: '{url: .outputs.url}'
 resources:
   function:
     resource_type: aws-lambda@1.0.0
@@ -231,7 +233,7 @@ resources:
 		},
 		{
 			name:    "child step names a step the parent lacks",
-			child:   "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: chart\n    resources:\n      billing: .outputs\n",
+			child:   "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: chart\n    resources:\n      billing:\n        template: .outputs\n",
 			wantErr: "step 'chart' is not a step of the parent bundle",
 		},
 		{
@@ -246,13 +248,23 @@ resources:
 		},
 		{
 			name:    "step template for an undeclared resource",
-			child:   "name: app\nversion: 0.1.0\nsteps:\n  - path: src\n    resources:\n      billing: .outputs\n",
+			child:   "name: app\nversion: 0.1.0\nsteps:\n  - path: src\n    resources:\n      billing:\n        template: .outputs\n",
 			wantErr: "steps[src].resources 'billing' is not declared",
 		},
 		{
 			name:    "step template is empty",
-			child:   "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing: ''\n",
-			wantErr: "steps[src].resources 'billing' must be a jq template",
+			child:   "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing:\n        template: ''\n",
+			wantErr: "steps[src].resources 'billing' template must be a jq template",
+		},
+		{
+			name:    "step resource is a bare template",
+			child:   "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing: .outputs\n",
+			wantErr: "steps[src].resources 'billing' must be a map with a 'template'",
+		},
+		{
+			name:    "step resource sets an unknown key",
+			child:   "name: app\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing:\n        template: .outputs\n        foo: bar\n",
+			wantErr: "steps[src].resources 'billing' may only set template; remove: foo",
 		},
 		{
 			name:    "child omits version",

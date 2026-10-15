@@ -23,6 +23,8 @@ var childMapKeys = []string{"app", "dependencies", "resources", "steps"}
 
 var childStepKeys = []string{"path", "resources"}
 
+var stepResourceKeys = []string{"template"}
+
 var legacyInputKeys = []string{"connections", "artifacts"}
 
 var envReferenceRegex = regexp.MustCompile(`\.(params|dependencies|connections)\.([A-Za-z0-9_-]+)`)
@@ -196,22 +198,35 @@ func mergeSteps(parent, child, childResources map[string]any) ([]any, error) {
 
 	for _, field := range sortedKeys(childResources) {
 		if _, ok := bound[field]; !ok {
-			return nil, fmt.Errorf("resource '%s' is not emitted by any step; add a jq template for it under steps[].resources", field)
+			return nil, fmt.Errorf("resource '%s' is not emitted by any step; add a jq template for it under steps[].resources.%s.template", field, field)
 		}
 	}
 
 	return merged, nil
 }
 
-func checkStepTemplate(path, field string, template any, childResources map[string]any, bound map[string]string) error {
+func checkStepTemplate(path, field string, entry any, childResources map[string]any, bound map[string]string) error {
 	if _, declared := childResources[field]; !declared {
 		return fmt.Errorf("steps[%s].resources '%s' is not declared in the bundle's 'resources'", path, field)
 	}
 	if other, dup := bound[field]; dup {
 		return fmt.Errorf("resource '%s' is emitted by both step '%s' and step '%s'", field, other, path)
 	}
-	if query, _ := template.(string); strings.TrimSpace(query) == "" {
-		return fmt.Errorf("steps[%s].resources '%s' must be a jq template", path, field)
+	settings, ok := entry.(map[string]any)
+	if !ok {
+		return fmt.Errorf("steps[%s].resources '%s' must be a map with a 'template'", path, field)
+	}
+	var invalid []string
+	for _, key := range sortedKeys(settings) {
+		if !slices.Contains(stepResourceKeys, key) {
+			invalid = append(invalid, key)
+		}
+	}
+	if len(invalid) > 0 {
+		return fmt.Errorf("steps[%s].resources '%s' may only set template; remove: %s", path, field, strings.Join(invalid, ", "))
+	}
+	if query, _ := settings["template"].(string); strings.TrimSpace(query) == "" {
+		return fmt.Errorf("steps[%s].resources '%s' template must be a jq template", path, field)
 	}
 	return nil
 }

@@ -128,7 +128,7 @@ func TestResolveSource(t *testing.T) {
 		{
 			name: "step resource templates stay in massdriver.yaml",
 			childFiles: map[string]string{
-				"massdriver.yaml": "extends: base@~1.2\nname: myapp\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing: '{url: .outputs.url}'\n",
+				"massdriver.yaml": "extends: base@~1.2\nname: myapp\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing:\n        template: '{url: .outputs.url}'\n",
 			},
 			versions: map[string]string{"base@~1.2": "1.2.3"},
 			check: func(t *testing.T, _, sourceDir string) {
@@ -138,8 +138,9 @@ func TestResolveSource(t *testing.T) {
 				}
 				steps, _ := merged["steps"].([]any)
 				step, _ := steps[0].(map[string]any)
-				templates, _ := step["resources"].(map[string]any)
-				if templates["billing"] != "{url: .outputs.url}" {
+				resources, _ := step["resources"].(map[string]any)
+				billing, _ := resources["billing"].(map[string]any)
+				if billing["template"] != "{url: .outputs.url}" {
 					t.Errorf("steps[0].resources = %v", step["resources"])
 				}
 				matches, _ := filepath.Glob(filepath.Join(sourceDir, "src", "*.jq"))
