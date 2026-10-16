@@ -378,3 +378,51 @@ func TestLintMatchRequired(t *testing.T) {
 		})
 	}
 }
+
+func TestLintRuntime(t *testing.T) {
+	tests := []struct {
+		name string
+		bun  *bundle.Bundle
+		want []bundle.LintIssue
+	}{
+		{
+			name: "runtime with an app block",
+			bun:  &bundle.Bundle{ProvidesRuntime: true, AppSpec: &bundle.AppSpec{}},
+		},
+		{
+			name: "bundle that is not a runtime",
+			bun:  &bundle.Bundle{},
+		},
+		{
+			name: "application",
+			bun:  &bundle.Bundle{ExtendsRuntime: "lambda@~1.2"},
+		},
+		{
+			name: "runtime that also extends a runtime",
+			bun:  &bundle.Bundle{ProvidesRuntime: true, ExtendsRuntime: "lambda@~1.2", AppSpec: &bundle.AppSpec{}},
+			want: []bundle.LintIssue{
+				{
+					Rule:     "runtime-extends",
+					Severity: bundle.LintError,
+					Message:  "provides_runtime and extends_runtime cannot both be set. A bundle is either a runtime or an application that runs on one.",
+				},
+			},
+		},
+		{
+			name: "runtime without an app block",
+			bun:  &bundle.Bundle{ProvidesRuntime: true},
+			want: []bundle.LintIssue{
+				{
+					Rule:     "runtime-app",
+					Severity: bundle.LintError,
+					Message:  "provides_runtime: true requires an app block. The runtime's IaC must consume envs and secrets for applications to run on it.",
+				},
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.ElementsMatch(t, tc.want, tc.bun.LintRuntime().Issues)
+		})
+	}
+}

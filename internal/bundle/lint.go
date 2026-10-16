@@ -226,6 +226,19 @@ func matchRequired(sch *schema.Schema) error {
 	return nil
 }
 
+// LintRuntime reports an error when a runtime also extends a runtime or has no
+// app block for applications to fill.
+func (b *Bundle) LintRuntime() LintResult {
+	var result LintResult
+	if b.ProvidesRuntime && b.ExtendsRuntime != nil {
+		result.AddError("runtime-extends", "provides_runtime and extends_runtime cannot both be set. A bundle is either a runtime or an application that runs on one.")
+	}
+	if b.ProvidesRuntime && b.AppSpec == nil {
+		result.AddError("runtime-app", "provides_runtime: true requires an app block. The runtime's IaC must consume envs and secrets for applications to run on it.")
+	}
+	return result
+}
+
 // LintInputsMatchProvisioner warns when massdriver.yaml params differ from the provisioner's declared variables.
 //
 //nolint:gocognit

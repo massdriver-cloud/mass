@@ -56,7 +56,7 @@ func writeFiles(t *testing.T, dir string, files map[string]string) {
 
 func TestResolveSource(t *testing.T) {
 	parentFiles := map[string]string{
-		"massdriver.yaml": "name: base\ndescription: The base bundle.\nversion: 1.2.3\nsteps:\n  - path: src\n    provisioner: opentofu\nparams:\n  properties: {}\nui: {}\n",
+		"massdriver.yaml": "name: base\ndescription: The base bundle.\nversion: 1.2.3\nprovides_runtime: true\napp:\n  envs: {}\nsteps:\n  - path: src\n    provisioner: opentofu\nparams:\n  properties: {}\nui: {}\n",
 		"src/main.tf":     "# parent code\n",
 		"README.md":       "parent readme\n",
 		"icon.svg":        "<svg/>\n",
@@ -65,6 +65,7 @@ func TestResolveSource(t *testing.T) {
 	tests := []struct {
 		name        string
 		childFiles  map[string]string
+		parentFiles map[string]string
 		keep        bool
 		versions    map[string]string
 		wantInPlace bool
@@ -84,7 +85,7 @@ func TestResolveSource(t *testing.T) {
 		{
 			name: "keep assembles into the git-ignored local build directory",
 			childFiles: map[string]string{
-				"massdriver.yaml": "extends: base@~1.2\nname: myapp\nversion: 0.1.0\n",
+				"massdriver.yaml": "extends_runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n",
 				"README.md":       "child readme\n",
 				"src/main.tf":     "# child code that must not leak\n",
 			},
@@ -109,7 +110,7 @@ func TestResolveSource(t *testing.T) {
 				if merged["name"] != "myapp" || merged["description"] != "The base bundle." {
 					t.Errorf("merged identity = %v / %v", merged["name"], merged["description"])
 				}
-				stamp, _ := merged["extends"].(map[string]any)
+				stamp, _ := merged["extends_runtime"].(map[string]any)
 				if stamp["version"] != "1.2.3" || stamp["digest"] != "sha256:feed" || stamp["constraint"] != "~1.2" {
 					t.Errorf("extends stamp = %v", stamp)
 				}
@@ -117,7 +118,7 @@ func TestResolveSource(t *testing.T) {
 		},
 		{
 			name:       "temporary build directory is removed by cleanup",
-			childFiles: map[string]string{"massdriver.yaml": "extends: base@~1.2\nname: myapp\nversion: 0.1.0\n"},
+			childFiles: map[string]string{"massdriver.yaml": "extends_runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n"},
 			versions:   map[string]string{"base@~1.2": "1.2.3"},
 			check: func(t *testing.T, childDir, sourceDir string) {
 				if strings.HasPrefix(sourceDir, childDir) {
@@ -128,7 +129,7 @@ func TestResolveSource(t *testing.T) {
 		{
 			name: "step resource templates stay in massdriver.yaml",
 			childFiles: map[string]string{
-				"massdriver.yaml": "extends: base@~1.2\nname: myapp\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing:\n        template: '{url: .outputs.url}'\n",
+				"massdriver.yaml": "extends_runtime: base@~1.2\nname: myapp\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing:\n        template: '{url: .outputs.url}'\n",
 			},
 			versions: map[string]string{"base@~1.2": "1.2.3"},
 			check: func(t *testing.T, _, sourceDir string) {
@@ -151,14 +152,21 @@ func TestResolveSource(t *testing.T) {
 		},
 		{
 			name:       "unresolvable parent",
-			childFiles: map[string]string{"massdriver.yaml": "extends: base@~9\nname: myapp\nversion: 0.1.0\n"},
+			childFiles: map[string]string{"massdriver.yaml": "extends_runtime: base@~9\nname: myapp\nversion: 0.1.0\n"},
 			wantErr:    "resolving parent bundle base@~9: bundle not found",
 		},
 		{
 			name:       "invalid child",
-			childFiles: map[string]string{"massdriver.yaml": "extends: base@~1.2\nname: myapp\nversion: 0.1.0\nparams:\n  properties: {}\n"},
+			childFiles: map[string]string{"massdriver.yaml": "extends_runtime: base@~1.2\nname: myapp\nversion: 0.1.0\nparams:\n  properties: {}\n"},
 			versions:   map[string]string{"base@~1.2": "1.2.3"},
 			wantErr:    "remove: params",
+		},
+		{
+			name:        "parent is not a runtime",
+			childFiles:  map[string]string{"massdriver.yaml": "extends_runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n"},
+			parentFiles: map[string]string{"massdriver.yaml": "name: base\nversion: 1.2.3\napp:\n  envs: {}\n"},
+			versions:    map[string]string{"base@~1.2": "1.2.3"},
+			wantErr:     "base@1.2.3 is not a runtime",
 		},
 	}
 
@@ -166,7 +174,11 @@ func TestResolveSource(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			childDir := t.TempDir()
 			writeFiles(t, childDir, tc.childFiles)
-			api := &fakeExtendsAPI{versions: tc.versions, parentFiles: parentFiles}
+			parent := parentFiles
+			if tc.parentFiles != nil {
+				parent = tc.parentFiles
+			}
+			api := &fakeExtendsAPI{versions: tc.versions, parentFiles: parent}
 
 			var out bytes.Buffer
 			sourceDir, cleanup, err := cmdbundle.ResolveSource(context.Background(), api, childDir, tc.keep, &out)
@@ -198,13 +210,13 @@ func TestResolveSource(t *testing.T) {
 
 func TestRunExtendsRebuildsFromScratch(t *testing.T) {
 	childDir := t.TempDir()
-	writeFiles(t, childDir, map[string]string{"massdriver.yaml": "extends: base@~1.2\nname: myapp\nversion: 0.1.0\n"})
+	writeFiles(t, childDir, map[string]string{"massdriver.yaml": "extends_runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n"})
 	buildDir := filepath.Join(t.TempDir(), "build")
 	writeFiles(t, buildDir, map[string]string{"stale.tf": "# from a previous parent\n"})
 
 	api := &fakeExtendsAPI{
 		versions:    map[string]string{"base@~1.2": "1.2.3"},
-		parentFiles: map[string]string{"massdriver.yaml": "name: base\ndescription: The base bundle.\n"},
+		parentFiles: map[string]string{"massdriver.yaml": "name: base\ndescription: The base bundle.\nprovides_runtime: true\napp:\n  envs: {}\n"},
 	}
 	found, err := cmdbundle.RunExtends(context.Background(), api, childDir, buildDir, &bytes.Buffer{})
 	if err != nil || !found {

@@ -28,12 +28,12 @@ func TestParseExtends(t *testing.T) {
 		wantErr        string
 	}{
 		{name: "absent", spec: "name: x", wantFound: false},
-		{name: "with constraint", spec: "extends: lambda@~1.2", wantName: "lambda", wantConstraint: "~1.2", wantFound: true},
-		{name: "dev constraint", spec: "extends: lambda@~1.2+dev", wantName: "lambda", wantConstraint: "~1.2+dev", wantFound: true},
-		{name: "bare name tracks latest", spec: "extends: lambda", wantName: "lambda", wantConstraint: "latest", wantFound: true},
-		{name: "other organization", spec: "extends: acme/lambda@~1", wantFound: true, wantErr: "another organization"},
-		{name: "not a string", spec: "extends: {name: lambda}", wantFound: true, wantErr: "must be a string"},
-		{name: "empty constraint", spec: "extends: lambda@", wantFound: true, wantErr: "must be <bundle>@<constraint>"},
+		{name: "with constraint", spec: "extends_runtime: lambda@~1.2", wantName: "lambda", wantConstraint: "~1.2", wantFound: true},
+		{name: "dev constraint", spec: "extends_runtime: lambda@~1.2+dev", wantName: "lambda", wantConstraint: "~1.2+dev", wantFound: true},
+		{name: "bare name tracks latest", spec: "extends_runtime: lambda", wantName: "lambda", wantConstraint: "latest", wantFound: true},
+		{name: "other organization", spec: "extends_runtime: acme/lambda@~1", wantFound: true, wantErr: "another organization"},
+		{name: "not a string", spec: "extends_runtime: {name: lambda}", wantFound: true, wantErr: "must be a string"},
+		{name: "empty constraint", spec: "extends_runtime: lambda@", wantFound: true, wantErr: "must be <bundle>@<constraint>"},
 	}
 
 	for _, tc := range tests {
@@ -63,6 +63,7 @@ name: lambda
 description: A lambda function.
 version: 1.2.7
 source_url: https://github.com/acme/lambda
+provides_runtime: true
 steps:
   - path: src
     provisioner: opentofu
@@ -89,6 +90,58 @@ app:
       required: false
 `
 
+func TestCheckRuntime(t *testing.T) {
+	ref := bundle.ParentRef{Name: "lambda", Version: "1.2.7"}
+
+	tests := []struct {
+		name    string
+		parent  string
+		wantErr string
+	}{
+		{name: "runtime", parent: parentSpec},
+		{
+			name:    "bundle that is not a runtime",
+			parent:  "name: lambda\napp:\n  envs: {}\n",
+			wantErr: "lambda@1.2.7 is not a runtime. Set provides_runtime: true",
+		},
+		{
+			name:    "runtime set to false",
+			parent:  "name: lambda\nprovides_runtime: false\napp:\n  envs: {}\n",
+			wantErr: "is not a runtime",
+		},
+		{
+			name:    "runtime without an app block",
+			parent:  "name: lambda\nprovides_runtime: true\n",
+			wantErr: "runtime lambda@1.2.7 has no 'app' block",
+		},
+		{
+			name:    "application",
+			parent:  "name: lambda\nprovides_runtime: true\napp:\n  envs: {}\nextends_runtime:\n  name: base\n  version: 0.0.1\n",
+			wantErr: "lambda@1.2.7 is an application, not a runtime",
+		},
+		{
+			name:    "runtime uses legacy connections",
+			parent:  "name: lambda\nprovides_runtime: true\napp:\n  envs: {}\nconnections:\n  properties: {}\n",
+			wantErr: "deprecated 'connections'",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := bundle.CheckRuntime(mustYAML(t, tc.parent), ref)
+			if tc.wantErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("err = %v, want containing %q", err, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestMergeExtends(t *testing.T) {
 	ref := bundle.ParentRef{Name: "lambda", Constraint: "~1.2", Version: "1.2.7", Digest: "sha256:abc"}
 
@@ -103,7 +156,7 @@ func TestMergeExtends(t *testing.T) {
 		{
 			name: "child identity and additions overlay the parent",
 			child: `
-extends: lambda@~1.2
+extends_runtime: lambda@~1.2
 name: payments-api
 description: Handles card captures.
 version: 0.1.0
@@ -123,7 +176,7 @@ app:
 name: payments-api
 description: Handles card captures.
 version: 0.1.0
-extends:
+extends_runtime:
   name: lambda
   constraint: "~1.2"
   version: 1.2.7
@@ -269,10 +322,9 @@ resources:
 			wantErr: "must set its own 'version'",
 		},
 		{
-			name:    "parent uses legacy connections",
-			child:   "name: app\nversion: 0.1.0\n",
-			parent:  "name: lambda\nconnections:\n  properties: {}\n",
-			wantErr: "deprecated 'connections'",
+			name:    "child sets provides_runtime",
+			child:   "name: app\nversion: 0.1.0\nprovides_runtime: true\n",
+			wantErr: "cannot set 'provides_runtime'",
 		},
 		{
 			name:    "dependency collides with parent dependency",
@@ -308,23 +360,6 @@ resources:
 			name:         "env reads an optional dependency",
 			child:        "name: app\nversion: 0.1.0\ndependencies:\n  cache:\n    resource_type: redis@~1\n    required: false\napp:\n  envs:\n    CACHE: .dependencies.cache.data.host\n",
 			wantWarnings: []string{"app.envs.CACHE reads optional dependency 'cache'; deployments fail while it is not connected"},
-		},
-		{
-			name:         "parent without an app block",
-			child:        "name: app\nversion: 0.1.0\napp:\n  envs:\n    STAGE: '@text \"prod\"'\n",
-			parent:       "name: lambda\nparams:\n  properties: {}\n",
-			wantWarnings: []string{"parent lambda@1.2.7 has no 'app' block, so its IaC likely ignores app envs and secrets; the child's 'app' block may have no effect"},
-		},
-		{
-			name:   "parent's own extends stamp is replaced",
-			child:  "name: app\nversion: 0.1.0\n",
-			parent: "name: lambda\nextends:\n  name: base\n  version: 0.0.1\n",
-			check: func(t *testing.T, merged map[string]any) {
-				stamp, _ := merged["extends"].(map[string]any)
-				if stamp["name"] != "lambda" || stamp["version"] != "1.2.7" {
-					t.Errorf("extends = %v, want the resolved lambda parent", merged["extends"])
-				}
-			},
 		},
 	}
 

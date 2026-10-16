@@ -8,7 +8,7 @@ Builds, lints, and publishes a bundle to your organization's catalog. The bundle
 mass bundle publish [path] [flags]
 ```
 
-A bundle that sets `extends` is merged with the newest matching parent and published as a single bundle. See [Extending Bundles](https://docs.massdriver.cloud/bundle-development/extending-bundles).
+An application that sets `extends_runtime` is merged with the newest matching runtime and published as a single bundle. See [Runtimes and Applications](https://docs.massdriver.cloud/bundle-development/runtimes-and-applications).
 
 ## Flags
 

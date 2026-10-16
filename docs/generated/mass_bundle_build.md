@@ -20,7 +20,7 @@ Validates `massdriver.yaml`, dereferences its schemas, and generates IaC input d
 mass bundle build [path] [flags]
 ```
 
-A bundle that sets `extends: <bundle>@<constraint>` is merged with the newest matching parent and assembled in `.massdriver/build/`. See [Extending Bundles](https://docs.massdriver.cloud/bundle-development/extending-bundles).
+An application that sets `extends_runtime: <runtime>@<constraint>` is merged with the newest matching runtime and assembled in `.massdriver/build/`. See [Runtimes and Applications](https://docs.massdriver.cloud/bundle-development/runtimes-and-applications).
 
 ## Flags
 

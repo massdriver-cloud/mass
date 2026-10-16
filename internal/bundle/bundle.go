@@ -76,6 +76,9 @@ type Bundle struct {
 	UI          map[string]any `json:"ui,omitempty" yaml:"ui,omitempty" mapstructure:"ui"`
 	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty" mapstructure:"app"`
 
+	ProvidesRuntime bool `json:"provides_runtime,omitempty" yaml:"provides_runtime,omitempty" mapstructure:"provides_runtime"`
+	ExtendsRuntime  any  `json:"extends_runtime,omitempty" yaml:"extends_runtime,omitempty" mapstructure:"extends_runtime"`
+
 	// Resources and Dependencies are the current input terms. Artifacts and
 	// Connections are their deprecated predecessors.
 	Resources    map[string]Resource   `json:"resources,omitempty" yaml:"resources,omitempty" mapstructure:"resources"`

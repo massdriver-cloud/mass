@@ -13,8 +13,11 @@ import (
 	"github.com/massdriver-cloud/mass/internal/files"
 )
 
-// ExtendsKey is the massdriver.yaml key naming the parent bundle.
-const ExtendsKey = "extends"
+// ExtendsKey is the massdriver.yaml key naming the runtime an application runs on.
+const ExtendsKey = "extends_runtime"
+
+// ProvidesRuntimeKey marks a bundle as a runtime that applications can extend.
+const ProvidesRuntimeKey = "provides_runtime"
 
 // DocFiles are the top-level files a child carries over its parent's copy.
 var DocFiles = []string{"README.md", "readme.md", "CHANGELOG.md", "icon.svg", "operator.md", "operator.mdx"}
@@ -32,7 +35,7 @@ var legacyInputKeys = []string{"connections", "artifacts"}
 var envReferenceRegex = regexp.MustCompile(`\.(params|dependencies|connections)\.([A-Za-z0-9_-]+)`)
 
 // ParentRef identifies the exact parent a child was merged with. Its map form
-// replaces the child's `extends` constraint in the merged massdriver.yaml.
+// replaces the child's `extends_runtime` constraint in the merged massdriver.yaml.
 type ParentRef struct {
 	Name       string
 	Constraint string
@@ -58,7 +61,7 @@ func ReadSpec(dir string) (map[string]any, error) {
 	return spec, nil
 }
 
-// ParseExtends splits a child's `extends` value into a parent name and
+// ParseExtends splits a child's `extends_runtime` value into a parent name and
 // version constraint. A bare name tracks `latest`.
 func ParseExtends(spec map[string]any) (name, constraint string, found bool, err error) {
 	raw, ok := spec[ExtendsKey]
@@ -82,25 +85,45 @@ func ParseExtends(spec map[string]any) (name, constraint string, found bool, err
 	return name, constraint, true, nil
 }
 
-// MergeExtends overlays a child massdriver.yaml onto its parent's. The parent
-// owns everything that shapes the IaC; the child supplies identity, extra
-// dependencies, resources emitted by jq templates on the parent's steps, and
-// app wiring. The returned warnings are non-fatal.
+// CheckRuntime reports whether a pulled parent can be extended: it must set
+// provides_runtime, carry an app block, not itself extend a runtime, and use
+// the current input format.
+func CheckRuntime(parent map[string]any, ref ParentRef) error {
+	if _, ok := parent[ExtendsKey]; ok {
+		return fmt.Errorf("%s@%s is an application, not a runtime; applications cannot run on other applications", ref.Name, ref.Version)
+	}
+	if isRuntime, _ := parent[ProvidesRuntimeKey].(bool); !isRuntime {
+		return fmt.Errorf("%s@%s is not a runtime. Set provides_runtime: true in its massdriver.yaml and republish", ref.Name, ref.Version)
+	}
+	if _, ok := parent["app"].(map[string]any); !ok {
+		return fmt.Errorf("runtime %s@%s has no 'app' block. A runtime's IaC must consume envs and secrets for applications to run on it", ref.Name, ref.Version)
+	}
+	for _, key := range legacyInputKeys {
+		if _, ok := parent[key]; ok {
+			return fmt.Errorf("runtime %s@%s uses the deprecated '%s' field; it must be republished with 'dependencies' and 'resources' before applications can run on it", ref.Name, ref.Version, key)
+		}
+	}
+	return nil
+}
+
+// MergeExtends overlays an application's massdriver.yaml onto its runtime's.
+// The runtime owns everything that shapes the IaC; the application supplies
+// identity, extra dependencies, resources emitted by jq templates on the
+// runtime's steps, and app wiring. The returned warnings are non-fatal.
 func MergeExtends(parent, child map[string]any, ref ParentRef) (map[string]any, []string, error) {
 	if err := validateChildKeys(child); err != nil {
 		return nil, nil, err
 	}
 	if _, ok := child["version"].(string); !ok {
-		return nil, nil, errors.New("a bundle that extends another must set its own 'version'")
+		return nil, nil, errors.New("a bundle with 'extends_runtime' must set its own 'version'")
 	}
-	for _, key := range legacyInputKeys {
-		if _, ok := parent[key]; ok {
-			return nil, nil, fmt.Errorf("parent %s@%s uses the deprecated '%s' field; it must be republished with 'dependencies' and 'resources' before it can be extended", ref.Name, ref.Version, key)
-		}
+	if _, ok := child[ProvidesRuntimeKey]; ok {
+		return nil, nil, errors.New("a bundle with 'extends_runtime' cannot set 'provides_runtime'; an application cannot be a runtime")
 	}
 
 	merged := maps.Clone(parent)
 	delete(merged, "source_url")
+	delete(merged, ProvidesRuntimeKey)
 	for key, value := range child {
 		if !slices.Contains(childMapKeys, key) {
 			merged[key] = value
@@ -134,7 +157,7 @@ func MergeExtends(parent, child map[string]any, ref ParentRef) (map[string]any, 
 		merged["steps"] = steps
 	}
 
-	app, warnings, err := mergeApp(parent, child, ref)
+	app, err := mergeApp(parent, child)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -142,12 +165,12 @@ func MergeExtends(parent, child map[string]any, ref ParentRef) (map[string]any, 
 		merged["app"] = app
 	}
 
-	envWarnings, err := checkEnvReferences(merged)
+	warnings, err := checkEnvReferences(merged)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return merged, append(warnings, envWarnings...), nil
+	return merged, warnings, nil
 }
 
 func validateChildKeys(child map[string]any) error {
@@ -165,7 +188,7 @@ func validateChildKeys(child map[string]any) error {
 		return nil
 	}
 	sort.Strings(invalid)
-	return fmt.Errorf("a bundle that extends another may only set name, description, version, source_url, app, dependencies, resources, and steps; remove: %s", strings.Join(invalid, ", "))
+	return fmt.Errorf("a bundle with 'extends_runtime' may only set name, description, version, source_url, app, dependencies, resources, and steps; remove: %s", strings.Join(invalid, ", "))
 }
 
 func mergeSteps(parent, child, childResources map[string]any) ([]any, error) {
@@ -270,7 +293,7 @@ func validateChildStep(s any) (string, map[string]any, error) {
 		}
 	}
 	if len(invalid) > 0 {
-		return "", nil, fmt.Errorf("a step in a bundle that extends another may only set path and resources; remove: %s", strings.Join(invalid, ", "))
+		return "", nil, fmt.Errorf("a step in a bundle with 'extends_runtime' may only set path and resources; remove: %s", strings.Join(invalid, ", "))
 	}
 	path, _ := step["path"].(string)
 	templates, _ := step["resources"].(map[string]any)
@@ -298,8 +321,8 @@ func mergeDependencies(parent, child map[string]any) (map[string]any, error) {
 	return merged, nil
 }
 
-func mergeApp(parent, child map[string]any, ref ParentRef) (map[string]any, []string, error) {
-	parentApp, parentHasApp := parent["app"].(map[string]any)
+func mergeApp(parent, child map[string]any) (map[string]any, error) {
+	parentApp, _ := parent["app"].(map[string]any)
 	childApp, childHasApp := child["app"].(map[string]any)
 
 	var invalid []string
@@ -309,32 +332,27 @@ func mergeApp(parent, child map[string]any, ref ParentRef) (map[string]any, []st
 		}
 	}
 	if len(invalid) > 0 {
-		return nil, nil, fmt.Errorf("a bundle that extends another may only set envs and secrets under 'app'; remove: %s", strings.Join(invalid, ", "))
-	}
-
-	var warnings []string
-	if !parentHasApp {
-		if childHasApp {
-			warnings = append(warnings, fmt.Sprintf("parent %s@%s has no 'app' block, so its IaC likely ignores app envs and secrets; the child's 'app' block may have no effect", ref.Name, ref.Version))
-		}
-		return childApp, warnings, nil
+		return nil, fmt.Errorf("a bundle with 'extends_runtime' may only set envs and secrets under 'app'; remove: %s", strings.Join(invalid, ", "))
 	}
 	if !childHasApp {
-		return parentApp, warnings, nil
+		return parentApp, nil
 	}
 
 	merged := maps.Clone(parentApp)
+	if merged == nil {
+		merged = map[string]any{}
+	}
 	for _, section := range []string{"envs", "secrets"} {
 		combined, err := mergeDisjoint(parentApp[section], childApp[section], "app."+section)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if len(combined) > 0 {
 			merged[section] = combined
 		}
 	}
 
-	return merged, warnings, nil
+	return merged, nil
 }
 
 func mergeDisjoint(parentVal, childVal any, label string) (map[string]any, error) {

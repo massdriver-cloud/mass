@@ -96,7 +96,7 @@ func LocalBuildDir(childDir string) (string, error) {
 }
 
 // RunExtends assembles a child bundle at buildDir by pulling the parent named
-// in the child's `extends` and merging the two massdriver.yaml documents. It
+// in the child's `extends_runtime` and merging the two massdriver.yaml documents. It
 // reports false, and touches nothing, when the child extends nothing.
 func RunExtends(ctx context.Context, api ExtendsAPI, childDir, buildDir string, out io.Writer) (bool, error) {
 	child, err := bundle.ReadSpec(childDir)
@@ -125,19 +125,24 @@ func RunExtends(ctx context.Context, api ExtendsAPI, childDir, buildDir string, 
 	if err != nil {
 		return true, fmt.Errorf("pulling parent bundle %s@%s: %w", name, version, err)
 	}
-	fmt.Fprintf(out, "Extending %s@%s (%s, %s)\n", prettylogs.Underline(name), prettylogs.Underline(version), constraint, digest)
+	fmt.Fprintf(out, "Extending runtime %s@%s (%s, %s)\n", prettylogs.Underline(name), prettylogs.Underline(version), constraint, digest)
 
 	parent, err := bundle.ReadSpec(buildDir)
 	if err != nil {
 		return true, fmt.Errorf("reading parent bundle %s@%s: %w", name, version, err)
 	}
 
-	merged, warnings, err := bundle.MergeExtends(parent, child, bundle.ParentRef{
+	parentRef := bundle.ParentRef{
 		Name:       name,
 		Constraint: constraint,
 		Version:    version,
 		Digest:     digest,
-	})
+	}
+	if err = bundle.CheckRuntime(parent, parentRef); err != nil {
+		return true, err
+	}
+
+	merged, warnings, err := bundle.MergeExtends(parent, child, parentRef)
 	if err != nil {
 		return true, err
 	}
