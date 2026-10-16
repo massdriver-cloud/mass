@@ -28,12 +28,12 @@ func TestParseExtends(t *testing.T) {
 		wantErr        string
 	}{
 		{name: "absent", spec: "name: x", wantFound: false},
-		{name: "with constraint", spec: "extends_runtime: lambda@~1.2", wantName: "lambda", wantConstraint: "~1.2", wantFound: true},
-		{name: "dev constraint", spec: "extends_runtime: lambda@~1.2+dev", wantName: "lambda", wantConstraint: "~1.2+dev", wantFound: true},
-		{name: "bare name tracks latest", spec: "extends_runtime: lambda", wantName: "lambda", wantConstraint: "latest", wantFound: true},
-		{name: "other organization", spec: "extends_runtime: acme/lambda@~1", wantFound: true, wantErr: "another organization"},
-		{name: "not a string", spec: "extends_runtime: {name: lambda}", wantFound: true, wantErr: "must be a string"},
-		{name: "empty constraint", spec: "extends_runtime: lambda@", wantFound: true, wantErr: "must be <bundle>@<constraint>"},
+		{name: "with constraint", spec: "app: {runtime: lambda@~1.2}", wantName: "lambda", wantConstraint: "~1.2", wantFound: true},
+		{name: "dev constraint", spec: "app: {runtime: lambda@~1.2+dev}", wantName: "lambda", wantConstraint: "~1.2+dev", wantFound: true},
+		{name: "bare name tracks latest", spec: "app: {runtime: lambda}", wantName: "lambda", wantConstraint: "latest", wantFound: true},
+		{name: "other organization", spec: "app: {runtime: acme/lambda@~1}", wantFound: true, wantErr: "another organization"},
+		{name: "not a string", spec: "app: {runtime: {name: lambda}}", wantFound: true, wantErr: "must be a string"},
+		{name: "empty constraint", spec: "app: {runtime: lambda@}", wantFound: true, wantErr: "must be <runtime>@<constraint>"},
 	}
 
 	for _, tc := range tests {
@@ -63,7 +63,7 @@ name: lambda
 description: A lambda function.
 version: 1.2.7
 source_url: https://github.com/acme/lambda
-provides_runtime: true
+provides: [compute, runtime]
 steps:
   - path: src
     provisioner: opentofu
@@ -102,26 +102,26 @@ func TestCheckRuntime(t *testing.T) {
 		{
 			name:    "bundle that is not a runtime",
 			parent:  "name: lambda\napp:\n  envs: {}\n",
-			wantErr: "lambda@1.2.7 is not a runtime. Set provides_runtime: true",
+			wantErr: "lambda@1.2.7 does not provide a runtime. Add `runtime` to `provides`",
 		},
 		{
-			name:    "runtime set to false",
-			parent:  "name: lambda\nprovides_runtime: false\napp:\n  envs: {}\n",
-			wantErr: "is not a runtime",
+			name:    "bundle that provides something else",
+			parent:  "name: lambda\nprovides: [compute]\napp:\n  envs: {}\n",
+			wantErr: "does not provide a runtime",
 		},
 		{
 			name:    "runtime without an app block",
-			parent:  "name: lambda\nprovides_runtime: true\n",
+			parent:  "name: lambda\nprovides: [runtime]\n",
 			wantErr: "runtime lambda@1.2.7 has no 'app' block",
 		},
 		{
 			name:    "application",
-			parent:  "name: lambda\nprovides_runtime: true\napp:\n  envs: {}\nextends_runtime:\n  name: base\n  version: 0.0.1\n",
-			wantErr: "lambda@1.2.7 is an application, not a runtime",
+			parent:  "name: lambda\nprovides: [runtime]\napp:\n  envs: {}\n  runtime:\n    name: base\n    version: 0.0.1\n",
+			wantErr: "lambda@1.2.7 runs on a runtime itself",
 		},
 		{
 			name:    "runtime uses legacy connections",
-			parent:  "name: lambda\nprovides_runtime: true\napp:\n  envs: {}\nconnections:\n  properties: {}\n",
+			parent:  "name: lambda\nprovides: [runtime]\napp:\n  envs: {}\nconnections:\n  properties: {}\n",
 			wantErr: "deprecated 'connections'",
 		},
 	}
@@ -156,15 +156,16 @@ func TestMergeExtends(t *testing.T) {
 		{
 			name: "child identity and additions overlay the parent",
 			child: `
-extends_runtime: lambda@~1.2
 name: payments-api
 description: Handles card captures.
 version: 0.1.0
+provides: [application]
 dependencies:
   db:
     resource_type: postgres@~1
     required: true
 app:
+  runtime: lambda@~1.2
   envs:
     DB_HOST: .dependencies.db.host
   secrets:
@@ -176,11 +177,7 @@ app:
 name: payments-api
 description: Handles card captures.
 version: 0.1.0
-extends_runtime:
-  name: lambda
-  constraint: "~1.2"
-  version: 1.2.7
-  digest: sha256:abc
+provides: [application]
 steps:
   - path: src
     provisioner: opentofu
@@ -203,6 +200,11 @@ resources:
     resource_type: aws-lambda@1.0.0
     required: true
 app:
+  runtime:
+    name: lambda
+    constraint: "~1.2"
+    version: 1.2.7
+    digest: sha256:abc
   envs:
     MEMORY: .params.memory | tostring
     DB_HOST: .dependencies.db.host
@@ -233,7 +235,7 @@ app:
 		{
 			name:    "child app sets a key other than envs and secrets",
 			child:   "name: app\nversion: 0.1.0\napp:\n  policies:\n    - .dependencies.network.data.read\n",
-			wantErr: "may only set envs and secrets under 'app'; remove: policies",
+			wantErr: "may only set runtime, envs, and secrets under 'app'; remove: policies",
 		},
 		{
 			name:    "child sets a parent-owned key",
@@ -322,9 +324,18 @@ resources:
 			wantErr: "must set its own 'version'",
 		},
 		{
-			name:    "child sets provides_runtime",
-			child:   "name: app\nversion: 0.1.0\nprovides_runtime: true\n",
-			wantErr: "cannot set 'provides_runtime'",
+			name:  "runtime's provides is not inherited",
+			child: "name: app\nversion: 0.1.0\n",
+			check: func(t *testing.T, merged map[string]any) {
+				if _, ok := merged["provides"]; ok {
+					t.Errorf("provides = %v, want absent", merged["provides"])
+				}
+			},
+		},
+		{
+			name:    "child provides runtime",
+			child:   "name: app\nversion: 0.1.0\nprovides: [compute, runtime]\n",
+			wantErr: "cannot both provide `runtime` and set `app.runtime`",
 		},
 		{
 			name:    "dependency collides with parent dependency",

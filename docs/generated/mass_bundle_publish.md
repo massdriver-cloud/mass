@@ -20,7 +20,7 @@ Builds, lints, and publishes a bundle to your organization's catalog. The bundle
 mass bundle publish [path] [flags]
 ```
 
-An application that sets `extends_runtime` is merged with the newest matching runtime and published as a single bundle. See [Runtimes and Applications](https://docs.massdriver.cloud/bundle-development/runtimes-and-applications).
+An application that sets `app.runtime` is merged with the newest matching runtime and published as a single bundle. See [Runtimes and Applications](https://docs.massdriver.cloud/bundle-development/runtimes-and-applications).
 
 ## Flags
 

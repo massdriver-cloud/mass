@@ -28,9 +28,9 @@ func RunLint(b *bundle.Bundle) bundle.LintResult {
 	allResults.Merge(inputsResult)
 	printLintResult("Inputs match provisioner", inputsResult)
 
-	runtimeResult := b.LintRuntime()
-	allResults.Merge(runtimeResult)
-	printLintResult("Runtime", runtimeResult)
+	providesResult := b.LintProvides()
+	allResults.Merge(providesResult)
+	printLintResult("Provides", providesResult)
 
 	return allResults
 }

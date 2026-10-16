@@ -39,6 +39,7 @@ type AppSpec struct {
 	Envs     map[string]string `json:"envs" yaml:"envs" mapstructure:"envs"`
 	Policies []string          `json:"policies" yaml:"policies" mapstructure:"policies"`
 	Secrets  map[string]Secret `json:"secrets" yaml:"secrets" mapstructure:"secrets"`
+	Runtime  any               `json:"runtime,omitempty" yaml:"runtime,omitempty" mapstructure:"runtime"`
 }
 
 // Secret describes a secret that the bundle expects to be injected at runtime.
@@ -75,9 +76,7 @@ type Bundle struct {
 	Connections map[string]any `json:"connections,omitempty" yaml:"connections,omitempty" mapstructure:"connections"`
 	UI          map[string]any `json:"ui,omitempty" yaml:"ui,omitempty" mapstructure:"ui"`
 	AppSpec     *AppSpec       `json:"app,omitempty" yaml:"app,omitempty" mapstructure:"app"`
-
-	ProvidesRuntime bool `json:"provides_runtime,omitempty" yaml:"provides_runtime,omitempty" mapstructure:"provides_runtime"`
-	ExtendsRuntime  any  `json:"extends_runtime,omitempty" yaml:"extends_runtime,omitempty" mapstructure:"extends_runtime"`
+	Provides    []string       `json:"provides,omitempty" yaml:"provides,omitempty" mapstructure:"provides"`
 
 	// Resources and Dependencies are the current input terms. Artifacts and
 	// Connections are their deprecated predecessors.

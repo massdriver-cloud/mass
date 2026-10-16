@@ -13,29 +13,35 @@ import (
 	"github.com/massdriver-cloud/mass/internal/files"
 )
 
-// ExtendsKey is the massdriver.yaml key naming the runtime an application runs on.
-const ExtendsKey = "extends_runtime"
+// RuntimeKey is the key under `app` naming the runtime an application runs on.
+const RuntimeKey = "runtime"
 
-// ProvidesRuntimeKey marks a bundle as a runtime that applications can extend.
-const ProvidesRuntimeKey = "provides_runtime"
+// ProvidesKey lists what a bundle provides, from ProvidesValues.
+const ProvidesKey = "provides"
+
+// ProvidesRuntime is the `provides` value that marks a bundle as a runtime.
+const ProvidesRuntime = "runtime"
+
+// ProvidesValues is the closed set a bundle may list in `provides`.
+var ProvidesValues = []string{"compute", "networking", "storage", "data", "messaging", "authentication", "runtime", "application"}
 
 // DocFiles are the top-level files a child carries over its parent's copy.
 var DocFiles = []string{"README.md", "readme.md", "CHANGELOG.md", "icon.svg", "operator.md", "operator.mdx"}
 
-var childMapKeys = []string{"app", "dependencies", "resources", "steps"}
+var childMapKeys = []string{"app", "dependencies", "provides", "resources", "steps"}
 
 var childStepKeys = []string{"path", "resources"}
 
 var stepResourceKeys = []string{"template"}
 
-var childAppKeys = []string{"envs", "secrets"}
+var childAppKeys = []string{"runtime", "envs", "secrets"}
 
 var legacyInputKeys = []string{"connections", "artifacts"}
 
 var envReferenceRegex = regexp.MustCompile(`\.(params|dependencies|connections)\.([A-Za-z0-9_-]+)`)
 
 // ParentRef identifies the exact parent a child was merged with. Its map form
-// replaces the child's `extends_runtime` constraint in the merged massdriver.yaml.
+// replaces the child's `app.runtime` constraint in the merged massdriver.yaml.
 type ParentRef struct {
 	Name       string
 	Constraint string
@@ -61,39 +67,53 @@ func ReadSpec(dir string) (map[string]any, error) {
 	return spec, nil
 }
 
-// ParseExtends splits a child's `extends_runtime` value into a parent name and
+// AppRuntime returns the `app.runtime` value of a massdriver.yaml document.
+func AppRuntime(spec map[string]any) (any, bool) {
+	app, _ := spec["app"].(map[string]any)
+	raw, ok := app[RuntimeKey]
+	return raw, ok
+}
+
+// ProvidesRuntimeValue reports whether a massdriver.yaml document lists
+// `runtime` in `provides`.
+func ProvidesRuntimeValue(spec map[string]any) bool {
+	provides, _ := spec[ProvidesKey].([]any)
+	return slices.Contains(provides, any(ProvidesRuntime))
+}
+
+// ParseExtends splits a child's `app.runtime` value into a runtime name and
 // version constraint. A bare name tracks `latest`.
 func ParseExtends(spec map[string]any) (name, constraint string, found bool, err error) {
-	raw, ok := spec[ExtendsKey]
+	raw, ok := AppRuntime(spec)
 	if !ok {
 		return "", "", false, nil
 	}
 	ref, isString := raw.(string)
 	if !isString || ref == "" {
-		return "", "", true, fmt.Errorf("'%s' must be a string like <bundle>@<constraint>, e.g. lambda@~1.2", ExtendsKey)
+		return "", "", true, errors.New("'app.runtime' must be a string like <runtime>@<constraint>, e.g. lambda@~1.2")
 	}
 	name, constraint, hasConstraint := strings.Cut(ref, "@")
 	if !hasConstraint {
 		constraint = "latest"
 	}
 	if strings.Contains(name, "/") {
-		return "", "", true, fmt.Errorf("'%s: %s' references another organization; a parent must be in your organization", ExtendsKey, ref)
+		return "", "", true, fmt.Errorf("'app.runtime: %s' references another organization; a runtime must be in your organization", ref)
 	}
 	if name == "" || constraint == "" {
-		return "", "", true, fmt.Errorf("'%s: %s' must be <bundle>@<constraint>, e.g. lambda@~1.2", ExtendsKey, ref)
+		return "", "", true, fmt.Errorf("'app.runtime: %s' must be <runtime>@<constraint>, e.g. lambda@~1.2", ref)
 	}
 	return name, constraint, true, nil
 }
 
-// CheckRuntime reports whether a pulled parent can be extended: it must set
-// provides_runtime, carry an app block, not itself extend a runtime, and use
-// the current input format.
+// CheckRuntime reports whether a pulled parent can be run on: it must provide
+// `runtime`, carry an app block, not itself run on a runtime, and use the
+// current input format.
 func CheckRuntime(parent map[string]any, ref ParentRef) error {
-	if _, ok := parent[ExtendsKey]; ok {
-		return fmt.Errorf("%s@%s is an application, not a runtime; applications cannot run on other applications", ref.Name, ref.Version)
+	if _, ok := AppRuntime(parent); ok {
+		return fmt.Errorf("%s@%s runs on a runtime itself; applications cannot run on other applications", ref.Name, ref.Version)
 	}
-	if isRuntime, _ := parent[ProvidesRuntimeKey].(bool); !isRuntime {
-		return fmt.Errorf("%s@%s is not a runtime. Set provides_runtime: true in its massdriver.yaml and republish", ref.Name, ref.Version)
+	if !ProvidesRuntimeValue(parent) {
+		return fmt.Errorf("%s@%s does not provide a runtime. Add `runtime` to `provides` in its massdriver.yaml and republish", ref.Name, ref.Version)
 	}
 	if _, ok := parent["app"].(map[string]any); !ok {
 		return fmt.Errorf("runtime %s@%s has no 'app' block. A runtime's IaC must consume envs and secrets for applications to run on it", ref.Name, ref.Version)
@@ -115,21 +135,23 @@ func MergeExtends(parent, child map[string]any, ref ParentRef) (map[string]any, 
 		return nil, nil, err
 	}
 	if _, ok := child["version"].(string); !ok {
-		return nil, nil, errors.New("a bundle with 'extends_runtime' must set its own 'version'")
+		return nil, nil, errors.New("a bundle with 'app.runtime' must set its own 'version'")
 	}
-	if _, ok := child[ProvidesRuntimeKey]; ok {
-		return nil, nil, errors.New("a bundle with 'extends_runtime' cannot set 'provides_runtime'; an application cannot be a runtime")
+	if ProvidesRuntimeValue(child) {
+		return nil, nil, errors.New("a bundle cannot both provide `runtime` and set `app.runtime`; applications cannot run on other applications")
 	}
 
 	merged := maps.Clone(parent)
 	delete(merged, "source_url")
-	delete(merged, ProvidesRuntimeKey)
+	delete(merged, ProvidesKey)
 	for key, value := range child {
 		if !slices.Contains(childMapKeys, key) {
 			merged[key] = value
 		}
 	}
-	merged[ExtendsKey] = ref.toMap()
+	if provides, ok := child[ProvidesKey]; ok {
+		merged[ProvidesKey] = provides
+	}
 
 	deps, err := mergeDependencies(parent, child)
 	if err != nil {
@@ -157,13 +179,11 @@ func MergeExtends(parent, child map[string]any, ref ParentRef) (map[string]any, 
 		merged["steps"] = steps
 	}
 
-	app, err := mergeApp(parent, child)
+	app, err := mergeApp(parent, child, ref)
 	if err != nil {
 		return nil, nil, err
 	}
-	if app != nil {
-		merged["app"] = app
-	}
+	merged["app"] = app
 
 	warnings, err := checkEnvReferences(merged)
 	if err != nil {
@@ -188,7 +208,7 @@ func validateChildKeys(child map[string]any) error {
 		return nil
 	}
 	sort.Strings(invalid)
-	return fmt.Errorf("a bundle with 'extends_runtime' may only set name, description, version, source_url, app, dependencies, resources, and steps; remove: %s", strings.Join(invalid, ", "))
+	return fmt.Errorf("a bundle with 'app.runtime' may only set name, description, version, source_url, provides, app, dependencies, resources, and steps; remove: %s", strings.Join(invalid, ", "))
 }
 
 func mergeSteps(parent, child, childResources map[string]any) ([]any, error) {
@@ -293,7 +313,7 @@ func validateChildStep(s any) (string, map[string]any, error) {
 		}
 	}
 	if len(invalid) > 0 {
-		return "", nil, fmt.Errorf("a step in a bundle with 'extends_runtime' may only set path and resources; remove: %s", strings.Join(invalid, ", "))
+		return "", nil, fmt.Errorf("a step in a bundle with 'app.runtime' may only set path and resources; remove: %s", strings.Join(invalid, ", "))
 	}
 	path, _ := step["path"].(string)
 	templates, _ := step["resources"].(map[string]any)
@@ -321,9 +341,9 @@ func mergeDependencies(parent, child map[string]any) (map[string]any, error) {
 	return merged, nil
 }
 
-func mergeApp(parent, child map[string]any) (map[string]any, error) {
+func mergeApp(parent, child map[string]any, ref ParentRef) (map[string]any, error) {
 	parentApp, _ := parent["app"].(map[string]any)
-	childApp, childHasApp := child["app"].(map[string]any)
+	childApp, _ := child["app"].(map[string]any)
 
 	var invalid []string
 	for _, key := range sortedKeys(childApp) {
@@ -332,16 +352,14 @@ func mergeApp(parent, child map[string]any) (map[string]any, error) {
 		}
 	}
 	if len(invalid) > 0 {
-		return nil, fmt.Errorf("a bundle with 'extends_runtime' may only set envs and secrets under 'app'; remove: %s", strings.Join(invalid, ", "))
-	}
-	if !childHasApp {
-		return parentApp, nil
+		return nil, fmt.Errorf("a bundle with 'app.runtime' may only set runtime, envs, and secrets under 'app'; remove: %s", strings.Join(invalid, ", "))
 	}
 
 	merged := maps.Clone(parentApp)
 	if merged == nil {
 		merged = map[string]any{}
 	}
+	merged[RuntimeKey] = ref.toMap()
 	for _, section := range []string{"envs", "secrets"} {
 		combined, err := mergeDisjoint(parentApp[section], childApp[section], "app."+section)
 		if err != nil {

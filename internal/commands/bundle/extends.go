@@ -46,7 +46,7 @@ func (a extendsAPI) PullBundle(ctx context.Context, name, version, dir string) (
 }
 
 // ResolveSource returns the directory to build, lint, or publish from. A
-// bundle that extends nothing is used in place. Otherwise it is assembled in
+// bundle with no app.runtime is used in place. Otherwise it is assembled in
 // the child's local build directory when keep is set, or in a temporary
 // directory that cleanup removes.
 func ResolveSource(ctx context.Context, api ExtendsAPI, childDir string, keep bool, out io.Writer) (string, func(), error) {
@@ -55,7 +55,7 @@ func ResolveSource(ctx context.Context, api ExtendsAPI, childDir string, keep bo
 	if err != nil {
 		return "", noop, err
 	}
-	if _, found := child[bundle.ExtendsKey]; !found {
+	if _, found := bundle.AppRuntime(child); !found {
 		return childDir, noop, nil
 	}
 
@@ -96,7 +96,7 @@ func LocalBuildDir(childDir string) (string, error) {
 }
 
 // RunExtends assembles a child bundle at buildDir by pulling the parent named
-// in the child's `extends_runtime` and merging the two massdriver.yaml documents. It
+// in the child's `app.runtime` and merging the two massdriver.yaml documents. It
 // reports false, and touches nothing, when the child extends nothing.
 func RunExtends(ctx context.Context, api ExtendsAPI, childDir, buildDir string, out io.Writer) (bool, error) {
 	child, err := bundle.ReadSpec(childDir)
