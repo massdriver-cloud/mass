@@ -226,6 +226,38 @@ func matchRequired(sch *schema.Schema) error {
 	return nil
 }
 
+// LintProvides checks `provides` against the closed set and the rules each
+// value carries. A missing `provides` warns until it becomes required.
+func (b *Bundle) LintProvides() LintResult {
+	var result LintResult
+	if b.Provides == nil {
+		result.AddWarning("provides", "provides is not set and will be required in the next major release. List what this bundle provides from: "+strings.Join(ProvidesValues, ", "))
+		return result
+	}
+
+	seen := map[string]bool{}
+	for _, value := range b.Provides {
+		if !slices.Contains(ProvidesValues, value) {
+			result.AddError("provides", fmt.Sprintf("provides: '%s' is not one of %s", value, strings.Join(ProvidesValues, ", ")))
+		}
+		if seen[value] {
+			result.AddError("provides", fmt.Sprintf("provides lists '%s' more than once", value))
+		}
+		seen[value] = true
+	}
+
+	if len(b.Provides) > 0 && len(b.Resources) == 0 {
+		result.AddError("provides", fmt.Sprintf("`provides: %s` requires at least one entry in `resources`.", b.Provides[0]))
+	}
+	if seen[ProvidesRuntime] && b.AppSpec == nil {
+		result.AddError("provides", "`provides: runtime` requires an `app` block. The runtime's IaC must consume envs and secrets for applications to run on it.")
+	}
+	if seen[ProvidesRuntime] && b.AppSpec != nil && b.AppSpec.Runtime != nil {
+		result.AddError("provides", "A bundle cannot both provide `runtime` and set `app.runtime`; applications cannot run on other applications.")
+	}
+	return result
+}
+
 // LintInputsMatchProvisioner warns when massdriver.yaml params differ from the provisioner's declared variables.
 //
 //nolint:gocognit

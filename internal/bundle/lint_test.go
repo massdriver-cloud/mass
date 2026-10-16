@@ -378,3 +378,70 @@ func TestLintMatchRequired(t *testing.T) {
 		})
 	}
 }
+
+func TestLintProvides(t *testing.T) {
+	resources := map[string]bundle.Resource{"function": {ResourceType: "aws-lambda@1.0.0"}}
+	allValues := "compute, networking, storage, data, messaging, authentication, runtime, application"
+
+	issue := func(severity bundle.LintSeverity, message string) bundle.LintIssue {
+		return bundle.LintIssue{Rule: "provides", Severity: severity, Message: message}
+	}
+
+	tests := []struct {
+		name string
+		bun  *bundle.Bundle
+		want []bundle.LintIssue
+	}{
+		{
+			name: "provides is not set",
+			bun:  &bundle.Bundle{},
+			want: []bundle.LintIssue{issue(bundle.LintWarning, "provides is not set and will be required in the next major release. List what this bundle provides from: "+allValues)},
+		},
+		{
+			name: "empty provides",
+			bun:  &bundle.Bundle{Provides: []string{}},
+		},
+		{
+			name: "values with resources",
+			bun:  &bundle.Bundle{Provides: []string{"compute", "application"}, Resources: resources},
+		},
+		{
+			name: "unknown value",
+			bun:  &bundle.Bundle{Provides: []string{"queue"}, Resources: resources},
+			want: []bundle.LintIssue{issue(bundle.LintError, "provides: 'queue' is not one of "+allValues)},
+		},
+		{
+			name: "duplicate value",
+			bun:  &bundle.Bundle{Provides: []string{"compute", "compute"}, Resources: resources},
+			want: []bundle.LintIssue{issue(bundle.LintError, "provides lists 'compute' more than once")},
+		},
+		{
+			name: "values without resources",
+			bun:  &bundle.Bundle{Provides: []string{"networking"}},
+			want: []bundle.LintIssue{issue(bundle.LintError, "`provides: networking` requires at least one entry in `resources`.")},
+		},
+		{
+			name: "runtime with an app block",
+			bun:  &bundle.Bundle{Provides: []string{"compute", "runtime"}, Resources: resources, AppSpec: &bundle.AppSpec{}},
+		},
+		{
+			name: "runtime without an app block",
+			bun:  &bundle.Bundle{Provides: []string{"runtime"}, Resources: resources},
+			want: []bundle.LintIssue{issue(bundle.LintError, "`provides: runtime` requires an `app` block. The runtime's IaC must consume envs and secrets for applications to run on it.")},
+		},
+		{
+			name: "runtime that runs on a runtime",
+			bun:  &bundle.Bundle{Provides: []string{"runtime"}, Resources: resources, AppSpec: &bundle.AppSpec{Runtime: "lambda@~1.2"}},
+			want: []bundle.LintIssue{issue(bundle.LintError, "A bundle cannot both provide `runtime` and set `app.runtime`; applications cannot run on other applications.")},
+		},
+		{
+			name: "application without provides application",
+			bun:  &bundle.Bundle{Provides: []string{"compute"}, Resources: resources, AppSpec: &bundle.AppSpec{Runtime: "lambda@~1.2"}},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.ElementsMatch(t, tc.want, tc.bun.LintProvides().Issues)
+		})
+	}
+}

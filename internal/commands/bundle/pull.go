@@ -7,6 +7,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/oci"
 	"github.com/massdriver-cloud/mass/internal/prettylogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2/content/file"
 )
 
@@ -20,28 +21,12 @@ func RunPull(ctx context.Context, mdClient *massdriver.Client, bundleName string
 		prettylogs.Underline(directory),
 	)
 
-	repo, repoErr := mdClient.OciRepos.Target(bundleName)
-	if repoErr != nil {
-		return repoErr
-	}
-
 	tag, tagErr := resolveTag(ctx, mdClient, bundleName, version)
 	if tagErr != nil {
 		return tagErr
 	}
 
-	store, fileErr := file.New(directory)
-	if fileErr != nil {
-		return fmt.Errorf("failed to create file store: %w", fileErr)
-	}
-	defer store.Close()
-
-	puller := &oci.Puller{
-		Target: store,
-		Repo:   repo,
-	}
-
-	descriptor, pullErr := puller.Pull(ctx, tag)
+	descriptor, pullErr := pullToDirectory(ctx, mdClient, bundleName, tag, directory)
 	if pullErr != nil {
 		return fmt.Errorf("failed to pull bundle: %w", pullErr)
 	}
@@ -53,6 +38,30 @@ func RunPull(ctx context.Context, mdClient *massdriver.Client, bundleName string
 	)
 
 	return nil
+}
+
+func pullToDirectory(ctx context.Context, mdClient *massdriver.Client, bundleName, tag, directory string) (ocispec.Descriptor, error) {
+	repo, repoErr := mdClient.OciRepos.Target(bundleName)
+	if repoErr != nil {
+		return ocispec.Descriptor{}, repoErr
+	}
+
+	store, fileErr := file.New(directory)
+	if fileErr != nil {
+		return ocispec.Descriptor{}, fmt.Errorf("failed to create file store: %w", fileErr)
+	}
+	defer store.Close()
+
+	puller := &oci.Puller{
+		Target: store,
+		Repo:   repo,
+	}
+
+	descriptor, pullErr := puller.Pull(ctx, tag)
+	if pullErr != nil {
+		return ocispec.Descriptor{}, accessHint(pullErr, bundleName)
+	}
+	return descriptor, nil
 }
 
 func resolveTag(ctx context.Context, mdClient *massdriver.Client, bundleName string, version string) (string, error) {
