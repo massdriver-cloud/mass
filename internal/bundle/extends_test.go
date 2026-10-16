@@ -116,7 +116,7 @@ func TestCheckRuntime(t *testing.T) {
 		},
 		{
 			name:    "application",
-			parent:  "name: lambda\nprovides: [runtime]\napp:\n  envs: {}\n  runtime:\n    name: base\n    version: 0.0.1\n",
+			parent:  "name: lambda\nprovides: [runtime]\napp:\n  envs: {}\n  runtime: base@0.0.1\n",
 			wantErr: "lambda@1.2.7 runs on a runtime itself",
 		},
 		{
@@ -200,11 +200,7 @@ resources:
     resource_type: aws-lambda@1.0.0
     required: true
 app:
-  runtime:
-    name: lambda
-    constraint: "~1.2"
-    version: 1.2.7
-    digest: sha256:abc
+  runtime: lambda@1.2.7
   envs:
     MEMORY: .params.memory | tostring
     DB_HOST: .dependencies.db.host

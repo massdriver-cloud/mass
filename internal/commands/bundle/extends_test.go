@@ -111,9 +111,8 @@ func TestResolveSource(t *testing.T) {
 					t.Errorf("merged identity = %v / %v", merged["name"], merged["description"])
 				}
 				app, _ := merged["app"].(map[string]any)
-				stamp, _ := app["runtime"].(map[string]any)
-				if stamp["version"] != "1.2.3" || stamp["digest"] != "sha256:feed" || stamp["constraint"] != "~1.2" {
-					t.Errorf("app.runtime stamp = %v", stamp)
+				if app["runtime"] != "base@1.2.3" {
+					t.Errorf("app.runtime = %v, want base@1.2.3", app["runtime"])
 				}
 			},
 		},

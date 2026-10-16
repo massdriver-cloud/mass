@@ -40,8 +40,8 @@ var legacyInputKeys = []string{"connections", "artifacts"}
 
 var envReferenceRegex = regexp.MustCompile(`\.(params|dependencies|connections)\.([A-Za-z0-9_-]+)`)
 
-// ParentRef identifies the exact parent a child was merged with. Its map form
-// replaces the child's `app.runtime` constraint in the merged massdriver.yaml.
+// ParentRef identifies the exact parent a child was merged with. Its pinned
+// form replaces the child's `app.runtime` constraint in the merged massdriver.yaml.
 type ParentRef struct {
 	Name       string
 	Constraint string
@@ -49,13 +49,8 @@ type ParentRef struct {
 	Digest     string
 }
 
-func (r ParentRef) toMap() map[string]any {
-	return map[string]any{
-		"name":       r.Name,
-		"constraint": r.Constraint,
-		"version":    r.Version,
-		"digest":     r.Digest,
-	}
+func (r ParentRef) pinned() string {
+	return r.Name + "@" + r.Version
 }
 
 // ReadSpec reads massdriver.yaml from dir as an untyped document.
@@ -359,7 +354,7 @@ func mergeApp(parent, child map[string]any, ref ParentRef) (map[string]any, erro
 	if merged == nil {
 		merged = map[string]any{}
 	}
-	merged[RuntimeKey] = ref.toMap()
+	merged[RuntimeKey] = ref.pinned()
 	for _, section := range []string{"envs", "secrets"} {
 		combined, err := mergeDisjoint(parentApp[section], childApp[section], "app."+section)
 		if err != nil {
