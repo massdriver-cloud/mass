@@ -25,6 +25,8 @@ var childStepKeys = []string{"path", "resources"}
 
 var stepResourceKeys = []string{"template"}
 
+var childAppKeys = []string{"envs", "secrets"}
+
 var legacyInputKeys = []string{"connections", "artifacts"}
 
 var envReferenceRegex = regexp.MustCompile(`\.(params|dependencies|connections)\.([A-Za-z0-9_-]+)`)
@@ -300,6 +302,16 @@ func mergeApp(parent, child map[string]any, ref ParentRef) (map[string]any, []st
 	parentApp, parentHasApp := parent["app"].(map[string]any)
 	childApp, childHasApp := child["app"].(map[string]any)
 
+	var invalid []string
+	for _, key := range sortedKeys(childApp) {
+		if !slices.Contains(childAppKeys, key) {
+			invalid = append(invalid, key)
+		}
+	}
+	if len(invalid) > 0 {
+		return nil, nil, fmt.Errorf("a bundle that extends another may only set envs and secrets under 'app'; remove: %s", strings.Join(invalid, ", "))
+	}
+
 	var warnings []string
 	if !parentHasApp {
 		if childHasApp {
@@ -320,17 +332,6 @@ func mergeApp(parent, child map[string]any, ref ParentRef) (map[string]any, []st
 		if len(combined) > 0 {
 			merged[section] = combined
 		}
-	}
-
-	policies, _ := parentApp["policies"].([]any)
-	childPolicies, _ := childApp["policies"].([]any)
-	for _, p := range childPolicies {
-		if !slices.Contains(policies, p) {
-			policies = append(policies, p)
-		}
-	}
-	if policies != nil {
-		merged["policies"] = policies
 	}
 
 	return merged, warnings, nil

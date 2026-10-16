@@ -87,8 +87,6 @@ app:
   secrets:
     SHARED:
       required: false
-  policies:
-    - .dependencies.network.data.read
 `
 
 func TestMergeExtends(t *testing.T) {
@@ -119,9 +117,6 @@ app:
   secrets:
     STRIPE_KEY:
       required: true
-  policies:
-    - .dependencies.network.data.read
-    - .dependencies.db.data.read
 `,
 			check: func(t *testing.T, merged map[string]any) {
 				want := mustYAML(t, `
@@ -163,9 +158,6 @@ app:
       required: false
     STRIPE_KEY:
       required: true
-  policies:
-    - .dependencies.network.data.read
-    - .dependencies.db.data.read
 `)
 				if !reflect.DeepEqual(merged, want) {
 					got, _ := yaml.Marshal(merged)
@@ -184,6 +176,11 @@ app:
 					t.Errorf("description = %v, want the parent's", merged["description"])
 				}
 			},
+		},
+		{
+			name:    "child app sets a key other than envs and secrets",
+			child:   "name: app\nversion: 0.1.0\napp:\n  policies:\n    - .dependencies.network.data.read\n",
+			wantErr: "may only set envs and secrets under 'app'; remove: policies",
 		},
 		{
 			name:    "child sets a parent-owned key",
