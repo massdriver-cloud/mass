@@ -249,6 +249,30 @@ app:
 			wantErr:     "remove: params, ui",
 		},
 		{
+			name:        "application nulls a runtime-owned key",
+			application: "name: app\nversion: 0.1.0\nparams:\n",
+			wantErr:     "remove: params",
+		},
+		{
+			name:        "application sets an unknown scalar key",
+			application: "name: app\nversion: 0.1.0\ntype: infrastructure\n",
+			wantErr:     "remove: type",
+		},
+		{
+			name:        "application sets a non-string scalar",
+			application: "name: app\nversion: 0.1.0\ndescription: {text: hi}\n",
+			wantErr:     "'description' must be a string",
+		},
+		{
+			name:        "application sets schema",
+			application: "name: app\nversion: 0.1.0\nschema: draft-07\n",
+			check: func(t *testing.T, merged map[string]any) {
+				if merged["schema"] != "draft-07" {
+					t.Errorf("schema = %v, want draft-07", merged["schema"])
+				}
+			},
+		},
+		{
 			name: "application resource is emitted by a runtime step",
 			application: `
 name: billing-api
@@ -328,6 +352,11 @@ resources:
 			name:        "application omits version",
 			application: "name: app\n",
 			wantErr:     "must set its own 'version'",
+		},
+		{
+			name:        "application version is a number",
+			application: "name: app\nversion: 1.0\n",
+			wantErr:     "'version' must be a string; quote it if it looks like a number",
 		},
 		{
 			name:        "runtime's provides is not inherited",

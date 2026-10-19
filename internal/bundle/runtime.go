@@ -30,6 +30,8 @@ var DocFiles = []string{"README.md", "readme.md", "CHANGELOG.md", "icon.svg", "o
 
 var appMergeKeys = []string{"app", "dependencies", "provides", "resources", "steps"}
 
+var appScalarKeys = []string{"name", "description", "version", "source_url", "schema"}
+
 var appStepKeys = []string{"path", "resources"}
 
 var stepResourceKeys = []string{"template"}
@@ -126,7 +128,7 @@ func MergeApplication(runtime, application map[string]any, ref RuntimeRef) (map[
 	if err := validateApplicationKeys(application); err != nil {
 		return nil, nil, err
 	}
-	if _, ok := application["version"].(string); !ok {
+	if _, ok := application["version"]; !ok {
 		return nil, nil, errors.New("a bundle with 'app.runtime' must set its own 'version'")
 	}
 	if ProvidesRuntimeValue(application) {
@@ -187,20 +189,21 @@ func MergeApplication(runtime, application map[string]any, ref RuntimeRef) (map[
 
 func validateApplicationKeys(application map[string]any) error {
 	var invalid []string
-	for key, value := range application {
-		if slices.Contains(appMergeKeys, key) {
-			continue
-		}
-		switch value.(type) {
-		case map[string]any, []any:
+	for _, key := range sortedKeys(application) {
+		switch {
+		case slices.Contains(appMergeKeys, key):
+		case slices.Contains(appScalarKeys, key):
+			if _, ok := application[key].(string); !ok {
+				return fmt.Errorf("'%s' must be a string; quote it if it looks like a number", key)
+			}
+		default:
 			invalid = append(invalid, key)
 		}
 	}
 	if len(invalid) == 0 {
 		return nil
 	}
-	sort.Strings(invalid)
-	return fmt.Errorf("a bundle with 'app.runtime' may only set name, description, version, source_url, provides, app, dependencies, resources, and steps; remove: %s", strings.Join(invalid, ", "))
+	return fmt.Errorf("a bundle with 'app.runtime' may only set name, description, version, source_url, schema, provides, app, dependencies, resources, and steps; remove: %s", strings.Join(invalid, ", "))
 }
 
 func mergeSteps(runtime, application, appResources map[string]any, ref RuntimeRef) ([]any, error) {
