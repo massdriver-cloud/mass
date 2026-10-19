@@ -378,3 +378,63 @@ func TestLintMatchRequired(t *testing.T) {
 		})
 	}
 }
+
+func TestLintProvides(t *testing.T) {
+	resources := map[string]bundle.Resource{"function": {ResourceType: "aws-lambda@1.0.0"}}
+	app := &bundle.AppSpec{}
+
+	issue := func(message string) bundle.LintIssue {
+		return bundle.LintIssue{Rule: "provides", Severity: bundle.LintError, Message: message}
+	}
+
+	tests := []struct {
+		name string
+		bun  *bundle.Bundle
+		want []bundle.LintIssue
+	}{
+		{
+			name: "provides is not set",
+			bun:  &bundle.Bundle{},
+		},
+		{
+			name: "empty provides",
+			bun:  &bundle.Bundle{Provides: []string{}},
+		},
+		{
+			name: "runtime with resources and an app block",
+			bun:  &bundle.Bundle{Provides: []string{"runtime"}, Resources: resources, AppSpec: app},
+		},
+		{
+			name: "value outside the set",
+			bun:  &bundle.Bundle{Provides: []string{"compute", "runtime"}, Resources: resources, AppSpec: app},
+			want: []bundle.LintIssue{issue("provides: 'compute' is not one of runtime")},
+		},
+		{
+			name: "duplicate value",
+			bun:  &bundle.Bundle{Provides: []string{"runtime", "runtime"}, Resources: resources, AppSpec: app},
+			want: []bundle.LintIssue{issue("provides lists 'runtime' more than once")},
+		},
+		{
+			name: "runtime without resources",
+			bun:  &bundle.Bundle{Provides: []string{"runtime"}, AppSpec: app},
+		},
+		{
+			name: "runtime without an app block",
+			bun:  &bundle.Bundle{Provides: []string{"runtime"}, Resources: resources},
+		},
+		{
+			name: "runtime that runs on a runtime",
+			bun:  &bundle.Bundle{Provides: []string{"runtime"}, Resources: resources, AppSpec: &bundle.AppSpec{Runtime: "lambda@~1.2"}},
+			want: []bundle.LintIssue{issue("A bundle cannot both provide `runtime` and set `app.runtime`; applications cannot run on other applications.")},
+		},
+		{
+			name: "application without provides",
+			bun:  &bundle.Bundle{Resources: resources, AppSpec: &bundle.AppSpec{Runtime: "lambda@~1.2"}},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.ElementsMatch(t, tc.want, tc.bun.LintProvides().Issues)
+		})
+	}
+}

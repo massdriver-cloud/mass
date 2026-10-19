@@ -226,6 +226,28 @@ func matchRequired(sch *schema.Schema) error {
 	return nil
 }
 
+// LintProvides checks `provides` against the closed set and the rules each
+// value carries.
+func (b *Bundle) LintProvides() LintResult {
+	var result LintResult
+
+	seen := map[string]bool{}
+	for _, value := range b.Provides {
+		if !slices.Contains(ProvidesValues, value) {
+			result.AddError("provides", fmt.Sprintf("provides: '%s' is not one of %s", value, strings.Join(ProvidesValues, ", ")))
+		}
+		if seen[value] {
+			result.AddError("provides", fmt.Sprintf("provides lists '%s' more than once", value))
+		}
+		seen[value] = true
+	}
+
+	if seen[ProvidesRuntime] && b.AppSpec != nil && b.AppSpec.Runtime != "" {
+		result.AddError("provides", "A bundle cannot both provide `runtime` and set `app.runtime`; applications cannot run on other applications.")
+	}
+	return result
+}
+
 // LintInputsMatchProvisioner warns when massdriver.yaml params differ from the provisioner's declared variables.
 //
 //nolint:gocognit

@@ -28,6 +28,10 @@ func RunLint(b *bundle.Bundle) bundle.LintResult {
 	allResults.Merge(inputsResult)
 	printLintResult("Inputs match provisioner", inputsResult)
 
+	providesResult := b.LintProvides()
+	allResults.Merge(providesResult)
+	printLintResult("Provides", providesResult)
+
 	return allResults
 }
 

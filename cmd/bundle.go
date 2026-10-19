@@ -80,6 +80,7 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 	bundleBuildCmd := &cobra.Command{
 		Use:   "build [path]",
 		Short: "Build schemas and generate IaC files from massdriver.yaml file",
+		Long:  helpdocs.MustRender("bundle/build"),
 		Args:  cobra.MaximumNArgs(1),
 		RunE:  runBundleBuild,
 	}
@@ -125,6 +126,7 @@ func NewCmdBundle() *cobra.Command { //nolint:funlen // cobra command builders a
 		Use:     "publish [path]",
 		Aliases: []string{"push"},
 		Short:   "Publish bundle to Massdriver's package manager",
+		Long:    helpdocs.MustRender("bundle/publish"),
 		Args:    cobra.MaximumNArgs(1),
 		RunE:    runBundlePublish,
 	}
@@ -352,17 +354,29 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
-	if err != nil {
-		return err
-	}
-
 	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	return cmdbundle.RunBuild(bundleDirectory, unmarshalledBundle, mdClient)
+	sourceDir, cleanup, err := cmdbundle.ResolveSource(context.Background(), cmdbundle.NewRuntimeAPI(mdClient), bundleDirectory, true, os.Stdout)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	unmarshalledBundle, err := bundle.Unmarshal(sourceDir)
+	if err != nil {
+		return err
+	}
+
+	if err = cmdbundle.RunBuild(sourceDir, unmarshalledBundle, mdClient); err != nil {
+		return err
+	}
+	if sourceDir != bundleDirectory {
+		fmt.Printf("Bundle assembled at %s\n", sourceDir)
+	}
+	return nil
 }
 
 func runBundleImport(cmd *cobra.Command, args []string) error {
@@ -386,14 +400,20 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
-	if err != nil {
-		return err
-	}
-
 	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	sourceDir, cleanup, err := cmdbundle.ResolveSource(context.Background(), cmdbundle.NewRuntimeAPI(mdClient), bundleDirectory, false, os.Stdout)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	unmarshalledBundle, err := bundle.Unmarshal(sourceDir)
+	if err != nil {
+		return err
 	}
 
 	// Schema validation runs before dereferencing, which assumes a valid bundle.
@@ -401,7 +421,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = unmarshalledBundle.DereferenceSchemas(bundleDirectory, resourcetype.NewMassdriverResolver(mdClient))
+	err = unmarshalledBundle.DereferenceSchemas(sourceDir, resourcetype.NewMassdriverResolver(mdClient))
 	if err != nil {
 		return err
 	}
@@ -446,14 +466,20 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 
-	unmarshalledBundle, err := bundle.Unmarshal(bundleDirectory)
-	if err != nil {
-		return err
-	}
-
 	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
+	}
+
+	sourceDir, cleanup, err := cmdbundle.ResolveSource(ctx, cmdbundle.NewRuntimeAPI(mdClient), bundleDirectory, false, os.Stdout)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	unmarshalledBundle, err := bundle.Unmarshal(sourceDir)
+	if err != nil {
+		return err
 	}
 
 	// Schema validation runs before Build, which dereferences and assumes a valid bundle.
@@ -461,7 +487,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = unmarshalledBundle.Build(bundleDirectory, resourcetype.NewMassdriverResolver(mdClient))
+	err = unmarshalledBundle.Build(sourceDir, resourcetype.NewMassdriverResolver(mdClient))
 	if err != nil {
 		return err
 	}
@@ -471,12 +497,10 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 
 		switch {
 		case results.HasErrors():
-			fmt.Printf("Halting publish: Linting failed with %d error(s)\n", len(results.Errors()))
-			os.Exit(1)
+			return fmt.Errorf("halting publish: linting failed with %d error(s)", len(results.Errors()))
 		case results.HasWarnings():
 			if failWarnings {
-				fmt.Printf("Halting publish: linting failed with %d warning(s)\n", len(results.Warnings()))
-				os.Exit(1)
+				return fmt.Errorf("halting publish: linting failed with %d warning(s)", len(results.Warnings()))
 			}
 			fmt.Printf("Linting completed with %d warning(s)\n", len(results.Warnings()))
 		default:
@@ -484,7 +508,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	return cmdbundle.RunPublish(ctx, unmarshalledBundle, mdClient, bundleDirectory, developmentRelease)
+	return cmdbundle.RunPublish(ctx, unmarshalledBundle, mdClient, sourceDir, developmentRelease)
 }
 
 func runBundlePull(cmd *cobra.Command, args []string) error {
