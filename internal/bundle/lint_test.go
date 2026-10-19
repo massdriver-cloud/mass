@@ -421,7 +421,6 @@ func TestLintProvides(t *testing.T) {
 		{
 			name: "runtime without an app block",
 			bun:  &bundle.Bundle{Provides: []string{"runtime"}, Resources: resources},
-			want: []bundle.LintIssue{issue("`provides: runtime` requires an `app` block. The runtime's IaC must consume envs and secrets for applications to run on it.")},
 		},
 		{
 			name: "runtime that runs on a runtime",

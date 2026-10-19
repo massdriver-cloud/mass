@@ -101,17 +101,13 @@ func ParseExtends(spec map[string]any) (name, constraint string, found bool, err
 }
 
 // CheckRuntime reports whether a pulled parent can be run on: it must provide
-// `runtime`, carry an app block, not itself run on a runtime, and use the
-// current input format.
+// `runtime`, not itself run on a runtime, and use the current input format.
 func CheckRuntime(parent map[string]any, ref ParentRef) error {
 	if _, ok := AppRuntime(parent); ok {
 		return fmt.Errorf("%s@%s runs on a runtime itself; applications cannot run on other applications", ref.Name, ref.Version)
 	}
 	if !ProvidesRuntimeValue(parent) {
 		return fmt.Errorf("%s@%s does not provide a runtime. Add `runtime` to `provides` in its massdriver.yaml and republish", ref.Name, ref.Version)
-	}
-	if _, ok := parent["app"].(map[string]any); !ok {
-		return fmt.Errorf("runtime %s@%s has no 'app' block. A runtime's IaC must consume envs and secrets for applications to run on it", ref.Name, ref.Version)
 	}
 	for _, key := range legacyInputKeys {
 		if _, ok := parent[key]; ok {

@@ -110,9 +110,8 @@ func TestCheckRuntime(t *testing.T) {
 			wantErr: "does not provide a runtime",
 		},
 		{
-			name:    "runtime without an app block",
-			parent:  "name: lambda\nprovides: [runtime]\n",
-			wantErr: "runtime lambda@1.2.7 has no 'app' block",
+			name:   "runtime without an app block",
+			parent: "name: lambda\nprovides: [runtime]\n",
 		},
 		{
 			name:    "application",
@@ -225,6 +224,17 @@ app:
 				}
 				if merged["description"] != "A lambda function." {
 					t.Errorf("description = %v, want the parent's", merged["description"])
+				}
+			},
+		},
+		{
+			name:   "runtime without an app block",
+			child:  "name: app\nversion: 0.1.0\napp:\n  runtime: lambda@~1.2\n  envs:\n    STAGE: '@text \"prod\"'\n",
+			parent: "name: lambda\nprovides: [runtime]\n",
+			check: func(t *testing.T, merged map[string]any) {
+				want := mustYAML(t, "runtime: lambda@1.2.7\nenvs:\n  STAGE: '@text \"prod\"'\n")
+				if !reflect.DeepEqual(merged["app"], want) {
+					t.Errorf("app = %v, want %v", merged["app"], want)
 				}
 			},
 		},

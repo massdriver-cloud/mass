@@ -242,9 +242,6 @@ func (b *Bundle) LintProvides() LintResult {
 		seen[value] = true
 	}
 
-	if seen[ProvidesRuntime] && b.AppSpec == nil {
-		result.AddError("provides", "`provides: runtime` requires an `app` block. The runtime's IaC must consume envs and secrets for applications to run on it.")
-	}
 	if seen[ProvidesRuntime] && b.AppSpec != nil && b.AppSpec.Runtime != nil {
 		result.AddError("provides", "A bundle cannot both provide `runtime` and set `app.runtime`; applications cannot run on other applications.")
 	}
