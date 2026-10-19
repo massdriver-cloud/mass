@@ -417,7 +417,6 @@ func TestLintProvides(t *testing.T) {
 		{
 			name: "runtime without resources",
 			bun:  &bundle.Bundle{Provides: []string{"runtime"}, AppSpec: app},
-			want: []bundle.LintIssue{issue("`provides: runtime` requires at least one entry in `resources`.")},
 		},
 		{
 			name: "runtime without an app block",

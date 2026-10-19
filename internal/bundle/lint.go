@@ -242,9 +242,6 @@ func (b *Bundle) LintProvides() LintResult {
 		seen[value] = true
 	}
 
-	if len(b.Provides) > 0 && len(b.Resources) == 0 {
-		result.AddError("provides", fmt.Sprintf("`provides: %s` requires at least one entry in `resources`.", b.Provides[0]))
-	}
 	if seen[ProvidesRuntime] && b.AppSpec == nil {
 		result.AddError("provides", "`provides: runtime` requires an `app` block. The runtime's IaC must consume envs and secrets for applications to run on it.")
 	}
