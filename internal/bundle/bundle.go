@@ -39,7 +39,7 @@ type AppSpec struct {
 	Envs     map[string]string `json:"envs" yaml:"envs" mapstructure:"envs"`
 	Policies []string          `json:"policies" yaml:"policies" mapstructure:"policies"`
 	Secrets  map[string]Secret `json:"secrets" yaml:"secrets" mapstructure:"secrets"`
-	Runtime  any               `json:"runtime,omitempty" yaml:"runtime,omitempty" mapstructure:"runtime"`
+	Runtime  string            `json:"runtime,omitempty" yaml:"runtime,omitempty" mapstructure:"runtime"`
 }
 
 // Secret describes a secret that the bundle expects to be injected at runtime.

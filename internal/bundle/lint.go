@@ -242,7 +242,7 @@ func (b *Bundle) LintProvides() LintResult {
 		seen[value] = true
 	}
 
-	if seen[ProvidesRuntime] && b.AppSpec != nil && b.AppSpec.Runtime != nil {
+	if seen[ProvidesRuntime] && b.AppSpec != nil && b.AppSpec.Runtime != "" {
 		result.AddError("provides", "A bundle cannot both provide `runtime` and set `app.runtime`; applications cannot run on other applications.")
 	}
 	return result
