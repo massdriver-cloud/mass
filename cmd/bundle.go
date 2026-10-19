@@ -359,7 +359,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	sourceDir, cleanup, err := cmdbundle.ResolveSource(context.Background(), cmdbundle.NewExtendsAPI(mdClient), bundleDirectory, true, os.Stdout)
+	sourceDir, cleanup, err := cmdbundle.ResolveSource(context.Background(), cmdbundle.NewRuntimeAPI(mdClient), bundleDirectory, true, os.Stdout)
 	if err != nil {
 		return err
 	}
@@ -405,7 +405,7 @@ func runBundleLint(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	sourceDir, cleanup, err := cmdbundle.ResolveSource(context.Background(), cmdbundle.NewExtendsAPI(mdClient), bundleDirectory, false, os.Stdout)
+	sourceDir, cleanup, err := cmdbundle.ResolveSource(context.Background(), cmdbundle.NewRuntimeAPI(mdClient), bundleDirectory, false, os.Stdout)
 	if err != nil {
 		return err
 	}
@@ -471,7 +471,7 @@ func runBundlePublish(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	sourceDir, cleanup, err := cmdbundle.ResolveSource(ctx, cmdbundle.NewExtendsAPI(mdClient), bundleDirectory, false, os.Stdout)
+	sourceDir, cleanup, err := cmdbundle.ResolveSource(ctx, cmdbundle.NewRuntimeAPI(mdClient), bundleDirectory, false, os.Stdout)
 	if err != nil {
 		return err
 	}

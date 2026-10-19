@@ -13,13 +13,13 @@ import (
 	cmdbundle "github.com/massdriver-cloud/mass/internal/commands/bundle"
 )
 
-type fakeExtendsAPI struct {
-	versions    map[string]string
-	parentFiles map[string]string
-	pulled      []string
+type fakeRuntimeAPI struct {
+	versions     map[string]string
+	runtimeFiles map[string]string
+	pulled       []string
 }
 
-func (f *fakeExtendsAPI) ResolveBundleVersion(_ context.Context, ref string) (string, error) {
+func (f *fakeRuntimeAPI) ResolveBundleVersion(_ context.Context, ref string) (string, error) {
 	v, ok := f.versions[ref]
 	if !ok {
 		return "", errors.New("bundle not found")
@@ -27,9 +27,9 @@ func (f *fakeExtendsAPI) ResolveBundleVersion(_ context.Context, ref string) (st
 	return v, nil
 }
 
-func (f *fakeExtendsAPI) PullBundle(_ context.Context, name, version, dir string) (string, error) {
+func (f *fakeRuntimeAPI) PullBundle(_ context.Context, name, version, dir string) (string, error) {
 	f.pulled = append(f.pulled, name+"@"+version)
-	for rel, content := range f.parentFiles {
+	for rel, content := range f.runtimeFiles {
 		path := filepath.Join(dir, rel)
 		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 			return "", err
@@ -55,52 +55,52 @@ func writeFiles(t *testing.T, dir string, files map[string]string) {
 }
 
 func TestResolveSource(t *testing.T) {
-	parentFiles := map[string]string{
+	runtimeFiles := map[string]string{
 		"massdriver.yaml": "name: base\ndescription: The base bundle.\nversion: 1.2.3\nprovides: [runtime]\napp:\n  envs: {}\nsteps:\n  - path: src\n    provisioner: opentofu\nparams:\n  properties: {}\nui: {}\n",
-		"src/main.tf":     "# parent code\n",
-		"README.md":       "parent readme\n",
+		"src/main.tf":     "# runtime code\n",
+		"README.md":       "runtime readme\n",
 		"icon.svg":        "<svg/>\n",
 	}
 
 	tests := []struct {
-		name        string
-		childFiles  map[string]string
-		parentFiles map[string]string
-		keep        bool
-		versions    map[string]string
-		wantInPlace bool
-		wantErr     string
-		check       func(t *testing.T, childDir, sourceDir string)
+		name         string
+		appFiles     map[string]string
+		runtimeFiles map[string]string
+		keep         bool
+		versions     map[string]string
+		wantInPlace  bool
+		wantErr      string
+		check        func(t *testing.T, appDir, sourceDir string)
 	}{
 		{
-			name:        "bundle without extends builds in place",
-			childFiles:  map[string]string{"massdriver.yaml": "name: plain\nversion: 1.0.0\n"},
+			name:        "bundle without app.runtime builds in place",
+			appFiles:    map[string]string{"massdriver.yaml": "name: plain\nversion: 1.0.0\n"},
 			wantInPlace: true,
-			check: func(t *testing.T, childDir, _ string) {
-				if _, err := os.Stat(filepath.Join(childDir, ".massdriver")); !errors.Is(err, os.ErrNotExist) {
-					t.Errorf(".massdriver created for a bundle without extends")
+			check: func(t *testing.T, appDir, _ string) {
+				if _, err := os.Stat(filepath.Join(appDir, ".massdriver")); !errors.Is(err, os.ErrNotExist) {
+					t.Errorf(".massdriver created for a bundle without app.runtime")
 				}
 			},
 		},
 		{
 			name: "keep assembles into the git-ignored local build directory",
-			childFiles: map[string]string{
+			appFiles: map[string]string{
 				"massdriver.yaml": "app:\n  runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n",
-				"README.md":       "child readme\n",
-				"src/main.tf":     "# child code that must not leak\n",
+				"README.md":       "application readme\n",
+				"src/main.tf":     "# application code that must not leak\n",
 			},
 			keep:     true,
 			versions: map[string]string{"base@~1.2": "1.2.3"},
-			check: func(t *testing.T, childDir, sourceDir string) {
-				if sourceDir != filepath.Join(childDir, ".massdriver", "build") {
+			check: func(t *testing.T, appDir, sourceDir string) {
+				if sourceDir != filepath.Join(appDir, ".massdriver", "build") {
 					t.Fatalf("sourceDir = %s, want the local build directory", sourceDir)
 				}
-				ignore, err := os.ReadFile(filepath.Join(childDir, ".massdriver", ".gitignore"))
+				ignore, err := os.ReadFile(filepath.Join(appDir, ".massdriver", ".gitignore"))
 				if err != nil || string(ignore) != "*\n" {
 					t.Errorf(".gitignore = %q, %v", ignore, err)
 				}
-				assertFile(t, sourceDir, "src/main.tf", "# parent code\n")
-				assertFile(t, sourceDir, "README.md", "child readme\n")
+				assertFile(t, sourceDir, "src/main.tf", "# runtime code\n")
+				assertFile(t, sourceDir, "README.md", "application readme\n")
 				assertFile(t, sourceDir, "icon.svg", "<svg/>\n")
 
 				merged, err := bundle.ReadSpec(sourceDir)
@@ -117,18 +117,18 @@ func TestResolveSource(t *testing.T) {
 			},
 		},
 		{
-			name:       "temporary build directory is removed by cleanup",
-			childFiles: map[string]string{"massdriver.yaml": "app:\n  runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n"},
-			versions:   map[string]string{"base@~1.2": "1.2.3"},
-			check: func(t *testing.T, childDir, sourceDir string) {
-				if strings.HasPrefix(sourceDir, childDir) {
-					t.Errorf("sourceDir %s is inside the child directory", sourceDir)
+			name:     "temporary build directory is removed by cleanup",
+			appFiles: map[string]string{"massdriver.yaml": "app:\n  runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n"},
+			versions: map[string]string{"base@~1.2": "1.2.3"},
+			check: func(t *testing.T, appDir, sourceDir string) {
+				if strings.HasPrefix(sourceDir, appDir) {
+					t.Errorf("sourceDir %s is inside the application directory", sourceDir)
 				}
 			},
 		},
 		{
 			name: "step resource templates stay in massdriver.yaml",
-			childFiles: map[string]string{
+			appFiles: map[string]string{
 				"massdriver.yaml": "app:\n  runtime: base@~1.2\nname: myapp\nversion: 0.1.0\nresources:\n  billing:\n    resource_type: billing-api@~1\nsteps:\n  - path: src\n    resources:\n      billing:\n        template: '{url: .outputs.url}'\n",
 			},
 			versions: map[string]string{"base@~1.2": "1.2.3"},
@@ -151,37 +151,37 @@ func TestResolveSource(t *testing.T) {
 			},
 		},
 		{
-			name:       "unresolvable parent",
-			childFiles: map[string]string{"massdriver.yaml": "app:\n  runtime: base@~9\nname: myapp\nversion: 0.1.0\n"},
-			wantErr:    "resolving parent bundle base@~9: bundle not found",
+			name:     "unresolvable runtime",
+			appFiles: map[string]string{"massdriver.yaml": "app:\n  runtime: base@~9\nname: myapp\nversion: 0.1.0\n"},
+			wantErr:  "resolving runtime base@~9: bundle not found",
 		},
 		{
-			name:       "invalid child",
-			childFiles: map[string]string{"massdriver.yaml": "app:\n  runtime: base@~1.2\nname: myapp\nversion: 0.1.0\nparams:\n  properties: {}\n"},
-			versions:   map[string]string{"base@~1.2": "1.2.3"},
-			wantErr:    "remove: params",
+			name:     "invalid application",
+			appFiles: map[string]string{"massdriver.yaml": "app:\n  runtime: base@~1.2\nname: myapp\nversion: 0.1.0\nparams:\n  properties: {}\n"},
+			versions: map[string]string{"base@~1.2": "1.2.3"},
+			wantErr:  "remove: params",
 		},
 		{
-			name:        "parent is not a runtime",
-			childFiles:  map[string]string{"massdriver.yaml": "app:\n  runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n"},
-			parentFiles: map[string]string{"massdriver.yaml": "name: base\nversion: 1.2.3\napp:\n  envs: {}\n"},
-			versions:    map[string]string{"base@~1.2": "1.2.3"},
-			wantErr:     "base@1.2.3 does not provide a runtime",
+			name:         "bundle is not a runtime",
+			appFiles:     map[string]string{"massdriver.yaml": "app:\n  runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n"},
+			runtimeFiles: map[string]string{"massdriver.yaml": "name: base\nversion: 1.2.3\napp:\n  envs: {}\n"},
+			versions:     map[string]string{"base@~1.2": "1.2.3"},
+			wantErr:      "base@1.2.3 does not provide a runtime",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			childDir := t.TempDir()
-			writeFiles(t, childDir, tc.childFiles)
-			parent := parentFiles
-			if tc.parentFiles != nil {
-				parent = tc.parentFiles
+			appDir := t.TempDir()
+			writeFiles(t, appDir, tc.appFiles)
+			runtime := runtimeFiles
+			if tc.runtimeFiles != nil {
+				runtime = tc.runtimeFiles
 			}
-			api := &fakeExtendsAPI{versions: tc.versions, parentFiles: parent}
+			api := &fakeRuntimeAPI{versions: tc.versions, runtimeFiles: runtime}
 
 			var out bytes.Buffer
-			sourceDir, cleanup, err := cmdbundle.ResolveSource(context.Background(), api, childDir, tc.keep, &out)
+			sourceDir, cleanup, err := cmdbundle.ResolveSource(context.Background(), api, appDir, tc.keep, &out)
 			if tc.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
 					t.Fatalf("err = %v, want containing %q", err, tc.wantErr)
@@ -191,11 +191,11 @@ func TestResolveSource(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if (sourceDir == childDir) != tc.wantInPlace {
-				t.Fatalf("sourceDir = %s, in place = %v, want %v", sourceDir, sourceDir == childDir, tc.wantInPlace)
+			if (sourceDir == appDir) != tc.wantInPlace {
+				t.Fatalf("sourceDir = %s, in place = %v, want %v", sourceDir, sourceDir == appDir, tc.wantInPlace)
 			}
 			if tc.check != nil {
-				tc.check(t, childDir, sourceDir)
+				tc.check(t, appDir, sourceDir)
 			}
 
 			cleanup()
@@ -208,19 +208,19 @@ func TestResolveSource(t *testing.T) {
 	}
 }
 
-func TestRunExtendsRebuildsFromScratch(t *testing.T) {
-	childDir := t.TempDir()
-	writeFiles(t, childDir, map[string]string{"massdriver.yaml": "app:\n  runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n"})
+func TestAssembleApplicationRebuildsFromScratch(t *testing.T) {
+	appDir := t.TempDir()
+	writeFiles(t, appDir, map[string]string{"massdriver.yaml": "app:\n  runtime: base@~1.2\nname: myapp\nversion: 0.1.0\n"})
 	buildDir := filepath.Join(t.TempDir(), "build")
-	writeFiles(t, buildDir, map[string]string{"stale.tf": "# from a previous parent\n"})
+	writeFiles(t, buildDir, map[string]string{"stale.tf": "# from a previous runtime\n"})
 
-	api := &fakeExtendsAPI{
-		versions:    map[string]string{"base@~1.2": "1.2.3"},
-		parentFiles: map[string]string{"massdriver.yaml": "name: base\ndescription: The base bundle.\nprovides: [runtime]\napp:\n  envs: {}\n"},
+	api := &fakeRuntimeAPI{
+		versions:     map[string]string{"base@~1.2": "1.2.3"},
+		runtimeFiles: map[string]string{"massdriver.yaml": "name: base\ndescription: The base bundle.\nprovides: [runtime]\napp:\n  envs: {}\n"},
 	}
-	found, err := cmdbundle.RunExtends(context.Background(), api, childDir, buildDir, &bytes.Buffer{})
+	found, err := cmdbundle.AssembleApplication(context.Background(), api, appDir, buildDir, &bytes.Buffer{})
 	if err != nil || !found {
-		t.Fatalf("RunExtends = %v, %v", found, err)
+		t.Fatalf("AssembleApplication = %v, %v", found, err)
 	}
 	if _, statErr := os.Stat(filepath.Join(buildDir, "stale.tf")); !errors.Is(statErr, os.ErrNotExist) {
 		t.Errorf("stale file from a previous build survived")

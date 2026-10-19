@@ -16,20 +16,20 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// ExtendsAPI is the SDK surface needed to resolve and fetch a parent bundle.
-type ExtendsAPI interface {
+// RuntimeAPI is the SDK surface needed to resolve and fetch a runtime.
+type RuntimeAPI interface {
 	// ResolveBundleVersion resolves "<name>@<constraint>" to a concrete version.
 	ResolveBundleVersion(ctx context.Context, ref string) (string, error)
 	// PullBundle writes the bundle's files into dir and returns its manifest digest.
 	PullBundle(ctx context.Context, name, version, dir string) (string, error)
 }
 
-// NewExtendsAPI returns the production [ExtendsAPI] backed by the SDK client.
-func NewExtendsAPI(c *massdriver.Client) ExtendsAPI { return extendsAPI{c: c} }
+// NewRuntimeAPI returns the production [RuntimeAPI] backed by the SDK client.
+func NewRuntimeAPI(c *massdriver.Client) RuntimeAPI { return runtimeAPI{c: c} }
 
-type extendsAPI struct{ c *massdriver.Client }
+type runtimeAPI struct{ c *massdriver.Client }
 
-func (a extendsAPI) ResolveBundleVersion(ctx context.Context, ref string) (string, error) {
+func (a runtimeAPI) ResolveBundleVersion(ctx context.Context, ref string) (string, error) {
 	b, err := a.c.Bundles.Get(ctx, ref)
 	if err != nil {
 		return "", err
@@ -37,7 +37,7 @@ func (a extendsAPI) ResolveBundleVersion(ctx context.Context, ref string) (strin
 	return b.Version, nil
 }
 
-func (a extendsAPI) PullBundle(ctx context.Context, name, version, dir string) (string, error) {
+func (a runtimeAPI) PullBundle(ctx context.Context, name, version, dir string) (string, error) {
 	desc, err := pullToDirectory(ctx, a.c, name, version, dir)
 	if err != nil {
 		return "", err
@@ -47,32 +47,32 @@ func (a extendsAPI) PullBundle(ctx context.Context, name, version, dir string) (
 
 // ResolveSource returns the directory to build, lint, or publish from. A
 // bundle with no app.runtime is used in place. Otherwise it is assembled in
-// the child's local build directory when keep is set, or in a temporary
+// the application's local build directory when keep is set, or in a temporary
 // directory that cleanup removes.
-func ResolveSource(ctx context.Context, api ExtendsAPI, childDir string, keep bool, out io.Writer) (string, func(), error) {
+func ResolveSource(ctx context.Context, api RuntimeAPI, appDir string, keep bool, out io.Writer) (string, func(), error) {
 	noop := func() {}
-	child, err := bundle.ReadSpec(childDir)
+	application, err := bundle.ReadSpec(appDir)
 	if err != nil {
 		return "", noop, err
 	}
-	if _, found := bundle.AppRuntime(child); !found {
-		return childDir, noop, nil
+	if _, found := bundle.AppRuntime(application); !found {
+		return appDir, noop, nil
 	}
 
-	buildDir, cleanup, err := buildDirectory(childDir, keep)
+	buildDir, cleanup, err := buildDirectory(appDir, keep)
 	if err != nil {
 		return "", noop, err
 	}
-	if _, err = RunExtends(ctx, api, childDir, buildDir, out); err != nil {
+	if _, err = AssembleApplication(ctx, api, appDir, buildDir, out); err != nil {
 		cleanup()
 		return "", noop, err
 	}
 	return buildDir, cleanup, nil
 }
 
-func buildDirectory(childDir string, keep bool) (string, func(), error) {
+func buildDirectory(appDir string, keep bool) (string, func(), error) {
 	if keep {
-		dir, err := LocalBuildDir(childDir)
+		dir, err := LocalBuildDir(appDir)
 		return dir, func() {}, err
 	}
 	dir, err := os.MkdirTemp("", "mass-bundle-")
@@ -82,10 +82,10 @@ func buildDirectory(childDir string, keep bool) (string, func(), error) {
 	return dir, func() { _ = os.RemoveAll(dir) }, nil
 }
 
-// LocalBuildDir is where `mass bundle build` assembles a bundle that extends
-// another, kept out of the child's step directories and out of git.
-func LocalBuildDir(childDir string) (string, error) {
-	root := filepath.Join(childDir, ".massdriver")
+// LocalBuildDir is where `mass bundle build` assembles an application on its
+// runtime, kept out of the application's step directories and out of git.
+func LocalBuildDir(appDir string) (string, error) {
+	root := filepath.Join(appDir, ".massdriver")
 	if err := os.MkdirAll(root, 0o750); err != nil {
 		return "", err
 	}
@@ -95,15 +95,16 @@ func LocalBuildDir(childDir string) (string, error) {
 	return filepath.Join(root, "build"), nil
 }
 
-// RunExtends assembles a child bundle at buildDir by pulling the parent named
-// in the child's `app.runtime` and merging the two massdriver.yaml documents. It
-// reports false, and touches nothing, when the child extends nothing.
-func RunExtends(ctx context.Context, api ExtendsAPI, childDir, buildDir string, out io.Writer) (bool, error) {
-	child, err := bundle.ReadSpec(childDir)
+// AssembleApplication assembles an application at buildDir by pulling the
+// runtime named in its `app.runtime` and merging the two massdriver.yaml
+// documents. It reports false, and touches nothing, when the bundle sets no
+// `app.runtime`.
+func AssembleApplication(ctx context.Context, api RuntimeAPI, appDir, buildDir string, out io.Writer) (bool, error) {
+	application, err := bundle.ReadSpec(appDir)
 	if err != nil {
 		return false, err
 	}
-	name, constraint, found, err := bundle.ParseExtends(child)
+	name, constraint, found, err := bundle.ParseAppRuntime(application)
 	if err != nil || !found {
 		return found, err
 	}
@@ -111,7 +112,7 @@ func RunExtends(ctx context.Context, api ExtendsAPI, childDir, buildDir string, 
 	ref := name + "@" + constraint
 	version, err := api.ResolveBundleVersion(ctx, ref)
 	if err != nil {
-		return true, fmt.Errorf("resolving parent bundle %s: %w", ref, err)
+		return true, fmt.Errorf("resolving runtime %s: %w", ref, err)
 	}
 
 	if err = os.RemoveAll(buildDir); err != nil {
@@ -123,26 +124,26 @@ func RunExtends(ctx context.Context, api ExtendsAPI, childDir, buildDir string, 
 
 	digest, err := api.PullBundle(ctx, name, version, buildDir)
 	if err != nil {
-		return true, fmt.Errorf("pulling parent bundle %s@%s: %w", name, version, err)
+		return true, fmt.Errorf("pulling runtime %s@%s: %w", name, version, err)
 	}
-	fmt.Fprintf(out, "Extending runtime %s@%s (%s, %s)\n", prettylogs.Underline(name), prettylogs.Underline(version), constraint, digest)
+	fmt.Fprintf(out, "Using runtime %s@%s (%s, %s)\n", prettylogs.Underline(name), prettylogs.Underline(version), constraint, digest)
 
-	parent, err := bundle.ReadSpec(buildDir)
+	runtime, err := bundle.ReadSpec(buildDir)
 	if err != nil {
-		return true, fmt.Errorf("reading parent bundle %s@%s: %w", name, version, err)
+		return true, fmt.Errorf("reading runtime %s@%s: %w", name, version, err)
 	}
 
-	parentRef := bundle.ParentRef{
+	runtimeRef := bundle.RuntimeRef{
 		Name:       name,
 		Constraint: constraint,
 		Version:    version,
 		Digest:     digest,
 	}
-	if err = bundle.CheckRuntime(parent, parentRef); err != nil {
+	if err = bundle.CheckRuntime(runtime, runtimeRef); err != nil {
 		return true, err
 	}
 
-	merged, warnings, err := bundle.MergeExtends(parent, child, parentRef)
+	merged, warnings, err := bundle.MergeApplication(runtime, application, runtimeRef)
 	if err != nil {
 		return true, err
 	}
@@ -158,12 +159,12 @@ func RunExtends(ctx context.Context, api ExtendsAPI, childDir, buildDir string, 
 		return true, err
 	}
 
-	return true, copyDocFiles(childDir, buildDir)
+	return true, copyDocFiles(appDir, buildDir)
 }
 
-func copyDocFiles(childDir, buildDir string) error {
+func copyDocFiles(appDir, buildDir string) error {
 	for _, name := range bundle.DocFiles {
-		data, err := os.ReadFile(filepath.Join(childDir, name))
+		data, err := os.ReadFile(filepath.Join(appDir, name))
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
