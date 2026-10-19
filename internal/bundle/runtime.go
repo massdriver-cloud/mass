@@ -125,11 +125,15 @@ func CheckRuntime(runtime map[string]any, ref RuntimeRef) error {
 // identity, extra dependencies, resources emitted by jq templates on the
 // runtime's steps, and app wiring. The returned warnings are non-fatal.
 func MergeApplication(runtime, application map[string]any, ref RuntimeRef) (map[string]any, []string, error) {
+	version, ok := application["version"]
+	if !ok {
+		return nil, nil, errors.New("a bundle with 'app.runtime' must set its own 'version'")
+	}
+	if v, _ := version.(string); !validSemverRegex.MatchString(v) {
+		return nil, nil, fmt.Errorf("invalid version in massdriver.yaml: %v. Version must follow semantic versioning (MAJOR.MINOR.PATCH), e.g., 1.2.3", version)
+	}
 	if err := validateApplicationKeys(application); err != nil {
 		return nil, nil, err
-	}
-	if _, ok := application["version"]; !ok {
-		return nil, nil, errors.New("a bundle with 'app.runtime' must set its own 'version'")
 	}
 	if ProvidesRuntimeValue(application) {
 		return nil, nil, errors.New("a bundle cannot both provide `runtime` and set `app.runtime`; applications cannot run on other applications")
@@ -194,7 +198,7 @@ func validateApplicationKeys(application map[string]any) error {
 		case slices.Contains(appMergeKeys, key):
 		case slices.Contains(appScalarKeys, key):
 			if _, ok := application[key].(string); !ok {
-				return fmt.Errorf("'%s' must be a string; quote it if it looks like a number", key)
+				return fmt.Errorf("'%s' must be a string", key)
 			}
 		default:
 			invalid = append(invalid, key)

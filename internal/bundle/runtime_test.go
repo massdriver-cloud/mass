@@ -356,7 +356,12 @@ resources:
 		{
 			name:        "application version is a number",
 			application: "name: app\nversion: 1.0\n",
-			wantErr:     "'version' must be a string; quote it if it looks like a number",
+			wantErr:     "invalid version in massdriver.yaml: 1. Version must follow semantic versioning",
+		},
+		{
+			name:        "application version is not semver",
+			application: "name: app\nversion: '1.0'\n",
+			wantErr:     "invalid version in massdriver.yaml: 1.0. Version must follow semantic versioning",
 		},
 		{
 			name:        "runtime's provides is not inherited",
