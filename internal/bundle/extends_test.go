@@ -63,7 +63,7 @@ name: lambda
 description: A lambda function.
 version: 1.2.7
 source_url: https://github.com/acme/lambda
-provides: [compute, runtime]
+provides: [runtime]
 steps:
   - path: src
     provisioner: opentofu
@@ -105,8 +105,8 @@ func TestCheckRuntime(t *testing.T) {
 			wantErr: "lambda@1.2.7 does not provide a runtime. Add `runtime` to `provides`",
 		},
 		{
-			name:    "bundle that provides something else",
-			parent:  "name: lambda\nprovides: [compute]\napp:\n  envs: {}\n",
+			name:    "bundle with an empty provides",
+			parent:  "name: lambda\nprovides: []\napp:\n  envs: {}\n",
 			wantErr: "does not provide a runtime",
 		},
 		{
@@ -159,7 +159,7 @@ func TestMergeExtends(t *testing.T) {
 name: payments-api
 description: Handles card captures.
 version: 0.1.0
-provides: [application]
+provides: []
 dependencies:
   db:
     resource_type: postgres@~1
@@ -177,7 +177,7 @@ app:
 name: payments-api
 description: Handles card captures.
 version: 0.1.0
-provides: [application]
+provides: []
 steps:
   - path: src
     provisioner: opentofu
@@ -330,7 +330,7 @@ resources:
 		},
 		{
 			name:    "child provides runtime",
-			child:   "name: app\nversion: 0.1.0\nprovides: [compute, runtime]\n",
+			child:   "name: app\nversion: 0.1.0\nprovides: [runtime]\n",
 			wantErr: "cannot both provide `runtime` and set `app.runtime`",
 		},
 		{

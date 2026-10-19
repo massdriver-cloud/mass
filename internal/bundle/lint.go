@@ -227,13 +227,9 @@ func matchRequired(sch *schema.Schema) error {
 }
 
 // LintProvides checks `provides` against the closed set and the rules each
-// value carries. A missing `provides` warns until it becomes required.
+// value carries.
 func (b *Bundle) LintProvides() LintResult {
 	var result LintResult
-	if b.Provides == nil {
-		result.AddWarning("provides", "provides is not set and will be required in the next major release. List what this bundle provides from: "+strings.Join(ProvidesValues, ", "))
-		return result
-	}
 
 	seen := map[string]bool{}
 	for _, value := range b.Provides {

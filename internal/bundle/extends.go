@@ -23,7 +23,7 @@ const ProvidesKey = "provides"
 const ProvidesRuntime = "runtime"
 
 // ProvidesValues is the closed set a bundle may list in `provides`.
-var ProvidesValues = []string{"compute", "networking", "storage", "data", "messaging", "authentication", "runtime", "application"}
+var ProvidesValues = []string{"runtime"}
 
 // DocFiles are the top-level files a child carries over its parent's copy.
 var DocFiles = []string{"README.md", "readme.md", "CHANGELOG.md", "icon.svg", "operator.md", "operator.mdx"}
