@@ -5,12 +5,14 @@ package resourcetype
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands/repository"
@@ -98,12 +100,15 @@ func normalizeRel(p string) string {
 
 // RunPublish publishes the resource type at path — a directory, a
 // massdriver.yaml, or a raw schema file via the deprecated legacy path.
-func RunPublish(ctx context.Context, mdClient *massdriver.Client, path string) (string, string, error) {
+func RunPublish(ctx context.Context, mdClient *massdriver.Client, path string, developmentRelease bool) (string, string, error) {
 	target, resolveErr := resolvePublishPath(path)
 	if resolveErr != nil {
 		return "", "", resolveErr
 	}
 	if target.legacy {
+		if developmentRelease {
+			return "", "", fmt.Errorf("development releases require the massdriver.yaml format; run `mass resource-type convert %s` first", target.path)
+		}
 		return publishLegacySchema(ctx, mdClient, target.path)
 	}
 
@@ -126,7 +131,8 @@ func RunPublish(ctx context.Context, mdClient *massdriver.Client, path string) (
 	}
 
 	// Before the network-heavy dereference and validation.
-	if versionErr := checkDuplicateVersion(ctx, mdClient, config.Name, config.Version); versionErr != nil {
+	version, versionErr := resolveVersion(ctx, mdClient, config.Name, config.Version, developmentRelease)
+	if versionErr != nil {
 		return "", "", versionErr
 	}
 
@@ -144,15 +150,15 @@ func RunPublish(ctx context.Context, mdClient *massdriver.Client, path string) (
 		Repo:  repo,
 	}
 
-	if _, packageErr := publisher.Package(ctx, srcDir, config.Version, resourcetype.ArtifactType, packageKeep(config)); packageErr != nil {
+	if _, packageErr := publisher.Package(ctx, srcDir, version, resourcetype.ArtifactType, packageKeep(config)); packageErr != nil {
 		return "", "", fmt.Errorf("packaging resource type: %w", packageErr)
 	}
 
-	if publishErr := publisher.Publish(ctx, config.Version); publishErr != nil {
+	if publishErr := publisher.Publish(ctx, version); publishErr != nil {
 		return "", "", fmt.Errorf("publishing resource type: %w", publishErr)
 	}
 
-	return config.Name, config.Version, nil
+	return config.Name, version, nil
 }
 
 type publishTarget struct {
@@ -260,24 +266,42 @@ func validateBuiltSchema(mdClient *massdriver.Client, rt map[string]any) error {
 	return nil
 }
 
-// checkDuplicateVersion mirrors the immutability the API enforces, failing
-// before the network-heavy packaging work.
-func checkDuplicateVersion(ctx context.Context, mdClient *massdriver.Client, name, version string) error {
-	// 0.0.0 is the unversioned/dev tag — republishable, matching bundles, though
+// resolveVersion returns the tag to publish under. It mirrors the immutability
+// the API enforces, failing before the network-heavy packaging work.
+func resolveVersion(ctx context.Context, mdClient *massdriver.Client, name, version string, developmentRelease bool) (string, error) {
+	// 0.0.0 is the unversioned tag — republishable, matching bundles, though
 	// the API refuses it once other versions exist.
 	if version == "0.0.0" {
-		return nil
+		if developmentRelease {
+			return "", errors.New("a development release needs a version in massdriver.yaml to base it on")
+		}
+		return version, nil
 	}
 	repo, err := mdClient.OciRepos.Get(ctx, name)
 	if err != nil {
-		return repository.NotFoundHint(err, "resource-type", name)
+		return "", repository.NotFoundHint(err, "resource-type", name)
 	}
-	for _, t := range repo.Tags {
-		if t.Tag == version {
-			return fmt.Errorf("version %s already exists for resource type %s", version, name)
+	tags := make([]string, len(repo.Tags))
+	for i, t := range repo.Tags {
+		tags[i] = t.Tag
+	}
+	return nextVersion(name, version, tags, developmentRelease, time.Now())
+}
+
+// nextVersion applies the publish rule to a repo's existing tags. A
+// development release of a version that already shipped would sort before it
+// and never resolve, so it is refused.
+func nextVersion(name, version string, existingTags []string, developmentRelease bool, now time.Time) (string, error) {
+	if slices.Contains(existingTags, version) {
+		if developmentRelease {
+			return "", fmt.Errorf("version %s already exists for resource type %s - cannot publish a development release for an existing version", version, name)
 		}
+		return "", fmt.Errorf("version %s already exists for resource type %s", version, name)
 	}
-	return nil
+	if developmentRelease {
+		return fmt.Sprintf("%s-dev.%s", version, now.UTC().Format("20060102T150405Z")), nil
+	}
+	return version, nil
 }
 
 func validateResourceType(rt map[string]any, schemaURL string) error {

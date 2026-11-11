@@ -72,6 +72,7 @@ func NewCmdType() *cobra.Command {
 		Args:    cobra.MaximumNArgs(1),
 		RunE:    runTypePublish,
 	}
+	typePublishCmd.Flags().BoolP("development", "d", false, "Publish the resource type as a development release.")
 
 	typePullCmd := &cobra.Command{
 		Use:   "pull <resource-type>[@<version>]",
@@ -195,7 +196,12 @@ func runTypePublish(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	name, version, publishErr := cmdresourcetype.RunPublish(ctx, mdClient, path)
+	developmentRelease, err := cmd.Flags().GetBool("development")
+	if err != nil {
+		return err
+	}
+
+	name, version, publishErr := cmdresourcetype.RunPublish(ctx, mdClient, path, developmentRelease)
 	if publishErr != nil {
 		return fmt.Errorf("error publishing resource type: %w", publishErr)
 	}
