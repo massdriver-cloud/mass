@@ -1,11 +1,13 @@
-package resourcetype //nolint:testpackage // needs access to unexported checkDuplicateVersion
+package resourcetype //nolint:testpackage // needs access to unexported resolveVersion
 
 import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
@@ -38,7 +40,7 @@ func TestRunPublishValidation(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, err := RunPublish(t.Context(), nil, tc.path)
+			_, _, err := RunPublish(t.Context(), nil, tc.path, false)
 			if err == nil {
 				t.Fatalf("expected an error, got nil")
 			}
@@ -147,7 +149,7 @@ func TestRunPublishLegacySchema(t *testing.T) {
 	var name, version string
 	var publishErr error
 	out := captureStdout(t, func() {
-		name, version, publishErr = RunPublish(t.Context(), mdClient, path)
+		name, version, publishErr = RunPublish(t.Context(), mdClient, path, false)
 	})
 
 	if publishErr != nil {
@@ -234,7 +236,7 @@ func TestCheckDuplicateVersion(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := checkDuplicateVersion(t.Context(), tc.client(t), "aws-s3-bucket", tc.version)
+			_, err := resolveVersion(t.Context(), tc.client(t), "aws-s3-bucket", tc.version, false)
 			if tc.wantPass {
 				if err != nil {
 					t.Fatalf("expected no error, got: %v", err)
@@ -252,8 +254,78 @@ func TestCheckDuplicateVersion(t *testing.T) {
 }
 
 // The nil client is the assertion: losing the short-circuit panics here.
-func TestCheckDuplicateVersionDevTagSkipsAPI(t *testing.T) {
-	if err := checkDuplicateVersion(t.Context(), nil, "aws-s3-bucket", "0.0.0"); err != nil {
+func TestResolveVersionUnversionedSkipsAPI(t *testing.T) {
+	version, err := resolveVersion(t.Context(), nil, "aws-s3-bucket", "0.0.0", false)
+	if err != nil {
 		t.Fatalf("0.0.0 should skip the duplicate check, got: %v", err)
+	}
+	if version != "0.0.0" {
+		t.Fatalf("expected 0.0.0, got %s", version)
+	}
+}
+
+func TestResolveVersionDevelopmentNeedsVersion(t *testing.T) {
+	_, err := resolveVersion(t.Context(), nil, "aws-s3-bucket", "0.0.0", true)
+	if err == nil || !strings.Contains(err.Error(), "needs a version") {
+		t.Fatalf("expected a missing-version error, got: %v", err)
+	}
+}
+
+func TestResolveVersionDevelopmentAppendsTimestamp(t *testing.T) {
+	client := repoWithTags(t, "aws-s3-bucket", "1.0.0")
+	version, err := resolveVersion(t.Context(), client, "aws-s3-bucket", "1.1.0", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !regexp.MustCompile(`^1\.1\.0-dev\.\d{8}T\d{6}Z$`).MatchString(version) {
+		t.Fatalf("unexpected development version %q", version)
+	}
+}
+
+func TestNextVersion(t *testing.T) {
+	now := time.Date(2026, 11, 10, 15, 30, 0, 0, time.FixedZone("EST", -5*60*60))
+
+	tests := []struct {
+		name        string
+		version     string
+		tags        []string
+		development bool
+		want        string
+		wantErr     string
+	}{
+		{name: "stable", version: "1.1.0", tags: []string{"1.0.0"}, want: "1.1.0"},
+		{name: "development uses UTC timestamp", version: "1.1.0", tags: []string{"1.0.0"}, development: true, want: "1.1.0-dev.20261110T203000Z"},
+		{name: "development alongside earlier dev releases", version: "1.1.0", tags: []string{"1.1.0-dev.20261101T000000Z"}, development: true, want: "1.1.0-dev.20261110T203000Z"},
+		{name: "stable already exists", version: "1.0.0", tags: []string{"1.0.0"}, wantErr: "version 1.0.0 already exists for resource type aws-s3-bucket"},
+		{name: "development of existing version", version: "1.0.0", tags: []string{"1.0.0"}, development: true, wantErr: "cannot publish a development release for an existing version"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := nextVersion("aws-s3-bucket", tc.version, tc.tags, tc.development, now)
+			if tc.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+					t.Fatalf("expected error containing %q, got: %v", tc.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRunPublishDevelopmentRejectsLegacySchema(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "schema.json")
+	if err := os.WriteFile(path, []byte("{}"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := RunPublish(t.Context(), nil, path, true)
+	if err == nil || !strings.Contains(err.Error(), "require the massdriver.yaml format") {
+		t.Fatalf("expected a legacy-format error, got: %v", err)
 	}
 }

@@ -40,7 +40,20 @@ mass resource-type publish ./my-resource-type
 
 # Or point directly at the massdriver.yaml
 mass resource-type publish ./my-resource-type/massdriver.yaml
+
+# Publish a development release
+mass resource-type publish --development
 ```
+
+## Development releases
+
+`--development` publishes `<version>-dev.<timestamp>` (e.g.
+`1.2.0-dev.20060102T150405Z`) instead of `version`. Stable ranges such as `~1`
+and `latest` skip development releases; a bundle picks one up by naming the
+exact version or a `+dev` range (`~1+dev`, `latest+dev`) in its `dependencies`
+or `resources`.
+
+A development release cannot be published for a `version` that already exists.
 
 ## Publishing a raw JSON schema (deprecated)
 
@@ -70,7 +83,8 @@ mass resource-type publish [path] [flags]
 ### Options
 
 ```
-  -h, --help   help for publish
+  -d, --development   Publish the resource type as a development release.
+  -h, --help          help for publish
 ```
 
 ### Options inherited from parent commands
