@@ -170,7 +170,7 @@ func TestRunPublishLegacySchema(t *testing.T) {
 }
 
 // Get returns tags through a paginated `items` envelope.
-func repoWithTags(t *testing.T, name string, tags ...string) *massdriver.Client {
+func repoWithTags(t *testing.T, tags ...string) *massdriver.Client {
 	t.Helper()
 
 	items := make([]map[string]any, 0, len(tags))
@@ -180,8 +180,8 @@ func repoWithTags(t *testing.T, name string, tags ...string) *massdriver.Client 
 
 	return newMockClient(t, gqltest.RespondWithData(map[string]any{
 		"ociRepo": map[string]any{
-			"id":           name,
-			"name":         name,
+			"id":           "aws-s3-bucket",
+			"name":         "aws-s3-bucket",
 			"artifactType": "application/vnd.massdriver.resource-type.v1+json",
 			"tags":         map[string]any{"items": items},
 		},
@@ -210,19 +210,19 @@ func TestCheckDuplicateVersion(t *testing.T) {
 	}{
 		{
 			name:     "version not yet published",
-			client:   func(t *testing.T) *massdriver.Client { return repoWithTags(t, "aws-s3-bucket", "1.0.0", "1.1.0") },
+			client:   func(t *testing.T) *massdriver.Client { return repoWithTags(t, "1.0.0", "1.1.0") },
 			version:  "2.0.0",
 			wantPass: true,
 		},
 		{
 			name:    "version already published",
-			client:  func(t *testing.T) *massdriver.Client { return repoWithTags(t, "aws-s3-bucket", "1.0.0", "2.0.0") },
+			client:  func(t *testing.T) *massdriver.Client { return repoWithTags(t, "1.0.0", "2.0.0") },
 			version: "2.0.0",
 			wantErr: "version 2.0.0 already exists for resource type aws-s3-bucket",
 		},
 		{
 			name:     "repository has no published versions",
-			client:   func(t *testing.T) *massdriver.Client { return repoWithTags(t, "aws-s3-bucket") },
+			client:   func(t *testing.T) *massdriver.Client { return repoWithTags(t) },
 			version:  "1.0.0",
 			wantPass: true,
 		},
@@ -272,7 +272,7 @@ func TestResolveVersionDevelopmentNeedsVersion(t *testing.T) {
 }
 
 func TestResolveVersionDevelopmentAppendsTimestamp(t *testing.T) {
-	client := repoWithTags(t, "aws-s3-bucket", "1.0.0")
+	client := repoWithTags(t, "1.0.0")
 	version, err := resolveVersion(t.Context(), client, "aws-s3-bucket", "1.1.0", true)
 	if err != nil {
 		t.Fatal(err)
