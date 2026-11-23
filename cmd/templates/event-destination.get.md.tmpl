@@ -1,0 +1,62 @@
+# Event Destination: {{.Name | mdEscape}}
+
+**ID:** {{.ID | mdEscape}}
+
+**Adapter:** {{.Adapter | mdEscape}}
+
+**Status:** {{.Status | mdEscape}}
+
+{{- if not .FailingSince.IsZero}}
+
+**Failing Since:** {{.FailingSince.Format "2006-01-02 15:04:05"}}
+{{- end}}
+
+{{- if .LastError}}
+
+**Last Error:** {{.LastError | mdEscape}}
+{{- end}}
+
+{{- if not .LastDeliveredAt.IsZero}}
+
+**Last Delivered:** {{.LastDeliveredAt.Format "2006-01-02 15:04:05"}}
+{{- end}}
+
+**Created:** {{.CreatedAt.Format "2006-01-02 15:04:05"}}
+
+**Updated:** {{.UpdatedAt.Format "2006-01-02 15:04:05"}}
+
+## Events
+
+**Event Types:**
+{{- if .EventTypes}}
+{{- range .EventTypes}}
+- {{. | mdEscape}}
+{{- end}}
+{{- else}}
+Every event type
+{{- end}}
+
+**Attributes:**
+{{- if .Attributes}}
+{{- range $key, $value := .Attributes}}
+- **{{$key | mdEscape}}:** {{$value | mdEscape}}
+{{- end}}
+{{- else}}
+Any attributes
+{{- end}}
+
+**Condition:**
+{{- if .Condition}}
+
+```
+{{.Condition}}
+```
+{{- else}}
+None
+{{- end}}
+
+## Config
+
+```json
+{{.ConfigJSON}}
+```
