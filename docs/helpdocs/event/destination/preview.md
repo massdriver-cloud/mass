@@ -7,7 +7,7 @@ If the condition cannot run on an event, the preview stops with an error that na
 ## Usage
 
 ```bash
-mass event-destination preview [flags]
+mass event destination preview [flags]
 ```
 
 ## Flags
@@ -21,7 +21,7 @@ mass event-destination preview [flags]
 ## Examples
 
 ```bash
-mass event-destination preview \
+mass event destination preview \
   --event-type 'deployment.*' \
   --attribute md-environment=prod \
   --condition '.data.metadata.deployment_action == "PROVISION"'

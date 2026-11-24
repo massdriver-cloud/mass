@@ -1,10 +1,10 @@
 ---
-id: mass_event-type.md
-slug: /cli/commands/mass_event-type
-title: Mass Event-Type
-sidebar_label: Mass Event-Type
+id: mass_event_type.md
+slug: /cli/commands/mass_event_type
+title: Mass Event Type
+sidebar_label: Mass Event Type
 ---
-## mass event-type
+## mass event type
 
 Event catalog
 
@@ -18,7 +18,7 @@ The catalog of events that Massdriver records in the audit log. Event destinatio
 ### Options
 
 ```
-  -h, --help   help for event-type
+  -h, --help   help for type
 ```
 
 ### Options inherited from parent commands
@@ -29,5 +29,5 @@ The catalog of events that Massdriver records in the audit log. Event destinatio
 
 ### SEE ALSO
 
-* [mass](/cli/commands/mass)	 - Massdriver Cloud CLI
-* [mass event-type list](/cli/commands/mass_event-type_list)	 - List event types
+* [mass event](/cli/commands/mass_event)	 - Events, event types, and event destinations
+* [mass event type list](/cli/commands/mass_event_type_list)	 - List event types

@@ -1,10 +1,10 @@
 ---
-id: mass_event-type_list.md
-slug: /cli/commands/mass_event-type_list
-title: Mass Event-Type List
-sidebar_label: Mass Event-Type List
+id: mass_event_type_list.md
+slug: /cli/commands/mass_event_type_list
+title: Mass Event Type List
+sidebar_label: Mass Event Type List
 ---
-## mass event-type list
+## mass event type list
 
 List event types
 
@@ -17,7 +17,7 @@ Lists the event types, sorted by id.
 ## Usage
 
 ```bash
-mass event-type list [flags]
+mass event type list [flags]
 ```
 
 ## Flags
@@ -28,12 +28,12 @@ mass event-type list [flags]
 ## Examples
 
 ```bash
-mass event-type list --entity deployment
+mass event type list --entity deployment
 ```
 
 
 ```
-mass event-type list [flags]
+mass event type list [flags]
 ```
 
 ### Options
@@ -52,4 +52,4 @@ mass event-type list [flags]
 
 ### SEE ALSO
 
-* [mass event-type](/cli/commands/mass_event-type)	 - Event catalog
+* [mass event type](/cli/commands/mass_event_type)	 - Event catalog

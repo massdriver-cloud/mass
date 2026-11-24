@@ -1,5 +1,5 @@
-// Package eventdestination holds the logic behind `mass event-destination`
-// and `mass event-type`.
+// Package eventdestination holds the logic behind `mass event destination`
+// and `mass event type`.
 package eventdestination
 
 import (
@@ -278,7 +278,7 @@ func RunDeliveries(ctx context.Context, api API, id string, statuses []string, o
 	})
 }
 
-// PreviewOptions holds the flags of `mass event-destination preview`.
+// PreviewOptions holds the flags of `mass event destination preview`.
 type PreviewOptions struct {
 	EventTypes []string
 	Attributes []string

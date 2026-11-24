@@ -5,7 +5,7 @@ Lists the event destinations in your organization.
 ## Usage
 
 ```bash
-mass event-destination list [flags]
+mass event destination list [flags]
 ```
 
 ## Flags
@@ -17,8 +17,8 @@ mass event-destination list [flags]
 
 ```bash
 # List all destinations
-mass event-destination list
+mass event destination list
 
 # List the paused destinations
-mass event-destination list --status PAUSED
+mass event destination list --status PAUSED
 ```

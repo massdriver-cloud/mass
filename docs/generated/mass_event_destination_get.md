@@ -1,10 +1,10 @@
 ---
-id: mass_event-destination_get.md
-slug: /cli/commands/mass_event-destination_get
-title: Mass Event-Destination Get
-sidebar_label: Mass Event-Destination Get
+id: mass_event_destination_get.md
+slug: /cli/commands/mass_event_destination_get
+title: Mass Event Destination Get
+sidebar_label: Mass Event Destination Get
 ---
-## mass event-destination get
+## mass event destination get
 
 Get an event destination
 
@@ -19,7 +19,7 @@ Shows an event destination: its status, the events it selects, and its config. T
 ## Usage
 
 ```bash
-mass event-destination get <id> [flags]
+mass event destination get <id> [flags]
 ```
 
 ## Flags
@@ -29,15 +29,15 @@ mass event-destination get <id> [flags]
 ## Examples
 
 ```bash
-mass event-destination get 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13
+mass event destination get 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13
 
 # Read the signing secret again
-mass event-destination get 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13 -o json | jq -r .signingSecret
+mass event destination get 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13 -o json | jq -r .signingSecret
 ```
 
 
 ```
-mass event-destination get <id> [flags]
+mass event destination get <id> [flags]
 ```
 
 ### Options
@@ -55,4 +55,4 @@ mass event-destination get <id> [flags]
 
 ### SEE ALSO
 
-* [mass event-destination](/cli/commands/mass_event-destination)	 - Event destination management
+* [mass event destination](/cli/commands/mass_event_destination)	 - Event destination management

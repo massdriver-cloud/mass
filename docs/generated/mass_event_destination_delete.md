@@ -1,10 +1,10 @@
 ---
-id: mass_event-destination_delete.md
-slug: /cli/commands/mass_event-destination_delete
-title: Mass Event-Destination Delete
-sidebar_label: Mass Event-Destination Delete
+id: mass_event_destination_delete.md
+slug: /cli/commands/mass_event_destination_delete
+title: Mass Event Destination Delete
+sidebar_label: Mass Event Destination Delete
 ---
-## mass event-destination delete
+## mass event destination delete
 
 Delete an event destination
 
@@ -19,7 +19,7 @@ You must type the destination's name to confirm, unless you set `--force`.
 ## Usage
 
 ```bash
-mass event-destination delete <id> [flags]
+mass event destination delete <id> [flags]
 ```
 
 ## Flags
@@ -28,7 +28,7 @@ mass event-destination delete <id> [flags]
 
 
 ```
-mass event-destination delete <id> [flags]
+mass event destination delete <id> [flags]
 ```
 
 ### Options
@@ -46,4 +46,4 @@ mass event-destination delete <id> [flags]
 
 ### SEE ALSO
 
-* [mass event-destination](/cli/commands/mass_event-destination)	 - Event destination management
+* [mass event destination](/cli/commands/mass_event_destination)	 - Event destination management

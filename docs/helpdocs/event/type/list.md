@@ -5,7 +5,7 @@ Lists the event types, sorted by id.
 ## Usage
 
 ```bash
-mass event-type list [flags]
+mass event type list [flags]
 ```
 
 ## Flags
@@ -16,5 +16,5 @@ mass event-type list [flags]
 ## Examples
 
 ```bash
-mass event-type list --entity deployment
+mass event type list --entity deployment
 ```

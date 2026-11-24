@@ -5,5 +5,5 @@ Starts sending events to a paused destination again, beginning with the events t
 ## Usage
 
 ```bash
-mass event-destination resume <id>
+mass event destination resume <id>
 ```

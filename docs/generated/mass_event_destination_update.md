@@ -1,10 +1,10 @@
 ---
-id: mass_event-destination_update.md
-slug: /cli/commands/mass_event-destination_update
-title: Mass Event-Destination Update
-sidebar_label: Mass Event-Destination Update
+id: mass_event_destination_update.md
+slug: /cli/commands/mass_event_destination_update
+title: Mass Event Destination Update
+sidebar_label: Mass Event Destination Update
 ---
-## mass event-destination update
+## mass event destination update
 
 Update an event destination
 
@@ -17,7 +17,7 @@ Changes an event destination. Only the flags you set change.
 ## Usage
 
 ```bash
-mass event-destination update <id> [flags]
+mass event destination update <id> [flags]
 ```
 
 ## Flags
@@ -37,15 +37,15 @@ New event types and attributes apply to events recorded after the change. A new 
 
 ```bash
 # Rotate the credentials
-mass event-destination update 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13 --auth @auth.json
+mass event destination update 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13 --auth @auth.json
 
 # Receive every event
-mass event-destination update 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13 --event-type ''
+mass event destination update 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13 --event-type ''
 ```
 
 
 ```
-mass event-destination update <id> [flags]
+mass event destination update <id> [flags]
 ```
 
 ### Options
@@ -70,4 +70,4 @@ mass event-destination update <id> [flags]
 
 ### SEE ALSO
 
-* [mass event-destination](/cli/commands/mass_event-destination)	 - Event destination management
+* [mass event destination](/cli/commands/mass_event_destination)	 - Event destination management

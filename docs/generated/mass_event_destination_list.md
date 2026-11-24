@@ -1,10 +1,10 @@
 ---
-id: mass_event-destination_list.md
-slug: /cli/commands/mass_event-destination_list
-title: Mass Event-Destination List
-sidebar_label: Mass Event-Destination List
+id: mass_event_destination_list.md
+slug: /cli/commands/mass_event_destination_list
+title: Mass Event Destination List
+sidebar_label: Mass Event Destination List
 ---
-## mass event-destination list
+## mass event destination list
 
 List event destinations
 
@@ -17,7 +17,7 @@ Lists the event destinations in your organization.
 ## Usage
 
 ```bash
-mass event-destination list [flags]
+mass event destination list [flags]
 ```
 
 ## Flags
@@ -29,15 +29,15 @@ mass event-destination list [flags]
 
 ```bash
 # List all destinations
-mass event-destination list
+mass event destination list
 
 # List the paused destinations
-mass event-destination list --status PAUSED
+mass event destination list --status PAUSED
 ```
 
 
 ```
-mass event-destination list [flags]
+mass event destination list [flags]
 ```
 
 ### Options
@@ -56,4 +56,4 @@ mass event-destination list [flags]
 
 ### SEE ALSO
 
-* [mass event-destination](/cli/commands/mass_event-destination)	 - Event destination management
+* [mass event destination](/cli/commands/mass_event_destination)	 - Event destination management

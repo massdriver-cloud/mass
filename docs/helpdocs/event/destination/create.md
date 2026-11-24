@@ -5,7 +5,7 @@ Creates an event destination and prints its signing secret. Your receiver uses t
 ## Usage
 
 ```bash
-mass event-destination create --name <name> [flags]
+mass event destination create --name <name> [flags]
 ```
 
 ## Flags
@@ -20,20 +20,20 @@ mass event-destination create --name <name> [flags]
 - `--attribute`: An attribute value that the event's entity must have had, `key=value`. Repeat for more. Leave it out to receive events of any attributes.
 - `--condition`: A jq expression run on each selected CloudEvent. The event is sent only when it outputs `true`.
 
-Use `mass event-destination preview` to check event types, attributes, and a condition before you create a destination with them.
+Use `mass event destination preview` to check event types, attributes, and a condition before you create a destination with them.
 
 ## Examples
 
 ```bash
 # Send production deployment events to a URL
-mass event-destination create \
+mass event destination create \
   --name "Production deployments" \
   --url https://hooks.example.com/massdriver \
   --event-type 'deployment.*' \
   --attribute md-environment=prod
 
 # Send credentials from a file
-mass event-destination create \
+mass event destination create \
   --name "Audit export" \
   --url https://hooks.example.com/massdriver \
   --auth @auth.json

@@ -7,7 +7,7 @@ Shows an event destination: its status, the events it selects, and its config. T
 ## Usage
 
 ```bash
-mass event-destination get <id> [flags]
+mass event destination get <id> [flags]
 ```
 
 ## Flags
@@ -17,8 +17,8 @@ mass event-destination get <id> [flags]
 ## Examples
 
 ```bash
-mass event-destination get 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13
+mass event destination get 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13
 
 # Read the signing secret again
-mass event-destination get 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13 -o json | jq -r .signingSecret
+mass event destination get 4f9b2c1e-8d3a-4c6e-9f1b-2a7d5e8c0b13 -o json | jq -r .signingSecret
 ```

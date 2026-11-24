@@ -1,10 +1,10 @@
 ---
-id: mass_event-destination_preview.md
-slug: /cli/commands/mass_event-destination_preview
-title: Mass Event-Destination Preview
-sidebar_label: Mass Event-Destination Preview
+id: mass_event_destination_preview.md
+slug: /cli/commands/mass_event_destination_preview
+title: Mass Event Destination Preview
+sidebar_label: Mass Event Destination Preview
 ---
-## mass event-destination preview
+## mass event destination preview
 
 List recent events that event types, attributes, and a condition select
 
@@ -19,7 +19,7 @@ If the condition cannot run on an event, the preview stops with an error that na
 ## Usage
 
 ```bash
-mass event-destination preview [flags]
+mass event destination preview [flags]
 ```
 
 ## Flags
@@ -33,7 +33,7 @@ mass event-destination preview [flags]
 ## Examples
 
 ```bash
-mass event-destination preview \
+mass event destination preview \
   --event-type 'deployment.*' \
   --attribute md-environment=prod \
   --condition '.data.metadata.deployment_action == "PROVISION"'
@@ -41,7 +41,7 @@ mass event-destination preview \
 
 
 ```
-mass event-destination preview [flags]
+mass event destination preview [flags]
 ```
 
 ### Options
@@ -63,4 +63,4 @@ mass event-destination preview [flags]
 
 ### SEE ALSO
 
-* [mass event-destination](/cli/commands/mass_event-destination)	 - Event destination management
+* [mass event destination](/cli/commands/mass_event_destination)	 - Event destination management

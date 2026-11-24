@@ -1,10 +1,10 @@
 ---
-id: mass_event-destination_resume.md
-slug: /cli/commands/mass_event-destination_resume
-title: Mass Event-Destination Resume
-sidebar_label: Mass Event-Destination Resume
+id: mass_event_destination_resume.md
+slug: /cli/commands/mass_event_destination_resume
+title: Mass Event Destination Resume
+sidebar_label: Mass Event Destination Resume
 ---
-## mass event-destination resume
+## mass event destination resume
 
 Resume a paused event destination
 
@@ -17,12 +17,12 @@ Starts sending events to a paused destination again, beginning with the events t
 ## Usage
 
 ```bash
-mass event-destination resume <id>
+mass event destination resume <id>
 ```
 
 
 ```
-mass event-destination resume <id> [flags]
+mass event destination resume <id> [flags]
 ```
 
 ### Options
@@ -39,4 +39,4 @@ mass event-destination resume <id> [flags]
 
 ### SEE ALSO
 
-* [mass event-destination](/cli/commands/mass_event-destination)	 - Event destination management
+* [mass event destination](/cli/commands/mass_event_destination)	 - Event destination management

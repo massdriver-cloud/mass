@@ -21,20 +21,33 @@ import (
 //go:embed templates/event-destination.get.md.tmpl
 var eventDestinationTemplates embed.FS
 
-// NewCmdEventDestination returns a cobra command for managing event destinations.
-func NewCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command builders are necessarily long
+// NewCmdEvent returns a cobra command for the organization's events.
+func NewCmdEvent() *cobra.Command {
+	eventCmd := &cobra.Command{
+		Use:     "event",
+		Short:   "Events, event types, and event destinations",
+		Long:    helpdocs.MustRender("event"),
+		Aliases: []string{"events"},
+	}
+
+	eventCmd.AddCommand(newCmdEventDestination())
+	eventCmd.AddCommand(newCmdEventType())
+	return eventCmd
+}
+
+func newCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command builders are necessarily long
 	eventDestinationCmd := &cobra.Command{
-		Use:     "event-destination",
+		Use:     "destination",
 		Short:   "Event destination management",
-		Long:    helpdocs.MustRender("event-destination"),
-		Aliases: []string{"event-destinations", "ed"},
+		Long:    helpdocs.MustRender("event/destination"),
+		Aliases: []string{"destinations", "dest"},
 	}
 
 	listCmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List event destinations",
-		Long:    helpdocs.MustRender("event-destination/list"),
+		Long:    helpdocs.MustRender("event/destination/list"),
 		Args:    cobra.NoArgs,
 		RunE:    runEventDestinationList,
 	}
@@ -44,7 +57,7 @@ func NewCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command 
 	getCmd := &cobra.Command{
 		Use:   "get <id>",
 		Short: "Get an event destination",
-		Long:  helpdocs.MustRender("event-destination/get"),
+		Long:  helpdocs.MustRender("event/destination/get"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEventDestinationGet,
 	}
@@ -53,7 +66,7 @@ func NewCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command 
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create an event destination",
-		Long:  helpdocs.MustRender("event-destination/create"),
+		Long:  helpdocs.MustRender("event/destination/create"),
 		Args:  cobra.NoArgs,
 		RunE:  runEventDestinationCreate,
 	}
@@ -63,7 +76,7 @@ func NewCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command 
 	updateCmd := &cobra.Command{
 		Use:   "update <id>",
 		Short: "Update an event destination",
-		Long:  helpdocs.MustRender("event-destination/update"),
+		Long:  helpdocs.MustRender("event/destination/update"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEventDestinationUpdate,
 	}
@@ -72,7 +85,7 @@ func NewCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command 
 	deleteCmd := &cobra.Command{
 		Use:   "delete <id>",
 		Short: "Delete an event destination",
-		Long:  helpdocs.MustRender("event-destination/delete"),
+		Long:  helpdocs.MustRender("event/destination/delete"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEventDestinationDelete,
 	}
@@ -81,7 +94,7 @@ func NewCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command 
 	pauseCmd := &cobra.Command{
 		Use:   "pause <id>",
 		Short: "Pause an event destination",
-		Long:  helpdocs.MustRender("event-destination/pause"),
+		Long:  helpdocs.MustRender("event/destination/pause"),
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
@@ -96,7 +109,7 @@ func NewCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command 
 	resumeCmd := &cobra.Command{
 		Use:   "resume <id>",
 		Short: "Resume a paused event destination",
-		Long:  helpdocs.MustRender("event-destination/resume"),
+		Long:  helpdocs.MustRender("event/destination/resume"),
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
@@ -111,7 +124,7 @@ func NewCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command 
 	previewCmd := &cobra.Command{
 		Use:   "preview",
 		Short: "List recent events that event types, attributes, and a condition select",
-		Long:  helpdocs.MustRender("event-destination/preview"),
+		Long:  helpdocs.MustRender("event/destination/preview"),
 		Args:  cobra.NoArgs,
 		RunE:  runEventDestinationPreview,
 	}
@@ -124,7 +137,7 @@ func NewCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command 
 	deliveriesCmd := &cobra.Command{
 		Use:   "deliveries <id>",
 		Short: "List an event destination's deliveries",
-		Long:  helpdocs.MustRender("event-destination/deliveries"),
+		Long:  helpdocs.MustRender("event/destination/deliveries"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEventDestinationDeliveries,
 	}
@@ -134,7 +147,7 @@ func NewCmdEventDestination() *cobra.Command { //nolint:funlen // cobra command 
 	redeliverCmd := &cobra.Command{
 		Use:   "redeliver <id>",
 		Short: "Send failed deliveries again",
-		Long:  helpdocs.MustRender("event-destination/redeliver"),
+		Long:  helpdocs.MustRender("event/destination/redeliver"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runEventDestinationRedeliver,
 	}
@@ -343,20 +356,19 @@ func runEventDestinationRedeliver(cmd *cobra.Command, args []string) error {
 	return eventdestination.RunRedeliver(context.Background(), api, args[0], deliveryIDs, os.Stdout)
 }
 
-// NewCmdEventType returns a cobra command for the event catalog.
-func NewCmdEventType() *cobra.Command {
+func newCmdEventType() *cobra.Command {
 	eventTypeCmd := &cobra.Command{
-		Use:     "event-type",
+		Use:     "type",
 		Short:   "Event catalog",
-		Long:    helpdocs.MustRender("event-type"),
-		Aliases: []string{"event-types"},
+		Long:    helpdocs.MustRender("event/type"),
+		Aliases: []string{"types"},
 	}
 
 	listCmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List event types",
-		Long:    helpdocs.MustRender("event-type/list"),
+		Long:    helpdocs.MustRender("event/type/list"),
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			entity, _ := cmd.Flags().GetString("entity")
