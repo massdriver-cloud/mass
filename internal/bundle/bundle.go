@@ -193,6 +193,13 @@ func (b *Bundle) normalizeInputs() error {
 	if hasArtifacts {
 		fmt.Println(prettylogs.Orange("Warning: the 'artifacts' field is deprecated; migrate to 'resources'. The legacy term does not support versioned resource types"))
 	}
+	for name, dep := range b.Dependencies {
+		switch dep.Cardinality {
+		case "", CardinalityOne, CardinalityMany:
+		default:
+			return fmt.Errorf("dependency %q has invalid cardinality %q; use %q or %q", name, dep.Cardinality, CardinalityOne, CardinalityMany)
+		}
+	}
 
 	b.hydrateDependencySchema()
 	return nil
@@ -219,6 +226,15 @@ func dependenciesToSchema(deps map[string]Dependency) map[string]any {
 	properties := map[string]any{}
 	required := []any{}
 	for name, dep := range deps {
+		if dep.IsMany() {
+			// A required set is checked at deploy time; the variable always defaults to an empty map.
+			properties[name] = map[string]any{
+				"type":                 "object",
+				"additionalProperties": map[string]any{"$ref": dep.ResourceType},
+				"default":              map[string]any{},
+			}
+			continue
+		}
 		properties[name] = map[string]any{"$ref": dep.ResourceType}
 		if dep.Required != nil && *dep.Required {
 			required = append(required, name)
