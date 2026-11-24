@@ -140,8 +140,8 @@ github.com/manifoldco/promptui v0.9.0 h1:3V4HzJk1TtXW1MTZMP7mdlwbBpIinw3HztaIlYt
 github.com/manifoldco/promptui v0.9.0/go.mod h1:ka04sppxSGFAtxX0qhlYQjISsg9mR4GWtQEhdbn6Pgg=
 github.com/massdriver-cloud/airlock v0.0.10 h1:05wz7kovH09X1VMfHcjLWylYanoLFcxuD0oZi13WG9U=
 github.com/massdriver-cloud/airlock v0.0.10/go.mod h1:igJm33JvINiUtbyEspUeKUWyWewG+jYyxO1UDHqLp9Q=
-github.com/massdriver-cloud/massdriver-sdk-go v0.4.1-0.20261123235156-871c263915da h1:sH3h2TZ8qVE9FZjhlI48iA5nJKNZRBqyttWCb+KFuhU=
-github.com/massdriver-cloud/massdriver-sdk-go v0.4.1-0.20261123235156-871c263915da/go.mod h1:TK7rgT6K9zQZu2xnoniISgHdoCDGOE67KENw4OMTq00=
+github.com/massdriver-cloud/massdriver-sdk-go v0.4.1-0.20261123235944-e59cde9c9c0f h1:ad2XpsL/2kHoNQZzKn+pxglDA2jrcQiq6zfhvDXQuZ4=
+github.com/massdriver-cloud/massdriver-sdk-go v0.4.1-0.20261123235944-e59cde9c9c0f/go.mod h1:TK7rgT6K9zQZu2xnoniISgHdoCDGOE67KENw4OMTq00=
 github.com/massdriver-cloud/terraform-config-inspect v0.0.2 h1:Jc7BrhFHLbK7Epig6ShiEVMzQPPHVIOx0/BatvtEwtY=
 github.com/massdriver-cloud/terraform-config-inspect v0.0.2/go.mod h1:3AbDpWxIRMdMAg7FDmTJuVBhCGNwdm49cBIOmUHjqRg=
 github.com/mattn/go-colorable v0.1.2/go.mod h1:U0ppj6V5qS13XJ6of8GYAs25YV2eR4EVcfRqFIhoBtE=

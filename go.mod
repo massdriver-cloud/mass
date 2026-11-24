@@ -15,7 +15,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/airlock v0.0.10
-	github.com/massdriver-cloud/massdriver-sdk-go v0.4.1-0.20261123235156-871c263915da
+	github.com/massdriver-cloud/massdriver-sdk-go v0.4.1-0.20261123235944-e59cde9c9c0f
 	github.com/mattn/go-runewidth v0.0.31
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/osteele/liquid v1.9.2
@@ -23,6 +23,7 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/spf13/cobra v1.10.2
+	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	github.com/zclconf/go-cty v1.19.0
@@ -92,7 +93,6 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/sosedoff/ansible-vault-go v0.2.0 // indirect
-	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.63 // indirect
 	github.com/xo/terminfo v1.2.0 // indirect
