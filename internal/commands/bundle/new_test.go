@@ -135,17 +135,17 @@ func TestGenerateBasicBundleWithoutTemplate(t *testing.T) {
 		t.Errorf("Expected description to be 'A test bundle without a template' but got %q", got.Description)
 	}
 
-	// Check connections
-	wantConnections := map[string]any{
-		"required": []any{"vpc", "database"},
-		"properties": map[string]any{
-			"vpc":      map[string]any{"$ref": "massdriver/aws-vpc"},
-			"database": map[string]any{"$ref": "massdriver/aws-rds-postgres"},
-		},
+	required := true
+	wantDependencies := map[string]bundle.Dependency{
+		"vpc":      {ResourceType: "massdriver/aws-vpc", Required: &required},
+		"database": {ResourceType: "massdriver/aws-rds-postgres", Required: &required},
 	}
 
-	if !reflect.DeepEqual(got.Connections, wantConnections) {
-		t.Errorf("Expected connections to be %v but got %v", wantConnections, got.Connections)
+	if !reflect.DeepEqual(got.Dependencies, wantDependencies) {
+		t.Errorf("Expected dependencies to be %v but got %v", wantDependencies, got.Dependencies)
+	}
+	if got.Connections != nil || got.Artifacts != nil {
+		t.Errorf("Expected no legacy connections or artifacts but got %v and %v", got.Connections, got.Artifacts)
 	}
 }
 
@@ -175,13 +175,14 @@ func TestGenerateBasicBundleNoConnections(t *testing.T) {
 		t.Errorf("Expected name to be 'simple-bundle' but got %q", got.Name)
 	}
 
-	wantConnections := map[string]any{
-		"required":   []any{},
-		"properties": map[string]any{},
+	if !reflect.DeepEqual(got.Dependencies, map[string]bundle.Dependency{}) {
+		t.Errorf("Expected empty dependencies but got %v", got.Dependencies)
 	}
-
-	if !reflect.DeepEqual(got.Connections, wantConnections) {
-		t.Errorf("Expected connections to be %v but got %v", wantConnections, got.Connections)
+	if !reflect.DeepEqual(got.Resources, map[string]bundle.Resource{}) {
+		t.Errorf("Expected empty resources but got %v", got.Resources)
+	}
+	if got.Connections != nil || got.Artifacts != nil {
+		t.Errorf("Expected no legacy connections or artifacts but got %v and %v", got.Connections, got.Artifacts)
 	}
 }
 
