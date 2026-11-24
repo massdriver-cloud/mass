@@ -40,6 +40,7 @@ Configure and deploying infrastructure and applications.
 * [mass deployment](/cli/commands/mass_deployment)	 - Manage deployments
 * [mass docs](/cli/commands/mass_docs)	 - Gen docs
 * [mass environment](/cli/commands/mass_environment)	 - Environment management
+* [mass event](/cli/commands/mass_event)	 - Events, event types, and event destinations
 * [mass instance](/cli/commands/mass_instance)	 - Manage instances of IaC deployed in environments.
 * [mass project](/cli/commands/mass_project)	 - Project management
 * [mass repository](/cli/commands/mass_repository)	 - Manage OCI repositories (bundles and resource types)
