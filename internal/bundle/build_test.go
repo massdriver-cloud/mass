@@ -177,8 +177,8 @@ func TestBuildDependencyCardinality(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := b.Build(dir, stubResolver(queueSchema)); err != nil {
-				t.Fatal(err)
+			if buildErr := b.Build(dir, stubResolver(queueSchema)); buildErr != nil {
+				t.Fatal(buildErr)
 			}
 
 			got, err := os.ReadFile(path.Join(dir, "src", "_massdriver_variables.tf"))
