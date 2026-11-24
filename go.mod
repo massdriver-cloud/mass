@@ -15,7 +15,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/airlock v0.0.10
-	github.com/massdriver-cloud/massdriver-sdk-go v0.3.4
+	github.com/massdriver-cloud/massdriver-sdk-go v0.5.0
 	github.com/mattn/go-runewidth v0.0.31
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/osteele/liquid v1.9.2
@@ -30,14 +30,14 @@ require (
 	golang.org/x/term v0.47.0
 	golang.org/x/text v0.43.0
 	gopkg.in/yaml.v3 v3.0.1
-	oras.land/oras-go/v2 v2.6.3
+	oras.land/oras-go/v2 v2.6.4
 	sigs.k8s.io/yaml v1.6.0
 )
 
 require (
 	github.com/Checkmarx/kics/v2 v2.2.0 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
-	github.com/agnivade/levenshtein v1.2.1 // indirect
+	github.com/agnivade/levenshtein v1.2.2 // indirect
 	github.com/alecthomas/chroma/v2 v2.27.0 // indirect
 	github.com/alexflint/go-arg v1.6.1 // indirect
 	github.com/alexflint/go-scalar v1.2.0 // indirect
@@ -94,7 +94,7 @@ require (
 	github.com/sosedoff/ansible-vault-go v0.2.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
-	github.com/vektah/gqlparser/v2 v2.5.62 // indirect
+	github.com/vektah/gqlparser/v2 v2.5.63 // indirect
 	github.com/xo/terminfo v1.2.0 // indirect
 	github.com/yuin/goldmark v1.8.6 // indirect
 	github.com/yuin/goldmark-emoji v1.0.6 // indirect
