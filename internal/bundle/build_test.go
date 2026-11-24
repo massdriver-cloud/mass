@@ -136,12 +136,13 @@ func TestBuildDependencyCardinality(t *testing.T) {
 	}
 
 	cases := []struct {
-		name        string
-		cardinality string
-		want        string
+		name       string
+		dependency string
+		want       string
 	}{
 		{
-			name: "one",
+			name:       "one",
+			dependency: "    required: true\n",
 			want: `variable "queues" {
   type = object({
     arn = string
@@ -150,8 +151,18 @@ func TestBuildDependencyCardinality(t *testing.T) {
 `,
 		},
 		{
-			name:        "many",
-			cardinality: "    cardinality: many\n",
+			name:       "many required",
+			dependency: "    required: true\n    cardinality: many\n",
+			want: `variable "queues" {
+  type = map(object({
+    arn = string
+  }))
+}
+`,
+		},
+		{
+			name:       "many optional",
+			dependency: "    cardinality: many\n",
 			want: `variable "queues" {
   type = map(object({
     arn = string
@@ -168,7 +179,7 @@ func TestBuildDependencyCardinality(t *testing.T) {
 			if err := os.Mkdir(path.Join(dir, "src"), 0750); err != nil {
 				t.Fatal(err)
 			}
-			massdriverYAML := "name: worker\ndescription: drains queues\nversion: 1.0.0\nsteps:\n  - path: src\n    provisioner: opentofu\nparams:\n  properties: {}\nui: {}\ndependencies:\n  queues:\n    resource_type: aws-sqs-queue@~2.0\n    required: true\n" + tc.cardinality
+			massdriverYAML := "name: worker\ndescription: drains queues\nversion: 1.0.0\nsteps:\n  - path: src\n    provisioner: opentofu\nparams:\n  properties: {}\nui: {}\ndependencies:\n  queues:\n    resource_type: aws-sqs-queue@~2.0\n" + tc.dependency
 			if err := os.WriteFile(path.Join(dir, "massdriver.yaml"), []byte(massdriverYAML), 0600); err != nil {
 				t.Fatal(err)
 			}

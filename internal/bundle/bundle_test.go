@@ -101,24 +101,63 @@ func TestDependenciesToSchema(t *testing.T) {
 }
 
 func TestDependenciesToSchemaMany(t *testing.T) {
-	deps := map[string]Dependency{
-		"queues": {ResourceType: "aws-sqs-queue@~2.0", Required: boolPtr(true), Cardinality: CardinalityMany},
-	}
-
-	got := dependenciesToSchema(deps)
-
-	want := map[string]any{
-		"properties": map[string]any{
-			"queues": map[string]any{
-				"type":                 "object",
-				"additionalProperties": map[string]any{"$ref": "aws-sqs-queue@~2.0"},
-				"default":              map[string]any{},
+	cases := []struct {
+		name     string
+		required *bool
+		want     map[string]any
+	}{
+		{
+			name:     "required",
+			required: boolPtr(true),
+			want: map[string]any{
+				"properties": map[string]any{
+					"queues": map[string]any{
+						"type":                 "object",
+						"additionalProperties": map[string]any{"$ref": "aws-sqs-queue@~2.0"},
+						"minProperties":        1,
+					},
+				},
+				"required": []any{"queues"},
 			},
 		},
-		"required": []any{},
+		{
+			name:     "optional",
+			required: boolPtr(false),
+			want: map[string]any{
+				"properties": map[string]any{
+					"queues": map[string]any{
+						"type":                 "object",
+						"additionalProperties": map[string]any{"$ref": "aws-sqs-queue@~2.0"},
+						"default":              map[string]any{},
+					},
+				},
+				"required": []any{},
+			},
+		},
+		{
+			name: "unset required is optional",
+			want: map[string]any{
+				"properties": map[string]any{
+					"queues": map[string]any{
+						"type":                 "object",
+						"additionalProperties": map[string]any{"$ref": "aws-sqs-queue@~2.0"},
+						"default":              map[string]any{},
+					},
+				},
+				"required": []any{},
+			},
+		},
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %#v, want %#v", got, want)
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			deps := map[string]Dependency{
+				"queues": {ResourceType: "aws-sqs-queue@~2.0", Required: tc.required, Cardinality: CardinalityMany},
+			}
+			if got := dependenciesToSchema(deps); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("got %#v, want %#v", got, tc.want)
+			}
+		})
 	}
 }
 

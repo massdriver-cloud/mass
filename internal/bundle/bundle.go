@@ -226,17 +226,25 @@ func dependenciesToSchema(deps map[string]Dependency) map[string]any {
 	properties := map[string]any{}
 	required := []any{}
 	for name, dep := range deps {
-		if dep.IsMany() {
-			// A required set is checked at deploy time; the variable always defaults to an empty map.
+		isRequired := dep.Required != nil && *dep.Required
+		switch {
+		case dep.IsMany() && isRequired:
+			properties[name] = map[string]any{
+				"type":                 "object",
+				"additionalProperties": map[string]any{"$ref": dep.ResourceType},
+				"minProperties":        1,
+			}
+		case dep.IsMany():
+			// Without a default, an absent optional set renders as null rather than an empty map.
 			properties[name] = map[string]any{
 				"type":                 "object",
 				"additionalProperties": map[string]any{"$ref": dep.ResourceType},
 				"default":              map[string]any{},
 			}
-			continue
+		default:
+			properties[name] = map[string]any{"$ref": dep.ResourceType}
 		}
-		properties[name] = map[string]any{"$ref": dep.ResourceType}
-		if dep.Required != nil && *dep.Required {
+		if isRequired {
 			required = append(required, name)
 		}
 	}
