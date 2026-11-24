@@ -65,7 +65,7 @@ mass event-destination create [flags]
       --condition string         jq expression that must output true for the event to be sent
       --config string            Adapter config as JSON, or @file
       --event-type stringArray   Event type, or <entity>.* for every event of an entity; repeat for more
-      --header stringArray       Header sent with each event, Name=value (sets headers in the HTTP config); repeat for more
+      --header stringArray       Header sent with each event, Name=value (sets headers in the HTTP config, which the API returns; put credentials in --auth); repeat for more
   -h, --help                     help for create
       --name string              Name of the destination, unique in the organization
       --url string               URL to post events to (sets url in the HTTP config)

@@ -339,7 +339,7 @@ func TestRunRedeliver(t *testing.T) {
 		wantOut     string
 	}{
 		{name: "every failed delivery", wantOut: "Every failed delivery of `Audit`"},
-		{name: "given deliveries", deliveryIDs: []string{"d-1", "d-2"}, wantOut: "2 failed deliveries of `Audit`"},
+		{name: "given deliveries", deliveryIDs: []string{"d-1", "d-2"}, wantOut: "given deliveries of `Audit` that failed"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -441,6 +441,15 @@ func TestRunPreview(t *testing.T) {
 	}
 	if len(got) != 2 || api.previewFetched != 2 {
 		t.Errorf("listed %d events after fetching %d, want 2 and 2", len(got), api.previewFetched)
+	}
+}
+
+func TestRunPreviewRejectsLimitBelowOne(t *testing.T) {
+	_, err := renderTo(t, func(f *os.File) error {
+		return eventdestination.RunPreview(t.Context(), &fakeAPI{}, eventdestination.PreviewOptions{Limit: 0, Output: "table"}, f)
+	})
+	if err == nil || !strings.Contains(err.Error(), "--limit") {
+		t.Errorf("err = %v, want a --limit error", err)
 	}
 }
 

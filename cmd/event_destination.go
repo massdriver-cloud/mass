@@ -159,7 +159,7 @@ func addEventDestinationFlags(flags *pflag.FlagSet) {
 	flags.String("config", "", "Adapter config as JSON, or @file")
 	flags.String("auth", "", "Adapter credentials as JSON, or @file. Never returned by the API")
 	flags.String("url", "", "URL to post events to (sets url in the HTTP config)")
-	flags.StringArray("header", nil, "Header sent with each event, Name=value (sets headers in the HTTP config); repeat for more")
+	flags.StringArray("header", nil, "Header sent with each event, Name=value (sets headers in the HTTP config, which the API returns; put credentials in --auth); repeat for more")
 	flags.StringArray("event-type", nil, "Event type, or <entity>.* for every event of an entity; repeat for more")
 	flags.StringArray("attribute", nil, "Attribute the event's entity must have had, key=value; repeat for more")
 	flags.String("condition", "", "jq expression that must output true for the event to be sent")

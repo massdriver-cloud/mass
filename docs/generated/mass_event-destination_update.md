@@ -24,7 +24,7 @@ mass event-destination update <id> [flags]
 
 - `--name`: New name of the destination.
 - `--url`: New URL. Changes `url` in the current config.
-- `--header`: A header sent with each event, `Name=value`. Adds to or changes `headers` in the current config. Repeat for more.
+- `--header`: A header sent with each event, `Name=value`. Adds to or changes `headers` in the current config. Repeat for more. To remove a header, use `--config`.
 - `--config`: Replaces the config, as JSON or `@file`.
 - `--auth`: Replaces the credentials, as JSON or `@file`. `--auth '{}'` removes them.
 - `--event-type`: Replaces the event types. Repeat for more. `--event-type ''` receives every event.
@@ -56,7 +56,7 @@ mass event-destination update <id> [flags]
       --condition string         jq expression that must output true for the event to be sent
       --config string            Adapter config as JSON, or @file
       --event-type stringArray   Event type, or <entity>.* for every event of an entity; repeat for more
-      --header stringArray       Header sent with each event, Name=value (sets headers in the HTTP config); repeat for more
+      --header stringArray       Header sent with each event, Name=value (sets headers in the HTTP config, which the API returns; put credentials in --auth); repeat for more
   -h, --help                     help for update
       --name string              Name of the destination, unique in the organization
       --url string               URL to post events to (sets url in the HTTP config)

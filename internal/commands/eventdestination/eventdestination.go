@@ -225,7 +225,7 @@ func RunRedeliver(ctx context.Context, api API, id string, deliveryIDs []string,
 		fmt.Fprintf(out, "🔁 Every failed delivery of `%s` is queued to send again\n", destination.Name)
 		return nil
 	}
-	fmt.Fprintf(out, "🔁 %d failed deliveries of `%s` are queued to send again\n", len(deliveryIDs), destination.Name)
+	fmt.Fprintf(out, "🔁 The given deliveries of `%s` that failed are queued to send again\n", destination.Name)
 	return nil
 }
 
@@ -291,6 +291,9 @@ type PreviewOptions struct {
 // selection matches, newest first. The limit keeps an empty selection from
 // paging through the whole audit log.
 func RunPreview(ctx context.Context, api API, opts PreviewOptions, out *os.File) error {
+	if opts.Limit < 1 {
+		return errors.New("--limit must be at least 1")
+	}
 	attributes, err := ParsePairs(opts.Attributes, "--attribute")
 	if err != nil {
 		return err
@@ -448,9 +451,6 @@ func render[T any](seq iter.Seq2[T, error], output string, out *os.File, cfg cli
 
 func take[T any](seq iter.Seq2[T, error], n int) iter.Seq2[T, error] {
 	return func(yield func(T, error) bool) {
-		if n <= 0 {
-			return
-		}
 		count := 0
 		for v, err := range seq {
 			if !yield(v, err) || err != nil {

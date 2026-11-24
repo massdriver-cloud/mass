@@ -12,7 +12,7 @@ mass event-destination update <id> [flags]
 
 - `--name`: New name of the destination.
 - `--url`: New URL. Changes `url` in the current config.
-- `--header`: A header sent with each event, `Name=value`. Adds to or changes `headers` in the current config. Repeat for more.
+- `--header`: A header sent with each event, `Name=value`. Adds to or changes `headers` in the current config. Repeat for more. To remove a header, use `--config`.
 - `--config`: Replaces the config, as JSON or `@file`.
 - `--auth`: Replaces the credentials, as JSON or `@file`. `--auth '{}'` removes them.
 - `--event-type`: Replaces the event types. Repeat for more. `--event-type ''` receives every event.
