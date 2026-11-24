@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/massdriver-cloud/mass/internal/bundle"
@@ -120,5 +121,73 @@ func TestBuildTFVars(t *testing.T) {
 		if string(gotContent) != string(expectedContent) {
 			t.Errorf("Expected file content for %s to be %s but got %s", fileName, string(expectedContent), string(gotContent))
 		}
+	}
+}
+
+func TestBuildDependencyCardinality(t *testing.T) {
+	queueSchema := map[string]any{
+		"schema": map[string]any{
+			"type":     "object",
+			"required": []any{"arn"},
+			"properties": map[string]any{
+				"arn": map[string]any{"type": "string"},
+			},
+		},
+	}
+
+	cases := []struct {
+		name        string
+		cardinality string
+		want        string
+	}{
+		{
+			name: "one",
+			want: `variable "queues" {
+  type = object({
+    arn = string
+  })
+}
+`,
+		},
+		{
+			name:        "many",
+			cardinality: "    cardinality: many\n",
+			want: `variable "queues" {
+  type = map(object({
+    arn = string
+  }))
+  default = {}
+}
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.Mkdir(path.Join(dir, "src"), 0750); err != nil {
+				t.Fatal(err)
+			}
+			massdriverYAML := "name: worker\ndescription: drains queues\nversion: 1.0.0\nsteps:\n  - path: src\n    provisioner: opentofu\nparams:\n  properties: {}\nui: {}\ndependencies:\n  queues:\n    resource_type: aws-sqs-queue@~2.0\n    required: true\n" + tc.cardinality
+			if err := os.WriteFile(path.Join(dir, "massdriver.yaml"), []byte(massdriverYAML), 0600); err != nil {
+				t.Fatal(err)
+			}
+
+			b, err := bundle.Unmarshal(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := b.Build(dir, stubResolver(queueSchema)); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := os.ReadFile(path.Join(dir, "src", "_massdriver_variables.tf"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(got), tc.want) {
+				t.Errorf("generated variables missing\n%s\ngot\n%s", tc.want, got)
+			}
+		})
 	}
 }

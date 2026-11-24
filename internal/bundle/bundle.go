@@ -56,10 +56,22 @@ type Resource struct {
 	Required     *bool  `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
 }
 
+// Cardinality values for a dependency. An empty value means CardinalityOne.
+const (
+	CardinalityOne  = "one"
+	CardinalityMany = "many"
+)
+
 // Dependency is one entry in a bundle's `dependencies` block.
 type Dependency struct {
 	ResourceType string `json:"resource_type,omitempty" yaml:"resource_type,omitempty" mapstructure:"resource_type"`
 	Required     *bool  `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
+	Cardinality  string `json:"cardinality,omitempty" yaml:"cardinality,omitempty" mapstructure:"cardinality"`
+}
+
+// IsMany reports whether the dependency takes a set of resources keyed by resource ID.
+func (d Dependency) IsMany() bool {
+	return d.Cardinality == CardinalityMany
 }
 
 // Bundle represents a Massdriver bundle definition parsed from massdriver.yaml.
