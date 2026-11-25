@@ -279,6 +279,7 @@ func TestRunDelete(t *testing.T) {
 		wantOut     string
 	}{
 		{name: "confirmed", stdin: "db/hostname\n", wantDeletes: []string{"instance:api-prod-db.db/hostname"}, wantOut: "Type `db/hostname` to delete it from instance `api-prod-db`: Deleted `db/hostname` from instance `api-prod-db`\n"},
+		{name: "confirmed without newline", stdin: "db/hostname", wantDeletes: []string{"instance:api-prod-db.db/hostname"}, wantOut: "Type `db/hostname` to delete it from instance `api-prod-db`: Deleted `db/hostname` from instance `api-prod-db`\n"},
 		{name: "cancelled", stdin: "no\n", wantOut: "Type `db/hostname` to delete it from instance `api-prod-db`: Deletion cancelled.\n"},
 		{name: "forced", force: true, wantDeletes: []string{"instance:api-prod-db.db/hostname"}, wantOut: "Deleted `db/hostname` from instance `api-prod-db`\n"},
 	}

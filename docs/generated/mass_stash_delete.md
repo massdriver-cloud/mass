@@ -12,7 +12,7 @@ Delete a stash entry
 
 # Delete Stash Entry
 
-Deletes an entry. You must type the key to confirm, unless you set `--force`.
+Deletes an entry. You must type the key to confirm, unless you set `--force`. A different answer cancels the delete and exits 0, so scripts should use `--force`.
 
 ## Usage
 
