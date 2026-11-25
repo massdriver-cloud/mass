@@ -4,7 +4,7 @@ The stash stores small values in a project, environment, component, instance, or
 
 Each scope is its own namespace. A value in an environment is not visible from its instances or deployments.
 
-Inside a provisioner, `mass stash` signs in with the deployment's token (`MASSDRIVER_DEPLOYMENT_ID` and `MASSDRIVER_TOKEN`) when no API key is configured.
+Inside a provisioner, `mass stash` signs in with the deployment's token (`MASSDRIVER_DEPLOYMENT_ID` and `MASSDRIVER_TOKEN`) when no API key is configured. That token can read and write the stash of its deployment and of that deployment's instance, environment, component, and project.
 
 ## Addresses
 
