@@ -48,6 +48,7 @@ func Execute() {
 	rootCmd.AddCommand(NewCmdResource())
 	rootCmd.AddCommand(NewCmdType())
 	rootCmd.AddCommand(NewCmdSchema())
+	rootCmd.AddCommand(NewCmdStash())
 	rootCmd.AddCommand(NewCmdVersion())
 	rootCmd.AddCommand(NewCmdWhoami())
 	if err := rootCmd.Execute(); err != nil {

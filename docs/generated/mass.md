@@ -47,5 +47,6 @@ Configure and deploying infrastructure and applications.
 * [mass resource](/cli/commands/mass_resource)	 - Manage resources
 * [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management
 * [mass schema](/cli/commands/mass_schema)	 - Manage JSON Schemas
+* [mass stash](/cli/commands/mass_stash)	 - Store and read small values in a project, environment, component, instance, or deployment
 * [mass version](/cli/commands/mass_version)	 - Version of Mass CLI
 * [mass whoami](/cli/commands/mass_whoami)	 - Show the currently authenticated user or service account
