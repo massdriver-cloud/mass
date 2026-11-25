@@ -74,27 +74,19 @@ params:
 
 `, data.Name, data.Description)
 
-	// Add connections
 	var sb strings.Builder
-	sb.WriteString("connections:\n")
 	if len(data.Connections) == 0 {
-		sb.WriteString("  required: []\n  properties: {}\n")
+		sb.WriteString("dependencies: {}\n")
 	} else {
-		sb.WriteString("  required:\n")
-		for _, conn := range data.Connections {
-			fmt.Fprintf(&sb, "    - %s\n", conn.Name)
-		}
-		sb.WriteString("  properties:\n")
-		for _, conn := range data.Connections {
-			fmt.Fprintf(&sb, "    %s:\n      $ref: %s\n", conn.Name, conn.ResourceType)
+		sb.WriteString("dependencies:\n")
+		for _, dep := range data.Connections {
+			fmt.Fprintf(&sb, "  %s:\n    resource_type: %s\n    required: true\n", dep.Name, dep.ResourceType)
 		}
 	}
 	yaml += sb.String()
 
 	yaml += `
-artifacts:
-  required: []
-  properties: {}
+resources: {}
 
 ui:
   ui:order:

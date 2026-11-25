@@ -56,10 +56,22 @@ type Resource struct {
 	Required     *bool  `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
 }
 
+// Cardinality values for a dependency. An empty value means CardinalityOne.
+const (
+	CardinalityOne  = "one"
+	CardinalityMany = "many"
+)
+
 // Dependency is one entry in a bundle's `dependencies` block.
 type Dependency struct {
 	ResourceType string `json:"resource_type,omitempty" yaml:"resource_type,omitempty" mapstructure:"resource_type"`
 	Required     *bool  `json:"required,omitempty" yaml:"required,omitempty" mapstructure:"required"`
+	Cardinality  string `json:"cardinality,omitempty" yaml:"cardinality,omitempty" mapstructure:"cardinality"`
+}
+
+// IsMany reports whether the dependency takes a set of resources keyed by resource ID.
+func (d Dependency) IsMany() bool {
+	return d.Cardinality == CardinalityMany
 }
 
 // Bundle represents a Massdriver bundle definition parsed from massdriver.yaml.
@@ -181,6 +193,13 @@ func (b *Bundle) normalizeInputs() error {
 	if hasArtifacts {
 		fmt.Println(prettylogs.Orange("Warning: the 'artifacts' field is deprecated; migrate to 'resources'. The legacy term does not support versioned resource types"))
 	}
+	for name, dep := range b.Dependencies {
+		switch dep.Cardinality {
+		case "", CardinalityOne, CardinalityMany:
+		default:
+			return fmt.Errorf("dependency %q has invalid cardinality %q; use %q or %q", name, dep.Cardinality, CardinalityOne, CardinalityMany)
+		}
+	}
 
 	b.hydrateDependencySchema()
 	return nil
@@ -207,8 +226,25 @@ func dependenciesToSchema(deps map[string]Dependency) map[string]any {
 	properties := map[string]any{}
 	required := []any{}
 	for name, dep := range deps {
-		properties[name] = map[string]any{"$ref": dep.ResourceType}
-		if dep.Required != nil && *dep.Required {
+		isRequired := dep.Required != nil && *dep.Required
+		switch {
+		case dep.IsMany() && isRequired:
+			properties[name] = map[string]any{
+				"type":                 "object",
+				"additionalProperties": map[string]any{"$ref": dep.ResourceType},
+				"minProperties":        1,
+			}
+		case dep.IsMany():
+			// Without a default, an absent optional set renders as null rather than an empty map.
+			properties[name] = map[string]any{
+				"type":                 "object",
+				"additionalProperties": map[string]any{"$ref": dep.ResourceType},
+				"default":              map[string]any{},
+			}
+		default:
+			properties[name] = map[string]any{"$ref": dep.ResourceType}
+		}
+		if isRequired {
 			required = append(required, name)
 		}
 	}
