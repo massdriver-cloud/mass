@@ -7,6 +7,7 @@ import (
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
 	"github.com/massdriver-cloud/mass/internal/commands/stash"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/spf13/cobra"
 )
 
@@ -64,7 +65,8 @@ func NewCmdStash() *cobra.Command {
 }
 
 func newStashAPI(cmd *cobra.Command) (stash.API, error) {
-	mdClient, err := newMassdriverClient(cmd)
+	// Stash commands also run inside provisioners, where only the deployment token is set.
+	mdClient, err := newMassdriverClient(cmd, massdriver.WithDeploymentTokenFallback())
 	if err != nil {
 		return nil, fmt.Errorf("error initializing massdriver client: %w", err)
 	}
