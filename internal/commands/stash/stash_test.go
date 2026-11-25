@@ -244,7 +244,7 @@ func TestRunSet(t *testing.T) {
 		},
 		{name: "json not an object", address: "api.stats", value: `[1,2]`, opts: stash.SetOptions{Format: "json"}, wantErr: "--format json needs the value to be a JSON object"},
 		{name: "bad format", address: "api.stats", value: "x", opts: stash.SetOptions{Format: "yaml"}, wantErr: `invalid --format "yaml": use text or json`},
-		{name: "negative ttl", address: "api.stats", value: "x", opts: stash.SetOptions{TTL: -1}, wantErr: "invalid --ttl -1: use a number of seconds greater than zero"},
+		{name: "negative ttl", address: "api.stats", value: "x", opts: stash.SetOptions{TTL: -1}, wantErr: "invalid --ttl -1: use zero or more seconds"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -299,9 +299,20 @@ func TestRunDelete(t *testing.T) {
 	}
 }
 
+func TestRunDelete_NoConfirmation(t *testing.T) {
+	api := &fakeAPI{entries: map[string]types.StashEntry{"db/hostname": {Key: "db/hostname", Value: ptr("db.internal")}}}
+	err := stash.RunDelete(t.Context(), api, "api.db/hostname", false, strings.NewReader(""), &bytes.Buffer{})
+	if err == nil || err.Error() != "no confirmation given; set --force to delete without one" {
+		t.Fatalf("err = %v, want the no-confirmation error", err)
+	}
+	if len(api.deletes) != 0 {
+		t.Errorf("deletes = %v, want none", api.deletes)
+	}
+}
+
 func TestRunDelete_Missing(t *testing.T) {
 	api := &fakeAPI{}
-	err := stash.RunDelete(t.Context(), api, "api.nope", true, strings.NewReader(""), &bytes.Buffer{})
+	err := stash.RunDelete(t.Context(), api, "api.nope", false, strings.NewReader("nope\n"), &bytes.Buffer{})
 	if !errors.Is(err, gql.ErrNotFound) {
 		t.Fatalf("err = %v, want gql.ErrNotFound", err)
 	}

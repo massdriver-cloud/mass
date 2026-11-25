@@ -1,6 +1,6 @@
 # Set Stash Entry
 
-Stores a value under a key. A value of `-` reads the value from stdin.
+Stores a value under a key. A value of `-` reads the value from stdin and keeps every byte, including a trailing newline.
 
 Each write replaces the entry's value, format, TTL, and flags.
 

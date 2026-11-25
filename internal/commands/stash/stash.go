@@ -198,7 +198,7 @@ func RunSet(ctx context.Context, api API, address, value string, opts SetOptions
 		return fmt.Errorf("invalid --format %q: use text or json", opts.Format)
 	}
 	if opts.TTL < 0 {
-		return fmt.Errorf("invalid --ttl %d: use a number of seconds greater than zero", opts.TTL)
+		return fmt.Errorf("invalid --ttl %d: use zero or more seconds", opts.TTL)
 	}
 	input.TTL = time.Duration(opts.TTL) * time.Second
 
@@ -234,12 +234,15 @@ func RunDelete(ctx context.Context, api API, address string, force bool, in io.R
 	if err != nil {
 		return err
 	}
-	if _, err := api.Get(ctx, scope, key); err != nil {
-		return err
-	}
 	if !force {
+		if _, err := api.Get(ctx, scope, key); err != nil {
+			return err
+		}
 		fmt.Fprintf(out, "Type `%s` to delete it from %s `%s`: ", key, scope.Kind, scope.ID)
-		answer, _ := bufio.NewReader(in).ReadString('\n')
+		answer, readErr := bufio.NewReader(in).ReadString('\n')
+		if readErr != nil && answer == "" {
+			return errors.New("no confirmation given; set --force to delete without one")
+		}
 		if strings.TrimSpace(answer) != key {
 			fmt.Fprintln(out, "Deletion cancelled.")
 			return nil
