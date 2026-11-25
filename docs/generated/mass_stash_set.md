@@ -14,7 +14,7 @@ Set a stash entry's value
 
 Stores a value under a key. A value of `-` reads the value from stdin and keeps every byte, including a trailing newline.
 
-Each write replaces the entry's value, format, TTL, and flags.
+Each write replaces the entry's value, label, format, TTL, and flags.
 
 ## Usage
 
@@ -24,6 +24,7 @@ mass stash set <scope>.<key> <value> [flags]
 
 ## Flags
 
+- `--label`: A human-readable name for the entry, up to 255 characters. It is not encrypted and is shown even for sensitive entries, so keep secrets out of it.
 - `--format`: `text` (default) or `json`. A `json` value must be a JSON object.
 - `--ttl`: Delete the entry this many seconds after the write
 - `--immutable`: Keep the first value. Later writes fail.
@@ -32,7 +33,7 @@ mass stash set <scope>.<key> <value> [flags]
 ## Examples
 
 ```bash
-mass stash set "$DEPLOYMENT_ID.db/hostname" "$DB_HOST"
+mass stash set "$DEPLOYMENT_ID.db/hostname" "$DB_HOST" --label "Database hostname"
 
 # Run migrations once per deployment
 mass stash set "$DEPLOYMENT_ID.migrations/ran" "true" --immutable
@@ -56,6 +57,7 @@ mass stash set <scope>.<key> <value> [flags]
       --format string   How the value is read (text, json) (default "text")
   -h, --help            help for set
       --immutable       Keep the first value; later writes fail
+      --label string    Human-readable name for the entry, up to 255 characters
       --sensitive       Hide the value from callers that cannot write the scope
       --ttl int         Delete the entry this many seconds after the write
 ```

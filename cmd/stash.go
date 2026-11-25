@@ -35,6 +35,7 @@ func NewCmdStash() *cobra.Command {
 		Args:  cobra.ExactArgs(2),
 		RunE:  runStashSet,
 	}
+	setCmd.Flags().String("label", "", "Human-readable name for the entry, up to 255 characters")
 	setCmd.Flags().String("format", "text", "How the value is read (text, json)")
 	setCmd.Flags().Int("ttl", 0, "Delete the entry this many seconds after the write")
 	setCmd.Flags().Bool("immutable", false, "Keep the first value; later writes fail")
@@ -86,6 +87,7 @@ func runStashGet(cmd *cobra.Command, args []string) error {
 
 func runStashSet(cmd *cobra.Command, args []string) error {
 	opts := stash.SetOptions{}
+	opts.Label, _ = cmd.Flags().GetString("label")
 	opts.Format, _ = cmd.Flags().GetString("format")
 	opts.TTL, _ = cmd.Flags().GetInt("ttl")
 	opts.Immutable, _ = cmd.Flags().GetBool("immutable")

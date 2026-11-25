@@ -12,7 +12,7 @@ mass stash get <scope>.<key> [flags]
 
 ## Flags
 
-- `--output, -o`: Output format, `text` (default) or `json`. `json` prints the whole entry: its value, format, flags, and expiry.
+- `--output, -o`: Output format, `text` (default) or `json`. `json` prints the whole entry: its value, label, format, flags, and expiry.
 
 ## Examples
 

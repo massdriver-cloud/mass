@@ -163,7 +163,7 @@ func TestResolveScope_NeitherIsNotFound(t *testing.T) {
 
 func TestRunGet(t *testing.T) {
 	api := &fakeAPI{entries: map[string]types.StashEntry{
-		"db/hostname": {Key: "db/hostname", Value: ptr("db.internal"), Format: "TEXT"},
+		"db/hostname": {Key: "db/hostname", Label: "Database hostname", Value: ptr("db.internal"), Format: "TEXT"},
 		"password":    {Key: "password", Sensitive: true, Format: "TEXT"},
 	}}
 
@@ -175,7 +175,7 @@ func TestRunGet(t *testing.T) {
 		wantErr string
 	}{
 		{name: "raw value", address: "api.db/hostname", output: "text", want: "db.internal"},
-		{name: "json entry", address: "api.db/hostname", output: "json", want: "{\n  \"key\": \"db/hostname\",\n  \"value\": \"db.internal\",\n  \"format\": \"TEXT\",\n  \"immutable\": false,\n  \"sensitive\": false\n}\n"},
+		{name: "json entry", address: "api.db/hostname", output: "json", want: "{\n  \"key\": \"db/hostname\",\n  \"label\": \"Database hostname\",\n  \"value\": \"db.internal\",\n  \"format\": \"TEXT\",\n  \"immutable\": false,\n  \"sensitive\": false\n}\n"},
 		{name: "redacted", address: "api.password", output: "text", wantErr: "password is sensitive: reading it needs write access to project:api"},
 		{name: "missing", address: "api.nope", output: "text", wantErr: "not found"},
 	}
@@ -213,11 +213,11 @@ func TestRunSet(t *testing.T) {
 			name:    "text with ttl",
 			address: "api-staging.ami-id",
 			value:   "ami-0abc",
-			opts:    stash.SetOptions{TTL: 86400},
+			opts:    stash.SetOptions{Label: "Base image", TTL: 86400},
 			want: setCall{
 				scope: sdkstash.Scope{Kind: sdkstash.ScopeEnvironment, ID: "api-staging"},
 				key:   "ami-id",
-				input: sdkstash.SetInput{Value: "ami-0abc", Format: sdkstash.FormatText, TTL: 24 * time.Hour},
+				input: sdkstash.SetInput{Value: "ami-0abc", Label: "Base image", Format: sdkstash.FormatText, TTL: 24 * time.Hour},
 			},
 		},
 		{
@@ -326,7 +326,7 @@ func TestRunList(t *testing.T) {
 	api := &fakeAPI{
 		components: map[string]bool{"api-db": true},
 		entries: map[string]types.StashEntry{
-			"password": {Key: "password", Format: "TEXT", Sensitive: true, Immutable: true},
+			"password": {Key: "password", Label: "Admin password", Format: "TEXT", Sensitive: true, Immutable: true},
 		},
 	}
 
@@ -334,8 +334,8 @@ func TestRunList(t *testing.T) {
 		output string
 		want   []string
 	}{
-		{output: "json", want: []string{`"key": "password"`, `"value": null`, `"sensitive": true`}},
-		{output: "table", want: []string{"Key", "password", "(sensitive)", "immutable,sensitive"}},
+		{output: "json", want: []string{`"key": "password"`, `"label": "Admin password"`, `"value": null`, `"sensitive": true`}},
+		{output: "table", want: []string{"Key", "Label", "password", "Admin password", "(sensitive)", "immutable,sensitive"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.output, func(t *testing.T) {

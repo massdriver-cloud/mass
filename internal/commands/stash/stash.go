@@ -179,6 +179,7 @@ func RunGet(ctx context.Context, api API, address, output string, out io.Writer)
 
 // SetOptions holds the flags of `mass stash set`.
 type SetOptions struct {
+	Label     string
 	Format    string
 	TTL       int
 	Immutable bool
@@ -187,7 +188,7 @@ type SetOptions struct {
 
 // RunSet stores value under the address. A value of "-" reads it from in.
 func RunSet(ctx context.Context, api API, address, value string, opts SetOptions, in io.Reader, out io.Writer) error {
-	input := sdkstash.SetInput{Immutable: opts.Immutable, Sensitive: opts.Sensitive}
+	input := sdkstash.SetInput{Label: opts.Label, Immutable: opts.Immutable, Sensitive: opts.Sensitive}
 
 	switch strings.ToLower(opts.Format) {
 	case "", "text":
@@ -277,9 +278,9 @@ func RunList(ctx context.Context, api API, ref, output string, out *os.File) err
 		return writeJSON(out, entries)
 	case "table":
 		return cli.Paginate(seq, cli.PagerConfig[types.StashEntry]{
-			Columns: []string{"Key", "Value", "Format", "Flags", "Expires", "Updated"},
+			Columns: []string{"Key", "Label", "Value", "Format", "Flags", "Expires", "Updated"},
 			Row: func(e types.StashEntry) []string {
-				return []string{e.Key, valueCell(e), e.Format, flagsCell(e), formatTime(e.ExpiresAt), formatTime(e.UpdatedAt)}
+				return []string{e.Key, cli.TruncateString(e.Label, 40), valueCell(e), e.Format, flagsCell(e), formatTime(e.ExpiresAt), formatTime(e.UpdatedAt)}
 			},
 			Out: out,
 		})
