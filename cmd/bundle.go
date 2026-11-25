@@ -370,7 +370,7 @@ func runBundleBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err = cmdbundle.RunBuild(sourceDir, unmarshalledBundle, mdClient); err != nil {
+	if err = cmdbundle.RunBuild(context.Background(), sourceDir, unmarshalledBundle, mdClient, os.Stdout); err != nil {
 		return err
 	}
 	if sourceDir != bundleDirectory {
