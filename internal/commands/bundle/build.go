@@ -98,7 +98,7 @@ func WarnCardinalityChanges(ctx context.Context, published PublishedBundleAPI, b
 			effect = "The variable becomes an object; on upgrade the field's connections are removed and the user connects one source."
 		}
 		fmt.Fprintln(out, prettylogs.Orange(fmt.Sprintf(
-			"Warning: dependency %q changes cardinality from %s to %s since %s@%s. %s",
+			"Warning: dependency %q changes cardinality from %s to %s since the latest published version, %s@%s. %s",
 			name, was, now, b.Name, version, effect)))
 	}
 }

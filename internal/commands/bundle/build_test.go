@@ -10,9 +10,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/massdriver-cloud/mass/internal/api"
 	mdbundle "github.com/massdriver-cloud/mass/internal/bundle"
 	cmdbundle "github.com/massdriver-cloud/mass/internal/commands/bundle"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql/gqltest"
 )
 
 type fakePublishedBundleAPI struct {
@@ -23,6 +26,35 @@ type fakePublishedBundleAPI struct {
 
 func (f fakePublishedBundleAPI) PublishedCardinalities(_ context.Context, _ string) (string, map[string]string, error) {
 	return f.version, f.cardinalities, f.err
+}
+
+// The warning compares against lowercase "one"/"many"; the API returns ONE/MANY.
+func TestPublishedBundleAPILowercasesCardinality(t *testing.T) {
+	mock := gqltest.NewClient(gqltest.RespondWithData(map[string]any{
+		"bundle": map[string]any{
+			"version": "1.2.0",
+			"dependencies": []any{
+				map[string]any{"name": "network", "cardinality": "ONE"},
+				map[string]any{"name": "queues", "cardinality": "MANY"},
+			},
+		},
+	}))
+	t.Cleanup(api.SetTransportForTest(mock))
+	mdClient, err := massdriver.NewClient(massdriver.WithGQLClient(mock), massdriver.WithOrganizationID("test-org"))
+	if err != nil {
+		t.Fatalf("failed to build test client: %v", err)
+	}
+
+	version, cardinalities, err := cmdbundle.NewPublishedBundleAPI(mdClient).PublishedCardinalities(t.Context(), "aws-worker")
+	if err != nil {
+		t.Fatalf("PublishedCardinalities returned an error: %v", err)
+	}
+	if version != "1.2.0" {
+		t.Errorf("version = %q, want 1.2.0", version)
+	}
+	if cardinalities["network"] != "one" || cardinalities["queues"] != "many" {
+		t.Errorf("cardinalities = %v, want network=one queues=many", cardinalities)
+	}
 }
 
 func TestWarnCardinalityChanges(t *testing.T) {
@@ -37,7 +69,7 @@ func TestWarnCardinalityChanges(t *testing.T) {
 			published: fakePublishedBundleAPI{version: "1.2.0", cardinalities: map[string]string{"queues": "one"}},
 			deps:      map[string]mdbundle.Dependency{"queues": {Cardinality: "many"}},
 			want: []string{
-				`dependency "queues" changes cardinality from one to many since aws-worker@1.2.0`,
+				`dependency "queues" changes cardinality from one to many since the latest published version, aws-worker@1.2.0`,
 				"The variable becomes a map; the existing line becomes a set of one.",
 			},
 		},
@@ -46,7 +78,7 @@ func TestWarnCardinalityChanges(t *testing.T) {
 			published: fakePublishedBundleAPI{version: "1.2.0", cardinalities: map[string]string{"queues": "many"}},
 			deps:      map[string]mdbundle.Dependency{"queues": {}},
 			want: []string{
-				`dependency "queues" changes cardinality from many to one since aws-worker@1.2.0`,
+				`dependency "queues" changes cardinality from many to one since the latest published version, aws-worker@1.2.0`,
 				"The variable becomes an object; on upgrade the field's connections are removed and the user connects one source.",
 			},
 		},
