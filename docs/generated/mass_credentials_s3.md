@@ -12,12 +12,9 @@ Print AWS credentials for the Massdriver S3 API
 
 # S3 Credentials
 
-Prints AWS credentials for the Massdriver S3 API. Tools such as the AWS CLI, AWS SDKs, and rclone use them to read instance params and to propose deployments.
+Prints AWS credentials for the Massdriver S3 API. Tools such as the AWS CLI, AWS SDKs, and rclone use them to read instance params.
 
-The profile's API key must be an access token (`md_...`).
-
-- Access key ID: the first 12 characters of the access token
-- Secret access key: the hex SHA-256 of the access token
+The profile must authenticate with an access token (`md_...`). The credentials belong to that access token: they work only in its organization, and they stop working when the access token expires or is revoked.
 
 ## Usage
 
@@ -40,7 +37,7 @@ cat >> ~/.aws/config <<'EOF'
 credential_process = mass credentials s3
 endpoint_url = https://api.massdriver.cloud/s3
 EOF
-aws s3 cp s3://acme/ecomm/prod/db.json - --profile massdriver
+aws s3 cp s3://acme/ecomm/prod/db/params.json - --profile massdriver
 ```
 
 

@@ -1,7 +1,7 @@
-// Package api is a holding pen for GraphQL operations the SDK doesn't expose —
-// today just the deprecated `publishResourceType` mutation, kept so pipelines
-// publishing raw JSON schemas keep working. Delete this package when the API
-// drops the mutation.
+// Package api is a holding pen for GraphQL operations the SDK doesn't expose:
+// the deprecated `publishResourceType` mutation, kept so pipelines publishing
+// raw JSON schemas keep working, and the `s3Credentials` query. Move each one to
+// the SDK or delete it when the API drops it.
 package api
 
 import (
