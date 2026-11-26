@@ -24,6 +24,8 @@ mass credentials s3 [--output process|env]
 
 `--output process` (the default) prints JSON for the AWS `credential_process` setting. `--output env` prints shell exports, including `AWS_ENDPOINT_URL_S3`.
 
+The endpoint below is for Massdriver Cloud. For a self-hosted installation, use the `AWS_ENDPOINT_URL_S3` value that `--output env` prints.
+
 ## Examples
 
 ```bash

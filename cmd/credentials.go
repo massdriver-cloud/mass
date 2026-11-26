@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
-	"github.com/massdriver-cloud/mass/internal/api"
 	"github.com/massdriver-cloud/mass/internal/commands/credentials"
 	"github.com/spf13/cobra"
 )
@@ -41,6 +40,10 @@ func runCredentialsS3(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if err = credentials.ValidateS3Output(output); err != nil {
+		return err
+	}
+
 	cmd.SilenceUsage = true
 
 	mdClient, err := newMassdriverClient(cmd)
@@ -48,10 +51,5 @@ func runCredentialsS3(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
 
-	creds, err := api.GetS3Credentials(cmd.Context(), mdClient)
-	if err != nil {
-		return err
-	}
-
-	return credentials.RunS3(*creds, output, os.Stdout)
+	return credentials.RunS3(cmd.Context(), credentials.NewAPI(mdClient), output, os.Stdout)
 }
