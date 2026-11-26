@@ -37,6 +37,7 @@ Configure and deploying infrastructure and applications.
 * [mass completion](/cli/commands/mass_completion)	 - Generate the autocompletion script for the specified shell
 * [mass component](/cli/commands/mass_component)	 - Manage components in a project's blueprint
 * [mass config](/cli/commands/mass_config)	 - Manage CLI configuration profiles
+* [mass credentials](/cli/commands/mass_credentials)	 - Print credentials for other tools to reach Massdriver
 * [mass deployment](/cli/commands/mass_deployment)	 - Manage deployments
 * [mass docs](/cli/commands/mass_docs)	 - Gen docs
 * [mass environment](/cli/commands/mass_environment)	 - Environment management
