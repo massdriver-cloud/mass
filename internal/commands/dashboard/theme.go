@@ -1,6 +1,10 @@
 package dashboard
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 const (
 	colorTeal      = lipgloss.Color("#5ED3B4")
@@ -41,6 +45,7 @@ var (
 	styleKey      = lipgloss.NewStyle().Bold(true).Foreground(colorTeal)
 	styleUpgrade  = lipgloss.NewStyle().Bold(true).Foreground(colorYellow)
 	styleDeploy   = lipgloss.NewStyle().Bold(true).Foreground(colorBlue)
+	styleNote     = lipgloss.NewStyle().Foreground(lipgloss.Color("#C9B8F0"))
 )
 
 func statusColor(status string) lipgloss.Color {
@@ -78,16 +83,18 @@ const (
 	HealthDown     = "down"
 )
 
+// healthColor colors the health states the Massdriver UI knows; any other
+// state is gray.
 func healthColor(state string) lipgloss.Color {
-	switch state {
-	case HealthHealthy:
+	switch strings.ToLower(state) {
+	case HealthHealthy, "ok", "up":
 		return colorGreen
-	case HealthDegraded:
+	case HealthDegraded, "warning", "recovering":
 		return colorOrange
-	case HealthDown:
+	case HealthDown, "failed", "error":
 		return colorRed
 	default:
-		return colorBlue
+		return colorGray
 	}
 }
 
@@ -104,9 +111,9 @@ func levelColor(level string) lipgloss.Color {
 
 func usageColor(u *Usage) lipgloss.Color {
 	switch ratio := u.Value / u.Max; {
-	case ratio >= 0.9:
+	case ratio >= 0.95:
 		return colorRed
-	case ratio >= 0.75:
+	case ratio >= 0.8:
 		return colorOrange
 	default:
 		return colorTeal

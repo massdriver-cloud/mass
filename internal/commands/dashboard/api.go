@@ -25,7 +25,8 @@ type API interface {
 	Environments(ctx context.Context, cursor string) ([]Environment, string, error)
 	Runtimes(ctx context.Context, cursor string) ([]Runtime, string, error)
 	Applications(ctx context.Context, cursor string) ([]Application, string, error)
-	Widgets(ctx context.Context, scopes []Scope, cursor string) ([]Widget, string, error)
+	StashEntries(ctx context.Context, scopes []Scope, cursor string) ([]StashEntry, string, error)
+	Annotations(ctx context.Context, projectID, cursor string) ([]Annotation, string, error)
 	Events(ctx context.Context, since time.Time) (Log, error)
 	History(ctx context.Context, since time.Time) (Log, error)
 }
@@ -68,6 +69,7 @@ type Instance struct {
 	DeployedVersion  string       `json:"deployedVersion"`
 	AvailableUpgrade string       `json:"availableUpgrade"`
 	FiringAlarmCount int          `json:"firingAlarmCount"`
+	Component        *Ref         `json:"component"`
 	Bundle           *Bundle      `json:"bundle"`
 	LatestProvision  *Provision   `json:"latestProvision"`
 	LatestDeployment *Deployment  `json:"latestDeployment"`
@@ -171,7 +173,10 @@ type Snapshot struct {
 	Environments []Environment
 	Runtimes     []Runtime
 	Applications []Application
-	Widgets      []Widget
+	Annotations  []Annotation
+	// AnnotationsErr is why annotations could not be read, such as a
+	// service account, which has none.
+	AnnotationsErr error
 }
 
 // Fetch reads every page of environments, runtimes, and applications.
@@ -193,7 +198,7 @@ func Fetch(ctx context.Context, api API) (*Snapshot, error) {
 	if err := group.Wait(); err != nil {
 		return nil, err
 	}
-	snap.Widgets = fetchWidgets(ctx, api, snap.Environments)
+	snap.Annotations, snap.AnnotationsErr = readAnnotations(ctx, api, snap.Environments)
 	cleanSnapshot(snap)
 	return snap, nil
 }
@@ -366,6 +371,7 @@ const environmentsQuery = `query dashboardEnvironments($organizationId: ID!, $cu
       parent { id }
       instances {
         id status deployedVersion availableUpgrade firingAlarmCount
+        component { id }
         bundle { name version runtime { name version } }
         latestProvision { createdAt bundle { name version runtime { name version } } }
         latestDeployment { status action createdAt }

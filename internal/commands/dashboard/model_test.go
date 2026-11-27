@@ -64,7 +64,7 @@ func loaded(t *testing.T, api dashboard.API, cfg dashboard.Config, w, h int) das
 	t.Helper()
 	var m tea.Model = dashboard.NewModel(api, cfg)
 	m, _ = m.Update(tea.WindowSizeMsg{Width: w, Height: h})
-	model := pump(t, m, []tea.Cmd{m.Init()}, 4)
+	model := pump(t, m, []tea.Cmd{m.Init()}, 9)
 	return model
 }
 

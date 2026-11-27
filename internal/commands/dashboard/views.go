@@ -62,13 +62,14 @@ func (m Model) constellationBody(h int) string {
 		Frame: m.frame, Intro: m.intro(), Flashes: m.flashes,
 	}
 	scene.Target, scene.TargetAge = m.lockOn()
+	scene.Now = m.cfg.Now()
 	canvas := scene.Render(canvasW, h)
 	if panelW == 0 {
 		return canvas
 	}
 	var panel string
 	if m.help {
-		panel = Legend(m.cfg.Watch)
+		panel = Legend(m.cfg.Watch, m.snap.AnnotationsErr)
 	} else {
 		panel = EnvDetail(m.graph, m.graph.Env(m.selected), blast, m.cfg.Now(), panelW)
 	}
@@ -333,7 +334,7 @@ func toggle(name string, on bool) string {
 }
 
 // Legend explains the marks and motion on the constellation.
-func Legend(watch bool) string {
+func Legend(watch bool, notesErr error) string {
 	highlight := lipgloss.NewStyle().Foreground(colorHighlight)
 	rows := []string{
 		styleHeading.Render("WHAT MOVES"),
@@ -362,6 +363,14 @@ func Legend(watch bool) string {
 		styleHeading.Render("BADGES"),
 		styleBoldRed.Render("▲N")+" alarms firing  "+styleUpgrade.Render("↑N")+" upgrades",
 		lipgloss.NewStyle().Foreground(colorOrange).Render("⚑")+" banner  "+styleTeal.Render("◆")+" application  "+styleFaint.Render("◌")+" no access",
+		styleNote.Render("✎")+" note",
 	)
+	if notesErr != nil {
+		why := "Notes and pinned widgets could not be read: " + clean(notesErr.Error())
+		if strings.Contains(notesErr.Error(), "service account") {
+			why = "Notes and pinned widgets need a personal access token. This profile signs in as a service account."
+		}
+		rows = append(rows, "", styleMuted.Render(why))
+	}
 	return strings.Join(rows, "\n")
 }

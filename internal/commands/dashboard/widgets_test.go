@@ -1,11 +1,9 @@
 package dashboard_test
 
 import (
-	"context"
-	"errors"
-	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/massdriver-cloud/mass/internal/commands/dashboard"
@@ -14,32 +12,57 @@ import (
 func inst(id string) dashboard.Scope { return dashboard.Scope{Kind: "INSTANCE", ID: id} }
 func env(id string) dashboard.Scope  { return dashboard.Scope{Kind: "ENVIRONMENT", ID: id} }
 
-func withWidgets() *fakeAPI {
+func text(scope dashboard.Scope, key, value string) dashboard.StashEntry {
+	return dashboard.StashEntry{Scope: scope, Key: key, Value: value, Format: "TEXT", UpdatedAt: fixedNow().Format(time.RFC3339)}
+}
+
+func object(scope dashboard.Scope, key string, data dashboard.Values) dashboard.StashEntry {
+	return dashboard.StashEntry{Scope: scope, Key: key, Value: "{}", Data: data, Format: "JSON", UpdatedAt: fixedNow().Format(time.RFC3339)}
+}
+
+func withStash() *fakeAPI {
 	api := fixture()
-	api.widgets = []dashboard.Widget{
-		{Name: dashboard.WidgetHealth, Scope: inst("care-dev-app"), Values: dashboard.Values{"state": "degraded"}},
-		{Name: dashboard.WidgetUsage, Scope: inst("care-dev-app"), Values: dashboard.Values{"value": 82.0, "max": 100.0, "label": "% CPU"}},
-		{Name: dashboard.WidgetUsage, Scope: inst("care-dev-queue"), Values: dashboard.Values{"value": 1.0, "max": 0.0}},
-		{Name: dashboard.WidgetTraffic, Scope: inst("platform-dev-db"), Values: dashboard.Values{"rate": 1250.0, "errors": 7.0}},
-		{Name: dashboard.WidgetTraffic, Scope: inst("care-dev-app"), Values: dashboard.Values{"rate": 40.0}},
-		{Name: dashboard.WidgetBanner, Scope: env("care-dev"), Values: dashboard.Values{"message": "Load test until 5pm", "level": "warning"}},
-		{Name: dashboard.WidgetBanner, Scope: env("billing-dev"), Values: dashboard.Values{"level": "error"}},
-		{Name: dashboard.WidgetLinks, Scope: env("care-dev"), Values: dashboard.Values{"links": []any{
+	api.stash = []dashboard.StashEntry{
+		text(inst("care-dev-app"), "md/health", "degraded"),
+		object(inst("care-dev-app"), "md/usage", dashboard.Values{"value": 82.0, "max": 100.0, "label": "% CPU"}),
+		object(inst("care-dev-queue"), "md/usage", dashboard.Values{"value": 1.0, "max": 0.0}),
+		object(inst("platform-dev-db"), "md/traffic", dashboard.Values{"rps": 1250.0, "errors_5m": 7.0, "p95_ms": 180.0}),
+		object(inst("care-dev-app"), "md/traffic", dashboard.Values{"rps": 40.0, "errors_5m": 0.0}),
+		object(env("care-dev"), "md/banner", dashboard.Values{"message": "Load test until 5pm", "level": "warning"}),
+		object(env("billing-dev"), "md/banner", dashboard.Values{"level": "error"}),
+		object(env("care-dev"), "md/links", dashboard.Values{"links": []any{
 			map[string]any{"label": "Grafana", "url": "https://grafana.example.com"},
 			map[string]any{"label": "", "url": "https://skipped.example.com"},
-		}}},
-		{Name: dashboard.WidgetHealth, Scope: inst("nobody"), Values: dashboard.Values{"state": "down"}},
+		}}),
+		text(inst("billing-dev-app"), "md/health", "ok"),
+		object(inst("billing-dev-app"), "md/health", dashboard.Values{"state": "wrong format"}),
 	}
 	return api
 }
 
-func TestWidgetsOnTheGraph(t *testing.T) {
-	api := withWidgets()
-	snap, err := dashboard.Fetch(context.Background(), api)
+func graphOf(t *testing.T, api *fakeAPI) *dashboard.Graph {
+	t.Helper()
+	snap := fixtureSnapshotFrom(t, api)
+	st, err := dashboard.ReadStash(t.Context(), api, snap.Environments)
 	if err != nil {
 		t.Fatal(err)
 	}
 	g := dashboard.BuildGraph(snap)
+	g.ApplyStash(st, snap.Annotations, fixedNow())
+	return g
+}
+
+func fixtureSnapshotFrom(t *testing.T, api *fakeAPI) *dashboard.Snapshot {
+	t.Helper()
+	snap, err := dashboard.Fetch(t.Context(), api)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return snap
+}
+
+func TestWidgetsFromWellKnownKeys(t *testing.T) {
+	g := graphOf(t, withStash())
 
 	app := g.Instance("care-dev-app")
 	if app.Health != "degraded" || app.Usage == nil || app.Usage.Value != 82 || app.Usage.Label != "% CPU" || app.Traffic.Rate != 40 {
@@ -59,11 +82,11 @@ func TestWidgetsOnTheGraph(t *testing.T) {
 		tr := g.Traffic(l)
 		switch l.From + ">" + l.To {
 		case "platform-dev>care-dev":
-			if tr == nil || tr.Rate != 1250 || tr.Errors != 7 {
+			if tr == nil || tr.Rate != 1250 || tr.Errors != 7 || tr.Latency != 180 || !tr.HasLatency {
 				t.Errorf("platform-dev>care-dev traffic = %+v", tr)
 			}
 		case "care-dev>billing-dev":
-			if tr == nil || tr.Rate != 40 {
+			if tr == nil || tr.Rate != 40 || tr.HasLatency {
 				t.Errorf("care-dev>billing-dev traffic = %+v", tr)
 			}
 		default:
@@ -74,83 +97,75 @@ func TestWidgetsOnTheGraph(t *testing.T) {
 	}
 }
 
-func TestWidgetScopes(t *testing.T) {
-	api := fixture()
-	big := make([]dashboard.Instance, 250)
-	for i := range big {
-		big[i] = dashboard.Instance{ID: fmt.Sprintf("big-dev-i%d", i), Status: "PROVISIONED"}
-	}
-	api.envPages = append(api.envPages, []dashboard.Environment{{ID: "big-dev", Name: "Dev", Project: ref("big", "Big"), Instances: big}})
-	if _, err := dashboard.Fetch(context.Background(), api); err != nil {
-		t.Fatal(err)
-	}
-	projects := map[string]int{}
-	for _, read := range api.scopeReads {
-		if len(read) > 200 {
-			t.Errorf("a read asked for %d scopes, more than 200", len(read))
-		}
-		seen := map[string]bool{}
-		for _, s := range read {
-			seen[strings.SplitN(s.ID, "-", 2)[0]] = true
-		}
-		if len(seen) != 1 {
-			t.Errorf("a read mixed projects: %v", seen)
-		}
-		for p := range seen {
-			projects[p]++
-		}
-	}
-	if projects["big"] != 2 || projects["care"] != 1 {
-		t.Errorf("reads per project = %v, want big split in two", projects)
-	}
-}
-
-func TestWidgetsKeepTheReadsThatWork(t *testing.T) {
-	api := withWidgets()
-	api.failScope = "platform-dev"
-	g := dashboard.BuildGraph(fixtureSnapshotFrom(t, api))
-	if g.Instance("care-dev-app").Health != "degraded" || g.Instance("platform-dev-db").Traffic != nil {
-		t.Error("a failed read for one project should leave out only that project's widgets")
-	}
-}
-
 func TestWidgetsCannotEscapeTheTerminal(t *testing.T) {
 	api := fixture()
-	api.widgets = []dashboard.Widget{
-		{Name: dashboard.WidgetBanner, Scope: env("care-dev"), Values: dashboard.Values{"message": "fine\x1b]0;owned\x07\u009b2J"}},
-		{Name: dashboard.WidgetLinks, Scope: env("care-dev"), Values: dashboard.Values{"links": []any{
+	api.stash = []dashboard.StashEntry{
+		object(env("care-dev"), "md/banner", dashboard.Values{"message": "fine\x1b]0;owned\x07\u009b2J"}),
+		object(env("care-dev"), "md/links", dashboard.Values{"links": []any{
 			map[string]any{"label": "ok\x1b[31m", "url": "https://ok.example.com\x1b\\"},
 			map[string]any{"label": "local", "url": "file:///etc/passwd"},
 			map[string]any{"label": "script", "url": "javascript:alert(1)"},
 			map[string]any{"label": "Loud\u202eev\u200fil\u2028", "url": "HTTPS://LOUD.example.com"},
-		}}},
+		}}),
 	}
-	g := dashboard.BuildGraph(fixtureSnapshotFrom(t, api))
-	care := g.Env("care-dev")
+	care := graphOf(t, api).Env("care-dev")
 	if care.Banner.Message != "fine]0;owned2J" {
 		t.Errorf("banner = %q, want control characters stripped", care.Banner.Message)
 	}
 	if len(care.Links) != 2 || care.Links[0].Label != "ok[31m" || care.Links[0].URL != "https://ok.example.com\\" ||
 		care.Links[1].Label != "Loudevil" {
-		t.Errorf("links = %+v, want only the web link, cleaned", care.Links)
+		t.Errorf("links = %+v, want only the web links, cleaned", care.Links)
 	}
 }
 
-func TestWidgetsFailQuietly(t *testing.T) {
-	api := withWidgets()
-	api.widgetErr = errors.New(`Cannot query field "alphaWidgetsForScopes"`)
-	snap, err := dashboard.Fetch(context.Background(), api)
-	if err != nil || len(snap.Widgets) != 0 || len(snap.Environments) != 5 {
-		t.Errorf("Fetch = %d widgets, %d environments, %v; want the dashboard without widgets", len(snap.Widgets), len(snap.Environments), err)
+func TestPinnedWidgets(t *testing.T) {
+	src := func(scope, id, key string, path ...any) map[string]any {
+		return map[string]any{"source": "stash", "scope": map[string]any{scope: id}, "key": key, "path": path}
+	}
+	api := withStash()
+	api.stash = append(api.stash,
+		text(inst("care-dev-queue"), "status/health", "down"),
+		text(inst("care-dev-queue"), "db/connections", "37"),
+		text(inst("care-dev-queue"), "db/max_connections", "100"),
+		object(inst("care-dev-app"), "stats/traffic", dashboard.Values{"rps": 9.0, "errors_5m": 12.0}),
+		text(env("care-dev"), "status/maintenance", "Database upgrade tonight"),
+	)
+	api.annotations = map[string][]dashboard.Annotation{"care": {
+		{Kind: "WIDGET", Surfaces: []string{dashboard.WidgetHealth}, Entity: dashboard.AnnotationEntity{Typename: "Instance", ID: "care-dev-queue"},
+			Inputs: dashboard.Values{"state": src("instance", "care-dev-queue", "status/health")}},
+		{Kind: "WIDGET", Surfaces: []string{dashboard.WidgetUsage}, Entity: dashboard.AnnotationEntity{Typename: "Instance", ID: "care-dev-queue"},
+			Inputs: dashboard.Values{"value": src("instance", "care-dev-queue", "db/connections"), "max": src("instance", "care-dev-queue", "db/max_connections")}},
+		{Kind: "WIDGET", Surfaces: []string{dashboard.WidgetBanner}, Entity: dashboard.AnnotationEntity{Typename: "Environment", ID: "care-dev"},
+			Inputs: dashboard.Values{"message": src("environment", "care-dev", "status/maintenance")}},
+		{Kind: "WIDGET", Surfaces: []string{dashboard.WidgetHealth}, Entity: dashboard.AnnotationEntity{Typename: "Instance", ID: "care-dev-app"},
+			Inputs: dashboard.Values{"state": src("instance", "care-dev-app", "missing")}},
+		{Kind: "WIDGET", Surfaces: []string{dashboard.WidgetTraffic}, Entity: dashboard.AnnotationEntity{
+			Typename: "Link", ID: "l1", FromComponent: ref("care-app", ""), ToComponent: ref("care-queue", ""),
+		}, Inputs: dashboard.Values{
+			"rate": src("instance", "care-dev-app", "stats/traffic", "rps"), "errors": src("instance", "care-dev-app", "stats/traffic", "errors_5m"),
+		}},
+	}}
+	api.envPages[0][1].Instances[1].Component = ref("care-queue", "")
+	g := graphOf(t, api)
+	queue := g.Instance("care-dev-queue")
+	if queue.Health != "down" || queue.Usage == nil || queue.Usage.Value != 37 || queue.Usage.Max != 100 {
+		t.Errorf("care-dev-queue = health %q usage %+v; want widgets from pinned keys, with numbers read from text", queue.Health, queue.Usage)
+	}
+	if b := g.Env("care-dev").Banner; b == nil || b.Message != "Database upgrade tonight" {
+		t.Errorf("banner = %+v; a pinned banner replaces the md/banner one", b)
+	}
+	if g.Instance("care-dev-app").Health != "degraded" {
+		t.Error("a pinned widget that cannot resolve leaves the md/ widget in place")
+	}
+	if tr := g.Instance("care-dev-app").Traffic; tr == nil || tr.Rate != 9 || tr.Errors != 12 {
+		t.Errorf("traffic = %+v; a pinned link widget draws on the instance the link leaves", tr)
 	}
 }
 
 func TestWidgetsInTheView(t *testing.T) {
-	m := press(loaded(t, withWidgets(), config(&opener{}), 200, 48), "/", "c", "a", "r", "e", "enter")
+	m := press(loaded(t, withStash(), config(&opener{}), 200, 48), "/", "c", "a", "r", "e", "enter")
 	out := view(m)
-	for _, want := range []string{
-		"⚑ Load test until 5pm", "↗ Grafana", "degraded", "82/100 % CPU", "40/s",
-	} {
+	for _, want := range []string{"⚑ Load test until 5pm", "↗ Grafana", "degraded", "82/100 % CPU", "40/s"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("view is missing %q:\n%s", want, out)
 		}
@@ -159,21 +174,16 @@ func TestWidgetsInTheView(t *testing.T) {
 		t.Error("a header link should be a terminal hyperlink")
 	}
 
-	g := dashboard.BuildGraph(fixtureSnapshotFrom(t, withWidgets()))
+	g := graphOf(t, withStash())
 	pos := dashboard.Layout(g, 160, 48, dashboard.LayoutOptions{})
-	scene := ansi.Strip(dashboard.Scene{Graph: g, Pos: pos, Frame: 5}.Render(160, 48))
-	if !strings.Contains(scene, "1.2k/s ✕7") || !strings.Contains(scene, "40/s") {
+	scene := ansi.Strip(dashboard.Scene{Graph: g, Pos: pos, Frame: 5, Now: fixedNow()}.Render(160, 48))
+	if !strings.Contains(scene, "1.2k/s 180ms ✕7") || !strings.Contains(scene, "40/s") {
 		t.Errorf("links should carry their traffic:\n%s", scene)
 	}
-}
-
-func fixtureSnapshotFrom(t *testing.T, api *fakeAPI) *dashboard.Snapshot {
-	t.Helper()
-	snap, err := dashboard.Fetch(context.Background(), api)
-	if err != nil {
-		t.Fatal(err)
+	stale := ansi.Strip(dashboard.Scene{Graph: g, Pos: pos, Frame: 5, Now: fixedNow().Add(time.Hour)}.Render(160, 48))
+	if !strings.Contains(stale, "stale") {
+		t.Errorf("traffic unreported for an hour should be stale:\n%s", stale)
 	}
-	return snap
 }
 
 func TestRate(t *testing.T) {

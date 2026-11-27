@@ -16,48 +16,57 @@ import (
 )
 
 type fakeAPI struct {
-	envPages   [][]dashboard.Environment
-	runtimes   []dashboard.Runtime
-	apps       []dashboard.Application
-	err        error
-	cursors    []string
-	eventReads []dashboard.Log
-	eventCalls int
-	history    []dashboard.Event
-	truncated  bool
-	historyErr error
-	since      time.Time
-	widgets    []dashboard.Widget
-	widgetErr  error
-	failScope  string
-	scopeMu    sync.Mutex
-	scopeReads [][]dashboard.Scope
+	envPages    [][]dashboard.Environment
+	runtimes    []dashboard.Runtime
+	apps        []dashboard.Application
+	err         error
+	cursors     []string
+	eventReads  []dashboard.Log
+	eventCalls  int
+	history     []dashboard.Event
+	truncated   bool
+	historyErr  error
+	since       time.Time
+	stash       []dashboard.StashEntry
+	stashErr    error
+	failScope   string
+	scopeMu     sync.Mutex
+	scopeReads  [][]dashboard.Scope
+	annotations map[string][]dashboard.Annotation
+	annErr      error
 }
 
-func (f *fakeAPI) Widgets(ctx context.Context, scopes []dashboard.Scope, _ string) ([]dashboard.Widget, string, error) {
+func (f *fakeAPI) StashEntries(ctx context.Context, scopes []dashboard.Scope, _ string) ([]dashboard.StashEntry, string, error) {
 	f.scopeMu.Lock()
 	f.scopeReads = append(f.scopeReads, scopes)
 	f.scopeMu.Unlock()
 	if err := ctx.Err(); err != nil {
 		return nil, "", err
 	}
-	if f.widgetErr != nil {
-		return nil, "", f.widgetErr
+	if f.stashErr != nil {
+		return nil, "", f.stashErr
 	}
 	for _, s := range scopes {
 		if s.ID == f.failScope {
 			return nil, "", errors.New("read failed")
 		}
 	}
-	var out []dashboard.Widget
-	for _, w := range f.widgets {
+	var out []dashboard.StashEntry
+	for _, e := range f.stash {
 		for _, s := range scopes {
-			if s == w.Scope {
-				out = append(out, w)
+			if s == e.Scope {
+				out = append(out, e)
 			}
 		}
 	}
 	return out, "", nil
+}
+
+func (f *fakeAPI) Annotations(_ context.Context, projectID, _ string) ([]dashboard.Annotation, string, error) {
+	if f.annErr != nil {
+		return nil, "", f.annErr
+	}
+	return f.annotations[projectID], "", nil
 }
 
 func (f *fakeAPI) History(_ context.Context, since time.Time) (dashboard.Log, error) {
@@ -123,17 +132,17 @@ func fixture() *fakeAPI {
 	}}
 	platform := dashboard.Environment{ID: "platform-dev", Name: "Development", Project: ref("platform", "Platform"), Instances: []dashboard.Instance{
 		{ID: "platform-dev-network", Status: "PROVISIONED"},
-		{ID: "platform-dev-db", Status: "PROVISIONED", Alarms: firing, Cost: usd(1250), Dependencies: []dashboard.Dependency{dependsOn("platform-dev-network", "platform-dev")}},
+		{ID: "platform-dev-db", Status: "PROVISIONED", Alarms: firing, Cost: usd(1250), Component: ref("platform-db", ""), Dependencies: []dashboard.Dependency{dependsOn("platform-dev-network", "platform-dev")}},
 	}}
 	care := dashboard.Environment{ID: "care-dev", Name: "Development", Project: ref("care", "Care"), Instances: []dashboard.Instance{
-		{ID: "care-dev-app", Status: "PROVISIONED", Bundle: appBundle("care-app", "0.1.0", "1.0.0"),
+		{ID: "care-dev-app", Status: "PROVISIONED", Bundle: appBundle("care-app", "0.1.0", "1.0.0"), Component: ref("care-app", ""),
 			DeployedVersion: "0.1.0", AvailableUpgrade: "0.2.0",
 			Dependencies: []dashboard.Dependency{dependsOn("platform-dev-db", "platform-dev"), dependsOn("secret-vpc", "secret-prod")}},
 		{ID: "care-dev-queue", Status: "INITIALIZED", AvailableUpgrade: "1.0.0",
 			LatestDeployment: &dashboard.Deployment{Status: "PROPOSED", Action: "PROVISION"}},
 	}}
 	billing := dashboard.Environment{ID: "billing-dev", Name: "Development", Project: ref("billing", "Billing"), Instances: []dashboard.Instance{
-		{ID: "billing-dev-app", Status: "FAILED", Bundle: appBundle("billing-app", "2.0.0", "1.0.0"),
+		{ID: "billing-dev-app", Status: "FAILED", Bundle: appBundle("billing-app", "2.0.0", "1.0.0"), Component: ref("billing-app", ""),
 			LatestDeployment: &dashboard.Deployment{Status: "RUNNING", Action: "PROVISION", CreatedAt: "2026-11-25T23:58:00Z"},
 			LatestProvision:  &dashboard.Provision{Bundle: appBundle("billing-app", "1.9.0", "0.9.0")},
 			Dependencies:     []dashboard.Dependency{dependsOn("care-dev-app", "care-dev")}},
@@ -248,9 +257,6 @@ func TestNewAPIWithClient(t *testing.T) {
 		"dashboardEnvironments": `{"environments":{"cursor":{"next":"c2"},"items":[{"id":"e1","name":"Dev","instances":[{"id":"i1","status":"PROVISIONED"}]}]}}`,
 		"dashboardRuntimes":     `{"runtimes":{"cursor":{"next":null},"items":[{"id":"ecs","latest":{"version":"1.0.0"},"adoption":[]}]}}`,
 		"dashboardApplications": `{"applications":{"cursor":{"next":null},"items":[{"id":"app","latest":{"version":"0.1.0","runtime":{"name":"ecs","version":"1.0.0"}}}]}}`,
-		"dashboardWidgets": `{"alphaWidgetsForScopes":{"cursor":{"next":null},"items":[` +
-			`{"name":"instance.status_dot","scope":{"kind":"INSTANCE","id":"i1"},"values":{"state":"down"}},` +
-			`{"name":"instance.usage_bar","scope":{"kind":"INSTANCE","id":"i1"},"values":"{\"value\":3,\"max\":4}"}]}}`,
 	}}
 	audit := &fakeAudit{page: types.Page[types.AuditLog]{Items: []types.AuditLog{{ID: "a1", Type: "deployment.completed"}}}}
 	api := dashboard.NewAPIWithClient(client, audit, "acme")
@@ -285,19 +291,34 @@ func TestNewAPIWithClient(t *testing.T) {
 	if !audit.input.TimeRangeStart.Equal(since) {
 		t.Errorf("audit log read from %v, want %v", audit.input.TimeRangeStart, since)
 	}
-	widgets, _, err := api.Widgets(ctx, []dashboard.Scope{{Kind: "ENVIRONMENT", ID: "e1"}, {Kind: "INSTANCE", ID: "i1"}}, "")
-	if err != nil || len(widgets) != 2 || widgets[0].Values["state"] != "down" || widgets[1].Values["max"] != 4.0 {
-		t.Errorf("Widgets = %+v, %v; want values read from an object or an encoded string", widgets, err)
-	}
-	wvars, _ := client.reqs[len(client.reqs)-1].Variables.(map[string]any)
-	scopes, _ := wvars["scopes"].([]map[string]string)
-	if len(scopes) != 2 || scopes[0]["environment"] != "e1" || scopes[1]["instance"] != "i1" {
-		t.Errorf("scopes = %v, want one field per scope", wvars["scopes"])
-	}
-
 	audit.err = errors.New("forbidden")
 	if _, err := api.Events(ctx, since); err == nil {
 		t.Error("Events should report a failed read")
+	}
+}
+
+func TestNewAPIWithClientStash(t *testing.T) {
+	client := &recordingClient{data: map[string]string{
+		"dashboardStash": `{"alphaStashEntriesForScopes":{"cursor":{"next":null},"items":[` +
+			`{"scope":{"kind":"INSTANCE","id":"i1"},"key":"md/health","value":"down","data":null,"format":"TEXT","label":null},` +
+			`{"scope":{"kind":"INSTANCE","id":"i1"},"key":"md/usage","value":"{\"value\":3,\"max\":4}","data":"{\"value\":3,\"max\":4}","format":"JSON"}]}}`,
+		"dashboardAnnotations": `{"alphaAnnotations":{"cursor":{"next":null},"items":[` +
+			`{"id":"a1","kind":"NOTE","surfaces":["environment.canvas_legend"],"template":"hi","inputs":null,"entity":{"__typename":"Environment","id":"e1"}}]}}`,
+	}}
+	api := dashboard.NewAPIWithClient(client, &fakeAudit{}, "acme")
+	ctx := context.Background()
+	entries, _, err := api.StashEntries(ctx, []dashboard.Scope{{Kind: "ENVIRONMENT", ID: "e1"}, {Kind: "INSTANCE", ID: "i1"}}, "")
+	if err != nil || len(entries) != 2 || entries[0].Value != "down" || entries[0].Data != nil || entries[1].Data["max"] != 4.0 {
+		t.Errorf("StashEntries = %+v, %v; want data read from an object or an encoded string", entries, err)
+	}
+	svars, _ := client.reqs[len(client.reqs)-1].Variables.(map[string]any)
+	scopes, _ := svars["scopes"].([]map[string]string)
+	if len(scopes) != 2 || scopes[0]["environment"] != "e1" || scopes[1]["instance"] != "i1" {
+		t.Errorf("scopes = %v, want one field per scope", svars["scopes"])
+	}
+	notes, _, err := api.Annotations(ctx, "p1", "")
+	if err != nil || len(notes) != 1 || notes[0].Entity.Typename != "Environment" || notes[0].Template != "hi" {
+		t.Errorf("Annotations = %+v, %v", notes, err)
 	}
 }
 

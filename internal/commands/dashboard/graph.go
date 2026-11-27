@@ -55,6 +55,10 @@ type EnvNode struct {
 	Currency    string
 	Banner      *Banner
 	Links       []HeaderLink
+	// Notes are environment notes; ProjectNotes are notes on its project.
+	Notes        []string
+	ProjectNotes []string
+	LinkNotes    []LinkNote
 }
 
 // InstNode is one instance in the graph.
@@ -70,6 +74,8 @@ type InstNode struct {
 	Upgrade        string
 	Deployed       string
 	Deploy         *Deployment
+	ComponentID    string
+	Notes          []string
 	Health         string
 	Usage          *Usage
 	Traffic        *Traffic
@@ -196,7 +202,6 @@ func BuildGraph(snap *Snapshot) *Graph {
 	g.linkDependencies(snap.Environments)
 	g.linkForks()
 	g.collectProjects()
-	g.applyWidgets(snap.Widgets)
 	slices.SortFunc(g.Firing, func(a, b FiringAlarm) int { return b.Since.Compare(a.Since) })
 	return g
 }
@@ -235,6 +240,9 @@ func toInstNode(envID string, inst Instance) *InstNode {
 		Deployed: inst.DeployedVersion,
 		Upgrade:  inst.AvailableUpgrade,
 		Deploy:   inst.LatestDeployment,
+	}
+	if inst.Component != nil {
+		in.ComponentID = inst.Component.ID
 	}
 	b := inst.Bundle
 	if inst.LatestProvision != nil && inst.LatestProvision.Bundle != nil {

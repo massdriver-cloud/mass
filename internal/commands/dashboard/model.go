@@ -55,6 +55,9 @@ type Config struct {
 	Refresh time.Duration
 	// EventPoll is how often to read new audit log events; zero never does.
 	EventPoll time.Duration
+	// StashPoll is how often to read the stash for its feed; zero reads it
+	// only with each refresh.
+	StashPoll time.Duration
 	Now       func() time.Time
 	Links     Links
 	// Open opens a URL in the browser.
@@ -80,9 +83,15 @@ type (
 		url string
 		err error
 	}
+	stashMsg struct {
+		stash   Stash
+		err     error
+		initial bool
+	}
 	frameMsg     time.Time
 	refreshMsg   struct{}
 	eventPollMsg struct{}
+	stashPollMsg struct{}
 )
 
 // Model is the dashboard's bubbletea model.
@@ -115,6 +124,8 @@ type Model struct {
 	upgradeIdx int
 
 	replay        replay
+	stash         Stash
+	stashOn       bool
 	watch         watchState
 	replayRequest int
 	introAt       int
@@ -175,6 +186,64 @@ func (m Model) ctx() context.Context {
 	return m.cfg.Context
 }
 
+func (m Model) fetchStash(initial bool) tea.Cmd {
+	if m.snap == nil {
+		return nil
+	}
+	api, ctx, envs := m.api, m.ctx(), m.snap.Environments
+	return func() tea.Msg {
+		st, err := ReadStash(ctx, api, envs)
+		return stashMsg{stash: st, err: err, initial: initial}
+	}
+}
+
+// applyStash takes a new read of the stash: it redraws widgets and notes,
+// and past the first read, puts each change on the ticker and flashes where
+// it happened.
+func (m Model) applyStash(msg stashMsg) (Model, tea.Cmd) {
+	var next tea.Cmd
+	if m.cfg.StashPoll > 0 {
+		next = after(m.cfg.StashPoll, stashPollMsg{})
+	}
+	if m.graph == nil || (msg.err != nil && len(msg.stash) == 0) {
+		return m, next
+	}
+	var changes []StashChange
+	if !msg.initial {
+		changes = msg.stash.Changes(m.stash)
+	}
+	m.stash = msg.stash
+	now := m.cfg.Now()
+	m.graph.ApplyStash(m.stash, m.snap.Annotations, now)
+	if len(changes) == 0 {
+		return m, next
+	}
+	fresh := make([]Event, 0, len(changes))
+	ids := map[string]bool{}
+	flashes := make(map[string]Flash, len(m.flashes)+len(changes))
+	for id, f := range m.flashes {
+		flashes[id] = f
+	}
+	for _, c := range changes {
+		ev := m.graph.StashEvent(c, now)
+		fresh = append(fresh, ev)
+		ids[ev.ID] = true
+		if ev.EnvID != "" && !m.replay.on {
+			flashes[ev.EnvID] = Flash{Label: c.Key}
+		}
+	}
+	m.flashes = flashes
+	kept := m.events[:0:0]
+	for _, ev := range m.events {
+		if !ids[ev.ID] {
+			kept = append(kept, ev)
+		}
+	}
+	m.events = slices.Concat(fresh, kept)
+	m.events = m.events[:min(len(m.events), eventsKept)]
+	return m, next
+}
+
 func after(d time.Duration, msg tea.Msg) tea.Cmd {
 	if d <= 0 {
 		return nil
@@ -201,6 +270,10 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		return m.reload()
 	case eventPollMsg:
 		return m, m.fetchEvents(false)
+	case stashPollMsg:
+		return m, m.fetchStash(false)
+	case stashMsg:
+		return m.applyStash(msg)
 	case snapshotMsg:
 		return m.applySnapshot(msg)
 	case eventsMsg:
@@ -256,6 +329,11 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 		m.alarmIdx = min(m.alarmIdx, max(len(m.graph.Firing)-1, 0))
 		m.upgradeIdx = min(m.upgradeIdx, max(len(m.upgrades())-1, 0))
 		m, alert = m.watchAlarms(before)
+		m.graph.ApplyStash(m.stash, m.snap.Annotations, m.cfg.Now())
+		if !m.stashOn || m.cfg.StashPoll <= 0 {
+			alert = tea.Batch(alert, m.fetchStash(!m.stashOn))
+			m.stashOn = true
+		}
 	}
 	return m, tea.Batch(after(m.cfg.Refresh, refreshMsg{}), alert)
 }
@@ -310,10 +388,11 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 	return m, poll
 }
 
-// changesTheMap reports whether an event changes something the map draws:
-// a deployment, an alarm, or a stash key a widget reads.
+// changesTheMap reports whether an event changes something the map draws
+// that only a full read picks up: a deployment or an alarm. The stash has its
+// own feed.
 func changesTheMap(eventType string) bool {
-	for _, prefix := range []string{"deployment.", "alarm", "stash"} {
+	for _, prefix := range []string{"deployment.", "alarm"} {
 		if strings.HasPrefix(eventType, prefix) {
 			return true
 		}

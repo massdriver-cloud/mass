@@ -20,6 +20,8 @@ func eventColor(ev Event) lipgloss.Color {
 		return colorOrange
 	case strings.HasPrefix(ev.Type, "deployment."):
 		return colorBlue
+	case strings.HasPrefix(ev.Type, "stash."):
+		return colorYellow
 	default:
 		return colorTeal
 	}

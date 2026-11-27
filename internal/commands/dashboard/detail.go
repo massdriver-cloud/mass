@@ -37,6 +37,7 @@ func EnvDetail(g *Graph, env *EnvNode, blast *Blast, now time.Time, w int) strin
 	}
 	writeHeaderLinks(&b, env.Links, w)
 	writeBanner(&b, env.Banner, w)
+	writeNotes(&b, append(slices.Clone(env.ProjectNotes), env.Notes...), w)
 	line("")
 	line(statusBar(env, w))
 	line(statusLegend(env))
@@ -45,6 +46,7 @@ func EnvDetail(g *Graph, env *EnvNode, blast *Blast, now time.Time, w int) strin
 	writeNeighbors(&b, g, "FEEDS", g.Consumers(env.ID), func(l Link) string { return l.To }, w)
 	writeBlast(&b, g, env, blast, w)
 	writeInstances(&b, env, now, w)
+	writeLinkNotes(&b, env, w)
 	return b.String()
 }
 
@@ -185,8 +187,11 @@ func writeInstances(b *strings.Builder, env *EnvNode, now time.Time, w int) {
 		}
 		room := w - 2 - lipgloss.Width(badges)
 		b.WriteString(mark + " " + clip(name, max(room, 8)) + badges + "\n")
-		for _, line := range flow(instanceDetails(inst), w-2) {
+		for _, line := range flow(instanceDetails(inst, now), w-2) {
 			b.WriteString(lipgloss.NewStyle().MaxWidth(w).Render("  "+line) + "\n")
+		}
+		for _, note := range inst.Notes {
+			b.WriteString(styleNote.Render(indent(wrap("✎ "+note, w-4), "  ")) + "\n")
 		}
 	}
 }
@@ -230,7 +235,7 @@ func flow(parts []string, w int) []string {
 
 // instanceDetails is what an instance runs and what its widgets say, shown
 // under its name.
-func instanceDetails(inst *InstNode) []string {
+func instanceDetails(inst *InstNode, now time.Time) []string {
 	var parts []string
 	if inst.IsApp() {
 		parts = append(parts, styleTeal.Render("◆ "+inst.Runtime+" "+shortVersion(inst.RuntimeVersion)))
@@ -245,9 +250,12 @@ func instanceDetails(inst *InstNode) []string {
 		parts = append(parts, usageBar(u, 10)+styleMuted.Render(" "+usageText(u)))
 	}
 	if tr := inst.Traffic; tr != nil {
-		text := styleTeal.Render(Rate(tr.Rate) + "/s")
+		text := styleTeal.Render(Rate(tr.Rate) + "/s" + latencyText(tr))
 		if tr.Errors > 0 {
-			text += styleRed.Render(fmt.Sprintf(" ✕%d in 5m", tr.Errors))
+			text += lipgloss.NewStyle().Foreground(errorColor(tr.Errors)).Render(fmt.Sprintf(" ✕%d in 5m", tr.Errors))
+		}
+		if tr.Stale(now) {
+			text = styleFaint.Render(Rate(tr.Rate) + "/s stale")
 		}
 		parts = append(parts, text)
 	}
@@ -266,6 +274,24 @@ func usageText(u *Usage) string {
 		text += " " + u.Label
 	}
 	return text
+}
+
+func writeNotes(b *strings.Builder, notes []string, w int) {
+	for _, note := range notes {
+		b.WriteString(styleNote.Render(indent(wrap("✎ "+note, w-2), "  ")[2:]) + "\n")
+	}
+}
+
+func writeLinkNotes(b *strings.Builder, env *EnvNode, w int) {
+	if len(env.LinkNotes) == 0 {
+		return
+	}
+	b.WriteString("\n" + styleHeading.Render("NOTES ON LINKS") + "\n")
+	for _, n := range env.LinkNotes {
+		from, to := strings.TrimPrefix(n.From, env.ID+"-"), strings.TrimPrefix(n.To, env.ID+"-")
+		b.WriteString(styleMuted.Render(clip(from+" ⟶ "+to, w)) + "\n")
+		b.WriteString(styleNote.Render(indent(wrap(n.Text, w-2), "  ")) + "\n")
+	}
 }
 
 func writeBanner(b *strings.Builder, banner *Banner, w int) {

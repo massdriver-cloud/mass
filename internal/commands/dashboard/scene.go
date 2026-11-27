@@ -5,6 +5,7 @@ import (
 	"math"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-runewidth"
@@ -31,6 +32,8 @@ type Scene struct {
 	// TargetAge how many frames ago.
 	Target    string
 	TargetAge int
+	// Now is when the frame is drawn, for traffic that has gone stale.
+	Now time.Time
 }
 
 // Flash marks an environment where something just happened.
@@ -207,7 +210,7 @@ func (s Scene) drawParticles(c *Canvas) {
 			t := math.Mod(float64(s.Frame)*speed+float64(k)/float64(sparks)+float64(i)*0.137, 1)
 			spark := color
 			if k < errs {
-				spark = colorRed
+				spark = errorColor(s.Graph.Traffic(l).Errors)
 			}
 			c.Disc(Bezier(p0, p1, p2, t), 0.6, spark, layerParticles)
 			if t > 0.03 {
@@ -225,6 +228,9 @@ func sparkFlow(l Link, tr *Traffic) (int, float64, int) {
 	if tr == nil {
 		return min(l.Count, 3), 1.2, 0
 	}
+	if tr.Rate <= 0 {
+		return 0, 0, 0
+	}
 	weight := math.Log10(tr.Rate + 1)
 	sparks := min(max(1+int(weight*1.5), 1), 6)
 	errs := 0
@@ -233,6 +239,17 @@ func sparkFlow(l Link, tr *Traffic) (int, float64, int) {
 	}
 	return sparks, 1.2 * (1 + weight/3), errs
 }
+
+// errorColor follows the Massdriver UI: a few errors are amber, ten or more
+// are red.
+func errorColor(errors int) lipgloss.Color {
+	if errors >= manyErrors {
+		return colorRed
+	}
+	return colorOrange
+}
+
+const manyErrors = 10
 
 func (s Scene) drawTrafficLabels(c *Canvas) {
 	if !s.settled() {
@@ -245,11 +262,15 @@ func (s Scene) drawTrafficLabels(c *Canvas) {
 			continue
 		}
 		mid := Bezier(p0, p1, p2, 0.5)
-		label := Rate(tr.Rate) + "/s"
+		label := Rate(tr.Rate) + "/s" + latencyText(tr)
 		style := lipgloss.NewStyle().Foreground(colorTealDim)
 		if tr.Errors > 0 {
 			label += fmt.Sprintf(" ✕%d", tr.Errors)
-			style = lipgloss.NewStyle().Foreground(colorRed)
+			style = lipgloss.NewStyle().Foreground(errorColor(tr.Errors))
+		}
+		if tr.Stale(s.Now) {
+			label += " stale"
+			style = styleFaint
 		}
 		w := runewidth.StringWidth(label)
 		if x, y := int(mid.X)/2-w/2, int(mid.Y)/4; c.Free(x-1, y, w+2) {
@@ -306,7 +327,7 @@ func (s Scene) instanceColor(env *EnvNode, inst *InstNode) lipgloss.Color {
 		return colorHighlight
 	case !s.Matches(env):
 		return colorFaint
-	case inst.Health == HealthDown && s.Frame%6 < 3:
+	case healthColor(inst.Health) == colorRed && s.Frame%6 < 3:
 		return colorRedDim
 	case inst.Health != "":
 		return healthColor(inst.Health)

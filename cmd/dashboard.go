@@ -22,6 +22,7 @@ func NewCmdDashboard() *cobra.Command {
 	}
 	cmd.Flags().Duration("refresh", dashboardRefresh, "How often to re-read the organization; 0 reads once")
 	cmd.Flags().Duration("events", dashboardEvents, "How often to read new activity from the audit log; 0 turns the live ticker off")
+	cmd.Flags().Duration("stash", dashboardStash, "How often to read the stash for widgets, notes, and the live feed; 0 reads it with each refresh")
 	cmd.Flags().Bool("watch", false, "Jump to any alarm that starts firing while the dashboard is open, and send a desktop notification")
 	return cmd
 }
@@ -29,6 +30,7 @@ func NewCmdDashboard() *cobra.Command {
 const (
 	dashboardRefresh = 30 * time.Second
 	dashboardEvents  = 5 * time.Second
+	dashboardStash   = 3 * time.Second
 )
 
 func runDashboard(cmd *cobra.Command, _ []string) error {
@@ -38,6 +40,10 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	events, err := cmd.Flags().GetDuration("events")
+	if err != nil {
+		return err
+	}
+	stash, err := cmd.Flags().GetDuration("stash")
 	if err != nil {
 		return err
 	}
@@ -54,6 +60,7 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 		Org:       mdClient.Config().OrganizationID,
 		Refresh:   refresh,
 		EventPoll: events,
+		StashPoll: stash,
 		Watch:     watch,
 		Links:     dashboard.NewLinks(mdClient.URLs.Helper(ctx)),
 	}})

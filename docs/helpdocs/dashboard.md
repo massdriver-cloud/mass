@@ -14,7 +14,7 @@ A live ticker follows the audit log. When something happens, its environment lig
 
 **Replay** plays the audit log back, from five minutes to 24 hours ago, onto the constellation, so you can watch a rollout, an incident, or a busy afternoon move across your environments.
 
-Widgets set through the stash show up where they belong: `md/health` colors an instance, `md/usage` draws its usage bar, `md/traffic` sets the pace of the sparks on the links an instance sends on and labels them with requests per second and errors, `md/banner` flags an environment, and `md/links` puts its dashboards and runbooks in the side panel.
+The dashboard follows the stash as a feed, reading it every few seconds (`--stash`). Each change goes on the ticker and lights up its environment. Widgets show where they belong: `md/health` colors an instance, `md/usage` draws its usage bar, `md/traffic` sets the pace of the sparks on the links an instance sends on and labels them with requests per second, latency, and errors, `md/banner` flags an environment, and `md/links` puts its dashboards and runbooks in the side panel. Your annotations show too: widgets you pinned to any stash key, and notes rendered from their Liquid templates. Annotations need a personal access token; a service account has none.
 
 With `--watch`, an alarm that starts firing takes the view to its environment, locks on, shows its blast radius under a banner that counts up, and rings the terminal with a desktop notification. When it clears, the banner says how long it lasted and the view goes back where it was.
 
@@ -24,7 +24,7 @@ When the output is not a terminal, `mass dashboard` prints the same data as tabl
 
 ```shell
 mass dashboard
-mass dashboard --refresh 10s --events 2s
+mass dashboard --refresh 10s --events 2s --stash 1s
 mass dashboard --watch
 mass dashboard --profile production | less
 ```
