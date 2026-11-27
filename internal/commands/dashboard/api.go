@@ -6,9 +6,13 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
@@ -298,6 +302,11 @@ type gqlAPI struct {
 	client graphql.Client
 	audit  AuditLister
 	orgID  string
+
+	mu sync.Mutex
+	// limits is the page size each operation settled on after the API
+	// refused a page as too complex, so later pages start there.
+	limits map[string]int
 }
 
 // NewAPI returns the production [API], sending queries through the SDK's
@@ -436,11 +445,73 @@ func (a *gqlAPI) query(ctx context.Context, op, query, cursor string, out any) e
 	return a.request(ctx, op, query, map[string]any{"organizationId": a.orgID, "cursor": cur}, out)
 }
 
+// ErrTooComplex means a request costs more than the API allows, even one
+// item at a time.
+var ErrTooComplex = errors.New("the request is more complex than the API allows")
+
+// request sends one operation. The API scores each request's complexity and
+// refuses one over its limit, which a large page of environments, with their
+// instances, alarms, and dependencies, can pass. A paged request that is
+// refused asks again for a smaller page, sized from the score the API
+// reports, and the operation keeps that page size.
 func (a *gqlAPI) request(ctx context.Context, op, query string, vars map[string]any, out any) error {
+	cur, paged := vars["cursor"].(map[string]any)
+	for {
+		if paged {
+			cur["limit"] = a.limitFor(op)
+		}
+		err := a.send(ctx, op, query, vars, out)
+		cost, most, refused := tooComplex(err)
+		if !refused {
+			return err
+		}
+		limit, _ := cur["limit"].(int)
+		if !paged || limit <= 1 {
+			return fmt.Errorf("%s: %w (complexity %d, maximum %d)", op, ErrTooComplex, cost, most)
+		}
+		a.setLimit(op, max(1, min(limit-1, limit*most/max(cost, 1))))
+	}
+}
+
+func (a *gqlAPI) send(ctx context.Context, op, query string, vars map[string]any, out any) error {
 	var raw json.RawMessage
 	resp := &graphql.Response{Data: &raw}
 	if err := a.client.MakeRequest(ctx, &graphql.Request{OpName: op, Query: query, Variables: vars}, resp); err != nil {
 		return err
 	}
 	return json.Unmarshal(raw, out)
+}
+
+func (a *gqlAPI) limitFor(op string) int {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if limit, ok := a.limits[op]; ok {
+		return limit
+	}
+	return pageLimit
+}
+
+func (a *gqlAPI) setLimit(op string, limit int) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.limits == nil {
+		a.limits = map[string]int{}
+	}
+	a.limits[op] = limit
+}
+
+var complexityError = regexp.MustCompile(`complexity is (\d+) and maximum is (\d+)`)
+
+// tooComplex reads the score and the limit out of the API's refusal.
+func tooComplex(err error) (int, int, bool) {
+	if err == nil {
+		return 0, 0, false
+	}
+	m := complexityError.FindStringSubmatch(err.Error())
+	if m == nil {
+		return 0, 0, false
+	}
+	cost, _ := strconv.Atoi(m[1])
+	most, _ := strconv.Atoi(m[2])
+	return cost, most, true
 }

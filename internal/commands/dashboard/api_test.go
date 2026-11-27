@@ -571,3 +571,51 @@ func TestToEvent(t *testing.T) {
 		})
 	}
 }
+
+// costlyClient refuses any page over most items, as the API refuses a request
+// whose complexity is over its maximum.
+type costlyClient struct {
+	most   int
+	limits []int
+}
+
+func (c *costlyClient) MakeRequest(_ context.Context, req *graphql.Request, resp *graphql.Response) error {
+	vars, _ := req.Variables.(map[string]any)
+	cursor, _ := vars["cursor"].(map[string]any)
+	limit, _ := cursor["limit"].(int)
+	c.limits = append(c.limits, limit)
+	if limit > c.most {
+		return fmt.Errorf("input:1:1: Operation %s is too complex: complexity is %d and maximum is %d", req.OpName, limit*1000, c.most*1000)
+	}
+	raw, _ := resp.Data.(*json.RawMessage)
+	*raw = json.RawMessage(`{"environments":{"cursor":{"next":null},"items":[{"id":"e1"}]}}`)
+	return nil
+}
+
+func TestTooComplexAsksForSmallerPages(t *testing.T) {
+	tests := map[string]struct {
+		most       int
+		wantLimits []int
+		wantErr    bool
+	}{
+		"fits":                     {most: 50, wantLimits: []int{50, 50}},
+		"retries a smaller page":   {most: 20, wantLimits: []int{50, 20, 20}},
+		"too complex for one item": {most: 0, wantLimits: []int{50, 1}, wantErr: true},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			client := &costlyClient{most: tc.most}
+			api := dashboard.NewAPIWithClient(client, &fakeAudit{}, "acme")
+			_, _, err := api.EnvironmentsByID(context.Background(), []string{"e1"}, "")
+			if err == nil {
+				_, _, err = api.EnvironmentsByID(context.Background(), []string{"e1"}, "")
+			}
+			if tc.wantErr != errors.Is(err, dashboard.ErrTooComplex) {
+				t.Fatalf("err = %v", err)
+			}
+			if !slices.Equal(client.limits, tc.wantLimits) {
+				t.Errorf("limits = %v, want %v; the second read should start at the page size that fit", client.limits, tc.wantLimits)
+			}
+		})
+	}
+}
