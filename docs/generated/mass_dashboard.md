@@ -63,7 +63,7 @@ mass dashboard [flags]
       --refresh duration   How often to re-read the organization; 0 reads once (default 30s)
       --stash duration     How often to read the stash for widgets, notes, and the live feed; each read covers every scope, so a short interval costs more; 0 reads it with each refresh (default 3s)
       --theme string       How the map is drawn: constellation, metro, radar (default "constellation")
-      --watch              Jump to any alarm that starts firing while the dashboard is open, and send a desktop notification
+      --watch              Jump to any alarm that starts firing in view while the dashboard is open, and send a desktop notification
 ```
 
 ### Options inherited from parent commands

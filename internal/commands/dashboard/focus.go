@@ -68,8 +68,8 @@ const environmentFields = `
         dependencies { field resource { id origin instance { id environment { id } } } }
         resources {
           resource {
-            remoteReferences { items { instance { id environment { id } } } }
-            environmentDefaults { items { environment { id } } }
+            remoteReferences(cursor: {limit: 100}) { items { instance { id environment { id } } } }
+            environmentDefaults(cursor: {limit: 100}) { items { environment { id } } }
           }
         }
       }`
@@ -177,7 +177,6 @@ func loadAround(ctx context.Context, api API, focus string, depth int) ([]Enviro
 	return out, r.missing, nil
 }
 
-// reach is what loadAround has read so far.
 type reach struct {
 	loaded  map[string]Environment
 	order   []string
@@ -225,7 +224,6 @@ func loadIDs(ctx context.Context, api API, ids []string) ([]Environment, error) 
 	return out, nil
 }
 
-// neighbors are the environments one hop from env.
 func neighbors(env Environment) []string {
 	var out []string
 	add := func(id string) {
@@ -251,8 +249,6 @@ func neighbors(env Environment) []string {
 
 type consumer struct{ instance, env string }
 
-// consumers are the instances, and the environments by default, that use
-// resources inst produces.
 func consumers(inst Instance) []consumer {
 	var out []consumer
 	for _, r := range inst.Resources {
@@ -287,6 +283,7 @@ func FindPlace(places []Place, query string) (Place, bool) {
 	for _, rank := range []func(Place) bool{
 		func(p Place) bool { return strings.ToLower(p.ID) == q },
 		func(p Place) bool { return strings.HasPrefix(strings.ToLower(p.ID), q) },
+		func(p Place) bool { return strings.HasPrefix(strings.ToLower(p.Name), q) },
 		func(p Place) bool { return strings.Contains(label(p), q) },
 	} {
 		for _, p := range places {

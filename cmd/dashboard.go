@@ -28,7 +28,7 @@ func NewCmdDashboard() *cobra.Command {
 	cmd.Flags().Int("depth", dashboard.DefaultDepth, "How many hops from the focus to read")
 	cmd.Flags().String("theme", dashboard.DefaultTheme, "How the map is drawn: "+strings.Join(dashboard.Themes(), ", "))
 	cmd.Flags().String("palette", dashboard.DefaultPalette, "Colors and backdrop: "+strings.Join(dashboard.Palettes(), ", "))
-	cmd.Flags().Bool("watch", false, "Jump to any alarm that starts firing while the dashboard is open, and send a desktop notification")
+	cmd.Flags().Bool("watch", false, "Jump to any alarm that starts firing in view while the dashboard is open, and send a desktop notification")
 	return cmd
 }
 

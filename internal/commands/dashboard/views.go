@@ -150,7 +150,7 @@ func (m Model) alarmsBody(h int) string {
 		return lipgloss.Place(m.width, h, lipgloss.Center, lipgloss.Center, calm)
 	}
 	var b strings.Builder
-	b.WriteString(styleHeading.Render(fmt.Sprintf("FIRING ALARMS (%d)", total)) + "\n\n")
+	b.WriteString(styleHeading.Render(fmt.Sprintf("FIRING ALARMS IN VIEW (%d)", total)) + "\n\n")
 	for i, a := range m.graph.Firing {
 		envs, insts := m.graph.BlastRadius(a.InstanceID).Downstream()
 		row := fmt.Sprintf("▲ %-5s %-30s %-24s %-28s ✸ %d env · %d inst downstream", Ago(m.cfg.Now(), a.Since),
@@ -173,7 +173,7 @@ func (m Model) upgradesBody(h int) string {
 		return lipgloss.Place(m.width, h, lipgloss.Center, lipgloss.Center, calm)
 	}
 	var b strings.Builder
-	b.WriteString(styleHeading.Render(fmt.Sprintf("UPGRADES AVAILABLE (%d)", len(ups))) + "\n\n")
+	b.WriteString(styleHeading.Render(fmt.Sprintf("UPGRADES AVAILABLE IN VIEW (%d)", len(ups))) + "\n\n")
 	for i, inst := range ups {
 		from := shortVersion(inst.Deployed)
 		if from == "" {
@@ -266,7 +266,8 @@ func tabHelp(tab Tab) []string {
 	case TabRuntimes:
 		return []string{
 			styleHeading.Render("RUNTIMES"), "",
-			"Each bar is how the instances on a runtime split across its versions.",
+			"Each bar is how the instances in view on a runtime split across its versions. Applications",
+			"count across the organization.",
 			"",
 			note(colorGreen, "━", "on the latest version"),
 			note(colorYellow, "━", "a patch behind"),
@@ -278,7 +279,8 @@ func tabHelp(tab Tab) []string {
 	case TabAlarms:
 		return []string{
 			styleHeading.Render("ALARMS"), "",
-			"Each row is an alarm firing now: how long, the alarm, its instance, and its environment.",
+			"Each row is an alarm firing now in the environments in view: how long, the alarm, its instance,",
+			"and its environment.",
 			note(colorOrange, "✸", "how many environments and instances depend on that instance downstream"),
 			"",
 			"enter shows it on the map with its blast radius; o opens the instance in the web app.",
@@ -286,7 +288,7 @@ func tabHelp(tab Tab) []string {
 	case TabUpgrades:
 		return []string{
 			styleHeading.Render("UPGRADES"), "",
-			"Each row is an instance whose version constraint allows a newer bundle:",
+			"Each row is an instance in view whose version constraint allows a newer bundle:",
 			"the version it runs → the version its next deploy would use.",
 			"",
 			"enter shows it on the map; o opens the instance in the web app.",

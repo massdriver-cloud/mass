@@ -131,22 +131,34 @@ const (
 var noteCache = struct {
 	sync.Mutex
 	lines map[string][]string
-}{lines: map[string][]string{}}
+	slow  map[string]bool
+}{lines: map[string][]string{}, slow: map[string]bool{}}
 
 // renderNote renders a note's Liquid template with the stashes it can see
-// and reduces the markdown to lines of text. A template that runs past
-// noteRenderLimit is cut off, so one slow note cannot freeze the screen.
+// and reduces the markdown to lines of text. A note renders once for each set
+// of stash values, so a template that reads the clock shows the time it last
+// rendered. A template that runs past noteRenderLimit is cut off, and is not
+// rendered again until its text changes, since Liquid cannot be stopped and
+// each try would leave another render running.
 func renderNote(template string, bindings map[string]any) []string {
 	if len(template) > maxTemplate {
 		return []string{"(note too long to show)"}
 	}
-	encoded, _ := json.Marshal(bindings)
-	key := template + "\x00" + string(encoded)
 	noteCache.Lock()
-	cached, ok := noteCache.lines[key]
+	slow := noteCache.slow[template]
 	noteCache.Unlock()
-	if ok {
-		return cached
+	if slow {
+		return []string{tooSlow}
+	}
+	encoded, err := json.Marshal(bindings)
+	key := template + "\x00" + string(encoded)
+	if err == nil {
+		noteCache.Lock()
+		cached, ok := noteCache.lines[key]
+		noteCache.Unlock()
+		if ok {
+			return cached
+		}
 	}
 	done := make(chan []string, 1)
 	go func() { done <- renderLines(template, bindings) }()
@@ -154,16 +166,23 @@ func renderNote(template string, bindings map[string]any) []string {
 	select {
 	case lines = <-done:
 	case <-time.After(noteRenderLimit):
-		lines = []string{"(note takes too long to render)"}
+		noteCache.Lock()
+		noteCache.slow[template] = true
+		noteCache.Unlock()
+		return []string{tooSlow}
 	}
-	noteCache.Lock()
-	if len(noteCache.lines) >= noteCacheSize {
-		noteCache.lines = map[string][]string{}
+	if err == nil {
+		noteCache.Lock()
+		if len(noteCache.lines) >= noteCacheSize {
+			noteCache.lines = map[string][]string{}
+		}
+		noteCache.lines[key] = lines
+		noteCache.Unlock()
 	}
-	noteCache.lines[key] = lines
-	noteCache.Unlock()
 	return lines
 }
+
+const tooSlow = "(note takes too long to render)"
 
 func renderLines(template string, bindings map[string]any) []string {
 	out, err := liquidEngine.ParseAndRenderString(template, bindings)

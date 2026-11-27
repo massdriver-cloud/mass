@@ -1,6 +1,7 @@
 package dashboard_test
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -25,14 +26,29 @@ func keys(m dashboard.Model, names ...string) (dashboard.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+// tabTo steps the selection to id with tab, returning the command the last
+// step asked for.
+func tabTo(t *testing.T, m dashboard.Model, id string) (dashboard.Model, tea.Cmd) {
+	t.Helper()
+	var cmd tea.Cmd
+	for range 8 {
+		if m.Selected() == id {
+			return m, cmd
+		}
+		m, cmd = pressCmd(m, "tab")
+	}
+	t.Fatalf("tab never reached %s", id)
+	return m, nil
+}
+
 func TestRefocusOnSelection(t *testing.T) {
 	m := loaded(t, fixture(), config(&opener{}), 160, 48)
 	if m.Focus() != "care-dev" {
 		t.Fatalf("focus = %q", m.Focus())
 	}
-	m, cmd := keys(m, "/", "b", "i", "l", "l", "i", "n", "g", "-", "d", "enter")
-	if m.Selected() != "billing-dev" || m.Focus() != "care-dev" {
-		t.Fatalf("selected %q focus %q; selecting should not move the focus at once", m.Selected(), m.Focus())
+	m, cmd := tabTo(t, m, "billing-dev")
+	if m.Focus() != "care-dev" {
+		t.Fatalf("focus %q; a selection should not move the focus at once", m.Focus())
 	}
 	m = drive(t, m, cmd, 30)
 	if m.Focus() != "billing-dev" {
@@ -45,11 +61,42 @@ func TestRefocusOnSelection(t *testing.T) {
 
 func TestRefocusSkipsASelectionThatMoved(t *testing.T) {
 	m := loaded(t, fixture(), config(&opener{}), 160, 48)
-	m, first := keys(m, "/", "b", "i", "l", "l", "i", "n", "g", "-", "d", "enter")
-	m = press(m, "/", "p", "l", "a", "t", "enter")
+	m, first := tabTo(t, m, "billing-dev")
+	m = press(m, "tab")
 	m = drive(t, m, first, 30)
 	if m.Focus() != "care-dev" {
 		t.Errorf("focus = %q; a selection that moved on should not take the focus", m.Focus())
+	}
+}
+
+func TestSearchFocusesOnEnter(t *testing.T) {
+	m := loaded(t, fixture(), config(&opener{}), 160, 48)
+	m, typing := keys(m, "/", "b", "i", "l")
+	m = drive(t, m, typing, 30)
+	if m.Focus() != "care-dev" {
+		t.Fatalf("focus = %q; a pause while typing should not move the focus", m.Focus())
+	}
+	m, cmd := keys(m, "l", "i", "n", "g", "-", "d", "enter")
+	if m.Focus() != "billing-dev" {
+		t.Fatalf("focus = %q; enter on a search should move the focus at once", m.Focus())
+	}
+	m = drive(t, m, cmd, 30)
+	if m.Focus() != "billing-dev" || m.Selected() != "billing-dev" {
+		t.Errorf("focus %q selected %q", m.Focus(), m.Selected())
+	}
+}
+
+func TestOlderFailedReadKeepsTheNewFocus(t *testing.T) {
+	api := fixture()
+	m := loaded(t, api, config(&opener{}), 160, 48)
+	m, refresh := pressCmd(m, "r")
+	m, cmd := keys(m, "/", "p", "l", "a", "t", "enter")
+	api.err = errors.New("timeout")
+	m = drive(t, m, refresh, 1)
+	api.err = nil
+	m = drive(t, m, cmd, 30)
+	if m.Focus() != "platform-dev" {
+		t.Errorf("focus = %q; a failed read for the old focus should not undo the new one", m.Focus())
 	}
 }
 

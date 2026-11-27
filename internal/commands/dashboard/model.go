@@ -80,6 +80,8 @@ type (
 		snap *Snapshot
 		err  error
 		at   time.Time
+		// focus is the focus the read was for.
+		focus string
 	}
 	eventsMsg struct {
 		log     Log
@@ -198,7 +200,7 @@ func (m Model) fetch() tea.Cmd {
 	api, ctx, now, where := m.api, m.ctx(), m.cfg.Now, Where{Focus: m.focus, Depth: m.cfg.Depth}
 	return func() tea.Msg {
 		snap, err := Fetch(ctx, api, where)
-		return snapshotMsg{snap: snap, err: err, at: now()}
+		return snapshotMsg{snap: snap, err: err, at: now(), focus: where.Focus}
 	}
 }
 
@@ -289,7 +291,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if next.graph != nil {
 		next = next.withLayout(next.canvasSize())
 	}
-	if next.graph != nil && next.selected != m.selected && next.selected != next.focus {
+	// Only a key moves the focus: a search still being typed, or a selection
+	// --watch makes, does not.
+	_, key := msg.(tea.KeyMsg)
+	if key && !next.searching && next.graph != nil && next.selected != m.selected && next.selected != next.focus {
 		next.refocusSeq++
 		cmd = tea.Batch(cmd, after(refocusDelay, refocusMsg{id: next.selected, seq: next.refocusSeq}))
 	}
@@ -417,7 +422,7 @@ func (m Model) reload() (Model, tea.Cmd) {
 }
 
 func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
-	if msg.err == nil && m.focus != "" && msg.snap.Focus != m.focus {
+	if msg.focus != m.focus {
 		return m, nil
 	}
 	if msg.err != nil && m.graph != nil {
@@ -496,7 +501,7 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 		if ev.EnvID != "" {
 			flashes[ev.EnvID] = Flash{Label: EventLabel(ev)}
 		}
-		deployed = deployed || changesTheMap(ev.Type)
+		deployed = deployed || m.changesTheView(ev)
 	}
 	m.flashes = flashes
 	if deployed && !m.loading {
@@ -509,6 +514,10 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 // changesTheMap reports whether an event changes something the map draws
 // that only a full read picks up: a deployment or an alarm. The stash has its
 // own feed.
+func (m Model) changesTheView(ev Event) bool {
+	return changesTheMap(ev.Type) && m.graph != nil && m.graph.Env(ev.EnvID) != nil
+}
+
 func changesTheMap(eventType string) bool {
 	for _, prefix := range []string{"deployment.", "alarm"} {
 		if strings.HasPrefix(eventType, prefix) {
@@ -561,6 +570,7 @@ func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "right", "l", "left", "h", "up", "k", "down", "j", "tab", "shift+tab":
 		m = m.move(key)
 	case "r":
+		m.directory = nil
 		return m.reload()
 	case "o":
 		return m, m.openSelection()
@@ -622,12 +632,12 @@ func (m Model) handleSearchKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 		m.searching = false
 		query := m.filter
 		next := m.selectFirstMatch()
+		next.refocusSeq++
 		if next.graph != nil && !(Scene{Filter: query}).Matches(next.graph.Env(next.selected)) {
 			next.filter = ""
-			next.refocusSeq++
 			return next.searchDirectory(query)
 		}
-		return next, nil
+		return next.refocus(refocusMsg{id: next.selected, seq: next.refocusSeq})
 	case "esc":
 		m.searching, m.filter = false, ""
 	case "backspace":

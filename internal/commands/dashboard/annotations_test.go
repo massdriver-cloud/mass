@@ -85,6 +85,15 @@ func TestSlowNote(t *testing.T) {
 	if notes := g.Env("care-dev").Notes; notes[len(notes)-1] != "(note takes too long to render)" {
 		t.Errorf("notes = %q, want the slow one cut off", notes)
 	}
+	api.stash = append(api.stash, text(env("care-dev"), "counter", "2"))
+	start = time.Now()
+	g = graphOf(t, api)
+	if elapsed := time.Since(start); elapsed > 100*time.Millisecond {
+		t.Errorf("a note that was too slow should not render again with new values; took %v", elapsed)
+	}
+	if notes := g.Env("care-dev").Notes; notes[len(notes)-1] != "(note takes too long to render)" {
+		t.Errorf("notes = %q", notes)
+	}
 }
 
 func TestPartialStashRead(t *testing.T) {
