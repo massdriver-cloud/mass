@@ -178,26 +178,66 @@ func writeInstances(b *strings.Builder, env *EnvNode, now time.Time, w int) {
 	b.WriteString("\n" + styleHeading.Render("INSTANCES") + "\n")
 	for _, inst := range env.Instances {
 		name := strings.TrimPrefix(inst.ID, env.ID+"-")
-		tag := ""
-		if inst.IsApp() {
-			tag = styleTeal.Render(" ◆ " + inst.Runtime + " " + inst.RuntimeVersion)
-		}
-		if inst.Firing > 0 {
-			tag += styleRed.Render(fmt.Sprintf(" ▲%d", inst.Firing))
-		}
-		tag += instanceActivity(inst, now)
-		room := w - 2 - lipgloss.Width(tag)
+		badges := instanceBadges(inst, now)
 		mark := dot(statusColor(inst.Status))
 		if inst.Health != "" {
 			mark = dot(healthColor(inst.Health))
 		}
-		b.WriteString(mark + " " + clip(name, max(room, 4)) + tag + "\n")
-		writeInstanceWidgets(b, inst, w)
+		room := w - 2 - lipgloss.Width(badges)
+		b.WriteString(mark + " " + clip(name, max(room, 8)) + badges + "\n")
+		for _, line := range flow(instanceDetails(inst), w-2) {
+			b.WriteString(lipgloss.NewStyle().MaxWidth(w).Render("  "+line) + "\n")
+		}
 	}
 }
 
-func writeInstanceWidgets(b *strings.Builder, inst *InstNode, w int) {
+func instanceBadges(inst *InstNode, now time.Time) string {
+	var tag string
+	if inst.Firing > 0 {
+		tag += styleRed.Render(fmt.Sprintf(" ▲%d", inst.Firing))
+	}
+	switch {
+	case inst.Deploying():
+		since, _ := time.Parse(time.RFC3339, inst.Deploy.CreatedAt)
+		tag += styleDeploy.Render(" ⟳ " + strings.ToLower(inst.Deploy.Action) + " " + Ago(now, since))
+	case inst.AwaitingApproval():
+		tag += styleUpgrade.Render(" ⏸ awaiting approval")
+	}
+	return tag
+}
+
+// flow lays styled parts out in lines no wider than w, joined by dots.
+func flow(parts []string, w int) []string {
+	var lines []string
+	cur := ""
+	sep := styleFaint.Render(" · ")
+	for _, p := range parts {
+		switch {
+		case cur == "":
+			cur = p
+		case lipgloss.Width(cur+sep+p) <= w:
+			cur += sep + p
+		default:
+			lines = append(lines, cur)
+			cur = p
+		}
+	}
+	if cur != "" {
+		lines = append(lines, cur)
+	}
+	return lines
+}
+
+// instanceDetails is what an instance runs and what its widgets say, shown
+// under its name.
+func instanceDetails(inst *InstNode) []string {
 	var parts []string
+	if inst.IsApp() {
+		parts = append(parts, styleTeal.Render("◆ "+inst.Runtime+" "+shortVersion(inst.RuntimeVersion)))
+	}
+	if inst.HasUpgrade() {
+		parts = append(parts, styleUpgrade.Render("↑"+shortVersion(inst.Upgrade)))
+	}
 	if inst.Health != "" {
 		parts = append(parts, lipgloss.NewStyle().Foreground(healthColor(inst.Health)).Render(inst.Health))
 	}
@@ -211,9 +251,7 @@ func writeInstanceWidgets(b *strings.Builder, inst *InstNode, w int) {
 		}
 		parts = append(parts, text)
 	}
-	if len(parts) > 0 {
-		b.WriteString(lipgloss.NewStyle().MaxWidth(w).Render("  "+strings.Join(parts, styleFaint.Render(" · "))) + "\n")
-	}
+	return parts
 }
 
 func usageBar(u *Usage, w int) string {
@@ -247,21 +285,6 @@ func writeHeaderLinks(b *strings.Builder, links []HeaderLink, w int) {
 		parts = append(parts, hyperlink(l.URL, styleTeal.Render("↗ "+clip(l.Label, w-4))))
 	}
 	b.WriteString(strings.Join(parts, "\n") + "\n")
-}
-
-func instanceActivity(inst *InstNode, now time.Time) string {
-	var tag string
-	switch {
-	case inst.Deploying():
-		since, _ := time.Parse(time.RFC3339, inst.Deploy.CreatedAt)
-		tag = styleDeploy.Render(" ⟳ " + strings.ToLower(inst.Deploy.Action) + " " + Ago(now, since))
-	case inst.AwaitingApproval():
-		tag = styleUpgrade.Render(" ⏸ awaiting approval")
-	}
-	if inst.HasUpgrade() {
-		tag += styleUpgrade.Render(" ↑" + shortVersion(inst.Upgrade))
-	}
-	return tag
 }
 
 // Money formats an amount compactly, in dollars when the currency is USD.

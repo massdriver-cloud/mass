@@ -31,13 +31,13 @@ func TestEnvDetail(t *testing.T) {
 		{
 			name: "consumer of a hidden environment",
 			env:  "care-dev",
-			want: []string{"USES RESOURCES FROM", "secret-prod", "Platform / Development", "app ◆ ecs 1.0.0 ↑0.2.0", "1 not deployed", "queue ⏸ awaiting approval"},
+			want: []string{"USES RESOURCES FROM", "secret-prod", "Platform / Development", "◆ ecs 1.0.0 · ↑0.2.0", "1 not deployed", "queue ⏸ awaiting approval"},
 		},
 		{
 			name:  "leaf",
 			env:   "billing-dev",
 			blast: g.BlastRadius("billing-dev"),
-			want:  []string{"Nothing outside Development uses its resources.", "1 failed", "⟳ 1 deploying", "app ◆ ecs 0.9.0 ⟳ provision 2m"},
+			want:  []string{"Nothing outside Development uses its resources.", "1 failed", "⟳ 1 deploying", "app ⟳ provision 2m ◆ ecs 0.9.0"},
 		},
 		{name: "fork", env: "sandbox-demo", want: []string{"forked from sandbox-template", "No instances"}},
 		{name: "restricted", env: "secret-prod", want: []string{"secret-prod", "you cannot view it"}},
