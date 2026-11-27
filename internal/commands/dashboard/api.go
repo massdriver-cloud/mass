@@ -25,6 +25,7 @@ type API interface {
 	Environments(ctx context.Context, cursor string) ([]Environment, string, error)
 	Runtimes(ctx context.Context, cursor string) ([]Runtime, string, error)
 	Applications(ctx context.Context, cursor string) ([]Application, string, error)
+	Widgets(ctx context.Context, scopes []Scope, cursor string) ([]Widget, string, error)
 	Events(ctx context.Context, since time.Time) (Log, error)
 	History(ctx context.Context, since time.Time) (Log, error)
 }
@@ -170,6 +171,7 @@ type Snapshot struct {
 	Environments []Environment
 	Runtimes     []Runtime
 	Applications []Application
+	Widgets      []Widget
 }
 
 // Fetch reads every page of environments, runtimes, and applications.
@@ -191,6 +193,7 @@ func Fetch(ctx context.Context, api API) (*Snapshot, error) {
 	if err := group.Wait(); err != nil {
 		return nil, err
 	}
+	snap.Widgets = fetchWidgets(ctx, api, snap.Environments)
 	return snap, nil
 }
 
@@ -389,7 +392,10 @@ func (a *gqlAPI) query(ctx context.Context, op, query, cursor string, out any) e
 	if cursor != "" {
 		cur["next"] = cursor
 	}
-	vars := map[string]any{"organizationId": a.orgID, "cursor": cur}
+	return a.request(ctx, op, query, map[string]any{"organizationId": a.orgID, "cursor": cur}, out)
+}
+
+func (a *gqlAPI) request(ctx context.Context, op, query string, vars map[string]any, out any) error {
 	var raw json.RawMessage
 	resp := &graphql.Response{Data: &raw}
 	if err := a.client.MakeRequest(ctx, &graphql.Request{OpName: op, Query: query, Variables: vars}, resp); err != nil {

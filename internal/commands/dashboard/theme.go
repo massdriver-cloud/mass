@@ -71,6 +71,53 @@ func statusLabel(status string) string {
 	}
 }
 
+// Health states the UI has colors for.
+const (
+	HealthHealthy  = "healthy"
+	HealthDegraded = "degraded"
+	HealthDown     = "down"
+)
+
+func healthColor(state string) lipgloss.Color {
+	switch state {
+	case HealthHealthy:
+		return colorGreen
+	case HealthDegraded:
+		return colorOrange
+	case HealthDown:
+		return colorRed
+	default:
+		return colorBlue
+	}
+}
+
+func levelColor(level string) lipgloss.Color {
+	switch level {
+	case "error":
+		return colorRed
+	case "warning":
+		return colorOrange
+	default:
+		return colorBlue
+	}
+}
+
+func usageColor(u *Usage) lipgloss.Color {
+	switch ratio := u.Value / u.Max; {
+	case ratio >= 0.9:
+		return colorRed
+	case ratio >= 0.75:
+		return colorOrange
+	default:
+		return colorTeal
+	}
+}
+
+// hyperlink makes label a link the terminal can open, where it supports OSC 8.
+func hyperlink(url, label string) string {
+	return "\x1b]8;;" + url + "\x1b\\" + label + "\x1b]8;;\x1b\\"
+}
+
 func hopColor(hop int) lipgloss.Color {
 	switch hop {
 	case 0:

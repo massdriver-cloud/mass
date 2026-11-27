@@ -53,6 +53,8 @@ type EnvNode struct {
 	Firing      []FiringAlarm
 	Cost        float64
 	Currency    string
+	Banner      *Banner
+	Links       []HeaderLink
 }
 
 // InstNode is one instance in the graph.
@@ -68,6 +70,9 @@ type InstNode struct {
 	Upgrade        string
 	Deployed       string
 	Deploy         *Deployment
+	Health         string
+	Usage          *Usage
+	Traffic        *Traffic
 }
 
 // IsApp reports whether the instance runs an application.
@@ -79,9 +84,10 @@ func (i *InstNode) HasUpgrade() bool {
 	return i.Upgrade != "" && i.Deployed != "" && CompareVersions(i.Upgrade, i.Deployed) > 0
 }
 
-// Deploying reports whether a deployment of the instance is running or queued.
+// Deploying reports whether a provision or decommission of the instance is
+// running or queued. A plan changes nothing, so it does not count.
 func (i *InstNode) Deploying() bool {
-	return i.Deploy != nil && (i.Deploy.Status == "RUNNING" || i.Deploy.Status == "PENDING")
+	return i.Deploy != nil && i.Deploy.Action != "PLAN" && (i.Deploy.Status == "RUNNING" || i.Deploy.Status == "PENDING")
 }
 
 // AwaitingApproval reports whether the latest deployment waits for someone
@@ -190,6 +196,7 @@ func BuildGraph(snap *Snapshot) *Graph {
 	g.linkDependencies(snap.Environments)
 	g.linkForks()
 	g.collectProjects()
+	g.applyWidgets(snap.Widgets)
 	slices.SortFunc(g.Firing, func(a, b FiringAlarm) int { return b.Since.Compare(a.Since) })
 	return g
 }

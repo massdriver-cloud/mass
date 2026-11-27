@@ -35,6 +35,8 @@ func EnvDetail(g *Graph, env *EnvNode, blast *Blast, now time.Time, w int) strin
 	if n := len(env.Deploying()); n > 0 {
 		line(styleDeploy.Render(fmt.Sprintf("⟳ %d deploying", n)))
 	}
+	writeHeaderLinks(&b, env.Links, w)
+	writeBanner(&b, env.Banner, w)
 	line("")
 	line(statusBar(env, w))
 	line(statusLegend(env))
@@ -185,8 +187,66 @@ func writeInstances(b *strings.Builder, env *EnvNode, now time.Time, w int) {
 		}
 		tag += instanceActivity(inst, now)
 		room := w - 2 - lipgloss.Width(tag)
-		b.WriteString(dot(statusColor(inst.Status)) + " " + clip(name, max(room, 4)) + tag + "\n")
+		mark := dot(statusColor(inst.Status))
+		if inst.Health != "" {
+			mark = dot(healthColor(inst.Health))
+		}
+		b.WriteString(mark + " " + clip(name, max(room, 4)) + tag + "\n")
+		writeInstanceWidgets(b, inst, w)
 	}
+}
+
+func writeInstanceWidgets(b *strings.Builder, inst *InstNode, w int) {
+	var parts []string
+	if inst.Health != "" {
+		parts = append(parts, lipgloss.NewStyle().Foreground(healthColor(inst.Health)).Render(inst.Health))
+	}
+	if u := inst.Usage; u != nil {
+		parts = append(parts, usageBar(u, 10)+styleMuted.Render(" "+usageText(u)))
+	}
+	if tr := inst.Traffic; tr != nil {
+		text := styleTeal.Render(Rate(tr.Rate) + "/s")
+		if tr.Errors > 0 {
+			text += styleRed.Render(fmt.Sprintf(" ✕%d in 5m", tr.Errors))
+		}
+		parts = append(parts, text)
+	}
+	if len(parts) > 0 {
+		b.WriteString(lipgloss.NewStyle().MaxWidth(w).Render("  "+strings.Join(parts, styleFaint.Render(" · "))) + "\n")
+	}
+}
+
+func usageBar(u *Usage, w int) string {
+	filled := min(int(u.Value/u.Max*float64(w)+0.5), w)
+	return lipgloss.NewStyle().Foreground(usageColor(u)).Render(strings.Repeat("█", filled)) +
+		styleFaint.Render(strings.Repeat("░", w-filled))
+}
+
+func usageText(u *Usage) string {
+	text := Rate(u.Value) + "/" + Rate(u.Max)
+	if u.Label != "" {
+		text += " " + u.Label
+	}
+	return text
+}
+
+func writeBanner(b *strings.Builder, banner *Banner, w int) {
+	if banner == nil {
+		return
+	}
+	style := lipgloss.NewStyle().Foreground(levelColor(banner.Level))
+	b.WriteString("\n" + style.Bold(true).Render("⚑ ") + style.Render(indent(wrap(banner.Message, w-2), "  ")[2:]) + "\n")
+}
+
+func writeHeaderLinks(b *strings.Builder, links []HeaderLink, w int) {
+	if len(links) == 0 {
+		return
+	}
+	parts := make([]string, 0, len(links))
+	for _, l := range links {
+		parts = append(parts, hyperlink(l.URL, styleTeal.Render("↗ "+clip(l.Label, w-4))))
+	}
+	b.WriteString(strings.Join(parts, "\n") + "\n")
 }
 
 func instanceActivity(inst *InstNode, now time.Time) string {

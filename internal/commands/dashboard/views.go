@@ -24,6 +24,9 @@ func (m Model) View() string {
 	}
 	fit := lipgloss.NewStyle().MaxWidth(m.width)
 	body = lipgloss.NewStyle().Width(m.width).Height(h).MaxHeight(h).Render(body)
+	if m.graph != nil {
+		body = overlayFirstLine(body, m.incidentBanner())
+	}
 	return lipgloss.JoinVertical(lipgloss.Left, fit.Render(m.header()), fit.Render(body), fit.Render(m.ticker()), m.footer())
 }
 
@@ -55,6 +58,7 @@ func (m Model) constellationBody(h int) string {
 		ShowApps: m.showApps, GroupByProject: m.grouped, ShowCost: m.showCost, Filter: m.filter,
 		Frame: m.frame, Intro: m.intro(), Flashes: m.flashes,
 	}
+	scene.Target, scene.TargetAge = m.lockOn()
 	canvas := scene.Render(canvasW, h)
 	if panelW == 0 {
 		return canvas
@@ -299,6 +303,8 @@ func Legend() string {
 		styleDeploy.Render("⟳") + " Deploying",
 		styleUpgrade.Render("↑") + " Upgrade available",
 		lipgloss.NewStyle().Foreground(colorHighlight).Render("◯") + " Something just happened",
+		styleTeal.Render("1.2k/s") + styleRed.Render(" ✕7") + " Traffic and errors from md/traffic",
+		lipgloss.NewStyle().Foreground(colorOrange).Render("⚑") + " Banner from md/banner",
 		styleFaint.Render("◌") + " No access",
 	}
 	return strings.Join(rows, "\n")

@@ -26,6 +26,25 @@ type fakeAPI struct {
 	truncated  bool
 	historyErr error
 	since      time.Time
+	widgets    []dashboard.Widget
+	widgetErr  error
+	scopeReads [][]dashboard.Scope
+}
+
+func (f *fakeAPI) Widgets(_ context.Context, scopes []dashboard.Scope, _ string) ([]dashboard.Widget, string, error) {
+	f.scopeReads = append(f.scopeReads, scopes)
+	if f.widgetErr != nil {
+		return nil, "", f.widgetErr
+	}
+	var out []dashboard.Widget
+	for _, w := range f.widgets {
+		for _, s := range scopes {
+			if s == w.Scope {
+				out = append(out, w)
+			}
+		}
+	}
+	return out, "", nil
 }
 
 func (f *fakeAPI) History(_ context.Context, since time.Time) (dashboard.Log, error) {
@@ -180,6 +199,9 @@ func TestNewAPIWithClient(t *testing.T) {
 		"dashboardEnvironments": `{"environments":{"cursor":{"next":"c2"},"items":[{"id":"e1","name":"Dev","instances":[{"id":"i1","status":"PROVISIONED"}]}]}}`,
 		"dashboardRuntimes":     `{"runtimes":{"cursor":{"next":null},"items":[{"id":"ecs","latest":{"version":"1.0.0"},"adoption":[]}]}}`,
 		"dashboardApplications": `{"applications":{"cursor":{"next":null},"items":[{"id":"app","latest":{"version":"0.1.0","runtime":{"name":"ecs","version":"1.0.0"}}}]}}`,
+		"dashboardWidgets": `{"alphaWidgetsForScopes":{"cursor":{"next":null},"items":[` +
+			`{"name":"instance.status_dot","scope":{"kind":"INSTANCE","id":"i1"},"values":{"state":"down"}},` +
+			`{"name":"instance.usage_bar","scope":{"kind":"INSTANCE","id":"i1"},"values":"{\"value\":3,\"max\":4}"}]}}`,
 	}}
 	audit := &fakeAudit{page: types.Page[types.AuditLog]{Items: []types.AuditLog{{ID: "a1", Type: "deployment.completed"}}}}
 	api := dashboard.NewAPIWithClient(client, audit, "acme")
@@ -214,6 +236,16 @@ func TestNewAPIWithClient(t *testing.T) {
 	if !audit.input.TimeRangeStart.Equal(since) {
 		t.Errorf("audit log read from %v, want %v", audit.input.TimeRangeStart, since)
 	}
+	widgets, _, err := api.Widgets(ctx, []dashboard.Scope{{Kind: "ENVIRONMENT", ID: "e1"}, {Kind: "INSTANCE", ID: "i1"}}, "")
+	if err != nil || len(widgets) != 2 || widgets[0].Values["state"] != "down" || widgets[1].Values["max"] != 4.0 {
+		t.Errorf("Widgets = %+v, %v; want values read from an object or an encoded string", widgets, err)
+	}
+	wvars, _ := client.reqs[len(client.reqs)-1].Variables.(map[string]any)
+	scopes, _ := wvars["scopes"].([]map[string]string)
+	if len(scopes) != 2 || scopes[0]["environment"] != "e1" || scopes[1]["instance"] != "i1" {
+		t.Errorf("scopes = %v, want one field per scope", wvars["scopes"])
+	}
+
 	audit.err = errors.New("forbidden")
 	if _, err := api.Events(ctx, since); err == nil {
 		t.Error("Events should report a failed read")

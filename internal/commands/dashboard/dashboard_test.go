@@ -64,6 +64,14 @@ func TestRunSummaryMoreAlarms(t *testing.T) {
 	}
 }
 
+func TestTerminalNotifier(t *testing.T) {
+	var out bytes.Buffer
+	dashboard.TerminalNotifier(&out)("▲ CPU high", "db\x07 · Care\x1b]")
+	if got, want := out.String(), "\a\x1b]9;▲ CPU high: db · Care]\x07"; got != want {
+		t.Errorf("notification = %q, want %q", got, want)
+	}
+}
+
 func TestNewLinks(t *testing.T) {
 	links := dashboard.NewLinks(urls.NewWithBaseURL("https://app.example.com/", "acme"))
 	tests := []struct{ got, want string }{

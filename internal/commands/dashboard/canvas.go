@@ -155,6 +155,18 @@ func (c *Canvas) Text(cx, cy int, s string, style lipgloss.Style) {
 	}
 }
 
+// Free reports whether the w cells from (cx, cy) are on the canvas and hold
+// no text.
+func (c *Canvas) Free(cx, cy, w int) bool {
+	for x := cx; x < cx+w; x++ {
+		ce := c.at(x, cy)
+		if ce == nil || ce.isTxt {
+			return false
+		}
+	}
+	return true
+}
+
 // TextCentered writes s centered on cell column cx.
 func (c *Canvas) TextCentered(cx, cy int, s string, style lipgloss.Style) {
 	c.Text(cx-runewidth.StringWidth(s)/2, cy, s, style)

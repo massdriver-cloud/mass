@@ -142,6 +142,13 @@ func equal(a, b []string) bool {
 	return true
 }
 
+func TestPlansAreNotDeploys(t *testing.T) {
+	inst := &dashboard.InstNode{Deploy: &dashboard.Deployment{Status: "RUNNING", Action: "PLAN"}}
+	if inst.Deploying() {
+		t.Error("a running plan changes nothing, so it is not a deploy")
+	}
+}
+
 func TestInstanceActivity(t *testing.T) {
 	g := dashboard.BuildGraph(fixtureSnapshot(t))
 	tests := []struct {

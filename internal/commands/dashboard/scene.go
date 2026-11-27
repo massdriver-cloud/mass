@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 )
 
 // Scene is what the constellation shows on one frame.
@@ -26,6 +27,10 @@ type Scene struct {
 	// Flashes holds, for each environment with a fresh event, how many frames
 	// ago the event arrived and what it was.
 	Flashes map[string]Flash
+	// Target is the environment an incident just took the view to, and
+	// TargetAge how many frames ago.
+	Target    string
+	TargetAge int
 }
 
 // Flash marks an environment where something just happened.
@@ -70,7 +75,9 @@ func (s Scene) Render(w, h int) string {
 	for _, env := range s.Graph.Envs {
 		s.drawLabel(c, env)
 	}
+	s.drawTrafficLabels(c)
 	s.drawFlashes(c)
+	s.drawLockOn(c)
 	return c.Render()
 }
 
@@ -194,16 +201,74 @@ func (s Scene) drawParticles(c *Canvas) {
 		if color == colorLink || color == colorLinkDim {
 			color = colorTeal
 		}
-		speed := 1.2 / math.Max(p0.Dist(p2), 1)
-		sparks := min(l.Count, 3)
+		sparks, speed, errs := sparkFlow(l, s.Graph.Traffic(l))
+		speed /= math.Max(p0.Dist(p2), 1)
 		for k := range sparks {
 			t := math.Mod(float64(s.Frame)*speed+float64(k)/float64(sparks)+float64(i)*0.137, 1)
-			c.Disc(Bezier(p0, p1, p2, t), 0.6, color, layerParticles)
+			spark := color
+			if k < errs {
+				spark = colorRed
+			}
+			c.Disc(Bezier(p0, p1, p2, t), 0.6, spark, layerParticles)
 			if t > 0.03 {
 				tail := Bezier(p0, p1, p2, t-0.03)
-				c.Dot(int(math.Round(tail.X)), int(math.Round(tail.Y)), color, layerParticles)
+				c.Dot(int(math.Round(tail.X)), int(math.Round(tail.Y)), spark, layerParticles)
 			}
 		}
+	}
+}
+
+// sparkFlow turns a link's traffic into how many sparks run along it, how
+// fast, and how many of them are red for errors. Without traffic, a link with
+// more resources gets more sparks.
+func sparkFlow(l Link, tr *Traffic) (int, float64, int) {
+	if tr == nil {
+		return min(l.Count, 3), 1.2, 0
+	}
+	weight := math.Log10(tr.Rate + 1)
+	sparks := min(max(1+int(weight*1.5), 1), 6)
+	errs := 0
+	if tr.Errors > 0 {
+		errs = max(1, min(sparks/2, int(math.Log10(float64(tr.Errors)+1)*2)))
+	}
+	return sparks, 1.2 * (1 + weight/3), errs
+}
+
+func (s Scene) drawTrafficLabels(c *Canvas) {
+	if !s.settled() {
+		return
+	}
+	for _, l := range s.Graph.EnvLinks {
+		tr := s.Graph.Traffic(l)
+		p0, p1, p2, ok := s.curve(l)
+		if tr == nil || !ok {
+			continue
+		}
+		mid := Bezier(p0, p1, p2, 0.5)
+		label := Rate(tr.Rate) + "/s"
+		style := lipgloss.NewStyle().Foreground(colorTealDim)
+		if tr.Errors > 0 {
+			label += fmt.Sprintf(" ✕%d", tr.Errors)
+			style = lipgloss.NewStyle().Foreground(colorRed)
+		}
+		w := runewidth.StringWidth(label)
+		if x, y := int(mid.X)/2-w/2, int(mid.Y)/4; c.Free(x-1, y, w+2) {
+			c.Text(x, y, label, style)
+		}
+	}
+}
+
+// Rate formats a count compactly, like 950, 1.2k, or 3.4M.
+func Rate(n float64) string {
+	switch {
+	case n >= 1_000_000:
+		return fmt.Sprintf("%.1fM", n/1_000_000)
+	case n >= 1000:
+		return fmt.Sprintf("%.1fk", n/1000)
+	case n >= 10 || n == math.Trunc(n):
+		return fmt.Sprintf("%.0f", n)
+	default:
+		return fmt.Sprintf("%.1f", n)
 	}
 }
 
@@ -241,6 +306,10 @@ func (s Scene) instanceColor(env *EnvNode, inst *InstNode) lipgloss.Color {
 		return colorHighlight
 	case !s.Matches(env):
 		return colorFaint
+	case inst.Health == HealthDown && s.Frame%6 < 3:
+		return colorRedDim
+	case inst.Health != "":
+		return healthColor(inst.Health)
 	}
 	return statusColor(inst.Status)
 }
@@ -374,6 +443,9 @@ func (s Scene) drawLabel(c *Canvas, env *EnvNode) {
 	if n := env.Upgrades(); n > 0 {
 		badge := fmt.Sprintf("↑%d", n)
 		c.Text(cx-3-len([]rune(badge)), cy-1, badge, styleUpgrade)
+	}
+	if env.Banner != nil {
+		c.Text(cx-runewidth.StringWidth(name)/2-2, cy+2, "⚑", lipgloss.NewStyle().Bold(true).Foreground(levelColor(env.Banner.Level)))
 	}
 }
 

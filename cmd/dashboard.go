@@ -22,6 +22,7 @@ func NewCmdDashboard() *cobra.Command {
 	}
 	cmd.Flags().Duration("refresh", dashboardRefresh, "How often to re-read the organization; 0 reads once")
 	cmd.Flags().Duration("events", dashboardEvents, "How often to read new activity from the audit log; 0 turns the live ticker off")
+	cmd.Flags().Bool("watch", false, "Take the view to each alarm that starts firing, and notify")
 	return cmd
 }
 
@@ -40,6 +41,10 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	watch, err := cmd.Flags().GetBool("watch")
+	if err != nil {
+		return err
+	}
 	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
@@ -49,6 +54,7 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 		Org:       mdClient.Config().OrganizationID,
 		Refresh:   refresh,
 		EventPoll: events,
+		Watch:     watch,
 		Links:     dashboard.NewLinks(mdClient.URLs.Helper(ctx)),
 	}})
 }

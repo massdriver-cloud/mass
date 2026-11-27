@@ -59,6 +59,10 @@ type Config struct {
 	Links     Links
 	// Open opens a URL in the browser.
 	Open func(url string) error
+	// Watch takes the view to each alarm that starts firing.
+	Watch bool
+	// Notify tells someone away from the dashboard that an alarm started firing.
+	Notify func(title, body string)
 }
 
 type (
@@ -111,6 +115,7 @@ type Model struct {
 	upgradeIdx int
 
 	replay        replay
+	watch         watchState
 	replayRequest int
 	introAt       int
 	events        []Event
@@ -222,7 +227,7 @@ func (m Model) tick() Model {
 		}
 	}
 	m.flashes = flashes
-	return m.advanceReplay()
+	return m.advanceReplay().settleWatch()
 }
 
 func (m Model) reload() (Model, tea.Cmd) {
@@ -236,7 +241,9 @@ func (m Model) reload() (Model, tea.Cmd) {
 func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 	m.loading = false
 	m.err = msg.err
+	var alert tea.Cmd
 	if msg.err == nil {
+		before := m.graph
 		m.snap, m.graph, m.fetched = msg.snap, BuildGraph(msg.snap), msg.at
 		m.layoutKey = ""
 		if m.introAt < 0 {
@@ -248,8 +255,9 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 		m.runtimeIdx = min(m.runtimeIdx, max(len(m.snap.Runtimes)-1, 0))
 		m.alarmIdx = min(m.alarmIdx, max(len(m.graph.Firing)-1, 0))
 		m.upgradeIdx = min(m.upgradeIdx, max(len(m.upgrades())-1, 0))
+		m, alert = m.watchAlarms(before)
 	}
-	return m, after(m.cfg.Refresh, refreshMsg{})
+	return m, tea.Batch(after(m.cfg.Refresh, refreshMsg{}), alert)
 }
 
 // applyEvents re-reads the organization on a deployment event so rings and
@@ -292,7 +300,7 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 		if ev.EnvID != "" {
 			flashes[ev.EnvID] = Flash{Label: EventLabel(ev)}
 		}
-		deployed = deployed || strings.HasPrefix(ev.Type, "deployment.")
+		deployed = deployed || changesTheMap(ev.Type)
 	}
 	m.flashes = flashes
 	if deployed && !m.loading {
@@ -300,6 +308,17 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 		return m, tea.Batch(poll, m.fetch())
 	}
 	return m, poll
+}
+
+// changesTheMap reports whether an event changes something the map draws:
+// a deployment, an alarm, or a stash key a widget reads.
+func changesTheMap(eventType string) bool {
+	for _, prefix := range []string{"deployment.", "alarm", "stash"} {
+		if strings.HasPrefix(eventType, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func (m Model) firstSelection() string {
@@ -313,6 +332,19 @@ func (m Model) firstSelection() string {
 }
 
 func (m Model) handleKey(msg tea.KeyMsg) (Model, tea.Cmd) {
+	if len(m.watch.open) > 0 && msg.String() == "esc" && !m.watch.acked && !m.searching && !m.replay.picking {
+		m.watch.acked = true
+		return m, nil
+	}
+	tab, selected := m.tab, m.selected
+	next, cmd := m.handleViewKey(msg)
+	if len(next.watch.open) > 0 && (next.tab != tab || next.selected != selected) {
+		next.watch.touched = true
+	}
+	return next, cmd
+}
+
+func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	if m.searching {
 		return m.handleSearchKey(msg), nil
 	}
