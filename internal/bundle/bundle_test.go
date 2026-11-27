@@ -42,6 +42,44 @@ func TestUnmarshalDependencyResourceVariants(t *testing.T) {
 	}
 }
 
+func TestUnmarshalDependencyCardinality(t *testing.T) {
+	const base = "name: example\ndescription: a bundle\nversion: 1.0.0\nsteps:\n  - path: src\n    provisioner: opentofu\nparams:\n  properties: {}\nui: {}\ndependencies:\n  queues:\n    resource_type: aws-sqs-queue@~2.0\n"
+	cases := []struct {
+		name     string
+		yaml     string
+		wantMany bool
+		wantErr  string
+	}{
+		{name: "missing defaults to one", yaml: base},
+		{name: "one", yaml: base + "    cardinality: one\n"},
+		{name: "many", yaml: base + "    cardinality: many\n", wantMany: true},
+		{name: "invalid", yaml: base + "    cardinality: several\n", wantErr: `dependency "queues" has invalid cardinality "several"; use "one" or "many"`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.WriteFile(filepath.Join(dir, "massdriver.yaml"), []byte(tc.yaml), 0600); err != nil {
+				t.Fatal(err)
+			}
+
+			b, err := Unmarshal(dir)
+			if tc.wantErr != "" {
+				if err == nil || err.Error() != tc.wantErr {
+					t.Fatalf("got error %v, want %q", err, tc.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got := b.Dependencies["queues"].IsMany(); got != tc.wantMany {
+				t.Errorf("IsMany() = %v, want %v", got, tc.wantMany)
+			}
+		})
+	}
+}
+
 func TestDependenciesToSchema(t *testing.T) {
 	deps := map[string]Dependency{
 		"network":  {ResourceType: "aws-vpc@1.2.3", Required: boolPtr(true)},
@@ -59,6 +97,67 @@ func TestDependenciesToSchema(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %#v, want %#v", got, want)
+	}
+}
+
+func TestDependenciesToSchemaMany(t *testing.T) {
+	cases := []struct {
+		name     string
+		required *bool
+		want     map[string]any
+	}{
+		{
+			name:     "required",
+			required: boolPtr(true),
+			want: map[string]any{
+				"properties": map[string]any{
+					"queues": map[string]any{
+						"type":                 "object",
+						"additionalProperties": map[string]any{"$ref": "aws-sqs-queue@~2.0"},
+						"minProperties":        1,
+					},
+				},
+				"required": []any{"queues"},
+			},
+		},
+		{
+			name:     "optional",
+			required: boolPtr(false),
+			want: map[string]any{
+				"properties": map[string]any{
+					"queues": map[string]any{
+						"type":                 "object",
+						"additionalProperties": map[string]any{"$ref": "aws-sqs-queue@~2.0"},
+						"default":              map[string]any{},
+					},
+				},
+				"required": []any{},
+			},
+		},
+		{
+			name: "unset required is optional",
+			want: map[string]any{
+				"properties": map[string]any{
+					"queues": map[string]any{
+						"type":                 "object",
+						"additionalProperties": map[string]any{"$ref": "aws-sqs-queue@~2.0"},
+						"default":              map[string]any{},
+					},
+				},
+				"required": []any{},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			deps := map[string]Dependency{
+				"queues": {ResourceType: "aws-sqs-queue@~2.0", Required: tc.required, Cardinality: CardinalityMany},
+			}
+			if got := dependenciesToSchema(deps); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("got %#v, want %#v", got, tc.want)
+			}
+		})
 	}
 }
 
