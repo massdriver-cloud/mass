@@ -73,6 +73,9 @@ func TestStashFirstReadAfterAFailureIsNotNews(t *testing.T) {
 	api.failScope = "sandbox"
 	m, cmd := keys(m, "/", "d", "e", "m", "o", "enter")
 	m = drive(t, m, cmd, 30)
+	if strings.Contains(view(m), "Demo at 3pm") {
+		t.Fatal("the read after the refocus should have failed")
+	}
 	api.failScope = ""
 	m = refreshed(t, m)
 	if out := view(m); !strings.Contains(out, "Demo at 3pm") || strings.Contains(out, "stash set") {
