@@ -22,6 +22,9 @@ const (
 	// that started before the event from undoing it.
 	touchedFor = time.Minute
 	maxBackoff = time.Minute
+	// maxStreams is the most environments streamed at once. A view wider
+	// than this polls instead of holding a stream open for each.
+	maxStreams = 20
 )
 
 type (
@@ -65,14 +68,22 @@ type feed struct {
 	// cannot is set when the profile cannot stream at all.
 	cannot  bool
 	reading bool
+	// pending is a read asked for while one was in flight, run when it lands
+	// so environments new to the view get their first read.
+	pending bool
 	touched map[Scope]map[string]time.Time
 }
 
 // live reports whether every environment in view is streaming, so polling
 // would only repeat what the streams say.
 func (m Model) live() bool {
-	if m.feed.cannot || len(m.feed.subs) == 0 {
+	if m.feed.cannot || len(m.feed.subs) == 0 || m.snap == nil {
 		return false
+	}
+	for _, env := range m.snap.Environments {
+		if _, ok := m.feed.subs[env.ID]; !ok && env.Project != nil {
+			return false
+		}
 	}
 	for _, sub := range m.feed.subs {
 		if sub.stream == nil {
@@ -83,7 +94,11 @@ func (m Model) live() bool {
 }
 
 func (m Model) fetchStash(initial bool) (Model, tea.Cmd) {
-	if m.snap == nil || m.feed.reading {
+	if m.snap == nil {
+		return m, nil
+	}
+	if m.feed.reading {
+		m.feed.pending = true
 		return m, nil
 	}
 	m.feed.reading = true
@@ -103,20 +118,22 @@ func (m Model) pollStash() (Model, tea.Cmd) {
 	return m, tea.Batch(read, next)
 }
 
-// applyStash takes a new read of the stash.
-func (m Model) applyStash(msg stashMsg) Model {
+func (m Model) applyStash(msg stashMsg) (Model, tea.Cmd) {
 	m.feed.reading = false
+	var again tea.Cmd
+	if m.feed.pending {
+		m.feed.pending = false
+		m, again = m.fetchStash(false)
+	}
 	if m.graph == nil {
-		return m
+		return m, again
 	}
 	st := msg.read.Stash
 	st.Keep(m.stash, msg.read.Failed)
 	st.KeepTouched(m.stash, m.feed.touched, msg.at)
-	return m.takeStash(st, msg.initial)
+	return m.takeStash(st, msg.initial), again
 }
 
-// takeStash redraws widgets and notes from st and, past the first read,
-// puts each change on the ticker and flashes where it happened.
 func (m Model) takeStash(st Stash, initial bool) Model {
 	var changes []StashChange
 	if !initial {
@@ -154,8 +171,6 @@ func (m Model) takeStash(st Stash, initial bool) Model {
 	return m
 }
 
-// syncSubscriptions streams each environment in view and stops streaming
-// the ones that left it.
 func (m Model) syncSubscriptions() (Model, tea.Cmd) {
 	if m.feed.cannot || m.snap == nil {
 		return m, nil
@@ -168,6 +183,9 @@ func (m Model) syncSubscriptions() (Model, tea.Cmd) {
 		if env.Project != nil {
 			want[env.ID] = env.Project.ID
 		}
+	}
+	if len(want) > maxStreams {
+		clear(want)
 	}
 	for id, sub := range m.feed.subs {
 		if _, ok := want[id]; !ok {
@@ -235,8 +253,8 @@ func (m Model) applySubscribed(msg subscribedMsg) (Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// receive waits for the next events on a stream, taking every event already
-// waiting with it.
+// receive takes every event already waiting along with the first, so a
+// burst redraws once.
 func receive(env string, gen int, stream *streaming.Stream[StashEvent]) tea.Cmd {
 	return func() tea.Msg {
 		ev, ok := <-stream.C
@@ -291,8 +309,6 @@ func (m Model) applyStashEvents(msg stashEventsMsg) (Model, tea.Cmd) {
 	return m, receive(msg.env, msg.gen, sub.stream)
 }
 
-// applyStashClosed streams the environment again when its stream ends,
-// waiting longer after each failure in a row.
 func (m Model) applyStashClosed(msg stashClosedMsg) (Model, tea.Cmd) {
 	sub := m.current(msg.env, msg.gen)
 	if sub == nil {

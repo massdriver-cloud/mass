@@ -413,7 +413,7 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 	case stashPollMsg:
 		return m.pollStash()
 	case stashMsg:
-		return m.applyStash(msg), nil
+		return m.applyStash(msg)
 	case subscribedMsg:
 		return m.applySubscribed(msg)
 	case stashEventsMsg:
