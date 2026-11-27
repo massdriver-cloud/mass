@@ -1,10 +1,10 @@
 ---
-id: mass_stash_delete.md
-slug: /cli/commands/mass_stash_delete
-title: Mass Stash Delete
-sidebar_label: Mass Stash Delete
+id: mass_alpha_stash_delete.md
+slug: /cli/commands/mass_alpha_stash_delete
+title: Mass Alpha Stash Delete
+sidebar_label: Mass Alpha Stash Delete
 ---
-## mass stash delete
+## mass alpha stash delete
 
 Delete a stash entry
 
@@ -17,7 +17,7 @@ Deletes an entry. You must type the key to confirm, unless you set `--force`. A 
 ## Usage
 
 ```bash
-mass stash delete <scope>.<key> [flags]
+mass alpha stash delete <scope>.<key> [flags]
 ```
 
 ## Flags
@@ -27,14 +27,14 @@ mass stash delete <scope>.<key> [flags]
 ## Examples
 
 ```bash
-mass stash delete "api-staging-db.ami-id"
+mass alpha stash delete "api-staging-db.ami-id"
 
-mass stash delete "env:api-db.config/v2" --force
+mass alpha stash delete "env:api-db.config/v2" --force
 ```
 
 
 ```
-mass stash delete <scope>.<key> [flags]
+mass alpha stash delete <scope>.<key> [flags]
 ```
 
 ### Options
@@ -52,4 +52,4 @@ mass stash delete <scope>.<key> [flags]
 
 ### SEE ALSO
 
-* [mass stash](/cli/commands/mass_stash)	 - Store and read small values in a project, environment, component, instance, or deployment
+* [mass alpha stash](/cli/commands/mass_alpha_stash)	 - Store and read small values in a project, environment, component, instance, or deployment

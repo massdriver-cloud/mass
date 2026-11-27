@@ -1,4 +1,4 @@
-// Package stash holds the logic behind `mass stash`.
+// Package stash holds the logic behind `mass alpha stash`.
 package stash
 
 import (
@@ -152,7 +152,7 @@ func resolveAddress(ctx context.Context, api API, address string) (sdkstash.Scop
 	return scope, key, nil
 }
 
-// RunGet prints an entry's value exactly as stored, so `$(mass stash get ...)`
+// RunGet prints an entry's value exactly as stored, so `$(mass alpha stash get ...)`
 // captures it. With output "json" it prints the whole entry.
 func RunGet(ctx context.Context, api API, address, output string, out io.Writer) error {
 	scope, key, err := resolveAddress(ctx, api, address)
@@ -177,7 +177,7 @@ func RunGet(ctx context.Context, api API, address, output string, out io.Writer)
 	return fmt.Errorf("unsupported output format: %s", output)
 }
 
-// SetOptions holds the flags of `mass stash set`.
+// SetOptions holds the flags of `mass alpha stash set`.
 type SetOptions struct {
 	Label     string
 	Format    string

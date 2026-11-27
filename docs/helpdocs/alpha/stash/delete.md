@@ -5,7 +5,7 @@ Deletes an entry. You must type the key to confirm, unless you set `--force`. A 
 ## Usage
 
 ```bash
-mass stash delete <scope>.<key> [flags]
+mass alpha stash delete <scope>.<key> [flags]
 ```
 
 ## Flags
@@ -15,7 +15,7 @@ mass stash delete <scope>.<key> [flags]
 ## Examples
 
 ```bash
-mass stash delete "api-staging-db.ami-id"
+mass alpha stash delete "api-staging-db.ami-id"
 
-mass stash delete "env:api-db.config/v2" --force
+mass alpha stash delete "env:api-db.config/v2" --force
 ```

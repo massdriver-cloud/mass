@@ -1,10 +1,10 @@
 ---
-id: mass_stash_list.md
-slug: /cli/commands/mass_stash_list
-title: Mass Stash List
-sidebar_label: Mass Stash List
+id: mass_alpha_stash_list.md
+slug: /cli/commands/mass_alpha_stash_list
+title: Mass Alpha Stash List
+sidebar_label: Mass Alpha Stash List
 ---
-## mass stash list
+## mass alpha stash list
 
 List the stash entries in a scope
 
@@ -17,7 +17,7 @@ Lists the entries in one scope. Sensitive values show as `(sensitive)` unless yo
 ## Usage
 
 ```bash
-mass stash list <scope> [flags]
+mass alpha stash list <scope> [flags]
 ```
 
 ## Flags
@@ -27,14 +27,14 @@ mass stash list <scope> [flags]
 ## Examples
 
 ```bash
-mass stash list api-prod
+mass alpha stash list api-prod
 
-mass stash list "$DEPLOYMENT_ID" -o json | jq -r '.[].key'
+mass alpha stash list "$DEPLOYMENT_ID" -o json | jq -r '.[].key'
 ```
 
 
 ```
-mass stash list <scope> [flags]
+mass alpha stash list <scope> [flags]
 ```
 
 ### Options
@@ -52,4 +52,4 @@ mass stash list <scope> [flags]
 
 ### SEE ALSO
 
-* [mass stash](/cli/commands/mass_stash)	 - Store and read small values in a project, environment, component, instance, or deployment
+* [mass alpha stash](/cli/commands/mass_alpha_stash)	 - Store and read small values in a project, environment, component, instance, or deployment

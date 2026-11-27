@@ -35,6 +35,7 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	rootCmd.PersistentFlags().String("profile", "", "Configuration profile to use (overrides MASSDRIVER_PROFILE and the active profile)")
 
+	rootCmd.AddCommand(NewCmdAlpha())
 	rootCmd.AddCommand(NewCmdBundle())
 	rootCmd.AddCommand(NewCmdComponent())
 	rootCmd.AddCommand(NewCmdConfig())
@@ -48,7 +49,6 @@ func Execute() {
 	rootCmd.AddCommand(NewCmdResource())
 	rootCmd.AddCommand(NewCmdType())
 	rootCmd.AddCommand(NewCmdSchema())
-	rootCmd.AddCommand(NewCmdStash())
 	rootCmd.AddCommand(NewCmdVersion())
 	rootCmd.AddCommand(NewCmdWhoami())
 	if err := rootCmd.Execute(); err != nil {

@@ -11,18 +11,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewCmdStash returns a cobra command for stash entries.
-func NewCmdStash() *cobra.Command {
+func newCmdAlphaStash() *cobra.Command {
 	stashCmd := &cobra.Command{
 		Use:   "stash",
 		Short: "Store and read small values in a project, environment, component, instance, or deployment",
-		Long:  helpdocs.MustRender("stash"),
+		Long:  helpdocs.MustRender("alpha/stash"),
 	}
 
 	getCmd := &cobra.Command{
 		Use:   "get <scope>.<key>",
 		Short: "Print a stash entry's value",
-		Long:  helpdocs.MustRender("stash/get"),
+		Long:  helpdocs.MustRender("alpha/stash/get"),
 		Args:  cobra.ExactArgs(1),
 		RunE:  runStashGet,
 	}
@@ -31,7 +30,7 @@ func NewCmdStash() *cobra.Command {
 	setCmd := &cobra.Command{
 		Use:   "set <scope>.<key> <value>",
 		Short: "Set a stash entry's value",
-		Long:  helpdocs.MustRender("stash/set"),
+		Long:  helpdocs.MustRender("alpha/stash/set"),
 		Args:  cobra.ExactArgs(2),
 		RunE:  runStashSet,
 	}
@@ -45,7 +44,7 @@ func NewCmdStash() *cobra.Command {
 		Use:     "delete <scope>.<key>",
 		Aliases: []string{"rm"},
 		Short:   "Delete a stash entry",
-		Long:    helpdocs.MustRender("stash/delete"),
+		Long:    helpdocs.MustRender("alpha/stash/delete"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runStashDelete,
 	}
@@ -55,7 +54,7 @@ func NewCmdStash() *cobra.Command {
 		Use:     "list <scope>",
 		Aliases: []string{"ls"},
 		Short:   "List the stash entries in a scope",
-		Long:    helpdocs.MustRender("stash/list"),
+		Long:    helpdocs.MustRender("alpha/stash/list"),
 		Args:    cobra.ExactArgs(1),
 		RunE:    runStashList,
 	}

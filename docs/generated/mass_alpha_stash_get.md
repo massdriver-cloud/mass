@@ -1,10 +1,10 @@
 ---
-id: mass_stash_get.md
-slug: /cli/commands/mass_stash_get
-title: Mass Stash Get
-sidebar_label: Mass Stash Get
+id: mass_alpha_stash_get.md
+slug: /cli/commands/mass_alpha_stash_get
+title: Mass Alpha Stash Get
+sidebar_label: Mass Alpha Stash Get
 ---
-## mass stash get
+## mass alpha stash get
 
 Print a stash entry's value
 
@@ -19,7 +19,7 @@ A sensitive value is shown only to callers that can write its scope. Other calle
 ## Usage
 
 ```bash
-mass stash get <scope>.<key> [flags]
+mass alpha stash get <scope>.<key> [flags]
 ```
 
 ## Flags
@@ -29,14 +29,14 @@ mass stash get <scope>.<key> [flags]
 ## Examples
 
 ```bash
-DB_HOST=$(mass stash get "$DEPLOYMENT_ID.db/hostname")
+DB_HOST=$(mass alpha stash get "$DEPLOYMENT_ID.db/hostname")
 
-mass stash get "$DEPLOYMENT_ID.stats" -o json | jq .data.changed
+mass alpha stash get "$DEPLOYMENT_ID.stats" -o json | jq .data.changed
 ```
 
 
 ```
-mass stash get <scope>.<key> [flags]
+mass alpha stash get <scope>.<key> [flags]
 ```
 
 ### Options
@@ -54,4 +54,4 @@ mass stash get <scope>.<key> [flags]
 
 ### SEE ALSO
 
-* [mass stash](/cli/commands/mass_stash)	 - Store and read small values in a project, environment, component, instance, or deployment
+* [mass alpha stash](/cli/commands/mass_alpha_stash)	 - Store and read small values in a project, environment, component, instance, or deployment

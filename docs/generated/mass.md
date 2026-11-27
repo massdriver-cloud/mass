@@ -33,6 +33,7 @@ Configure and deploying infrastructure and applications.
 
 ### SEE ALSO
 
+* [mass alpha](/cli/commands/mass_alpha)	 - Commands for features in alpha
 * [mass bundle](/cli/commands/mass_bundle)	 - Generate and publish bundles
 * [mass completion](/cli/commands/mass_completion)	 - Generate the autocompletion script for the specified shell
 * [mass component](/cli/commands/mass_component)	 - Manage components in a project's blueprint
@@ -47,6 +48,5 @@ Configure and deploying infrastructure and applications.
 * [mass resource](/cli/commands/mass_resource)	 - Manage resources
 * [mass resource-type](/cli/commands/mass_resource-type)	 - Resource type management
 * [mass schema](/cli/commands/mass_schema)	 - Manage JSON Schemas
-* [mass stash](/cli/commands/mass_stash)	 - Store and read small values in a project, environment, component, instance, or deployment
 * [mass version](/cli/commands/mass_version)	 - Version of Mass CLI
 * [mass whoami](/cli/commands/mass_whoami)	 - Show the currently authenticated user or service account

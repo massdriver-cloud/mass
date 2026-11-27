@@ -7,7 +7,7 @@ A sensitive value is shown only to callers that can write its scope. Other calle
 ## Usage
 
 ```bash
-mass stash get <scope>.<key> [flags]
+mass alpha stash get <scope>.<key> [flags]
 ```
 
 ## Flags
@@ -17,7 +17,7 @@ mass stash get <scope>.<key> [flags]
 ## Examples
 
 ```bash
-DB_HOST=$(mass stash get "$DEPLOYMENT_ID.db/hostname")
+DB_HOST=$(mass alpha stash get "$DEPLOYMENT_ID.db/hostname")
 
-mass stash get "$DEPLOYMENT_ID.stats" -o json | jq .data.changed
+mass alpha stash get "$DEPLOYMENT_ID.stats" -o json | jq .data.changed
 ```

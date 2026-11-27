@@ -5,7 +5,7 @@ Lists the entries in one scope. Sensitive values show as `(sensitive)` unless yo
 ## Usage
 
 ```bash
-mass stash list <scope> [flags]
+mass alpha stash list <scope> [flags]
 ```
 
 ## Flags
@@ -15,7 +15,7 @@ mass stash list <scope> [flags]
 ## Examples
 
 ```bash
-mass stash list api-prod
+mass alpha stash list api-prod
 
-mass stash list "$DEPLOYMENT_ID" -o json | jq -r '.[].key'
+mass alpha stash list "$DEPLOYMENT_ID" -o json | jq -r '.[].key'
 ```
