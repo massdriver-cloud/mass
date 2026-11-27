@@ -413,7 +413,6 @@ func (m Model) animating() bool {
 	return m.progress(m.pan, moveFrames) < 1 || m.progress(m.unfold, introFrames) < 1
 }
 
-// tickMotion moves the clock on, and keeps ticking while anything moves.
 func (m Model) tickMotion(now time.Time) (Model, tea.Cmd) {
 	m.clock = now
 	for _, mo := range []*motion{&m.pan, &m.unfold} {
@@ -991,7 +990,12 @@ func (m Model) withLayout(w, h int) Model {
 	}
 	opts := LayoutOptions{GroupByProject: m.grouped, ProducersOnTop: m.stacked, Center: m.focus, Seed: m.settled}
 	pos, settled := layoutTheme(m.cfg.Theme, m.graph, w, h, opts)
-	if m.pos != nil {
+	// A resize changes the scale of the whole map, so gliding from the old
+	// positions would sweep every node across the screen.
+	switch {
+	case key.w != m.layoutKey.w || key.h != m.layoutKey.h:
+		m.pan = motion{}
+	case m.pos != nil:
 		m.pan = motion{on: true, frame: m.frame, from: m.animatedPos()}
 	}
 	m.pos, m.layoutKey = pos, key

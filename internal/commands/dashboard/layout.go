@@ -25,7 +25,8 @@ type LayoutOptions struct {
 }
 
 // Layout places every environment in a w×h cell box, returning each one's
-// node center in dots. The same graph and options always give the same layout.
+// node center in dots. The same graph and options, seed included, always give
+// the same layout.
 func Layout(g *Graph, w, h int, opts LayoutOptions) map[string]Point {
 	pos, _ := layout(g, w, h, opts)
 	return pos
