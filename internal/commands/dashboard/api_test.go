@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -22,13 +23,14 @@ type fakeAPI struct {
 	eventReads [][]dashboard.Event
 	eventCalls int
 	history    []dashboard.Event
+	truncated  bool
 	historyErr error
 	since      time.Time
 }
 
-func (f *fakeAPI) History(_ context.Context, since time.Time) ([]dashboard.Event, error) {
+func (f *fakeAPI) History(_ context.Context, since time.Time) (dashboard.Log, error) {
 	f.since = since
-	return f.history, f.historyErr
+	return dashboard.Log{Events: f.history, Truncated: f.truncated}, f.historyErr
 }
 
 func (f *fakeAPI) Events(context.Context, time.Time) ([]dashboard.Event, error) {
@@ -230,49 +232,77 @@ func (p pagedAudit) ListPage(_ context.Context, input auditlogs.ListInput) (type
 	return page, nil
 }
 
-func TestHistory(t *testing.T) {
-	logs := func(ids ...string) []types.AuditLog {
-		out := make([]types.AuditLog, 0, len(ids))
-		for _, id := range ids {
-			out = append(out, types.AuditLog{ID: id})
-		}
-		return out
+func auditLogs(prefix string, from, to int) []types.AuditLog {
+	out := make([]types.AuditLog, 0, from-to+1)
+	for i := from; i >= to; i-- {
+		out = append(out, types.AuditLog{ID: fmt.Sprintf("%s%d", prefix, i)})
 	}
+	return out
+}
+
+// newestFirst splits n audit log entries, newest first, into pages of 100.
+func newestFirst(n int) map[string]types.Page[types.AuditLog] {
+	pages := map[string]types.Page[types.AuditLog]{}
+	for start, cursor := n, ""; start > 0; start -= 100 {
+		next := ""
+		if start > 100 {
+			next = fmt.Sprintf("p%d", start-100)
+		}
+		pages[cursor] = types.Page[types.AuditLog]{Items: auditLogs("e", start, max(start-99, 1)), Next: next}
+		cursor = next
+	}
+	return pages
+}
+
+func ids(events []dashboard.Event) []string {
+	out := make([]string, 0, len(events))
+	for _, ev := range events {
+		out = append(out, ev.ID)
+	}
+	return out
+}
+
+func TestReadAudit(t *testing.T) {
 	tests := []struct {
-		name    string
-		pages   map[string]types.Page[types.AuditLog]
-		want    []string
-		wantErr bool
+		name          string
+		pages         map[string]types.Page[types.AuditLog]
+		wantEvents    int
+		wantFirst     string
+		wantLast      string
+		wantTruncated bool
+		wantErr       bool
 	}{
-		{
-			name: "every page, oldest first",
-			pages: map[string]types.Page[types.AuditLog]{
-				"":   {Items: logs("e4", "e3"), Next: "p2"},
-				"p2": {Items: logs("e2", "e1")},
-			},
-			want: []string{"e1", "e2", "e3", "e4"},
-		},
+		{name: "two pages, oldest first", pages: newestFirst(150), wantEvents: 150, wantFirst: "e1", wantLast: "e150"},
+		{name: "more than a replay holds", pages: newestFirst(1200), wantEvents: 1000, wantFirst: "e201", wantLast: "e1200", wantTruncated: true},
+		{name: "exactly a replay's worth", pages: newestFirst(1000), wantEvents: 1000, wantFirst: "e1", wantLast: "e1000"},
 		{
 			name:    "a failed page",
-			pages:   map[string]types.Page[types.AuditLog]{"": {Items: logs("e2"), Next: "missing"}},
+			pages:   map[string]types.Page[types.AuditLog]{"": {Items: auditLogs("e", 2, 2), Next: "missing"}},
 			wantErr: true,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			api := dashboard.NewAPIWithClient(nil, pagedAudit{pages: tc.pages}, "acme")
-			events, err := api.History(context.Background(), time.Time{})
+			log, err := api.History(context.Background(), time.Time{})
 			if tc.wantErr != (err != nil) {
 				t.Fatalf("err = %v", err)
 			}
-			got := make([]string, 0, len(events))
-			for _, ev := range events {
-				got = append(got, ev.ID)
+			if tc.wantErr {
+				return
 			}
-			if !tc.wantErr && !equal(got, tc.want) {
-				t.Errorf("history = %v, want %v", got, tc.want)
+			got := ids(log.Events)
+			if len(got) != tc.wantEvents || got[0] != tc.wantFirst || got[len(got)-1] != tc.wantLast || log.Truncated != tc.wantTruncated {
+				t.Errorf("history = %d events %s..%s truncated %v, want %d %s..%s %v", len(got), got[0], got[len(got)-1],
+					log.Truncated, tc.wantEvents, tc.wantFirst, tc.wantLast, tc.wantTruncated)
 			}
 		})
+	}
+
+	api := dashboard.NewAPIWithClient(nil, pagedAudit{pages: newestFirst(320)}, "acme")
+	events, err := api.Events(context.Background(), time.Time{})
+	if err != nil || len(events) != 320 {
+		t.Errorf("a burst of 320 events between polls read %d, %v; want every page", len(events), err)
 	}
 }
 

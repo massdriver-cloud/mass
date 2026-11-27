@@ -16,6 +16,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/auditlogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
+	"golang.org/x/sync/errgroup"
 )
 
 // API is the narrow surface the dashboard reads from. Each call returns one
@@ -25,7 +26,7 @@ type API interface {
 	Runtimes(ctx context.Context, cursor string) ([]Runtime, string, error)
 	Applications(ctx context.Context, cursor string) ([]Application, string, error)
 	Events(ctx context.Context, since time.Time) ([]Event, error)
-	History(ctx context.Context, since time.Time) ([]Event, error)
+	History(ctx context.Context, since time.Time) (Log, error)
 }
 
 // AuditLister reads one page of the audit log.
@@ -65,6 +66,7 @@ type Instance struct {
 	Status           string       `json:"status"`
 	DeployedVersion  string       `json:"deployedVersion"`
 	AvailableUpgrade string       `json:"availableUpgrade"`
+	FiringAlarmCount int          `json:"firingAlarmCount"`
 	Bundle           *Bundle      `json:"bundle"`
 	LatestProvision  *Provision   `json:"latestProvision"`
 	LatestDeployment *Deployment  `json:"latestDeployment"`
@@ -172,19 +174,32 @@ type Snapshot struct {
 
 // Fetch reads every page of environments, runtimes, and applications.
 func Fetch(ctx context.Context, api API) (*Snapshot, error) {
-	envs, err := drain(ctx, api.Environments)
-	if err != nil {
-		return nil, fmt.Errorf("list environments: %w", err)
+	snap := &Snapshot{}
+	group, ctx := errgroup.WithContext(ctx)
+	group.Go(func() (err error) {
+		snap.Environments, err = drainAs(ctx, "list environments", api.Environments)
+		return err
+	})
+	group.Go(func() (err error) {
+		snap.Runtimes, err = drainAs(ctx, "list runtimes", api.Runtimes)
+		return err
+	})
+	group.Go(func() (err error) {
+		snap.Applications, err = drainAs(ctx, "list applications", api.Applications)
+		return err
+	})
+	if err := group.Wait(); err != nil {
+		return nil, err
 	}
-	runtimes, err := drain(ctx, api.Runtimes)
+	return snap, nil
+}
+
+func drainAs[T any](ctx context.Context, what string, page func(context.Context, string) ([]T, string, error)) ([]T, error) {
+	items, err := drain(ctx, page)
 	if err != nil {
-		return nil, fmt.Errorf("list runtimes: %w", err)
+		return nil, fmt.Errorf("%s: %w", what, err)
 	}
-	apps, err := drain(ctx, api.Applications)
-	if err != nil {
-		return nil, fmt.Errorf("list applications: %w", err)
-	}
-	return &Snapshot{Environments: envs, Runtimes: runtimes, Applications: apps}, nil
+	return items, nil
 }
 
 // maxPages stops a server that keeps handing back a cursor from looping forever.
@@ -226,44 +241,55 @@ func NewAPIWithClient(client graphql.Client, audit AuditLister, orgID string) AP
 	return &gqlAPI{client: client, audit: audit, orgID: orgID}
 }
 
-const eventPageSize = 50
+const (
+	auditPageSize = 100
+	// eventLimit bounds one poll; a burst bigger than this between polls
+	// shows only its newest events.
+	eventLimit = 500
+	// historyLimit bounds a replay; a busier window keeps its newest events.
+	historyLimit = 1000
+)
 
-func (a *gqlAPI) Events(ctx context.Context, since time.Time) ([]Event, error) {
-	page, err := a.audit.ListPage(ctx, auditlogs.ListInput{TimeRangeStart: since, PageSize: eventPageSize})
-	if err != nil {
-		return nil, err
-	}
-	events := make([]Event, 0, len(page.Items))
-	for _, log := range page.Items {
-		events = append(events, ToEvent(log))
-	}
-	return events, nil
+// Log is a stretch of the audit log, oldest first. Truncated says the
+// stretch held more events than were read, and the oldest were left out.
+type Log struct {
+	Events    []Event
+	Truncated bool
 }
 
-// historyLimit caps how much of the audit log a replay reads.
-const historyLimit = 1000
+func (a *gqlAPI) Events(ctx context.Context, since time.Time) ([]Event, error) {
+	log, err := a.readAudit(ctx, since, eventLimit)
+	return log.Events, err
+}
 
-// History reads the audit log since a time, oldest first, up to historyLimit
-// events; past the limit it keeps the newest.
-func (a *gqlAPI) History(ctx context.Context, since time.Time) ([]Event, error) {
-	var events []Event
+func (a *gqlAPI) History(ctx context.Context, since time.Time) (Log, error) {
+	return a.readAudit(ctx, since, historyLimit)
+}
+
+// readAudit pages back from the newest event, the audit log's default order.
+func (a *gqlAPI) readAudit(ctx context.Context, since time.Time, limit int) (Log, error) {
+	var log Log
 	after := ""
-	for len(events) < historyLimit {
-		page, err := a.audit.ListPage(ctx, auditlogs.ListInput{TimeRangeStart: since, PageSize: 100, After: after})
+	for {
+		page, err := a.audit.ListPage(ctx, auditlogs.ListInput{TimeRangeStart: since, PageSize: auditPageSize, After: after})
 		if err != nil {
-			return nil, err
+			return Log{}, err
 		}
-		for _, log := range page.Items {
-			events = append(events, ToEvent(log))
+		for _, entry := range page.Items {
+			log.Events = append(log.Events, ToEvent(entry))
+		}
+		if len(log.Events) >= limit {
+			log.Truncated = len(log.Events) > limit || page.Next != ""
+			log.Events = log.Events[:limit]
+			break
 		}
 		if page.Next == "" || len(page.Items) == 0 {
 			break
 		}
 		after = page.Next
 	}
-	events = events[:min(len(events), historyLimit)]
-	slices.Reverse(events)
-	return events, nil
+	slices.Reverse(log.Events)
+	return log, nil
 }
 
 // ToEvent reads the environment, actor, and a short detail out of an audit
@@ -300,7 +326,7 @@ const environmentsQuery = `query dashboardEnvironments($organizationId: ID!, $cu
       project { id name }
       parent { id }
       instances {
-        id status deployedVersion availableUpgrade
+        id status deployedVersion availableUpgrade firingAlarmCount
         bundle { name version runtime { name version } }
         latestProvision { createdAt bundle { name version runtime { name version } } }
         latestDeployment { status action createdAt }

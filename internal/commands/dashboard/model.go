@@ -44,7 +44,9 @@ type Links interface {
 
 // Config configures a [Model].
 type Config struct {
-	Org string
+	// Context cancels reads still in flight when the dashboard closes.
+	Context context.Context //nolint:containedctx // the model outlives any one call
+	Org     string
 	// Refresh is how often to re-read the organization; zero reads once.
 	Refresh time.Duration
 	// EventPoll is how often to read new audit log events; zero never does.
@@ -104,16 +106,17 @@ type Model struct {
 	alarmIdx   int
 	upgradeIdx int
 
-	replay    replay
-	introAt   int
-	events    []Event
-	seen      map[string]bool
-	since     time.Time
-	flashes   map[string]Flash
-	toast     string
-	toastAt   int
-	pos       map[string]Point
-	layoutKey string
+	replay        replay
+	replayRequest int
+	introAt       int
+	events        []Event
+	seen          map[string]time.Time
+	since         time.Time
+	flashes       map[string]Flash
+	toast         string
+	toastAt       int
+	pos           map[string]Point
+	layoutKey     string
 }
 
 // NewModel returns a dashboard that reads from api.
@@ -123,7 +126,7 @@ func NewModel(api API, cfg Config) Model {
 	}
 	return Model{
 		api: api, cfg: cfg, loading: true, blastOn: true, showApps: true, introAt: -1,
-		seen: map[string]bool{}, flashes: map[string]Flash{}, since: cfg.Now().Add(-eventBacklog),
+		seen: map[string]time.Time{}, flashes: map[string]Flash{}, since: cfg.Now().Add(-eventBacklog),
 	}
 }
 
@@ -141,19 +144,26 @@ func frame() tea.Cmd {
 }
 
 func (m Model) fetch() tea.Cmd {
-	api, now := m.api, m.cfg.Now
+	api, ctx, now := m.api, m.ctx(), m.cfg.Now
 	return func() tea.Msg {
-		snap, err := Fetch(context.Background(), api)
+		snap, err := Fetch(ctx, api)
 		return snapshotMsg{snap: snap, err: err, at: now()}
 	}
 }
 
 func (m Model) fetchEvents(initial bool) tea.Cmd {
-	api, since := m.api, m.since
+	api, ctx, since := m.api, m.ctx(), m.since
 	return func() tea.Msg {
-		events, err := api.Events(context.Background(), since)
+		events, err := api.Events(ctx, since)
 		return eventsMsg{events: events, err: err, initial: initial}
 	}
+}
+
+func (m Model) ctx() context.Context {
+	if m.cfg.Context == nil {
+		return context.Background()
+	}
+	return m.cfg.Context
 }
 
 func after(d time.Duration, msg tea.Msg) tea.Cmd {
@@ -238,9 +248,8 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 	return m, after(m.cfg.Refresh, refreshMsg{})
 }
 
-// applyEvents adds events not seen before to the ticker and, past the first
-// read, flashes their environments. A deployment event re-reads the
-// organization so rings and spinners catch up with it.
+// applyEvents re-reads the organization on a deployment event so rings and
+// spinners catch up with it.
 func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 	poll := after(m.cfg.EventPoll, eventPollMsg{})
 	if msg.err != nil {
@@ -248,12 +257,18 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 	}
 	fresh := make([]Event, 0, len(msg.events))
 	for _, ev := range msg.events {
-		if !m.seen[ev.ID] {
-			m.seen[ev.ID] = true
+		if _, ok := m.seen[ev.ID]; !ok {
+			m.seen[ev.ID] = ev.At
 			fresh = append(fresh, ev)
 		}
 		if ev.At.After(m.since) {
 			m.since = ev.At
+		}
+	}
+	// Reads start at since inclusive, so only events at since can come back.
+	for id, at := range m.seen {
+		if at.Before(m.since) {
+			delete(m.seen, id)
 		}
 	}
 	slices.SortStableFunc(fresh, func(a, b Event) int { return b.At.Compare(a.At) })
@@ -435,7 +450,6 @@ func step(idx, n int, key string) int {
 	return idx
 }
 
-// orderedEnvs lists environments top to bottom, left to right on screen.
 func (m Model) orderedEnvs() []*EnvNode {
 	envs := slices.Clone(m.graph.Envs)
 	slices.SortStableFunc(envs, func(a, b *EnvNode) int {
@@ -491,7 +505,6 @@ func (m Model) nearest(dir Point) string {
 	return best
 }
 
-// selectionURL is the web app page for what is selected on the current tab.
 func (m Model) selectionURL() string {
 	if m.cfg.Links == nil || m.graph == nil {
 		return ""
@@ -543,7 +556,6 @@ func (m Model) blast() *Blast {
 	return m.graph.BlastRadius(sources...)
 }
 
-// upgrades lists the instances that can upgrade, by environment.
 func (m Model) upgrades() []*InstNode {
 	if m.graph == nil {
 		return nil
@@ -578,7 +590,6 @@ func (m Model) panelWidth() int {
 	}
 }
 
-// bodyHeight leaves room for the header, the event ticker, and the footer.
 func (m Model) bodyHeight() int { return max(m.height-4, 3) }
 
 func (m Model) canvasSize() (int, int) {

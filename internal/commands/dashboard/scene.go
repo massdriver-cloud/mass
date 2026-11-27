@@ -76,8 +76,6 @@ func (s Scene) Render(w, h int) string {
 
 func (s Scene) settled() bool { return s.Intro <= 0 || s.Intro >= 1 }
 
-// unfold moves every node part of the way out from the center while the
-// intro plays.
 func (s Scene) unfold(c *Canvas) map[string]Point {
 	if s.settled() {
 		return s.Pos
@@ -183,8 +181,6 @@ func (s Scene) drawLinks(c *Canvas) {
 	}
 }
 
-// drawParticles sends sparks from each producer to its consumers, so the
-// direction resources flow is visible at a glance.
 func (s Scene) drawParticles(c *Canvas) {
 	for i, l := range s.Graph.EnvLinks {
 		if l.Kind != LinkDependency {
@@ -266,8 +262,6 @@ func (s Scene) ringColors(env *EnvNode) func(float64) lipgloss.Color {
 	}
 }
 
-// radius is a node's size: fixed, or by its share of the most expensive
-// environment's spend when cost is on.
 func (s Scene) radius(env *EnvNode) float64 {
 	if !s.ShowCost {
 		return nodeRadius
@@ -289,7 +283,7 @@ func (s Scene) drawNode(c *Canvas, env *EnvNode) {
 	}
 	r := s.radius(env)
 	c.Ring(center, r, s.ringColors(env), layerNodes)
-	if len(env.Firing) > 0 {
+	if env.FiringCount() > 0 {
 		s.drawAlarmPulse(c, center, r)
 	}
 	if len(env.Deploying()) > 0 {
@@ -318,7 +312,6 @@ func (s Scene) drawAlarmPulse(c *Canvas, center Point, r float64) {
 	c.Ring(center, r+2.5+float64(phase)*0.8, func(float64) lipgloss.Color { return color }, layerHalo)
 }
 
-// drawDeploySpinner sweeps a comet around the ring while a deployment runs.
 func (s Scene) drawDeploySpinner(c *Canvas, center Point, r float64) {
 	head := math.Mod(float64(s.Frame)*0.045, 1)
 	c.Ring(center, r+1.2, func(f float64) lipgloss.Color {
@@ -345,7 +338,7 @@ func (s Scene) labelStyles(env *EnvNode) (lipgloss.Style, lipgloss.Style) {
 		name = styleSelected
 	case !s.Matches(env) || env.Restricted:
 		name, sub = styleFaint, styleFaint
-	case len(env.Firing) > 0:
+	case env.FiringCount() > 0:
 		name = styleBoldRed
 	}
 	return name, sub
@@ -375,7 +368,7 @@ func (s Scene) drawLabel(c *Canvas, env *EnvNode) {
 	}
 	c.TextCentered(cx, cy+2, name, nameStyle)
 	c.TextCentered(cx, cy+3, s.subLabel(env), subStyle)
-	if n := len(env.Firing); n > 0 {
+	if n := env.FiringCount(); n > 0 {
 		c.Text(cx+3, cy-1, fmt.Sprintf("▲%d", n), styleBoldRed)
 	}
 	if n := env.Upgrades(); n > 0 {
@@ -384,8 +377,6 @@ func (s Scene) drawLabel(c *Canvas, env *EnvNode) {
 	}
 }
 
-// drawFlashes rings an environment where an event just landed and floats the
-// event's name up out of it.
 func (s Scene) drawFlashes(c *Canvas) {
 	ids := make([]string, 0, len(s.Flashes))
 	for id := range s.Flashes {

@@ -59,8 +59,6 @@ type segment struct {
 	color lipgloss.Color
 }
 
-// bar draws segments as one w-cell bar, each as wide as its share of the
-// total, and never hides a nonzero segment.
 func bar(segs []segment, w int) string {
 	total := 0
 	for _, s := range segs {

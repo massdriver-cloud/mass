@@ -135,8 +135,6 @@ func BumpVersion(v string, bump Bump) string {
 	return fmt.Sprintf("%d.%d.%d", nums[0], nums[1], nums[2])
 }
 
-// versionColor shades a version by how far it trails the newest: green on
-// the newest, then amber, then red.
 func versionColor(v, latest string) lipgloss.Color {
 	switch {
 	case v == latest:
@@ -213,7 +211,6 @@ func bumpPicker(r Rollout, bump Bump) string {
 	return styleMuted.Render("What if you publish? ") + strings.Join(parts, styleFaint.Render("│"))
 }
 
-// shortVersion drops the build timestamp from a development version.
 func shortVersion(v string) string {
 	if i := strings.Index(v, "-dev."); i >= 0 {
 		return v[:i+4]

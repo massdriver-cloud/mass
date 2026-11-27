@@ -25,7 +25,6 @@ func eventColor(ev Event) lipgloss.Color {
 	}
 }
 
-// ticker is one line of the newest audit log events, newest first.
 func (m Model) ticker() string {
 	if m.replay.on || m.replay.loading || m.replay.picking || m.replay.err != nil {
 		return m.replayTicker()

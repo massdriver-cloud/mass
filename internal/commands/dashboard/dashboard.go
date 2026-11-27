@@ -36,6 +36,7 @@ func Run(ctx context.Context, api API, opts Options) error {
 	if opts.Open == nil {
 		opts.Open = OpenBrowser
 	}
+	opts.Context = ctx
 	model := NewModel(api, opts.Config)
 	final, err := tea.NewProgram(model, tea.WithAltScreen(), tea.WithOutput(opts.Out), tea.WithContext(ctx)).Run()
 	if err != nil {
@@ -58,7 +59,11 @@ func OpenBrowser(url string) error {
 	default:
 		cmd = exec.CommandContext(context.Background(), "xdg-open", url)
 	}
-	return cmd.Start()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go cmd.Wait() //nolint:errcheck // the browser's exit status is not ours to report
+	return nil
 }
 
 // RunSummary writes what the dashboard shows as plain text.
@@ -84,7 +89,7 @@ func writeEnvironments(out io.Writer, g *Graph) {
 		for _, l := range g.Producers(env.ID) {
 			producers = append(producers, l.From)
 		}
-		tbl.AddRow(env.ID, env.ProjectName, statusSummary(env), strings.Join(producers, ", "), len(env.Firing))
+		tbl.AddRow(env.ID, env.ProjectName, statusSummary(env), strings.Join(producers, ", "), env.FiringCount())
 	}
 	tbl.Print()
 }

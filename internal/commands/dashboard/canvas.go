@@ -28,7 +28,6 @@ type cell struct {
 	cont  bool
 }
 
-// braille dot bits, indexed [x][y] within a cell.
 var brailleBits = [2][4]uint8{
 	{0x01, 0x02, 0x04, 0x40},
 	{0x08, 0x10, 0x20, 0x80},

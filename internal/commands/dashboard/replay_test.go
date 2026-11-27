@@ -118,6 +118,30 @@ func TestReplayPicker(t *testing.T) {
 	}
 }
 
+func TestReplayTruncated(t *testing.T) {
+	api := withHistory([]dashboard.Event{{ID: "1"}, {ID: "2"}, {ID: "3"}}, nil)
+	api.truncated = true
+	if out := view(replayed(t, api, []string{"enter"}, 0)); !strings.Contains(out, "newest 3 only") {
+		t.Errorf("a cut-short replay should say so:\n%s", out)
+	}
+}
+
+func TestReplayIgnoresStaleHistory(t *testing.T) {
+	m, first := pressCmd(loaded(t, withHistory([]dashboard.Event{{ID: "1"}}, nil), config(&opener{}), 200, 48), "t", "enter")
+	m, second := pressCmd(m, "t", "t", "enter")
+	if first == nil || second == nil {
+		t.Fatal("each start should read the audit log")
+	}
+	next, _ := m.Update(first())
+	if out := view(next.(dashboard.Model)); !strings.Contains(out, "reading the last hour") { //nolint:errcheck,forcetypeassert // Update always returns a Model
+		t.Errorf("the cancelled read should not start the replay:\n%s", out)
+	}
+	next, _ = next.Update(second())
+	if out := view(next.(dashboard.Model)); !strings.Contains(out, "0/1") { //nolint:errcheck,forcetypeassert // Update always returns a Model
+		t.Errorf("the current read should start the replay:\n%s", out)
+	}
+}
+
 func TestReplayStops(t *testing.T) {
 	m := replayed(t, withHistory([]dashboard.Event{{ID: "1", Type: "instance.created"}}, nil), []string{"enter"}, 0)
 	out := view(press(m, "t"))

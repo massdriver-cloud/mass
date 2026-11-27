@@ -1,7 +1,6 @@
 package dashboard
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -27,8 +26,6 @@ const (
 	replaySteps = 300
 )
 
-// replay plays the audit log back onto the constellation, one step of events
-// every few frames.
 type replay struct {
 	picking bool
 	window  time.Duration
@@ -36,17 +33,19 @@ type replay struct {
 	loading bool
 	paused  bool
 	err     error
-	events  []Event
+	log     Log
 	pos     int
 	speed   int
 }
 
+// historyMsg carries the request it answers, so a replay cancelled while
+// loading cannot take the answer meant for the one that replaced it.
 type historyMsg struct {
-	events []Event
-	err    error
+	log     Log
+	err     error
+	request int
 }
 
-// toggleReplay opens the window picker, or stops a replay that is running.
 func (m Model) toggleReplay() Model {
 	window := m.replay.window
 	if window == 0 {
@@ -80,27 +79,26 @@ func (m Model) handlePickKey(key string) (Model, tea.Cmd) {
 
 func (m Model) startReplay() (Model, tea.Cmd) {
 	m.replay = replay{window: m.replay.window, loading: true, speed: 1}
-	api, since := m.api, m.cfg.Now().Add(-m.replay.window)
+	m.replayRequest++
+	api, ctx, since, request := m.api, m.ctx(), m.cfg.Now().Add(-m.replay.window), m.replayRequest
 	return m, func() tea.Msg {
-		events, err := api.History(context.Background(), since)
-		return historyMsg{events: events, err: err}
+		log, err := api.History(ctx, since)
+		return historyMsg{log: log, err: err, request: request}
 	}
 }
 
 func (m Model) applyHistory(msg historyMsg) Model {
-	if !m.replay.loading {
+	if !m.replay.loading || msg.request != m.replayRequest {
 		return m
 	}
 	m.replay.loading, m.replay.err = false, msg.err
 	if msg.err == nil {
-		m.replay.on, m.replay.events, m.flashes = true, msg.events, map[string]Flash{}
-		m.replay.speed = startSpeed(len(msg.events))
+		m.replay.on, m.replay.log, m.flashes = true, msg.log, map[string]Flash{}
+		m.replay.speed = startSpeed(len(msg.log.Events))
 	}
 	return m
 }
 
-// startSpeed is the smallest doubling of one event a step that plays n
-// events in about replaySteps steps.
 func startSpeed(n int) int {
 	speed := 1
 	for speed < replayMaxSpeed && speed*replaySteps < n {
@@ -130,7 +128,7 @@ func windowWords(d time.Duration) string {
 func (m Model) handleReplayKey(key string) Model {
 	switch key {
 	case " ":
-		if m.replay.pos >= len(m.replay.events) {
+		if m.replay.pos >= len(m.replay.log.Events) {
 			m.replay.pos = 0
 		}
 		m.replay.paused = !m.replay.paused
@@ -142,19 +140,17 @@ func (m Model) handleReplayKey(key string) Model {
 	return m
 }
 
-// advanceReplay plays the next step of events, flashing where each happened,
-// and pauses at the end.
 func (m Model) advanceReplay() Model {
 	r := m.replay
 	if !r.on || r.paused || m.frame%replayStepFrames != 0 {
 		return m
 	}
 	for range r.speed {
-		if r.pos >= len(r.events) {
+		if r.pos >= len(r.log.Events) {
 			r.paused = true
 			break
 		}
-		if ev := r.events[r.pos]; ev.EnvID != "" {
+		if ev := r.log.Events[r.pos]; ev.EnvID != "" {
 			m.flashes[ev.EnvID] = Flash{Label: EventLabel(ev)}
 		}
 		r.pos++
@@ -163,8 +159,6 @@ func (m Model) advanceReplay() Model {
 	return m
 }
 
-// replayTicker shows where the replay is: its clock, progress, speed, and the
-// events it just played.
 func (m Model) replayTicker() string {
 	r := m.replay
 	badge := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#0B0F14")).Background(colorOrange).Render(" ⏪ REPLAY ")
@@ -175,25 +169,28 @@ func (m Model) replayTicker() string {
 		return badge + styleMuted.Render(" reading the last "+windowWords(r.window)+"…")
 	case r.err != nil:
 		return badge + styleRed.Render(" could not read the audit log: "+r.err.Error())
-	case len(r.events) == 0:
+	case len(r.log.Events) == 0:
 		return badge + styleMuted.Render(" nothing happened in the last "+windowWords(r.window))
 	}
-	clock := r.events[max(r.pos-1, 0)].At.Local().Format("Mon 15:04")
+	clock := r.log.Events[max(r.pos-1, 0)].At.Local().Format("Mon 15:04")
 	state := fmt.Sprintf("×%d", r.speed)
 	if r.paused {
 		state = "paused"
 	}
-	if r.pos >= len(r.events) {
+	if r.pos >= len(r.log.Events) {
 		state = "done"
 	}
 	parts := []string{
 		badge,
 		styleTitle.Render(clock),
-		progress(r.pos, len(r.events), 24),
-		styleMuted.Render(fmt.Sprintf("%d/%d %s", r.pos, len(r.events), state)),
+		progress(r.pos, len(r.log.Events), 24),
+		styleMuted.Render(fmt.Sprintf("%d/%d %s", r.pos, len(r.log.Events), state)),
+	}
+	if r.log.Truncated {
+		parts = append(parts, styleUpgrade.Render(fmt.Sprintf("newest %d only", len(r.log.Events))))
 	}
 	for i := r.pos - 1; i >= 0 && i >= r.pos-4; i-- {
-		parts = append(parts, m.tickerItem(r.events[i], r.events[max(r.pos-1, 0)].At))
+		parts = append(parts, m.tickerItem(r.log.Events[i], r.log.Events[max(r.pos-1, 0)].At))
 	}
 	return strings.Join(parts, "  ")
 }

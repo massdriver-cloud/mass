@@ -101,6 +101,15 @@ func (e *EnvNode) Deploying() []*InstNode {
 	return out
 }
 
+// FiringCount counts the environment's firing alarms.
+func (e *EnvNode) FiringCount() int {
+	n := 0
+	for _, inst := range e.Instances {
+		n += inst.Firing
+	}
+	return n
+}
+
 // Upgrades counts the environment's instances that can upgrade.
 func (e *EnvNode) Upgrades() int {
 	n := 0
@@ -149,7 +158,7 @@ func (e *EnvNode) StatusCount(status string) int {
 // Health is the status that best describes the environment as a whole.
 func (e *EnvNode) Health() string {
 	switch {
-	case len(e.Firing) > 0 || e.StatusCount(StatusFailed) > 0:
+	case e.FiringCount() > 0 || e.StatusCount(StatusFailed) > 0:
 		return StatusFailed
 	case e.StatusCount(StatusProvisioned) > 0:
 		return StatusProvisioned
@@ -188,7 +197,8 @@ func (g *Graph) addEnv(env Environment) {
 		node.Instances = append(node.Instances, in)
 		g.instances[in.ID] = in
 		firing := firingAlarms(env.ID, inst)
-		in.Firing = len(firing)
+		// The alarm list is one page; the count covers every alarm.
+		in.Firing = max(len(firing), inst.FiringAlarmCount)
 		node.Firing = append(node.Firing, firing...)
 		if amount := inst.Cost.LastMonth.Amount; amount != nil {
 			node.Cost += *amount

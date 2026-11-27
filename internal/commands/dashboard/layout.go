@@ -56,7 +56,6 @@ func jitter(id string) float64 {
 
 const layoutIterations = 400
 
-// settle runs a Fruchterman–Reingold simulation in the unit square.
 func settle(g *Graph, opts LayoutOptions) map[string]Point {
 	envs := envOrder(g)
 	pos := make(map[string]Point, len(envs))
@@ -132,9 +131,6 @@ func cluster(envs []*EnvNode, pos, disp map[string]Point, k float64) {
 	}
 }
 
-// stackLayers puts each layer of producers on its own band of rows, keeping
-// the left-to-right order the simulation found and wrapping a layer onto more
-// rows when its labels will not fit across.
 func stackLayers(g *Graph, pos map[string]Point, half map[string]float64, w, h int) map[string]Point {
 	layers := g.Layers()
 	byLayer := map[int][]string{}
@@ -186,10 +182,8 @@ func labelHalfWidths(g *Graph) map[string]float64 {
 	return half
 }
 
-// labelRows is how many cell rows a node and its two-line label take.
 const labelRows = 5
 
-// fit scales positions into the cell box, leaving room for labels at the edges.
 func fit(pos map[string]Point, w, h int) map[string]Point {
 	minX, minY := math.Inf(1), math.Inf(1)
 	maxX, maxY := math.Inf(-1), math.Inf(-1)
@@ -214,7 +208,6 @@ func fit(pos map[string]Point, w, h int) map[string]Point {
 	return out
 }
 
-// separate nudges nodes whose labels would overlap apart, in cells.
 func separate(g *Graph, cells map[string]Point, half map[string]float64, w, h int) {
 	envs := envOrder(g)
 	for range 80 {
@@ -264,7 +257,6 @@ func sign(v float64, tie bool) float64 {
 	}
 }
 
-// clamp keeps every node and its label on the canvas.
 func clamp(cells map[string]Point, half map[string]float64, w, h int) {
 	for id, p := range cells {
 		lo := math.Max(half[id]-1, 3)
