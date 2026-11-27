@@ -108,6 +108,9 @@ type (
 		places []Place
 		err    error
 		query  string
+		// selected is the selection when the search ended, so a late answer
+		// does not undo a selection made since.
+		selected string
 	}
 )
 
@@ -317,27 +320,28 @@ func (m Model) refocus(msg refocusMsg) (Model, tea.Cmd) {
 // moves the focus there.
 func (m Model) searchDirectory(query string) (Model, tea.Cmd) {
 	if m.directory != nil {
-		return m.applyDirectory(directoryMsg{places: m.directory, query: query})
+		return m.applyDirectory(directoryMsg{places: m.directory, query: query, selected: m.selected})
 	}
-	api, ctx := m.api, m.ctx()
+	api, ctx, selected := m.api, m.ctx(), m.selected
 	return m, func() tea.Msg {
 		places, err := drain(ctx, api.Directory)
-		return directoryMsg{places: places, err: err, query: query}
+		return directoryMsg{places: places, err: err, query: query, selected: selected}
 	}
 }
 
 func (m Model) applyDirectory(msg directoryMsg) (Model, tea.Cmd) {
 	if msg.err != nil {
 		m.toast, m.toastAt = "could not search: "+clean(msg.err.Error()), m.frame
-		return m.cancelSearch(), nil
+		return m.searchFailed(msg), nil
 	}
 	m.directory = msg.places
 	p, ok := FindPlace(m.directory, msg.query)
 	if !ok {
 		m.toast, m.toastAt = "no environment matches "+clean(msg.query), m.frame
-		return m.cancelSearch(), nil
+		return m.searchFailed(msg), nil
 	}
 	if p.ID == m.focus {
+		m.selected = m.focus
 		return m, nil
 	}
 	m.focus, m.loading = p.ID, true
@@ -625,6 +629,15 @@ func (m Model) handleConstellationKey(key string) Model {
 		m.searching, m.filter, m.searchFrom = true, "", m.selected
 	}
 	return m
+}
+
+// searchFailed puts the selection back as cancelSearch does, unless the
+// selection moved or a new search started while the directory was read.
+func (m Model) searchFailed(msg directoryMsg) Model {
+	if m.searching || m.selected != msg.selected {
+		return m
+	}
+	return m.cancelSearch()
 }
 
 // cancelSearch puts the selection back where it was before the search,

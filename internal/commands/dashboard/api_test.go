@@ -24,6 +24,7 @@ type fakeAPI struct {
 	err         error
 	recent      string
 	noRecent    bool
+	dirErr      error
 	envReads    [][]string
 	eventReads  []dashboard.Log
 	eventCalls  int
@@ -105,6 +106,9 @@ func (f *fakeAPI) EnvironmentsByID(_ context.Context, ids []string, _ string) ([
 }
 
 func (f *fakeAPI) Directory(context.Context, string) ([]dashboard.Place, string, error) {
+	if f.dirErr != nil {
+		return nil, "", f.dirErr
+	}
 	var out []dashboard.Place
 	for _, page := range f.envPages {
 		for _, env := range page {
@@ -260,6 +264,7 @@ func TestFetchAroundFocus(t *testing.T) {
 		where       dashboard.Where
 		recent      string
 		noRecent    bool
+		dirErr      error
 		wantFocus   string
 		wantEnvs    []string
 		wantMissing []string

@@ -165,3 +165,37 @@ func TestSearchWithNoMatchRestoresTheSelection(t *testing.T) {
 		})
 	}
 }
+
+func TestSearchDirectoryFails(t *testing.T) {
+	api := fixture()
+	api.dirErr = errors.New("timeout")
+	m := loaded(t, api, config(&opener{}), 160, 48)
+	m, cmd := keys(m, "/", "b", "z", "z", "enter")
+	m = drive(t, m, cmd, 30)
+	if m.Selected() != "care-dev" || !strings.Contains(view(m), "could not search: timeout") {
+		t.Errorf("selected %q; a failed directory read should say so and put the selection back", m.Selected())
+	}
+}
+
+func TestSearchDirectoryAnswersLate(t *testing.T) {
+	m := loaded(t, fixture(), config(&opener{}), 160, 48)
+	m, cmd := keys(m, "/", "z", "z", "z", "enter")
+	m, _ = tabTo(t, m, "billing-dev")
+	m = drive(t, m, cmd, 1)
+	if m.Selected() != "billing-dev" {
+		t.Errorf("selected %q; a late answer should not undo a selection made since", m.Selected())
+	}
+}
+
+func TestCancelledSearchKeepsAnIncident(t *testing.T) {
+	api, n := fixture(), &notes{}
+	m, refresh := pressCmd(watching(t, api, n), "r")
+	setFiring(api, true)
+	m, _ = tabTo(t, m, "billing-dev")
+	m = press(m, "/", "b", "i", "l")
+	m = drive(t, m, refresh, 1)
+	m = press(m, "esc")
+	if m.Selected() != "care-dev" {
+		t.Errorf("selected %q; cancelling a search should leave the selection on the incident", m.Selected())
+	}
+}
