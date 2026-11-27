@@ -469,7 +469,8 @@ func (a *gqlAPI) request(ctx context.Context, op, query string, vars map[string]
 		if !paged || limit <= 1 {
 			return fmt.Errorf("%s: %w (complexity %d, maximum %d)", op, ErrTooComplex, cost, most)
 		}
-		a.setLimit(op, max(1, min(limit-1, limit*most/max(cost, 1))))
+		// The margin saves a second refusal when later pages cost a little more.
+		a.setLimit(op, max(1, min(limit-1, limit*most*9/(max(cost, 1)*10))))
 	}
 }
 
@@ -497,12 +498,16 @@ func (a *gqlAPI) setLimit(op string, limit int) {
 	if a.limits == nil {
 		a.limits = map[string]int{}
 	}
+	// Concurrent reads of one operation can be refused together; the smallest
+	// page wins so a late answer does not raise the limit back.
+	if held, ok := a.limits[op]; ok && held < limit {
+		return
+	}
 	a.limits[op] = limit
 }
 
 var complexityError = regexp.MustCompile(`complexity is (\d+) and maximum is (\d+)`)
 
-// tooComplex reads the score and the limit out of the API's refusal.
 func tooComplex(err error) (int, int, bool) {
 	if err == nil {
 		return 0, 0, false

@@ -572,8 +572,8 @@ func TestToEvent(t *testing.T) {
 	}
 }
 
-// costlyClient refuses any page over most items, as the API refuses a request
-// whose complexity is over its maximum.
+// costlyClient refuses any page over most items, and any request that is not
+// paged, as the API refuses a request whose complexity is over its maximum.
 type costlyClient struct {
 	most   int
 	limits []int
@@ -581,10 +581,10 @@ type costlyClient struct {
 
 func (c *costlyClient) MakeRequest(_ context.Context, req *graphql.Request, resp *graphql.Response) error {
 	vars, _ := req.Variables.(map[string]any)
-	cursor, _ := vars["cursor"].(map[string]any)
+	cursor, paged := vars["cursor"].(map[string]any)
 	limit, _ := cursor["limit"].(int)
 	c.limits = append(c.limits, limit)
-	if limit > c.most {
+	if !paged || limit > c.most {
 		return fmt.Errorf("input:1:1: Operation %s is too complex: complexity is %d and maximum is %d", req.OpName, limit*1000, c.most*1000)
 	}
 	raw, _ := resp.Data.(*json.RawMessage)
@@ -593,22 +593,32 @@ func (c *costlyClient) MakeRequest(_ context.Context, req *graphql.Request, resp
 }
 
 func TestTooComplexAsksForSmallerPages(t *testing.T) {
+	environments := func(api dashboard.API) error {
+		_, _, err := api.EnvironmentsByID(context.Background(), []string{"e1"}, "")
+		return err
+	}
+	recent := func(api dashboard.API) error {
+		_, err := api.RecentEnvironment(context.Background())
+		return err
+	}
 	tests := map[string]struct {
+		read       func(dashboard.API) error
 		most       int
 		wantLimits []int
 		wantErr    bool
 	}{
-		"fits":                     {most: 50, wantLimits: []int{50, 50}},
-		"retries a smaller page":   {most: 20, wantLimits: []int{50, 20, 20}},
-		"too complex for one item": {most: 0, wantLimits: []int{50, 1}, wantErr: true},
+		"fits":                     {read: environments, most: 50, wantLimits: []int{50, 50}},
+		"retries a smaller page":   {read: environments, most: 20, wantLimits: []int{50, 18, 18}},
+		"too complex for one item": {read: environments, most: 0, wantLimits: []int{50, 1}, wantErr: true},
+		"unpaged is not retried":   {read: recent, most: 50, wantLimits: []int{0}, wantErr: true},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			client := &costlyClient{most: tc.most}
 			api := dashboard.NewAPIWithClient(client, &fakeAudit{}, "acme")
-			_, _, err := api.EnvironmentsByID(context.Background(), []string{"e1"}, "")
+			err := tc.read(api)
 			if err == nil {
-				_, _, err = api.EnvironmentsByID(context.Background(), []string{"e1"}, "")
+				err = tc.read(api)
 			}
 			if tc.wantErr != errors.Is(err, dashboard.ErrTooComplex) {
 				t.Fatalf("err = %v", err)
