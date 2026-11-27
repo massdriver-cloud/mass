@@ -33,6 +33,10 @@ const (
 	eventBacklog  = time.Hour
 	eventsKept    = 40
 	toastFrames   = 50
+	// eventOverlap re-reads the tail of the last poll. An event is stamped
+	// before the transaction that writes it commits, so it can land behind
+	// events already read.
+	eventOverlap = 30 * time.Second
 )
 
 // Links builds web app URLs for what the dashboard shows.
@@ -152,7 +156,7 @@ func (m Model) fetch() tea.Cmd {
 }
 
 func (m Model) fetchEvents(initial bool) tea.Cmd {
-	api, ctx, since := m.api, m.ctx(), m.since
+	api, ctx, since := m.api, m.ctx(), m.since.Add(-eventOverlap)
 	return func() tea.Msg {
 		log, err := api.Events(ctx, since)
 		return eventsMsg{log: log, err: err, initial: initial}
@@ -268,9 +272,8 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 			m.since = ev.At
 		}
 	}
-	// Reads start at since inclusive, so only events at since can come back.
 	for id, at := range m.seen {
-		if at.Before(m.since) {
+		if at.Before(m.since.Add(-eventOverlap)) {
 			delete(m.seen, id)
 		}
 	}

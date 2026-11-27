@@ -191,7 +191,11 @@ func TestModelEvents(t *testing.T) {
 	api.eventReads = []dashboard.Log{
 		{Events: []dashboard.Event{{ID: "old", Type: "instance.created", EnvID: "care-dev", At: fixedNow().Add(-time.Hour / 2)}}},
 		{Events: []dashboard.Event{{ID: "old", Type: "instance.created", EnvID: "care-dev", At: fixedNow().Add(-time.Hour / 2)}, newest}},
-		{Events: []dashboard.Event{newest, {ID: "burst", Type: "instance.updated", EnvID: "care-dev", At: fixedNow()}}, Truncated: true},
+		{Events: []dashboard.Event{
+			{ID: "late", Type: "secret.set", At: fixedNow().Add(-10 * time.Second)},
+			newest,
+			{ID: "burst", Type: "instance.updated", EnvID: "care-dev", At: fixedNow()},
+		}, Truncated: true},
 	}
 	var m tea.Model = dashboard.NewModel(api, config(&opener{}))
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 200, Height: 48})
@@ -218,7 +222,10 @@ func TestModelEvents(t *testing.T) {
 	if strings.Count(ticker, "instance created") != 1 || strings.Count(ticker, "deployment completed") != 1 {
 		t.Errorf("an event read twice should show once:\n%s", ticker)
 	}
-	if !strings.Contains(out, "instance updated") || !strings.Contains(out, "more than 2 events since the last check") {
+	if !strings.Contains(ticker, "secret set") {
+		t.Errorf("an event committed after newer ones were read should still show:\n%s", ticker)
+	}
+	if !strings.Contains(out, "instance updated") || !strings.Contains(out, "more than 3 events since the last check") {
 		t.Errorf("a cut-short poll should show its events and say it was cut short:\n%s", out)
 	}
 }
