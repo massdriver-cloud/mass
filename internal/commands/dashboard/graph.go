@@ -2,7 +2,10 @@ package dashboard
 
 import (
 	"cmp"
+	"fmt"
+	"hash/fnv"
 	"slices"
+	"strconv"
 	"time"
 )
 
@@ -489,6 +492,19 @@ func (g *Graph) envHops(instHops map[string]int, sourceIDs []string) map[string]
 		}
 	}
 	return out
+}
+
+// Shape identifies everything a layout depends on, so a read that changes
+// none of it leaves the map where it is.
+func (g *Graph) Shape() string {
+	h := fnv.New64a()
+	for _, env := range g.Envs {
+		fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00", env.ID, env.ProjectID, env.Name, env.ProjectName)
+	}
+	for _, l := range g.EnvLinks {
+		fmt.Fprintf(h, "%s\x00%s\x00%d\x00", l.From, l.To, l.Kind)
+	}
+	return strconv.FormatUint(h.Sum64(), 16)
 }
 
 // Layers ranks environments so every producer sits above its consumers:

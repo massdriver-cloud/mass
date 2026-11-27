@@ -38,6 +38,31 @@ func TestLayout(t *testing.T) {
 	}
 }
 
+func TestLayoutFollowsSeed(t *testing.T) {
+	g := dashboard.BuildGraph(fixtureSnapshot(t))
+	tests := map[string]struct {
+		platform, billing float64
+	}{
+		"platform left":  {platform: -0.3, billing: 0.3},
+		"platform right": {platform: 0.3, billing: -0.3},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			seed := map[string]dashboard.Point{
+				"care-dev": {X: 0.2, Y: 0.1}, "platform-dev": {X: 0.2 + tc.platform, Y: 0.1}, "billing-dev": {X: 0.2 + tc.billing, Y: 0.1},
+			}
+			pos := dashboard.Layout(g, 160, 48, dashboard.LayoutOptions{Center: "care-dev", Seed: seed})
+			left := pos["platform-dev"].X < pos["care-dev"].X
+			if left != (tc.platform < 0) || (pos["billing-dev"].X < pos["care-dev"].X) == left {
+				t.Errorf("layout %v should keep the sides the seed put each environment on", pos)
+			}
+			if len(pos) != len(g.Envs) {
+				t.Errorf("placed %d of %d environments; ones new to the seed should be placed too", len(pos), len(g.Envs))
+			}
+		})
+	}
+}
+
 func TestLayoutProducersOnTop(t *testing.T) {
 	g := dashboard.BuildGraph(fixtureSnapshot(t))
 	pos := dashboard.Layout(g, 160, 48, dashboard.LayoutOptions{ProducersOnTop: true})

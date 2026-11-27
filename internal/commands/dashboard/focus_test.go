@@ -209,3 +209,21 @@ func TestSearchDirectoryAnswersDuringANewSearch(t *testing.T) {
 		t.Errorf("a late answer should not end a search that started since:\n%s", out)
 	}
 }
+
+func TestANewFocusCancelsTheReadBefore(t *testing.T) {
+	api := fixture()
+	m := loaded(t, api, config(&opener{}), 160, 48)
+	m, first := keys(m, "/", "p", "l", "a", "t", "enter")
+	m, second := keys(m, "/", "b", "i", "l", "enter")
+	m = drive(t, m, first, 30)
+	if api.cancelled == 0 {
+		t.Error("a read for a focus the view has moved past should be cancelled")
+	}
+	if m.Focus() != "billing-dev" {
+		t.Fatalf("focus = %q; a cancelled read should not undo the new focus", m.Focus())
+	}
+	m = drive(t, m, second, 30)
+	if m.Focus() != "billing-dev" || !strings.Contains(view(m), "Billing") {
+		t.Errorf("focus = %q; the latest read should land", m.Focus())
+	}
+}

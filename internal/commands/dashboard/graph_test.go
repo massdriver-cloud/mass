@@ -46,6 +46,18 @@ func TestBuildGraph(t *testing.T) {
 	}
 }
 
+func TestShape(t *testing.T) {
+	snap := fixtureSnapshot(t)
+	shape := dashboard.BuildGraph(snap).Shape()
+	if again := dashboard.BuildGraph(fixtureSnapshot(t)).Shape(); again != shape {
+		t.Errorf("the same graph has two shapes: %s and %s", shape, again)
+	}
+	snap.Environments = snap.Environments[1:]
+	if fewer := dashboard.BuildGraph(snap).Shape(); fewer == shape {
+		t.Error("a graph with an environment less should have another shape")
+	}
+}
+
 func TestHealth(t *testing.T) {
 	g := dashboard.BuildGraph(fixtureSnapshot(t))
 	tests := map[string]string{

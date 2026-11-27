@@ -2,8 +2,8 @@ package dashboard
 
 import (
 	"math"
-	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mattn/go-runewidth"
@@ -16,6 +16,11 @@ type Canvas struct {
 	W, H   int
 	cells  []cell
 	styles []lipgloss.Style
+	// textEscapes and dotEscapes hold each style's escape codes once worked out;
+	// dotEscapes outlives a frame, since dots come in a few colors.
+	textEscapes []escapes
+	textKnown   []bool
+	dotEscapes  map[lipgloss.Color]escapes
 }
 
 type cell struct {
@@ -38,6 +43,27 @@ func NewCanvas(w, h int) *Canvas {
 	w, h = max(w, 1), max(h, 1)
 	return &Canvas{W: w, H: h, cells: make([]cell, w*h)}
 }
+
+// canvases keeps canvases between frames, which would otherwise each
+// allocate a grid the size of the screen many times a second.
+var canvases = sync.Pool{New: func() any { return &Canvas{} }}
+
+func borrowCanvas(w, h int) *Canvas {
+	c, _ := canvases.Get().(*Canvas)
+	c.W, c.H = max(w, 1), max(h, 1)
+	if n := c.W * c.H; cap(c.cells) >= n {
+		c.cells = c.cells[:n]
+		clear(c.cells)
+	} else {
+		c.cells = make([]cell, n)
+	}
+	clear(c.styles)
+	c.styles = c.styles[:0]
+	c.textEscapes, c.textKnown = c.textEscapes[:0], c.textKnown[:0]
+	return c
+}
+
+func (c *Canvas) release() { canvases.Put(c) }
 
 // DotW and DotH are the canvas size in dots.
 func (c *Canvas) DotW() int { return c.W * 2 }
@@ -139,8 +165,17 @@ func (c *Canvas) Disc(center Point, r float64, color lipgloss.Color, layer int) 
 
 // Text writes s starting at cell (cx, cy), clipped to the canvas.
 func (c *Canvas) Text(cx, cy int, s string, style lipgloss.Style) {
+	c.Put(cx, cy, s, c.Style(style))
+}
+
+// Style registers a style for Put, for text drawn many times in one style.
+func (c *Canvas) Style(style lipgloss.Style) int {
 	c.styles = append(c.styles, style)
-	id := len(c.styles)
+	return len(c.styles)
+}
+
+// Put writes s starting at cell (cx, cy) in a style from Style.
+func (c *Canvas) Put(cx, cy int, s string, id int) {
 	for _, r := range s {
 		w := runewidth.RuneWidth(r)
 		if ce := c.at(cx, cy); ce != nil {
@@ -175,6 +210,7 @@ func (c *Canvas) TextCentered(cx, cy int, s string, style lipgloss.Style) {
 // Render returns the canvas as styled lines.
 func (c *Canvas) Render() string {
 	var b strings.Builder
+	b.Grow(c.W * c.H * 4)
 	for y := range c.H {
 		if y > 0 {
 			b.WriteByte('\n')
@@ -184,42 +220,71 @@ func (c *Canvas) Render() string {
 	return b.String()
 }
 
-func (c *Canvas) renderRow(b *strings.Builder, y int) {
-	var run strings.Builder
-	var runStyle lipgloss.Style
-	runKey := ""
-	flush := func() {
-		if run.Len() > 0 {
-			b.WriteString(runStyle.Render(run.String()))
-			run.Reset()
-		}
+// escapes are the codes a style writes before and after its text. Writing
+// them directly spares lipgloss measuring every run of every frame.
+type escapes struct{ before, after string }
+
+// marker is a private-use character no style rewrites.
+const marker = "\uE000"
+
+func escapesOf(style lipgloss.Style) escapes {
+	out := style.Render(marker)
+	before, after, ok := strings.Cut(out, marker)
+	if !ok {
+		return escapes{}
 	}
+	return escapes{before: before, after: after}
+}
+
+func (c *Canvas) renderRow(b *strings.Builder, y int) {
+	var cur escapes
 	for x := range c.W {
 		ce := c.cells[y*c.W+x]
 		if ce.cont {
 			continue
 		}
-		ch, style, key := c.glyph(ce)
-		if key != runKey {
-			flush()
-			runStyle, runKey = style, key
+		ch, w := c.glyph(ce)
+		if w != cur {
+			b.WriteString(cur.after)
+			b.WriteString(w.before)
+			cur = w
 		}
-		run.WriteRune(ch)
+		b.WriteRune(ch)
 	}
-	flush()
+	b.WriteString(cur.after)
 }
 
-var plain = lipgloss.NewStyle()
-
-func (c *Canvas) glyph(ce cell) (rune, lipgloss.Style, string) {
+func (c *Canvas) glyph(ce cell) (rune, escapes) {
 	switch {
 	case ce.isTxt:
-		return ce.text, c.styles[ce.style-1], "t" + strconv.Itoa(ce.style)
+		return ce.text, c.textCodes(ce.style)
 	case ce.dots != 0:
-		return rune(0x2800) + rune(ce.dots), lipgloss.NewStyle().Foreground(ce.color), "d" + string(ce.color)
+		return rune(0x2800) + rune(ce.dots), c.dotCodes(ce.color)
 	default:
-		return ' ', plain, ""
+		return ' ', escapes{}
 	}
+}
+
+func (c *Canvas) textCodes(id int) escapes {
+	for len(c.textKnown) < len(c.styles) {
+		c.textEscapes, c.textKnown = append(c.textEscapes, escapes{}), append(c.textKnown, false)
+	}
+	if !c.textKnown[id-1] {
+		c.textEscapes[id-1], c.textKnown[id-1] = escapesOf(c.styles[id-1]), true
+	}
+	return c.textEscapes[id-1]
+}
+
+func (c *Canvas) dotCodes(color lipgloss.Color) escapes {
+	if w, ok := c.dotEscapes[color]; ok {
+		return w
+	}
+	if c.dotEscapes == nil {
+		c.dotEscapes = map[lipgloss.Color]escapes{}
+	}
+	w := escapesOf(lipgloss.NewStyle().Foreground(color))
+	c.dotEscapes[color] = w
+	return w
 }
 
 // Point is a position in dots.

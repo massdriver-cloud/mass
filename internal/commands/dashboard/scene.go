@@ -64,7 +64,8 @@ const (
 
 // Render draws the scene into a w×h block of cells.
 func (s Scene) Render(w, h int) string {
-	c := NewCanvas(w, h)
+	c := borrowCanvas(w, h)
+	defer c.release()
 	s.Pos = s.unfold(c)
 	s.drawStars(c)
 	switch s.Theme {

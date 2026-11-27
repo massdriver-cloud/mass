@@ -85,3 +85,21 @@ func TestBezier(t *testing.T) {
 		}
 	}
 }
+
+func TestCanvasStyles(t *testing.T) {
+	style := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#f00"))
+	tests := map[string]func(c *dashboard.Canvas){
+		"text":         func(c *dashboard.Canvas) { c.Text(0, 0, "hi", style) },
+		"put":          func(c *dashboard.Canvas) { id := c.Style(style); c.Put(0, 0, "h", id); c.Put(1, 0, "i", id) },
+		"two in a row": func(c *dashboard.Canvas) { c.Text(0, 0, "h", style); c.Text(1, 0, "i", style) },
+	}
+	for name, draw := range tests {
+		t.Run(name, func(t *testing.T) {
+			c := dashboard.NewCanvas(2, 1)
+			draw(c)
+			if got, want := c.Render(), style.Render("hi"); ansi.Strip(got) != "hi" || (name != "two in a row" && got != want) {
+				t.Errorf("render = %q, want %q", got, want)
+			}
+		})
+	}
+}

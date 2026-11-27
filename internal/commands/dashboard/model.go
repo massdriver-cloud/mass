@@ -29,10 +29,13 @@ var tabNames = []string{"Constellation", "Runtimes", "Alarms", "Upgrades"}
 
 const (
 	frameInterval = 80 * time.Millisecond
-	introFrames   = 22
-	eventBacklog  = time.Hour
-	eventsKept    = 40
-	toastFrames   = 50
+	// motionInterval is how often the map redraws while it moves, so motion
+	// is smooth though the rest of the animation runs at frameInterval.
+	motionInterval = 16 * time.Millisecond
+	introFrames    = 22
+	eventBacklog   = time.Hour
+	eventsKept     = 40
+	toastFrames    = 50
 	// eventOverlap re-reads the tail of the last poll. An event is stamped
 	// before the transaction that writes it commits, so it can land behind
 	// events already read.
@@ -80,8 +83,8 @@ type (
 		snap *Snapshot
 		err  error
 		at   time.Time
-		// focus is the focus the read was for.
-		focus string
+		// seq is the read's place in line; only the latest read is applied.
+		seq int
 	}
 	eventsMsg struct {
 		log     Log
@@ -97,7 +100,8 @@ type (
 		initial bool
 	}
 	frameMsg     time.Time
-	refreshMsg   struct{}
+	motionMsg    time.Time
+	refreshMsg   struct{ seq int }
 	eventPollMsg struct{}
 	stashPollMsg struct{}
 	refocusMsg   struct {
@@ -151,18 +155,28 @@ type Model struct {
 	alarmIdx   int
 	upgradeIdx int
 
-	replay        replay
-	focus         string
-	shownFocus    string
-	refocusSeq    int
-	directory     []Place
-	from          map[string]Point
-	moveAt        int
+	replay      replay
+	focus       string
+	shownFocus  string
+	refocusSeq  int
+	directory   []Place
+	fetchSeq    int
+	cancelFetch context.CancelFunc
+	// refreshSeq keeps one refresh timer running: a read the focus started
+	// sets its own, and the one before it stops.
+	refreshSeq int
+
+	pan     motion
+	unfold  motion
+	clock   time.Time
+	moving  bool
+	settled map[string]Point
+	shape   string
+
 	stash         Stash
 	stashOn       bool
 	watch         watchState
 	replayRequest int
-	introAt       int
 	events        []Event
 	seen          map[string]time.Time
 	since         time.Time
@@ -170,7 +184,7 @@ type Model struct {
 	toast         string
 	toastAt       int
 	pos           map[string]Point
-	layoutKey     string
+	layoutKey     layoutKey
 }
 
 // NewModel returns a dashboard that reads from api.
@@ -182,14 +196,14 @@ func NewModel(api API, cfg Config) Model {
 		cfg.Theme = DefaultTheme
 	}
 	return Model{
-		api: api, cfg: cfg, loading: true, blastOn: true, showApps: true, introAt: -1, focus: cfg.Focus,
+		api: api, cfg: cfg, loading: true, blastOn: true, showApps: true, focus: cfg.Focus,
 		seen: map[string]time.Time{}, flashes: map[string]Flash{}, since: cfg.Now().Add(-eventBacklog),
 	}
 }
 
 // Init starts the first reads and the animation clock.
 func (m Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{m.fetch(), frame()}
+	cmds := []tea.Cmd{m.read(m.ctx(), func() {}), frame()}
 	if m.cfg.EventPoll > 0 {
 		cmds = append(cmds, m.fetchEvents(true))
 	}
@@ -200,11 +214,24 @@ func frame() tea.Cmd {
 	return tea.Tick(frameInterval, func(t time.Time) tea.Msg { return frameMsg(t) })
 }
 
-func (m Model) fetch() tea.Cmd {
-	api, ctx, now, where := m.api, m.ctx(), m.cfg.Now, Where{Focus: m.focus, Depth: m.cfg.Depth}
+// fetch reads the organization around the focus, cancelling a read still in
+// flight, whose answer would be thrown away.
+func (m Model) fetch() (Model, tea.Cmd) {
+	if m.cancelFetch != nil {
+		m.cancelFetch()
+	}
+	ctx, cancel := context.WithCancel(m.ctx())
+	m.fetchSeq++
+	m.loading, m.cancelFetch = true, cancel
+	return m, m.read(ctx, cancel)
+}
+
+func (m Model) read(ctx context.Context, done func()) tea.Cmd {
+	api, now, where, seq := m.api, m.cfg.Now, Where{Focus: m.focus, Depth: m.cfg.Depth}, m.fetchSeq
 	return func() tea.Msg {
+		defer done()
 		snap, err := Fetch(ctx, api, where)
-		return snapshotMsg{snap: snap, err: err, at: now(), focus: where.Focus}
+		return snapshotMsg{snap: snap, err: err, at: now(), seq: seq}
 	}
 }
 
@@ -295,6 +322,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if next.graph != nil {
 		next = next.withLayout(next.canvasSize())
 	}
+	if !next.moving && next.animating() {
+		next.moving = true
+		cmd = tea.Batch(cmd, motionTick())
+	}
 	// Only a key moves the focus: a search still being typed, or a selection
 	// --watch makes, does not.
 	_, key := msg.(tea.KeyMsg)
@@ -312,8 +343,8 @@ func (m Model) refocus(msg refocusMsg) (Model, tea.Cmd) {
 	if msg.seq != m.refocusSeq || m.selected != msg.id || msg.id == m.focus || env == nil || env.Restricted {
 		return m, nil
 	}
-	m.focus, m.loading = msg.id, true
-	return m, m.fetch()
+	m.focus = msg.id
+	return m.fetch()
 }
 
 // searchDirectory finds an environment that is not in view by name, and
@@ -348,25 +379,70 @@ func (m Model) applyDirectory(msg directoryMsg) (Model, tea.Cmd) {
 	}
 	// A match moves the focus even if the selection moved meanwhile: enter on
 	// the search asked to go there.
-	m.focus, m.loading = p.ID, true
-	return m, m.fetch()
+	m.focus = p.ID
+	return m.fetch()
 }
 
-// animatedPos eases each node from where it was before the focus moved to
-// where it is now. A node new to the view grows out of the new focus.
+// motion is an animation that runs for a number of frames. Once motion ticks
+// arrive it keeps time with them too, so it moves between frames.
+type motion struct {
+	on    bool
+	frame int
+	at    time.Time
+	// from is where each node was when a move started.
+	from map[string]Point
+}
+
+func motionTick() tea.Cmd {
+	return tea.Tick(motionInterval, func(t time.Time) tea.Msg { return motionMsg(t) })
+}
+
+// progress runs from 0 to 1 over frames frames.
+func (m Model) progress(mo motion, frames int) float64 {
+	if !mo.on {
+		return 1
+	}
+	t := float64(m.frame-mo.frame) / float64(frames)
+	if !mo.at.IsZero() {
+		t = max(t, float64(m.clock.Sub(mo.at))/float64(time.Duration(frames)*frameInterval))
+	}
+	return min(t, 1)
+}
+
+func (m Model) animating() bool {
+	return m.progress(m.pan, moveFrames) < 1 || m.progress(m.unfold, introFrames) < 1
+}
+
+// tickMotion moves the clock on, and keeps ticking while anything moves.
+func (m Model) tickMotion(now time.Time) (Model, tea.Cmd) {
+	m.clock = now
+	for _, mo := range []*motion{&m.pan, &m.unfold} {
+		if mo.on && mo.at.IsZero() {
+			mo.at, mo.frame = now, m.frame
+		}
+	}
+	if !m.animating() {
+		m.moving = false
+		return m, nil
+	}
+	return m, motionTick()
+}
+
+// animatedPos eases each node from where it was when the layout last
+// changed to where it is now. A node new to the view grows out of the focus.
 func (m Model) animatedPos() map[string]Point {
-	t := float64(m.frame-m.moveAt) / moveFrames
-	if m.from == nil || t >= 1 {
+	t := m.progress(m.pan, moveFrames)
+	if t >= 1 {
 		return m.pos
 	}
 	t = 1 - (1-t)*(1-t)*(1-t)
-	origin, ok := m.from[m.focus]
+	origin, ok := m.pan.from[m.focus]
 	if !ok {
 		origin = m.pos[m.focus]
 	}
 	out := make(map[string]Point, len(m.pos))
 	for id, to := range m.pos {
-		from, ok := m.from[id]
+		from, ok := m.pan.from[id]
 		if !ok {
 			from = origin
 		}
@@ -380,8 +456,14 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 	case frameMsg:
+		m.clock = time.Time(msg)
 		return m.tick(), frame()
+	case motionMsg:
+		return m.tickMotion(time.Time(msg))
 	case refreshMsg:
+		if msg.seq != m.refreshSeq {
+			return m, nil
+		}
 		return m.reload()
 	case eventPollMsg:
 		return m, m.fetchEvents(false)
@@ -412,13 +494,15 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 
 func (m Model) tick() Model {
 	m.frame++
-	flashes := make(map[string]Flash, len(m.flashes))
-	for id, f := range m.flashes {
-		if f.Age+1 < FlashFrames {
-			flashes[id] = Flash{Age: f.Age + 1, Label: f.Label}
+	if len(m.flashes) > 0 {
+		flashes := make(map[string]Flash, len(m.flashes))
+		for id, f := range m.flashes {
+			if f.Age+1 < FlashFrames {
+				flashes[id] = Flash{Age: f.Age + 1, Label: f.Label}
+			}
 		}
+		m.flashes = flashes
 	}
-	m.flashes = flashes
 	return m.advanceReplay().settleWatch()
 }
 
@@ -426,12 +510,11 @@ func (m Model) reload() (Model, tea.Cmd) {
 	if m.loading {
 		return m, nil
 	}
-	m.loading = true
-	return m, m.fetch()
+	return m.fetch()
 }
 
 func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
-	if msg.focus != m.focus {
+	if msg.seq != m.fetchSeq {
 		return m, nil
 	}
 	if msg.err != nil && m.graph != nil {
@@ -443,16 +526,13 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 	if msg.err == nil {
 		before := m.graph
 		m.snap, m.graph, m.fetched = msg.snap, BuildGraph(msg.snap), msg.at
-		m.layoutKey = ""
+		m.shape = m.graph.Shape()
 		m.focus = msg.snap.Focus
 		if m.shownFocus != m.focus {
-			if m.shownFocus != "" {
-				m.from, m.moveAt = m.pos, m.frame
-			}
 			m.shownFocus, m.selected = m.focus, m.focus
 		}
-		if m.introAt < 0 {
-			m.introAt = m.frame
+		if !m.unfold.on {
+			m.unfold = motion{on: true, frame: m.frame}
 		}
 		if m.graph.Env(m.selected) == nil {
 			m.selected = m.firstSelection()
@@ -467,7 +547,8 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 			m.stashOn = true
 		}
 	}
-	return m, tea.Batch(after(m.cfg.Refresh, refreshMsg{}), alert)
+	m.refreshSeq++
+	return m, tea.Batch(after(m.cfg.Refresh, refreshMsg{seq: m.refreshSeq}), alert)
 }
 
 // applyEvents re-reads the organization on a deployment event so rings and
@@ -514,8 +595,8 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 	}
 	m.flashes = flashes
 	if deployed && !m.loading {
-		m.loading = true
-		return m, tea.Batch(poll, m.fetch())
+		next, read := m.fetch()
+		return next, tea.Batch(poll, read)
 	}
 	return m, poll
 }
@@ -867,10 +948,10 @@ func (m Model) upgrades() []*InstNode {
 }
 
 func (m Model) intro() float64 {
-	if m.introAt < 0 {
+	if !m.unfold.on {
 		return 0
 	}
-	return math.Min(float64(m.frame-m.introAt)/introFrames, 1)
+	return m.progress(m.unfold, introFrames)
 }
 
 func (m Model) panelWidth() int {
@@ -894,13 +975,29 @@ func (m Model) canvasSize() (int, int) {
 	return max(w, 10), m.bodyHeight()
 }
 
+// layoutKey is everything a layout depends on.
+type layoutKey struct {
+	w, h                int
+	grouped, stacked    bool
+	theme, focus, shape string
+}
+
+// withLayout places the map again when anything it depends on changes, and
+// eases the nodes there from where they are on screen.
 func (m Model) withLayout(w, h int) Model {
-	key := fmt.Sprintf("%d:%d:%t:%t:%s:%s", w, h, m.grouped, m.stacked, m.cfg.Theme, m.focus)
+	key := layoutKey{w: w, h: h, grouped: m.grouped, stacked: m.stacked, theme: m.cfg.Theme, focus: m.focus, shape: m.shape}
 	if key == m.layoutKey && m.pos != nil {
 		return m
 	}
-	m.pos = LayoutTheme(m.cfg.Theme, m.graph, w, h, LayoutOptions{GroupByProject: m.grouped, ProducersOnTop: m.stacked, Center: m.focus})
-	m.layoutKey = key
+	opts := LayoutOptions{GroupByProject: m.grouped, ProducersOnTop: m.stacked, Center: m.focus, Seed: m.settled}
+	pos, settled := layoutTheme(m.cfg.Theme, m.graph, w, h, opts)
+	if m.pos != nil {
+		m.pan = motion{on: true, frame: m.frame, from: m.animatedPos()}
+	}
+	m.pos, m.layoutKey = pos, key
+	if settled != nil {
+		m.settled = settled
+	}
 	return m
 }
 

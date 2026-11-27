@@ -39,6 +39,7 @@ type fakeAPI struct {
 	scopeReads  [][]dashboard.Scope
 	annotations map[string][]dashboard.Annotation
 	annErr      error
+	cancelled   int
 }
 
 func (f *fakeAPI) StashEntries(ctx context.Context, scopes []dashboard.Scope, _ string) ([]dashboard.StashEntry, string, error) {
@@ -87,10 +88,14 @@ func (f *fakeAPI) Events(context.Context, time.Time) (dashboard.Log, error) {
 	return f.eventReads[f.eventCalls-1], nil
 }
 
-func (f *fakeAPI) EnvironmentsByID(_ context.Context, ids []string, _ string) ([]dashboard.Environment, string, error) {
+func (f *fakeAPI) EnvironmentsByID(ctx context.Context, ids []string, _ string) ([]dashboard.Environment, string, error) {
 	f.scopeMu.Lock()
+	defer f.scopeMu.Unlock()
 	f.envReads = append(f.envReads, ids)
-	f.scopeMu.Unlock()
+	if err := ctx.Err(); err != nil {
+		f.cancelled++
+		return nil, "", err
+	}
 	if f.err != nil {
 		return nil, "", f.err
 	}

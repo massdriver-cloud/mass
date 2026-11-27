@@ -18,13 +18,24 @@ type LayoutOptions struct {
 	ProducersOnTop bool
 	// Center is the environment the layout holds in the middle.
 	Center string
+	// Seed is an earlier layout's settled positions. Starting from it moves
+	// what is already on screen as little as the change allows, so a new
+	// focus pans the map rather than reshuffling it.
+	Seed map[string]Point
 }
 
 // Layout places every environment in a w×h cell box, returning each one's
 // node center in dots. The same graph and options always give the same layout.
 func Layout(g *Graph, w, h int, opts LayoutOptions) map[string]Point {
+	pos, _ := layout(g, w, h, opts)
+	return pos
+}
+
+// layout is Layout that also returns the settled positions, to seed the
+// next layout with.
+func layout(g *Graph, w, h int, opts LayoutOptions) (map[string]Point, map[string]Point) {
 	if len(g.Envs) == 0 {
-		return map[string]Point{}
+		return map[string]Point{}, nil
 	}
 	pos := settle(g, opts)
 	half := labelHalfWidths(g)
@@ -39,7 +50,7 @@ func Layout(g *Graph, w, h int, opts LayoutOptions) map[string]Point {
 	for id, p := range cells {
 		out[id] = Point{X: p.X*2 + 1, Y: p.Y*4 + 2}
 	}
-	return out
+	return out, pos
 }
 
 func envOrder(g *Graph) []*EnvNode {
@@ -56,46 +67,111 @@ func jitter(id string) float64 {
 	return float64(h.Sum32()%1000)/1000 - 0.5
 }
 
-const layoutIterations = 400
+const (
+	layoutIterations = 400
+	// A seeded layout starts near its answer, so it runs fewer, gentler
+	// steps, which also keeps it from drifting from the seed.
+	seededIterations  = 120
+	seededTemperature = 0.02
+)
 
 func settle(g *Graph, opts LayoutOptions) map[string]Point {
 	envs := envOrder(g)
-	pos := make(map[string]Point, len(envs))
+	index := make(map[string]int, len(envs))
 	for i, env := range envs {
-		angle := 2 * math.Pi * float64(i) / float64(len(envs))
-		r := 0.35 + 0.05*jitter(env.ID)
-		pos[env.ID] = Point{X: r * math.Cos(angle), Y: r * math.Sin(angle)}
+		index[env.ID] = i
 	}
+	links := make([][2]int, 0, len(g.EnvLinks))
+	for _, l := range g.EnvLinks {
+		a, okA := index[l.From]
+		b, okB := index[l.To]
+		if okA && okB {
+			links = append(links, [2]int{a, b})
+		}
+	}
+	pos, temp, iterations := seeded(envs, links, opts)
+	if pos == nil {
+		pos, temp, iterations = make([]Point, len(envs)), 0.1, layoutIterations
+		for i, env := range envs {
+			angle := 2 * math.Pi * float64(i) / float64(len(envs))
+			r := 0.35 + 0.05*jitter(env.ID)
+			pos[i] = Point{X: r * math.Cos(angle), Y: r * math.Sin(angle)}
+		}
+	}
+	center, pinned := index[opts.Center]
 	k := math.Sqrt(1.0 / float64(len(envs)))
-	temp := 0.1
-	for range layoutIterations {
-		disp := map[string]Point{}
-		repel(envs, pos, disp, k)
-		attract(g, pos, disp, k)
+	disp := make([]Point, len(envs))
+	for range iterations {
+		clear(disp)
+		repel(pos, disp, k)
+		attract(links, pos, disp, k)
 		if opts.GroupByProject {
 			cluster(envs, pos, disp, k)
 		}
-		for _, env := range envs {
-			if env.ID == opts.Center {
-				pos[env.ID] = Point{}
+		for i, p := range pos {
+			if pinned && i == center {
+				pos[i] = Point{}
 				continue
 			}
-			p, d := pos[env.ID], disp[env.ID]
+			d := disp[i]
 			dist := math.Hypot(p.X, p.Y)
 			d.X -= p.X * dist * 4 / k
 			d.Y -= p.Y * dist * 4 / k
 			length := math.Max(math.Hypot(d.X, d.Y), 1e-9)
 			step := math.Min(length, temp)
-			pos[env.ID] = Point{X: p.X + d.X/length*step, Y: p.Y + d.Y/length*step}
+			pos[i] = Point{X: p.X + d.X/length*step, Y: p.Y + d.Y/length*step}
 		}
 		temp = math.Max(temp*0.985, 0.002)
 	}
-	return pos
+	out := make(map[string]Point, len(envs))
+	for i, env := range envs {
+		out[env.ID] = pos[i]
+	}
+	return out
 }
 
-func push(disp map[string]Point, id string, dx, dy float64) {
-	d := disp[id]
-	disp[id] = Point{X: d.X + dx, Y: d.Y + dy}
+// seeded starts from the seed shifted so the center sits at the origin. An
+// environment new to the layout starts beside the neighbors it already has,
+// or out on the edge if it has none. A seed without the center is no help,
+// so settle starts afresh.
+func seeded(envs []*EnvNode, links [][2]int, opts LayoutOptions) ([]Point, float64, int) {
+	origin, ok := opts.Seed[opts.Center]
+	if !ok {
+		return nil, 0, 0
+	}
+	pos := make([]Point, len(envs))
+	placed := make([]bool, len(envs))
+	for i, env := range envs {
+		if p, ok := opts.Seed[env.ID]; ok {
+			pos[i], placed[i] = Point{X: p.X - origin.X, Y: p.Y - origin.Y}, true
+		}
+	}
+	for i, env := range envs {
+		if placed[i] {
+			continue
+		}
+		var sum Point
+		n := 0
+		for _, l := range links {
+			other := l[0]
+			if other == i {
+				other = l[1]
+			} else if l[1] != i {
+				continue
+			}
+			if placed[other] {
+				sum, n = Point{X: sum.X + pos[other].X, Y: sum.Y + pos[other].Y}, n+1
+			}
+		}
+		angle := 2 * math.Pi * (jitter(env.ID) + 0.5)
+		if n == 0 {
+			pos[i] = Point{X: 0.5 * math.Cos(angle), Y: 0.5 * math.Sin(angle)}
+		} else {
+			pos[i] = Point{X: sum.X/float64(n) + 0.05*math.Cos(angle), Y: sum.Y/float64(n) + 0.05*math.Sin(angle)}
+		}
+		placed[i] = true
+	}
+	return pos, seededTemperature, seededIterations
 }
 
 func delta(a, b Point) (float64, float64, float64) {
@@ -103,36 +179,37 @@ func delta(a, b Point) (float64, float64, float64) {
 	return dx, dy, math.Max(math.Hypot(dx, dy), 1e-3)
 }
 
-func repel(envs []*EnvNode, pos, disp map[string]Point, k float64) {
-	for i, a := range envs {
-		for _, b := range envs[i+1:] {
-			dx, dy, d := delta(pos[a.ID], pos[b.ID])
-			f := k * k / d
-			push(disp, a.ID, dx/d*f, dy/d*f)
-			push(disp, b.ID, -dx/d*f, -dy/d*f)
+func repel(pos, disp []Point, k float64) {
+	for i := range pos {
+		for j := i + 1; j < len(pos); j++ {
+			dx, dy, d := delta(pos[i], pos[j])
+			f := k * k / d / d
+			disp[i].X, disp[i].Y = disp[i].X+dx*f, disp[i].Y+dy*f
+			disp[j].X, disp[j].Y = disp[j].X-dx*f, disp[j].Y-dy*f
 		}
 	}
 }
 
-func attract(g *Graph, pos, disp map[string]Point, k float64) {
-	for _, l := range g.EnvLinks {
-		dx, dy, d := delta(pos[l.From], pos[l.To])
-		f := d * d / k
-		push(disp, l.From, -dx/d*f, -dy/d*f)
-		push(disp, l.To, dx/d*f, dy/d*f)
+func attract(links [][2]int, pos, disp []Point, k float64) {
+	for _, l := range links {
+		a, b := l[0], l[1]
+		dx, dy, d := delta(pos[a], pos[b])
+		f := d / k
+		disp[a].X, disp[a].Y = disp[a].X-dx*f, disp[a].Y-dy*f
+		disp[b].X, disp[b].Y = disp[b].X+dx*f, disp[b].Y+dy*f
 	}
 }
 
-func cluster(envs []*EnvNode, pos, disp map[string]Point, k float64) {
+func cluster(envs []*EnvNode, pos, disp []Point, k float64) {
 	for i, a := range envs {
-		for _, b := range envs[i+1:] {
-			if a.ProjectID == "" || a.ProjectID != b.ProjectID {
+		for j := i + 1; j < len(envs); j++ {
+			if a.ProjectID == "" || a.ProjectID != envs[j].ProjectID {
 				continue
 			}
-			dx, dy, d := delta(pos[a.ID], pos[b.ID])
-			f := 1.5 * d * d / k
-			push(disp, a.ID, -dx/d*f, -dy/d*f)
-			push(disp, b.ID, dx/d*f, dy/d*f)
+			dx, dy, d := delta(pos[i], pos[j])
+			f := 1.5 * d / k
+			disp[i].X, disp[i].Y = disp[i].X-dx*f, disp[i].Y-dy*f
+			disp[j].X, disp[j].Y = disp[j].X+dx*f, disp[j].Y+dy*f
 		}
 	}
 }

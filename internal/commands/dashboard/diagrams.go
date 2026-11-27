@@ -37,13 +37,20 @@ func NextTheme(name string) string {
 
 // LayoutTheme places every environment for a theme, in dots.
 func LayoutTheme(theme string, g *Graph, w, h int, opts LayoutOptions) map[string]Point {
+	pos, _ := layoutTheme(theme, g, w, h, opts)
+	return pos
+}
+
+// layoutTheme is LayoutTheme that also returns the constellation's settled
+// positions, to seed the next layout with; other themes return none.
+func layoutTheme(theme string, g *Graph, w, h int, opts LayoutOptions) (map[string]Point, map[string]Point) {
 	switch theme {
 	case ThemeMetro:
-		return MetroLayout(g, w, h)
+		return MetroLayout(g, w, h), nil
 	case ThemeRadar:
-		return RadarLayout(g, w, h, opts.Center)
+		return RadarLayout(g, w, h, opts.Center), nil
 	}
-	return Layout(g, w, h, opts)
+	return layout(g, w, h, opts)
 }
 
 // hops is how many links apart each environment is from center, following
@@ -238,12 +245,12 @@ func (s Scene) renderMetro(c *Canvas) {
 		if color == colorLink || color == colorTealDim {
 			color = projectColor(s.Graph, s.Graph.Env(l.From).ProjectID)
 		}
-		style := lipgloss.NewStyle().Foreground(color)
+		style := c.Style(lipgloss.NewStyle().Foreground(color))
 		fx, fy := cellOf(from)
 		tx, ty := cellOf(to)
 		path := append(append([][2]int{{fx, fy}}, routes[i]...), [2]int{tx, ty})
 		for j := 1; j+1 < len(path); j++ {
-			c.Text(path[j][0], path[j][1], trackGlyph(path[j-1], path[j], path[j+1], l.Kind == LinkFork), style)
+			c.Put(path[j][0], path[j][1], trackGlyph(path[j-1], path[j], path[j+1], l.Kind == LinkFork), style)
 		}
 	}
 	if s.settled() {
