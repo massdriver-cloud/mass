@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"errors"
+	"maps"
 	"slices"
 	"time"
 
@@ -72,6 +73,9 @@ type feed struct {
 	// so environments new to the view get their first read.
 	pending bool
 	touched map[Scope]map[string]time.Time
+	// known holds the scopes a read has covered. A scope's first read is
+	// what it already had, not news for the ticker.
+	known map[Scope]bool
 }
 
 // live reports whether every environment in view is streaming, so polling
@@ -131,13 +135,30 @@ func (m Model) applyStash(msg stashMsg) (Model, tea.Cmd) {
 	st := msg.read.Stash
 	st.Keep(m.stash, msg.read.Failed)
 	st.KeepTouched(m.stash, m.feed.touched, msg.at)
-	return m.takeStash(st, msg.initial), again
+	var news func(Scope) bool
+	if !msg.initial {
+		known := maps.Clone(m.feed.known)
+		news = func(s Scope) bool { return known[s] }
+	}
+	if m.feed.known == nil {
+		m.feed.known = map[Scope]bool{}
+	}
+	for _, s := range msg.read.Scopes {
+		m.feed.known[s] = true
+	}
+	return m.takeStash(st, news), again
 }
 
-func (m Model) takeStash(st Stash, initial bool) Model {
+// takeStash puts on the ticker the changes in scopes news accepts; a nil
+// news puts none there.
+func (m Model) takeStash(st Stash, news func(Scope) bool) Model {
 	var changes []StashChange
-	if !initial {
-		changes = st.Changes(m.stash)
+	if news != nil {
+		for _, c := range st.Changes(m.stash) {
+			if news(c.Scope) {
+				changes = append(changes, c)
+			}
+		}
 	}
 	m.stash = st
 	now := m.cfg.Now()
@@ -304,7 +325,7 @@ func (m Model) applyStashEvents(msg stashEventsMsg) (Model, tea.Cmd) {
 		m.feed.touched[ev.Scope][ev.Key] = now
 	}
 	if m.graph != nil {
-		m = m.takeStash(m.stash.Apply(msg.events), false)
+		m = m.takeStash(m.stash.Apply(msg.events), func(Scope) bool { return true })
 	}
 	return m, receive(msg.env, msg.gen, sub.stream)
 }

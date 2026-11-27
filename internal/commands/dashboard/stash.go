@@ -213,7 +213,9 @@ func stashScopes(envs []Environment) [][]Scope {
 // StashRead is one read of the stash. Failed holds the scopes of the
 // batches that could not be read, whose entries are unknown rather than gone.
 type StashRead struct {
-	Stash  Stash
+	Stash Stash
+	// Scopes are every scope the read asked for, read or not.
+	Scopes []Scope
 	Failed []Scope
 	Err    error
 }
@@ -244,7 +246,7 @@ func ReadStash(ctx context.Context, api API, envs []Environment) StashRead {
 		}
 		st[e.Scope][e.Key] = e
 	}
-	read := StashRead{Stash: st}
+	read := StashRead{Stash: st, Scopes: slices.Concat(batches...)}
 	for i, e := range errs {
 		if e != nil {
 			read.Err = e
