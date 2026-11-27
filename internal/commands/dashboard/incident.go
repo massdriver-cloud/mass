@@ -233,7 +233,7 @@ func (m Model) incidentBanner() string {
 	case w.resolved != nil:
 		r := w.resolved
 		text := fmt.Sprintf(" ✓ %s on %s resolved after %s ", r.incident.Alarm.Name, r.incident.Alarm.InstanceID, clock(r.after))
-		return lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#0B0F14")).Background(colorGreen).Width(m.width).Render(text)
+		return lipgloss.NewStyle().Bold(true).Foreground(colorInk).Background(colorGreen).Width(m.width).Render(text)
 	}
 	return ""
 }

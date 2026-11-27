@@ -18,6 +18,7 @@ require (
 	github.com/massdriver-cloud/airlock v0.0.10
 	github.com/massdriver-cloud/massdriver-sdk-go v0.5.1
 	github.com/mattn/go-runewidth v0.0.31
+	github.com/muesli/termenv v0.16.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/osteele/liquid v1.9.2
 	github.com/rodaine/table v1.4.0
@@ -87,7 +88,6 @@ require (
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
-	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/osteele/tuesday v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

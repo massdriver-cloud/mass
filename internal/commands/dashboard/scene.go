@@ -127,20 +127,7 @@ func hash01(x, y, salt int) float64 {
 	return float64(n%10000) / 10000
 }
 
-func (s Scene) drawStars(c *Canvas) {
-	for y := range c.DotH() {
-		for x := range c.DotW() {
-			if hash01(x, y, 7) > 0.0025 {
-				continue
-			}
-			color := colorStar
-			if hash01(x, y, s.Frame/6) < 0.25 {
-				color = colorStarLit
-			}
-			c.Dot(x, y, color, layerStars)
-		}
-	}
-}
+func (s Scene) drawStars(c *Canvas) { drawBackground(c, s.Frame) }
 
 func (s Scene) linkColor(l Link) (lipgloss.Color, int) {
 	if s.Blast != nil {

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/massdriver-cloud/mass/docs/helpdocs"
@@ -23,6 +24,7 @@ func NewCmdDashboard() *cobra.Command {
 	cmd.Flags().Duration("refresh", dashboardRefresh, "How often to re-read the organization; 0 reads once")
 	cmd.Flags().Duration("events", dashboardEvents, "How often to read new activity from the audit log; 0 turns the live ticker off")
 	cmd.Flags().Duration("stash", dashboardStash, "How often to read the stash for widgets, notes, and the live feed; 0 reads it with each refresh")
+	cmd.Flags().String("theme", dashboard.DefaultTheme, "Look of the dashboard: "+strings.Join(dashboard.Themes(), ", "))
 	cmd.Flags().Bool("watch", false, "Jump to any alarm that starts firing while the dashboard is open, and send a desktop notification")
 	return cmd
 }
@@ -47,6 +49,10 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	theme, err := cmd.Flags().GetString("theme")
+	if err != nil {
+		return err
+	}
 	watch, err := cmd.Flags().GetBool("watch")
 	if err != nil {
 		return err
@@ -63,5 +69,5 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 		StashPoll: stash,
 		Watch:     watch,
 		Links:     dashboard.NewLinks(mdClient.URLs.Helper(ctx)),
-	}})
+	}, Theme: theme})
 }

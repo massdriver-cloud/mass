@@ -6,25 +6,28 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const (
-	colorTeal      = lipgloss.Color("#5ED3B4")
-	colorTealDim   = lipgloss.Color("#2F7F6C")
-	colorGreen     = lipgloss.Color("#6CCF97")
-	colorRed       = lipgloss.Color("#F25F5C")
-	colorRedDim    = lipgloss.Color("#8E3A39")
-	colorBlue      = lipgloss.Color("#6C9EF0")
-	colorGray      = lipgloss.Color("#7C8594")
-	colorOrange    = lipgloss.Color("#F59E42")
-	colorYellow    = lipgloss.Color("#F2C94C")
-	colorLink      = lipgloss.Color("#5A6680")
-	colorLinkDim   = lipgloss.Color("#353C4C")
-	colorStar      = lipgloss.Color("#3B4252")
-	colorStarLit   = lipgloss.Color("#7B88A1")
-	colorText      = lipgloss.Color("#E6EDF3")
-	colorMuted     = lipgloss.Color("#8B95A7")
-	colorFaint     = lipgloss.Color("#4C566A")
-	colorHighlight = lipgloss.Color("#FFFFFF")
-	colorPanel     = lipgloss.Color("#3B4252")
+// The colors in use, set by UseTheme.
+var (
+	colorTeal      lipgloss.Color
+	colorTealDim   lipgloss.Color
+	colorGreen     lipgloss.Color
+	colorRed       lipgloss.Color
+	colorRedDim    lipgloss.Color
+	colorBlue      lipgloss.Color
+	colorGray      lipgloss.Color
+	colorOrange    lipgloss.Color
+	colorYellow    lipgloss.Color
+	colorLink      lipgloss.Color
+	colorLinkDim   lipgloss.Color
+	colorStar      lipgloss.Color
+	colorStarLit   lipgloss.Color
+	colorText      lipgloss.Color
+	colorMuted     lipgloss.Color
+	colorFaint     lipgloss.Color
+	colorHighlight lipgloss.Color
+	colorPanel     lipgloss.Color
+	colorNote      lipgloss.Color
+	colorInk       lipgloss.Color
 )
 
 var projectColors = []lipgloss.Color{
@@ -32,21 +35,44 @@ var projectColors = []lipgloss.Color{
 }
 
 var (
-	styleTitle    = lipgloss.NewStyle().Bold(true).Foreground(colorText)
-	styleMuted    = lipgloss.NewStyle().Foreground(colorMuted)
-	styleFaint    = lipgloss.NewStyle().Foreground(colorFaint)
-	styleTeal     = lipgloss.NewStyle().Foreground(colorTeal)
-	styleRed      = lipgloss.NewStyle().Foreground(colorRed)
-	styleBoldRed  = lipgloss.NewStyle().Bold(true).Foreground(colorRed)
-	styleHeading  = lipgloss.NewStyle().Bold(true).Foreground(colorMuted)
-	styleSelected = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#0B0F14")).Background(colorTeal)
-	styleBadge    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#0B0F14")).Background(colorGreen).Padding(0, 1)
-	styleBehind   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#0B0F14")).Background(colorOrange).Padding(0, 1)
-	styleKey      = lipgloss.NewStyle().Bold(true).Foreground(colorTeal)
-	styleUpgrade  = lipgloss.NewStyle().Bold(true).Foreground(colorYellow)
-	styleDeploy   = lipgloss.NewStyle().Bold(true).Foreground(colorBlue)
-	styleNote     = lipgloss.NewStyle().Foreground(lipgloss.Color("#C9B8F0"))
+	styleTitle    lipgloss.Style
+	styleMuted    lipgloss.Style
+	styleFaint    lipgloss.Style
+	styleTeal     lipgloss.Style
+	styleRed      lipgloss.Style
+	styleBoldRed  lipgloss.Style
+	styleHeading  lipgloss.Style
+	styleSelected lipgloss.Style
+	styleBadge    lipgloss.Style
+	styleBehind   lipgloss.Style
+	styleKey      lipgloss.Style
+	styleUpgrade  lipgloss.Style
+	styleDeploy   lipgloss.Style
+	styleNote     lipgloss.Style
 )
+
+func init() {
+	if err := UseTheme(DefaultTheme); err != nil {
+		panic(err)
+	}
+}
+
+func restyle() {
+	styleTitle = lipgloss.NewStyle().Bold(true).Foreground(colorText)
+	styleMuted = lipgloss.NewStyle().Foreground(colorMuted)
+	styleFaint = lipgloss.NewStyle().Foreground(colorFaint)
+	styleTeal = lipgloss.NewStyle().Foreground(colorTeal)
+	styleRed = lipgloss.NewStyle().Foreground(colorRed)
+	styleBoldRed = lipgloss.NewStyle().Bold(true).Foreground(colorRed)
+	styleHeading = lipgloss.NewStyle().Bold(true).Foreground(colorMuted)
+	styleSelected = lipgloss.NewStyle().Bold(true).Foreground(colorInk).Background(colorTeal)
+	styleBadge = lipgloss.NewStyle().Bold(true).Foreground(colorInk).Background(colorGreen).Padding(0, 1)
+	styleBehind = lipgloss.NewStyle().Bold(true).Foreground(colorInk).Background(colorOrange).Padding(0, 1)
+	styleKey = lipgloss.NewStyle().Bold(true).Foreground(colorTeal)
+	styleUpgrade = lipgloss.NewStyle().Bold(true).Foreground(colorYellow)
+	styleDeploy = lipgloss.NewStyle().Bold(true).Foreground(colorBlue)
+	styleNote = lipgloss.NewStyle().Foreground(colorNote)
+}
 
 func statusColor(status string) lipgloss.Color {
 	switch status {

@@ -161,7 +161,7 @@ func (m Model) advanceReplay() Model {
 
 func (m Model) replayTicker() string {
 	r := m.replay
-	badge := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#0B0F14")).Background(colorOrange).Render(" ⏪ REPLAY ")
+	badge := lipgloss.NewStyle().Bold(true).Foreground(colorInk).Background(colorOrange).Render(" ⏪ REPLAY ")
 	switch {
 	case r.picking:
 		return badge + " " + windowPicker(r.window)

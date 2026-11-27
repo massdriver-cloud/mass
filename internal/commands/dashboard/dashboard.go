@@ -19,6 +19,8 @@ import (
 type Options struct {
 	Config
 	Out *os.File
+	// Theme names the look; empty is the default.
+	Theme string
 }
 
 // Run opens the dashboard when Out is a terminal, and otherwise writes a
@@ -29,6 +31,11 @@ func Run(ctx context.Context, api API, opts Options) error {
 	}
 	if opts.Now == nil {
 		opts.Now = time.Now
+	}
+	if opts.Theme != "" {
+		if err := UseTheme(opts.Theme); err != nil {
+			return err
+		}
 	}
 	if !cli.IsInteractive(opts.Out) {
 		return RunSummary(ctx, api, opts.Out, opts.Now())

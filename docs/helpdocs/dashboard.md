@@ -18,6 +18,8 @@ The dashboard follows the stash as a feed, reading it every few seconds (`--stas
 
 With `--watch`, an alarm that starts firing takes the view to its environment, locks on, shows its blast radius under a banner that counts up, and rings the terminal with a desktop notification. When it clears, the banner says how long it lasted and the view goes back where it was.
 
+`--theme` changes the look: `constellation` (the default) draws on a starfield, `rain` on falling green streams, and `blueprint` on a drafting grid.
+
 When the output is not a terminal, `mass dashboard` prints the same data as tables.
 
 ## Examples
@@ -26,5 +28,6 @@ When the output is not a terminal, `mass dashboard` prints the same data as tabl
 mass dashboard
 mass dashboard --refresh 10s --events 2s --stash 1s
 mass dashboard --watch
+mass dashboard --theme rain
 mass dashboard --profile production | less
 ```
