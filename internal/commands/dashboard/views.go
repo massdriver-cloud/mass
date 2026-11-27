@@ -57,7 +57,7 @@ func (m Model) constellationBody(h int) string {
 	canvasW, _ := m.canvasSize()
 	blast := m.blast()
 	scene := Scene{
-		Graph: m.graph, Pos: m.pos, Selected: m.selected, Blast: blast,
+		Graph: m.graph, Pos: m.animatedPos(), Selected: m.selected, Blast: blast, Theme: m.cfg.Theme,
 		ShowApps: m.showApps, GroupByProject: m.grouped, ShowCost: m.showCost, Filter: m.filter,
 		Frame: m.frame, Intro: m.intro(), Flashes: m.flashes,
 	}
@@ -66,7 +66,7 @@ func (m Model) constellationBody(h int) string {
 	if panelW == 0 && m.help {
 		return m.helpBox(h, Legend(m.cfg.Watch, m.snap.AnnotationsErr))
 	}
-	canvas := scene.Render(canvasW, h)
+	canvas := overlayFirstLine(scene.Render(canvasW, h), m.bannerStrip(canvasW))
 	if panelW == 0 {
 		return canvas
 	}
@@ -77,6 +77,28 @@ func (m Model) constellationBody(h int) string {
 		panel = EnvDetail(m.graph, m.graph.Env(m.selected), blast, m.cfg.Now(), panelW)
 	}
 	return lipgloss.JoinHorizontal(lipgloss.Top, canvas, m.panel(panel, panelW, h))
+}
+
+// bannerStrip runs the selected environment's banner across the top of the
+// map, or else the most urgent banner in view.
+func (m Model) bannerStrip(w int) string {
+	env := m.graph.Env(m.selected)
+	if env == nil || env.Banner == nil {
+		env = nil
+		rank := map[string]int{"error": 3, "warning": 2}
+		best := -1
+		for _, e := range m.graph.Envs {
+			if e.Banner != nil && rank[e.Banner.Level] > best {
+				env, best = e, rank[e.Banner.Level]
+			}
+		}
+	}
+	if env == nil {
+		return ""
+	}
+	text := " ⚑ " + envLabel(m.graph, env.ID) + " · " + env.Banner.Message + " "
+	return lipgloss.NewStyle().Bold(true).Foreground(colorInk).Background(levelColor(env.Banner.Level)).
+		MaxWidth(w).Width(w).Render(clip(text, w))
 }
 
 func (m Model) panel(content string, w, h int) string {
@@ -307,7 +329,7 @@ func (m Model) footer() string {
 		}
 		keys = append(keys, [][2]string{
 			{"/", "find"}, {"b", toggle("blast", m.blastOn)}, {"a", toggle("apps", m.showApps)},
-			{"c", toggle("cost", m.showCost)}, {"g", toggle("projects", m.grouped)}, {"s", toggle("producers on top", m.stacked)},
+			{"c", toggle("cost", m.showCost)}, {"g", toggle("projects", m.grouped)}, {"s", toggle("producers on top", m.stacked)}, {"v", m.cfg.Theme},
 		}...)
 	case TabRuntimes:
 		keys = append(keys, [2]string{"0/p/m/M", "what if"})

@@ -25,6 +25,12 @@ func EnvDetail(g *Graph, env *EnvNode, blast *Blast, now time.Time, w int) strin
 		line(styleMuted.Render(wrap("Instances you can view use resources from this environment, but you cannot view it.", w)))
 		return b.String()
 	}
+	if env.Unloaded {
+		line(styleMuted.Render(clip(env.ID, w)))
+		line("")
+		line(styleMuted.Render(wrap("Past the edge of the view. It links to an environment in view; focus on it to read it and what it links to.", w)))
+		return b.String()
+	}
 	line(styleMuted.Render(clip(env.ProjectName+" · "+env.ID, w)))
 	if env.ParentID != "" {
 		line(styleFaint.Render(clip("forked from "+env.ParentID, w)))

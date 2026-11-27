@@ -97,12 +97,12 @@ func view(m dashboard.Model) string {
 
 func TestModelLoads(t *testing.T) {
 	m := loaded(t, fixture(), config(&opener{}), 200, 48)
-	if m.Selected() != "platform-dev" {
-		t.Errorf("selected = %q, want the environment with the newest firing alarm", m.Selected())
+	if m.Selected() != "care-dev" {
+		t.Errorf("selected = %q, want the most recently deployed environment", m.Selected())
 	}
 	out := view(m)
 	for _, want := range []string{
-		"acme", "1 Constellation", "5 environments · 4 projects", "⟳ 1 deploying", "↑ 1", "$1.2k/mo", "1 alarming",
+		"acme", "1 Constellation", "3 environments · 3 projects", "⟳ 1 deploying", "↑ 1", "$1.2k/mo", "1 alarming",
 		"BLAST RADIUS", "b blast ●", "LIVE", "waiting for activity", "o open",
 	} {
 		if !strings.Contains(out, want) {
@@ -126,7 +126,7 @@ func TestModelKeys(t *testing.T) {
 		{name: "upgrades tab", keys: []string{"4"}, wantTab: dashboard.TabUpgrades, wantView: []string{"UPGRADES AVAILABLE (1)", "care-dev-app", "care-app", "0.1.0 → 0.2.0"}},
 		{name: "upgrade to map", keys: []string{"4", "down", "enter"}, wantTab: dashboard.TabConstellation, wantSelected: "care-dev"},
 		{name: "find", keys: []string{"/", "b", "i", "l", "enter"}, wantSelected: "billing-dev"},
-		{name: "find then clear", keys: []string{"/", "z", "z", "backspace", "esc"}, wantSelected: "platform-dev"},
+		{name: "find then clear", keys: []string{"/", "z", "z", "backspace", "esc"}, wantSelected: "care-dev"},
 		{
 			name: "toggles", keys: []string{"b", "a", "c", "g", "s"},
 			wantView: []string{"b blast ○", "a apps ○", "c cost ●", "g projects ●", "s producers on top ●"},
@@ -159,7 +159,7 @@ func TestModelOpens(t *testing.T) {
 		wantURL   string
 		wantToast string
 	}{
-		{name: "environment", keys: []string{"o"}, wantURL: "https://app/env/platform-dev", wantToast: "opened https://app/env/platform-dev"},
+		{name: "environment", keys: []string{"o"}, wantURL: "https://app/env/care-dev", wantToast: "opened https://app/env/care-dev"},
 		{name: "alarm", keys: []string{"3", "o"}, wantURL: "https://app/inst/platform-dev-db", wantToast: "opened"},
 		{name: "upgrade", keys: []string{"4", "o"}, wantURL: "https://app/inst/care-dev-app", wantToast: "opened"},
 		{name: "runtime without a browser", keys: []string{"2", "o"}, wantURL: "https://app/rt/ecs", wantToast: "could not open a browser: https://app/rt/ecs"},
@@ -204,7 +204,7 @@ func TestModelEvents(t *testing.T) {
 	if api.eventCalls < 3 {
 		t.Fatalf("read events %d times, want polls after the first read", api.eventCalls)
 	}
-	if got := len(api.cursors); got < 4 {
+	if got := len(api.envReads); got < 4 {
 		t.Errorf("read environment pages %d times, want a re-read after the deployment event", got)
 	}
 	out := view(model)
@@ -237,7 +237,7 @@ func TestModelMovesSelection(t *testing.T) {
 		m = press(m, key)
 		seen[m.Selected()] = true
 	}
-	if len(seen) < 6 {
+	if len(seen) < 4 {
 		t.Errorf("visited %v, want every environment", seen)
 	}
 }
@@ -272,7 +272,7 @@ func TestModelNarrow(t *testing.T) {
 
 func TestModelError(t *testing.T) {
 	m := loaded(t, &fakeAPI{err: errors.New("unauthorized")}, config(&opener{}), 100, 30)
-	if out := view(m); !strings.Contains(out, "Could not read the dashboard: list environments: unauthorized") {
+	if out := view(m); !strings.Contains(out, "Could not read the dashboard: find the most recent environment: unauthorized") {
 		t.Errorf("view = %s", out)
 	}
 }

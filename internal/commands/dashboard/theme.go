@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// The colors in use, set by UseTheme.
+// The colors in use, set by UsePalette.
 var (
 	colorTeal      lipgloss.Color
 	colorTealDim   lipgloss.Color
@@ -52,7 +52,7 @@ var (
 )
 
 func init() {
-	if err := UseTheme(DefaultTheme); err != nil {
+	if err := UsePalette(DefaultPalette); err != nil {
 		panic(err)
 	}
 }

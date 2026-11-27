@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -20,7 +22,9 @@ type fakeAPI struct {
 	runtimes    []dashboard.Runtime
 	apps        []dashboard.Application
 	err         error
-	cursors     []string
+	recent      string
+	noRecent    bool
+	envReads    [][]string
 	eventReads  []dashboard.Log
 	eventCalls  int
 	history     []dashboard.Event
@@ -82,20 +86,60 @@ func (f *fakeAPI) Events(context.Context, time.Time) (dashboard.Log, error) {
 	return f.eventReads[f.eventCalls-1], nil
 }
 
-func (f *fakeAPI) Environments(_ context.Context, cursor string) ([]dashboard.Environment, string, error) {
-	f.cursors = append(f.cursors, cursor)
+func (f *fakeAPI) EnvironmentsByID(_ context.Context, ids []string, _ string) ([]dashboard.Environment, string, error) {
+	f.scopeMu.Lock()
+	f.envReads = append(f.envReads, ids)
+	f.scopeMu.Unlock()
 	if f.err != nil {
 		return nil, "", f.err
 	}
-	idx := 0
-	if cursor != "" {
-		idx = int(cursor[0] - '0')
+	var out []dashboard.Environment
+	for _, page := range f.envPages {
+		for _, env := range page {
+			if slices.Contains(ids, env.ID) {
+				out = append(out, env)
+			}
+		}
 	}
-	next := ""
-	if idx+1 < len(f.envPages) {
-		next = string(rune('0' + idx + 1))
+	return out, "", nil
+}
+
+func (f *fakeAPI) Directory(context.Context, string) ([]dashboard.Place, string, error) {
+	var out []dashboard.Place
+	for _, page := range f.envPages {
+		for _, env := range page {
+			out = append(out, dashboard.Place{ID: env.ID, Name: env.Name, Project: env.Project})
+		}
 	}
-	return f.envPages[idx], next, nil
+	return out, "", nil
+}
+
+func (f *fakeAPI) RecentEnvironment(context.Context) (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	if f.noRecent {
+		return "", nil
+	}
+	if f.recent != "" {
+		return f.recent, nil
+	}
+	return "care-dev", nil
+}
+
+// all loads every environment of the fixture.
+func (f *fakeAPI) all() []dashboard.Environment {
+	var out []dashboard.Environment
+	for _, page := range f.envPages {
+		out = append(out, page...)
+	}
+	return out
+}
+
+func usedBy(instanceID, envID string) dashboard.InstanceResource {
+	return dashboard.InstanceResource{Resource: dashboard.ProducedResource{RemoteReferences: dashboard.RemoteReferences{
+		Items: []dashboard.RemoteReference{{Instance: &dashboard.ResourceInstance{ID: instanceID, Environment: ref(envID, "")}}},
+	}}}
 }
 
 func (f *fakeAPI) Runtimes(context.Context, string) ([]dashboard.Runtime, string, error) {
@@ -132,10 +176,12 @@ func fixture() *fakeAPI {
 	}}
 	platform := dashboard.Environment{ID: "platform-dev", Name: "Development", Project: ref("platform", "Platform"), Instances: []dashboard.Instance{
 		{ID: "platform-dev-network", Status: "PROVISIONED"},
-		{ID: "platform-dev-db", Status: "PROVISIONED", Alarms: firing, Cost: usd(1250), Component: ref("platform-db", ""), Dependencies: []dashboard.Dependency{dependsOn("platform-dev-network", "platform-dev")}},
+		{ID: "platform-dev-db", Status: "PROVISIONED", Alarms: firing, Cost: usd(1250), Component: ref("platform-db", ""),
+			Resources: []dashboard.InstanceResource{usedBy("care-dev-app", "care-dev")}, Dependencies: []dashboard.Dependency{dependsOn("platform-dev-network", "platform-dev")}},
 	}}
 	care := dashboard.Environment{ID: "care-dev", Name: "Development", Project: ref("care", "Care"), Instances: []dashboard.Instance{
 		{ID: "care-dev-app", Status: "PROVISIONED", Bundle: appBundle("care-app", "0.1.0", "1.0.0"), Component: ref("care-app", ""),
+			Resources:       []dashboard.InstanceResource{usedBy("billing-dev-app", "billing-dev")},
 			DeployedVersion: "0.1.0", AvailableUpgrade: "0.2.0",
 			Dependencies: []dashboard.Dependency{dependsOn("platform-dev-db", "platform-dev"), dependsOn("secret-vpc", "secret-prod")}},
 		{ID: "care-dev-queue", Status: "INITIALIZED", AvailableUpgrade: "1.0.0",
@@ -160,12 +206,15 @@ func fixture() *fakeAPI {
 	}
 }
 
+// fixtureSnapshot is the whole fixture, every environment loaded.
 func fixtureSnapshot(t *testing.T) *dashboard.Snapshot {
 	t.Helper()
-	snap, err := dashboard.Fetch(context.Background(), fixture())
+	api := fixture()
+	snap, err := dashboard.Fetch(context.Background(), api, dashboard.Where{Focus: "care-dev"})
 	if err != nil {
 		t.Fatal(err)
 	}
+	snap.Environments, snap.Missing = api.all(), []string{"secret-prod"}
 	return snap
 }
 
@@ -180,7 +229,7 @@ func TestFetchCleansPublisherText(t *testing.T) {
 	billing.LatestProvision.Bundle.Name = "billing-app\x1b]0;x\x07"
 	billing.LatestProvision.Bundle.Runtime.Name = "ecs\x1b[2J"
 
-	snap, err := dashboard.Fetch(context.Background(), api)
+	snap, err := dashboard.Fetch(context.Background(), api, dashboard.Where{Focus: "care-dev"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,35 +254,80 @@ func TestFetchCleansPublisherText(t *testing.T) {
 	}
 }
 
-func TestFetch(t *testing.T) {
+func TestFetchAroundFocus(t *testing.T) {
 	tests := []struct {
-		name     string
-		api      *fakeAPI
-		wantEnvs int
-		wantErr  bool
+		name        string
+		where       dashboard.Where
+		recent      string
+		noRecent    bool
+		wantFocus   string
+		wantEnvs    []string
+		wantMissing []string
+		wantErr     string
 	}{
-		{name: "reads every page", api: fixture(), wantEnvs: 5},
-		{name: "reports a failed page", api: &fakeAPI{err: errors.New("boom")}, wantErr: true},
+		{
+			name: "the most recent environment and its neighbors", wantFocus: "care-dev",
+			wantEnvs: []string{"care-dev", "platform-dev", "billing-dev"}, wantMissing: []string{"secret-prod"},
+		},
+		{
+			name: "a consumer found through the resources it uses", where: dashboard.Where{Focus: "platform-dev"}, wantFocus: "platform-dev",
+			wantEnvs: []string{"platform-dev", "care-dev"},
+		},
+		{
+			name: "two hops out", where: dashboard.Where{Focus: "billing-dev", Depth: 2}, wantFocus: "billing-dev",
+			wantEnvs: []string{"billing-dev", "care-dev", "platform-dev"}, wantMissing: []string{"secret-prod"},
+		},
+		{
+			name: "a fork and its parent", where: dashboard.Where{Focus: "sandbox-demo"}, wantFocus: "sandbox-demo",
+			wantEnvs: []string{"sandbox-demo", "sandbox-template"},
+		},
+		{name: "an environment that is not there", where: dashboard.Where{Focus: "nope"}, wantErr: `environment "nope": not found`},
+		{name: "an organization with nothing deployed", recent: "-", wantErr: "no environments to show"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			snap, err := dashboard.Fetch(context.Background(), tc.api)
-			if tc.wantErr {
-				if err == nil {
-					t.Fatal("want error")
+			api := fixture()
+			if tc.recent == "-" {
+				api.envPages = nil
+				api.recent = ""
+				api.noRecent = true
+			}
+			snap, err := dashboard.Fetch(context.Background(), api, tc.where)
+			if tc.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+					t.Fatalf("err = %v, want %q", err, tc.wantErr)
 				}
 				return
 			}
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := len(snap.Environments); got != tc.wantEnvs {
-				t.Errorf("environments = %d, want %d", got, tc.wantEnvs)
+			var got []string
+			for _, env := range snap.Environments {
+				got = append(got, env.ID)
 			}
-			if want := []string{"", "1"}; len(tc.api.cursors) != 2 || tc.api.cursors[1] != want[1] {
-				t.Errorf("cursors = %v, want %v", tc.api.cursors, want)
+			if snap.Focus != tc.wantFocus || !equal(got, tc.wantEnvs) || !equal(snap.Missing, tc.wantMissing) {
+				t.Errorf("focus %s, envs %v, missing %v; want %s, %v, %v", snap.Focus, got, snap.Missing, tc.wantFocus, tc.wantEnvs, tc.wantMissing)
 			}
 		})
+	}
+	if _, err := dashboard.Fetch(context.Background(), &fakeAPI{err: errors.New("boom")}, dashboard.Where{}); err == nil {
+		t.Error("a failed read should be reported")
+	}
+}
+
+func TestFindPlace(t *testing.T) {
+	places := []dashboard.Place{
+		{ID: "billing-dev", Name: "Development", Project: ref("billing", "Billing")},
+		{ID: "care-dev", Name: "Development", Project: ref("care", "Care")},
+		{ID: "care-prod", Name: "Production", Project: ref("care", "Care")},
+	}
+	tests := map[string]string{"care-prod": "care-prod", "care": "care-dev", "production": "care-prod", "billing development": "", "  ": ""}
+	for query, want := range tests {
+		got, ok := dashboard.FindPlace(places, query)
+		if (want == "") == ok || got.ID != want {
+			t.Errorf("FindPlace(%q) = %q, %v; want %q", query, got.ID, ok, want)
+		}
 	}
 }
 
@@ -257,21 +351,30 @@ func TestNewAPIWithClient(t *testing.T) {
 		"dashboardEnvironments": `{"environments":{"cursor":{"next":"c2"},"items":[{"id":"e1","name":"Dev","instances":[{"id":"i1","status":"PROVISIONED"}]}]}}`,
 		"dashboardRuntimes":     `{"runtimes":{"cursor":{"next":null},"items":[{"id":"ecs","latest":{"version":"1.0.0"},"adoption":[]}]}}`,
 		"dashboardApplications": `{"applications":{"cursor":{"next":null},"items":[{"id":"app","latest":{"version":"0.1.0","runtime":{"name":"ecs","version":"1.0.0"}}}]}}`,
+		"dashboardDirectory":    `{"environments":{"cursor":{"next":null},"items":[{"id":"e1","name":"Dev","project":{"id":"p","name":"P"}}]}}`,
+		"dashboardRecent":       `{"deployments":{"items":[{"instance":null},{"instance":{"id":"i9","environment":{"id":"e9"}}}]},"environments":{"items":[{"id":"e1"}]}}`,
 	}}
 	audit := &fakeAudit{page: types.Page[types.AuditLog]{Items: []types.AuditLog{{ID: "a1", Type: "deployment.completed"}}}}
 	api := dashboard.NewAPIWithClient(client, audit, "acme")
 	ctx := context.Background()
 
-	envs, next, err := api.Environments(ctx, "c1")
+	envs, next, err := api.EnvironmentsByID(ctx, []string{"e1"}, "c1")
 	if err != nil || next != "c2" || len(envs) != 1 || envs[0].Instances[0].ID != "i1" {
-		t.Fatalf("Environments = %v, %q, %v", envs, next, err)
+		t.Fatalf("EnvironmentsByID = %v, %q, %v", envs, next, err)
 	}
 	vars, ok := client.reqs[0].Variables.(map[string]any)
-	if !ok || vars["organizationId"] != "acme" {
+	if !ok || vars["organizationId"] != "acme" || !equal(vars["ids"].([]string), []string{"e1"}) { //nolint:errcheck,forcetypeassert // the request sets ids
 		t.Fatalf("variables = %v", client.reqs[0].Variables)
 	}
 	if cursor, ok := vars["cursor"].(map[string]any); !ok || cursor["next"] != "c1" {
 		t.Errorf("cursor = %v", vars["cursor"])
+	}
+	places, _, err := api.Directory(ctx, "")
+	if err != nil || len(places) != 1 || places[0].Project.Name != "P" {
+		t.Errorf("Directory = %v, %v", places, err)
+	}
+	if recent, recentErr := api.RecentEnvironment(ctx); recentErr != nil || recent != "e9" {
+		t.Errorf("RecentEnvironment = %q, %v; want the environment of the newest deployment", recent, recentErr)
 	}
 
 	runtimes, next, err := api.Runtimes(ctx, "")

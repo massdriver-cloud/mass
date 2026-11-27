@@ -53,12 +53,15 @@ func graphOf(t *testing.T, api *fakeAPI) *dashboard.Graph {
 	return g
 }
 
+// fixtureSnapshotFrom reads api's runtimes, applications, and annotations,
+// with every one of its environments loaded.
 func fixtureSnapshotFrom(t *testing.T, api *fakeAPI) *dashboard.Snapshot {
 	t.Helper()
-	snap, err := dashboard.Fetch(t.Context(), api)
+	snap, err := dashboard.Fetch(t.Context(), api, dashboard.Where{Focus: "care-dev"})
 	if err != nil {
 		t.Fatal(err)
 	}
+	snap.Environments, snap.Missing = api.all(), []string{"secret-prod"}
 	return snap
 }
 

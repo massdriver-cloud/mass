@@ -22,7 +22,9 @@ import (
 // API is the narrow surface the dashboard reads from. Each call returns one
 // page and the cursor for the next, empty on the last page.
 type API interface {
-	Environments(ctx context.Context, cursor string) ([]Environment, string, error)
+	EnvironmentsByID(ctx context.Context, ids []string, cursor string) ([]Environment, string, error)
+	Directory(ctx context.Context, cursor string) ([]Place, string, error)
+	RecentEnvironment(ctx context.Context) (string, error)
 	Runtimes(ctx context.Context, cursor string) ([]Runtime, string, error)
 	Applications(ctx context.Context, cursor string) ([]Application, string, error)
 	StashEntries(ctx context.Context, scopes []Scope, cursor string) ([]StashEntry, string, error)
@@ -64,18 +66,19 @@ type Ref struct {
 
 // Instance is one instance and what it depends on.
 type Instance struct {
-	ID               string       `json:"id"`
-	Status           string       `json:"status"`
-	DeployedVersion  string       `json:"deployedVersion"`
-	AvailableUpgrade string       `json:"availableUpgrade"`
-	FiringAlarmCount int          `json:"firingAlarmCount"`
-	Component        *Ref         `json:"component"`
-	Bundle           *Bundle      `json:"bundle"`
-	LatestProvision  *Provision   `json:"latestProvision"`
-	LatestDeployment *Deployment  `json:"latestDeployment"`
-	Alarms           AlarmsPage   `json:"alarms"`
-	Dependencies     []Dependency `json:"dependencies"`
-	Cost             Cost         `json:"cost"`
+	ID               string             `json:"id"`
+	Status           string             `json:"status"`
+	DeployedVersion  string             `json:"deployedVersion"`
+	AvailableUpgrade string             `json:"availableUpgrade"`
+	FiringAlarmCount int                `json:"firingAlarmCount"`
+	Component        *Ref               `json:"component"`
+	Resources        []InstanceResource `json:"resources"`
+	Bundle           *Bundle            `json:"bundle"`
+	LatestProvision  *Provision         `json:"latestProvision"`
+	LatestDeployment *Deployment        `json:"latestDeployment"`
+	Alarms           AlarmsPage         `json:"alarms"`
+	Dependencies     []Dependency       `json:"dependencies"`
+	Cost             Cost               `json:"cost"`
 }
 
 // Bundle is the bundle version an instance or application uses. Runtime is
@@ -170,7 +173,13 @@ type Application struct {
 
 // Snapshot is everything the dashboard shows, read at one moment.
 type Snapshot struct {
+	// Focus is the environment the view is centered on, and Environments the
+	// ones within reach of it.
+	Focus        string
 	Environments []Environment
+	// Missing are environments within reach that could not be read, because
+	// they are gone or you cannot view them.
+	Missing      []string
 	Runtimes     []Runtime
 	Applications []Application
 	Annotations  []Annotation
@@ -179,12 +188,30 @@ type Snapshot struct {
 	AnnotationsErr error
 }
 
-// Fetch reads every page of environments, runtimes, and applications.
-func Fetch(ctx context.Context, api API) (*Snapshot, error) {
-	snap := &Snapshot{}
+// Where says what to center the dashboard on and how far out to read.
+type Where struct {
+	// Focus is an environment id; empty means the most recently deployed.
+	Focus string
+	Depth int
+}
+
+// Fetch reads the environments within reach of the focus, and every
+// runtime and application.
+func Fetch(ctx context.Context, api API, where Where) (*Snapshot, error) {
+	snap := &Snapshot{Focus: where.Focus}
+	if snap.Focus == "" {
+		recent, err := api.RecentEnvironment(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("find the most recent environment: %w", err)
+		}
+		if recent == "" {
+			return nil, ErrNoEnvironments
+		}
+		snap.Focus = recent
+	}
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() (err error) {
-		snap.Environments, err = drainAs(groupCtx, "list environments", api.Environments)
+		snap.Environments, snap.Missing, err = loadAround(groupCtx, api, snap.Focus, where.Depth)
 		return err
 	})
 	group.Go(func() (err error) {
@@ -362,27 +389,6 @@ func ToEvent(log types.AuditLog) Event {
 	return ev
 }
 
-const environmentsQuery = `query dashboardEnvironments($organizationId: ID!, $cursor: Cursor) {
-  environments(organizationId: $organizationId, sort: {field: CREATED_AT, order: DESC}, cursor: $cursor) {
-    cursor { next }
-    items {
-      id name createdAt
-      project { id name }
-      parent { id }
-      instances {
-        id status deployedVersion availableUpgrade firingAlarmCount
-        component { id }
-        bundle { name version runtime { name version } }
-        latestProvision { createdAt bundle { name version runtime { name version } } }
-        latestDeployment { status action createdAt }
-        cost { lastMonth { amount currency } }
-        alarms { items { displayName currentState { status message occurredAt } } }
-        dependencies { field resource { id origin instance { id environment { id } } } }
-      }
-    }
-  }
-}`
-
 const runtimesQuery = `query dashboardRuntimes($organizationId: ID!, $cursor: Cursor) {
   runtimes(organizationId: $organizationId, cursor: $cursor) {
     cursor { next }
@@ -404,14 +410,6 @@ type page[T any] struct {
 		Next string `json:"next"`
 	} `json:"cursor"`
 	Items []T `json:"items"`
-}
-
-func (a *gqlAPI) Environments(ctx context.Context, cursor string) ([]Environment, string, error) {
-	var data struct {
-		Page page[Environment] `json:"environments"`
-	}
-	err := a.query(ctx, "dashboardEnvironments", environmentsQuery, cursor, &data)
-	return data.Page.Items, data.Page.Cursor.Next, err
 }
 
 func (a *gqlAPI) Runtimes(ctx context.Context, cursor string) ([]Runtime, string, error) {

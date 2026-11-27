@@ -105,7 +105,7 @@ func TestReplayPicker(t *testing.T) {
 			t.Errorf("picker is missing %q:\n%s", want, out)
 		}
 	}
-	if m.Selected() != "platform-dev" || press(m, "down").Selected() != "platform-dev" {
+	if m.Selected() != "care-dev" || press(m, "down").Selected() != "care-dev" {
 		t.Error("arrows pick a window, not an environment")
 	}
 	for _, cancel := range []string{"esc", "t"} {

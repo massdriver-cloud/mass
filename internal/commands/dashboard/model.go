@@ -62,6 +62,13 @@ type Config struct {
 	Links     Links
 	// Open opens a URL in the browser.
 	Open func(url string) error
+	// Focus is the environment to center on; empty is the most recently
+	// deployed one.
+	Focus string
+	// Depth is how many hops from the focus to read.
+	Depth int
+	// Theme is how the map is drawn.
+	Theme string
 	// Watch takes the view to each alarm that starts firing.
 	Watch bool
 	// Notify tells someone away from the dashboard that an alarm started firing.
@@ -91,6 +98,22 @@ type (
 	refreshMsg   struct{}
 	eventPollMsg struct{}
 	stashPollMsg struct{}
+	refocusMsg   struct {
+		id  string
+		seq int
+	}
+	directoryMsg struct {
+		places []Place
+		err    error
+		query  string
+	}
+)
+
+const (
+	// refocusDelay is how long a selection rests before the view moves its
+	// focus there, so stepping across the map does not read every stop.
+	refocusDelay = 700 * time.Millisecond
+	moveFrames   = 14
 )
 
 // Model is the dashboard's bubbletea model.
@@ -123,6 +146,12 @@ type Model struct {
 	upgradeIdx int
 
 	replay        replay
+	focus         string
+	shownFocus    string
+	refocusSeq    int
+	directory     []Place
+	from          map[string]Point
+	moveAt        int
 	stash         Stash
 	stashOn       bool
 	watch         watchState
@@ -143,8 +172,11 @@ func NewModel(api API, cfg Config) Model {
 	if cfg.Now == nil {
 		cfg.Now = time.Now
 	}
+	if cfg.Theme == "" {
+		cfg.Theme = DefaultTheme
+	}
 	return Model{
-		api: api, cfg: cfg, loading: true, blastOn: true, showApps: true, introAt: -1,
+		api: api, cfg: cfg, loading: true, blastOn: true, showApps: true, introAt: -1, focus: cfg.Focus,
 		seen: map[string]time.Time{}, flashes: map[string]Flash{}, since: cfg.Now().Add(-eventBacklog),
 	}
 }
@@ -163,9 +195,9 @@ func frame() tea.Cmd {
 }
 
 func (m Model) fetch() tea.Cmd {
-	api, ctx, now := m.api, m.ctx(), m.cfg.Now
+	api, ctx, now, where := m.api, m.ctx(), m.cfg.Now, Where{Focus: m.focus, Depth: m.cfg.Depth}
 	return func() tea.Msg {
-		snap, err := Fetch(ctx, api)
+		snap, err := Fetch(ctx, api, where)
 		return snapshotMsg{snap: snap, err: err, at: now()}
 	}
 }
@@ -257,7 +289,76 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if next.graph != nil {
 		next = next.withLayout(next.canvasSize())
 	}
+	if next.graph != nil && next.selected != m.selected && next.selected != next.focus {
+		next.refocusSeq++
+		cmd = tea.Batch(cmd, after(refocusDelay, refocusMsg{id: next.selected, seq: next.refocusSeq}))
+	}
 	return next, cmd
+}
+
+// refocus moves the focus to the selected environment, once the selection
+// has rested there, and reads what is within reach of it.
+func (m Model) refocus(msg refocusMsg) (Model, tea.Cmd) {
+	env := m.graph.Env(msg.id)
+	if msg.seq != m.refocusSeq || m.selected != msg.id || msg.id == m.focus || env == nil || env.Restricted {
+		return m, nil
+	}
+	m.focus, m.loading = msg.id, true
+	return m, m.fetch()
+}
+
+// searchDirectory finds an environment that is not in view by name, and
+// moves the focus there.
+func (m Model) searchDirectory(query string) (Model, tea.Cmd) {
+	if m.directory != nil {
+		return m.applyDirectory(directoryMsg{places: m.directory, query: query})
+	}
+	api, ctx := m.api, m.ctx()
+	return m, func() tea.Msg {
+		places, err := drain(ctx, api.Directory)
+		return directoryMsg{places: places, err: err, query: query}
+	}
+}
+
+func (m Model) applyDirectory(msg directoryMsg) (Model, tea.Cmd) {
+	if msg.err != nil {
+		m.toast, m.toastAt = "could not search: "+clean(msg.err.Error()), m.frame
+		return m, nil
+	}
+	m.directory = msg.places
+	p, ok := FindPlace(m.directory, msg.query)
+	if !ok {
+		m.toast, m.toastAt = "no environment matches "+clean(msg.query), m.frame
+		return m, nil
+	}
+	if p.ID == m.focus {
+		return m, nil
+	}
+	m.focus, m.loading = p.ID, true
+	return m, m.fetch()
+}
+
+// animatedPos eases each node from where it was before the focus moved to
+// where it is now. A node new to the view grows out of the new focus.
+func (m Model) animatedPos() map[string]Point {
+	t := float64(m.frame-m.moveAt) / moveFrames
+	if m.from == nil || t >= 1 {
+		return m.pos
+	}
+	t = 1 - (1-t)*(1-t)*(1-t)
+	origin, ok := m.from[m.focus]
+	if !ok {
+		origin = m.pos[m.focus]
+	}
+	out := make(map[string]Point, len(m.pos))
+	for id, to := range m.pos {
+		from, ok := m.from[id]
+		if !ok {
+			from = origin
+		}
+		out[id] = Point{X: from.X + (to.X-from.X)*t, Y: from.Y + (to.Y-from.Y)*t}
+	}
+	return out
 }
 
 func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
@@ -274,6 +375,10 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		return m, m.fetchStash(false)
 	case stashMsg:
 		return m.applyStash(msg)
+	case refocusMsg:
+		return m.refocus(msg)
+	case directoryMsg:
+		return m.applyDirectory(msg)
 	case snapshotMsg:
 		return m.applySnapshot(msg)
 	case eventsMsg:
@@ -312,6 +417,12 @@ func (m Model) reload() (Model, tea.Cmd) {
 }
 
 func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
+	if msg.err == nil && m.focus != "" && msg.snap.Focus != m.focus {
+		return m, nil
+	}
+	if msg.err != nil && m.graph != nil {
+		m.focus = m.shownFocus
+	}
 	m.loading = false
 	m.err = msg.err
 	var alert tea.Cmd
@@ -319,6 +430,13 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 		before := m.graph
 		m.snap, m.graph, m.fetched = msg.snap, BuildGraph(msg.snap), msg.at
 		m.layoutKey = ""
+		m.focus = msg.snap.Focus
+		if m.shownFocus != m.focus {
+			if m.shownFocus != "" {
+				m.from, m.moveAt = m.pos, m.frame
+			}
+			m.shownFocus, m.selected = m.focus, m.focus
+		}
 		if m.introAt < 0 {
 			m.introAt = m.frame
 		}
@@ -425,7 +543,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 
 func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	if m.searching {
-		return m.handleSearchKey(msg), nil
+		return m.handleSearchKey(msg)
 	}
 	if m.replay.picking {
 		return m.handlePickKey(msg.String())
@@ -435,7 +553,12 @@ func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 		return m, tea.Quit
 	case "1", "2", "3", "4":
 		m.tab = Tab(key[0] - '1')
-	case "right", "l", "left", "h", "up", "k", "down", "j", "tab", "shift+tab", "enter":
+	case "enter":
+		if m.tab == TabConstellation && m.graph != nil && m.selected != m.focus {
+			return m.refocus(refocusMsg{id: m.selected, seq: m.refocusSeq})
+		}
+		m = m.move(key)
+	case "right", "l", "left", "h", "up", "k", "down", "j", "tab", "shift+tab":
 		m = m.move(key)
 	case "r":
 		return m.reload()
@@ -485,17 +608,26 @@ func (m Model) handleConstellationKey(key string) Model {
 		m.grouped = !m.grouped
 	case "s":
 		m.stacked = !m.stacked
+	case "v":
+		m.cfg.Theme = NextTheme(m.cfg.Theme)
 	case "/":
 		m.searching, m.filter = true, ""
 	}
 	return m
 }
 
-func (m Model) handleSearchKey(msg tea.KeyMsg) Model {
+func (m Model) handleSearchKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 	case "enter":
 		m.searching = false
-		return m.selectFirstMatch()
+		query := m.filter
+		next := m.selectFirstMatch()
+		if next.graph != nil && !(Scene{Filter: query}).Matches(next.graph.Env(next.selected)) {
+			next.filter = ""
+			next.refocusSeq++
+			return next.searchDirectory(query)
+		}
+		return next, nil
 	case "esc":
 		m.searching, m.filter = false, ""
 	case "backspace":
@@ -505,10 +637,10 @@ func (m Model) handleSearchKey(msg tea.KeyMsg) Model {
 	default:
 		if msg.Type == tea.KeyRunes || msg.Type == tea.KeySpace {
 			m.filter += string(msg.Runes)
-			return m.selectFirstMatch()
+			return m.selectFirstMatch(), nil
 		}
 	}
-	return m
+	return m, nil
 }
 
 func (m Model) selectFirstMatch() Model {
@@ -536,20 +668,20 @@ func (m Model) move(key string) Model {
 		m.runtimeIdx = step(m.runtimeIdx, len(m.snap.Runtimes), key)
 	case TabAlarms:
 		if key == "enter" && len(m.graph.Firing) > 0 {
-			return m.focus(m.graph.Firing[m.alarmIdx].EnvID)
+			return m.showOnMap(m.graph.Firing[m.alarmIdx].EnvID)
 		}
 		m.alarmIdx = step(m.alarmIdx, len(m.graph.Firing), key)
 	case TabUpgrades:
 		ups := m.upgrades()
 		if key == "enter" && len(ups) > 0 {
-			return m.focus(ups[m.upgradeIdx].EnvID)
+			return m.showOnMap(ups[m.upgradeIdx].EnvID)
 		}
 		m.upgradeIdx = step(m.upgradeIdx, len(ups), key)
 	}
 	return m
 }
 
-func (m Model) focus(envID string) Model {
+func (m Model) showOnMap(envID string) Model {
 	m.tab, m.selected, m.blastOn = TabConstellation, envID, true
 	return m
 }
@@ -718,11 +850,11 @@ func (m Model) canvasSize() (int, int) {
 }
 
 func (m Model) withLayout(w, h int) Model {
-	key := fmt.Sprintf("%d:%d:%t:%t", w, h, m.grouped, m.stacked)
+	key := fmt.Sprintf("%d:%d:%t:%t:%s:%s", w, h, m.grouped, m.stacked, m.cfg.Theme, m.focus)
 	if key == m.layoutKey && m.pos != nil {
 		return m
 	}
-	m.pos = Layout(m.graph, w, h, LayoutOptions{GroupByProject: m.grouped, ProducersOnTop: m.stacked})
+	m.pos = LayoutTheme(m.cfg.Theme, m.graph, w, h, LayoutOptions{GroupByProject: m.grouped, ProducersOnTop: m.stacked, Center: m.focus})
 	m.layoutKey = key
 	return m
 }
@@ -732,3 +864,9 @@ func (m Model) Selected() string { return m.selected }
 
 // ActiveTab is the tab on screen.
 func (m Model) ActiveTab() Tab { return m.tab }
+
+// Focus is the environment the view is centered on.
+func (m Model) Focus() string { return m.focus }
+
+// Theme is how the map is drawn.
+func (m Model) Theme() string { return m.cfg.Theme }

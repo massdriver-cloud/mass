@@ -38,6 +38,7 @@ type Graph struct {
 
 	envs      map[string]*EnvNode
 	instances map[string]*InstNode
+	missing   map[string]bool
 }
 
 // EnvNode is one environment in the graph. Restricted environments hold
@@ -49,12 +50,15 @@ type EnvNode struct {
 	ProjectName string
 	ParentID    string
 	Restricted  bool
-	Instances   []*InstNode
-	Firing      []FiringAlarm
-	Cost        float64
-	Currency    string
-	Banner      *Banner
-	Links       []HeaderLink
+	// Unloaded environments are past the edge of what was read: a loaded
+	// environment links to them, and moving the focus there reads them.
+	Unloaded  bool
+	Instances []*InstNode
+	Firing    []FiringAlarm
+	Cost      float64
+	Currency  string
+	Banner    *Banner
+	Links     []HeaderLink
 	// Notes are environment notes; ProjectNotes are notes on its project.
 	Notes        []string
 	ProjectNotes []string
@@ -195,7 +199,10 @@ func (e *EnvNode) Health() string {
 
 // BuildGraph turns a snapshot into the constellation.
 func BuildGraph(snap *Snapshot) *Graph {
-	g := &Graph{envs: map[string]*EnvNode{}, instances: map[string]*InstNode{}}
+	g := &Graph{envs: map[string]*EnvNode{}, instances: map[string]*InstNode{}, missing: map[string]bool{}}
+	for _, id := range snap.Missing {
+		g.missing[id] = true
+	}
 	for _, env := range snap.Environments {
 		g.addEnv(env)
 	}
@@ -294,15 +301,41 @@ func (g *Graph) linkDependencies(envs []Environment) {
 			}
 		}
 	}
+	g.linkConsumers(envs, envLinks, instLinks)
 	g.EnvLinks = sortedLinks(envLinks, LinkDependency)
 	g.InstLinks = sortedLinks(instLinks, LinkDependency)
+}
+
+// linkConsumers adds the links a producer knows of but its consumers' own
+// dependencies did not, because the consumer was not read.
+func (g *Graph) linkConsumers(envs []Environment, envLinks, instLinks map[[2]string]int) {
+	for _, env := range envs {
+		for _, inst := range env.Instances {
+			for _, c := range consumers(inst) {
+				if c.env == "" || c.env == env.ID {
+					continue
+				}
+				g.ensureEnv(c.env)
+				if c.instance != "" {
+					addOnce(instLinks, inst.ID, c.instance)
+				}
+				addOnce(envLinks, env.ID, c.env)
+			}
+		}
+	}
+}
+
+func addOnce(links map[[2]string]int, from, to string) {
+	if _, ok := links[[2]string{from, to}]; !ok {
+		links[[2]string{from, to}] = 1
+	}
 }
 
 func (g *Graph) ensureEnv(id string) {
 	if _, ok := g.envs[id]; ok {
 		return
 	}
-	node := &EnvNode{ID: id, Name: id, Restricted: true}
+	node := &EnvNode{ID: id, Name: id, Restricted: g.missing[id], Unloaded: !g.missing[id]}
 	g.Envs = append(g.Envs, node)
 	g.envs[id] = node
 }

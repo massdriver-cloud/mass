@@ -35,7 +35,7 @@ func TestRunSummary(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var out bytes.Buffer
-			err := dashboard.RunSummary(context.Background(), tc.api, &out, now)
+			err := dashboard.RunSummary(context.Background(), tc.api, &out, now, dashboard.Where{})
 			if tc.wantErr != (err != nil) {
 				t.Fatalf("err = %v, wantErr %v", err, tc.wantErr)
 			}
@@ -56,7 +56,7 @@ func TestRunSummaryMoreAlarms(t *testing.T) {
 	api := fixture()
 	api.envPages[0][0].Instances[1].FiringAlarmCount = 3
 	var out bytes.Buffer
-	if err := dashboard.RunSummary(context.Background(), api, &out, time.Now()); err != nil {
+	if err := dashboard.RunSummary(context.Background(), api, &out, time.Now(), dashboard.Where{}); err != nil {
 		t.Fatal(err)
 	}
 	if got := ansi.Strip(out.String()); !strings.Contains(got, "+2 more on the instances' alarm pages") {

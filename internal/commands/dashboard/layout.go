@@ -16,6 +16,8 @@ type LayoutOptions struct {
 	// ProducersOnTop puts each environment above the environments that use its
 	// resources.
 	ProducersOnTop bool
+	// Center is the environment the layout holds in the middle.
+	Center string
 }
 
 // Layout places every environment in a w×h cell box, returning each one's
@@ -30,7 +32,7 @@ func Layout(g *Graph, w, h int, opts LayoutOptions) map[string]Point {
 	if opts.ProducersOnTop {
 		cells = stackLayers(g, pos, half, w, h)
 	} else {
-		cells = fit(pos, w, h)
+		cells = fit(pos, w, h, opts.Center)
 	}
 	separate(g, cells, half, w, h)
 	out := make(map[string]Point, len(cells))
@@ -74,6 +76,10 @@ func settle(g *Graph, opts LayoutOptions) map[string]Point {
 			cluster(envs, pos, disp, k)
 		}
 		for _, env := range envs {
+			if env.ID == opts.Center {
+				pos[env.ID] = Point{}
+				continue
+			}
 			p, d := pos[env.ID], disp[env.ID]
 			dist := math.Hypot(p.X, p.Y)
 			d.X -= p.X * dist * 4 / k
@@ -184,12 +190,17 @@ func labelHalfWidths(g *Graph) map[string]float64 {
 
 const labelRows = 5
 
-func fit(pos map[string]Point, w, h int) map[string]Point {
+func fit(pos map[string]Point, w, h int, center string) map[string]Point {
 	minX, minY := math.Inf(1), math.Inf(1)
 	maxX, maxY := math.Inf(-1), math.Inf(-1)
 	for _, p := range pos {
 		minX, maxX = math.Min(minX, p.X), math.Max(maxX, p.X)
 		minY, maxY = math.Min(minY, p.Y), math.Max(maxY, p.Y)
+	}
+	if c, ok := pos[center]; ok {
+		rx := math.Max(math.Abs(minX-c.X), math.Abs(maxX-c.X))
+		ry := math.Max(math.Abs(minY-c.Y), math.Abs(maxY-c.Y))
+		minX, maxX, minY, maxY = c.X-rx, c.X+rx, c.Y-ry, c.Y+ry
 	}
 	padX, padTop, padBottom := 10.0, 2.0, 3.0
 	spanX := math.Max(float64(w)-2*padX-1, 1)

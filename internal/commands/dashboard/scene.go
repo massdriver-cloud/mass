@@ -34,6 +34,8 @@ type Scene struct {
 	TargetAge int
 	// Now is when the frame is drawn, for traffic that has gone stale.
 	Now time.Time
+	// Theme is how the map is drawn; empty is the constellation.
+	Theme string
 }
 
 // Flash marks an environment where something just happened.
@@ -65,6 +67,18 @@ func (s Scene) Render(w, h int) string {
 	c := NewCanvas(w, h)
 	s.Pos = s.unfold(c)
 	s.drawStars(c)
+	switch s.Theme {
+	case ThemeMetro:
+		s.renderMetro(c)
+		s.drawFlashes(c)
+		s.drawLockOn(c)
+		return c.Render()
+	case ThemeRadar:
+		s.renderRadar(c)
+		s.drawFlashes(c)
+		s.drawLockOn(c)
+		return c.Render()
+	}
 	s.drawLinks(c)
 	if s.settled() {
 		s.drawParticles(c)
@@ -413,7 +427,7 @@ func (s Scene) labelStyles(env *EnvNode) (lipgloss.Style, lipgloss.Style) {
 	switch {
 	case env.ID == s.Selected:
 		name = styleSelected
-	case !s.Matches(env) || env.Restricted:
+	case !s.Matches(env) || env.Restricted || env.Unloaded:
 		name, sub = styleFaint, styleFaint
 	case env.FiringCount() > 0:
 		name = styleBoldRed
@@ -425,6 +439,8 @@ func (s Scene) subLabel(env *EnvNode) string {
 	switch {
 	case env.Restricted:
 		return "no access"
+	case env.Unloaded:
+		return "not loaded"
 	case s.ShowCost && env.Currency != "":
 		return env.ProjectName + " · " + Money(env.Cost, env.Currency) + "/mo"
 	default:

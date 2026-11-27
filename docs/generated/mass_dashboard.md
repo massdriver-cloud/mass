@@ -14,23 +14,25 @@ Watch your environments, alarms, and runtimes live
 
 A live view of your organization in the terminal.
 
-**Constellation** places every environment you can view on a map, linked to the environments whose resources it uses and the environment it was forked from. Sparks travel each link from the producer to the consumer. Rings show the status of each environment's instances, a firing alarm pulses red, and a running deployment sweeps around its ring. Select an environment to see its instances, alarms, deployments, upgrades, the environments on either side of it, and its blast radius: everything downstream that its trouble could reach. With cost on, each ring is sized by last month's spend.
+The map centers on one environment: the one you name with `--env`, or else the one with the most recent deployment. It reads that environment and the ones it shares resources with, out to `--depth` hops. Environments past the edge show as not loaded. Select one and the view moves there: the focus glides to the middle and the environments around it come into frame. `/` finds an environment by name anywhere in the organization.
+
+**Constellation** places those environments on a map, linked to the environments whose resources they use and the environment they were forked from. Sparks travel each link from the producer to the consumer. Rings show the status of each environment's instances, a firing alarm pulses red, and a running deployment sweeps around its ring. Select an environment to see its instances, alarms, deployments, upgrades, the environments on either side of it, and its blast radius: everything downstream that its trouble could reach. With cost on, each ring is sized by last month's spend.
 
 **Runtimes** shows which runtime versions your applications build on and your instances run, and what a patch, minor, or major release would leave behind.
 
-**Alarms** lists every firing alarm with how far its blast radius reaches.
+**Alarms** lists every firing alarm in view with how far its blast radius reaches.
 
-**Upgrades** lists every instance that can move to a newer bundle version.
+**Upgrades** lists every instance in view that can move to a newer bundle version.
 
-A live ticker follows the audit log. When something happens, its environment lights up on the map, and a deployment event re-reads the organization.
+A live ticker follows the audit log. When something happens, its environment lights up on the map, and a deployment event re-reads what is in view.
 
-**Replay** plays the audit log back, from five minutes to 24 hours ago, onto the constellation, so you can watch a rollout, an incident, or a busy afternoon move across your environments.
+**Replay** plays the audit log back, from five minutes to 24 hours ago, onto the map, so you can watch a rollout, an incident, or a busy afternoon move across your environments.
 
-The dashboard follows the stash as a feed, reading it every few seconds (`--stash`). Each change goes on the ticker and lights up its environment. Widgets show where they belong: `md/health` colors an instance, `md/usage` draws its usage bar, `md/traffic` sets the pace of the sparks on the links an instance sends on and labels them with requests per second, latency, and errors, `md/banner` flags an environment, and `md/links` puts its dashboards and runbooks in the side panel. Your annotations show too: widgets you pinned to any stash key, and notes rendered from their Liquid templates. Annotations need a personal access token; a service account has none.
+The dashboard follows the stash as a feed, reading it every few seconds (`--stash`). Each change goes on the ticker and lights up its environment. Widgets show where they belong: `md/health` colors an instance, `md/usage` draws its usage bar, `md/traffic` sets the pace of the sparks on the links an instance sends on and labels them with requests per second, latency, and errors, `md/banner` runs across the top of the map and flags its environment, and `md/links` puts its dashboards and runbooks in the side panel. Your annotations show too: widgets you pinned to any stash key, and notes rendered from their Liquid templates. Annotations need a personal access token; a service account has none.
 
 With `--watch`, an alarm that starts firing takes the view to its environment, locks on, shows its blast radius under a banner that counts up, and rings the terminal with a desktop notification. When it clears, the banner says how long it lasted and the view goes back where it was.
 
-`--theme` changes the look: `constellation` (the default) draws on a starfield, `rain` on falling green streams, and `blueprint` on a drafting grid.
+`--theme` changes how the map is drawn: `constellation` (the default) scatters environments like stars, `metro` lays them out as stations on transit lines with producers to the left, and `radar` puts the focus at the center of a sweeping scope with each environment on the ring as many hops out as it is. `v` switches between them. `--palette` changes the colors and backdrop: `night` (the default), `rain`, and `blueprint`.
 
 When the output is not a terminal, `mass dashboard` prints the same data as tables.
 
@@ -38,9 +40,10 @@ When the output is not a terminal, `mass dashboard` prints the same data as tabl
 
 ```shell
 mass dashboard
+mass dashboard --env ecomm-prod --depth 2
 mass dashboard --refresh 10s --events 2s --stash 1s
 mass dashboard --watch
-mass dashboard --theme rain
+mass dashboard --theme radar --palette rain
 mass dashboard --profile production | less
 ```
 
@@ -52,11 +55,14 @@ mass dashboard [flags]
 ### Options
 
 ```
+      --depth int          How many hops from the focus to read (default 1)
+      --env string         Environment to center on, by id; the most recently deployed one when left out
       --events duration    How often to read new activity from the audit log; 0 turns the live ticker off (default 5s)
   -h, --help               help for dashboard
+      --palette string     Colors and backdrop: night, blueprint, rain (default "night")
       --refresh duration   How often to re-read the organization; 0 reads once (default 30s)
       --stash duration     How often to read the stash for widgets, notes, and the live feed; each read covers every scope, so a short interval costs more; 0 reads it with each refresh (default 3s)
-      --theme string       Look of the dashboard: constellation, blueprint, rain (default "constellation")
+      --theme string       How the map is drawn: constellation, metro, radar (default "constellation")
       --watch              Jump to any alarm that starts firing while the dashboard is open, and send a desktop notification
 ```
 

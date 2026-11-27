@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -19,8 +20,8 @@ import (
 type Options struct {
 	Config
 	Out *os.File
-	// Theme names the look; empty is the default.
-	Theme string
+	// Palette names the colors; empty is the default.
+	Palette string
 }
 
 // Run opens the dashboard when Out is a terminal, and otherwise writes a
@@ -32,13 +33,19 @@ func Run(ctx context.Context, api API, opts Options) error {
 	if opts.Now == nil {
 		opts.Now = time.Now
 	}
-	if opts.Theme != "" {
-		if err := UseTheme(opts.Theme); err != nil {
+	if opts.Palette != "" {
+		if err := UsePalette(opts.Palette); err != nil {
 			return err
 		}
 	}
+	if opts.Theme == "" {
+		opts.Theme = DefaultTheme
+	}
+	if !slices.Contains(Themes(), opts.Theme) {
+		return fmt.Errorf("no theme %q; choose %s", opts.Theme, strings.Join(Themes(), ", "))
+	}
 	if !cli.IsInteractive(opts.Out) {
-		return RunSummary(ctx, api, opts.Out, opts.Now())
+		return RunSummary(ctx, api, opts.Out, opts.Now(), Where{Focus: opts.Focus, Depth: opts.Depth})
 	}
 	if opts.Open == nil {
 		opts.Open = OpenBrowser
@@ -85,8 +92,8 @@ func OpenBrowser(url string) error {
 }
 
 // RunSummary writes what the dashboard shows as plain text.
-func RunSummary(ctx context.Context, api API, out io.Writer, now time.Time) error {
-	snap, err := Fetch(ctx, api)
+func RunSummary(ctx context.Context, api API, out io.Writer, now time.Time, where Where) error {
+	snap, err := Fetch(ctx, api, where)
 	if err != nil {
 		return err
 	}
