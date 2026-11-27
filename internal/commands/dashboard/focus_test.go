@@ -199,3 +199,13 @@ func TestCancelledSearchKeepsAnIncident(t *testing.T) {
 		t.Errorf("selected %q; cancelling a search should leave the selection on the incident", m.Selected())
 	}
 }
+
+func TestSearchDirectoryAnswersDuringANewSearch(t *testing.T) {
+	m := loaded(t, fixture(), config(&opener{}), 160, 48)
+	m, cmd := keys(m, "/", "z", "z", "z", "enter")
+	m = press(m, "/", "b", "i", "l")
+	m = drive(t, m, cmd, 1)
+	if out := view(m); !strings.Contains(out, "/ bil") {
+		t.Errorf("a late answer should not end a search that started since:\n%s", out)
+	}
+}

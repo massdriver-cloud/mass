@@ -263,8 +263,6 @@ func TestFetchAroundFocus(t *testing.T) {
 		name        string
 		where       dashboard.Where
 		recent      string
-		noRecent    bool
-		dirErr      error
 		wantFocus   string
 		wantEnvs    []string
 		wantMissing []string

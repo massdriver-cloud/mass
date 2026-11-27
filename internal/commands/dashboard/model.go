@@ -341,9 +341,13 @@ func (m Model) applyDirectory(msg directoryMsg) (Model, tea.Cmd) {
 		return m.searchFailed(msg), nil
 	}
 	if p.ID == m.focus {
-		m.selected = m.focus
+		if !m.movedOn(msg) {
+			m.selected = m.focus
+		}
 		return m, nil
 	}
+	// A match moves the focus even if the selection moved meanwhile: enter on
+	// the search asked to go there.
 	m.focus, m.loading = p.ID, true
 	return m, m.fetch()
 }
@@ -631,13 +635,15 @@ func (m Model) handleConstellationKey(key string) Model {
 	return m
 }
 
-// searchFailed puts the selection back as cancelSearch does, unless the
-// selection moved or a new search started while the directory was read.
 func (m Model) searchFailed(msg directoryMsg) Model {
-	if m.searching || m.selected != msg.selected {
+	if m.movedOn(msg) {
 		return m
 	}
 	return m.cancelSearch()
+}
+
+func (m Model) movedOn(msg directoryMsg) bool {
+	return m.searching || m.selected != msg.selected
 }
 
 // cancelSearch puts the selection back where it was before the search,
