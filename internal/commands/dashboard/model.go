@@ -139,8 +139,9 @@ type Model struct {
 	showCost bool
 	help     bool
 
-	searching bool
-	filter    string
+	searching  bool
+	searchFrom string
+	filter     string
 
 	runtimeIdx int
 	bump       Bump
@@ -621,7 +622,7 @@ func (m Model) handleConstellationKey(key string) Model {
 	case "v":
 		m.cfg.Theme = NextTheme(m.cfg.Theme)
 	case "/":
-		m.searching, m.filter = true, ""
+		m.searching, m.filter, m.searchFrom = true, "", m.selected
 	}
 	return m
 }
@@ -639,7 +640,7 @@ func (m Model) handleSearchKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 		}
 		return next.refocus(refocusMsg{id: next.selected, seq: next.refocusSeq})
 	case "esc":
-		m.searching, m.filter = false, ""
+		m.searching, m.filter, m.selected = false, "", m.searchFrom
 	case "backspace":
 		if r := []rune(m.filter); len(r) > 0 {
 			m.filter = string(r[:len(r)-1])

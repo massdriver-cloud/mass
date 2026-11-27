@@ -140,3 +140,11 @@ func TestFocusMovesNodes(t *testing.T) {
 		t.Error("nodes should glide to their new places after the focus moves")
 	}
 }
+
+func TestSearchEscapeRestoresTheSelection(t *testing.T) {
+	m := loaded(t, fixture(), config(&opener{}), 160, 48)
+	m = press(m, "/", "b", "i", "l", "l", "esc")
+	if m.Selected() != "care-dev" || m.Focus() != "care-dev" {
+		t.Errorf("selected %q focus %q; esc should put the selection back", m.Selected(), m.Focus())
+	}
+}
