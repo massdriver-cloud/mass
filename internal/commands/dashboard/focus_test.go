@@ -148,3 +148,20 @@ func TestSearchEscapeRestoresTheSelection(t *testing.T) {
 		t.Errorf("selected %q focus %q; esc should put the selection back", m.Selected(), m.Focus())
 	}
 }
+
+func TestSearchWithNoMatchRestoresTheSelection(t *testing.T) {
+	tests := map[string][]string{
+		"no match anywhere": {"/", "b", "z", "z", "enter"},
+		"an empty search":   {"/", "enter"},
+	}
+	for name, typed := range tests {
+		t.Run(name, func(t *testing.T) {
+			m := loaded(t, fixture(), config(&opener{}), 160, 48)
+			m, cmd := keys(m, typed...)
+			m = drive(t, m, cmd, 30)
+			if m.Selected() != "care-dev" || m.Focus() != "care-dev" {
+				t.Errorf("selected %q focus %q; a search that finds nothing should leave the view where it was", m.Selected(), m.Focus())
+			}
+		})
+	}
+}

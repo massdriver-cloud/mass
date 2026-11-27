@@ -329,13 +329,13 @@ func (m Model) searchDirectory(query string) (Model, tea.Cmd) {
 func (m Model) applyDirectory(msg directoryMsg) (Model, tea.Cmd) {
 	if msg.err != nil {
 		m.toast, m.toastAt = "could not search: "+clean(msg.err.Error()), m.frame
-		return m, nil
+		return m.cancelSearch(), nil
 	}
 	m.directory = msg.places
 	p, ok := FindPlace(m.directory, msg.query)
 	if !ok {
 		m.toast, m.toastAt = "no environment matches "+clean(msg.query), m.frame
-		return m, nil
+		return m.cancelSearch(), nil
 	}
 	if p.ID == m.focus {
 		return m, nil
@@ -627,9 +627,22 @@ func (m Model) handleConstellationKey(key string) Model {
 	return m
 }
 
+// cancelSearch puts the selection back where it was before the search,
+// unless --watch has since moved it to an incident.
+func (m Model) cancelSearch() Model {
+	m.searching, m.filter = false, ""
+	if len(m.watch.open) == 0 {
+		m.selected = m.searchFrom
+	}
+	return m
+}
+
 func (m Model) handleSearchKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 	case "enter":
+		if strings.TrimSpace(m.filter) == "" {
+			return m.cancelSearch(), nil
+		}
 		m.searching = false
 		query := m.filter
 		next := m.selectFirstMatch()
@@ -640,7 +653,7 @@ func (m Model) handleSearchKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 		}
 		return next.refocus(refocusMsg{id: next.selected, seq: next.refocusSeq})
 	case "esc":
-		m.searching, m.filter, m.selected = false, "", m.searchFrom
+		return m.cancelSearch(), nil
 	case "backspace":
 		if r := []rune(m.filter); len(r) > 0 {
 			m.filter = string(r[:len(r)-1])
