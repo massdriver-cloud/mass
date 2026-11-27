@@ -2,6 +2,8 @@ package dashboard
 
 import (
 	"context"
+	"encoding/json"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -90,7 +92,7 @@ func (st Stash) Changes(prev Stash) []StashChange {
 	for scope, entries := range st {
 		for key, e := range entries {
 			old, ok := prev[scope][key]
-			if !ok || old.UpdatedAt != e.UpdatedAt || old.Value != e.Value {
+			if !ok || old.UpdatedAt != e.UpdatedAt || old.Value != e.Value || !reflect.DeepEqual(old.Data, e.Data) {
 				out = append(out, StashChange{Scope: scope, Key: key, Entry: &e})
 			}
 		}
@@ -132,9 +134,7 @@ func (a *gqlAPI) StashEntries(ctx context.Context, scopes []Scope, cursor string
 	return data.Page.Items, data.Page.Cursor.Next, err
 }
 
-// stashScopes groups every project, environment, component, and instance of
-// a snapshot by project, in batches a read accepts: every scope of a read
-// must be in one project.
+// Every scope of a read must be in one project.
 func stashScopes(envs []Environment) [][]Scope {
 	byProject := map[string][]Scope{}
 	seen := map[Scope]bool{}
@@ -174,10 +174,17 @@ func stashScopes(envs []Environment) [][]Scope {
 	return batches
 }
 
+// StashRead is one read of the stash. Failed holds the scopes of the
+// batches that could not be read, whose entries are unknown rather than gone.
+type StashRead struct {
+	Stash  Stash
+	Failed []Scope
+	Err    error
+}
+
 // ReadStash reads the stash of every project, environment, component, and
-// instance. A batch that fails leaves out only its own entries; the error is
-// the last one seen, returned beside what was read.
-func ReadStash(ctx context.Context, api API, envs []Environment) (Stash, error) {
+// instance.
+func ReadStash(ctx context.Context, api API, envs []Environment) StashRead {
 	batches := stashScopes(envs)
 	results := make([][]StashEntry, len(batches))
 	errs := make([]error, len(batches))
@@ -202,13 +209,24 @@ func ReadStash(ctx context.Context, api API, envs []Environment) (Stash, error) 
 		}
 		st[scope][e.Key] = e
 	}
-	var err error
-	for _, e := range errs {
+	read := StashRead{Stash: st}
+	for i, e := range errs {
 		if e != nil {
-			err = e
+			read.Err = e
+			read.Failed = append(read.Failed, batches[i]...)
 		}
 	}
-	return st, err
+	return read
+}
+
+// Keep copies the entries of scopes from prev, for scopes a read could not
+// reach.
+func (st Stash) Keep(prev Stash, scopes []Scope) {
+	for _, s := range scopes {
+		if entries, ok := prev[scopeOf(s.Kind, s.ID)]; ok {
+			st[scopeOf(s.Kind, s.ID)] = entries
+		}
+	}
 }
 
 func cleanEntry(e StashEntry) StashEntry {
@@ -245,7 +263,6 @@ func cleanAny(v any) any {
 	}
 }
 
-// envOfScope is the environment a stash scope belongs to, for flashing it.
 func (g *Graph) envOfScope(s Scope) string {
 	switch s.Kind {
 	case "ENVIRONMENT":
@@ -277,7 +294,12 @@ func (g *Graph) StashEvent(c StashChange, at time.Time) Event {
 }
 
 func preview(e *StashEntry) string {
-	v := strings.Join(strings.Fields(e.Value), " ")
+	v := e.Value
+	if v == "" && e.Data != nil {
+		data, _ := json.Marshal(e.Data)
+		v = string(data)
+	}
+	v = strings.Join(strings.Fields(v), " ")
 	if len([]rune(v)) > 60 {
 		v = string([]rune(v)[:59]) + "…"
 	}

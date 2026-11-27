@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/massdriver-cloud/mass/internal/commands/dashboard"
 )
@@ -69,5 +70,32 @@ func TestAnnotationsForAServiceAccount(t *testing.T) {
 	out := view(press(loaded(t, api, config(&opener{}), 200, 60), "?"))
 	if !strings.Contains(out, "Notes and pinned widgets need a") || !strings.Contains(out, "service account") {
 		t.Errorf("help should say why there are no notes:\n%s", out)
+	}
+}
+
+func TestSlowNote(t *testing.T) {
+	api := withNotes()
+	api.annotations["care"] = append(api.annotations["care"],
+		note(dashboard.SurfaceCanvasLegend, "Environment", "care-dev", "{% for i in (1..100000000) %}x{% endfor %}"))
+	start := time.Now()
+	g := graphOf(t, api)
+	if elapsed := time.Since(start); elapsed > 2*time.Second {
+		t.Errorf("a slow note held the screen for %v", elapsed)
+	}
+	if notes := g.Env("care-dev").Notes; notes[len(notes)-1] != "(note takes too long to render)" {
+		t.Errorf("notes = %q, want the slow one cut off", notes)
+	}
+}
+
+func TestPartialStashRead(t *testing.T) {
+	api := withStash()
+	m := press(loaded(t, api, config(&opener{}), 200, 48), "/", "c", "a", "r", "e", "enter")
+	api.failScope = "care-dev"
+	out := view(refreshed(t, m))
+	if strings.Contains(out, "stash deleted") {
+		t.Errorf("a project that could not be read is not deleted:\n%s", out)
+	}
+	if !strings.Contains(out, "degraded") || !strings.Contains(out, "Load test until 5pm") {
+		t.Errorf("a project that could not be read keeps its widgets:\n%s", out)
 	}
 }

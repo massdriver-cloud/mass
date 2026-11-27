@@ -38,7 +38,7 @@ func (m Model) splash(h int) string {
 
 func (m Model) body(h int) string {
 	if m.help && m.tab != TabConstellation {
-		return m.helpBox(h)
+		return m.helpBox(h, strings.Join(tabHelp(m.tab), "\n"))
 	}
 	switch m.tab {
 	case TabRuntimes:
@@ -63,6 +63,9 @@ func (m Model) constellationBody(h int) string {
 	}
 	scene.Target, scene.TargetAge = m.lockOn()
 	scene.Now = m.cfg.Now()
+	if panelW == 0 && m.help {
+		return m.helpBox(h, Legend(m.cfg.Watch, m.snap.AnnotationsErr))
+	}
 	canvas := scene.Render(canvasW, h)
 	if panelW == 0 {
 		return canvas
@@ -271,9 +274,9 @@ func tabHelp(tab Tab) []string {
 	return nil
 }
 
-func (m Model) helpBox(h int) string {
+func (m Model) helpBox(h int, content string) string {
 	box := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(colorPanel).Padding(1, 2).
-		Width(min(m.width-4, 90)).Render(strings.Join(tabHelp(m.tab), "\n"))
+		Width(min(m.width-4, 90)).Render(content)
 	return lipgloss.Place(m.width, h, lipgloss.Center, lipgloss.Center, box)
 }
 

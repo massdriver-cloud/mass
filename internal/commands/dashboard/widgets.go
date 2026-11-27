@@ -186,8 +186,6 @@ func (g *Graph) ApplyStash(st Stash, annotations []Annotation, now time.Time) {
 	}
 }
 
-// applyAnnotations draws every note and pinned widget, returning the
-// surfaces and ids the pinned widgets drew on.
 func (g *Graph) applyAnnotations(st Stash, annotations []Annotation, now time.Time) map[string]bool {
 	pinned := map[string]bool{}
 	for _, a := range annotations {
@@ -232,8 +230,6 @@ func (g *Graph) clearStash() {
 	}
 }
 
-// applyPinned applies a widget annotation to what it is on, returning the
-// ids it drew on.
 func (g *Graph) applyPinned(a Annotation, surface string, st Stash, now time.Time) []string {
 	spec, ok := widgetSpecs[surface]
 	if !ok {

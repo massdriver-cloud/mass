@@ -84,8 +84,7 @@ type (
 		err error
 	}
 	stashMsg struct {
-		stash   Stash
-		err     error
+		read    StashRead
 		initial bool
 	}
 	frameMsg     time.Time
@@ -192,8 +191,7 @@ func (m Model) fetchStash(initial bool) tea.Cmd {
 	}
 	api, ctx, envs := m.api, m.ctx(), m.snap.Environments
 	return func() tea.Msg {
-		st, err := ReadStash(ctx, api, envs)
-		return stashMsg{stash: st, err: err, initial: initial}
+		return stashMsg{read: ReadStash(ctx, api, envs), initial: initial}
 	}
 }
 
@@ -205,14 +203,16 @@ func (m Model) applyStash(msg stashMsg) (Model, tea.Cmd) {
 	if m.cfg.StashPoll > 0 {
 		next = after(m.cfg.StashPoll, stashPollMsg{})
 	}
-	if m.graph == nil || (msg.err != nil && len(msg.stash) == 0) {
+	if m.graph == nil {
 		return m, next
 	}
+	st := msg.read.Stash
+	st.Keep(m.stash, msg.read.Failed)
 	var changes []StashChange
 	if !msg.initial {
-		changes = msg.stash.Changes(m.stash)
+		changes = st.Changes(m.stash)
 	}
-	m.stash = msg.stash
+	m.stash = st
 	now := m.cfg.Now()
 	m.graph.ApplyStash(m.stash, m.snap.Annotations, now)
 	if len(changes) == 0 {

@@ -2,8 +2,10 @@ package dashboard
 
 import (
 	"context"
+	"encoding/json"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/osteele/liquid"
@@ -69,9 +71,8 @@ func (a *gqlAPI) Annotations(ctx context.Context, projectID, cursor string) ([]A
 	return data.Page.Items, data.Page.Cursor.Next, err
 }
 
-// readAnnotations reads every project's annotations. Annotations are the
-// caller's own, and a service account has none, so a failed read leaves them
-// out and reports why.
+// A service account has no annotations, so a failed read leaves them out
+// and reports why.
 func readAnnotations(ctx context.Context, api API, envs []Environment) ([]Annotation, error) {
 	var projects []string
 	seen := map[string]bool{}
@@ -120,12 +121,51 @@ var (
 	markdownMarks = regexp.MustCompile(`(^#+\s*)|(\*\*|__|` + "`" + `)`)
 )
 
+const (
+	noteRenderLimit = 200 * time.Millisecond
+	noteCacheSize   = 512
+)
+
+// noteCache keeps each note's text for the stash values it was rendered
+// with, so a note renders once per change rather than on every read.
+var noteCache = struct {
+	sync.Mutex
+	lines map[string][]string
+}{lines: map[string][]string{}}
+
 // renderNote renders a note's Liquid template with the stashes it can see
-// and reduces the markdown to lines of text.
+// and reduces the markdown to lines of text. A template that runs past
+// noteRenderLimit is cut off, so one slow note cannot freeze the screen.
 func renderNote(template string, bindings map[string]any) []string {
 	if len(template) > maxTemplate {
 		return []string{"(note too long to show)"}
 	}
+	encoded, _ := json.Marshal(bindings)
+	key := template + "\x00" + string(encoded)
+	noteCache.Lock()
+	cached, ok := noteCache.lines[key]
+	noteCache.Unlock()
+	if ok {
+		return cached
+	}
+	done := make(chan []string, 1)
+	go func() { done <- renderLines(template, bindings) }()
+	var lines []string
+	select {
+	case lines = <-done:
+	case <-time.After(noteRenderLimit):
+		lines = []string{"(note takes too long to render)"}
+	}
+	noteCache.Lock()
+	if len(noteCache.lines) >= noteCacheSize {
+		noteCache.lines = map[string][]string{}
+	}
+	noteCache.lines[key] = lines
+	noteCache.Unlock()
+	return lines
+}
+
+func renderLines(template string, bindings map[string]any) []string {
 	out, err := liquidEngine.ParseAndRenderString(template, bindings)
 	if err != nil {
 		return []string{"(note does not render: " + clean(firstLine(err.Error())) + ")"}
@@ -214,8 +254,6 @@ func (g *Graph) noteOnLinks(a Annotation, st Stash, now time.Time) {
 	}
 }
 
-// annotatedInstances are the instances an annotation is on: the instance
-// itself, or every instance of a component.
 func (g *Graph) annotatedInstances(a Annotation) []*InstNode {
 	switch a.Entity.Typename {
 	case "Instance":
@@ -236,9 +274,8 @@ func (g *Graph) annotatedInstances(a Annotation) []*InstNode {
 	return nil
 }
 
-// annotatedLinks are the instance pairs a link annotation is on: in each
-// environment, the instance of the link's source component and the one of
-// its destination.
+// A link is between components, so it is on an instance pair in every
+// environment that runs both.
 func (g *Graph) annotatedLinks(a Annotation) [][2]*InstNode {
 	e := a.Entity
 	if e.Typename != "Link" || e.FromComponent == nil || e.ToComponent == nil {

@@ -20,7 +20,7 @@ func TestReadStashScopes(t *testing.T) {
 	}
 	api.envPages = append(api.envPages, []dashboard.Environment{{ID: "big-dev", Name: "Dev", Project: ref("big", "Big"), Instances: big}})
 	snap := fixtureSnapshotFrom(t, api)
-	if _, err := dashboard.ReadStash(t.Context(), api, snap.Environments); err != nil {
+	if err := dashboard.ReadStash(t.Context(), api, snap.Environments).Err; err != nil {
 		t.Fatal(err)
 	}
 	projects := map[string]int{}
@@ -55,7 +55,8 @@ func TestReadStashKeepsTheReadsThatWork(t *testing.T) {
 	api := withStash()
 	api.failScope = "platform-dev"
 	snap := fixtureSnapshotFrom(t, api)
-	st, err := dashboard.ReadStash(t.Context(), api, snap.Environments)
+	read := dashboard.ReadStash(t.Context(), api, snap.Environments)
+	st, err := read.Stash, read.Err
 	if err == nil {
 		t.Error("a failed read should be reported")
 	}
@@ -64,6 +65,9 @@ func TestReadStashKeepsTheReadsThatWork(t *testing.T) {
 	}
 	if _, ok := st.Get(inst("platform-dev-db"), "md/traffic", fixedNow()); ok {
 		t.Error("the failed project should have no entries")
+	}
+	if len(read.Failed) == 0 || read.Failed[0].ID != "platform" {
+		t.Errorf("failed scopes = %v, want the platform project's", read.Failed)
 	}
 }
 

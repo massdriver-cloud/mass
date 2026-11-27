@@ -281,11 +281,12 @@ func TestModelHelp(t *testing.T) {
 	watch := config(&opener{})
 	watch.Watch = true
 	tests := []struct {
-		name string
-		cfg  dashboard.Config
-		keys []string
-		want []string
-		not  []string
+		name  string
+		cfg   dashboard.Config
+		keys  []string
+		want  []string
+		not   []string
+		width int
 	}{
 		{
 			name: "constellation", cfg: config(&opener{}), keys: []string{"?"},
@@ -297,11 +298,16 @@ func TestModelHelp(t *testing.T) {
 		{name: "alarms", cfg: config(&opener{}), keys: []string{"3", "?"}, want: []string{"depend on that instance downstream"}},
 		{name: "upgrades", cfg: config(&opener{}), keys: []string{"4", "?"}, want: []string{"the version it runs → the version its next deploy would use"}},
 		{name: "closed", cfg: config(&opener{}), keys: []string{"2"}, not: []string{"split across its versions", "WHAT MOVES"}},
+		{name: "narrow", cfg: config(&opener{}), keys: []string{"?"}, width: 80, want: []string{"WHAT MOVES", "Ring: the environment's instances by status"}},
 		{name: "closed by esc", cfg: config(&opener{}), keys: []string{"?", "esc"}, not: []string{"WHAT MOVES"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			out := view(press(loaded(t, fixture(), tc.cfg, 200, 48), tc.keys...))
+			width := 200
+			if tc.width > 0 {
+				width = tc.width
+			}
+			out := view(press(loaded(t, fixture(), tc.cfg, width, 48), tc.keys...))
 			for _, want := range tc.want {
 				if !strings.Contains(out, want) {
 					t.Errorf("view is missing %q:\n%s", want, out)

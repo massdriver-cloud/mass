@@ -43,7 +43,8 @@ func withStash() *fakeAPI {
 func graphOf(t *testing.T, api *fakeAPI) *dashboard.Graph {
 	t.Helper()
 	snap := fixtureSnapshotFrom(t, api)
-	st, err := dashboard.ReadStash(t.Context(), api, snap.Environments)
+	read := dashboard.ReadStash(t.Context(), api, snap.Environments)
+	st, err := read.Stash, read.Err
 	if err != nil {
 		t.Fatal(err)
 	}
