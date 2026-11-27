@@ -10,6 +10,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/glamour v1.0.0
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
+	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/fatih/color v1.19.0
 	github.com/hashicorp/hcl/v2 v2.25.0
 	github.com/itchyny/gojq v0.12.19
@@ -51,7 +52,6 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.3 // indirect
 	github.com/buger/jsonparser v1.6.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
-	github.com/charmbracelet/x/ansi v0.11.9 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
 	github.com/charmbracelet/x/exp/slice v0.1.0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
