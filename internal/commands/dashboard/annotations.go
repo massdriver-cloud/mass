@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
 	"github.com/osteele/liquid"
 	"golang.org/x/sync/errgroup"
 )
@@ -206,8 +207,8 @@ func firstLine(s string) string {
 	return line
 }
 
-func (g *Graph) bindingFor(st Stash, now time.Time, kind, id string) map[string]any {
-	return map[string]any{"id": id, "stash": st.Values(scopeOf(kind, id), now)}
+func (g *Graph) bindingFor(st Stash, now time.Time, kind stash.ScopeKind, id string) map[string]any {
+	return map[string]any{"id": id, "stash": st.Values(Scope{Kind: kind, ID: id}, now)}
 }
 
 func (g *Graph) applyNote(a Annotation, st Stash, now time.Time) {
@@ -228,10 +229,10 @@ func (g *Graph) applyNote(a Annotation, st Stash, now time.Time) {
 func (g *Graph) noteOnInstances(a Annotation, st Stash, now time.Time) {
 	for _, inst := range g.annotatedInstances(a) {
 		b := map[string]any{
-			"project":     g.bindingFor(st, now, "PROJECT", a.ProjectID),
-			"environment": g.bindingFor(st, now, "ENVIRONMENT", inst.EnvID),
-			"component":   g.bindingFor(st, now, "COMPONENT", inst.ComponentID),
-			"instance":    g.bindingFor(st, now, "INSTANCE", inst.ID),
+			"project":     g.bindingFor(st, now, stash.ScopeProject, a.ProjectID),
+			"environment": g.bindingFor(st, now, stash.ScopeEnvironment, inst.EnvID),
+			"component":   g.bindingFor(st, now, stash.ScopeComponent, inst.ComponentID),
+			"instance":    g.bindingFor(st, now, stash.ScopeInstance, inst.ID),
 		}
 		inst.Notes = append(inst.Notes, renderNote(a.Template, b)...)
 	}
@@ -243,14 +244,14 @@ func (g *Graph) noteOnEnvironment(a Annotation, st Stash, now time.Time) {
 		return
 	}
 	b := map[string]any{
-		"project":     g.bindingFor(st, now, "PROJECT", a.ProjectID),
-		"environment": g.bindingFor(st, now, "ENVIRONMENT", env.ID),
+		"project":     g.bindingFor(st, now, stash.ScopeProject, a.ProjectID),
+		"environment": g.bindingFor(st, now, stash.ScopeEnvironment, env.ID),
 	}
 	env.Notes = append(env.Notes, renderNote(a.Template, b)...)
 }
 
 func (g *Graph) noteOnProject(a Annotation, st Stash, now time.Time) {
-	lines := renderNote(a.Template, map[string]any{"project": g.bindingFor(st, now, "PROJECT", a.ProjectID)})
+	lines := renderNote(a.Template, map[string]any{"project": g.bindingFor(st, now, stash.ScopeProject, a.ProjectID)})
 	for _, env := range g.Envs {
 		if env.ProjectID == a.ProjectID {
 			env.ProjectNotes = append(env.ProjectNotes, lines...)
@@ -261,10 +262,10 @@ func (g *Graph) noteOnProject(a Annotation, st Stash, now time.Time) {
 func (g *Graph) noteOnLinks(a Annotation, st Stash, now time.Time) {
 	for _, pair := range g.annotatedLinks(a) {
 		b := map[string]any{
-			"project":     g.bindingFor(st, now, "PROJECT", a.ProjectID),
-			"environment": g.bindingFor(st, now, "ENVIRONMENT", pair[0].EnvID),
-			"source":      g.bindingFor(st, now, "INSTANCE", pair[0].ID),
-			"destination": g.bindingFor(st, now, "INSTANCE", pair[1].ID),
+			"project":     g.bindingFor(st, now, stash.ScopeProject, a.ProjectID),
+			"environment": g.bindingFor(st, now, stash.ScopeEnvironment, pair[0].EnvID),
+			"source":      g.bindingFor(st, now, stash.ScopeInstance, pair[0].ID),
+			"destination": g.bindingFor(st, now, stash.ScopeInstance, pair[1].ID),
 		}
 		env := g.Env(pair[0].EnvID)
 		for _, line := range renderNote(a.Template, b) {

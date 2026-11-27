@@ -20,6 +20,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/auditlogs"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/streaming"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,6 +33,10 @@ type API interface {
 	Runtimes(ctx context.Context, cursor string) ([]Runtime, string, error)
 	Applications(ctx context.Context, cursor string) ([]Application, string, error)
 	StashEntries(ctx context.Context, scopes []Scope, cursor string) ([]StashEntry, string, error)
+	// SubscribeStash streams the keys set or deleted in an environment's
+	// stashes: its project, the environment, its components, and its
+	// instances.
+	SubscribeStash(ctx context.Context, projectID, environmentID string) (*streaming.Stream[StashEvent], error)
 	Annotations(ctx context.Context, projectID, cursor string) ([]Annotation, string, error)
 	Events(ctx context.Context, since time.Time) (Log, error)
 	History(ctx context.Context, since time.Time) (Log, error)
@@ -301,6 +306,7 @@ func drain[T any](ctx context.Context, page func(context.Context, string) ([]T, 
 type gqlAPI struct {
 	client graphql.Client
 	audit  AuditLister
+	stash  StashService
 	orgID  string
 
 	mu sync.Mutex
@@ -313,13 +319,13 @@ type gqlAPI struct {
 // GraphQL transport for the client's profile.
 func NewAPI(c *massdriver.Client) API {
 	cfg := c.Config()
-	return &gqlAPI{client: gql.NewV2Client(cfg), audit: c.AuditLogs, orgID: cfg.OrganizationID}
+	return &gqlAPI{client: gql.NewV2Client(cfg), audit: c.AuditLogs, stash: c.Stash, orgID: cfg.OrganizationID}
 }
 
-// NewAPIWithClient returns an [API] that sends queries through client and
-// reads the audit log through audit.
-func NewAPIWithClient(client graphql.Client, audit AuditLister, orgID string) API {
-	return &gqlAPI{client: client, audit: audit, orgID: orgID}
+// NewAPIWithClient returns an [API] that sends queries through client, reads
+// the audit log through audit, and reads the stash through stash.
+func NewAPIWithClient(client graphql.Client, audit AuditLister, stash StashService, orgID string) API {
+	return &gqlAPI{client: client, audit: audit, stash: stash, orgID: orgID}
 }
 
 const (

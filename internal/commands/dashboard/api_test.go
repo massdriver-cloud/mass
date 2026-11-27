@@ -14,7 +14,9 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/internal/commands/dashboard"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/auditlogs"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/streaming"
 )
 
 type fakeAPI struct {
@@ -40,6 +42,26 @@ type fakeAPI struct {
 	annotations map[string][]dashboard.Annotation
 	annErr      error
 	cancelled   int
+	// streamed holds the events each environment's first subscription sends
+	// before it ends; with streamed nil, subscribing needs a personal token.
+	streamed   map[string][]dashboard.StashEvent
+	subscribed []string
+}
+
+func (f *fakeAPI) SubscribeStash(_ context.Context, projectID, environmentID string) (*streaming.Stream[dashboard.StashEvent], error) {
+	f.scopeMu.Lock()
+	defer f.scopeMu.Unlock()
+	if f.streamed == nil || slices.Contains(f.subscribed, projectID+"/"+environmentID) {
+		return nil, streaming.ErrRequiresPAT
+	}
+	f.subscribed = append(f.subscribed, projectID+"/"+environmentID)
+	events := f.streamed[environmentID]
+	c := make(chan dashboard.StashEvent, len(events))
+	for _, ev := range events {
+		c <- ev
+	}
+	close(c)
+	return streaming.New(c, nil), nil
 }
 
 func (f *fakeAPI) StashEntries(ctx context.Context, scopes []dashboard.Scope, _ string) ([]dashboard.StashEntry, string, error) {
@@ -363,7 +385,7 @@ func TestNewAPIWithClient(t *testing.T) {
 		"dashboardRecent":       `{"deployments":{"items":[{"instance":null},{"instance":{"id":"i9","environment":{"id":"e9"}}}]},"environments":{"items":[{"id":"e1"}]}}`,
 	}}
 	audit := &fakeAudit{page: types.Page[types.AuditLog]{Items: []types.AuditLog{{ID: "a1", Type: "deployment.completed"}}}}
-	api := dashboard.NewAPIWithClient(client, audit, "acme")
+	api := dashboard.NewAPIWithClient(client, audit, nil, "acme")
 	ctx := context.Background()
 
 	envs, next, err := api.EnvironmentsByID(ctx, []string{"e1"}, "c1")
@@ -408,24 +430,37 @@ func TestNewAPIWithClient(t *testing.T) {
 	}
 }
 
+type fakeStash struct {
+	scopes []stash.Scope
+	input  stash.ForScopesInput
+	page   types.Page[stash.Entry]
+}
+
+func (f *fakeStash) Subscribe(context.Context, string, string) (*streaming.Stream[stash.Event], error) {
+	return nil, streaming.ErrRequiresPAT
+}
+
+func (f *fakeStash) ListForScopes(_ context.Context, scopes []stash.Scope, input stash.ForScopesInput) (types.Page[stash.Entry], error) {
+	f.scopes, f.input = scopes, input
+	return f.page, nil
+}
+
 func TestNewAPIWithClientStash(t *testing.T) {
 	client := &recordingClient{data: map[string]string{
-		"dashboardStash": `{"alphaStashEntriesForScopes":{"cursor":{"next":null},"items":[` +
-			`{"scope":{"kind":"INSTANCE","id":"i1"},"key":"md/health","value":"down","data":null,"format":"TEXT","label":null},` +
-			`{"scope":{"kind":"INSTANCE","id":"i1"},"key":"md/usage","value":"{\"value\":3,\"max\":4}","data":"{\"value\":3,\"max\":4}","format":"JSON"}]}}`,
 		"dashboardAnnotations": `{"alphaAnnotations":{"cursor":{"next":null},"items":[` +
 			`{"id":"a1","kind":"NOTE","surfaces":["environment.canvas_legend"],"template":"hi","inputs":null,"entity":{"__typename":"Environment","id":"e1"}}]}}`,
 	}}
-	api := dashboard.NewAPIWithClient(client, &fakeAudit{}, "acme")
+	down := "down"
+	st := &fakeStash{page: types.Page[stash.Entry]{Items: []stash.Entry{{Scope: stash.Scope{Kind: stash.ScopeInstance, ID: "i1"}, Key: "md/v1/health", Value: &down}}, Next: "c2"}}
+	api := dashboard.NewAPIWithClient(client, &fakeAudit{}, st, "acme")
 	ctx := context.Background()
-	entries, _, err := api.StashEntries(ctx, []dashboard.Scope{{Kind: "ENVIRONMENT", ID: "e1"}, {Kind: "INSTANCE", ID: "i1"}}, "")
-	if err != nil || len(entries) != 2 || entries[0].Value != "down" || entries[0].Data != nil || entries[1].Data["max"] != 4.0 {
-		t.Errorf("StashEntries = %+v, %v; want data read from an object or an encoded string", entries, err)
+	scopes := []dashboard.Scope{{Kind: stash.ScopeEnvironment, ID: "e1"}, {Kind: stash.ScopeInstance, ID: "i1"}}
+	entries, next, err := api.StashEntries(ctx, scopes, "c1")
+	if err != nil || next != "c2" || len(entries) != 1 || *entries[0].Value != "down" {
+		t.Errorf("StashEntries = %+v, %q, %v", entries, next, err)
 	}
-	svars, _ := client.reqs[len(client.reqs)-1].Variables.(map[string]any)
-	scopes, _ := svars["scopes"].([]map[string]string)
-	if len(scopes) != 2 || scopes[0]["environment"] != "e1" || scopes[1]["instance"] != "i1" {
-		t.Errorf("scopes = %v, want one field per scope", svars["scopes"])
+	if len(st.scopes) != 2 || st.input.After != "c1" || st.input.PageSize == 0 {
+		t.Errorf("read scopes %v with %+v, want both scopes from the cursor", st.scopes, st.input)
 	}
 	notes, _, err := api.Annotations(ctx, "p1", "")
 	if err != nil || len(notes) != 1 || notes[0].Entity.Typename != "Environment" || notes[0].Template != "hi" {
@@ -496,7 +531,7 @@ func TestReadAudit(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			api := dashboard.NewAPIWithClient(nil, pagedAudit{pages: tc.pages}, "acme")
+			api := dashboard.NewAPIWithClient(nil, pagedAudit{pages: tc.pages}, nil, "acme")
 			log, err := api.History(context.Background(), time.Time{})
 			if tc.wantErr != (err != nil) {
 				t.Fatalf("err = %v", err)
@@ -512,7 +547,7 @@ func TestReadAudit(t *testing.T) {
 		})
 	}
 
-	api := dashboard.NewAPIWithClient(nil, pagedAudit{pages: newestFirst(320)}, "acme")
+	api := dashboard.NewAPIWithClient(nil, pagedAudit{pages: newestFirst(320)}, nil, "acme")
 	burst, err := api.Events(context.Background(), time.Time{})
 	if err != nil || len(burst.Events) != 320 || burst.Truncated {
 		t.Errorf("a burst of 320 events between polls read %d, %v; want every page", len(burst.Events), err)
@@ -620,7 +655,7 @@ func TestTooComplexAsksForSmallerPages(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			client := &costlyClient{most: tc.most}
-			api := dashboard.NewAPIWithClient(client, &fakeAudit{}, "acme")
+			api := dashboard.NewAPIWithClient(client, &fakeAudit{}, nil, "acme")
 			err := tc.read(api)
 			if err == nil {
 				err = tc.read(api)

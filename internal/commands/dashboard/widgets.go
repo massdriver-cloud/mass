@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
 )
 
 // Widgets the Massdriver UI draws, named by the surface they show on.
@@ -31,30 +33,30 @@ type widgetInput struct {
 // an annotation.
 type widgetSpec struct {
 	key    string
-	scope  string
+	scope  stash.ScopeKind
 	format string
 	inputs []widgetInput
 }
 
 var widgetSpecs = map[string]widgetSpec{
-	WidgetHealth: {key: "md/health", scope: "INSTANCE", format: "TEXT", inputs: []widgetInput{
+	WidgetHealth: {key: stash.KeyHealthV1, scope: stash.ScopeInstance, format: "TEXT", inputs: []widgetInput{
 		{name: "state", kind: "string", required: true},
 	}},
-	WidgetUsage: {key: "md/usage", scope: "INSTANCE", format: "JSON", inputs: []widgetInput{
+	WidgetUsage: {key: stash.KeyUsageV1, scope: stash.ScopeInstance, format: "JSON", inputs: []widgetInput{
 		{name: "value", kind: "number", required: true, field: "value"},
 		{name: "max", kind: "number", required: true, field: "max"},
 		{name: "label", kind: "string", field: "label"},
 	}},
-	WidgetTraffic: {key: "md/traffic", scope: "INSTANCE", format: "JSON", inputs: []widgetInput{
+	WidgetTraffic: {key: stash.KeyTrafficV1, scope: stash.ScopeInstance, format: "JSON", inputs: []widgetInput{
 		{name: "rate", kind: "number", required: true, field: "rps"},
 		{name: "errors", kind: "integer", required: true, field: "errors_5m"},
 		{name: "latency", kind: "number", field: "p95_ms"},
 	}},
-	WidgetBanner: {key: "md/banner", scope: "ENVIRONMENT", format: "JSON", inputs: []widgetInput{
+	WidgetBanner: {key: stash.KeyBannerV1, scope: stash.ScopeEnvironment, format: "JSON", inputs: []widgetInput{
 		{name: "message", kind: "string", required: true, field: "message"},
 		{name: "level", kind: "string", field: "level"},
 	}},
-	WidgetLinks: {key: "md/links", scope: "ENVIRONMENT", format: "JSON", inputs: []widgetInput{
+	WidgetLinks: {key: stash.KeyLinksV1, scope: stash.ScopeEnvironment, format: "JSON", inputs: []widgetInput{
 		{name: "links", kind: "array", required: true, field: "links"},
 	}},
 }
@@ -77,7 +79,7 @@ func automatic(spec widgetSpec, st Stash, scope Scope, now time.Time) (resolved,
 		if in.field != "" {
 			path = []any{in.field}
 		}
-		sources[in.name] = map[string]any{"scope": map[string]any{strings.ToLower(scope.Kind): scope.ID}, "key": spec.key, "path": path}
+		sources[in.name] = map[string]any{"scope": map[string]any{string(scope.Kind): scope.ID}, "key": spec.key, "path": path}
 	}
 	return resolve(spec, sources, st, now)
 }
@@ -115,7 +117,7 @@ func lookup(src map[string]any, st Stash, now time.Time) (any, time.Time, bool) 
 	var scope Scope
 	for kind, id := range scopeMap {
 		s, _ := id.(string)
-		scope = scopeOf(kind, s)
+		scope = scopeOf(stash.ScopeKind(kind), s)
 	}
 	e, ok := st.Get(scope, key, now)
 	if !ok {
@@ -125,14 +127,14 @@ func lookup(src map[string]any, st Stash, now time.Time) (any, time.Time, bool) 
 	if len(path) > 0 && e.Format != "JSON" {
 		return nil, time.Time{}, false
 	}
-	value := e.value()
+	value := valueOf(e)
 	for _, seg := range path {
 		value, ok = descend(value, seg)
 		if !ok {
 			return nil, time.Time{}, false
 		}
 	}
-	return value, e.updated(), true
+	return value, e.UpdatedAt, true
 }
 
 func descend(value, seg any) (any, bool) {
@@ -207,14 +209,14 @@ func (g *Graph) applyAnnotations(st Stash, annotations []Annotation, now time.Ti
 
 func (g *Graph) applyAutomatic(env *EnvNode, st Stash, pinned map[string]bool, now time.Time) {
 	for name, spec := range widgetSpecs {
-		if spec.scope == "ENVIRONMENT" {
-			if r, ok := automatic(spec, st, scopeOf("ENVIRONMENT", env.ID), now); ok && !pinned[name+"\x00"+env.ID] {
+		if spec.scope == stash.ScopeEnvironment {
+			if r, ok := automatic(spec, st, Scope{Kind: stash.ScopeEnvironment, ID: env.ID}, now); ok && !pinned[name+"\x00"+env.ID] {
 				applyEnvWidget(env, name, r)
 			}
 			continue
 		}
 		for _, inst := range env.Instances {
-			if r, ok := automatic(spec, st, scopeOf("INSTANCE", inst.ID), now); ok && !pinned[name+"\x00"+inst.ID] {
+			if r, ok := automatic(spec, st, Scope{Kind: stash.ScopeInstance, ID: inst.ID}, now); ok && !pinned[name+"\x00"+inst.ID] {
 				applyInstanceWidget(inst, name, r)
 			}
 		}

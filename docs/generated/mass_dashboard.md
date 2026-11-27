@@ -28,7 +28,7 @@ A live ticker follows the audit log. When something happens, its environment lig
 
 **Replay** plays the audit log back, from five minutes to 24 hours ago, onto the map, so you can watch a rollout, an incident, or a busy afternoon move across your environments.
 
-The dashboard follows the stash as a feed, reading it every few seconds (`--stash`). Each change goes on the ticker and lights up its environment. Widgets show where they belong: `md/health` colors an instance, `md/usage` draws its usage bar, `md/traffic` sets the pace of the sparks on the links an instance sends on and labels them with requests per second, latency, and errors, `md/banner` runs across the top of the map and flags its environment, and `md/links` puts its dashboards and runbooks in the side panel. Your annotations show too: widgets you pinned to any stash key, and notes rendered from their Liquid templates. Annotations need a personal access token; a service account has none.
+The dashboard follows the stash as a feed. It reads every stash in view once, then streams each key as it is set or deleted. Streaming needs a personal access token; with a service account, or while a stream reconnects, the dashboard reads the stash every few seconds instead (`--stash`). Each change goes on the ticker and lights up its environment. Widgets show where they belong: `md/v1/health` colors an instance, `md/v1/usage` draws its usage bar, `md/v1/traffic` sets the pace of the sparks on the links an instance sends on and labels them with requests per second, latency, and errors, `md/v1/banner` runs across the top of the map and flags its environment, and `md/v1/links` puts its dashboards and runbooks in the side panel. Your annotations show too: widgets you pinned to any stash key, and notes rendered from their Liquid templates. Annotations need a personal access token; a service account has none.
 
 With `--watch`, an alarm that starts firing takes the view to its environment, locks on, shows its blast radius under a banner that counts up, and rings the terminal with a desktop notification. When it clears, the banner says how long it lasted and the view goes back where it was.
 
@@ -61,7 +61,7 @@ mass dashboard [flags]
   -h, --help               help for dashboard
       --palette string     Colors and backdrop: night, blueprint, rain (default "night")
       --refresh duration   How often to re-read the organization; 0 reads once (default 30s)
-      --stash duration     How often to read the stash for widgets, notes, and the live feed; each read covers every scope, so a short interval costs more; 0 reads it with each refresh (default 3s)
+      --stash duration     How often to read the stash when it cannot be streamed, as when the profile signs in without a personal access token or while a stream reconnects; 0 reads it with each refresh (default 3s)
       --theme string       How the map is drawn: constellation, metro, radar (default "constellation")
       --watch              Jump to any alarm that starts firing in view while the dashboard is open, and send a desktop notification
 ```

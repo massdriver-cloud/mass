@@ -3,37 +3,28 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"reflect"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/streaming"
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	// maxStashScopes is the most stashes one read takes.
-	maxStashScopes = 200
-	stashReads     = 4
-)
+const stashReads = 4
 
 // Scope names one stash: a project, environment, component, or instance.
-type Scope struct {
-	Kind string `json:"kind"`
-	ID   string `json:"id"`
-}
+type Scope = stash.Scope
 
 // StashEntry is one key in a stash.
-type StashEntry struct {
-	Scope     Scope  `json:"scope"`
-	Key       string `json:"key"`
-	Label     string `json:"label"`
-	Value     string `json:"value"`
-	Data      Values `json:"data"`
-	Format    string `json:"format"`
-	ExpiresAt string `json:"expiresAt"`
-	UpdatedAt string `json:"updatedAt"`
-}
+type StashEntry = stash.Entry
+
+// StashEvent says a key in a stash was set or deleted.
+type StashEvent = stash.Event
 
 // Stash is every entry the dashboard reads, by scope and key.
 type Stash map[Scope]map[string]StashEntry
@@ -46,12 +37,16 @@ type StashChange struct {
 	Entry *StashEntry
 }
 
-func scopeOf(kind, id string) Scope { return Scope{Kind: strings.ToUpper(kind), ID: id} }
+// scopeOf names a scope from a kind spelled in any case, as a widget's
+// inputs spell it.
+func scopeOf(kind stash.ScopeKind, id string) Scope {
+	return Scope{Kind: stash.ScopeKind(strings.ToLower(string(kind))), ID: id}
+}
 
 // Get returns the entry for key in scope, unless it has expired.
 func (st Stash) Get(scope Scope, key string, now time.Time) (StashEntry, bool) {
 	e, ok := st[scopeOf(scope.Kind, scope.ID)][key]
-	if !ok || e.expired(now) {
+	if !ok || expired(e, now) {
 		return StashEntry{}, false
 	}
 	return e, true
@@ -62,28 +57,77 @@ func (st Stash) Get(scope Scope, key string, now time.Time) (StashEntry, bool) {
 func (st Stash) Values(scope Scope, now time.Time) map[string]any {
 	out := map[string]any{}
 	for key, e := range st[scopeOf(scope.Kind, scope.ID)] {
-		if !e.expired(now) {
-			out[key] = e.value()
+		if !expired(e, now) {
+			out[key] = valueOf(e)
 		}
 	}
 	return out
 }
 
-func (e StashEntry) expired(now time.Time) bool {
-	at, err := time.Parse(time.RFC3339, e.ExpiresAt)
-	return err == nil && !at.After(now)
+func expired(e StashEntry, now time.Time) bool {
+	return !e.ExpiresAt.IsZero() && !e.ExpiresAt.After(now)
 }
 
-func (e StashEntry) value() any {
-	if e.Format == "JSON" {
-		return map[string]any(e.Data)
+func valueOf(e StashEntry) any {
+	if e.Format == string(stash.FormatJSON) {
+		return e.Data
 	}
-	return e.Value
+	return text(e)
 }
 
-func (e StashEntry) updated() time.Time {
-	at, _ := time.Parse(time.RFC3339, e.UpdatedAt)
-	return at
+func text(e StashEntry) string {
+	if e.Value == nil {
+		return ""
+	}
+	return *e.Value
+}
+
+// Apply returns the stash with events applied, leaving st as it was.
+func (st Stash) Apply(events []StashEvent) Stash {
+	out := maps.Clone(st)
+	if out == nil {
+		out = Stash{}
+	}
+	copied := map[Scope]bool{}
+	for _, ev := range events {
+		if !copied[ev.Scope] {
+			out[ev.Scope] = maps.Clone(st[ev.Scope])
+			if out[ev.Scope] == nil {
+				out[ev.Scope] = map[string]StashEntry{}
+			}
+			copied[ev.Scope] = true
+		}
+		switch {
+		case ev.Action == stash.EventDeleted:
+			delete(out[ev.Scope], ev.Key)
+		case ev.Entry != nil:
+			e := cleanEntry(*ev.Entry)
+			e.Scope = ev.Scope
+			out[ev.Scope][ev.Key] = e
+		}
+	}
+	return out
+}
+
+// KeepTouched copies from prev each key that touched says changed after
+// since: a read that started before an event arrived would undo it.
+func (st Stash) KeepTouched(prev Stash, touched map[Scope]map[string]time.Time, since time.Time) {
+	for scope, keys := range touched {
+		for key, at := range keys {
+			if !at.After(since) {
+				continue
+			}
+			e, ok := prev[scope][key]
+			switch {
+			case ok && st[scope] == nil:
+				st[scope] = map[string]StashEntry{key: e}
+			case ok:
+				st[scope][key] = e
+			default:
+				delete(st[scope], key)
+			}
+		}
+	}
 }
 
 // Changes lists the keys set or deleted since prev.
@@ -92,7 +136,7 @@ func (st Stash) Changes(prev Stash) []StashChange {
 	for scope, entries := range st {
 		for key, e := range entries {
 			old, ok := prev[scope][key]
-			if !ok || old.UpdatedAt != e.UpdatedAt || old.Value != e.Value || !reflect.DeepEqual(old.Data, e.Data) {
+			if !ok || !old.UpdatedAt.Equal(e.UpdatedAt) || text(old) != text(e) || !reflect.DeepEqual(old.Data, e.Data) {
 				out = append(out, StashChange{Scope: scope, Key: key, Entry: &e})
 			}
 		}
@@ -110,28 +154,20 @@ func (st Stash) Changes(prev Stash) []StashChange {
 	return out
 }
 
-const stashQuery = `query dashboardStash($organizationId: ID!, $scopes: [AlphaStashScope!]!, $cursor: Cursor) {
-  alphaStashEntriesForScopes(organizationId: $organizationId, scopes: $scopes, cursor: $cursor) {
-    cursor { next }
-    items { scope { kind id } key label value data format expiresAt updatedAt }
-  }
-}`
+// StashService reads the stash of many scopes at once, and streams its
+// changes.
+type StashService interface {
+	ListForScopes(ctx context.Context, scopes []stash.Scope, input stash.ForScopesInput) (types.Page[stash.Entry], error)
+	Subscribe(ctx context.Context, projectID, environmentID string) (*streaming.Stream[stash.Event], error)
+}
 
 func (a *gqlAPI) StashEntries(ctx context.Context, scopes []Scope, cursor string) ([]StashEntry, string, error) {
-	input := make([]map[string]string, 0, len(scopes))
-	for _, s := range scopes {
-		input = append(input, map[string]string{strings.ToLower(s.Kind): s.ID})
-	}
-	cur := map[string]any{"limit": pageLimit}
-	if cursor != "" {
-		cur["next"] = cursor
-	}
-	vars := map[string]any{"organizationId": a.orgID, "scopes": input, "cursor": cur}
-	var data struct {
-		Page page[StashEntry] `json:"alphaStashEntriesForScopes"`
-	}
-	err := a.request(ctx, "dashboardStash", stashQuery, vars, &data)
-	return data.Page.Items, data.Page.Cursor.Next, err
+	page, err := a.stash.ListForScopes(ctx, scopes, stash.ForScopesInput{PageSize: pageLimit, After: cursor})
+	return page.Items, page.Next, err
+}
+
+func (a *gqlAPI) SubscribeStash(ctx context.Context, projectID, environmentID string) (*streaming.Stream[StashEvent], error) {
+	return a.stash.Subscribe(ctx, projectID, environmentID)
 }
 
 // Every scope of a read must be in one project.
@@ -153,20 +189,20 @@ func stashScopes(envs []Environment) [][]Scope {
 		if _, ok := byProject[id]; !ok {
 			projects = append(projects, id)
 		}
-		add(id, scopeOf("PROJECT", id))
-		add(id, scopeOf("ENVIRONMENT", env.ID))
+		add(id, Scope{Kind: stash.ScopeProject, ID: id})
+		add(id, Scope{Kind: stash.ScopeEnvironment, ID: env.ID})
 		for _, inst := range env.Instances {
 			if inst.Component != nil {
-				add(id, scopeOf("COMPONENT", inst.Component.ID))
+				add(id, Scope{Kind: stash.ScopeComponent, ID: inst.Component.ID})
 			}
-			add(id, scopeOf("INSTANCE", inst.ID))
+			add(id, Scope{Kind: stash.ScopeInstance, ID: inst.ID})
 		}
 	}
 	var batches [][]Scope
 	for _, id := range projects {
 		scopes := byProject[id]
 		for len(scopes) > 0 {
-			n := min(len(scopes), maxStashScopes)
+			n := min(len(scopes), stash.MaxScopes)
 			batches = append(batches, scopes[:n])
 			scopes = scopes[n:]
 		}
@@ -203,11 +239,10 @@ func ReadStash(ctx context.Context, api API, envs []Environment) StashRead {
 	st := Stash{}
 	for _, e := range slices.Concat(results...) {
 		e = cleanEntry(e)
-		scope := scopeOf(e.Scope.Kind, e.Scope.ID)
-		if st[scope] == nil {
-			st[scope] = map[string]StashEntry{}
+		if st[e.Scope] == nil {
+			st[e.Scope] = map[string]StashEntry{}
 		}
-		st[scope][e.Key] = e
+		st[e.Scope][e.Key] = e
 	}
 	read := StashRead{Stash: st}
 	for i, e := range errs {
@@ -223,14 +258,18 @@ func ReadStash(ctx context.Context, api API, envs []Environment) StashRead {
 // reach.
 func (st Stash) Keep(prev Stash, scopes []Scope) {
 	for _, s := range scopes {
-		if entries, ok := prev[scopeOf(s.Kind, s.ID)]; ok {
-			st[scopeOf(s.Kind, s.ID)] = entries
+		if entries, ok := prev[s]; ok {
+			st[s] = entries
 		}
 	}
 }
 
 func cleanEntry(e StashEntry) StashEntry {
-	e.Key, e.Label, e.Value = clean(e.Key), clean(e.Label), clean(e.Value)
+	e.Key, e.Label = clean(e.Key), clean(e.Label)
+	if e.Value != nil {
+		v := clean(*e.Value)
+		e.Value = &v
+	}
 	e.Data = cleanValues(e.Data)
 	return e
 }
@@ -265,36 +304,37 @@ func cleanAny(v any) any {
 
 func (g *Graph) envOfScope(s Scope) string {
 	switch s.Kind {
-	case "ENVIRONMENT":
+	case stash.ScopeEnvironment:
 		return s.ID
-	case "INSTANCE":
+	case stash.ScopeInstance:
 		if inst := g.Instance(s.ID); inst != nil {
 			return inst.EnvID
 		}
+	case stash.ScopeProject, stash.ScopeComponent, stash.ScopeDeployment:
 	}
 	return ""
 }
 
 // StashEvent describes a stash change for the ticker.
 func (g *Graph) StashEvent(c StashChange, at time.Time) Event {
-	ev := Event{ID: "stash:" + c.Scope.Kind + ":" + c.Scope.ID + ":" + c.Key, At: at, EnvID: g.envOfScope(c.Scope)}
+	ev := Event{ID: "stash:" + c.Scope.String() + ":" + c.Key, At: at, EnvID: g.envOfScope(c.Scope)}
 	if c.Entry == nil {
 		ev.Type, ev.Detail = "stash.deleted", c.Key
 		return ev
 	}
 	ev.Type = "stash.set"
-	if t := c.Entry.updated(); !t.IsZero() {
-		ev.At = t
+	if !c.Entry.UpdatedAt.IsZero() {
+		ev.At = c.Entry.UpdatedAt
 	}
 	ev.Detail = c.Key + " = " + preview(c.Entry)
 	if ev.EnvID == "" {
-		ev.Detail = strings.ToLower(c.Scope.Kind) + " " + c.Scope.ID + " · " + ev.Detail
+		ev.Detail = string(c.Scope.Kind) + " " + c.Scope.ID + " · " + ev.Detail
 	}
 	return ev
 }
 
 func preview(e *StashEntry) string {
-	v := e.Value
+	v := text(*e)
 	if v == "" && e.Data != nil {
 		data, _ := json.Marshal(e.Data)
 		v = string(data)

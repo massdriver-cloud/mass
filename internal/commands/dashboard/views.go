@@ -380,7 +380,7 @@ func Legend(watch bool, notesErr error) string {
 		styleHeading.Render("LINES"),
 		styleMuted.Render("━━━ ")+"Uses resources from",
 		styleTeal.Render("─ ─ ")+"Forked from",
-		styleTeal.Render("1.2k/s")+styleRed.Render(" ✕7")+" Traffic and errors from md/traffic",
+		styleTeal.Render("1.2k/s")+styleRed.Render(" ✕7")+" Traffic and errors from md/v1/traffic",
 		"",
 		styleHeading.Render("COLORS"),
 		dot(colorGreen)+" Provisioned  "+dot(colorRed)+" Failed",

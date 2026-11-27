@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/massdriver-cloud/mass/internal/commands/dashboard"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
 )
 
 func note(surface, typename, id, template string) dashboard.Annotation {
@@ -17,15 +18,15 @@ func note(surface, typename, id, template string) dashboard.Annotation {
 func withNotes() *fakeAPI {
 	api := withStash()
 	api.stash = append(api.stash,
-		text(dashboard.Scope{Kind: "PROJECT", ID: "care"}, "release-train", "2026.12"),
-		text(dashboard.Scope{Kind: "COMPONENT", ID: "care-app"}, "owner", "visits-team"),
+		text(dashboard.Scope{Kind: stash.ScopeProject, ID: "care"}, "release-train", "2026.12"),
+		text(dashboard.Scope{Kind: stash.ScopeComponent, ID: "care-app"}, "owner", "visits-team"),
 	)
 	api.envPages[0][1].Instances[1].Component = ref("care-queue", "")
-	edge := note(dashboard.SurfaceCanvasEdge, "Link", "l1", "{{ source.stash[\"md/traffic\"].rps }} rps into {{ destination.id }}")
+	edge := note(dashboard.SurfaceCanvasEdge, "Link", "l1", "{{ source.stash[\"md/v1/traffic\"].rps }} rps into {{ destination.id }}")
 	edge.Entity.FromComponent, edge.Entity.ToComponent = ref("care-app", ""), ref("care-queue", "")
 	api.annotations = map[string][]dashboard.Annotation{"care": {
 		note(dashboard.SurfaceCanvasLegend, "Environment", "care-dev", "## Health: **{{ environment.id }}** ![chart](https://x/y.png)\n\nsee [runbook](https://wiki)"),
-		note(dashboard.SurfaceCanvasNode, "Component", "care-app", "owned by {{ component.stash.owner }}, {{ instance.stash[\"md/health\"] }}"),
+		note(dashboard.SurfaceCanvasNode, "Component", "care-app", "owned by {{ component.stash.owner }}, {{ instance.stash[\"md/v1/health\"] }}"),
 		note(dashboard.SurfaceProject, "Project", "care", "train {{ project.stash[\"release-train\"] }}"),
 		note(dashboard.SurfaceCanvasLegend, "Environment", "care-dev", "{% if %}"),
 		edge,

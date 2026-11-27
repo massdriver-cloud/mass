@@ -7,35 +7,37 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/massdriver-cloud/mass/internal/commands/dashboard"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
 )
 
-func inst(id string) dashboard.Scope { return dashboard.Scope{Kind: "INSTANCE", ID: id} }
-func env(id string) dashboard.Scope  { return dashboard.Scope{Kind: "ENVIRONMENT", ID: id} }
+func inst(id string) dashboard.Scope { return dashboard.Scope{Kind: stash.ScopeInstance, ID: id} }
+func env(id string) dashboard.Scope  { return dashboard.Scope{Kind: stash.ScopeEnvironment, ID: id} }
 
 func text(scope dashboard.Scope, key, value string) dashboard.StashEntry {
-	return dashboard.StashEntry{Scope: scope, Key: key, Value: value, Format: "TEXT", UpdatedAt: fixedNow().Format(time.RFC3339)}
+	return dashboard.StashEntry{Scope: scope, Key: key, Value: &value, Format: "TEXT", UpdatedAt: fixedNow()}
 }
 
 func object(scope dashboard.Scope, key string, data dashboard.Values) dashboard.StashEntry {
-	return dashboard.StashEntry{Scope: scope, Key: key, Value: "{}", Data: data, Format: "JSON", UpdatedAt: fixedNow().Format(time.RFC3339)}
+	encoded := "{}"
+	return dashboard.StashEntry{Scope: scope, Key: key, Value: &encoded, Data: data, Format: "JSON", UpdatedAt: fixedNow()}
 }
 
 func withStash() *fakeAPI {
 	api := fixture()
 	api.stash = []dashboard.StashEntry{
-		text(inst("care-dev-app"), "md/health", "degraded"),
-		object(inst("care-dev-app"), "md/usage", dashboard.Values{"value": 82.0, "max": 100.0, "label": "% CPU"}),
-		object(inst("care-dev-queue"), "md/usage", dashboard.Values{"value": 1.0, "max": 0.0}),
-		object(inst("platform-dev-db"), "md/traffic", dashboard.Values{"rps": 1250.0, "errors_5m": 7.0, "p95_ms": 180.0}),
-		object(inst("care-dev-app"), "md/traffic", dashboard.Values{"rps": 40.0, "errors_5m": 0.0}),
-		object(env("care-dev"), "md/banner", dashboard.Values{"message": "Load test until 5pm", "level": "warning"}),
-		object(env("billing-dev"), "md/banner", dashboard.Values{"level": "error"}),
-		object(env("care-dev"), "md/links", dashboard.Values{"links": []any{
+		text(inst("care-dev-app"), "md/v1/health", "degraded"),
+		object(inst("care-dev-app"), "md/v1/usage", dashboard.Values{"value": 82.0, "max": 100.0, "label": "% CPU"}),
+		object(inst("care-dev-queue"), "md/v1/usage", dashboard.Values{"value": 1.0, "max": 0.0}),
+		object(inst("platform-dev-db"), "md/v1/traffic", dashboard.Values{"rps": 1250.0, "errors_5m": 7.0, "p95_ms": 180.0}),
+		object(inst("care-dev-app"), "md/v1/traffic", dashboard.Values{"rps": 40.0, "errors_5m": 0.0}),
+		object(env("care-dev"), "md/v1/banner", dashboard.Values{"message": "Load test until 5pm", "level": "warning"}),
+		object(env("billing-dev"), "md/v1/banner", dashboard.Values{"level": "error"}),
+		object(env("care-dev"), "md/v1/links", dashboard.Values{"links": []any{
 			map[string]any{"label": "Grafana", "url": "https://grafana.example.com"},
 			map[string]any{"label": "", "url": "https://skipped.example.com"},
 		}}),
-		text(inst("billing-dev-app"), "md/health", "ok"),
-		object(inst("billing-dev-app"), "md/health", dashboard.Values{"state": "wrong format"}),
+		text(inst("billing-dev-app"), "md/v1/health", "ok"),
+		object(inst("billing-dev-app"), "md/v1/health", dashboard.Values{"state": "wrong format"}),
 	}
 	return api
 }
@@ -104,8 +106,8 @@ func TestWidgetsFromWellKnownKeys(t *testing.T) {
 func TestWidgetsCannotEscapeTheTerminal(t *testing.T) {
 	api := fixture()
 	api.stash = []dashboard.StashEntry{
-		object(env("care-dev"), "md/banner", dashboard.Values{"message": "fine\x1b]0;owned\x07\u009b2J"}),
-		object(env("care-dev"), "md/links", dashboard.Values{"links": []any{
+		object(env("care-dev"), "md/v1/banner", dashboard.Values{"message": "fine\x1b]0;owned\x07\u009b2J"}),
+		object(env("care-dev"), "md/v1/links", dashboard.Values{"links": []any{
 			map[string]any{"label": "ok\x1b[31m", "url": "https://ok.example.com\x1b\\"},
 			map[string]any{"label": "local", "url": "file:///etc/passwd"},
 			map[string]any{"label": "script", "url": "javascript:alert(1)"},
@@ -156,7 +158,7 @@ func TestPinnedWidgets(t *testing.T) {
 		t.Errorf("care-dev-queue = health %q usage %+v; want widgets from pinned keys, with numbers read from text", queue.Health, queue.Usage)
 	}
 	if b := g.Env("care-dev").Banner; b == nil || b.Message != "Database upgrade tonight" {
-		t.Errorf("banner = %+v; a pinned banner replaces the md/banner one", b)
+		t.Errorf("banner = %+v; a pinned banner replaces the md/v1/banner one", b)
 	}
 	if g.Instance("care-dev-app").Health != "degraded" {
 		t.Error("a pinned widget that cannot resolve leaves the md/ widget in place")

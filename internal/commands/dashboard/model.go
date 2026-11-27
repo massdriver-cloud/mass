@@ -58,8 +58,8 @@ type Config struct {
 	Refresh time.Duration
 	// EventPoll is how often to read new audit log events; zero never does.
 	EventPoll time.Duration
-	// StashPoll is how often to read the stash for its feed; zero reads it
-	// only with each refresh.
+	// StashPoll is how often to read the stash when it cannot be streamed;
+	// zero reads it only with each refresh.
 	StashPoll time.Duration
 	Now       func() time.Time
 	Links     Links
@@ -98,6 +98,8 @@ type (
 	stashMsg struct {
 		read    StashRead
 		initial bool
+		// at is when the read started.
+		at time.Time
 	}
 	frameMsg     time.Time
 	motionMsg    time.Time
@@ -175,6 +177,7 @@ type Model struct {
 
 	stash         Stash
 	stashOn       bool
+	feed          feed
 	watch         watchState
 	replayRequest int
 	events        []Event
@@ -248,65 +251,6 @@ func (m Model) ctx() context.Context {
 		return context.Background()
 	}
 	return m.cfg.Context
-}
-
-func (m Model) fetchStash(initial bool) tea.Cmd {
-	if m.snap == nil {
-		return nil
-	}
-	api, ctx, envs := m.api, m.ctx(), m.snap.Environments
-	return func() tea.Msg {
-		return stashMsg{read: ReadStash(ctx, api, envs), initial: initial}
-	}
-}
-
-// applyStash takes a new read of the stash: it redraws widgets and notes,
-// and past the first read, puts each change on the ticker and flashes where
-// it happened.
-func (m Model) applyStash(msg stashMsg) (Model, tea.Cmd) {
-	var next tea.Cmd
-	if m.cfg.StashPoll > 0 {
-		next = after(m.cfg.StashPoll, stashPollMsg{})
-	}
-	if m.graph == nil {
-		return m, next
-	}
-	st := msg.read.Stash
-	st.Keep(m.stash, msg.read.Failed)
-	var changes []StashChange
-	if !msg.initial {
-		changes = st.Changes(m.stash)
-	}
-	m.stash = st
-	now := m.cfg.Now()
-	m.graph.ApplyStash(m.stash, m.snap.Annotations, now)
-	if len(changes) == 0 {
-		return m, next
-	}
-	fresh := make([]Event, 0, len(changes))
-	ids := map[string]bool{}
-	flashes := make(map[string]Flash, len(m.flashes)+len(changes))
-	for id, f := range m.flashes {
-		flashes[id] = f
-	}
-	for _, c := range changes {
-		ev := m.graph.StashEvent(c, now)
-		fresh = append(fresh, ev)
-		ids[ev.ID] = true
-		if ev.EnvID != "" && !m.replay.on {
-			flashes[ev.EnvID] = Flash{Label: c.Key}
-		}
-	}
-	m.flashes = flashes
-	kept := m.events[:0:0]
-	for _, ev := range m.events {
-		if !ids[ev.ID] {
-			kept = append(kept, ev)
-		}
-	}
-	m.events = slices.Concat(fresh, kept)
-	m.events = m.events[:min(len(m.events), eventsKept)]
-	return m, next
 }
 
 func after(d time.Duration, msg tea.Msg) tea.Cmd {
@@ -467,9 +411,17 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 	case eventPollMsg:
 		return m, m.fetchEvents(false)
 	case stashPollMsg:
-		return m, m.fetchStash(false)
+		return m.pollStash()
 	case stashMsg:
-		return m.applyStash(msg)
+		return m.applyStash(msg), nil
+	case subscribedMsg:
+		return m.applySubscribed(msg)
+	case stashEventsMsg:
+		return m.applyStashEvents(msg)
+	case stashClosedMsg:
+		return m.applyStashClosed(msg)
+	case resubscribeMsg:
+		return m.applyResubscribe(msg)
 	case refocusMsg:
 		return m.refocus(msg)
 	case directoryMsg:
@@ -541,8 +493,12 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 		m.upgradeIdx = min(m.upgradeIdx, max(len(m.upgrades())-1, 0))
 		m, alert = m.watchAlarms(before)
 		m.graph.ApplyStash(m.stash, m.snap.Annotations, m.cfg.Now())
-		if !m.stashOn || m.cfg.StashPoll <= 0 {
-			alert = tea.Batch(alert, m.fetchStash(!m.stashOn))
+		var read, subs tea.Cmd
+		m, read = m.fetchStash(!m.stashOn)
+		m, subs = m.syncSubscriptions()
+		alert = tea.Batch(alert, read, subs)
+		if !m.stashOn {
+			alert = tea.Batch(alert, after(m.cfg.StashPoll, stashPollMsg{}))
 			m.stashOn = true
 		}
 	}

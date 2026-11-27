@@ -46,7 +46,11 @@ func (s sdkFollowAPI) ListInstances(ctx context.Context, environmentID string) (
 }
 
 func (s sdkFollowAPI) StreamEnvironmentEvents(ctx context.Context, environmentID string) (<-chan types.Event, error) {
-	return s.c.Environments.StreamEvents(ctx, environmentID)
+	stream, err := s.c.Environments.StreamEvents(ctx, environmentID)
+	if err != nil {
+		return nil, err
+	}
+	return stream.C, nil
 }
 
 func (s sdkFollowAPI) GetDeployment(ctx context.Context, id string) (*types.Deployment, error) {

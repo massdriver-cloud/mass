@@ -23,7 +23,7 @@ func NewCmdDashboard() *cobra.Command {
 	}
 	cmd.Flags().Duration("refresh", dashboardRefresh, "How often to re-read the organization; 0 reads once")
 	cmd.Flags().Duration("events", dashboardEvents, "How often to read new activity from the audit log; 0 turns the live ticker off")
-	cmd.Flags().Duration("stash", dashboardStash, "How often to read the stash for widgets, notes, and the live feed; each read covers every scope, so a short interval costs more; 0 reads it with each refresh")
+	cmd.Flags().Duration("stash", dashboardStash, "How often to read the stash when it cannot be streamed, as when the profile signs in without a personal access token or while a stream reconnects; 0 reads it with each refresh")
 	cmd.Flags().String("env", "", "Environment to center on, by id; the most recently deployed one when left out")
 	cmd.Flags().Int("depth", dashboard.DefaultDepth, "How many hops from the focus to read")
 	cmd.Flags().String("theme", dashboard.DefaultTheme, "How the map is drawn: "+strings.Join(dashboard.Themes(), ", "))
