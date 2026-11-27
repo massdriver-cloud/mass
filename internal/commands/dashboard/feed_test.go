@@ -65,3 +65,17 @@ func TestWideViewsPollInsteadOfStreaming(t *testing.T) {
 		t.Errorf("subscribed %d environments; a view this wide should poll", len(api.subscribed))
 	}
 }
+
+func TestStashFirstReadAfterAFailureIsNotNews(t *testing.T) {
+	api := withStash()
+	api.stash = append(api.stash, object(env("sandbox-demo"), "md/v1/banner", dashboard.Values{"message": "Demo at 3pm"}))
+	m := loaded(t, api, config(&opener{}), 200, 48)
+	api.failScope = "sandbox"
+	m, cmd := keys(m, "/", "d", "e", "m", "o", "enter")
+	m = drive(t, m, cmd, 30)
+	api.failScope = ""
+	m = refreshed(t, m)
+	if out := view(m); !strings.Contains(out, "Demo at 3pm") || strings.Contains(out, "stash set") {
+		t.Errorf("a scope read for the first time after a failed read is not news:\n%s", out)
+	}
+}

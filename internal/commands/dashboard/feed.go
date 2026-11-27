@@ -3,7 +3,6 @@ package dashboard
 import (
 	"context"
 	"errors"
-	"maps"
 	"slices"
 	"time"
 
@@ -73,8 +72,8 @@ type feed struct {
 	// so environments new to the view get their first read.
 	pending bool
 	touched map[Scope]map[string]time.Time
-	// known holds the scopes a read has covered. A scope's first read is
-	// what it already had, not news for the ticker.
+	// known holds the scopes the latest read covered. A scope's first read
+	// is what it already had, not news for the ticker.
 	known map[Scope]bool
 }
 
@@ -136,21 +135,23 @@ func (m Model) applyStash(msg stashMsg) (Model, tea.Cmd) {
 	st.Keep(m.stash, msg.read.Failed)
 	st.KeepTouched(m.stash, m.feed.touched, msg.at)
 	var news func(Scope) bool
-	if !msg.initial {
-		known := maps.Clone(m.feed.known)
-		news = func(s Scope) bool { return known[s] }
+	if prev := m.feed.known; !msg.initial {
+		news = func(s Scope) bool { return prev[s] }
 	}
-	if m.feed.known == nil {
-		m.feed.known = map[Scope]bool{}
+	failed := map[Scope]bool{}
+	for _, s := range msg.read.Failed {
+		failed[s] = true
 	}
+	known := make(map[Scope]bool, len(msg.read.Scopes))
 	for _, s := range msg.read.Scopes {
-		m.feed.known[s] = true
+		if !failed[s] || m.feed.known[s] {
+			known[s] = true
+		}
 	}
+	m.feed.known = known
 	return m.takeStash(st, news), again
 }
 
-// takeStash puts on the ticker the changes in scopes news accepts; a nil
-// news puts none there.
 func (m Model) takeStash(st Stash, news func(Scope) bool) Model {
 	var changes []StashChange
 	if news != nil {
