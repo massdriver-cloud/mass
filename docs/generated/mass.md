@@ -33,6 +33,7 @@ Configure and deploying infrastructure and applications.
 
 ### SEE ALSO
 
+* [mass alpha](/cli/commands/mass_alpha)	 - Commands for features in alpha
 * [mass bundle](/cli/commands/mass_bundle)	 - Generate and publish bundles
 * [mass completion](/cli/commands/mass_completion)	 - Generate the autocompletion script for the specified shell
 * [mass component](/cli/commands/mass_component)	 - Manage components in a project's blueprint

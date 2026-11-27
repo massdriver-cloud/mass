@@ -15,7 +15,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/airlock v0.0.10
-	github.com/massdriver-cloud/massdriver-sdk-go v0.5.1
+	github.com/massdriver-cloud/massdriver-sdk-go v0.6.0
 	github.com/mattn/go-runewidth v0.0.31
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/osteele/liquid v1.9.2
