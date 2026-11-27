@@ -232,8 +232,27 @@ func (m Model) alarmStat() string {
 	return styleTeal.Render("all clear")
 }
 
-// explain says what the moving parts on screen mean.
 func (m Model) explain() string {
+	full := m.explainParts(false)
+	if lipgloss.Width(full) <= m.width {
+		return full
+	}
+	return m.explainParts(true)
+}
+
+// explainParts falls back to a word per mark, so every mark still fits on a
+// narrow terminal.
+func (m Model) explainParts(short bool) string {
+	if short && m.tab == TabConstellation && !m.replay.on {
+		parts := []string{
+			note(colorTeal, "•→", "flow"), note(colorGreen, "◯", "status"), note(colorRed, "◉", "alarm"),
+			note(colorBlue, "◜", "deploying"), note(colorHighlight, "◯", "new event"), note(colorYellow, "↑", "upgrade"),
+		}
+		if m.cfg.Watch {
+			parts = append([]string{note(colorRed, "▲", "watching")}, parts...)
+		}
+		return strings.Join(parts, "  ")
+	}
 	var parts []string
 	switch {
 	case m.replay.on:
@@ -259,7 +278,7 @@ func (m Model) explain() string {
 		}
 	}
 	if m.cfg.Watch && !m.replay.on {
-		parts = append([]string{note(colorRed, "▲", "watching: a new alarm takes over the screen")}, parts...)
+		parts = append([]string{note(colorRed, "▲", "watching for new alarms")}, parts...)
 	}
 	return strings.Join(parts, styleFaint.Render("  ·  "))
 }
