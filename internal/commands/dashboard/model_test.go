@@ -187,19 +187,18 @@ func TestModelOpens(t *testing.T) {
 
 func TestModelEvents(t *testing.T) {
 	api := fixture()
-	api.eventReads = [][]dashboard.Event{
-		{{ID: "old", Type: "instance.created", EnvID: "care-dev", At: fixedNow().Add(-time.Hour / 2)}},
-		{
-			{ID: "old", Type: "instance.created", EnvID: "care-dev", At: fixedNow().Add(-time.Hour / 2)},
-			{ID: "new", Type: "deployment.completed", EnvID: "billing-dev", At: fixedNow(), Detail: "provision", Actor: "ana"},
-		},
+	newest := dashboard.Event{ID: "new", Type: "deployment.completed", EnvID: "billing-dev", At: fixedNow(), Detail: "provision", Actor: "ana"}
+	api.eventReads = []dashboard.Log{
+		{Events: []dashboard.Event{{ID: "old", Type: "instance.created", EnvID: "care-dev", At: fixedNow().Add(-time.Hour / 2)}}},
+		{Events: []dashboard.Event{{ID: "old", Type: "instance.created", EnvID: "care-dev", At: fixedNow().Add(-time.Hour / 2)}, newest}},
+		{Events: []dashboard.Event{newest, {ID: "burst", Type: "instance.updated", EnvID: "care-dev", At: fixedNow()}}, Truncated: true},
 	}
 	var m tea.Model = dashboard.NewModel(api, config(&opener{}))
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 200, Height: 48})
-	model := pump(t, m, []tea.Cmd{m.Init()}, 24)
+	model := pump(t, m, []tea.Cmd{m.Init()}, 40)
 
-	if api.eventCalls < 2 {
-		t.Fatalf("read events %d times, want a poll after the first read", api.eventCalls)
+	if api.eventCalls < 3 {
+		t.Fatalf("read events %d times, want polls after the first read", api.eventCalls)
 	}
 	if got := len(api.cursors); got < 4 {
 		t.Errorf("read environment pages %d times, want a re-read after the deployment event", got)
@@ -210,8 +209,17 @@ func TestModelEvents(t *testing.T) {
 			t.Errorf("ticker is missing %q:\n%s", want, out)
 		}
 	}
-	if strings.Count(out, "instance created") != 1 {
-		t.Error("an event read twice should show once")
+	ticker := ""
+	for _, line := range strings.Split(ansi.Strip(model.View()), "\n") {
+		if strings.Contains(line, "LIVE") {
+			ticker = line
+		}
+	}
+	if strings.Count(ticker, "instance created") != 1 || strings.Count(ticker, "deployment completed") != 1 {
+		t.Errorf("an event read twice should show once:\n%s", ticker)
+	}
+	if !strings.Contains(out, "instance updated") || !strings.Contains(out, "more than 2 events since the last check") {
+		t.Errorf("a cut-short poll should show its events and say it was cut short:\n%s", out)
 	}
 }
 

@@ -25,7 +25,7 @@ type API interface {
 	Environments(ctx context.Context, cursor string) ([]Environment, string, error)
 	Runtimes(ctx context.Context, cursor string) ([]Runtime, string, error)
 	Applications(ctx context.Context, cursor string) ([]Application, string, error)
-	Events(ctx context.Context, since time.Time) ([]Event, error)
+	Events(ctx context.Context, since time.Time) (Log, error)
 	History(ctx context.Context, since time.Time) (Log, error)
 }
 
@@ -257,9 +257,8 @@ type Log struct {
 	Truncated bool
 }
 
-func (a *gqlAPI) Events(ctx context.Context, since time.Time) ([]Event, error) {
-	log, err := a.readAudit(ctx, since, eventLimit)
-	return log.Events, err
+func (a *gqlAPI) Events(ctx context.Context, since time.Time) (Log, error) {
+	return a.readAudit(ctx, since, eventLimit)
 }
 
 func (a *gqlAPI) History(ctx context.Context, since time.Time) (Log, error) {

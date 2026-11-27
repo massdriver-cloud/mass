@@ -58,6 +58,18 @@ func TestEnvDetail(t *testing.T) {
 	}
 }
 
+func TestEnvDetailMoreAlarms(t *testing.T) {
+	snap := fixtureSnapshot(t)
+	snap.Environments[0].Instances[1].FiringAlarmCount = 3
+	g := dashboard.BuildGraph(snap)
+	out := ansi.Strip(dashboard.EnvDetail(g, g.Env("platform-dev"), nil, time.Now(), 60))
+	for _, want := range []string{"FIRING (3)", "CPU high", "+2 more on the instances' alarm pages"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("detail is missing %q:\n%s", want, out)
+		}
+	}
+}
+
 func TestAgo(t *testing.T) {
 	now := time.Date(2026, 11, 26, 12, 0, 0, 0, time.UTC)
 	tests := []struct {

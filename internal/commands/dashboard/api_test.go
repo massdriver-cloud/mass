@@ -20,7 +20,7 @@ type fakeAPI struct {
 	apps       []dashboard.Application
 	err        error
 	cursors    []string
-	eventReads [][]dashboard.Event
+	eventReads []dashboard.Log
 	eventCalls int
 	history    []dashboard.Event
 	truncated  bool
@@ -33,10 +33,10 @@ func (f *fakeAPI) History(_ context.Context, since time.Time) (dashboard.Log, er
 	return dashboard.Log{Events: f.history, Truncated: f.truncated}, f.historyErr
 }
 
-func (f *fakeAPI) Events(context.Context, time.Time) ([]dashboard.Event, error) {
+func (f *fakeAPI) Events(context.Context, time.Time) (dashboard.Log, error) {
 	f.eventCalls++
 	if f.eventCalls > len(f.eventReads) {
-		return nil, nil
+		return dashboard.Log{}, nil
 	}
 	return f.eventReads[f.eventCalls-1], nil
 }
@@ -208,7 +208,7 @@ func TestNewAPIWithClient(t *testing.T) {
 
 	since := time.Date(2026, 11, 26, 0, 0, 0, 0, time.UTC)
 	events, err := api.Events(ctx, since)
-	if err != nil || len(events) != 1 || events[0].ID != "a1" {
+	if err != nil || len(events.Events) != 1 || events.Events[0].ID != "a1" {
 		t.Errorf("Events = %v, %v", events, err)
 	}
 	if !audit.input.TimeRangeStart.Equal(since) {
@@ -300,9 +300,9 @@ func TestReadAudit(t *testing.T) {
 	}
 
 	api := dashboard.NewAPIWithClient(nil, pagedAudit{pages: newestFirst(320)}, "acme")
-	events, err := api.Events(context.Background(), time.Time{})
-	if err != nil || len(events) != 320 {
-		t.Errorf("a burst of 320 events between polls read %d, %v; want every page", len(events), err)
+	burst, err := api.Events(context.Background(), time.Time{})
+	if err != nil || len(burst.Events) != 320 || burst.Truncated {
+		t.Errorf("a burst of 320 events between polls read %d, %v; want every page", len(burst.Events), err)
 	}
 }
 

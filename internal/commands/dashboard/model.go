@@ -64,7 +64,7 @@ type (
 		at   time.Time
 	}
 	eventsMsg struct {
-		events  []Event
+		log     Log
 		err     error
 		initial bool
 	}
@@ -154,8 +154,8 @@ func (m Model) fetch() tea.Cmd {
 func (m Model) fetchEvents(initial bool) tea.Cmd {
 	api, ctx, since := m.api, m.ctx(), m.since
 	return func() tea.Msg {
-		events, err := api.Events(ctx, since)
-		return eventsMsg{events: events, err: err, initial: initial}
+		log, err := api.Events(ctx, since)
+		return eventsMsg{log: log, err: err, initial: initial}
 	}
 }
 
@@ -199,9 +199,9 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 	case historyMsg:
 		return m.applyHistory(msg), nil
 	case openedMsg:
-		m.toast, m.toastAt = "opened "+msg.url, m.frame
+		m.toast, m.toastAt = "↗ opened "+msg.url, m.frame
 		if msg.err != nil {
-			m.toast = "could not open a browser: " + msg.url
+			m.toast = "↗ could not open a browser: " + msg.url
 		}
 	case tea.KeyMsg:
 		return m.handleKey(msg)
@@ -255,8 +255,11 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 	if msg.err != nil {
 		return m, poll
 	}
-	fresh := make([]Event, 0, len(msg.events))
-	for _, ev := range msg.events {
+	if msg.log.Truncated && !msg.initial {
+		m.toast, m.toastAt = fmt.Sprintf("more than %d events since the last check; showing the newest", len(msg.log.Events)), m.frame
+	}
+	fresh := make([]Event, 0, len(msg.log.Events))
+	for _, ev := range msg.log.Events {
 		if _, ok := m.seen[ev.ID]; !ok {
 			m.seen[ev.ID] = ev.At
 			fresh = append(fresh, ev)

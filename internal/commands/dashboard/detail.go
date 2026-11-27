@@ -38,7 +38,7 @@ func EnvDetail(g *Graph, env *EnvNode, blast *Blast, now time.Time, w int) strin
 	line("")
 	line(statusBar(env, w))
 	line(statusLegend(env))
-	writeFiring(&b, env.Firing, now, w)
+	writeFiring(&b, env, now, w)
 	writeNeighbors(&b, g, "USES RESOURCES FROM", g.Producers(env.ID), func(l Link) string { return l.From }, w)
 	writeNeighbors(&b, g, "FEEDS", g.Consumers(env.ID), func(l Link) string { return l.To }, w)
 	writeBlast(&b, g, env, blast, w)
@@ -98,12 +98,18 @@ func statusLegend(env *EnvNode) string {
 	return strings.Join(parts, "  ")
 }
 
-func writeFiring(b *strings.Builder, firing []FiringAlarm, now time.Time, w int) {
-	if len(firing) == 0 {
+func writeFiring(b *strings.Builder, env *EnvNode, now time.Time, w int) {
+	total := env.FiringCount()
+	if total == 0 {
 		return
 	}
-	b.WriteString("\n" + styleBoldRed.Render(fmt.Sprintf("▲ FIRING (%d)", len(firing))) + "\n")
-	for _, a := range firing {
+	b.WriteString("\n" + styleBoldRed.Render(fmt.Sprintf("▲ FIRING (%d)", total)) + "\n")
+	defer func() {
+		if more := total - len(env.Firing); more > 0 {
+			b.WriteString(styleFaint.Render(fmt.Sprintf("+%d more on the instances' alarm pages", more)) + "\n")
+		}
+	}()
+	for _, a := range env.Firing {
 		b.WriteString(styleRed.Render(clip(a.Name, w-8)) + " " + styleFaint.Render(Ago(now, a.Since)) + "\n")
 		b.WriteString(styleMuted.Render(clip("  "+a.InstanceID, w)) + "\n")
 		if a.Message != "" {

@@ -230,7 +230,7 @@ func (m Model) footer() string {
 		return styleKey.Render("/") + " " + m.filter + styleTeal.Render("█") + styleFaint.Render("  enter select · esc clear")
 	}
 	if m.toast != "" && m.frame-m.toastAt < toastFrames {
-		return lipgloss.NewStyle().MaxWidth(m.width).Render(styleTeal.Render("↗ " + m.toast))
+		return lipgloss.NewStyle().MaxWidth(m.width).Render(styleTeal.Render(m.toast))
 	}
 	keys := [][2]string{{"←↑↓→", "move"}, {"1-4", "tabs"}}
 	switch {
