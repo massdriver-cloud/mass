@@ -111,10 +111,7 @@ func rolloutMiniBar(r Rollout, w int) string {
 }
 
 func (m Model) alarmsBody(h int) string {
-	total := 0
-	for _, env := range m.graph.Envs {
-		total += env.FiringCount()
-	}
+	total := m.graph.FiringCount()
 	if total == 0 {
 		calm := styleTeal.Render("✓") + styleMuted.Render(" No alarm is firing. All quiet in the constellation.")
 		return lipgloss.Place(m.width, h, lipgloss.Center, lipgloss.Center, calm)

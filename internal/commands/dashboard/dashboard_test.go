@@ -52,6 +52,18 @@ func TestRunSummary(t *testing.T) {
 	}
 }
 
+func TestRunSummaryMoreAlarms(t *testing.T) {
+	api := fixture()
+	api.envPages[0][0].Instances[1].FiringAlarmCount = 3
+	var out bytes.Buffer
+	if err := dashboard.RunSummary(context.Background(), api, &out, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if got := ansi.Strip(out.String()); !strings.Contains(got, "+2 more on the instances' alarm pages") {
+		t.Errorf("summary should say how many alarms it does not list:\n%s", got)
+	}
+}
+
 func TestNewLinks(t *testing.T) {
 	links := dashboard.NewLinks(urls.NewWithBaseURL("https://app.example.com/", "acme"))
 	tests := []struct{ got, want string }{

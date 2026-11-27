@@ -101,6 +101,16 @@ func (e *EnvNode) Deploying() []*InstNode {
 	return out
 }
 
+// FiringCount counts every firing alarm in the graph, including ones beyond
+// the first page of an instance's alarms.
+func (g *Graph) FiringCount() int {
+	n := 0
+	for _, env := range g.Envs {
+		n += env.FiringCount()
+	}
+	return n
+}
+
 // FiringCount counts the environment's firing alarms.
 func (e *EnvNode) FiringCount() int {
 	n := 0

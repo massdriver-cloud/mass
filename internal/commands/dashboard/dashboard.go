@@ -105,7 +105,8 @@ func statusSummary(env *EnvNode) string {
 }
 
 func writeAlarms(out io.Writer, g *Graph, now time.Time) {
-	if len(g.Firing) == 0 {
+	total := g.FiringCount()
+	if total == 0 {
 		return
 	}
 	fmt.Fprintln(out)
@@ -115,6 +116,9 @@ func writeAlarms(out io.Writer, g *Graph, now time.Time) {
 		tbl.AddRow(Ago(now, a.Since), a.Name, a.InstanceID, fmt.Sprintf("%d environments, %d instances", envs, insts))
 	}
 	tbl.Print()
+	if more := total - len(g.Firing); more > 0 {
+		fmt.Fprintf(out, "+%d more on the instances' alarm pages\n", more)
+	}
 }
 
 func writeRuntimes(out io.Writer, g *Graph, snap *Snapshot) {
