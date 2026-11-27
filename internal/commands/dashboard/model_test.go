@@ -131,7 +131,7 @@ func TestModelKeys(t *testing.T) {
 			name: "toggles", keys: []string{"b", "a", "c", "g", "s"},
 			wantView: []string{"b blast ○", "a apps ○", "c cost ●", "g projects ●", "s producers on top ●"},
 		},
-		{name: "legend", keys: []string{"?"}, wantView: []string{"WHAT MOVES", "Blast radius, source to downstream", "deploying", "upgrades"}},
+		{name: "legend", keys: []string{"?"}, wantView: []string{"WHAT MOVES", "Blast radius, source to downstream", "deploying", "upgrades", "p palette"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

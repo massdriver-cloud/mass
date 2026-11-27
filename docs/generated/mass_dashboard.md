@@ -32,7 +32,7 @@ The dashboard follows the stash as a feed, reading it every few seconds (`--stas
 
 With `--watch`, an alarm that starts firing takes the view to its environment, locks on, shows its blast radius under a banner that counts up, and rings the terminal with a desktop notification. When it clears, the banner says how long it lasted and the view goes back where it was.
 
-`--theme` changes how the map is drawn: `constellation` (the default) scatters environments like stars, `metro` lays them out as stations on transit lines with producers to the left, and `radar` puts the focus at the center of a sweeping scope with each environment on the ring as many hops out as it is. `v` switches between them. `--palette` changes the colors and backdrop: `night` (the default), `rain`, and `blueprint`.
+`--theme` changes how the map is drawn: `constellation` (the default) scatters environments like stars, `metro` lays them out as stations on transit lines with producers to the left, and `radar` puts the focus at the center of a sweeping scope with each environment on the ring as many hops out as it is. `v` switches between them. `--palette` changes the colors and backdrop: `night` (the default), `rain`, and `blueprint`. `p` switches between them.
 
 When the output is not a terminal, `mass dashboard` prints the same data as tables.
 

@@ -331,7 +331,7 @@ func (m Model) footer() string {
 		}
 		keys = append(keys, [][2]string{
 			{"/", "find"}, {"b", toggle("blast", m.blastOn)}, {"a", toggle("apps", m.showApps)},
-			{"c", toggle("cost", m.showCost)}, {"g", toggle("projects", m.grouped)}, {"s", toggle("producers on top", m.stacked)}, {"v", m.cfg.Theme},
+			{"c", toggle("cost", m.showCost)}, {"g", toggle("projects", m.grouped)}, {"s", toggle("producers on top", m.stacked)}, {"v", m.cfg.Theme}, {"p", paletteName},
 		}...)
 	case TabRuntimes:
 		keys = append(keys, [2]string{"0/p/m/M", "what if"})
@@ -391,6 +391,10 @@ func Legend(watch bool, notesErr error) string {
 		styleBoldRed.Render("▲N")+" alarms firing  "+styleUpgrade.Render("↑N")+" upgrades",
 		lipgloss.NewStyle().Foreground(colorOrange).Render("⚑")+" banner  "+styleTeal.Render("◆")+" application  "+styleFaint.Render("◌")+" no access",
 		styleNote.Render("✎")+" note",
+		"",
+		styleHeading.Render("KEYS"),
+		keyHint("v", "theme")+"  "+keyHint("p", "palette")+"  "+keyHint("/", "find")+"  "+keyHint("t", "replay")+"  "+keyHint("b", "blast radius"),
+		keyHint("a", "apps")+"  "+keyHint("c", "cost")+"  "+keyHint("g", "projects")+"  "+keyHint("s", "producers on top"),
 	)
 	if notesErr != nil {
 		why := "Notes and pinned widgets could not be read: " + clean(notesErr.Error())
@@ -400,4 +404,8 @@ func Legend(watch bool, notesErr error) string {
 		rows = append(rows, "", styleMuted.Render(why))
 	}
 	return strings.Join(rows, "\n")
+}
+
+func keyHint(key, what string) string {
+	return styleKey.Render(key) + " " + what
 }

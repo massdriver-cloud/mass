@@ -59,7 +59,19 @@ var palettes = map[string]palette{
 	},
 }
 
-var drawBackground = starfield
+var (
+	drawBackground = starfield
+	paletteName    = DefaultPalette
+)
+
+// CurrentPalette names the palette in use.
+func CurrentPalette() string { return paletteName }
+
+// NextPalette is the palette after name, wrapping to the first.
+func NextPalette(name string) string {
+	all := Palettes()
+	return all[(slices.Index(all, name)+1)%len(all)]
+}
 
 // Palettes lists the palette names, the default first.
 func Palettes() []string {
@@ -86,6 +98,7 @@ func UsePalette(name string) error {
 	colorText, colorMuted, colorFaint, colorHighlight = p.Text, p.Muted, p.Faint, p.Highlight
 	colorPanel, colorNote, colorInk = p.Panel, p.Note, p.Ink
 	drawBackground = t.background
+	paletteName = name
 	restyle()
 	return nil
 }

@@ -19,6 +19,17 @@ func TestPalettes(t *testing.T) {
 	}
 }
 
+func TestPaletteKey(t *testing.T) {
+	t.Cleanup(func() { _ = dashboard.UsePalette(dashboard.DefaultPalette) })
+	m := loaded(t, fixture(), config(&opener{}), 160, 48)
+	for _, want := range []string{"blueprint", "rain", "night"} {
+		m = press(m, "p")
+		if dashboard.CurrentPalette() != want {
+			t.Errorf("palette = %s, want %s", dashboard.CurrentPalette(), want)
+		}
+	}
+}
+
 func TestPalettesDraw(t *testing.T) {
 	profile := lipgloss.ColorProfile()
 	lipgloss.SetColorProfile(termenv.TrueColor)

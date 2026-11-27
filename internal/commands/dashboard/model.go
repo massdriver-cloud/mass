@@ -629,6 +629,8 @@ func (m Model) handleConstellationKey(key string) Model {
 		m.stacked = !m.stacked
 	case "v":
 		m.cfg.Theme = NextTheme(m.cfg.Theme)
+	case "p":
+		_ = UsePalette(NextPalette(paletteName))
 	case "/":
 		m.searching, m.filter, m.searchFrom = true, "", m.selected
 	}
