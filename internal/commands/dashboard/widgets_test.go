@@ -122,7 +122,7 @@ func TestWidgetsCannotEscapeTheTerminal(t *testing.T) {
 			map[string]any{"label": "ok\x1b[31m", "url": "https://ok.example.com\x1b\\"},
 			map[string]any{"label": "local", "url": "file:///etc/passwd"},
 			map[string]any{"label": "script", "url": "javascript:alert(1)"},
-			map[string]any{"label": "Loud\u202eevil", "url": "HTTPS://LOUD.example.com"},
+			map[string]any{"label": "Loud\u202eev\u200fil\u2028", "url": "HTTPS://LOUD.example.com"},
 		}}},
 	}
 	g := dashboard.BuildGraph(fixtureSnapshotFrom(t, api))

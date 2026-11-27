@@ -160,6 +160,42 @@ func fixtureSnapshot(t *testing.T) *dashboard.Snapshot {
 	return snap
 }
 
+func TestFetchCleansPublisherText(t *testing.T) {
+	api := fixture()
+	api.runtimes[0].ID = "ecs\x1b[2J"
+	api.runtimes[0].Adoption = []dashboard.Adoption{{Version: "1.0.0\u202e"}}
+	api.apps[0].ID = "care-app\x07"
+	api.apps[0].Latest.Runtime.Name = "ecs\x1b[2J"
+	billing := &api.envPages[0][2].Instances[0]
+	billing.DeployedVersion = "1.9.0\u200f"
+	billing.LatestProvision.Bundle.Name = "billing-app\x1b]0;x\x07"
+	billing.LatestProvision.Bundle.Runtime.Name = "ecs\x1b[2J"
+
+	snap, err := dashboard.Fetch(context.Background(), api)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := dashboard.BuildGraph(snap)
+	inst := g.Instance("billing-dev-app")
+	tests := []struct{ name, got, want string }{
+		{"runtime", snap.Runtimes[0].ID, "ecs[2J"},
+		{"adoption", snap.Runtimes[0].Adoption[0].Version, "1.0.0"},
+		{"application", snap.Applications[0].ID, "care-app"},
+		{"application runtime", snap.Applications[0].Latest.Runtime.Name, "ecs[2J"},
+		{"deployed", inst.Deployed, "1.9.0"},
+		{"bundle", inst.Bundle, "billing-app]0;x"},
+		{"instance runtime", inst.Runtime, "ecs[2J"},
+	}
+	for _, tc := range tests {
+		if tc.got != tc.want {
+			t.Errorf("%s = %q, want %q", tc.name, tc.got, tc.want)
+		}
+	}
+	if r := dashboard.BuildRollout(g, snap, snap.Runtimes[0], dashboard.BumpNone); len(r.Instances) != 1 || len(r.Apps) != 1 {
+		t.Errorf("rollout = %d instances, %d apps; cleaned names should still join", len(r.Instances), len(r.Apps))
+	}
+}
+
 func TestFetch(t *testing.T) {
 	tests := []struct {
 		name     string

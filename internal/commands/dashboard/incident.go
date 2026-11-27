@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -147,6 +148,7 @@ func (m Model) openIncidents(started []Incident) (Model, tea.Cmd) {
 		w.back = &viewState{tab: m.tab, selected: m.selected, blastOn: m.blastOn}
 		w.touched = false
 	}
+	w.open = slices.Clone(w.open)
 	started = foldUnlisted(started, w.open)
 	if len(started) == 0 {
 		m.watch = w
@@ -160,8 +162,8 @@ func (m Model) openIncidents(started []Incident) (Model, tea.Cmd) {
 	return m, m.notify("▲ "+newest.Name, newest.InstanceID+" · "+envLabel(m.graph, newest.EnvID))
 }
 
-// foldUnlisted renames an instance's open unlisted incident to its new count
-// rather than opening a second one for the same instance.
+// foldUnlisted renames an instance's open unlisted incident to its new count,
+// in open, rather than opening a second one for the same instance.
 func foldUnlisted(started, open []Incident) []Incident {
 	out := started[:0:0]
 	for _, inc := range started {
