@@ -68,6 +68,15 @@ func TestEnvDetailMoreAlarms(t *testing.T) {
 			t.Errorf("detail is missing %q:\n%s", want, out)
 		}
 	}
+
+	api := fixture()
+	api.envPages[0][0].Instances[1].FiringAlarmCount = 3
+	tab := view(press(loaded(t, api, config(&opener{}), 200, 48), "3"))
+	for _, want := range []string{"FIRING ALARMS (3)", "CPU high", "+2 more on the instances' alarm pages"} {
+		if !strings.Contains(tab, want) {
+			t.Errorf("alarms tab is missing %q:\n%s", want, tab)
+		}
+	}
 }
 
 func TestAgo(t *testing.T) {

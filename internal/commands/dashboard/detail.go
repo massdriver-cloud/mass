@@ -104,11 +104,6 @@ func writeFiring(b *strings.Builder, env *EnvNode, now time.Time, w int) {
 		return
 	}
 	b.WriteString("\n" + styleBoldRed.Render(fmt.Sprintf("▲ FIRING (%d)", total)) + "\n")
-	defer func() {
-		if more := total - len(env.Firing); more > 0 {
-			b.WriteString(styleFaint.Render(fmt.Sprintf("+%d more on the instances' alarm pages", more)) + "\n")
-		}
-	}()
 	for _, a := range env.Firing {
 		b.WriteString(styleRed.Render(clip(a.Name, w-8)) + " " + styleFaint.Render(Ago(now, a.Since)) + "\n")
 		b.WriteString(styleMuted.Render(clip("  "+a.InstanceID, w)) + "\n")
@@ -116,6 +111,14 @@ func writeFiring(b *strings.Builder, env *EnvNode, now time.Time, w int) {
 			b.WriteString(styleFaint.Render(indent(wrap(a.Message, w-2), "  ")) + "\n")
 		}
 	}
+	b.WriteString(moreAlarms(total, len(env.Firing)))
+}
+
+func moreAlarms(total, listed int) string {
+	if more := total - listed; more > 0 {
+		return styleFaint.Render(fmt.Sprintf("+%d more on the instances' alarm pages", more)) + "\n"
+	}
+	return ""
 }
 
 func writeNeighbors(b *strings.Builder, g *Graph, title string, links []Link, other func(Link) string, w int) {

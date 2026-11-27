@@ -111,12 +111,16 @@ func rolloutMiniBar(r Rollout, w int) string {
 }
 
 func (m Model) alarmsBody(h int) string {
-	if len(m.graph.Firing) == 0 {
+	total := 0
+	for _, env := range m.graph.Envs {
+		total += env.FiringCount()
+	}
+	if total == 0 {
 		calm := styleTeal.Render("✓") + styleMuted.Render(" No alarm is firing. All quiet in the constellation.")
 		return lipgloss.Place(m.width, h, lipgloss.Center, lipgloss.Center, calm)
 	}
 	var b strings.Builder
-	b.WriteString(styleHeading.Render(fmt.Sprintf("FIRING ALARMS (%d)", len(m.graph.Firing))) + "\n\n")
+	b.WriteString(styleHeading.Render(fmt.Sprintf("FIRING ALARMS (%d)", total)) + "\n\n")
 	for i, a := range m.graph.Firing {
 		envs, insts := m.graph.BlastRadius(a.InstanceID).Downstream()
 		row := fmt.Sprintf("▲ %-5s %-30s %-24s %-28s ✸ %d env · %d inst downstream", Ago(m.cfg.Now(), a.Since),
@@ -128,6 +132,7 @@ func (m Model) alarmsBody(h int) string {
 		}
 		b.WriteString(styleRed.Render(row) + "\n")
 	}
+	b.WriteString("\n" + moreAlarms(total, len(m.graph.Firing)))
 	return b.String()
 }
 
