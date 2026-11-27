@@ -27,8 +27,7 @@ func (m Model) View() string {
 	if m.graph != nil {
 		body = overlayFirstLine(body, m.incidentBanner())
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, fit.Render(m.header()), fit.Render(body), fit.Render(m.ticker()),
-		fit.Render(m.explain()), m.footer())
+	return lipgloss.JoinVertical(lipgloss.Left, fit.Render(m.header()), fit.Render(body), fit.Render(m.ticker()), m.footer())
 }
 
 func (m Model) splash(h int) string {
@@ -38,6 +37,9 @@ func (m Model) splash(h int) string {
 }
 
 func (m Model) body(h int) string {
+	if m.help && m.tab != TabConstellation {
+		return m.helpBox(h)
+	}
 	switch m.tab {
 	case TabRuntimes:
 		return m.runtimesBody(h)
@@ -66,7 +68,7 @@ func (m Model) constellationBody(h int) string {
 	}
 	var panel string
 	if m.help {
-		panel = Legend()
+		panel = Legend(m.cfg.Watch)
 	} else {
 		panel = EnvDetail(m.graph, m.graph.Env(m.selected), blast, m.cfg.Now(), panelW)
 	}
@@ -232,62 +234,50 @@ func (m Model) alarmStat() string {
 	return styleTeal.Render("all clear")
 }
 
-func (m Model) explain() string {
-	full := m.explainParts(false)
-	if lipgloss.Width(full) <= m.width {
-		return full
+// tabHelp explains the Runtimes, Alarms, and Upgrades tabs for the ? key.
+func tabHelp(tab Tab) []string {
+	switch tab {
+	case TabRuntimes:
+		return []string{
+			styleHeading.Render("RUNTIMES"), "",
+			"Each bar is how the instances on a runtime split across its versions.",
+			"",
+			note(colorGreen, "━", "on the latest version"),
+			note(colorYellow, "━", "a patch behind"),
+			note(colorOrange, "━", "a minor behind"),
+			note(colorRed, "━", "a major behind"),
+			"",
+			"p, m, and M show what a patch, minor, or major release would leave behind; 0 goes back.",
+		}
+	case TabAlarms:
+		return []string{
+			styleHeading.Render("ALARMS"), "",
+			"Each row is an alarm firing now: how long, the alarm, its instance, and its environment.",
+			note(colorOrange, "✸", "how many environments and instances depend on that instance downstream"),
+			"",
+			"enter shows it on the map with its blast radius; o opens the instance in the web app.",
+		}
+	case TabUpgrades:
+		return []string{
+			styleHeading.Render("UPGRADES"), "",
+			"Each row is an instance whose version constraint allows a newer bundle:",
+			"the version it runs → the version its next deploy would use.",
+			"",
+			"enter shows it on the map; o opens the instance in the web app.",
+		}
+	case TabConstellation:
 	}
-	return m.explainParts(true)
+	return nil
 }
 
-// explainParts falls back to a word per mark, so every mark still fits on a
-// narrow terminal.
-func (m Model) explainParts(short bool) string {
-	if short && m.tab == TabConstellation && !m.replay.on {
-		parts := []string{
-			note(colorTeal, "•→", "flow"), note(colorGreen, "◯", "status"), note(colorRed, "◉", "alarm"),
-			note(colorBlue, "◜", "deploying"), note(colorHighlight, "◯", "new event"), note(colorYellow, "↑", "upgrade"),
-		}
-		if m.cfg.Watch {
-			parts = append([]string{note(colorRed, "▲", "watching")}, parts...)
-		}
-		return strings.Join(parts, "  ")
-	}
-	var parts []string
-	switch {
-	case m.replay.on:
-		parts = []string{note("", "", "replaying the audit log in order: each flash is one event where it happened, and the clock is when")}
-	case m.tab == TabRuntimes:
-		parts = []string{
-			note("", "", "bars: share of instances on each runtime version"),
-			note(colorGreen, "━", "latest"), note(colorYellow, "━", "a patch behind"),
-			note(colorOrange, "━", "a minor behind"), note(colorRed, "━", "a major behind"),
-		}
-	case m.tab == TabAlarms:
-		parts = []string{note("", "", "firing for · alarm · instance · environment ·"), note(colorOrange, "✸", "what depends on it downstream")}
-	case m.tab == TabUpgrades:
-		parts = []string{note("", "", "instances whose version constraint allows a newer bundle: deployed → available")}
-	default:
-		parts = []string{
-			note(colorTeal, "•→", "sparks: resources flowing to their users"),
-			note(colorGreen, "◯", "ring: instance statuses"),
-			note(colorRed, "◉", "pulse: alarm"),
-			note(colorBlue, "◜", "comet: deploying"),
-			note(colorHighlight, "◯", "ripple: just happened"),
-			note(colorYellow, "↑", "upgrades"),
-		}
-	}
-	if m.cfg.Watch && !m.replay.on {
-		parts = append([]string{note(colorRed, "▲", "watching for new alarms")}, parts...)
-	}
-	return strings.Join(parts, styleFaint.Render("  ·  "))
+func (m Model) helpBox(h int) string {
+	box := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(colorPanel).Padding(1, 2).
+		Width(min(m.width-4, 90)).Render(strings.Join(tabHelp(m.tab), "\n"))
+	return lipgloss.Place(m.width, h, lipgloss.Center, lipgloss.Center, box)
 }
 
 func note(color lipgloss.Color, mark, text string) string {
-	if mark == "" {
-		return styleMuted.Render(text)
-	}
-	return lipgloss.NewStyle().Foreground(color).Render(mark) + " " + styleMuted.Render(text)
+	return lipgloss.NewStyle().Foreground(color).Render(mark) + " " + text
 }
 
 func (m Model) footer() string {
@@ -323,7 +313,7 @@ func (m Model) footer() string {
 	if m.cfg.Links != nil {
 		keys = append(keys, [2]string{"o", "open"})
 	}
-	keys = append(keys, [][2]string{{"r", "refresh"}, {"?", "legend"}, {"q", "quit"}}...)
+	keys = append(keys, [][2]string{{"r", "refresh"}, {"?", "help"}, {"q", "quit"}}...)
 	parts := make([]string, 0, len(keys))
 	for _, k := range keys {
 		parts = append(parts, styleKey.Render(k[0])+" "+styleMuted.Render(k[1]))
@@ -342,29 +332,36 @@ func toggle(name string, on bool) string {
 	return name + " ○"
 }
 
-// Legend explains the marks on the constellation.
-func Legend() string {
+// Legend explains the marks and motion on the constellation.
+func Legend(watch bool) string {
+	highlight := lipgloss.NewStyle().Foreground(colorHighlight)
 	rows := []string{
-		styleHeading.Render("LEGEND"),
-		"",
-		styleMuted.Render("━━━ ") + "Uses resources from",
-		styleTeal.Render("─ ─ ") + "Forked from",
-		styleTeal.Render(" •→ ") + "Resources flowing to a consumer",
-		"",
-		dot(colorGreen) + " Provisioned",
-		dot(colorRed) + " Failed",
-		dot(colorBlue) + " Not deployed",
-		dot(colorGray) + " Decommissioned",
-		styleTeal.Render("◆") + " Application",
-		"",
-		styleBoldRed.Render("▲") + " Alarm firing",
-		dot(colorRed) + dot(colorOrange) + dot(colorYellow) + " Blast radius, source to downstream",
-		styleDeploy.Render("⟳") + " Deploying",
-		styleUpgrade.Render("↑") + " Upgrade available",
-		lipgloss.NewStyle().Foreground(colorHighlight).Render("◯") + " Something just happened",
-		styleTeal.Render("1.2k/s") + styleRed.Render(" ✕7") + " Traffic and errors from md/traffic",
-		lipgloss.NewStyle().Foreground(colorOrange).Render("⚑") + " Banner from md/banner",
-		styleFaint.Render("◌") + " No access",
+		styleHeading.Render("WHAT MOVES"),
+		note(colorTeal, "•→", "Sparks: resources flowing to their users"),
+		note(colorGreen, "◯", "Ring: the environment's instances by status"),
+		note(colorRed, "◉", "Red pulse: an alarm is firing"),
+		note(colorBlue, "◜", "Comet around a ring: deploying"),
+		highlight.Render("◯") + " Ripple: something just happened",
+		highlight.Render("◎") + " Spinning halo: the selected environment",
 	}
+	if watch {
+		rows = append(rows, styleBoldRed.Render("▲")+" Watching: new alarms take the screen")
+	}
+	rows = append(rows,
+		"",
+		styleHeading.Render("LINES"),
+		styleMuted.Render("━━━ ")+"Uses resources from",
+		styleTeal.Render("─ ─ ")+"Forked from",
+		styleTeal.Render("1.2k/s")+styleRed.Render(" ✕7")+" Traffic and errors from md/traffic",
+		"",
+		styleHeading.Render("COLORS"),
+		dot(colorGreen)+" Provisioned  "+dot(colorRed)+" Failed",
+		dot(colorBlue)+" Not deployed  "+dot(colorGray)+" Decommissioned",
+		dot(colorRed)+dot(colorOrange)+dot(colorYellow)+" Blast radius, source to downstream",
+		"",
+		styleHeading.Render("BADGES"),
+		styleBoldRed.Render("▲N")+" alarms firing  "+styleUpgrade.Render("↑N")+" upgrades",
+		lipgloss.NewStyle().Foreground(colorOrange).Render("⚑")+" banner  "+styleTeal.Render("◆")+" application  "+styleFaint.Render("◌")+" no access",
+	)
 	return strings.Join(rows, "\n")
 }

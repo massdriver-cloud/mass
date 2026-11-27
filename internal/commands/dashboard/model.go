@@ -628,7 +628,7 @@ func (m Model) panelWidth() int {
 	}
 }
 
-func (m Model) bodyHeight() int { return max(m.height-5, 3) }
+func (m Model) bodyHeight() int { return max(m.height-4, 3) }
 
 func (m Model) canvasSize() (int, int) {
 	w := m.width

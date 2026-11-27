@@ -131,7 +131,7 @@ func TestModelKeys(t *testing.T) {
 			name: "toggles", keys: []string{"b", "a", "c", "g", "s"},
 			wantView: []string{"b blast ○", "a apps ○", "c cost ●", "g projects ●", "s producers on top ●"},
 		},
-		{name: "legend", keys: []string{"?"}, wantView: []string{"LEGEND", "Blast radius, source to downstream", "Deploying", "Upgrade available"}},
+		{name: "legend", keys: []string{"?"}, wantView: []string{"WHAT MOVES", "Blast radius, source to downstream", "deploying", "upgrades"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -277,33 +277,39 @@ func TestModelError(t *testing.T) {
 	}
 }
 
-func TestModelExplains(t *testing.T) {
+func TestModelHelp(t *testing.T) {
 	watch := config(&opener{})
 	watch.Watch = true
 	tests := []struct {
-		name  string
-		cfg   dashboard.Config
-		keys  []string
-		width int
-		want  []string
+		name string
+		cfg  dashboard.Config
+		keys []string
+		want []string
+		not  []string
 	}{
-		{name: "constellation", cfg: config(&opener{}), want: []string{"sparks: resources flowing to their users", "comet: deploying"}},
-		{name: "runtimes", cfg: config(&opener{}), keys: []string{"2"}, want: []string{"share of instances on each runtime version", "a minor behind"}},
-		{name: "alarms", cfg: config(&opener{}), keys: []string{"3"}, want: []string{"what depends on it downstream"}},
-		{name: "upgrades", cfg: config(&opener{}), keys: []string{"4"}, want: []string{"deployed → available"}},
-		{name: "watching", cfg: watch, want: []string{"▲ watching for new alarms", "sparks: resources flowing to their users"}},
-		{name: "narrow", cfg: watch, width: 80, want: []string{"▲ watching •→ flow ◯ status ◉ alarm ◜ deploying ◯ new event ↑ upgrade"}},
+		{
+			name: "constellation", cfg: config(&opener{}), keys: []string{"?"},
+			want: []string{"WHAT MOVES", "Sparks: resources flowing to their users", "Comet around a ring: deploying"},
+			not:  []string{"Watching:"},
+		},
+		{name: "watching", cfg: watch, keys: []string{"?"}, want: []string{"Watching: new alarms take the screen"}},
+		{name: "runtimes", cfg: config(&opener{}), keys: []string{"2", "?"}, want: []string{"how the instances on a runtime split across its versions", "a minor behind"}},
+		{name: "alarms", cfg: config(&opener{}), keys: []string{"3", "?"}, want: []string{"depend on that instance downstream"}},
+		{name: "upgrades", cfg: config(&opener{}), keys: []string{"4", "?"}, want: []string{"the version it runs → the version its next deploy would use"}},
+		{name: "closed", cfg: config(&opener{}), keys: []string{"2"}, not: []string{"split across its versions", "WHAT MOVES"}},
+		{name: "closed by esc", cfg: config(&opener{}), keys: []string{"?", "esc"}, not: []string{"WHAT MOVES"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			width := 200
-			if tc.width > 0 {
-				width = tc.width
-			}
-			out := view(press(loaded(t, fixture(), tc.cfg, width, 48), tc.keys...))
+			out := view(press(loaded(t, fixture(), tc.cfg, 200, 48), tc.keys...))
 			for _, want := range tc.want {
 				if !strings.Contains(out, want) {
 					t.Errorf("view is missing %q:\n%s", want, out)
+				}
+			}
+			for _, not := range tc.not {
+				if strings.Contains(out, not) {
+					t.Errorf("view should not have %q", not)
 				}
 			}
 		})
