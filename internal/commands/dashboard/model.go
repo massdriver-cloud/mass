@@ -338,7 +338,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	}
 	tab, selected := m.tab, m.selected
 	next, cmd := m.handleViewKey(msg)
-	if len(next.watch.open) > 0 && (next.tab != tab || next.selected != selected) {
+	if next.watch.back != nil && (next.tab != tab || next.selected != selected) {
 		next.watch.touched = true
 	}
 	return next, cmd

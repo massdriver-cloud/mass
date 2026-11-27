@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,13 +29,25 @@ type fakeAPI struct {
 	since      time.Time
 	widgets    []dashboard.Widget
 	widgetErr  error
+	failScope  string
+	scopeMu    sync.Mutex
 	scopeReads [][]dashboard.Scope
 }
 
-func (f *fakeAPI) Widgets(_ context.Context, scopes []dashboard.Scope, _ string) ([]dashboard.Widget, string, error) {
+func (f *fakeAPI) Widgets(ctx context.Context, scopes []dashboard.Scope, _ string) ([]dashboard.Widget, string, error) {
+	f.scopeMu.Lock()
 	f.scopeReads = append(f.scopeReads, scopes)
+	f.scopeMu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return nil, "", err
+	}
 	if f.widgetErr != nil {
 		return nil, "", f.widgetErr
+	}
+	for _, s := range scopes {
+		if s.ID == f.failScope {
+			return nil, "", errors.New("read failed")
+		}
 	}
 	var out []dashboard.Widget
 	for _, w := range f.widgets {

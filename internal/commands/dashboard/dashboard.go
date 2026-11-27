@@ -55,18 +55,8 @@ func Run(ctx context.Context, api API, opts Options) error {
 // notification, which iTerm2, Ghostty, WezTerm, and kitty show.
 func TerminalNotifier(out io.Writer) func(title, body string) {
 	return func(title, body string) {
-		fmt.Fprintf(out, "\a\x1b]9;%s: %s\x07", oscSafe(title), oscSafe(body))
+		fmt.Fprintf(out, "\a\x1b]9;%s: %s\x07", clean(title), clean(body))
 	}
-}
-
-// oscSafe keeps a notification from ending its escape sequence early.
-func oscSafe(s string) string {
-	return strings.Map(func(r rune) rune {
-		if r < 0x20 || r == 0x7f {
-			return -1
-		}
-		return r
-	}, s)
 }
 
 // OpenBrowser opens url in the system's browser.

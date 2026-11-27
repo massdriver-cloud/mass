@@ -177,17 +177,17 @@ type Snapshot struct {
 // Fetch reads every page of environments, runtimes, and applications.
 func Fetch(ctx context.Context, api API) (*Snapshot, error) {
 	snap := &Snapshot{}
-	group, ctx := errgroup.WithContext(ctx)
+	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() (err error) {
-		snap.Environments, err = drainAs(ctx, "list environments", api.Environments)
+		snap.Environments, err = drainAs(groupCtx, "list environments", api.Environments)
 		return err
 	})
 	group.Go(func() (err error) {
-		snap.Runtimes, err = drainAs(ctx, "list runtimes", api.Runtimes)
+		snap.Runtimes, err = drainAs(groupCtx, "list runtimes", api.Runtimes)
 		return err
 	})
 	group.Go(func() (err error) {
-		snap.Applications, err = drainAs(ctx, "list applications", api.Applications)
+		snap.Applications, err = drainAs(groupCtx, "list applications", api.Applications)
 		return err
 	})
 	if err := group.Wait(); err != nil {
@@ -298,24 +298,24 @@ func (a *gqlAPI) readAudit(ctx context.Context, since time.Time, limit int) (Log
 // log entry. The subject is an MRI, mri:<org>:<project>:<env>:<kind>:<id>, and
 // an environment's id is <project>-<env>.
 func ToEvent(log types.AuditLog) Event {
-	ev := Event{ID: log.ID, At: log.OccurredAt, Type: log.Type}
+	ev := Event{ID: log.ID, At: log.OccurredAt, Type: clean(log.Type)}
 	if parts := strings.Split(log.Subject, ":"); len(parts) >= 4 && parts[2] != "" && parts[3] != "" {
 		ev.EnvID = parts[2] + "-" + parts[3]
 	}
 	if log.Actor != nil && log.Actor.Type != string(auditlogs.ActorSystem) {
-		ev.Actor = log.Actor.Name
+		ev.Actor = clean(log.Actor.Name)
 	}
 	entity, _ := log.Data["entity"].(map[string]any)
 	switch {
 	case entity["action"] != nil:
-		ev.Detail = strings.ToLower(fmt.Sprint(entity["action"]))
+		ev.Detail = strings.ToLower(clean(fmt.Sprint(entity["action"])))
 	case entity["name"] != nil:
-		ev.Detail = fmt.Sprint(entity["name"])
+		ev.Detail = clean(fmt.Sprint(entity["name"]))
 	case entity["field"] != nil:
-		ev.Detail = fmt.Sprint(entity["field"])
+		ev.Detail = clean(fmt.Sprint(entity["field"]))
 	}
 	if ev.Actor == "" && entity["deployed_by_name"] != nil {
-		ev.Actor = fmt.Sprint(entity["deployed_by_name"])
+		ev.Actor = clean(fmt.Sprint(entity["deployed_by_name"]))
 	}
 	return ev
 }

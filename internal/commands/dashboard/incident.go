@@ -18,6 +18,9 @@ const (
 type Incident struct {
 	Alarm   FiringAlarm
 	Started time.Time
+	// Unlisted marks an incident whose alarm is past the first page of its
+	// instance's alarms; it stands for the instance's alarms as a whole.
+	Unlisted bool
 }
 
 type watchState struct {
@@ -46,38 +49,71 @@ type viewState struct {
 func alarmKey(a FiringAlarm) string { return a.InstanceID + "\x00" + a.Name }
 
 // watchAlarms compares the alarms firing before a read with the ones firing
-// after it: a new one opens an incident and takes the view to it, and one
-// that stops firing resolves its incident.
+// after it. The alarm list is one page per instance, so an instance's count
+// decides: an incident opens only when the count rises, and an alarm missing
+// from the list resolves only when the list holds every alarm of its instance.
 func (m Model) watchAlarms(before *Graph) (Model, tea.Cmd) {
 	if !m.cfg.Watch || before == nil {
 		return m, nil
 	}
-	was := map[string]bool{}
-	for _, a := range before.Firing {
-		was[alarmKey(a)] = true
-	}
-	now := map[string]bool{}
+	listed := map[string]bool{}
 	for _, a := range m.graph.Firing {
-		now[alarmKey(a)] = true
+		listed[alarmKey(a)] = true
 	}
-	m = m.resolveIncidents(now)
-	var started []Incident
-	for _, a := range m.graph.Firing {
-		if !was[alarmKey(a)] {
-			started = append(started, Incident{Alarm: a, Started: m.cfg.Now()})
-		}
-	}
+	m = m.resolveIncidents(listed)
+	started := startedIncidents(before, m.graph, m.cfg.Now())
 	if len(started) == 0 {
 		return m, nil
 	}
 	return m.openIncidents(started)
 }
 
-func (m Model) resolveIncidents(firing map[string]bool) Model {
+func startedIncidents(before, after *Graph, now time.Time) []Incident {
+	was := map[string]bool{}
+	for _, a := range before.Firing {
+		was[alarmKey(a)] = true
+	}
+	byInstance := map[string][]FiringAlarm{}
+	for _, a := range after.Firing {
+		byInstance[a.InstanceID] = append(byInstance[a.InstanceID], a)
+	}
+	var started []Incident
+	for _, env := range after.Envs {
+		for _, inst := range env.Instances {
+			prev := 0
+			if old := before.Instance(inst.ID); old != nil {
+				prev = old.Firing
+			}
+			if inst.Firing <= prev {
+				continue
+			}
+			fresh := newAlarms(byInstance[inst.ID], was, now)
+			started = append(started, fresh...)
+			if len(fresh) == 0 {
+				started = append(started, Incident{Started: now, Unlisted: true, Alarm: FiringAlarm{
+					InstanceID: inst.ID, EnvID: env.ID, Name: fmt.Sprintf("%d alarms firing", inst.Firing),
+				}})
+			}
+		}
+	}
+	return started
+}
+
+func newAlarms(alarms []FiringAlarm, was map[string]bool, now time.Time) []Incident {
+	var out []Incident
+	for _, a := range alarms {
+		if !was[alarmKey(a)] {
+			out = append(out, Incident{Alarm: a, Started: now})
+		}
+	}
+	return out
+}
+
+func (m Model) resolveIncidents(listed map[string]bool) Model {
 	w := m.watch
 	open := w.open[:0:0]
 	for _, inc := range w.open {
-		if firing[alarmKey(inc.Alarm)] {
+		if m.stillFiring(inc, listed) {
 			open = append(open, inc)
 			continue
 		}
@@ -88,9 +124,26 @@ func (m Model) resolveIncidents(firing map[string]bool) Model {
 	return m
 }
 
+func (m Model) stillFiring(inc Incident, listed map[string]bool) bool {
+	inst := m.graph.Instance(inc.Alarm.InstanceID)
+	if inst == nil || inst.Firing == 0 {
+		return false
+	}
+	if inc.Unlisted || listed[alarmKey(inc.Alarm)] {
+		return true
+	}
+	shown := 0
+	for _, a := range m.graph.Firing {
+		if a.InstanceID == inst.ID {
+			shown++
+		}
+	}
+	return inst.Firing > shown
+}
+
 func (m Model) openIncidents(started []Incident) (Model, tea.Cmd) {
 	w := m.watch
-	if len(w.open) == 0 {
+	if w.back == nil {
 		w.back = &viewState{tab: m.tab, selected: m.selected, blastOn: m.blastOn}
 		w.touched = false
 	}

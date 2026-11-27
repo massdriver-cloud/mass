@@ -105,6 +105,35 @@ func TestWidgetScopes(t *testing.T) {
 	}
 }
 
+func TestWidgetsKeepTheReadsThatWork(t *testing.T) {
+	api := withWidgets()
+	api.failScope = "platform-dev"
+	g := dashboard.BuildGraph(fixtureSnapshotFrom(t, api))
+	if g.Instance("care-dev-app").Health != "degraded" || g.Instance("platform-dev-db").Traffic != nil {
+		t.Error("a failed read for one project should leave out only that project's widgets")
+	}
+}
+
+func TestWidgetsCannotEscapeTheTerminal(t *testing.T) {
+	api := fixture()
+	api.widgets = []dashboard.Widget{
+		{Name: dashboard.WidgetBanner, Scope: env("care-dev"), Values: dashboard.Values{"message": "fine\x1b]0;owned\x07\u009b2J"}},
+		{Name: dashboard.WidgetLinks, Scope: env("care-dev"), Values: dashboard.Values{"links": []any{
+			map[string]any{"label": "ok\x1b[31m", "url": "https://ok.example.com\x1b\\"},
+			map[string]any{"label": "local", "url": "file:///etc/passwd"},
+			map[string]any{"label": "script", "url": "javascript:alert(1)"},
+		}}},
+	}
+	g := dashboard.BuildGraph(fixtureSnapshotFrom(t, api))
+	care := g.Env("care-dev")
+	if care.Banner.Message != "fine]0;owned2J" {
+		t.Errorf("banner = %q, want control characters stripped", care.Banner.Message)
+	}
+	if len(care.Links) != 1 || care.Links[0].Label != "ok[31m" || care.Links[0].URL != "https://ok.example.com\\" {
+		t.Errorf("links = %+v, want only the web link, cleaned", care.Links)
+	}
+}
+
 func TestWidgetsFailQuietly(t *testing.T) {
 	api := withWidgets()
 	api.widgetErr = errors.New(`Cannot query field "alphaWidgetsForScopes"`)

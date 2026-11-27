@@ -3,7 +3,10 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // Widget names in the platform's widget catalog.
@@ -15,8 +18,11 @@ const (
 	WidgetLinks   = "environment.header_link"
 )
 
-// maxWidgetScopes is the most stashes one widgets read takes.
-const maxWidgetScopes = 200
+const (
+	// maxWidgetScopes is the most stashes one widgets read takes.
+	maxWidgetScopes = 200
+	widgetReads     = 4
+)
 
 // Scope names one stash: an environment or an instance.
 type Scope struct {
@@ -142,18 +148,21 @@ func widgetScopes(envs []Environment) [][]Scope {
 // are extra: a read that fails, as it does on a server without widgets,
 // leaves them out rather than failing the dashboard.
 func fetchWidgets(ctx context.Context, api API, envs []Environment) []Widget {
-	var widgets []Widget
-	for _, scopes := range widgetScopes(envs) {
-		page := func(ctx context.Context, cursor string) ([]Widget, string, error) {
-			return api.Widgets(ctx, scopes, cursor)
-		}
-		batch, err := drain(ctx, page)
-		if err != nil {
+	batches := widgetScopes(envs)
+	results := make([][]Widget, len(batches))
+	var group errgroup.Group
+	group.SetLimit(widgetReads)
+	for i, scopes := range batches {
+		group.Go(func() error {
+			page := func(ctx context.Context, cursor string) ([]Widget, string, error) {
+				return api.Widgets(ctx, scopes, cursor)
+			}
+			results[i], _ = drain(ctx, page)
 			return nil
-		}
-		widgets = append(widgets, batch...)
+		})
 	}
-	return widgets
+	_ = group.Wait()
+	return slices.Concat(results...)
 }
 
 func (g *Graph) applyWidgets(widgets []Widget) {
@@ -174,12 +183,12 @@ func (g *Graph) applyWidgets(widgets []Widget) {
 func applyInstanceWidget(inst *InstNode, w Widget) {
 	switch w.Name {
 	case WidgetHealth:
-		inst.Health = str(w.Values, "state")
+		inst.Health = clean(str(w.Values, "state"))
 	case WidgetUsage:
 		value, okValue := num(w.Values, "value")
 		limit, okMax := num(w.Values, "max")
 		if okValue && okMax && limit > 0 {
-			inst.Usage = &Usage{Value: value, Max: limit, Label: str(w.Values, "label")}
+			inst.Usage = &Usage{Value: value, Max: limit, Label: clean(str(w.Values, "label"))}
 		}
 	case WidgetTraffic:
 		rate, ok := num(w.Values, "rate")
@@ -193,7 +202,7 @@ func applyInstanceWidget(inst *InstNode, w Widget) {
 func applyEnvWidget(env *EnvNode, w Widget) {
 	switch w.Name {
 	case WidgetBanner:
-		if msg := str(w.Values, "message"); msg != "" {
+		if msg := clean(str(w.Values, "message")); msg != "" {
 			env.Banner = &Banner{Message: msg, Level: str(w.Values, "level")}
 		}
 	case WidgetLinks:
@@ -202,11 +211,28 @@ func applyEnvWidget(env *EnvNode, w Widget) {
 			link, _ := l.(map[string]any)
 			label, _ := link["label"].(string)
 			url, _ := link["url"].(string)
-			if label != "" && url != "" {
+			label, url = clean(label), clean(url)
+			if label != "" && webURL(url) {
 				env.Links = append(env.Links, HeaderLink{Label: label, URL: url})
 			}
 		}
 	}
+}
+
+// webURL keeps a link the terminal can open to http and https.
+func webURL(url string) bool {
+	return strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "http://")
+}
+
+// clean strips control characters, so text from the platform cannot end or
+// start terminal escape sequences.
+func clean(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 0x20 || (r >= 0x7f && r < 0xa0) {
+			return -1
+		}
+		return r
+	}, s)
 }
 
 // Traffic sums the traffic that instances in the link's producing

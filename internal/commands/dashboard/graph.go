@@ -202,9 +202,9 @@ func BuildGraph(snap *Snapshot) *Graph {
 }
 
 func (g *Graph) addEnv(env Environment) {
-	node := &EnvNode{ID: env.ID, Name: env.Name}
+	node := &EnvNode{ID: env.ID, Name: clean(env.Name)}
 	if env.Project != nil {
-		node.ProjectID, node.ProjectName = env.Project.ID, env.Project.Name
+		node.ProjectID, node.ProjectName = env.Project.ID, clean(env.Project.Name)
 	}
 	if env.Parent != nil {
 		node.ParentID = env.Parent.ID
@@ -260,8 +260,8 @@ func firingAlarms(envID string, inst Instance) []FiringAlarm {
 		out = append(out, FiringAlarm{
 			InstanceID: inst.ID,
 			EnvID:      envID,
-			Name:       alarm.DisplayName,
-			Message:    state.Message,
+			Name:       clean(alarm.DisplayName),
+			Message:    clean(state.Message),
 			Since:      since,
 		})
 	}

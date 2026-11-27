@@ -115,7 +115,10 @@ func usageColor(u *Usage) lipgloss.Color {
 
 // hyperlink makes label a link the terminal can open, where it supports OSC 8.
 func hyperlink(url, label string) string {
-	return "\x1b]8;;" + url + "\x1b\\" + label + "\x1b]8;;\x1b\\"
+	if !webURL(url) {
+		return label
+	}
+	return "\x1b]8;;" + clean(url) + "\x1b\\" + label + "\x1b]8;;\x1b\\"
 }
 
 func hopColor(hop int) lipgloss.Color {
