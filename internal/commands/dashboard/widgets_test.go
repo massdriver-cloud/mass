@@ -122,6 +122,7 @@ func TestWidgetsCannotEscapeTheTerminal(t *testing.T) {
 			map[string]any{"label": "ok\x1b[31m", "url": "https://ok.example.com\x1b\\"},
 			map[string]any{"label": "local", "url": "file:///etc/passwd"},
 			map[string]any{"label": "script", "url": "javascript:alert(1)"},
+			map[string]any{"label": "Loud\u202eevil", "url": "HTTPS://LOUD.example.com"},
 		}}},
 	}
 	g := dashboard.BuildGraph(fixtureSnapshotFrom(t, api))
@@ -129,7 +130,8 @@ func TestWidgetsCannotEscapeTheTerminal(t *testing.T) {
 	if care.Banner.Message != "fine]0;owned2J" {
 		t.Errorf("banner = %q, want control characters stripped", care.Banner.Message)
 	}
-	if len(care.Links) != 1 || care.Links[0].Label != "ok[31m" || care.Links[0].URL != "https://ok.example.com\\" {
+	if len(care.Links) != 2 || care.Links[0].Label != "ok[31m" || care.Links[0].URL != "https://ok.example.com\\" ||
+		care.Links[1].Label != "Loudevil" {
 		t.Errorf("links = %+v, want only the web link, cleaned", care.Links)
 	}
 }

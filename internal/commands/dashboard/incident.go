@@ -147,12 +147,35 @@ func (m Model) openIncidents(started []Incident) (Model, tea.Cmd) {
 		w.back = &viewState{tab: m.tab, selected: m.selected, blastOn: m.blastOn}
 		w.touched = false
 	}
+	started = foldUnlisted(started, w.open)
+	if len(started) == 0 {
+		m.watch = w
+		return m, nil
+	}
 	w.open = append(started, w.open...)
 	w.resolved, w.acked, w.lockedAt = nil, false, m.frame
 	m.watch = w
 	newest := started[0].Alarm
 	m.tab, m.selected, m.blastOn = TabConstellation, newest.EnvID, true
 	return m, m.notify("▲ "+newest.Name, newest.InstanceID+" · "+envLabel(m.graph, newest.EnvID))
+}
+
+// foldUnlisted renames an instance's open unlisted incident to its new count
+// rather than opening a second one for the same instance.
+func foldUnlisted(started, open []Incident) []Incident {
+	out := started[:0:0]
+	for _, inc := range started {
+		folded := false
+		for i := range open {
+			if inc.Unlisted && open[i].Unlisted && open[i].Alarm.InstanceID == inc.Alarm.InstanceID {
+				open[i].Alarm.Name, folded = inc.Alarm.Name, true
+			}
+		}
+		if !folded {
+			out = append(out, inc)
+		}
+	}
+	return out
 }
 
 func (m Model) notify(title, body string) tea.Cmd {

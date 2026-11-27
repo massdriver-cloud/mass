@@ -148,11 +148,20 @@ func TestIncidentPastTheFirstPage(t *testing.T) {
 	m := watching(t, api, n)
 	queue := &api.envPages[0][1].Instances[1]
 	queue.FiringAlarmCount = 4
-	if out := view(reread(t, m)); !strings.Contains(out, "▲ 4 alarms firing · care-dev-queue") {
+	m = reread(t, m)
+	if out := view(m); !strings.Contains(out, "▲ 4 alarms firing · care-dev-queue") {
 		t.Errorf("banner should name the instance's alarms:\n%s", out)
 	}
 	if len(n.sent) != 1 || !strings.HasPrefix(n.sent[0], "▲ 4 alarms firing | care-dev-queue") {
 		t.Fatalf("notified %v; a rising count with nothing new listed should still open an incident", n.sent)
+	}
+	queue.FiringAlarmCount = 6
+	m = reread(t, m)
+	if out := view(m); !strings.Contains(out, "▲ 6 alarms firing · care-dev-queue") || strings.Contains(out, "+1 more") {
+		t.Errorf("a second rise on the same instance should update its incident, not open another:\n%s", out)
+	}
+	if len(n.sent) != 1 {
+		t.Errorf("notified %v; the update should not notify again", n.sent)
 	}
 }
 

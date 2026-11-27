@@ -194,7 +194,44 @@ func Fetch(ctx context.Context, api API) (*Snapshot, error) {
 		return nil, err
 	}
 	snap.Widgets = fetchWidgets(ctx, api, snap.Environments)
+	cleanSnapshot(snap)
 	return snap, nil
+}
+
+// cleanSnapshot strips control characters from the bundle and version text
+// that publishers write, so it reaches the terminal as text.
+func cleanSnapshot(snap *Snapshot) {
+	for i := range snap.Runtimes {
+		rt := &snap.Runtimes[i]
+		rt.ID = clean(rt.ID)
+		cleanBundle(&rt.Latest)
+		for j := range rt.Adoption {
+			rt.Adoption[j].Version = clean(rt.Adoption[j].Version)
+		}
+	}
+	for i := range snap.Applications {
+		app := &snap.Applications[i]
+		app.ID = clean(app.ID)
+		cleanBundle(&app.Latest)
+	}
+	for i := range snap.Environments {
+		for j := range snap.Environments[i].Instances {
+			inst := &snap.Environments[i].Instances[j]
+			inst.DeployedVersion, inst.AvailableUpgrade = clean(inst.DeployedVersion), clean(inst.AvailableUpgrade)
+			cleanBundle(inst.Bundle)
+			if inst.LatestProvision != nil {
+				cleanBundle(inst.LatestProvision.Bundle)
+			}
+		}
+	}
+}
+
+func cleanBundle(b *Bundle) {
+	if b == nil {
+		return
+	}
+	b.Name, b.Version = clean(b.Name), clean(b.Version)
+	cleanBundle(b.Runtime)
 }
 
 func drainAs[T any](ctx context.Context, what string, page func(context.Context, string) ([]T, string, error)) ([]T, error) {

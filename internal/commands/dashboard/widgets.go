@@ -221,14 +221,23 @@ func applyEnvWidget(env *EnvNode, w Widget) {
 
 // webURL keeps a link the terminal can open to http and https.
 func webURL(url string) bool {
-	return strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "http://")
+	for _, scheme := range []string{"https://", "http://"} {
+		if len(url) >= len(scheme) && strings.EqualFold(url[:len(scheme)], scheme) {
+			return true
+		}
+	}
+	return false
 }
 
 // clean strips control characters, so text from the platform cannot end or
-// start terminal escape sequences.
+// start terminal escape sequences, and bidirectional overrides, so it reads
+// on screen the way it is written.
 func clean(s string) string {
 	return strings.Map(func(r rune) rune {
-		if r < 0x20 || (r >= 0x7f && r < 0xa0) {
+		switch {
+		case r < 0x20, r >= 0x7f && r < 0xa0:
+			return -1
+		case r >= 0x202a && r <= 0x202e, r >= 0x2066 && r <= 0x2069:
 			return -1
 		}
 		return r
