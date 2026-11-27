@@ -180,9 +180,9 @@ func TestSearchDirectoryFails(t *testing.T) {
 func TestSearchDirectoryAnswersLate(t *testing.T) {
 	m := loaded(t, fixture(), config(&opener{}), 160, 48)
 	m, cmd := keys(m, "/", "z", "z", "z", "enter")
-	m, _ = tabTo(t, m, "billing-dev")
+	m, _ = tabTo(t, m, "platform-dev")
 	m = drive(t, m, cmd, 1)
-	if m.Selected() != "billing-dev" {
+	if m.Selected() != "platform-dev" {
 		t.Errorf("selected %q; a late answer should not undo a selection made since", m.Selected())
 	}
 }
