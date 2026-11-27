@@ -22,7 +22,7 @@ func NewCmdDashboard() *cobra.Command {
 	}
 	cmd.Flags().Duration("refresh", dashboardRefresh, "How often to re-read the organization; 0 reads once")
 	cmd.Flags().Duration("events", dashboardEvents, "How often to read new activity from the audit log; 0 turns the live ticker off")
-	cmd.Flags().Bool("watch", false, "Take the view to each alarm that starts firing, and notify")
+	cmd.Flags().Bool("watch", false, "Jump to any alarm that starts firing while the dashboard is open, and send a desktop notification")
 	return cmd
 }
 

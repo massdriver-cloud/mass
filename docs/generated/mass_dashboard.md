@@ -52,7 +52,7 @@ mass dashboard [flags]
       --events duration    How often to read new activity from the audit log; 0 turns the live ticker off (default 5s)
   -h, --help               help for dashboard
       --refresh duration   How often to re-read the organization; 0 reads once (default 30s)
-      --watch              Take the view to each alarm that starts firing, and notify
+      --watch              Jump to any alarm that starts firing while the dashboard is open, and send a desktop notification
 ```
 
 ### Options inherited from parent commands

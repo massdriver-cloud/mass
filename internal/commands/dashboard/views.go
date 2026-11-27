@@ -27,7 +27,8 @@ func (m Model) View() string {
 	if m.graph != nil {
 		body = overlayFirstLine(body, m.incidentBanner())
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, fit.Render(m.header()), fit.Render(body), fit.Render(m.ticker()), m.footer())
+	return lipgloss.JoinVertical(lipgloss.Left, fit.Render(m.header()), fit.Render(body), fit.Render(m.ticker()),
+		fit.Render(m.explain()), m.footer())
 }
 
 func (m Model) splash(h int) string {
@@ -229,6 +230,45 @@ func (m Model) alarmStat() string {
 		return styleBoldRed.Render(fmt.Sprintf("%d alarming", len(alarming)))
 	}
 	return styleTeal.Render("all clear")
+}
+
+// explain says what the moving parts on screen mean.
+func (m Model) explain() string {
+	var parts []string
+	switch {
+	case m.replay.on:
+		parts = []string{note("", "", "replaying the audit log in order: each flash is one event where it happened, and the clock is when")}
+	case m.tab == TabRuntimes:
+		parts = []string{
+			note("", "", "bars: share of instances on each runtime version"),
+			note(colorGreen, "━", "latest"), note(colorYellow, "━", "a patch behind"),
+			note(colorOrange, "━", "a minor behind"), note(colorRed, "━", "a major behind"),
+		}
+	case m.tab == TabAlarms:
+		parts = []string{note("", "", "firing for · alarm · instance · environment ·"), note(colorOrange, "✸", "what depends on it downstream")}
+	case m.tab == TabUpgrades:
+		parts = []string{note("", "", "instances whose version constraint allows a newer bundle: deployed → available")}
+	default:
+		parts = []string{
+			note(colorTeal, "•→", "sparks: resources flowing to their users"),
+			note(colorGreen, "◯", "ring: instance statuses"),
+			note(colorRed, "◉", "pulse: alarm"),
+			note(colorBlue, "◜", "comet: deploying"),
+			note(colorHighlight, "◯", "ripple: just happened"),
+			note(colorYellow, "↑", "upgrades"),
+		}
+	}
+	if m.cfg.Watch && !m.replay.on {
+		parts = append([]string{note(colorRed, "▲", "watching: a new alarm takes over the screen")}, parts...)
+	}
+	return strings.Join(parts, styleFaint.Render("  ·  "))
+}
+
+func note(color lipgloss.Color, mark, text string) string {
+	if mark == "" {
+		return styleMuted.Render(text)
+	}
+	return lipgloss.NewStyle().Foreground(color).Render(mark) + " " + styleMuted.Render(text)
 }
 
 func (m Model) footer() string {
