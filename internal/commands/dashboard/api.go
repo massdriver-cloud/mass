@@ -69,6 +69,8 @@ type Event struct {
 	EnvID  string    `json:"envId,omitempty"`
 	Actor  string    `json:"actor,omitempty"`
 	Detail string    `json:"detail,omitempty"`
+	// Widget is Detail drawn in color, for the ticker.
+	Widget string `json:"-"`
 }
 
 // Environment is one environment with the instances it holds.

@@ -121,7 +121,7 @@ func TestStashEvent(t *testing.T) {
 	}{
 		{
 			dashboard.StashChange{Scope: inst("care-dev-app"), Key: "md/v1/health", Entry: &set},
-			dashboard.Event{ID: "stash:instance:care-dev-app:md/v1/health", At: fixedNow(), Type: "stash.set", EnvID: "care-dev", Detail: "md/v1/health = down now"},
+			dashboard.Event{ID: "stash:instance:care-dev-app:md/v1/health", At: fixedNow(), Type: "stash.set", EnvID: "care-dev", Detail: "md/v1/health ● down now"},
 		},
 		{
 			dashboard.StashChange{Scope: dashboard.Scope{Kind: stash.ScopeProject, ID: "care"}, Key: "release"},
@@ -129,7 +129,11 @@ func TestStashEvent(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
-		if got := g.StashEvent(tc.change, fixedNow()); got != tc.want {
+		got := g.StashEvent(tc.change, nil, nil, fixedNow())
+		if ansi.Strip(got.Widget) != got.Detail {
+			t.Errorf("widget %q should read as its detail %q", got.Widget, got.Detail)
+		}
+		if got.Widget = ""; got != tc.want {
 			t.Errorf("StashEvent = %+v, want %+v", got, tc.want)
 		}
 	}
@@ -173,7 +177,7 @@ func TestStashFeed(t *testing.T) {
 	api.stash[0].UpdatedAt = fixedNow().Add(time.Second)
 	m = refreshed(t, m)
 	out := view(m)
-	if !strings.Contains(out, "stash set Care / Development · md/v1/health = down") {
+	if !strings.Contains(out, "stash set Care / Development · md/v1/health ● down") {
 		t.Errorf("ticker should carry the change:\n%s", out)
 	}
 	if !strings.Contains(out, "md/v1/health ") {
@@ -255,7 +259,7 @@ func TestStashFeedShowsEmoji(t *testing.T) {
 	api.stash[0] = text(inst("care-dev-app"), "md/v1/health", "down")
 	api.stash[0].UpdatedAt = fixedNow().Add(time.Second)
 	out := view(refreshed(t, m))
-	if !strings.Contains(out, "📌 Care / Development · md/v1/health = down") || strings.Contains(out, "stash set") {
+	if !strings.Contains(out, "📌 Care / Development · md/v1/health ● down") || strings.Contains(out, "stash set") {
 		t.Errorf("the ticker should lead a stash change with 📌, not words:\n%s", out)
 	}
 }
