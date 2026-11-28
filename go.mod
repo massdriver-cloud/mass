@@ -10,13 +10,15 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/glamour v1.0.0
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
+	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/fatih/color v1.19.0
 	github.com/hashicorp/hcl/v2 v2.25.0
 	github.com/itchyny/gojq v0.12.19
 	github.com/manifoldco/promptui v0.9.0
 	github.com/massdriver-cloud/airlock v0.0.10
-	github.com/massdriver-cloud/massdriver-sdk-go v0.5.1
+	github.com/massdriver-cloud/massdriver-sdk-go v0.6.1-0.20261127222237-8b9019ca0f62
 	github.com/mattn/go-runewidth v0.0.31
+	github.com/muesli/termenv v0.16.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/osteele/liquid v1.9.2
 	github.com/rodaine/table v1.4.0
@@ -28,6 +30,7 @@ require (
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	github.com/zclconf/go-cty v1.19.0
 	golang.org/x/mod v0.42.0
+	golang.org/x/sync v0.24.0
 	golang.org/x/term v0.47.0
 	golang.org/x/text v0.43.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -51,7 +54,6 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.3 // indirect
 	github.com/buger/jsonparser v1.6.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
-	github.com/charmbracelet/x/ansi v0.11.9 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.15 // indirect
 	github.com/charmbracelet/x/exp/slice v0.1.0 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
@@ -86,7 +88,6 @@ require (
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
-	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/osteele/tuesday v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -103,7 +104,6 @@ require (
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
 	golang.org/x/net v0.61.0 // indirect
-	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/tools v0.52.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

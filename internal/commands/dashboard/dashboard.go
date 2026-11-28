@@ -1,0 +1,179 @@
+package dashboard
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"runtime"
+	"slices"
+	"strings"
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/massdriver-cloud/mass/internal/cli"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/urls"
+)
+
+// Options configure [Run].
+type Options struct {
+	Config
+	Out *os.File
+	// Palette names the colors; empty is the default.
+	Palette string
+}
+
+// Run opens the dashboard when Out is a terminal, and otherwise writes a
+// plain summary of the same data.
+func Run(ctx context.Context, api API, opts Options) error {
+	if opts.Out == nil {
+		opts.Out = os.Stdout
+	}
+	if opts.Now == nil {
+		opts.Now = time.Now
+	}
+	if opts.Palette != "" {
+		if err := UsePalette(opts.Palette); err != nil {
+			return err
+		}
+	}
+	if opts.Theme == "" {
+		opts.Theme = DefaultTheme
+	}
+	if !slices.Contains(Themes(), opts.Theme) {
+		return fmt.Errorf("no theme %q; choose %s", opts.Theme, strings.Join(Themes(), ", "))
+	}
+	if opts.Render == "" {
+		opts.Render = DefaultRender
+	}
+	if !slices.Contains(Renders(), opts.Render) {
+		return fmt.Errorf("no render %q; choose %s", opts.Render, strings.Join(Renders(), ", "))
+	}
+	if !cli.IsInteractive(opts.Out) {
+		return RunSummary(ctx, api, opts.Out, opts.Now(), Where{Focus: opts.Focus, Depth: opts.Depth})
+	}
+	if opts.Open == nil {
+		opts.Open = OpenBrowser
+	}
+	if opts.Notify == nil {
+		opts.Notify = TerminalNotifier(opts.Out)
+	}
+	opts.Context = ctx
+	model := NewModel(api, opts.Config)
+	final, err := tea.NewProgram(model, tea.WithAltScreen(), tea.WithOutput(opts.Out), tea.WithContext(ctx)).Run()
+	if err != nil {
+		return err
+	}
+	if m, ok := final.(Model); ok && m.graph == nil && m.err != nil {
+		return m.err
+	}
+	return nil
+}
+
+// TerminalNotifier rings the terminal's bell and asks it for a desktop
+// notification, which iTerm2, Ghostty, WezTerm, and kitty show.
+func TerminalNotifier(out io.Writer) func(title, body string) {
+	return func(title, body string) {
+		fmt.Fprintf(out, "\a\x1b]9;%s: %s\x07", clean(title), clean(body))
+	}
+}
+
+// OpenBrowser opens url in the system's browser.
+func OpenBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.CommandContext(context.Background(), "open", url)
+	case "windows":
+		cmd = exec.CommandContext(context.Background(), "rundll32", "url.dll,FileProtocolHandler", url)
+	default:
+		cmd = exec.CommandContext(context.Background(), "xdg-open", url)
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go cmd.Wait() //nolint:errcheck // the browser's exit status is not ours to report
+	return nil
+}
+
+// RunSummary writes what the dashboard shows as plain text.
+func RunSummary(ctx context.Context, api API, out io.Writer, now time.Time, where Where) error {
+	snap, err := Fetch(ctx, api, where)
+	if err != nil {
+		return err
+	}
+	g := BuildGraph(snap)
+	writeEnvironments(out, g)
+	writeAlarms(out, g, now)
+	writeRuntimes(out, g, snap)
+	return nil
+}
+
+func writeEnvironments(out io.Writer, g *Graph) {
+	tbl := cli.NewTable("Environment", "Project", "Instances", "Uses resources from", "Alarms").WithWriter(out)
+	for _, env := range g.Envs {
+		if env.Restricted {
+			continue
+		}
+		producers := make([]string, 0, len(g.Producers(env.ID)))
+		for _, l := range g.Producers(env.ID) {
+			producers = append(producers, l.From)
+		}
+		tbl.AddRow(env.ID, env.ProjectName, statusSummary(env), strings.Join(producers, ", "), env.FiringCount())
+	}
+	tbl.Print()
+}
+
+func statusSummary(env *EnvNode) string {
+	parts := make([]string, 0, len(Statuses))
+	for _, status := range Statuses {
+		if n := env.StatusCount(status); n > 0 {
+			parts = append(parts, fmt.Sprintf("%d %s", n, statusLabel(status)))
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+func writeAlarms(out io.Writer, g *Graph, now time.Time) {
+	total := g.FiringCount()
+	if total == 0 {
+		return
+	}
+	fmt.Fprintln(out)
+	tbl := cli.NewTable("Firing", "Alarm", "Instance", "Downstream").WithWriter(out)
+	for _, a := range g.Firing {
+		envs, insts := g.BlastRadius(a.InstanceID).Downstream()
+		tbl.AddRow(Ago(now, a.Since), a.Name, a.InstanceID, fmt.Sprintf("%d environments, %d instances", envs, insts))
+	}
+	tbl.Print()
+	if more := total - len(g.Firing); more > 0 {
+		fmt.Fprintf(out, "+%d more on the instances' alarm pages\n", more)
+	}
+}
+
+func writeRuntimes(out io.Writer, g *Graph, snap *Snapshot) {
+	if len(snap.Runtimes) == 0 {
+		return
+	}
+	fmt.Fprintln(out)
+	tbl := cli.NewTable("Runtime", "Latest", "On latest", "Applications").WithWriter(out)
+	for _, rt := range snap.Runtimes {
+		r := BuildRollout(g, snap, rt, BumpNone)
+		tbl.AddRow(rt.ID, rt.Latest.Version, fmt.Sprintf("%d of %d instances", r.OnLatest(), len(r.Instances)), len(r.Apps))
+	}
+	tbl.Print()
+}
+
+type appLinks struct{ helper *urls.Helper }
+
+// NewLinks builds web app URLs with the SDK's URL helper.
+func NewLinks(helper *urls.Helper) Links { return appLinks{helper: helper} }
+
+func (l appLinks) Environment(id string) string { return l.helper.EnvironmentURL(id) }
+
+func (l appLinks) Instance(id string) string { return l.helper.InstanceURL(id) }
+
+func (l appLinks) Runtime(id string) string {
+	return fmt.Sprintf("%s/orgs/%s/runtimes/%s", l.helper.BaseURL, l.helper.OrgID, id)
+}
