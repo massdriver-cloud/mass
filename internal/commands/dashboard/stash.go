@@ -320,7 +320,7 @@ func (g *Graph) envOfScope(s Scope) string {
 // StashEvent describes a stash change for the ticker, drawing its value
 // against the annotations and the stash it changed.
 func (g *Graph) StashEvent(c StashChange, annotations []Annotation, st Stash, at time.Time) Event {
-	ev := Event{ID: "stash:" + c.Scope.String() + ":" + c.Key, At: at, EnvID: g.envOfScope(c.Scope)}
+	ev := Event{ID: "stash:" + c.Scope.String() + ":" + c.Key, At: at, EnvID: g.envOfScope(c.Scope), Emoji: StashEmoji(c.Key, c.Entry == nil)}
 	ev.Type = "stash.set"
 	if c.Entry == nil {
 		ev.Type = "stash.deleted"

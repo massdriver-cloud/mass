@@ -178,7 +178,7 @@ func (m Model) takeStash(st Stash, news func(Scope) bool) Model {
 		fresh = append(fresh, ev)
 		ids[ev.ID] = true
 		if ev.EnvID != "" && !m.replay.on {
-			flashes[ev.EnvID] = Flash{Label: c.Key, Emoji: EventEmoji(ev.Type)}
+			flashes[ev.EnvID] = Flash{Label: c.Key, Emoji: ev.Emoji}
 		}
 	}
 	m.flashes = flashes

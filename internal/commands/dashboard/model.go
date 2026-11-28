@@ -92,6 +92,8 @@ type Config struct {
 	WriteFile func(name string, data []byte) error
 	// Replay starts a replay this far back as soon as the dashboard opens.
 	Replay time.Duration
+	// Tutorial walks through what the map shows, one caption at a time.
+	Tutorial bool
 }
 
 type (
@@ -212,6 +214,7 @@ type Model struct {
 	logs          logView
 	post          *postmortem
 	drafts        map[string]string
+	tutorial      tutorialState
 }
 
 // NewModel returns a dashboard that reads from api.
@@ -228,6 +231,9 @@ func NewModel(api API, cfg Config) Model {
 	m := Model{
 		api: api, cfg: cfg, loading: true, blastOn: true, showApps: true, focus: cfg.Focus,
 		seen: map[string]time.Time{}, flashes: map[string]Flash{}, since: cfg.Now().Add(-eventBacklog),
+	}
+	if cfg.Tutorial {
+		m.tutorial = tutorialState{on: true, shown: -1}
 	}
 	if cfg.Replay > 0 {
 		m.replay, m.replayRequest = replay{window: cfg.Replay, loading: true, speed: 1}, 1
@@ -327,7 +333,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // has rested there, and reads what is within reach of it.
 func (m Model) refocus(msg refocusMsg) (Model, tea.Cmd) {
 	env := m.graph.Env(msg.id)
-	if msg.seq != m.refocusSeq || m.selected != msg.id || msg.id == m.focus || env == nil || env.Restricted {
+	if m.tutorial.on || msg.seq != m.refocusSeq || m.selected != msg.id || msg.id == m.focus || env == nil || env.Restricted {
 		return m, nil
 	}
 	m.focus = msg.id
@@ -510,12 +516,13 @@ func (m Model) tick() Model {
 		flashes := make(map[string]Flash, len(m.flashes))
 		for id, f := range m.flashes {
 			if f.Age+1 < FlashFrames {
-				flashes[id] = Flash{Age: f.Age + 1, Label: f.Label}
+				f.Age++
+				flashes[id] = f
 			}
 		}
 		m.flashes = flashes
 	}
-	return m.advanceReplay().settleWatch()
+	return m.advanceReplay().settleWatch().tickTutorial()
 }
 
 func (m Model) reload() (Model, tea.Cmd) {
@@ -572,16 +579,13 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 
 // applyEvents re-reads the organization on a deployment event so rings and
 // spinners catch up with it.
-func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
-	poll := after(m.cfg.EventPoll, eventPollMsg{})
-	if msg.err != nil {
-		return m, poll
-	}
-	if msg.log.Truncated && !msg.initial {
-		m.toast, m.toastAt = fmt.Sprintf("more than %d events since the last check; showing the newest", len(msg.log.Events)), m.frame
-	}
-	fresh := make([]Event, 0, len(msg.log.Events))
-	for _, ev := range msg.log.Events {
+func (m Model) freshEvents(events []Event) (Model, []Event) {
+	fresh := make([]Event, 0, len(events))
+	for _, ev := range events {
+		// The stash feed already carries each stash change, with its value.
+		if strings.HasPrefix(ev.Type, "stash") {
+			continue
+		}
 		if _, ok := m.seen[ev.ID]; !ok {
 			m.seen[ev.ID] = ev.At
 			fresh = append(fresh, ev)
@@ -595,6 +599,19 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 			delete(m.seen, id)
 		}
 	}
+	return m, fresh
+}
+
+func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
+	poll := after(m.cfg.EventPoll, eventPollMsg{})
+	if msg.err != nil {
+		return m, poll
+	}
+	if msg.log.Truncated && !msg.initial {
+		m.toast, m.toastAt = fmt.Sprintf("more than %d events since the last check; showing the newest", len(msg.log.Events)), m.frame
+	}
+	var fresh []Event
+	m, fresh = m.freshEvents(msg.log.Events)
 	slices.SortStableFunc(fresh, func(a, b Event) int { return b.At.Compare(a.At) })
 	m.events = append(fresh, m.events...)
 	m.events = m.events[:min(len(m.events), eventsKept)]
@@ -650,6 +667,9 @@ func (m Model) firstSelection() string {
 func (m Model) handleKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	if m.post != nil {
 		return m.handlePostmortemKey(msg)
+	}
+	if m.tutorial.on {
+		return m.handleTutorialKey(msg)
 	}
 	if m.peek != nil {
 		return m.handlePeekKey(msg)
