@@ -75,10 +75,16 @@ func pollEvents(t *testing.T, api *fakeAPI, m dashboard.Model, log dashboard.Log
 	return m
 }
 
-// writeUp presses w and writes what it asks to.
+// writeUp opens the write-up, saves it, and closes it.
 func writeUp(t *testing.T, m dashboard.Model) dashboard.Model {
 	t.Helper()
-	m, cmd := pressCmd(m, "w")
+	return press(save(t, press(m, "w")), "q")
+}
+
+// save presses ctrl+s and writes what it asks to.
+func save(t *testing.T, m dashboard.Model) dashboard.Model {
+	t.Helper()
+	m, cmd := pressCmd(m, "ctrl+s")
 	if cmd == nil {
 		return m
 	}

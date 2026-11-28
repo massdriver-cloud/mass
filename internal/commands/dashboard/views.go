@@ -24,7 +24,7 @@ func (m Model) View() string {
 	}
 	fit := lipgloss.NewStyle().MaxWidth(m.width)
 	body = lipgloss.NewStyle().Width(m.width).Height(h).MaxHeight(h).Render(body)
-	if m.graph != nil {
+	if m.graph != nil && m.post == nil {
 		body = overlayFirstLine(body, m.incidentBanner())
 	}
 	if m.tutorial.on && m.graph != nil {
@@ -40,6 +40,9 @@ func (m Model) splash(h int) string {
 }
 
 func (m Model) body(h int) string {
+	if m.post != nil {
+		return m.postmortemBody()
+	}
 	if m.peek != nil {
 		return m.peekBox(h)
 	}
@@ -301,7 +304,7 @@ func tabHelp(tab Tab) []string {
 			note(colorOrange, "✸", "how many environments and instances depend on that instance downstream"),
 			"",
 			"enter shows it on the map with its blast radius; o opens the instance in the web app.",
-			"w writes up its incident: a markdown timeline and a recording to replay with --playback.",
+			"w opens its incident write-up to read, edit, and save, with a recording to replay with --playback.",
 		}
 	case TabUpgrades:
 		return []string{
@@ -451,6 +454,9 @@ func keyHint(key, what string) string {
 // footerKeys lists the keys that do something where the user is now, most
 // useful first, so the line stays short enough to read.
 func (m Model) footerKeys() [][2]string {
+	if m.post != nil {
+		return m.post.keys()
+	}
 	if m.logs.open && m.logsInView() {
 		return [][2]string{{"pgup pgdn", "scroll"}, {"end", "follow"}, {"f", "close logs"}, {"?", "help"}, {"q", "quit"}}
 	}

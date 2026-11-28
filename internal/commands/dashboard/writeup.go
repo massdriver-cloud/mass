@@ -12,8 +12,11 @@ import (
 )
 
 type writtenMsg struct {
-	path string
-	err  error
+	path  string
+	err   error
+	name  string
+	md    string
+	draft bool
 }
 
 // WriteFile writes a file readable only by its owner, since an incident's
@@ -32,24 +35,14 @@ func (m Model) writeIncident() (Model, tea.Cmd) {
 		m.toast, m.toastAt = "no incident to write up", m.frame
 		return m, nil
 	}
-	write := m.cfg.WriteFile
-	if write == nil {
-		return m, nil
-	}
 	now := m.cfg.Now()
 	name := incidentName(r)
-	md := writeup(r, name, now)
 	rec, err := json.MarshalIndent(newRecording(m.cfg.Org, r, now), "", "  ")
 	if err != nil {
 		m.toast, m.toastAt = "could not record the incident: "+err.Error(), m.frame
 		return m, nil
 	}
-	return m, func() tea.Msg {
-		if err := write(name+".json", rec); err != nil {
-			return writtenMsg{path: name + ".json", err: err}
-		}
-		return writtenMsg{path: name + ".md", err: write(name+".md", []byte(md))}
-	}
+	return m.openPostmortem(name, writeup(r, name, now), rec), nil
 }
 
 func (m Model) applyWritten(msg writtenMsg) Model {
@@ -57,7 +50,7 @@ func (m Model) applyWritten(msg writtenMsg) Model {
 	if msg.err != nil {
 		m.toast = "could not write " + msg.path + ": " + clean(msg.err.Error())
 	}
-	return m
+	return m.keepSaved(msg)
 }
 
 // An alarm firing since before the dashboard opened, or without --watch, has
