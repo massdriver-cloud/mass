@@ -31,14 +31,17 @@ func TickerWidget(c StashChange, annotations []Annotation, st Stash, now time.Ti
 		return styleFaint.Render(clip(clean(c.Key), tickerRoom))
 	}
 	st = withEntry(st, c)
-	key := clean(c.Key)
 	if w := pinnedWidget(c, annotations, st, now); w != "" {
-		return ansi.Truncate(styleFaint.Render(key+" ")+w, tickerRoom, "…")
+		return ansi.Truncate(w, tickerRoom, "…")
 	}
 	if w := wellKnownWidget(c, st, now); w != "" {
-		return ansi.Truncate(styleFaint.Render(key+" ")+w, tickerRoom, "…")
+		return ansi.Truncate(w, tickerRoom, "…")
 	}
-	return styleFaint.Render(clip(key+" = "+plainValue(*c.Entry), tickerRoom))
+	// The key shows only when the value has nothing to say.
+	if v := plainValue(*c.Entry); v != "" {
+		return styleFaint.Render(clip(v, tickerRoom))
+	}
+	return styleFaint.Render(clip(clean(c.Key), tickerRoom))
 }
 
 func withEntry(st Stash, c StashChange) Stash {
