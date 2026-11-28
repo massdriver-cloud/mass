@@ -147,9 +147,36 @@ func (a recordedAPI) StreamDeploymentLogs(context.Context, string) (*streaming.S
 
 func (a recordedAPI) ApproveDeployment(context.Context, string) error { return ErrNoDeployer }
 
+func (a recordedAPI) RejectDeployment(context.Context, string, string) error { return ErrNoDeployer }
+
+// Deployments serves the latest deployment of each recorded instance; a
+// recording keeps no others.
+func (a recordedAPI) Deployments(_ context.Context, q DeploymentQuery, _ string) ([]Deployment, string, error) {
+	var out []Deployment
+	for _, env := range a.rec.Environments {
+		for _, inst := range env.Instances {
+			d := inst.LatestDeployment
+			if d == nil || !slices.Contains(q.Instances, inst.ID) || !slices.Contains(q.Statuses, d.Status) {
+				continue
+			}
+			dep := *d
+			dep.Instance = &Ref{ID: inst.ID}
+			out = append(out, dep)
+		}
+	}
+	return out, "", nil
+}
+
+func (a recordedAPI) PeekDeployment(context.Context, string, string) (DeploymentPeek, error) {
+	return DeploymentPeek{}, errNoConfig
+}
+
 func (a recordedAPI) Deploy(context.Context, string) error { return ErrNoDeployer }
 
-var errNotRecorded = errors.New("a recording has no deployment logs")
+var (
+	errNotRecorded = errors.New("a recording has no deployment logs")
+	errNoConfig    = errors.New("a recording has no deployment configuration")
+)
 
 func (a recordedAPI) Annotations(_ context.Context, projectID, _ string) ([]Annotation, string, error) {
 	return a.rec.Annotations[projectID], "", nil

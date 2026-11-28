@@ -23,9 +23,12 @@ const (
 	TabAlarms
 	// TabUpgrades lists every instance with a newer bundle version available.
 	TabUpgrades
+	// TabDeployments lists deployments awaiting approval, in flight, and
+	// recently finished.
+	TabDeployments
 )
 
-var tabNames = []string{"Constellation", "Runtimes", "Alarms", "Upgrades"}
+var tabNames = []string{"Constellation", "Runtimes", "Alarms", "Upgrades", "Deployments"}
 
 const (
 	frameInterval = 80 * time.Millisecond
@@ -81,7 +84,7 @@ type Config struct {
 	Watch bool
 	// Notify tells someone away from the dashboard that an alarm started firing.
 	Notify func(title, body string)
-	// ReadOnly turns off approving and deploying.
+	// ReadOnly turns off approving, rejecting, and deploying.
 	ReadOnly bool
 	// WriteFile saves incident write-ups, recordings, and map exports.
 	WriteFile func(name string, data []byte) error
@@ -200,6 +203,8 @@ type Model struct {
 	toastAt       int
 	picked        string
 	confirm       *pendingAction
+	peek          *peekView
+	desk          deskState
 	pos           map[string]Point
 	layoutKey     layoutKey
 	logs          logView
@@ -294,7 +299,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if next.selected != m.selected {
 		next.picked = ""
 	}
-	if next.logs.open && (next.selected != next.logs.env || next.tab != TabConstellation) {
+	if next.logs.open && !next.logsInView() {
 		next = next.closeLogs()
 	}
 	if !next.moving && next.animating() {
@@ -445,6 +450,8 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		return m.updateFeed(msg)
 	case logsMsg:
 		return m.updateLogs(msg)
+	case deskMsg, peekMsg:
+		return m.updateDesk(msg)
 	case refocusMsg:
 		return m.refocus(msg)
 	case directoryMsg:
@@ -540,10 +547,11 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 		m.upgradeIdx = min(m.upgradeIdx, max(len(m.upgrades())-1, 0))
 		m, alert = m.watchAlarms(before)
 		m.graph.ApplyStash(m.stash, m.snap.Annotations, m.cfg.Now())
-		var read, subs tea.Cmd
+		var read, subs, desk tea.Cmd
 		m, read = m.fetchStash(!m.stashOn)
 		m, subs = m.syncSubscriptions()
-		alert = tea.Batch(alert, read, subs)
+		m, desk = m.refreshDesk()
+		alert = tea.Batch(alert, read, subs, desk)
 		if !m.stashOn {
 			alert = tea.Batch(alert, after(m.cfg.StashPoll, stashPollMsg{}))
 			m.stashOn = true
@@ -631,6 +639,9 @@ func (m Model) firstSelection() string {
 }
 
 func (m Model) handleKey(msg tea.KeyMsg) (Model, tea.Cmd) {
+	if m.peek != nil {
+		return m.handlePeekKey(msg)
+	}
 	if m.confirm != nil {
 		return m.handleConfirmKey(msg)
 	}
@@ -653,11 +664,16 @@ func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	if m.replay.picking {
 		return m.handlePickKey(msg.String())
 	}
+	if m.tab == TabDeployments && m.graph != nil {
+		if next, cmd, ok := m.handleDeskKey(msg.String()); ok {
+			return next, cmd
+		}
+	}
 	switch key := msg.String(); key {
 	case "ctrl+c", "q":
 		return m.closeLogs(), tea.Quit
-	case "1", "2", "3", "4":
-		m.tab = Tab(key[0] - '1')
+	case "1", "2", "3", "4", "5":
+		return m.switchTab(Tab(key[0] - '1'))
 	case "enter":
 		if m.tab == TabConstellation && m.graph != nil && m.selected != m.focus {
 			return m.refocus(refocusMsg{id: m.selected, seq: m.refocusSeq})
@@ -708,7 +724,7 @@ func (m Model) handleTabKey(key string) Model {
 		if b, ok := bumps[key]; ok {
 			m.bump = b
 		}
-	case TabAlarms, TabUpgrades:
+	case TabAlarms, TabUpgrades, TabDeployments:
 	}
 	return m
 }
@@ -826,6 +842,13 @@ func (m Model) move(key string) Model {
 			return m.showOnMap(ups[m.upgradeIdx].EnvID)
 		}
 		m.upgradeIdx = step(m.upgradeIdx, len(ups), key)
+	case TabDeployments:
+		if d, ok := m.desk.selection(); ok && key == "enter" && m.envOf(d) != "" {
+			return m.showOnMap(m.envOf(d))
+		}
+		if key != "enter" {
+			m.desk = m.desk.step(key)
+		}
 	}
 	return m
 }
@@ -920,6 +943,10 @@ func (m Model) selectionURL() string {
 		if ups := m.upgrades(); len(ups) > 0 {
 			return m.cfg.Links.Instance(ups[m.upgradeIdx].ID)
 		}
+	case TabDeployments:
+		if d, ok := m.desk.selection(); ok && instanceOf(d) != "" {
+			return m.cfg.Links.Instance(instanceOf(d))
+		}
 	case TabConstellation:
 		if env := m.graph.Env(m.selected); env != nil && !env.Restricted {
 			return m.cfg.Links.Environment(env.ID)
@@ -979,7 +1006,7 @@ func (m Model) intro() float64 {
 
 func (m Model) panelWidth() int {
 	switch {
-	case m.logs.open && m.width >= 90:
+	case m.logs.open && m.logs.tab == TabConstellation && m.width >= 90:
 		return max(46, m.width*55/100)
 	case m.width >= 120:
 		return 46
@@ -1033,6 +1060,10 @@ func (m Model) withLayout(w, h int) Model {
 
 // Selected is the id of the selected environment.
 func (m Model) Selected() string { return m.selected }
+
+// SelectedDeployment is the id of the deployment selected on the
+// Deployments tab.
+func (m Model) SelectedDeployment() string { return m.desk.selected }
 
 // ActiveTab is the tab on screen.
 func (m Model) ActiveTab() Tab { return m.tab }

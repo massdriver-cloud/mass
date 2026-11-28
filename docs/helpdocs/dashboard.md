@@ -6,13 +6,15 @@ The map centers on one environment: the one you name with `--env`, or else the o
 
 **Constellation** places those environments on a map, linked to the environments whose resources they use and the environment they were forked from. Sparks travel each link from the producer to the consumer. Rings show the status of each environment's instances, a firing alarm pulses red, and a running deployment sweeps around its ring. Select an environment to see its instances, alarms, deployments, upgrades, the environments on either side of it, and its blast radius: everything downstream that its trouble could reach. With cost on, each ring is sized by last month's spend. `f` follows the selected environment's deployment logs in the side panel: the deployment running there, or else the most recent one. Lines stream in as they are written, and the panel keeps the final status when the deployment ends. Streaming needs a personal access token; with a service account the logs are read every two seconds instead.
 
-On the map, `n` and `N` pick an instance in the selected environment's side panel. `y` approves the picked instance's deployment that is awaiting approval (⏸), and `d` deploys it again with its current configuration. Both ask first, naming the instance, its environment, and how many environments and instances depend on it downstream; `y` or `enter` goes ahead, and any other key cancels. `--read-only` turns both off.
+On the map, `n` and `N` pick an instance in the selected environment's side panel. `y` approves the picked instance's deployment that is awaiting approval (⏸), and `d` deploys it again with its current configuration. Both ask first, naming the instance, its environment, and how many environments and instances depend on it downstream; `y` or `enter` goes ahead, `c` shows the configuration of the deployment awaiting approval, and any other key cancels. `--read-only` turns both off.
 
 **Runtimes** shows which runtime versions your applications build on and your instances run, and what a patch, minor, or major release would leave behind.
 
 **Alarms** lists every firing alarm in view with how far its blast radius reaches.
 
 **Upgrades** lists every instance in view that can move to a newer bundle version.
+
+**Deployments** is where deployments get decided. It lists the deployments of the instances in view: first those awaiting approval, with who proposed each one, how long ago, and their message; then those in flight and how long they have run; then, dimmer, the 20 most recent to finish. `enter` shows the selected deployment's environment on the map, and `f` follows its logs across the whole screen. `c` shows its configuration: the message, the bundle version, and each param it changes since the instance's last completed provision, with anything that looks like a secret masked. `y` approves a deployment awaiting approval, and `c` in that confirmation shows its configuration before you decide. `x` rejects one; type a reason before pressing `enter` and it is kept in the deployment's stash under `review/rejection`. If the reason cannot be saved, the deployment is still rejected and the dashboard says so. `--read-only` turns off `y` and `x` too.
 
 A live ticker follows the audit log. When something happens, its environment lights up on the map, and a deployment event re-reads what is in view.
 

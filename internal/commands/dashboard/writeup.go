@@ -76,7 +76,7 @@ func (m Model) incidentToWrite() (incidentRecord, bool) {
 		if env := m.graph.Env(m.selected); env != nil && len(env.Firing) > 0 {
 			alarm = &env.Firing[0]
 		}
-	case TabRuntimes, TabUpgrades:
+	case TabRuntimes, TabUpgrades, TabDeployments:
 	}
 	match := func(r incidentRecord) bool {
 		switch {
