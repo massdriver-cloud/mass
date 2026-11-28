@@ -224,3 +224,26 @@ func TestWriteupHelp(t *testing.T) {
 		}
 	}
 }
+
+func TestWriteupFileNames(t *testing.T) {
+	tests := map[string]struct {
+		alarm string
+		want  string
+	}{
+		"punctuation collapses": {alarm: "Latency | p99", want: "incident-care-dev-app-latency-p99-20261126-0000.md"},
+		"long names are cut":    {alarm: "Requests per second over the budget for checkout", want: "incident-care-dev-app-requests-per-second-over-the-bud-20261126-0000.md"},
+		"no letters, no slug":   {alarm: "!!!", want: "incident-care-dev-app-20261126-0000.md"},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			now, d := fixedNow(), &disk{}
+			api := fixture()
+			m := loaded(t, api, clocked(&now, d), 200, 48)
+			setAlarm(careApp(api), tc.alarm, "")
+			writeUp(t, reread(t, m))
+			if !slices.Contains(d.names(), tc.want) {
+				t.Errorf("wrote %v, want %s", d.names(), tc.want)
+			}
+		})
+	}
+}
