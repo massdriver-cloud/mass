@@ -54,8 +54,8 @@ func TestRefocusOnSelection(t *testing.T) {
 	if m.Focus() != "billing-dev" {
 		t.Fatalf("focus = %q; a selection that rests should become the focus", m.Focus())
 	}
-	if out := view(m); !strings.Contains(out, "🔭 out of view") {
-		t.Errorf("environments past the new edge should show as out of view:\n%s", out)
+	if out := view(m); !strings.Contains(out, "🔭") || strings.Contains(out, "not loaded") {
+		t.Errorf("environments past the new edge should show a telescope:\n%s", out)
 	}
 }
 

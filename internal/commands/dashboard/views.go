@@ -65,7 +65,7 @@ func (m Model) constellationBody(h int) string {
 	canvasW, _ := m.canvasSize()
 	blast := m.blast()
 	scene := Scene{
-		Graph: m.graph, Pos: m.animatedPos(), Selected: m.selected, Blast: blast, Theme: m.cfg.Theme, Blocks: m.cfg.Render == RenderBlocks,
+		Graph: m.graph, Pos: m.animatedPos(), Selected: m.selected, Blast: blast, Theme: m.cfg.Theme, Blocks: m.cfg.Render == RenderBlocks, FlashText: m.cfg.Flashes,
 		ShowApps: m.showApps, GroupByProject: m.grouped, ShowCost: m.showCost, Filter: m.filter,
 		Frame: m.frame, Intro: m.intro(), Flashes: m.flashes,
 	}
@@ -349,35 +349,12 @@ func (m Model) footer() string {
 	if m.toast != "" && m.frame-m.toastAt < toastFrames {
 		return lipgloss.NewStyle().MaxWidth(m.width).Render(styleTeal.Render(m.toast))
 	}
-	keys := [][2]string{{"←↑↓→", "move"}, {"1-5", "tabs"}}
-	switch {
-	case m.replay.picking:
+	if m.replay.picking {
 		return lipgloss.NewStyle().MaxWidth(m.width).Render(styleKey.Render("←→") + styleMuted.Render(" how far back") +
 			styleFaint.Render("  ·  ") + styleKey.Render("enter") + styleMuted.Render(" play") +
 			styleFaint.Render("  ·  ") + styleKey.Render("esc") + styleMuted.Render(" cancel"))
-	case m.replay.on:
-		keys = append(keys, [][2]string{{"t", "stop replay"}, {"space", "pause"}, {"[ ]", "speed"}}...)
 	}
-	switch m.tab {
-	case TabConstellation:
-		if !m.replay.on {
-			keys = append(keys, [2]string{"t", "replay"})
-		}
-		keys = append(keys, [][2]string{
-			{"/", "find"}, {"f", "logs"}, {"b", toggle("blast", m.blastOn)}, {"a", toggle("apps", m.showApps)},
-			{"c", toggle("cost", m.showCost)}, {"g", toggle("projects", m.grouped)}, {"s", toggle("producers on top", m.stacked)}, {"v", m.cfg.Theme}, {"p", paletteName},
-		}...)
-	case TabRuntimes:
-		keys = append(keys, [2]string{"0/p/m/M", "what if"})
-	case TabAlarms, TabUpgrades:
-		keys = append(keys, [2]string{"enter", "show on map"})
-	case TabDeployments:
-		keys = append(keys, [][2]string{{"enter", "map"}, {"f", "logs"}, {"c", "config"}, {"y", "approve"}, {"x", "reject"}}...)
-	}
-	if m.cfg.Links != nil {
-		keys = append(keys, [2]string{"o", "open"})
-	}
-	keys = append(keys, [][2]string{{"r", "refresh"}, {"?", "help"}, {"q", "quit"}}...)
+	keys := m.footerKeys()
 	parts := make([]string, 0, len(keys))
 	for _, k := range keys {
 		parts = append(parts, styleKey.Render(k[0])+" "+styleMuted.Render(k[1]))
@@ -463,4 +440,97 @@ func Legend(watch bool, notesErr error) string {
 
 func keyHint(key, what string) string {
 	return styleKey.Render(key) + " " + what
+}
+
+// footerKeys lists the keys that do something where the user is now, most
+// useful first, so the line stays short enough to read.
+func (m Model) footerKeys() [][2]string {
+	if m.logs.open && m.logsInView() {
+		return [][2]string{{"pgup pgdn", "scroll"}, {"end", "follow"}, {"f", "close logs"}, {"?", "help"}, {"q", "quit"}}
+	}
+	var keys [][2]string
+	if m.replay.on {
+		keys = append(keys, [][2]string{{"t", "stop replay"}, {"space", "pause"}, {"[ ]", "speed"}}...)
+	}
+	switch m.tab {
+	case TabConstellation:
+		keys = append(keys, m.mapKeys()...)
+	case TabRuntimes:
+		keys = append(keys, [][2]string{{"↑↓", "move"}, {"0/p/m/M", "what if"}}...)
+	case TabAlarms:
+		keys = append(keys, [][2]string{{"↑↓", "move"}, {"enter", "show on map"}, {"w", "write up"}}...)
+	case TabUpgrades:
+		keys = append(keys, [][2]string{{"↑↓", "move"}, {"enter", "show on map"}}...)
+	case TabDeployments:
+		keys = append(keys, m.deskKeys()...)
+	}
+	if m.cfg.Links != nil {
+		keys = append(keys, [2]string{"o", "open"})
+	}
+	return append(keys, [][2]string{{"1-5", "tabs"}, {"?", "help"}, {"q", "quit"}}...)
+}
+
+// toggleView flips one of the map's toggles and says where they all stand,
+// since the footer has no room to show them.
+func (m Model) toggleView(key string) Model {
+	switch key {
+	case "b":
+		m.blastOn = !m.blastOn
+	case "a":
+		m.showApps = !m.showApps
+	case "c":
+		m.showCost = !m.showCost
+	case "g":
+		m.grouped = !m.grouped
+	case "s":
+		m.stacked = !m.stacked
+	}
+	m.toast = strings.Join([]string{
+		toggle("blast", m.blastOn), toggle("apps", m.showApps), toggle("cost", m.showCost),
+		toggle("projects", m.grouped), toggle("producers on top", m.stacked),
+	}, "  ·  ")
+	m.toastAt = m.frame
+	return m
+}
+
+func (m Model) mapKeys() [][2]string {
+	if m.graph == nil {
+		return nil
+	}
+	keys := [][2]string{{"←↑↓→", "move"}, {"/", "find"}}
+	if inst := m.pickedInstance(); inst != nil {
+		keys = append(keys, [2]string{"n N", "pick"})
+		if inst.AwaitingApproval() {
+			keys = append(keys, [2]string{"y", "approve " + shortInstance(inst)})
+		}
+		if !inst.Deploying() {
+			keys = append(keys, [2]string{"d", "deploy " + shortInstance(inst)})
+		}
+		return append(keys, [2]string{"esc", "unpick"})
+	}
+	keys = append(keys, [2]string{"n", "pick instance"})
+	if env := m.graph.Env(m.selected); env != nil && len(env.Deploying()) > 0 {
+		keys = append(keys, [2]string{"f", "logs"})
+	}
+	if !m.replay.on {
+		keys = append(keys, [2]string{"t", "replay"})
+	}
+	return append(keys, [][2]string{{"v", m.cfg.Theme}, {"p", paletteName}, {"e", "export"}}...)
+}
+
+func (m Model) deskKeys() [][2]string {
+	keys := [][2]string{{"↑↓", "move"}}
+	d, ok := m.desk.selection()
+	if !ok {
+		return keys
+	}
+	keys = append(keys, [][2]string{{"c", "config"}, {"f", "logs"}}...)
+	if d.Status == "PROPOSED" {
+		keys = append(keys, [][2]string{{"y", "approve"}, {"x", "reject"}}...)
+	}
+	return append(keys, [2]string{"enter", "map"})
+}
+
+func shortInstance(inst *InstNode) string {
+	return strings.TrimPrefix(inst.ID, inst.EnvID+"-")
 }

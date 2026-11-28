@@ -155,7 +155,7 @@ func (m Model) advanceReplay() Model {
 			break
 		}
 		if ev := r.log.Events[r.pos]; ev.EnvID != "" {
-			m.flashes[ev.EnvID] = Flash{Label: EventLabel(ev)}
+			m.flashes[ev.EnvID] = Flash{Label: EventLabel(ev), Emoji: EventEmoji(ev.Type)}
 		}
 		r.pos++
 	}

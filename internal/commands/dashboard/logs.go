@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -99,6 +100,9 @@ type logView struct {
 	action string
 	status string
 	lines  []string
+	// back is how many lines the view sits above the newest; zero follows
+	// the tail.
+	back int
 	// last is the newest batch shown, and atLast the messages shown with
 	// that timestamp, so a batch both read and streamed shows once. Logs carry
 	// no ids, so two identical lines in one instant also show once.
@@ -323,7 +327,33 @@ func (l logView) add(batches []LogBatch) logView {
 	}
 	lines := slices.Concat(l.lines, fresh)
 	l.lines = lines[max(len(lines)-logsKept, 0):]
+	if l.back > 0 {
+		l.back = min(l.back+len(fresh), len(l.lines)-1)
+	}
 	return l
+}
+
+func (m Model) scrollLogs(key string) (Model, bool) {
+	page := max(m.bodyHeight()-6, 4)
+	back := m.logs.back
+	switch key {
+	case "pgup", "ctrl+u":
+		back += page
+	case "pgdown", "ctrl+d":
+		back -= page
+	case "shift+up":
+		back++
+	case "shift+down":
+		back--
+	case "home":
+		back = len(m.logs.lines)
+	case "end", "G":
+		back = 0
+	default:
+		return m, false
+	}
+	m.logs.back = max(min(back, len(m.logs.lines)-1), 0)
+	return m, true
 }
 
 func logLines(message string) []string {
@@ -347,10 +377,13 @@ func (m Model) logsPanel(w, h int) string {
 	if l.err != nil {
 		head = append(head, styleRed.Render(clip("could not read: "+clean(l.err.Error()), w)))
 	}
+	if l.back > 0 {
+		head = append(head, styleUpgrade.Render(fmt.Sprintf("↑ %d lines back", l.back))+styleFaint.Render(" · end follows"))
+	}
 	head = append(head, "")
 	room := max(h-len(head), 0)
 	var body []string
-	for i := len(l.lines) - 1; i >= 0 && len(body) < room; i-- {
+	for i := len(l.lines) - 1 - l.back; i >= 0 && len(body) < room; i-- {
 		body = append(wrapLog(l.lines[i], w), body...)
 	}
 	body = body[max(len(body)-room, 0):]

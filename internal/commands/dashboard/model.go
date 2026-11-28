@@ -80,6 +80,8 @@ type Config struct {
 	Theme string
 	// Render is how the map's dots are drawn.
 	Render string
+	// Flashes is what rises where something happened: emoji, words, or off.
+	Flashes string
 	// Watch takes the view to each alarm that starts firing.
 	Watch bool
 	// Notify tells someone away from the dashboard that an alarm started firing.
@@ -600,7 +602,7 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 	deployed := false
 	for _, ev := range fresh {
 		if ev.EnvID != "" {
-			flashes[ev.EnvID] = Flash{Label: EventLabel(ev)}
+			flashes[ev.EnvID] = Flash{Label: EventLabel(ev), Emoji: EventEmoji(ev.Type)}
 		}
 		deployed = deployed || m.changesTheView(ev)
 	}
@@ -657,6 +659,20 @@ func (m Model) handleKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	return next, cmd
 }
 
+// handleOverlayKey gives the logs being followed, then the Deployments tab,
+// first claim on a key.
+func (m Model) handleOverlayKey(key string) (Model, tea.Cmd, bool) {
+	if m.logs.open && m.logsInView() {
+		if next, ok := m.scrollLogs(key); ok {
+			return next, nil, true
+		}
+	}
+	if m.tab == TabDeployments && m.graph != nil {
+		return m.handleDeskKey(key)
+	}
+	return m, nil, false
+}
+
 func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	if m.searching {
 		return m.handleSearchKey(msg)
@@ -664,10 +680,8 @@ func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	if m.replay.picking {
 		return m.handlePickKey(msg.String())
 	}
-	if m.tab == TabDeployments && m.graph != nil {
-		if next, cmd, ok := m.handleDeskKey(msg.String()); ok {
-			return next, cmd
-		}
+	if next, cmd, ok := m.handleOverlayKey(msg.String()); ok {
+		return next, cmd
 	}
 	switch key := msg.String(); key {
 	case "ctrl+c", "q":
@@ -707,7 +721,7 @@ func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "?":
 		m.help = !m.help
 	case "esc":
-		m.filter, m.help = "", false
+		m.filter, m.help, m.picked = "", false, ""
 		m = m.closeLogs()
 	default:
 		m = m.handleTabKey(key)
@@ -731,16 +745,8 @@ func (m Model) handleTabKey(key string) Model {
 
 func (m Model) handleConstellationKey(key string) Model {
 	switch key {
-	case "b":
-		m.blastOn = !m.blastOn
-	case "a":
-		m.showApps = !m.showApps
-	case "c":
-		m.showCost = !m.showCost
-	case "g":
-		m.grouped = !m.grouped
-	case "s":
-		m.stacked = !m.stacked
+	case "b", "a", "c", "g", "s":
+		return m.toggleView(key)
 	case "v":
 		m.cfg.Theme = NextTheme(m.cfg.Theme)
 	case "p":

@@ -38,12 +38,70 @@ type Scene struct {
 	Theme string
 	// Blocks draws dots as solid blocks rather than braille.
 	Blocks bool
+	// FlashText is what rises where something happened: emoji, words, or
+	// nothing; empty is emoji.
+	FlashText string
 }
 
 // Flash marks an environment where something just happened.
 type Flash struct {
 	Age   int
 	Label string
+	// Emoji stands for what happened, drawn in place of Label unless the
+	// dashboard asks for words.
+	Emoji string
+}
+
+// Flash text: what rises over an environment where something happened.
+const (
+	FlashEmoji = "emoji"
+	FlashWords = "words"
+	FlashOff   = "off"
+)
+
+// FlashModes lists the flash text modes, the default first.
+func FlashModes() []string { return []string{FlashEmoji, FlashWords, FlashOff} }
+
+// EventEmoji is the emoji that stands for an event type.
+func EventEmoji(eventType string) string {
+	switch {
+	case strings.HasPrefix(eventType, "deployment."):
+		return deploymentEmoji(strings.TrimPrefix(eventType, "deployment."))
+	case strings.HasPrefix(eventType, "alarm"):
+		if strings.Contains(eventType, "ok") || strings.Contains(eventType, "resolved") || strings.Contains(eventType, "cleared") {
+			return "✅"
+		}
+		return "🚨"
+	case eventType == "stash.deleted":
+		return "🗑"
+	case strings.HasPrefix(eventType, "stash."):
+		return "📌"
+	case strings.HasPrefix(eventType, "instance."):
+		return "🛠"
+	case strings.HasPrefix(eventType, "environment."), strings.HasPrefix(eventType, "project."):
+		return "🌍"
+	default:
+		return "✨"
+	}
+}
+
+func deploymentEmoji(action string) string {
+	switch {
+	case strings.Contains(action, "fail"):
+		return "💥"
+	case strings.Contains(action, "complet"), strings.Contains(action, "succe"):
+		return "✅"
+	case strings.Contains(action, "abort"), strings.Contains(action, "cancel"):
+		return "🛑"
+	case strings.Contains(action, "propos"):
+		return "📝"
+	case strings.Contains(action, "approv"):
+		return "👍"
+	case strings.Contains(action, "reject"):
+		return "👎"
+	default:
+		return "🚀"
+	}
 }
 
 // FlashFrames is how long a flash stays on screen.
@@ -449,7 +507,7 @@ func (s Scene) subLabel(env *EnvNode) string {
 	case env.Restricted:
 		return "no access"
 	case env.Unloaded:
-		return "🔭 out of view"
+		return "🔭"
 	case s.ShowCost && env.Currency != "":
 		return env.ProjectName + " · " + Money(env.Cost, env.Currency) + "/mo"
 	default:
@@ -502,7 +560,14 @@ func (s Scene) drawFlashes(c *Canvas) {
 			color = colorTealDim
 		}
 		c.Ring(center, nodeRadius+float64(f.Age)*0.7, func(float64) lipgloss.Color { return color }, layerHalo)
+		text := f.Emoji
+		switch {
+		case s.FlashText == FlashOff:
+			continue
+		case s.FlashText == FlashWords || text == "":
+			text = f.Label
+		}
 		cx, cy := int(center.X)/2, int(center.Y)/4
-		c.TextCentered(cx, cy-2-f.Age/10, f.Label, lipgloss.NewStyle().Foreground(color))
+		c.TextCentered(cx, cy-2-f.Age/10, text, lipgloss.NewStyle().Foreground(color))
 	}
 }
