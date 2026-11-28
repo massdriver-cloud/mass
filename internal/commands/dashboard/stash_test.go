@@ -121,11 +121,11 @@ func TestStashEvent(t *testing.T) {
 	}{
 		{
 			dashboard.StashChange{Scope: inst("care-dev-app"), Key: "md/v1/health", Entry: &set},
-			dashboard.Event{ID: "stash:instance:care-dev-app:md/v1/health", At: fixedNow(), Type: "stash.set", EnvID: "care-dev", Detail: "md/v1/health = down now"},
+			dashboard.Event{ID: "stash:instance:care-dev-app:md/v1/health", At: fixedNow(), Type: "stash.set", EnvID: "care-dev", Detail: "md/v1/health = down now", Emoji: "🩺"},
 		},
 		{
 			dashboard.StashChange{Scope: dashboard.Scope{Kind: stash.ScopeProject, ID: "care"}, Key: "release"},
-			dashboard.Event{ID: "stash:project:care:release", At: fixedNow(), Type: "stash.deleted", Detail: "release"},
+			dashboard.Event{ID: "stash:project:care:release", At: fixedNow(), Type: "stash.deleted", Detail: "release", Emoji: "🗑"},
 		},
 	}
 	for _, tc := range tests {
@@ -255,7 +255,25 @@ func TestStashFeedShowsEmoji(t *testing.T) {
 	api.stash[0] = text(inst("care-dev-app"), "md/v1/health", "down")
 	api.stash[0].UpdatedAt = fixedNow().Add(time.Second)
 	out := view(refreshed(t, m))
-	if !strings.Contains(out, "📌 Care / Development · md/v1/health = down") || strings.Contains(out, "stash set") {
-		t.Errorf("the ticker should lead a stash change with 📌, not words:\n%s", out)
+	if !strings.Contains(out, "🩺 Care / Development · md/v1/health = down") || strings.Contains(out, "stash set") {
+		t.Errorf("the ticker should lead a health change with 🩺, not words:\n%s", out)
+	}
+}
+
+func TestStashFlashKeepsItsEmoji(t *testing.T) {
+	api := withStash()
+	cfg := config(&opener{})
+	cfg.Flashes = dashboard.FlashEmoji
+	m := loaded(t, api, cfg, 200, 48)
+	api.stash[0] = text(inst("care-dev-app"), "md/v1/health", "down")
+	api.stash[0].UpdatedAt = fixedNow().Add(time.Second)
+	m = refreshed(t, m)
+	tick := frameTick(t)
+	var model tea.Model = m
+	for range 5 {
+		model, _ = model.Update(tick)
+	}
+	if out := view(model.(dashboard.Model)); strings.Contains(out, "stash set") { //nolint:errcheck,forcetypeassert // Update always returns a Model
+		t.Errorf("an aging flash should keep its emoji, not turn into words:\n%s", out)
 	}
 }

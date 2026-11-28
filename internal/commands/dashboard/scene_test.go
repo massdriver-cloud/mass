@@ -145,3 +145,20 @@ func TestEventEmoji(t *testing.T) {
 		}
 	}
 }
+
+func TestStashEmoji(t *testing.T) {
+	tests := []struct {
+		key     string
+		deleted bool
+		want    string
+	}{
+		{key: "md/v1/health", want: "🩺"}, {key: "md/v1/usage", want: "📊"}, {key: "md/v1/traffic", want: "📈"},
+		{key: "md/v1/banner", want: "📣"}, {key: "md/v1/links", want: "🔗"}, {key: "release", want: "📌"},
+		{key: "md/v1/usage", deleted: true, want: "🗑"},
+	}
+	for _, tc := range tests {
+		if got := dashboard.StashEmoji(tc.key, tc.deleted); got != tc.want {
+			t.Errorf("StashEmoji(%s, %v) = %s, want %s", tc.key, tc.deleted, got, tc.want)
+		}
+	}
+}

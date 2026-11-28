@@ -107,7 +107,7 @@ func TestPlayback(t *testing.T) {
 		model, _ = model.Update(tick)
 	}
 	m = model.(dashboard.Model) //nolint:errcheck,forcetypeassert // Update always returns a Model
-	if out := view(m); !strings.Contains(out, "4/4 done") || !strings.Contains(out, "alarm cleared") {
+	if out := view(m); !strings.Contains(out, "4/4 done") || !strings.Contains(out, "✅ Care / Development · Latency | p99") {
 		t.Errorf("playback should run to the end:\n%s", out)
 	}
 	if out := view(press(m, "3")); !strings.Contains(out, "Latency | p99") {
