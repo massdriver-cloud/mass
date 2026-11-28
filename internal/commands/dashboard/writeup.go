@@ -19,7 +19,11 @@ type writtenMsg struct {
 // WriteFile writes a file readable only by its owner, since an incident's
 // stash values and alarm messages can be sensitive.
 func WriteFile(name string, data []byte) error {
-	return os.WriteFile(name, data, 0o600)
+	if err := os.WriteFile(name, data, 0o600); err != nil {
+		return err
+	}
+	// os.WriteFile keeps the mode of a file that already exists.
+	return os.Chmod(name, 0o600)
 }
 
 func (m Model) writeIncident() (Model, tea.Cmd) {
@@ -65,7 +69,7 @@ func (m Model) incidentToWrite() (incidentRecord, bool) {
 	var alarm *FiringAlarm
 	switch m.tab {
 	case TabAlarms:
-		if len(m.graph.Firing) > 0 {
+		if m.alarmIdx < len(m.graph.Firing) {
 			alarm = &m.graph.Firing[m.alarmIdx]
 		}
 	case TabConstellation:
@@ -102,7 +106,7 @@ func (m Model) incidentToWrite() (incidentRecord, bool) {
 }
 
 func incidentName(r incidentRecord) string {
-	return "incident-" + fileSafe(r.alarm.EnvID) + "-" + r.started.UTC().Format("20060102-1504")
+	return "incident-" + fileSafe(r.alarm.InstanceID) + "-" + r.started.UTC().Format("20060102-1504")
 }
 
 func fileSafe(s string) string {
@@ -119,7 +123,7 @@ func writeup(r incidentRecord, name string, now time.Time) string {
 	g := BuildGraph(r.snap)
 	a := r.alarm
 	var b strings.Builder
-	fmt.Fprintf(&b, "# %s on %s\n\n", a.Name, a.InstanceID)
+	fmt.Fprintf(&b, "# %s on %s\n\n", mdText(a.Name), a.InstanceID)
 	b.WriteString("| | |\n|---|---|\n")
 	fmt.Fprintf(&b, "| Environment | %s (`%s`) |\n", mdCell(envLabel(g, a.EnvID)), a.EnvID)
 	fmt.Fprintf(&b, "| Instance | `%s` |\n", a.InstanceID)
@@ -131,7 +135,7 @@ func writeup(r incidentRecord, name string, now time.Time) string {
 		fmt.Fprintf(&b, "| Resolved | %s |\n", r.resolved.UTC().Format("2006-01-02 15:04:05 UTC"))
 		fmt.Fprintf(&b, "| Duration | %s |\n", clock(r.resolved.Sub(r.started)))
 	}
-	b.WriteString("\n## Alarm\n\n**" + mdCell(a.Name) + "**\n")
+	b.WriteString("\n## Alarm\n\n**" + mdText(a.Name) + "**\n")
 	if a.Message != "" {
 		b.WriteString("\n> " + strings.Join(strings.Fields(a.Message), " ") + "\n")
 	}
@@ -206,3 +210,7 @@ func writeTimeline(b *strings.Builder, g *Graph, r incidentRecord) {
 func mdCell(s string) string {
 	return strings.ReplaceAll(strings.Join(strings.Fields(s), " "), "|", `\|`)
 }
+
+var mdSpecial = strings.NewReplacer(`\`, `\\`, "*", `\*`, "_", `\_`, "`", "\\`", "#", `\#`, "[", `\[`, "]", `\]`)
+
+func mdText(s string) string { return mdCell(mdSpecial.Replace(s)) }

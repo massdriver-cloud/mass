@@ -77,8 +77,9 @@ func (rec *Recording) Window() time.Duration {
 // API serves the dashboard's reads from the recording.
 func (rec *Recording) API() API { return recordedAPI{rec: rec} }
 
-// PlaybackConfig sets cfg up to replay the recording, from the moment it
-// started, with nothing read live.
+// PlaybackConfig sets cfg up to replay the recording with nothing read live.
+// Replay windows come in fixed lengths, so playback can begin a little
+// before the recording does.
 func (rec *Recording) PlaybackConfig(cfg Config) Config {
 	end := rec.End
 	cfg.Org, cfg.Focus, cfg.Depth = rec.Org, rec.Focus, len(rec.Environments)+1
