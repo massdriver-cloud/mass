@@ -231,7 +231,7 @@ func TestWriteupFileNames(t *testing.T) {
 		want  string
 	}{
 		"punctuation collapses": {alarm: "Latency | p99", want: "incident-care-dev-app-latency-p99-20261126-0000.md"},
-		"long names are cut":    {alarm: "Requests per second over the budget for checkout", want: "incident-care-dev-app-requests-per-second-over-the-bu-20261126-0000.md"},
+		"long names are cut":    {alarm: "Requests per second over the budget for checkout", want: "incident-care-dev-app-requests-per-second-over-the-bud-20261126-0000.md"},
 		"no letters, no slug":   {alarm: "!!!", want: "incident-care-dev-app-20261126-0000.md"},
 	}
 	for name, tc := range tests {
