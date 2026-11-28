@@ -137,7 +137,7 @@ func TestFlashText(t *testing.T) {
 func TestEventEmoji(t *testing.T) {
 	tests := map[string]string{
 		"deployment.started": "🚀", "deployment.completed": "✅", "deployment.failed": "💥", "deployment.proposed": "📝",
-		"deployment.rejected": "👎", "alarm.fired": "🚨", "stash.set": "📌", "stash.deleted": "🗑", "instance.updated": "🛠",
+		"deployment.rejected": "👎", "alarm.fired": "🚨", "stash.set": "📌", "stash.deleted": "🗑", "stash_entry.set": "📌", "stash_entry.deleted": "🗑", "instance.updated": "🛠",
 	}
 	for eventType, want := range tests {
 		if got := dashboard.EventEmoji(eventType); got != want {

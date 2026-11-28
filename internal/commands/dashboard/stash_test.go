@@ -246,3 +246,16 @@ func TestStashKeepTouched(t *testing.T) {
 }
 
 func ptr[T any](v T) *T { return &v }
+
+func TestStashFeedShowsEmoji(t *testing.T) {
+	api := withStash()
+	cfg := config(&opener{})
+	cfg.Flashes = dashboard.FlashEmoji
+	m := loaded(t, api, cfg, 200, 48)
+	api.stash[0] = text(inst("care-dev-app"), "md/v1/health", "down")
+	api.stash[0].UpdatedAt = fixedNow().Add(time.Second)
+	out := view(refreshed(t, m))
+	if !strings.Contains(out, "📌 Care / Development · md/v1/health = down") || strings.Contains(out, "stash set") {
+		t.Errorf("the ticker should lead a stash change with 📌, not words:\n%s", out)
+	}
+}

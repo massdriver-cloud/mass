@@ -30,7 +30,7 @@ func (o *opener) open(url string) error {
 }
 
 func config(o *opener) dashboard.Config {
-	return dashboard.Config{Org: "acme", EventPoll: time.Millisecond, Now: fixedNow, Links: fakeLinks{}, Open: o.open}
+	return dashboard.Config{Org: "acme", EventPoll: time.Millisecond, Now: fixedNow, Links: fakeLinks{}, Open: o.open, Flashes: dashboard.FlashWords}
 }
 
 // pump runs commands and feeds their messages back, as bubbletea would, for

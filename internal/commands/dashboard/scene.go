@@ -72,9 +72,9 @@ func EventEmoji(eventType string) string {
 			return "✅"
 		}
 		return "🚨"
-	case eventType == "stash.deleted":
+	case strings.HasPrefix(eventType, "stash") && strings.HasSuffix(eventType, "deleted"):
 		return "🗑"
-	case strings.HasPrefix(eventType, "stash."):
+	case strings.HasPrefix(eventType, "stash"):
 		return "📌"
 	case strings.HasPrefix(eventType, "instance."):
 		return "🛠"
