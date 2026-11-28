@@ -180,3 +180,29 @@ func TestAPIActions(t *testing.T) {
 		t.Errorf("ApproveDeployment without a deployer = %v", err)
 	}
 }
+
+func TestActionsFollowTheSelection(t *testing.T) {
+	tests := map[string]struct {
+		keys []string
+		want string
+	}{
+		"a pick is cleared on leaving": {keys: []string{"n", "tab", "d"}, want: "pick an instance with n first"},
+		"a deploy in flight":           {keys: []string{"BILLING", "n", "d"}, want: "billing-dev-app is already deploying"},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			api := fixture()
+			m := loaded(t, api, config(&opener{}), 200, 48)
+			for _, k := range tc.keys {
+				if k == "BILLING" {
+					m, _ = tabTo(t, m, "billing-dev")
+					continue
+				}
+				m = press(m, k)
+			}
+			if out := view(m); !strings.Contains(out, tc.want) || len(api.deployed) != 0 {
+				t.Errorf("deployed %v; view is missing %q:\n%s", api.deployed, tc.want, out)
+			}
+		})
+	}
+}

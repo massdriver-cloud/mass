@@ -158,6 +158,8 @@ func (m Model) ask(kind actionKind) Model {
 		}
 		act.deploymentID = inst.Deploy.ID
 		act.what = "the proposed " + strings.ToLower(inst.Deploy.Action)
+	} else if inst.Deploying() {
+		return m.say(inst.ID + " is already deploying")
 	}
 	act.envs, act.insts = m.graph.BlastRadius(inst.ID).Downstream()
 	m.confirm = &act

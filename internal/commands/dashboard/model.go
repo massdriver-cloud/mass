@@ -279,6 +279,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if next.graph != nil {
 		next = next.withLayout(next.canvasSize())
 	}
+	if next.selected != m.selected {
+		next.picked = ""
+	}
 	if next.logs.open && (next.selected != next.logs.env || next.tab != TabConstellation) {
 		next = next.closeLogs()
 	}
