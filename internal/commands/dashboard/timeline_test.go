@@ -35,7 +35,7 @@ func TestTimelineKeepsTheEarliestEvents(t *testing.T) {
 			}
 			m = pollEvents(t, api, m, dashboard.Log{Events: events})
 			writeUp(t, m)
-			md := d.files["incident-care-dev-20261126-0000.md"]
+			md := d.files["incident-care-dev-app-20261126-0000.md"]
 			if !strings.Contains(md, tc.last) || !strings.Contains(md, "e000") {
 				t.Errorf("write-up should run from e000 to %s:\n%s", tc.last, md)
 			}
@@ -59,8 +59,8 @@ func TestTimelineKeepsRecentIncidents(t *testing.T) {
 		file  string
 		want  string
 	}{
-		{name: "the first is still kept", later: 19, file: "incident-care-dev-20261126-0000.md", want: "# Queue backed up on care-dev-queue"},
-		{name: "the first has been let go", later: 20, file: "incident-billing-dev-20261126-0000.md", want: "# Billing slow on billing-dev-app"},
+		{name: "the first is still kept", later: 19, file: "incident-care-dev-queue-20261126-0000.md", want: "# Queue backed up on care-dev-queue"},
+		{name: "the first has been let go", later: 20, file: "incident-billing-dev-app-20261126-0000.md", want: "# Billing slow on billing-dev-app"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

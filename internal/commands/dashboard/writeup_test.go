@@ -121,7 +121,7 @@ func TestWriteup(t *testing.T) {
 	d := &disk{}
 	m := incidentScenario(t, d)
 	m = writeUp(t, m)
-	name := "incident-care-dev-20261126-0001"
+	name := "incident-care-dev-app-20261126-0001"
 	if got := d.names(); !slices.Equal(got, []string{name + ".json", name + ".md"}) {
 		t.Fatalf("wrote %v", got)
 	}
@@ -130,7 +130,7 @@ func TestWriteup(t *testing.T) {
 	}
 	md := d.files[name+".md"]
 	for _, want := range []string{
-		"# Latency | p99 on care-dev-app\n",
+		"# Latency \\| p99 on care-dev-app\n",
 		"| Environment | Care / Development (`care-dev`) |",
 		"| Started | 2026-11-26 00:01:00 UTC |",
 		"| Resolved | 2026-11-26 00:06:00 UTC |",
@@ -172,9 +172,9 @@ func TestWriteupPicks(t *testing.T) {
 				"| Duration | 24:00:00 so far |",
 				"2 environments and 2 instances downstream of `platform-dev-db`",
 				"- Care / Development: `care-dev-app` (1 hop)\n- Billing / Development: `billing-dev-app` (2 hops)\n",
-				"mass dashboard --playback incident-platform-dev-20261125-0000.json",
+				"mass dashboard --playback incident-platform-dev-db-20261125-0000.json",
 			},
-			toast: "✎ wrote incident-platform-dev-20261125-0000.md",
+			toast: "✎ wrote incident-platform-dev-db-20261125-0000.md",
 		},
 		{name: "an environment with nothing firing", toast: "no incident to write up"},
 		{name: "another tab", keys: []string{"2"}, toast: "no incident to write up"},
@@ -211,7 +211,7 @@ func TestWriteupFails(t *testing.T) {
 	cfg := config(&opener{})
 	cfg.WriteFile = d.write
 	m := writeUp(t, press(loaded(t, fixture(), cfg, 200, 48), "3"))
-	if out := view(m); !strings.Contains(out, "could not write incident-platform-dev-20261125-0000.json: disk full") {
+	if out := view(m); !strings.Contains(out, "could not write incident-platform-dev-db-20261125-0000.json: disk full") {
 		t.Errorf("a failed write should say so:\n%s", out)
 	}
 }
