@@ -172,6 +172,7 @@ func TestLogsClose(t *testing.T) {
 		{name: "esc", key: "esc"},
 		{name: "moving to another environment", key: "tab"},
 		{name: "quitting", key: "q"},
+		{name: "another tab", key: "2"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

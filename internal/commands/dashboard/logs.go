@@ -97,7 +97,8 @@ type logView struct {
 	status string
 	lines  []string
 	// last is the newest batch shown, and atLast the messages shown with
-	// that timestamp, so a batch both read and streamed shows once.
+	// that timestamp, so a batch both read and streamed shows once. Logs carry
+	// no ids, so two identical lines in one instant also show once.
 	last      time.Time
 	atLast    []string
 	ctx       context.Context //nolint:containedctx // reads and the stream outlive any one update
