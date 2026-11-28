@@ -2,12 +2,16 @@ package dashboard_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/Khan/genqlient/graphql"
 	"github.com/massdriver-cloud/mass/internal/commands/dashboard"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
@@ -177,6 +181,31 @@ func TestDeploymentsTab(t *testing.T) {
 	drive(t, m, cmd, 20)
 	if len(api.deployReads) != reads {
 		t.Errorf("a refresh with the tab closed read deployments")
+	}
+}
+
+func TestDeploymentsReadFails(t *testing.T) {
+	api := deskFixture()
+	api.deployErr = errors.New("gateway timeout")
+	m := onDesk(t, api, config(&opener{}))
+	if out := view(m); !strings.Contains(out, "could not read deployments: list deployments: gateway timeout · r retries") {
+		t.Fatalf("view is missing the retry hint:\n%s", out)
+	}
+	api.deployErr = nil
+	m, cmd := pressCmd(m, "r")
+	if out := view(drive(t, m, cmd, 20)); !strings.Contains(out, "AWAITING APPROVAL (2)") || strings.Contains(out, "r retries") {
+		t.Errorf("r should read the deployments again:\n%s", out)
+	}
+}
+
+func TestDeploymentsDuringReplay(t *testing.T) {
+	cfg := config(&opener{})
+	cfg.Replay = time.Hour
+	if out := view(onDesk(t, deskFixture(), cfg)); !strings.Contains(out, "this tab lists live deployments") {
+		t.Errorf("view is missing the replay note:\n%s", out)
+	}
+	if out := view(onDesk(t, deskFixture(), config(&opener{}))); strings.Contains(out, "this tab lists live deployments") {
+		t.Errorf("the replay note shows with no replay:\n%s", out)
 	}
 }
 
@@ -360,6 +389,10 @@ func peekFixture() dashboard.DeploymentPeek {
 			{Path: ".replicas", Target: types.ParamValue{Present: true, Value: "3"}},
 			{Path: ".legacy", Source: types.ParamValue{Present: true, Value: "on"}},
 			{Path: ".api_token", Target: types.ParamValue{Present: true, Value: "tok_live"}},
+			{Path: ".database.dsn", Target: types.ParamValue{Present: true, Value: "host=db user=app"}},
+			{Path: ".queue.connection_string", Target: types.ParamValue{Present: true, Value: "Endpoint=sb://q"}},
+			{Path: ".webhook", Target: types.ParamValue{Present: true, Value: "https://bot:s3cr3t@hooks.example.com/x"}},
+			{Path: ".homepage", Target: types.ParamValue{Present: true, Value: "https://example.com/x"}},
 			{Path: ".region", Source: types.ParamValue{Present: true, Value: "us-east-1"}, Target: types.ParamValue{Present: true, Value: "us-east-1"}, Equal: true},
 		},
 	}
@@ -378,9 +411,10 @@ func TestPeekRendering(t *testing.T) {
 			want: []string{
 				"provision · proposed · by ana@acme.dev · 3m ago", "against the last completed provision, 2d ago",
 				"~ .db.password •••••• → ••••••", "- .legacy on", "~ .notes plain → ••••••", "+ .replicas 3",
-				"~ .size small → large", "+ .api_token ••••••", "1 param unchanged",
+				"~ .size small → large", "+ .api_token ••••••", "+ .database.dsn ••••••", "+ .queue.connection_string ••••••",
+				"+ .webhook ••••••", "+ .homepage https://example.com/x", "1 param unchanged",
 			},
-			notWant: []string{"hunter2", "correct-horse", "BEGIN RSA", "tok_live", ".region"},
+			notWant: []string{"hunter2", "correct-horse", "BEGIN RSA", "tok_live", ".region", "user=app", "sb://q", "s3cr3t"},
 		},
 		{
 			name: "no baseline",
@@ -457,8 +491,8 @@ func TestAPIDeployments(t *testing.T) {
 		t.Fatalf("Deployments = %v, %q, %v", got, next, err)
 	}
 	vars, _ := client.reqs[0].Variables.(map[string]any)
-	if fmt.Sprint(vars["instances"], vars["statuses"]) != "[i1] [RUNNING]" {
-		t.Errorf("variables = %v", vars)
+	if got := fmt.Sprint(vars["filter"]); got != "map[instanceId:map[in:[i1]] status:map[in:[RUNNING]]]" {
+		t.Errorf("filter = %s", got)
 	}
 
 	peek, err := api.PeekDeployment(ctx, "i1", "d2")
@@ -483,6 +517,73 @@ func TestAPIDeployments(t *testing.T) {
 	}
 }
 
+// pagedClient serves pages of completed provisions, the next page named
+// by the cursor, and keeps asking for more after the last one given.
+type pagedClient struct {
+	pages   []string
+	filters []string
+}
+
+func (c *pagedClient) MakeRequest(_ context.Context, req *graphql.Request, resp *graphql.Response) error {
+	vars, _ := req.Variables.(map[string]any)
+	c.filters = append(c.filters, fmt.Sprint(vars["filter"]))
+	cursor, _ := vars["cursor"].(map[string]any)
+	n := 0
+	if next, ok := cursor["next"].(string); ok {
+		n, _ = strconv.Atoi(next)
+	}
+	items := "[]"
+	if n < len(c.pages) {
+		items = c.pages[n]
+	}
+	raw, _ := resp.Data.(*json.RawMessage)
+	*raw = json.RawMessage(fmt.Sprintf(`{"deployments":{"cursor":{"next":"%d"},"items":%s}}`, n+1, items))
+	return nil
+}
+
+func provisions(created ...string) string {
+	items := make([]string, 0, len(created))
+	for _, at := range created {
+		items = append(items, fmt.Sprintf(`{"id":"p-%s","status":"COMPLETED","action":"PROVISION","createdAt":"%s"}`, at[:10], at))
+	}
+	return "[" + strings.Join(items, ",") + "]"
+}
+
+func TestPeekBaseline(t *testing.T) {
+	newer := provisions("2026-11-25T03:00:00Z", "2026-11-25T02:00:00Z", "2026-11-25T01:00:00Z")
+	tests := []struct {
+		name      string
+		pages     []string
+		wantBase  string
+		wantReads int
+	}{
+		{name: "on the first page", pages: []string{provisions("2026-11-25T03:00:00Z", "2026-11-20T00:00:00Z")}, wantBase: "p-2026-11-20", wantReads: 1},
+		{name: "past page one", pages: []string{newer, newer, provisions("2026-11-19T00:00:00Z")}, wantBase: "p-2026-11-19", wantReads: 3},
+		{name: "none within reach", pages: []string{newer, newer, newer, newer, newer, provisions("2026-11-01T00:00:00Z")}, wantReads: 5},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client := &pagedClient{pages: tc.pages}
+			d := &fakeDeployer{got: &types.Deployment{ID: "target", CreatedAt: fixedNow().AddDate(0, 0, -5)}, diff: &types.DeploymentComparison{}}
+			api := dashboard.NewAPIWithClient(client, dashboard.Services{Audit: &fakeAudit{}, Deployer: d}, "acme")
+			peek, err := api.PeekDeployment(context.Background(), "i1", "target")
+			if err != nil {
+				t.Fatal(err)
+			}
+			base := ""
+			if peek.Baseline != nil {
+				base = peek.Baseline.ID
+			}
+			if base != tc.wantBase || len(client.filters) != tc.wantReads {
+				t.Errorf("baseline %q after %d reads, want %q after %d", base, len(client.filters), tc.wantBase, tc.wantReads)
+			}
+			if want := "map[action:map[in:[PROVISION]] instanceId:map[in:[i1]] status:map[in:[COMPLETED]]]"; client.filters[0] != want {
+				t.Errorf("filter = %s", client.filters[0])
+			}
+		})
+	}
+}
+
 func TestAPIRejectDeployment(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -495,7 +596,7 @@ func TestAPIRejectDeployment(t *testing.T) {
 		{name: "with a reason", reason: "too big", wantStashed: 1},
 		{name: "without a reason"},
 		{name: "reason not saved", reason: "too big", stashErr: errors.New("forbidden"), wantStashed: 1, wantErr: dashboard.ErrReasonNotSaved},
-		{name: "reject refused", reason: "too big", rejectErr: gql.ErrForbidden, wantStashed: 1, wantErr: gql.ErrForbidden},
+		{name: "a refused reject keeps no reason", reason: "too big", rejectErr: gql.ErrForbidden, wantErr: gql.ErrForbidden},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

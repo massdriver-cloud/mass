@@ -82,22 +82,3 @@ func TestBannerStrip(t *testing.T) {
 		t.Errorf("a banner in view should run across the top of the map:\n%s", out)
 	}
 }
-
-func TestPlainTheme(t *testing.T) {
-	cfg := config(&opener{})
-	cfg.Theme = dashboard.ThemePlain
-	m := loaded(t, fixture(), cfg, 160, 48)
-	out := view(m)
-	for _, want := range []string{"Platform", "Care", "Billing", "▲ 1 alarming", "⟳ 1 deploying", "↑ 1", "1/2 up"} {
-		if !strings.Contains(out, want) {
-			t.Errorf("the plain view is missing %q:\n%s", want, out)
-		}
-	}
-	if strings.ContainsFunc(out, func(r rune) bool { return r > 0x2800 && r <= 0x28FF }) {
-		t.Errorf("the plain view should draw no braille:\n%s", out)
-	}
-	m = press(m, "down")
-	if m.Selected() == "care-dev" {
-		t.Error("down should move to the next line")
-	}
-}

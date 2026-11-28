@@ -9,7 +9,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-
+	"github.com/charmbracelet/x/ansi"
 	"github.com/massdriver-cloud/mass/internal/commands/dashboard"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/streaming"
 )
@@ -224,8 +224,15 @@ func TestLogsWrapLongLines(t *testing.T) {
 	m, _ = tabTo(t, m, "billing-dev")
 	m, cmd := pressCmd(m, "f")
 	m = drive(t, m, cmd, 10)
-	if out := view(m); !strings.Contains(out, "TAIL-END") || strings.Contains(out, "…") {
-		t.Errorf("a long log line should wrap rather than be cut:\n%s", out)
+	out := ansi.Strip(m.View())
+	start := strings.Index(out, "aws_ecs_service")
+	if start < 0 || !strings.Contains(out, "TAIL-END") {
+		t.Fatalf("a long log line should wrap rather than be cut:\n%s", out)
+	}
+	rest := out[start:]
+	next := rest[strings.Index(rest, "\n")+1:]
+	if cont := next[strings.Index(next, "│")+len("│"):]; !strings.HasPrefix(strings.TrimPrefix(cont, " "), "  ") {
+		t.Errorf("the wrapped part should be indented under the line it continues:\n%s", out)
 	}
 }
 

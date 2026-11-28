@@ -549,18 +549,20 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 		m.upgradeIdx = min(m.upgradeIdx, max(len(m.upgrades())-1, 0))
 		m, alert = m.watchAlarms(before)
 		m.graph.ApplyStash(m.stash, m.snap.Annotations, m.cfg.Now())
-		var read, subs, desk tea.Cmd
+		var read, subs tea.Cmd
 		m, read = m.fetchStash(!m.stashOn)
 		m, subs = m.syncSubscriptions()
-		m, desk = m.refreshDesk()
-		alert = tea.Batch(alert, read, subs, desk)
+		alert = tea.Batch(alert, read, subs)
 		if !m.stashOn {
 			alert = tea.Batch(alert, after(m.cfg.StashPoll, stashPollMsg{}))
 			m.stashOn = true
 		}
 	}
+	// The desk reads on its own, so a failed read of the map does not keep
+	// r from retrying it.
+	m, desk := m.refreshDesk()
 	m.refreshSeq++
-	return m, tea.Batch(after(m.cfg.Refresh, refreshMsg{seq: m.refreshSeq}), alert)
+	return m, tea.Batch(after(m.cfg.Refresh, refreshMsg{seq: m.refreshSeq}), alert, desk)
 }
 
 // applyEvents re-reads the organization on a deployment event so rings and
@@ -1012,7 +1014,7 @@ func (m Model) intro() float64 {
 
 func (m Model) panelWidth() int {
 	switch {
-	case m.logs.open && m.logs.tab == TabConstellation && m.width >= 90:
+	case m.logs.open && m.logs.tab == TabConstellation && m.width >= 120:
 		return max(46, m.width*55/100)
 	case m.width >= 120:
 		return 46

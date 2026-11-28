@@ -24,6 +24,9 @@ const (
 	recentDeployments   = 20
 	deploymentInstances = 100
 	rejectionKey        = "review/rejection"
+	// baselinePages bounds the search for an old deployment's baseline, past
+	// which a diff is not worth the reads.
+	baselinePages = 5
 )
 
 var (
@@ -32,16 +35,17 @@ var (
 )
 
 // DeploymentQuery narrows a read of deployments to some instances and
-// statuses.
+// statuses, and, when Actions is set, to those actions.
 type DeploymentQuery struct {
 	Instances []string
 	Statuses  []string
+	Actions   []string
 }
 
-const deploymentsQuery = `query dashboardDeployments($organizationId: ID!, $instances: [ID!]!, $statuses: [DeploymentStatus!]!, $cursor: Cursor) {
+const deploymentsQuery = `query dashboardDeployments($organizationId: ID!, $filter: DeploymentsFilter, $cursor: Cursor) {
   deployments(
     organizationId: $organizationId
-    filter: {instanceId: {in: $instances}, status: {in: $statuses}}
+    filter: $filter
     sort: {field: CREATED_AT, order: DESC}
     cursor: $cursor
   ) {
@@ -55,7 +59,11 @@ func (a *gqlAPI) Deployments(ctx context.Context, q DeploymentQuery, cursor stri
 	if cursor != "" {
 		cur["next"] = cursor
 	}
-	vars := map[string]any{"organizationId": a.orgID, "instances": q.Instances, "statuses": q.Statuses, "cursor": cur}
+	filter := map[string]any{"instanceId": map[string]any{"in": q.Instances}, "status": map[string]any{"in": q.Statuses}}
+	if len(q.Actions) > 0 {
+		filter["action"] = map[string]any{"in": q.Actions}
+	}
+	vars := map[string]any{"organizationId": a.orgID, "filter": filter, "cursor": cur}
 	var data struct {
 		Page page[Deployment] `json:"deployments"`
 	}
@@ -173,14 +181,26 @@ func (a *gqlAPI) PeekDeployment(ctx context.Context, instanceID, deploymentID st
 }
 
 func (a *gqlAPI) baseline(ctx context.Context, instanceID string, d *types.Deployment) (Deployment, bool, error) {
-	done, _, err := a.Deployments(ctx, DeploymentQuery{Instances: []string{instanceID}, Statuses: []string{string(deployments.StatusCompleted)}}, "")
-	if err != nil {
-		return Deployment{}, false, err
+	q := DeploymentQuery{
+		Instances: []string{instanceID},
+		Statuses:  []string{string(deployments.StatusCompleted)},
+		Actions:   []string{string(deployments.ActionProvision)},
 	}
-	for _, c := range done {
-		if c.ID != d.ID && c.Action == string(deployments.ActionProvision) && (d.CreatedAt.IsZero() || createdAt(c).Before(d.CreatedAt)) {
-			return c, true, nil
+	cursor := ""
+	for range baselinePages {
+		done, next, err := a.Deployments(ctx, q, cursor)
+		if err != nil {
+			return Deployment{}, false, err
 		}
+		for _, c := range done {
+			if c.ID != d.ID && c.Action == string(deployments.ActionProvision) && (d.CreatedAt.IsZero() || createdAt(c).Before(d.CreatedAt)) {
+				return c, true, nil
+			}
+		}
+		if next == "" {
+			break
+		}
+		cursor = next
 	}
 	return Deployment{}, false, nil
 }
@@ -230,18 +250,15 @@ func (a *gqlAPI) RejectDeployment(ctx context.Context, deploymentID, reason stri
 	if a.deployer == nil {
 		return ErrNoDeployer
 	}
-	var saveErr error
-	if reason != "" {
-		scope := stash.Scope{Kind: stash.ScopeDeployment, ID: deploymentID}
-		_, saveErr = a.deployer.SetStash(ctx, scope, rejectionKey, stash.SetInput{Value: reason, Format: stash.FormatText})
-	}
-	// A reason that could not be kept is no reason to leave the deployment
-	// waiting on someone who has decided against it.
 	if _, err := a.deployer.RejectDeployment(ctx, deploymentID); err != nil {
 		return err
 	}
-	if saveErr != nil {
-		return fmt.Errorf("%w: %s", ErrReasonNotSaved, saveErr.Error())
+	if reason == "" {
+		return nil
+	}
+	scope := stash.Scope{Kind: stash.ScopeDeployment, ID: deploymentID}
+	if _, err := a.deployer.SetStash(ctx, scope, rejectionKey, stash.SetInput{Value: reason, Format: stash.FormatText}); err != nil {
+		return fmt.Errorf("%w: %s", ErrReasonNotSaved, err.Error())
 	}
 	return nil
 }
@@ -463,7 +480,7 @@ func (m Model) handlePeekKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 // peekSize is the width of the text in the config box and how many lines
 // of it fit.
 func (m Model) peekSize() (int, int) {
-	return min(m.width-4, 110) - 6, max(m.bodyHeight()-4, 1)
+	return max(min(m.width-4, 110)-6, 1), max(m.bodyHeight()-4, 1)
 }
 
 func (m Model) peekLines() []string {
@@ -559,8 +576,8 @@ func paramLine(c types.ParamComparison, pathW, w int) string {
 }
 
 var (
-	secretPath  = regexp.MustCompile(`(?i)(secret|passw|token|credential|private|cert|auth|api_?key|access_?key|signing|key$)`)
-	secretValue = regexp.MustCompile(`-----BEGIN|^(AKIA|ASIA)[0-9A-Z]{16}$|^eyJ[\w-]+\.[\w-]+\.|^gh[pousr]_|^xox[abpr]-|^sk-`)
+	secretPath  = regexp.MustCompile(`(?i)(secret|passw|token|credential|private|cert|auth|api_?key|access_?key|signing|dsn|connection|key$)`)
+	secretValue = regexp.MustCompile(`-----BEGIN|^(AKIA|ASIA)[0-9A-Z]{16}$|^eyJ[\w-]+\.[\w-]+\.|^gh[pousr]_|^xox[abpr]-|^sk-|^[a-zA-Z][\w+.-]*://[^/@\s:]+:[^/@\s]+@`)
 )
 
 const masked = "••••••"
@@ -601,13 +618,16 @@ func (m Model) deploymentsBody(h int) string {
 	if !m.desk.read {
 		msg := styleMuted.Render("reading the deployments in view…")
 		if m.desk.err != nil {
-			msg = styleRed.Render("could not read deployments: " + clean(m.desk.err.Error()))
+			msg = styleRed.Render(clip("could not read deployments: "+clean(m.desk.err.Error()), m.width-16)) + styleMuted.Render(" · ") + keyHint("r", "retries")
 		}
 		return lipgloss.Place(m.width, h, lipgloss.Center, lipgloss.Center, msg)
 	}
 	var lines []string
+	if m.replay.on {
+		lines = append(lines, styleMuted.Render("The replay plays on the map; this tab lists live deployments."))
+	}
 	if m.desk.err != nil {
-		lines = append(lines, styleRed.Render(clip("could not refresh deployments: "+clean(m.desk.err.Error()), m.width)))
+		lines = append(lines, styleRed.Render(clip("could not read deployments: "+clean(m.desk.err.Error()), m.width-16))+styleMuted.Render(" · ")+keyHint("r", "retries"))
 	}
 	b, w, now := m.desk.board, m.width-2, m.cfg.Now()
 	at, selLine := 0, 0
