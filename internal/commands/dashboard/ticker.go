@@ -70,7 +70,10 @@ func (m Model) tickerItem(ev Event, now time.Time) string {
 	if where != "" {
 		item += styleMuted.Render(" " + where)
 	}
-	if ev.Detail != "" {
+	switch {
+	case ev.Widget != "":
+		item += styleFaint.Render(" · ") + ev.Widget
+	case ev.Detail != "":
 		item += styleFaint.Render(" · " + ev.Detail)
 	}
 	if ev.Actor != "" {

@@ -22,7 +22,7 @@ func TestStashStreams(t *testing.T) {
 	var m tea.Model = dashboard.NewModel(api, config(&opener{}))
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 160, Height: 48})
 	model := pump(t, m, []tea.Cmd{m.Init()}, 40)
-	if out := view(model); !strings.Contains(out, "md/v1/health = down") {
+	if out := view(model); !strings.Contains(out, "● down") {
 		t.Errorf("a streamed key should reach the ticker:\n%s", out)
 	}
 	for _, want := range []string{"care/care-dev", "platform/platform-dev"} {
