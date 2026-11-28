@@ -83,6 +83,10 @@ type Config struct {
 	Notify func(title, body string)
 	// ReadOnly turns off approving and deploying.
 	ReadOnly bool
+	// WriteFile writes an incident's write-up and recording.
+	WriteFile func(name string, data []byte) error
+	// Replay starts a replay this far back as soon as the dashboard opens.
+	Replay time.Duration
 }
 
 type (
@@ -186,6 +190,7 @@ type Model struct {
 	stashOn       bool
 	feed          feed
 	watch         watchState
+	incidents     []incidentRecord
 	replayRequest int
 	events        []Event
 	seen          map[string]time.Time
@@ -211,10 +216,14 @@ func NewModel(api API, cfg Config) Model {
 	if cfg.LogPoll == 0 {
 		cfg.LogPoll = defaultLogPoll
 	}
-	return Model{
+	m := Model{
 		api: api, cfg: cfg, loading: true, blastOn: true, showApps: true, focus: cfg.Focus,
 		seen: map[string]time.Time{}, flashes: map[string]Flash{}, since: cfg.Now().Add(-eventBacklog),
 	}
+	if cfg.Replay > 0 {
+		m.replay, m.replayRequest = replay{window: cfg.Replay, loading: true, speed: 1}, 1
+	}
+	return m
 }
 
 // Init starts the first reads and the animation clock.
@@ -222,6 +231,9 @@ func (m Model) Init() tea.Cmd {
 	cmds := []tea.Cmd{m.read(m.ctx(), func() {}), frame()}
 	if m.cfg.EventPoll > 0 {
 		cmds = append(cmds, m.fetchEvents(true))
+	}
+	if m.replay.loading {
+		cmds = append(cmds, m.readHistory())
 	}
 	return tea.Batch(cmds...)
 }
@@ -455,6 +467,8 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		return m.applyHistory(msg), nil
 	case actionMsg:
 		return m.applyAction(msg)
+	case writtenMsg:
+		return m.applyWritten(msg), nil
 	case openedMsg:
 		m.toast, m.toastAt = "↗ opened "+msg.url, m.frame
 		if msg.err != nil {
@@ -557,6 +571,7 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 	slices.SortStableFunc(fresh, func(a, b Event) int { return b.At.Compare(a.At) })
 	m.events = append(fresh, m.events...)
 	m.events = m.events[:min(len(m.events), eventsKept)]
+	m = m.recordEvents(fresh)
 	if msg.initial || m.replay.on {
 		return m, poll
 	}
@@ -645,6 +660,8 @@ func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 		return m.reload()
 	case "o":
 		return m, m.openSelection()
+	case "w":
+		return m.writeIncident()
 	case "t":
 		if m.tab == TabConstellation {
 			m = m.toggleReplay()

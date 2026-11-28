@@ -119,6 +119,7 @@ func (m Model) resolveIncidents(listed map[string]bool) Model {
 			continue
 		}
 		w.resolved = &resolvedIncident{incident: inc, after: m.cfg.Now().Sub(inc.Started), at: m.frame}
+		m = m.recordResolved(inc, m.cfg.Now())
 	}
 	w.open = open
 	m.watch = w
@@ -157,6 +158,7 @@ func (m Model) openIncidents(started []Incident) (Model, tea.Cmd) {
 	w.open = append(started, w.open...)
 	w.resolved, w.acked, w.lockedAt = nil, false, m.frame
 	m.watch = w
+	m = m.recordIncidents(started)
 	newest := started[0].Alarm
 	m.tab, m.selected, m.blastOn = TabConstellation, newest.EnvID, true
 	return m, m.notify("▲ "+newest.Name, newest.InstanceID+" · "+envLabel(m.graph, newest.EnvID))

@@ -80,8 +80,12 @@ func (m Model) handlePickKey(key string) (Model, tea.Cmd) {
 func (m Model) startReplay() (Model, tea.Cmd) {
 	m.replay = replay{window: m.replay.window, loading: true, speed: 1}
 	m.replayRequest++
+	return m, m.readHistory()
+}
+
+func (m Model) readHistory() tea.Cmd {
 	api, ctx, since, request := m.api, m.ctx(), m.cfg.Now().Add(-m.replay.window), m.replayRequest
-	return m, func() tea.Msg {
+	return func() tea.Msg {
 		log, err := api.History(ctx, since)
 		return historyMsg{log: log, err: err, request: request}
 	}

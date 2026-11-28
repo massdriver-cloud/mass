@@ -59,6 +59,9 @@ func Run(ctx context.Context, api API, opts Options) error {
 	if opts.Notify == nil {
 		opts.Notify = TerminalNotifier(opts.Out)
 	}
+	if opts.WriteFile == nil {
+		opts.WriteFile = WriteFile
+	}
 	opts.Context = ctx
 	model := NewModel(api, opts.Config)
 	final, err := tea.NewProgram(model, tea.WithAltScreen(), tea.WithOutput(opts.Out), tea.WithContext(ctx)).Run()

@@ -22,6 +22,8 @@ The dashboard follows the stash as a feed. It reads every stash in view once, th
 
 With `--watch`, an alarm that starts firing takes the view to its environment, locks on, shows its blast radius under a banner that counts up, and rings the terminal with a desktop notification. When it clears, the banner says how long it lasted and the view goes back where it was.
 
+`w` writes up an incident: the one behind the selected alarm or environment, or else the most recent. It writes two files to the current directory, named for the alarmed instance, the alarm, and the minute the incident started, such as `incident-ecomm-prod-database-cpu-high-20261126-1402.md` and `incident-ecomm-prod-database-cpu-high-20261126-1402.json`. The markdown has how long the incident lasted, the alarm and its message, its blast radius, a timeline of the deployments, alarms, and stash changes in that blast radius from shortly before it fired until it cleared, and sections for the root cause and follow-ups. The JSON is a recording: the environments in view when it fired, their stash, and that timeline. `--playback` opens the dashboard on a recording, offline, and replays it on the map; `space` pauses and `[` and `]` change the speed.
+
 `--theme` changes how the map is drawn: `constellation` (the default) scatters environments like stars, `metro` lays them out as stations on transit lines with producers to the left, and `radar` puts the focus at the center of a sweeping scope with each environment on the ring as many hops out as it is. `v` switches between them. `--palette` changes the colors and backdrop: `night` (the default), `rain`, and `blueprint`. `p` switches between them. `--render blocks` fills the map's dots in as solid blocks, so links and rings draw as solid lines rather than dotted ones. It suits a terminal that draws block characters itself, such as Ghostty; braille works in any terminal.
 
 When the output is not a terminal, `mass dashboard` prints the same data as tables.
@@ -34,6 +36,7 @@ mass dashboard --env ecomm-prod --depth 2
 mass dashboard --refresh 10s --events 2s --stash 1s
 mass dashboard --watch
 mass dashboard --read-only
+mass dashboard --playback incident-ecomm-prod-database-cpu-high-20261126-1402.json
 mass dashboard --theme radar --palette rain
 mass dashboard --profile production | less
 ```

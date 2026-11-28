@@ -293,6 +293,7 @@ func tabHelp(tab Tab) []string {
 			note(colorOrange, "✸", "how many environments and instances depend on that instance downstream"),
 			"",
 			"enter shows it on the map with its blast radius; o opens the instance in the web app.",
+			"w writes up its incident: a markdown timeline and a recording to replay with --playback.",
 		}
 	case TabUpgrades:
 		return []string{
@@ -410,6 +411,7 @@ func Legend(watch bool, notesErr error) string {
 		keyHint("a", "apps")+"  "+keyHint("c", "cost")+"  "+keyHint("g", "projects")+"  "+keyHint("s", "producers on top"),
 		keyHint("f", "follow the latest deploy's logs"),
 		keyHint("n N", "pick an instance")+"  "+keyHint("y", "approve it")+"  "+keyHint("d", "deploy it"),
+		keyHint("w", "write up the incident"),
 	)
 	if notesErr != nil {
 		why := "Notes and pinned widgets could not be read: " + clean(notesErr.Error())
