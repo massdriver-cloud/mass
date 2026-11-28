@@ -61,8 +61,11 @@ type Config struct {
 	// StashPoll is how often to read the stash when it cannot be streamed;
 	// zero reads it only with each refresh.
 	StashPoll time.Duration
-	Now       func() time.Time
-	Links     Links
+	// LogPoll is how often to read a followed deployment's logs when they
+	// cannot be streamed, and to check whether a streamed one has ended.
+	LogPoll time.Duration
+	Now     func() time.Time
+	Links   Links
 	// Open opens a URL in the browser.
 	Open func(url string) error
 	// Focus is the environment to center on; empty is the most recently
@@ -190,6 +193,7 @@ type Model struct {
 	toastAt       int
 	pos           map[string]Point
 	layoutKey     layoutKey
+	logs          logView
 }
 
 // NewModel returns a dashboard that reads from api.
@@ -199,6 +203,9 @@ func NewModel(api API, cfg Config) Model {
 	}
 	if cfg.Theme == "" {
 		cfg.Theme = DefaultTheme
+	}
+	if cfg.LogPoll == 0 {
+		cfg.LogPoll = defaultLogPoll
 	}
 	return Model{
 		api: api, cfg: cfg, loading: true, blastOn: true, showApps: true, focus: cfg.Focus,
@@ -267,6 +274,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	next, cmd := m.update(msg)
 	if next.graph != nil {
 		next = next.withLayout(next.canvasSize())
+	}
+	if next.logs.open && (next.selected != next.logs.env || next.tab != TabConstellation) {
+		next = next.closeLogs()
 	}
 	if !next.moving && next.animating() {
 		next.moving = true
@@ -424,6 +434,8 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		return m.applyStashClosed(msg)
 	case resubscribeMsg:
 		return m.applyResubscribe(msg)
+	case logsMsg:
+		return m.updateLogs(msg)
 	case refocusMsg:
 		return m.refocus(msg)
 	case directoryMsg:
@@ -606,7 +618,7 @@ func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	}
 	switch key := msg.String(); key {
 	case "ctrl+c", "q":
-		return m, tea.Quit
+		return m.closeLogs(), tea.Quit
 	case "1", "2", "3", "4":
 		m.tab = Tab(key[0] - '1')
 	case "enter":
@@ -629,10 +641,15 @@ func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 		if m.replay.on {
 			m = m.handleReplayKey(key)
 		}
+	case "f":
+		if m.tab == TabConstellation && m.graph != nil {
+			return m.toggleLogs()
+		}
 	case "?":
 		m.help = !m.help
 	case "esc":
 		m.filter, m.help = "", false
+		m = m.closeLogs()
 	default:
 		m = m.handleTabKey(key)
 	}

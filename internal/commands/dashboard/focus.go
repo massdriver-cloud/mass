@@ -62,7 +62,7 @@ const environmentFields = `
         component { id }
         bundle { name version runtime { name version } }
         latestProvision { createdAt bundle { name version runtime { name version } } }
-        latestDeployment { status action createdAt }
+        latestDeployment { id status action createdAt }
         cost { lastMonth { amount currency } }
         alarms { items { displayName currentState { status message occurredAt } } }
         dependencies { field resource { id origin instance { id environment { id } } } }

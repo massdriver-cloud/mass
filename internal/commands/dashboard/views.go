@@ -66,14 +66,20 @@ func (m Model) constellationBody(h int) string {
 	if panelW == 0 && m.help {
 		return m.helpBox(h, Legend(m.cfg.Watch, m.snap.AnnotationsErr))
 	}
+	if panelW == 0 && m.logs.open {
+		return m.logsPanel(m.width, h)
+	}
 	canvas := overlayFirstLine(scene.Render(canvasW, h), m.bannerStrip(canvasW))
 	if panelW == 0 {
 		return canvas
 	}
 	var panel string
-	if m.help {
+	switch {
+	case m.help:
 		panel = Legend(m.cfg.Watch, m.snap.AnnotationsErr)
-	} else {
+	case m.logs.open:
+		panel = m.logsPanel(panelW, h)
+	default:
 		panel = EnvDetail(m.graph, m.graph.Env(m.selected), blast, m.cfg.Now(), panelW)
 	}
 	return lipgloss.JoinHorizontal(lipgloss.Top, canvas, m.panel(panel, panelW, h))
@@ -330,7 +336,7 @@ func (m Model) footer() string {
 			keys = append(keys, [2]string{"t", "replay"})
 		}
 		keys = append(keys, [][2]string{
-			{"/", "find"}, {"b", toggle("blast", m.blastOn)}, {"a", toggle("apps", m.showApps)},
+			{"/", "find"}, {"f", "logs"}, {"b", toggle("blast", m.blastOn)}, {"a", toggle("apps", m.showApps)},
 			{"c", toggle("cost", m.showCost)}, {"g", toggle("projects", m.grouped)}, {"s", toggle("producers on top", m.stacked)}, {"v", m.cfg.Theme}, {"p", paletteName},
 		}...)
 	case TabRuntimes:
@@ -395,6 +401,7 @@ func Legend(watch bool, notesErr error) string {
 		styleHeading.Render("KEYS"),
 		keyHint("v", "theme")+"  "+keyHint("p", "palette")+"  "+keyHint("/", "find")+"  "+keyHint("t", "replay")+"  "+keyHint("b", "blast radius"),
 		keyHint("a", "apps")+"  "+keyHint("c", "cost")+"  "+keyHint("g", "projects")+"  "+keyHint("s", "producers on top"),
+		keyHint("f", "follow the latest deploy's logs"),
 	)
 	if notesErr != nil {
 		why := "Notes and pinned widgets could not be read: " + clean(notesErr.Error())
