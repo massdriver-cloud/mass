@@ -44,6 +44,12 @@ func Run(ctx context.Context, api API, opts Options) error {
 	if !slices.Contains(Themes(), opts.Theme) {
 		return fmt.Errorf("no theme %q; choose %s", opts.Theme, strings.Join(Themes(), ", "))
 	}
+	if opts.Render == "" {
+		opts.Render = DefaultRender
+	}
+	if !slices.Contains(Renders(), opts.Render) {
+		return fmt.Errorf("no render %q; choose %s", opts.Render, strings.Join(Renders(), ", "))
+	}
 	if !cli.IsInteractive(opts.Out) {
 		return RunSummary(ctx, api, opts.Out, opts.Now(), Where{Focus: opts.Focus, Depth: opts.Depth})
 	}

@@ -103,3 +103,50 @@ func TestCanvasStyles(t *testing.T) {
 		})
 	}
 }
+
+func TestCanvasBlocks(t *testing.T) {
+	tests := map[string]struct {
+		dots [][2]int
+		want string
+	}{
+		"nothing":         {want: " "},
+		"top left eighth": {dots: [][2]int{{0, 0}}, want: "\U0001CEA8"},
+		"left column":     {dots: [][2]int{{0, 0}, {0, 1}, {0, 2}, {0, 3}}, want: "▌"},
+		"top half":        {dots: [][2]int{{0, 0}, {1, 0}, {0, 1}, {1, 1}}, want: "▀"},
+		"every dot":       {dots: [][2]int{{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}, {0, 3}, {1, 3}}, want: "█"},
+		"an octant":       {dots: [][2]int{{0, 1}}, want: "\U0001CD00"},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			c := dashboard.NewCanvas(1, 1)
+			c.Blocks = true
+			for _, d := range tc.dots {
+				c.Dot(d[0], d[1], lipgloss.Color("#fff"), 0)
+			}
+			if got := ansi.Strip(c.Render()); got != tc.want {
+				t.Errorf("render = %q (%U), want %q", got, []rune(got), tc.want)
+			}
+		})
+	}
+}
+
+func TestCanvasBlocksCoverEveryPattern(t *testing.T) {
+	seen := map[string]int{}
+	for dots := range 256 {
+		c := dashboard.NewCanvas(1, 1)
+		c.Blocks = true
+		for x := range 2 {
+			for y := range 4 {
+				bit := [2][4]int{{0x01, 0x02, 0x04, 0x40}, {0x08, 0x10, 0x20, 0x80}}[x][y]
+				if dots&bit != 0 {
+					c.Dot(x, y, lipgloss.Color("#fff"), 0)
+				}
+			}
+		}
+		got := ansi.Strip(c.Render())
+		if prev, ok := seen[got]; ok {
+			t.Errorf("dots %08b and %08b both draw %q", prev, dots, got)
+		}
+		seen[got] = dots
+	}
+}

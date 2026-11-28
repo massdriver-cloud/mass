@@ -57,7 +57,7 @@ func (m Model) constellationBody(h int) string {
 	canvasW, _ := m.canvasSize()
 	blast := m.blast()
 	scene := Scene{
-		Graph: m.graph, Pos: m.animatedPos(), Selected: m.selected, Blast: blast, Theme: m.cfg.Theme,
+		Graph: m.graph, Pos: m.animatedPos(), Selected: m.selected, Blast: blast, Theme: m.cfg.Theme, Blocks: m.cfg.Render == RenderBlocks,
 		ShowApps: m.showApps, GroupByProject: m.grouped, ShowCost: m.showCost, Filter: m.filter,
 		Frame: m.frame, Intro: m.intro(), Flashes: m.flashes,
 	}

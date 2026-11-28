@@ -86,3 +86,19 @@ func TestSceneMatches(t *testing.T) {
 		}
 	}
 }
+
+func TestSceneBlocks(t *testing.T) {
+	m := loaded(t, fixture(), config(&opener{}), 160, 48)
+	cfg := config(&opener{})
+	cfg.Render = dashboard.RenderBlocks
+	blocks := loaded(t, fixture(), cfg, 160, 48)
+	hasBraille := func(s string) bool {
+		return strings.ContainsFunc(s, func(r rune) bool { return r > 0x2800 && r <= 0x28FF })
+	}
+	if !hasBraille(view(m)) {
+		t.Error("the default render should draw braille")
+	}
+	if out := view(blocks); hasBraille(out) {
+		t.Errorf("--render blocks should draw no braille:\n%s", out)
+	}
+}

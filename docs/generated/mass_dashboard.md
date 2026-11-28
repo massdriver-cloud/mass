@@ -32,7 +32,7 @@ The dashboard follows the stash as a feed. It reads every stash in view once, th
 
 With `--watch`, an alarm that starts firing takes the view to its environment, locks on, shows its blast radius under a banner that counts up, and rings the terminal with a desktop notification. When it clears, the banner says how long it lasted and the view goes back where it was.
 
-`--theme` changes how the map is drawn: `constellation` (the default) scatters environments like stars, `metro` lays them out as stations on transit lines with producers to the left, and `radar` puts the focus at the center of a sweeping scope with each environment on the ring as many hops out as it is. `v` switches between them. `--palette` changes the colors and backdrop: `night` (the default), `rain`, and `blueprint`. `p` switches between them.
+`--theme` changes how the map is drawn: `constellation` (the default) scatters environments like stars, `metro` lays them out as stations on transit lines with producers to the left, and `radar` puts the focus at the center of a sweeping scope with each environment on the ring as many hops out as it is. `v` switches between them. `--palette` changes the colors and backdrop: `night` (the default), `rain`, and `blueprint`. `p` switches between them. `--render blocks` fills the map's dots in as solid blocks, so links and rings draw as solid lines rather than dotted ones. It suits a terminal that draws block characters itself, such as Ghostty.
 
 When the output is not a terminal, `mass dashboard` prints the same data as tables.
 
@@ -61,6 +61,7 @@ mass dashboard [flags]
   -h, --help               help for dashboard
       --palette string     Colors and backdrop: night, blueprint, rain (default "night")
       --refresh duration   How often to re-read the organization; 0 reads once (default 30s)
+      --render string      How the map's dots are drawn: braille dots, or solid blocks for terminals that draw block characters themselves, such as Ghostty (default "braille")
       --stash duration     How often to read the stash when it cannot be streamed, as when the profile signs in without a personal access token or while a stream reconnects; 0 reads it with each refresh (default 3s)
       --theme string       How the map is drawn: constellation, metro, radar (default "constellation")
       --watch              Jump to any alarm that starts firing in view while the dashboard is open, and send a desktop notification

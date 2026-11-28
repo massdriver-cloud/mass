@@ -13,7 +13,10 @@ import (
 // and four down per cell, so lines and rings come out four times finer than
 // the cells. Text written to a cell replaces its dots.
 type Canvas struct {
-	W, H   int
+	W, H int
+	// Blocks draws dots as solid blocks rather than braille.
+	Blocks bool
+
 	cells  []cell
 	styles []lipgloss.Style
 	// textEscapes and dotEscapes hold each style's escape codes once worked out;
@@ -50,7 +53,7 @@ var canvases = sync.Pool{New: func() any { return &Canvas{} }}
 
 func borrowCanvas(w, h int) *Canvas {
 	c, _ := canvases.Get().(*Canvas)
-	c.W, c.H = max(w, 1), max(h, 1)
+	c.W, c.H, c.Blocks = max(w, 1), max(h, 1), false
 	if n := c.W * c.H; cap(c.cells) >= n {
 		c.cells = c.cells[:n]
 		clear(c.cells)
@@ -259,6 +262,9 @@ func (c *Canvas) glyph(ce cell) (rune, escapes) {
 	case ce.isTxt:
 		return ce.text, c.textCodes(ce.style)
 	case ce.dots != 0:
+		if c.Blocks {
+			return octants[ce.dots], c.dotCodes(ce.color)
+		}
 		return rune(0x2800) + rune(ce.dots), c.dotCodes(ce.color)
 	default:
 		return ' ', escapes{}

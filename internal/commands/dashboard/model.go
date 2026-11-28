@@ -72,6 +72,8 @@ type Config struct {
 	Depth int
 	// Theme is how the map is drawn.
 	Theme string
+	// Render is how the map's dots are drawn.
+	Render string
 	// Watch takes the view to each alarm that starts firing.
 	Watch bool
 	// Notify tells someone away from the dashboard that an alarm started firing.

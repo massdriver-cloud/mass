@@ -36,6 +36,8 @@ type Scene struct {
 	Now time.Time
 	// Theme is how the map is drawn; empty is the constellation.
 	Theme string
+	// Blocks draws dots as solid blocks rather than braille.
+	Blocks bool
 }
 
 // Flash marks an environment where something just happened.
@@ -66,6 +68,7 @@ const (
 func (s Scene) Render(w, h int) string {
 	c := borrowCanvas(w, h)
 	defer c.release()
+	c.Blocks = s.Blocks
 	s.Pos = s.unfold(c)
 	s.drawStars(c)
 	switch s.Theme {
