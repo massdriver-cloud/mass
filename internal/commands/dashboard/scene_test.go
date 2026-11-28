@@ -101,4 +101,7 @@ func TestSceneBlocks(t *testing.T) {
 	if out := view(blocks); hasBraille(out) {
 		t.Errorf("--render blocks should draw no braille:\n%s", out)
 	}
+	if !hasBraille(view(m)) {
+		t.Error("a braille render after a blocks render should still draw braille")
+	}
 }
