@@ -142,12 +142,12 @@ func (x *svg) legend(y float64) {
 		{colorOrange, "blast radius"}, {colorYellow, "↑ upgrades"},
 	}
 	cx, fs := 4*x.k, x.font(2.8)
-	width := 0.0
+	fixed, text := 7*x.k*float64(len(entries)), 0.0
 	for _, e := range entries {
-		width += 7*x.k + float64(runewidth.StringWidth(e.label))*fs*0.62
+		text += float64(runewidth.StringWidth(e.label)) * fs * 0.62
 	}
-	if room := x.dotW*x.k - 8*x.k; width > room {
-		fs *= room / width
+	if room := x.dotW*x.k - 8*x.k; fixed+text > room && room > fixed {
+		fs *= (room - fixed) / text
 	}
 	for _, e := range entries {
 		fmt.Fprintf(&x.b, `<circle cx="%.1f" cy="%.1f" r="%.1f" fill="%s"/>`, cx+x.k, y-fs*0.35, x.k*0.9, e.color)

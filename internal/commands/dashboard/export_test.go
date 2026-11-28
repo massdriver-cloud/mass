@@ -148,4 +148,22 @@ func TestExportSVGFitsANarrowMap(t *testing.T) {
 	if !strings.Contains(out, `lengthAdjust="spacingAndGlyphs"`) {
 		t.Error("a title wider than the map should be squeezed to fit")
 	}
+	last := strings.LastIndex(out, "upgrades</text>")
+	start := strings.LastIndex(out[:last], "<text ")
+	var label struct {
+		X    float64 `xml:"x,attr"`
+		Size float64 `xml:"font-size,attr"`
+	}
+	if err := xml.Unmarshal([]byte(out[start:last+len("upgrades</text>")]), &label); err != nil {
+		t.Fatal(err)
+	}
+	var root struct {
+		Width float64 `xml:"width,attr"`
+	}
+	if err := xml.Unmarshal([]byte(out), &root); err != nil {
+		t.Fatal(err)
+	}
+	if end := label.X + float64(len("↑ upgrades"))*label.Size*0.62; end > root.Width {
+		t.Errorf("the color key ends at %.0f, past the map's width %.0f", end, root.Width)
+	}
 }
