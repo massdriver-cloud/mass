@@ -69,6 +69,11 @@ func (s Scene) Render(w, h int) string {
 	c := borrowCanvas(w, h)
 	defer c.release()
 	c.Blocks = s.Blocks
+	if s.Theme == ThemePlain {
+		s.renderPlain(c)
+		s.drawFlashes(c)
+		return c.Render()
+	}
 	s.Pos = s.unfold(c)
 	s.drawStars(c)
 	switch s.Theme {

@@ -10,11 +10,11 @@ import (
 )
 
 func TestThemesList(t *testing.T) {
-	if got := dashboard.Themes(); !equal(got, []string{"constellation", "metro", "radar"}) {
+	if got := dashboard.Themes(); !equal(got, []string{"constellation", "metro", "radar", "plain"}) {
 		t.Errorf("Themes = %v", got)
 	}
-	if got := dashboard.NextTheme("radar"); got != "constellation" {
-		t.Errorf("NextTheme(radar) = %s, want it to wrap", got)
+	if got := dashboard.NextTheme("plain"); got != "constellation" {
+		t.Errorf("NextTheme(plain) = %s, want it to wrap", got)
 	}
 }
 
@@ -68,7 +68,7 @@ func TestThemesRender(t *testing.T) {
 
 func TestThemeKey(t *testing.T) {
 	m := loaded(t, fixture(), config(&opener{}), 160, 48)
-	for _, want := range []string{"metro", "radar", "constellation"} {
+	for _, want := range []string{"metro", "radar", "plain", "constellation"} {
 		m = press(m, "v")
 		if m.Theme() != want {
 			t.Errorf("theme = %s, want %s", m.Theme(), want)
@@ -80,5 +80,24 @@ func TestBannerStrip(t *testing.T) {
 	out := view(loaded(t, withStash(), config(&opener{}), 160, 48))
 	if !strings.Contains(out, "⚑ Care / Development · Load test until 5pm") {
 		t.Errorf("a banner in view should run across the top of the map:\n%s", out)
+	}
+}
+
+func TestPlainTheme(t *testing.T) {
+	cfg := config(&opener{})
+	cfg.Theme = dashboard.ThemePlain
+	m := loaded(t, fixture(), cfg, 160, 48)
+	out := view(m)
+	for _, want := range []string{"Platform", "Care", "Billing", "▲ 1 alarming", "⟳ 1 deploying", "↑ 1", "1/2 up"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the plain view is missing %q:\n%s", want, out)
+		}
+	}
+	if strings.ContainsFunc(out, func(r rune) bool { return r > 0x2800 && r <= 0x28FF }) {
+		t.Errorf("the plain view should draw no braille:\n%s", out)
+	}
+	m = press(m, "down")
+	if m.Selected() == "care-dev" {
+		t.Error("down should move to the next line")
 	}
 }
