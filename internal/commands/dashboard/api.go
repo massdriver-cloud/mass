@@ -42,7 +42,16 @@ type API interface {
 	History(ctx context.Context, since time.Time) (Log, error)
 	DeploymentLogs(ctx context.Context, deploymentID string) (DeploymentLog, error)
 	StreamDeploymentLogs(ctx context.Context, deploymentID string) (*streaming.Stream[LogBatch], error)
+	// Deployments reads the deployments of instances in the given statuses,
+	// newest first.
+	Deployments(ctx context.Context, q DeploymentQuery, cursor string) ([]Deployment, string, error)
+	// PeekDeployment reads a deployment's configuration and what it changes
+	// since the instance's last completed provision.
+	PeekDeployment(ctx context.Context, instanceID, deploymentID string) (DeploymentPeek, error)
 	ApproveDeployment(ctx context.Context, deploymentID string) error
+	// RejectDeployment rejects a proposed deployment, and keeps a non-empty
+	// reason in its stash.
+	RejectDeployment(ctx context.Context, deploymentID, reason string) error
 	// Deploy provisions an instance again with its current configuration.
 	Deploy(ctx context.Context, instanceID string) error
 }
@@ -109,12 +118,18 @@ type Provision struct {
 	Bundle    *Bundle `json:"bundle"`
 }
 
-// Deployment is an instance's most recent deployment of any kind.
+// Deployment is one deployment of an instance. The map reads only each
+// instance's latest, without its message, author, or timing.
 type Deployment struct {
-	ID        string `json:"id"`
-	Status    string `json:"status"`
-	Action    string `json:"action"`
-	CreatedAt string `json:"createdAt"`
+	ID          string `json:"id"`
+	Status      string `json:"status"`
+	Action      string `json:"action"`
+	CreatedAt   string `json:"createdAt"`
+	Version     string `json:"version,omitempty"`
+	Message     string `json:"message,omitempty"`
+	DeployedBy  string `json:"deployedBy,omitempty"`
+	ElapsedTime int    `json:"elapsedTime,omitempty"`
+	Instance    *Ref   `json:"instance,omitempty"`
 }
 
 // AlarmsPage is the first page of an instance's alarms.

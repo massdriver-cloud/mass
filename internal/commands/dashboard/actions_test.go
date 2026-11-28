@@ -11,6 +11,7 @@ import (
 	"github.com/massdriver-cloud/mass/internal/commands/dashboard"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
@@ -112,11 +113,46 @@ func TestActionConfirmation(t *testing.T) {
 }
 
 type fakeDeployer struct {
-	inst     *types.Instance
-	created  []deployments.CreateInput
-	createID string
-	approved []string
-	err      error
+	inst      *types.Instance
+	created   []deployments.CreateInput
+	createID  string
+	approved  []string
+	err       error
+	rejected  []string
+	rejectErr error
+	stashed   []stashSet
+	stashErr  error
+	got       *types.Deployment
+	compared  [][2]string
+	diff      *types.DeploymentComparison
+}
+
+type stashSet struct {
+	scope stash.Scope
+	key   string
+	in    stash.SetInput
+}
+
+func (f *fakeDeployer) RejectDeployment(_ context.Context, id string) (*types.Deployment, error) {
+	f.rejected = append(f.rejected, id)
+	return &types.Deployment{}, f.rejectErr
+}
+
+func (f *fakeDeployer) GetDeployment(context.Context, string) (*types.Deployment, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.got, nil
+}
+
+func (f *fakeDeployer) CompareDeployments(_ context.Context, sourceID, targetID string) (*types.DeploymentComparison, error) {
+	f.compared = append(f.compared, [2]string{sourceID, targetID})
+	return f.diff, nil
+}
+
+func (f *fakeDeployer) SetStash(_ context.Context, scope stash.Scope, key string, in stash.SetInput) (*stash.Entry, error) {
+	f.stashed = append(f.stashed, stashSet{scope: scope, key: key, in: in})
+	return &stash.Entry{}, f.stashErr
 }
 
 func (f *fakeDeployer) GetInstance(_ context.Context, id string) (*types.Instance, error) {

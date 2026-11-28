@@ -31,7 +31,7 @@ func NewCmdDashboard() *cobra.Command {
 	cmd.Flags().String("render", dashboard.DefaultRender, "How the map's dots are drawn: braille dots, or solid blocks for terminals that draw block characters themselves, such as Ghostty")
 	cmd.Flags().String("palette", dashboard.DefaultPalette, "Colors and backdrop: "+strings.Join(dashboard.Palettes(), ", "))
 	cmd.Flags().Bool("watch", false, "Jump to any alarm that starts firing in view while the dashboard is open, and send a desktop notification")
-	cmd.Flags().Bool("read-only", false, "Turn off approving and deploying from the map")
+	cmd.Flags().Bool("read-only", false, "Turn off approving, rejecting, and deploying")
 	cmd.Flags().String("playback", "", "Replay an incident recording written with w, offline")
 	return cmd
 }

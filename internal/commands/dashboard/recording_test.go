@@ -2,6 +2,7 @@ package dashboard_test
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -71,6 +72,26 @@ func TestRecordingAPI(t *testing.T) {
 	}
 	if _, err := api.SubscribeStash(ctx, "care", "care-dev"); err == nil {
 		t.Error("a recording has no live stash")
+	}
+}
+
+func TestRecordingDeployments(t *testing.T) {
+	rec := &dashboard.Recording{Focus: "e", Environments: []dashboard.Environment{{ID: "e", Instances: []dashboard.Instance{
+		{ID: "i1", LatestDeployment: &dashboard.Deployment{ID: "d1", Status: "PROPOSED"}},
+		{ID: "i2", LatestDeployment: &dashboard.Deployment{ID: "d2", Status: "COMPLETED"}},
+		{ID: "i3"},
+	}}}}
+	api := rec.API()
+	ctx := context.Background()
+	got, _, err := api.Deployments(ctx, dashboard.DeploymentQuery{Instances: []string{"i1", "i2", "i3"}, Statuses: []string{"PROPOSED"}}, "")
+	if err != nil || len(got) != 1 || got[0].ID != "d1" || got[0].Instance.ID != "i1" {
+		t.Errorf("Deployments = %+v, %v", got, err)
+	}
+	if err := api.RejectDeployment(ctx, "d1", "no"); !errors.Is(err, dashboard.ErrNoDeployer) {
+		t.Errorf("RejectDeployment = %v; a recording changes nothing", err)
+	}
+	if _, err := api.PeekDeployment(ctx, "i1", "d1"); err == nil {
+		t.Error("a recording has no deployment configuration")
 	}
 }
 

@@ -88,8 +88,11 @@ func (m logsPollMsg) logsGen() int       { return m.gen }
 // logView follows one deployment's logs in the side panel. gen tells its
 // messages from those of a deployment followed before.
 type logView struct {
-	open   bool
-	gen    int
+	open bool
+	gen  int
+	// tab is where the logs show: the side panel on the map, or the whole
+	// body on the Deployments tab.
+	tab    Tab
 	env    string
 	inst   string
 	deploy string
@@ -155,10 +158,26 @@ func (m Model) openLogs() (Model, tea.Cmd) {
 		m.toast, m.toastAt = "no deployment to follow here", m.frame
 		return m, nil
 	}
+	return m.follow(TabConstellation, m.selected, inst.ID, *inst.Deploy)
+}
+
+// logsInView reports whether the followed logs are still what the screen is
+// about.
+func (m Model) logsInView() bool {
+	switch {
+	case m.tab != m.logs.tab:
+		return false
+	case m.tab == TabDeployments:
+		return m.desk.selected == m.logs.deploy
+	}
+	return m.selected == m.logs.env
+}
+
+func (m Model) follow(tab Tab, env, inst string, d Deployment) (Model, tea.Cmd) {
 	ctx, cancel := context.WithCancel(m.ctx())
 	m.logs = logView{
-		open: true, gen: m.logs.gen + 1, env: m.selected, inst: inst.ID, deploy: inst.Deploy.ID,
-		action: inst.Deploy.Action, status: inst.Deploy.Status, ctx: ctx, cancel: cancel,
+		open: true, gen: m.logs.gen + 1, tab: tab, env: env, inst: inst, deploy: d.ID,
+		action: d.Action, status: d.Status, ctx: ctx, cancel: cancel,
 	}
 	if m.logs.done() {
 		return m, m.readLogs()

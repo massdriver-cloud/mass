@@ -37,6 +37,9 @@ func (m Model) splash(h int) string {
 }
 
 func (m Model) body(h int) string {
+	if m.peek != nil {
+		return m.peekBox(h)
+	}
 	if m.confirm != nil {
 		return m.confirmBox(h)
 	}
@@ -50,6 +53,8 @@ func (m Model) body(h int) string {
 		return m.alarmsBody(h)
 	case TabUpgrades:
 		return m.upgradesBody(h)
+	case TabDeployments:
+		return m.deploymentsBody(h)
 	case TabConstellation:
 	}
 	return m.constellationBody(h)
@@ -303,6 +308,18 @@ func tabHelp(tab Tab) []string {
 			"",
 			"enter shows it on the map; o opens the instance in the web app.",
 		}
+	case TabDeployments:
+		return []string{
+			styleHeading.Render("DEPLOYMENTS"), "",
+			"The deployments of the instances in view: those awaiting approval, who proposed them and",
+			"why; those in flight and for how long; then the most recent to finish.",
+			"",
+			"enter shows its environment on the map; o opens its instance in the web app.",
+			"f follows its logs. c shows its message, its bundle version, and what it changes in the",
+			"params since the instance's last completed provision, with secrets masked.",
+			"y approves a proposed deployment; x rejects it, with an optional reason kept in its",
+			"stash as review/rejection.",
+		}
 	case TabConstellation:
 	}
 	return nil
@@ -322,14 +339,17 @@ func (m Model) footer() string {
 	if m.searching {
 		return styleKey.Render("/") + " " + m.filter + styleTeal.Render("█") + styleFaint.Render("  enter select · esc clear")
 	}
+	if m.peek != nil {
+		return lipgloss.NewStyle().MaxWidth(m.width).Render(styleKey.Render("↑↓") + styleMuted.Render(" scroll") +
+			styleFaint.Render("  ·  ") + styleKey.Render("esc") + styleMuted.Render(" close"))
+	}
 	if m.confirm != nil {
-		return lipgloss.NewStyle().MaxWidth(m.width).Render(styleKey.Render("y/enter") + styleMuted.Render(" "+m.confirm.verb()) +
-			styleFaint.Render("  ·  ") + styleMuted.Render("any other key cancels"))
+		return lipgloss.NewStyle().MaxWidth(m.width).Render(m.confirmFooter())
 	}
 	if m.toast != "" && m.frame-m.toastAt < toastFrames {
 		return lipgloss.NewStyle().MaxWidth(m.width).Render(styleTeal.Render(m.toast))
 	}
-	keys := [][2]string{{"←↑↓→", "move"}, {"1-4", "tabs"}}
+	keys := [][2]string{{"←↑↓→", "move"}, {"1-5", "tabs"}}
 	switch {
 	case m.replay.picking:
 		return lipgloss.NewStyle().MaxWidth(m.width).Render(styleKey.Render("←→") + styleMuted.Render(" how far back") +
@@ -351,6 +371,8 @@ func (m Model) footer() string {
 		keys = append(keys, [2]string{"0/p/m/M", "what if"})
 	case TabAlarms, TabUpgrades:
 		keys = append(keys, [2]string{"enter", "show on map"})
+	case TabDeployments:
+		keys = append(keys, [][2]string{{"enter", "map"}, {"f", "logs"}, {"c", "config"}, {"y", "approve"}, {"x", "reject"}}...)
 	}
 	if m.cfg.Links != nil {
 		keys = append(keys, [2]string{"o", "open"})
@@ -365,6 +387,20 @@ func (m Model) footer() string {
 		line = styleRed.Render("refresh failed: "+clip(m.err.Error(), 60)) + "  " + line
 	}
 	return lipgloss.NewStyle().MaxWidth(m.width).Render(line)
+}
+
+func (m Model) confirmFooter() string {
+	sep := styleFaint.Render("  ·  ")
+	switch m.confirm.kind {
+	case actionReject:
+		return styleMuted.Render("type a reason") + sep + styleKey.Render("enter") + styleMuted.Render(" reject") +
+			sep + styleKey.Render("esc") + styleMuted.Render(" cancel")
+	case actionApprove:
+		return styleKey.Render("y/enter") + styleMuted.Render(" approve") + sep + styleKey.Render("c") + styleMuted.Render(" config") +
+			sep + styleMuted.Render("any other key cancels")
+	case actionDeploy:
+	}
+	return styleKey.Render("y/enter") + styleMuted.Render(" "+m.confirm.verb()) + sep + styleMuted.Render("any other key cancels")
 }
 
 func toggle(name string, on bool) string {
@@ -411,6 +447,7 @@ func Legend(watch bool, notesErr error) string {
 		keyHint("a", "apps")+"  "+keyHint("c", "cost")+"  "+keyHint("g", "projects")+"  "+keyHint("s", "producers on top"),
 		keyHint("f", "follow the latest deploy's logs"),
 		keyHint("n N", "pick an instance")+"  "+keyHint("y", "approve it")+"  "+keyHint("d", "deploy it"),
+		keyHint("5", "deployments to approve, reject, or follow"),
 		keyHint("w", "write up the incident"),
 		keyHint("e", "export SVG"),
 	)

@@ -56,6 +56,14 @@ type fakeAPI struct {
 	approved   []string
 	deployed   []string
 	actionErr  error
+	// deploys are every deployment the API knows, in any order.
+	deploys     []dashboard.Deployment
+	deployReads []dashboard.DeploymentQuery
+	deployErr   error
+	peeks       map[string]dashboard.DeploymentPeek
+	peekErr     error
+	rejected    []string
+	reasons     []string
 }
 
 func (f *fakeAPI) ApproveDeployment(_ context.Context, deploymentID string) error {

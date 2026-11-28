@@ -12,6 +12,7 @@ import (
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/gql"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 )
 
@@ -20,6 +21,10 @@ type Deployer interface {
 	GetInstance(ctx context.Context, id string) (*types.Instance, error)
 	CreateDeployment(ctx context.Context, instanceID string, in deployments.CreateInput) (*types.Deployment, error)
 	ApproveDeployment(ctx context.Context, id string) (*types.Deployment, error)
+	RejectDeployment(ctx context.Context, id string) (*types.Deployment, error)
+	GetDeployment(ctx context.Context, id string) (*types.Deployment, error)
+	CompareDeployments(ctx context.Context, sourceID, targetID string) (*types.DeploymentComparison, error)
+	SetStash(ctx context.Context, scope stash.Scope, key string, in stash.SetInput) (*stash.Entry, error)
 }
 
 // NewDeployer returns the production [Deployer] backed by the SDK client.
@@ -37,6 +42,22 @@ func (s sdkDeployer) CreateDeployment(ctx context.Context, instanceID string, in
 
 func (s sdkDeployer) ApproveDeployment(ctx context.Context, id string) (*types.Deployment, error) {
 	return s.c.Deployments.Approve(ctx, id)
+}
+
+func (s sdkDeployer) RejectDeployment(ctx context.Context, id string) (*types.Deployment, error) {
+	return s.c.Deployments.Reject(ctx, id)
+}
+
+func (s sdkDeployer) GetDeployment(ctx context.Context, id string) (*types.Deployment, error) {
+	return s.c.Deployments.Get(ctx, id)
+}
+
+func (s sdkDeployer) CompareDeployments(ctx context.Context, sourceID, targetID string) (*types.DeploymentComparison, error) {
+	return s.c.Deployments.Compare(ctx, sourceID, targetID)
+}
+
+func (s sdkDeployer) SetStash(ctx context.Context, scope stash.Scope, key string, in stash.SetInput) (*stash.Entry, error) {
+	return s.c.Stash.Set(ctx, scope, key, in)
 }
 
 // ErrNoDeployer means the dashboard was built without a way to deploy.
@@ -77,13 +98,29 @@ type actionKind int
 const (
 	actionApprove actionKind = iota
 	actionDeploy
+	actionReject
 )
 
 func (k actionKind) verb() string {
-	if k == actionApprove {
+	switch k {
+	case actionApprove:
 		return "approve"
+	case actionReject:
+		return "reject"
+	case actionDeploy:
 	}
 	return "deploy"
+}
+
+func (k actionKind) title() string {
+	switch k {
+	case actionApprove:
+		return "APPROVE DEPLOYMENT"
+	case actionReject:
+		return "REJECT DEPLOYMENT"
+	case actionDeploy:
+	}
+	return "DEPLOY"
 }
 
 type pendingAction struct {
@@ -92,8 +129,13 @@ type pendingAction struct {
 	envID        string
 	deploymentID string
 	what         string
+	message      string
+	reason       string
 	envs, insts  int
 }
+
+// maxReason keeps a rejection reason to what reads as one line.
+const maxReason = 200
 
 type actionMsg struct {
 	action pendingAction
@@ -142,7 +184,7 @@ func (m Model) pickInstance(key string) Model {
 
 func (m Model) ask(kind actionKind) Model {
 	if m.cfg.ReadOnly {
-		return m.say("the dashboard is read-only; restart it without --read-only to " + kind.verb())
+		return m.refuseReadOnly(kind)
 	}
 	inst := m.pickedInstance()
 	if inst == nil {
@@ -161,7 +203,15 @@ func (m Model) ask(kind actionKind) Model {
 	} else if inst.Deploying() {
 		return m.say(inst.ID + " is already deploying")
 	}
-	act.envs, act.insts = m.graph.BlastRadius(inst.ID).Downstream()
+	return m.confirmAction(act)
+}
+
+func (m Model) refuseReadOnly(kind actionKind) Model {
+	return m.say("the dashboard is read-only; restart it without --read-only to " + kind.verb())
+}
+
+func (m Model) confirmAction(act pendingAction) Model {
+	act.envs, act.insts = m.graph.BlastRadius(act.instanceID).Downstream()
 	m.confirm = &act
 	return m
 }
@@ -173,22 +223,57 @@ func (m Model) say(toast string) Model {
 
 func (m Model) handleConfirmKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	act := *m.confirm
+	if act.kind == actionReject {
+		return m.handleReasonKey(msg)
+	}
+	key := msg.String()
+	if key == "c" && act.kind == actionApprove {
+		return m.openPeek(act.deploymentID, act.instanceID, act.envID)
+	}
 	m.confirm = nil
-	switch msg.String() {
-	case "y", "enter":
-	default:
+	if key != "y" && key != "enter" {
 		return m.say(act.verb() + " cancelled"), nil
 	}
 	// The map may have refreshed while the box was open.
 	if inst := m.graph.Instance(act.instanceID); act.kind == actionDeploy && inst != nil && inst.Deploying() {
 		return m.say(act.instanceID + " started deploying; nothing was sent"), nil
 	}
+	return m, m.send(act)
+}
+
+func (m Model) handleReasonKey(msg tea.KeyMsg) (Model, tea.Cmd) {
+	act := *m.confirm
+	switch msg.String() {
+	case "enter":
+		m.confirm = nil
+		return m, m.send(act)
+	case "esc", "ctrl+c":
+		m.confirm = nil
+		return m.say(act.verb() + " cancelled"), nil
+	case "backspace":
+		if r := []rune(act.reason); len(r) > 0 {
+			act.reason = string(r[:len(r)-1])
+		}
+	default:
+		if msg.Type == tea.KeyRunes || msg.Type == tea.KeySpace {
+			r := []rune(act.reason + clean(string(msg.Runes)))
+			act.reason = string(r[:min(len(r), maxReason)])
+		}
+	}
+	m.confirm = &act
+	return m, nil
+}
+
+func (m Model) send(act pendingAction) tea.Cmd {
 	api, ctx := m.api, m.ctx()
-	return m, func() tea.Msg {
+	return func() tea.Msg {
 		var err error
-		if act.kind == actionApprove {
+		switch act.kind {
+		case actionApprove:
 			err = api.ApproveDeployment(ctx, act.deploymentID)
-		} else {
+		case actionReject:
+			err = api.RejectDeployment(ctx, act.deploymentID, strings.TrimSpace(act.reason))
+		case actionDeploy:
 			err = api.Deploy(ctx, act.instanceID)
 		}
 		return actionMsg{action: act, err: err}
@@ -202,6 +287,10 @@ func (m Model) applyAction(msg actionMsg) (Model, tea.Cmd) {
 	switch {
 	case msg.err == nil && act.kind == actionApprove:
 		m = m.say("✓ approved " + act.instanceID)
+	case msg.err == nil && act.kind == actionReject:
+		m = m.say("✓ rejected " + act.instanceID)
+	case act.kind == actionReject && errors.Is(msg.err, ErrReasonNotSaved):
+		m = m.say("✓ rejected " + act.instanceID + ", but " + clean(msg.err.Error()))
 	case msg.err == nil:
 		m = m.say("⟳ deploying " + act.instanceID)
 	default:
@@ -222,10 +311,7 @@ func actionError(act pendingAction, err error) string {
 
 func (m Model) confirmBox(h int) string {
 	act := m.confirm
-	title := "APPROVE DEPLOYMENT"
-	if act.kind == actionDeploy {
-		title = "DEPLOY"
-	}
+	title := act.kind.title()
 	verb := strings.ToUpper(act.verb()[:1]) + act.verb()[1:]
 	reach := styleTeal.Render("✸") + " nothing depends on it downstream"
 	if act.envs > 0 || act.insts > 0 {
@@ -236,11 +322,21 @@ func (m Model) confirmBox(h int) string {
 		styleHeading.Render(title), "",
 		styleTitle.Render(act.instanceID),
 		styleMuted.Render(envLabel(m.graph, act.envID)),
-		"",
-		verb + " " + act.what + "?",
-		reach,
-		"",
-		keyHint("y", act.verb()) + "  " + keyHint("enter", act.verb()) + "  " + styleMuted.Render("any other key cancels"),
+	}
+	if act.message != "" {
+		rows = append(rows, styleMuted.Render("“"+clip(firstLine(strings.TrimSpace(act.message)), 80)+"”"))
+	}
+	rows = append(rows, "", verb+" "+act.what+"?", reach, "")
+	switch act.kind {
+	case actionReject:
+		rows = append(rows,
+			"Reason (optional): "+act.reason+styleTeal.Render("█"), "",
+			keyHint("enter", "reject")+"  "+keyHint("esc", "cancel"))
+	case actionApprove:
+		rows = append(rows, keyHint("y", act.verb())+"  "+keyHint("enter", act.verb())+"  "+keyHint("c", "peek the config")+"  "+
+			styleMuted.Render("any other key cancels"))
+	case actionDeploy:
+		rows = append(rows, keyHint("y", act.verb())+"  "+keyHint("enter", act.verb())+"  "+styleMuted.Render("any other key cancels"))
 	}
 	return m.helpBox(h, strings.Join(rows, "\n"))
 }
