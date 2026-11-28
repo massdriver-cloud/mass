@@ -210,6 +210,8 @@ type Model struct {
 	pos           map[string]Point
 	layoutKey     layoutKey
 	logs          logView
+	post          *postmortem
+	drafts        map[string]string
 }
 
 // NewModel returns a dashboard that reads from api.
@@ -303,6 +305,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if next.logs.open && !next.logsInView() {
 		next = next.closeLogs()
+	}
+	if next.post != nil {
+		next = next.fitPostmortem()
 	}
 	if !next.moving && next.animating() {
 		next.moving = true
@@ -643,6 +648,9 @@ func (m Model) firstSelection() string {
 }
 
 func (m Model) handleKey(msg tea.KeyMsg) (Model, tea.Cmd) {
+	if m.post != nil {
+		return m.handlePostmortemKey(msg)
+	}
 	if m.peek != nil {
 		return m.handlePeekKey(msg)
 	}

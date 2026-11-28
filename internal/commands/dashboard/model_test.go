@@ -77,6 +77,7 @@ func pressCmd(m dashboard.Model, keys ...string) (dashboard.Model, tea.Cmd) {
 	named := map[string]tea.KeyType{
 		"enter": tea.KeyEnter, "esc": tea.KeyEsc, "tab": tea.KeyTab, "backspace": tea.KeyBackspace,
 		"up": tea.KeyUp, "down": tea.KeyDown, "left": tea.KeyLeft, "right": tea.KeyRight,
+		"pgup": tea.KeyPgUp, "pgdown": tea.KeyPgDown, "ctrl+s": tea.KeyCtrlS,
 	}
 	var cmd tea.Cmd
 	for _, k := range keys {
