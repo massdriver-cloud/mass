@@ -42,6 +42,8 @@ With `--watch`, an alarm that starts firing takes the view to its environment, l
 
 `e` saves the map as it stands to an SVG in the current directory, named for the organization and the minute, such as `constellation-acme-20261126-0905.svg`. It keeps the theme, the palette, and the selection, and draws in vectors, so it stays sharp on a slide or in an incident write-up. The constellation theme also draws the blast radius, alarm pulses, and traffic; metro and radar draw the blast radius in their links, and plain exports its list.
 
+`--tutorial` walks through what everything on the map means, one thing at a time, on a made-up organization that shows every state at once. It needs no profile and reads nothing from Massdriver. `→`, `space`, or `enter` goes to the next step, `←` goes back, and `q` or `esc` quits; past the last step the made-up organization is yours to explore.
+
 When the output is not a terminal, `mass dashboard` prints the same data as tables.
 
 ## Examples
@@ -54,6 +56,7 @@ mass dashboard --watch
 mass dashboard --read-only
 mass dashboard --playback incident-ecomm-prod-database-cpu-high-20261126-1402.json
 mass dashboard --theme radar --palette rain
+mass dashboard --tutorial
 mass dashboard --profile production | less
 ```
 
@@ -77,6 +80,7 @@ mass dashboard [flags]
       --render string      How the map's dots are drawn: braille dots, or solid blocks for terminals that draw block characters themselves, such as Ghostty (default "braille")
       --stash duration     How often to read the stash when it cannot be streamed, as when the profile signs in without a personal access token or while a stream reconnects; 0 reads it with each refresh (default 3s)
       --theme string       How the map is drawn: constellation, metro, radar, plain (default "constellation")
+      --tutorial           Walk through what the map shows on a made-up organization, offline
       --watch              Jump to any alarm that starts firing in view while the dashboard is open, and send a desktop notification
 ```
 

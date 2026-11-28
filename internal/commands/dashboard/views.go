@@ -27,6 +27,9 @@ func (m Model) View() string {
 	if m.graph != nil {
 		body = overlayFirstLine(body, m.incidentBanner())
 	}
+	if m.tutorial.on && m.graph != nil {
+		body = m.tutorialOverlay(body)
+	}
 	return lipgloss.JoinVertical(lipgloss.Left, fit.Render(m.header()), fit.Render(body), fit.Render(m.ticker()), m.footer())
 }
 
@@ -336,6 +339,9 @@ func note(color lipgloss.Color, mark, text string) string {
 }
 
 func (m Model) footer() string {
+	if m.tutorial.on {
+		return m.tutorialFooter()
+	}
 	if m.searching {
 		return styleKey.Render("/") + " " + m.filter + styleTeal.Render("█") + styleFaint.Render("  enter select · esc clear")
 	}

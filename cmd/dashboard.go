@@ -34,6 +34,7 @@ func NewCmdDashboard() *cobra.Command {
 	cmd.Flags().Bool("watch", false, "Jump to any alarm that starts firing in view while the dashboard is open, and send a desktop notification")
 	cmd.Flags().Bool("read-only", false, "Turn off approving, rejecting, and deploying")
 	cmd.Flags().String("playback", "", "Replay an incident recording written with w, offline")
+	cmd.Flags().Bool("tutorial", false, "Walk through what the map shows on a made-up organization, offline")
 	return cmd
 }
 
@@ -93,7 +94,15 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	tutorial, err := cmd.Flags().GetBool("tutorial")
+	if err != nil {
+		return err
+	}
 	ctx := context.Background()
+	if tutorial {
+		api, cfg := dashboard.Tutorial(dashboard.Config{Render: render, Flashes: flashes})
+		return dashboard.Run(ctx, api, dashboard.Options{Config: cfg, Palette: palette})
+	}
 	if playback != "" {
 		return playRecording(ctx, playback, dashboard.Options{Config: dashboard.Config{Theme: theme, Render: render, ReadOnly: true}, Palette: palette})
 	}

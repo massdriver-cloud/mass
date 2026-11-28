@@ -208,6 +208,9 @@ func (m Model) settleWatch() Model {
 }
 
 func (m Model) lockOn() (string, int) {
+	if env, age, ok := m.tutorialLockOn(); ok {
+		return env, age
+	}
 	w := m.watch
 	if len(w.open) == 0 || m.frame-w.lockedAt >= lockOnFrames {
 		return "", 0

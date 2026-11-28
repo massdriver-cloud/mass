@@ -92,6 +92,8 @@ type Config struct {
 	WriteFile func(name string, data []byte) error
 	// Replay starts a replay this far back as soon as the dashboard opens.
 	Replay time.Duration
+	// Tutorial walks through what the map shows, one caption at a time.
+	Tutorial bool
 }
 
 type (
@@ -210,6 +212,7 @@ type Model struct {
 	pos           map[string]Point
 	layoutKey     layoutKey
 	logs          logView
+	tutorial      tutorialState
 }
 
 // NewModel returns a dashboard that reads from api.
@@ -226,6 +229,9 @@ func NewModel(api API, cfg Config) Model {
 	m := Model{
 		api: api, cfg: cfg, loading: true, blastOn: true, showApps: true, focus: cfg.Focus,
 		seen: map[string]time.Time{}, flashes: map[string]Flash{}, since: cfg.Now().Add(-eventBacklog),
+	}
+	if cfg.Tutorial {
+		m.tutorial = tutorialState{on: true, shown: -1}
 	}
 	if cfg.Replay > 0 {
 		m.replay, m.replayRequest = replay{window: cfg.Replay, loading: true, speed: 1}, 1
@@ -322,7 +328,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // has rested there, and reads what is within reach of it.
 func (m Model) refocus(msg refocusMsg) (Model, tea.Cmd) {
 	env := m.graph.Env(msg.id)
-	if msg.seq != m.refocusSeq || m.selected != msg.id || msg.id == m.focus || env == nil || env.Restricted {
+	if m.tutorial.on || msg.seq != m.refocusSeq || m.selected != msg.id || msg.id == m.focus || env == nil || env.Restricted {
 		return m, nil
 	}
 	m.focus = msg.id
@@ -511,7 +517,7 @@ func (m Model) tick() Model {
 		}
 		m.flashes = flashes
 	}
-	return m.advanceReplay().settleWatch()
+	return m.advanceReplay().settleWatch().tickTutorial()
 }
 
 func (m Model) reload() (Model, tea.Cmd) {
@@ -654,6 +660,9 @@ func (m Model) firstSelection() string {
 }
 
 func (m Model) handleKey(msg tea.KeyMsg) (Model, tea.Cmd) {
+	if m.tutorial.on {
+		return m.handleTutorialKey(msg)
+	}
 	if m.peek != nil {
 		return m.handlePeekKey(msg)
 	}
