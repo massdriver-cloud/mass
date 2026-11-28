@@ -69,6 +69,11 @@ type Event struct {
 	EnvID  string    `json:"envId,omitempty"`
 	Actor  string    `json:"actor,omitempty"`
 	Detail string    `json:"detail,omitempty"`
+	// Widget is Detail drawn in color, for the ticker.
+	Widget string `json:"-"`
+	// Emoji stands for the event when its type alone can't say, as for a
+	// stash key.
+	Emoji string `json:"emoji,omitempty"`
 }
 
 // Environment is one environment with the instances it holds.

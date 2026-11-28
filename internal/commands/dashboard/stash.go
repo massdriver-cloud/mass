@@ -2,13 +2,13 @@ package dashboard
 
 import (
 	"context"
-	"encoding/json"
 	"maps"
 	"reflect"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/types"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/streaming"
@@ -317,33 +317,20 @@ func (g *Graph) envOfScope(s Scope) string {
 	return ""
 }
 
-// StashEvent describes a stash change for the ticker.
-func (g *Graph) StashEvent(c StashChange, at time.Time) Event {
-	ev := Event{ID: "stash:" + c.Scope.String() + ":" + c.Key, At: at, EnvID: g.envOfScope(c.Scope)}
-	if c.Entry == nil {
-		ev.Type, ev.Detail = "stash.deleted", c.Key
-		return ev
-	}
+// StashEvent describes a stash change for the ticker, drawing its value
+// against the annotations and the stash it changed.
+func (g *Graph) StashEvent(c StashChange, annotations []Annotation, st Stash, at time.Time) Event {
+	ev := Event{ID: "stash:" + c.Scope.String() + ":" + c.Key, At: at, EnvID: g.envOfScope(c.Scope), Emoji: StashEmoji(c.Key, c.Entry == nil)}
 	ev.Type = "stash.set"
-	if !c.Entry.UpdatedAt.IsZero() {
+	if c.Entry == nil {
+		ev.Type = "stash.deleted"
+	} else if !c.Entry.UpdatedAt.IsZero() {
 		ev.At = c.Entry.UpdatedAt
 	}
-	ev.Detail = c.Key + " = " + preview(c.Entry)
-	if ev.EnvID == "" {
-		ev.Detail = string(c.Scope.Kind) + " " + c.Scope.ID + " · " + ev.Detail
+	ev.Widget = TickerWidget(c, annotations, st, at)
+	if ev.EnvID == "" && c.Entry != nil {
+		ev.Widget = styleFaint.Render(string(c.Scope.Kind)+" "+c.Scope.ID+" · ") + ev.Widget
 	}
+	ev.Detail = ansi.Strip(ev.Widget)
 	return ev
-}
-
-func preview(e *StashEntry) string {
-	v := text(*e)
-	if v == "" && e.Data != nil {
-		data, _ := json.Marshal(e.Data)
-		v = string(data)
-	}
-	v = strings.Join(strings.Fields(v), " ")
-	if len([]rune(v)) > 60 {
-		v = string([]rune(v)[:59]) + "…"
-	}
-	return v
 }

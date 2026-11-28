@@ -511,7 +511,8 @@ func (m Model) tick() Model {
 		flashes := make(map[string]Flash, len(m.flashes))
 		for id, f := range m.flashes {
 			if f.Age+1 < FlashFrames {
-				flashes[id] = Flash{Age: f.Age + 1, Label: f.Label}
+				f.Age++
+				flashes[id] = f
 			}
 		}
 		m.flashes = flashes
@@ -573,16 +574,13 @@ func (m Model) applySnapshot(msg snapshotMsg) (Model, tea.Cmd) {
 
 // applyEvents re-reads the organization on a deployment event so rings and
 // spinners catch up with it.
-func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
-	poll := after(m.cfg.EventPoll, eventPollMsg{})
-	if msg.err != nil {
-		return m, poll
-	}
-	if msg.log.Truncated && !msg.initial {
-		m.toast, m.toastAt = fmt.Sprintf("more than %d events since the last check; showing the newest", len(msg.log.Events)), m.frame
-	}
-	fresh := make([]Event, 0, len(msg.log.Events))
-	for _, ev := range msg.log.Events {
+func (m Model) freshEvents(events []Event) (Model, []Event) {
+	fresh := make([]Event, 0, len(events))
+	for _, ev := range events {
+		// The stash feed already carries each stash change, with its value.
+		if strings.HasPrefix(ev.Type, "stash") {
+			continue
+		}
 		if _, ok := m.seen[ev.ID]; !ok {
 			m.seen[ev.ID] = ev.At
 			fresh = append(fresh, ev)
@@ -596,6 +594,19 @@ func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
 			delete(m.seen, id)
 		}
 	}
+	return m, fresh
+}
+
+func (m Model) applyEvents(msg eventsMsg) (Model, tea.Cmd) {
+	poll := after(m.cfg.EventPoll, eventPollMsg{})
+	if msg.err != nil {
+		return m, poll
+	}
+	if msg.log.Truncated && !msg.initial {
+		m.toast, m.toastAt = fmt.Sprintf("more than %d events since the last check; showing the newest", len(msg.log.Events)), m.frame
+	}
+	var fresh []Event
+	m, fresh = m.freshEvents(msg.log.Events)
 	slices.SortStableFunc(fresh, func(a, b Event) int { return b.At.Compare(a.At) })
 	m.events = append(fresh, m.events...)
 	m.events = m.events[:min(len(m.events), eventsKept)]

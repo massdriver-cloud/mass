@@ -174,11 +174,11 @@ func (m Model) takeStash(st Stash, news func(Scope) bool) Model {
 		flashes[id] = f
 	}
 	for _, c := range changes {
-		ev := m.graph.StashEvent(c, now)
+		ev := m.graph.StashEvent(c, m.snap.Annotations, m.stash, now)
 		fresh = append(fresh, ev)
 		ids[ev.ID] = true
 		if ev.EnvID != "" && !m.replay.on {
-			flashes[ev.EnvID] = Flash{Label: c.Key, Emoji: EventEmoji(ev.Type)}
+			flashes[ev.EnvID] = Flash{Label: c.Key, Emoji: ev.Emoji}
 		}
 	}
 	m.flashes = flashes
