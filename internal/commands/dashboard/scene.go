@@ -444,7 +444,7 @@ func (s Scene) subLabel(env *EnvNode) string {
 	case env.Restricted:
 		return "no access"
 	case env.Unloaded:
-		return "not loaded"
+		return "🔭 out of view"
 	case s.ShowCost && env.Currency != "":
 		return env.ProjectName + " · " + Money(env.Cost, env.Currency) + "/mo"
 	default:

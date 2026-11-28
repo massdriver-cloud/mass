@@ -214,6 +214,19 @@ func TestLogsFollowTheTail(t *testing.T) {
 	}
 }
 
+func TestLogsWrapLongLines(t *testing.T) {
+	api := fixture()
+	long := `aws_ecs_service.main["oncall"]: Still creating... [1m10s elapsed] waiting for the tasks to settle` + " TAIL-END"
+	api.logReads = map[string][]dashboard.DeploymentLog{"dep-billing": {{Status: "COMPLETED", Batches: []dashboard.LogBatch{batch(1, long)}}}}
+	m := loaded(t, api, logConfig(), 120, 48)
+	m, _ = tabTo(t, m, "billing-dev")
+	m, cmd := pressCmd(m, "f")
+	m = drive(t, m, cmd, 10)
+	if out := view(m); !strings.Contains(out, "TAIL-END") || strings.Contains(out, "…") {
+		t.Errorf("a long log line should wrap rather than be cut:\n%s", out)
+	}
+}
+
 type fakeDeploys struct {
 	stream *streaming.Stream[dashboard.LogBatch]
 }
