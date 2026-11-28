@@ -979,7 +979,7 @@ func (m Model) intro() float64 {
 
 func (m Model) panelWidth() int {
 	switch {
-	case m.logs.open && m.width >= 90:
+	case m.logs.open && m.width >= 120:
 		return max(46, m.width*55/100)
 	case m.width >= 120:
 		return 46
