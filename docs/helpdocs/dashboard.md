@@ -6,6 +6,8 @@ The map centers on one environment: the one you name with `--env`, or else the o
 
 **Constellation** places those environments on a map, linked to the environments whose resources they use and the environment they were forked from. Sparks travel each link from the producer to the consumer. Rings show the status of each environment's instances, a firing alarm pulses red, and a running deployment sweeps around its ring. Select an environment to see its instances, alarms, deployments, upgrades, the environments on either side of it, and its blast radius: everything downstream that its trouble could reach. With cost on, each ring is sized by last month's spend. `f` follows the selected environment's deployment logs in the side panel: the deployment running there, or else the most recent one. Lines stream in as they are written, and the panel keeps the final status when the deployment ends. Streaming needs a personal access token; with a service account the logs are read every two seconds instead.
 
+On the map, `n` and `N` pick an instance in the selected environment's side panel. `y` approves the picked instance's deployment that is awaiting approval (⏸), and `d` deploys it again with its current configuration. Both ask first, naming the instance, its environment, and how many environments and instances depend on it downstream; `y` or `enter` goes ahead, and any other key cancels. `--read-only` turns both off.
+
 **Runtimes** shows which runtime versions your applications build on and your instances run, and what a patch, minor, or major release would leave behind.
 
 **Alarms** lists every firing alarm in view with how far its blast radius reaches.
@@ -31,6 +33,7 @@ mass dashboard
 mass dashboard --env ecomm-prod --depth 2
 mass dashboard --refresh 10s --events 2s --stash 1s
 mass dashboard --watch
+mass dashboard --read-only
 mass dashboard --theme radar --palette rain
 mass dashboard --profile production | less
 ```

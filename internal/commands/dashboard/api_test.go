@@ -53,6 +53,19 @@ type fakeAPI struct {
 	// liveLogs nil, streaming needs a personal token.
 	liveLogs   map[string][]dashboard.LogBatch
 	logStreams []context.Context
+	approved   []string
+	deployed   []string
+	actionErr  error
+}
+
+func (f *fakeAPI) ApproveDeployment(_ context.Context, deploymentID string) error {
+	f.approved = append(f.approved, deploymentID)
+	return f.actionErr
+}
+
+func (f *fakeAPI) Deploy(_ context.Context, instanceID string) error {
+	f.deployed = append(f.deployed, instanceID)
+	return f.actionErr
 }
 
 func (f *fakeAPI) SubscribeStash(_ context.Context, projectID, environmentID string) (*streaming.Stream[dashboard.StashEvent], error) {
@@ -223,7 +236,7 @@ func fixture() *fakeAPI {
 			DeployedVersion: "0.1.0", AvailableUpgrade: "0.2.0",
 			Dependencies: []dashboard.Dependency{dependsOn("platform-dev-db", "platform-dev"), dependsOn("secret-vpc", "secret-prod")}},
 		{ID: "care-dev-queue", Status: "INITIALIZED", AvailableUpgrade: "1.0.0",
-			LatestDeployment: &dashboard.Deployment{ID: "dep-queue", Status: "PROPOSED", Action: "PROVISION"}},
+			LatestDeployment: &dashboard.Deployment{ID: "dep-1", Status: "PROPOSED", Action: "PROVISION"}},
 	}}
 	billing := dashboard.Environment{ID: "billing-dev", Name: "Development", Project: ref("billing", "Billing"), Instances: []dashboard.Instance{
 		{ID: "billing-dev-app", Status: "FAILED", Bundle: appBundle("billing-app", "2.0.0", "1.0.0"), Component: ref("billing-app", ""),
@@ -392,7 +405,7 @@ func TestNewAPIWithClient(t *testing.T) {
 		"dashboardRecent":       `{"deployments":{"items":[{"instance":null},{"instance":{"id":"i9","environment":{"id":"e9"}}}]},"environments":{"items":[{"id":"e1"}]}}`,
 	}}
 	audit := &fakeAudit{page: types.Page[types.AuditLog]{Items: []types.AuditLog{{ID: "a1", Type: "deployment.completed"}}}}
-	api := dashboard.NewAPIWithClient(client, audit, nil, nil, "acme")
+	api := dashboard.NewAPIWithClient(client, dashboard.Services{Audit: audit}, "acme")
 	ctx := context.Background()
 
 	envs, next, err := api.EnvironmentsByID(ctx, []string{"e1"}, "c1")
@@ -459,7 +472,7 @@ func TestNewAPIWithClientStash(t *testing.T) {
 	}}
 	down := "down"
 	st := &fakeStash{page: types.Page[stash.Entry]{Items: []stash.Entry{{Scope: stash.Scope{Kind: stash.ScopeInstance, ID: "i1"}, Key: "md/v1/health", Value: &down}}, Next: "c2"}}
-	api := dashboard.NewAPIWithClient(client, &fakeAudit{}, st, nil, "acme")
+	api := dashboard.NewAPIWithClient(client, dashboard.Services{Audit: &fakeAudit{}, Stash: st}, "acme")
 	ctx := context.Background()
 	scopes := []dashboard.Scope{{Kind: stash.ScopeEnvironment, ID: "e1"}, {Kind: stash.ScopeInstance, ID: "i1"}}
 	entries, next, err := api.StashEntries(ctx, scopes, "c1")
@@ -538,7 +551,7 @@ func TestReadAudit(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			api := dashboard.NewAPIWithClient(nil, pagedAudit{pages: tc.pages}, nil, nil, "acme")
+			api := dashboard.NewAPIWithClient(nil, dashboard.Services{Audit: pagedAudit{pages: tc.pages}}, "acme")
 			log, err := api.History(context.Background(), time.Time{})
 			if tc.wantErr != (err != nil) {
 				t.Fatalf("err = %v", err)
@@ -554,7 +567,7 @@ func TestReadAudit(t *testing.T) {
 		})
 	}
 
-	api := dashboard.NewAPIWithClient(nil, pagedAudit{pages: newestFirst(320)}, nil, nil, "acme")
+	api := dashboard.NewAPIWithClient(nil, dashboard.Services{Audit: pagedAudit{pages: newestFirst(320)}}, "acme")
 	burst, err := api.Events(context.Background(), time.Time{})
 	if err != nil || len(burst.Events) != 320 || burst.Truncated {
 		t.Errorf("a burst of 320 events between polls read %d, %v; want every page", len(burst.Events), err)
@@ -662,7 +675,7 @@ func TestTooComplexAsksForSmallerPages(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			client := &costlyClient{most: tc.most}
-			api := dashboard.NewAPIWithClient(client, &fakeAudit{}, nil, nil, "acme")
+			api := dashboard.NewAPIWithClient(client, dashboard.Services{Audit: &fakeAudit{}}, "acme")
 			err := tc.read(api)
 			if err == nil {
 				err = tc.read(api)

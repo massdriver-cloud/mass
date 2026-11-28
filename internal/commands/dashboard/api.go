@@ -42,6 +42,9 @@ type API interface {
 	History(ctx context.Context, since time.Time) (Log, error)
 	DeploymentLogs(ctx context.Context, deploymentID string) (DeploymentLog, error)
 	StreamDeploymentLogs(ctx context.Context, deploymentID string) (*streaming.Stream[LogBatch], error)
+	ApproveDeployment(ctx context.Context, deploymentID string) error
+	// Deploy provisions an instance again with its current configuration.
+	Deploy(ctx context.Context, instanceID string) error
 }
 
 // AuditLister reads one page of the audit log.
@@ -307,11 +310,12 @@ func drain[T any](ctx context.Context, page func(context.Context, string) ([]T, 
 }
 
 type gqlAPI struct {
-	client  graphql.Client
-	audit   AuditLister
-	stash   StashService
-	deploys DeploymentService
-	orgID   string
+	client   graphql.Client
+	audit    AuditLister
+	stash    StashService
+	deploys  DeploymentService
+	deployer Deployer
+	orgID    string
 
 	mu sync.Mutex
 	// limits is the page size each operation settled on after the API
@@ -323,14 +327,22 @@ type gqlAPI struct {
 // GraphQL transport for the client's profile.
 func NewAPI(c *massdriver.Client) API {
 	cfg := c.Config()
-	return &gqlAPI{client: gql.NewV2Client(cfg), audit: c.AuditLogs, stash: c.Stash, deploys: c.Deployments, orgID: cfg.OrganizationID}
+	return &gqlAPI{client: gql.NewV2Client(cfg), audit: c.AuditLogs, stash: c.Stash, deploys: c.Deployments, deployer: NewDeployer(c), orgID: cfg.OrganizationID}
 }
 
-// NewAPIWithClient returns an [API] that sends queries through client, reads
-// the audit log through audit, reads the stash through stash, and streams
-// deployment logs through deploys.
-func NewAPIWithClient(client graphql.Client, audit AuditLister, stash StashService, deploys DeploymentService, orgID string) API {
-	return &gqlAPI{client: client, audit: audit, stash: stash, deploys: deploys, orgID: orgID}
+// Services are the SDK services the [API] reads and acts through, besides
+// GraphQL.
+type Services struct {
+	Audit    AuditLister
+	Stash    StashService
+	Deploys  DeploymentService
+	Deployer Deployer
+}
+
+// NewAPIWithClient returns an [API] that sends queries through client and
+// reaches everything else through services.
+func NewAPIWithClient(client graphql.Client, services Services, orgID string) API {
+	return &gqlAPI{client: client, audit: services.Audit, stash: services.Stash, deploys: services.Deploys, deployer: services.Deployer, orgID: orgID}
 }
 
 const (

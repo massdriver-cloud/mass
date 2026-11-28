@@ -226,7 +226,7 @@ func TestDeploymentLogsAPI(t *testing.T) {
 		"dashboardDeploymentLogs": `{"deployment":{"status":"RUNNING","logs":[{"timestamp":"2026-11-26T00:00:01Z","message":"hi"}]}}`,
 	}}
 	ctx := context.Background()
-	api := dashboard.NewAPIWithClient(client, &fakeAudit{}, nil, nil, "acme")
+	api := dashboard.NewAPIWithClient(client, dashboard.Services{Audit: &fakeAudit{}}, "acme")
 	log, err := api.DeploymentLogs(ctx, "dep-1")
 	if err != nil || log.Status != "RUNNING" || len(log.Batches) != 1 || log.Batches[0].Message != "hi" || !log.Batches[0].Timestamp.Equal(fixedNow().Add(time.Second)) {
 		t.Errorf("DeploymentLogs = %+v, %v", log, err)
@@ -238,7 +238,7 @@ func TestDeploymentLogsAPI(t *testing.T) {
 		t.Errorf("streaming without a deployment service = %v, want ErrRequiresPAT", err)
 	}
 	want := streaming.New(make(chan dashboard.LogBatch), nil)
-	api = dashboard.NewAPIWithClient(client, &fakeAudit{}, nil, fakeDeploys{stream: want}, "acme")
+	api = dashboard.NewAPIWithClient(client, dashboard.Services{Audit: &fakeAudit{}, Deploys: fakeDeploys{stream: want}}, "acme")
 	if got, err := api.StreamDeploymentLogs(ctx, "dep-1"); err != nil || got != want {
 		t.Errorf("StreamDeploymentLogs = %v, %v", got, err)
 	}

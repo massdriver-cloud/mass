@@ -12,6 +12,10 @@ import (
 
 // EnvDetail describes one environment for the side panel, w cells wide.
 func EnvDetail(g *Graph, env *EnvNode, blast *Blast, now time.Time, w int) string {
+	return envDetail(g, env, blast, now, w, "")
+}
+
+func envDetail(g *Graph, env *EnvNode, blast *Blast, now time.Time, w int, picked string) string {
 	if env == nil {
 		return styleMuted.Render("No environment selected.")
 	}
@@ -51,7 +55,7 @@ func EnvDetail(g *Graph, env *EnvNode, blast *Blast, now time.Time, w int) strin
 	writeNeighbors(&b, g, "USES RESOURCES FROM", g.Producers(env.ID), func(l Link) string { return l.From }, w)
 	writeNeighbors(&b, g, "FEEDS", g.Consumers(env.ID), func(l Link) string { return l.To }, w)
 	writeBlast(&b, g, env, blast, w)
-	writeInstances(&b, env, now, w)
+	writeInstances(&b, env, now, w, picked)
 	writeLinkNotes(&b, env, w)
 	return b.String()
 }
@@ -179,7 +183,7 @@ func writeBlast(b *strings.Builder, g *Graph, env *EnvNode, blast *Blast, w int)
 	}
 }
 
-func writeInstances(b *strings.Builder, env *EnvNode, now time.Time, w int) {
+func writeInstances(b *strings.Builder, env *EnvNode, now time.Time, w int, picked string) {
 	if len(env.Instances) == 0 {
 		return
 	}
@@ -192,7 +196,11 @@ func writeInstances(b *strings.Builder, env *EnvNode, now time.Time, w int) {
 			mark = dot(healthColor(inst.Health))
 		}
 		room := w - 2 - lipgloss.Width(badges)
-		b.WriteString(mark + " " + clip(name, max(room, 8)) + badges + "\n")
+		label := clip(name, max(room, 8))
+		if inst.ID == picked {
+			label = styleSelected.Render(label)
+		}
+		b.WriteString(mark + " " + label + badges + "\n")
 		for _, line := range flow(instanceDetails(inst, now), w-2) {
 			b.WriteString(lipgloss.NewStyle().MaxWidth(w).Render("  "+line) + "\n")
 		}

@@ -37,6 +37,9 @@ func (m Model) splash(h int) string {
 }
 
 func (m Model) body(h int) string {
+	if m.confirm != nil {
+		return m.confirmBox(h)
+	}
 	if m.help && m.tab != TabConstellation {
 		return m.helpBox(h, strings.Join(tabHelp(m.tab), "\n"))
 	}
@@ -80,7 +83,7 @@ func (m Model) constellationBody(h int) string {
 	case m.logs.open:
 		panel = m.logsPanel(panelW, h)
 	default:
-		panel = EnvDetail(m.graph, m.graph.Env(m.selected), blast, m.cfg.Now(), panelW)
+		panel = envDetail(m.graph, m.graph.Env(m.selected), blast, m.cfg.Now(), panelW, m.picked)
 	}
 	return lipgloss.JoinHorizontal(lipgloss.Top, canvas, m.panel(panel, panelW, h))
 }
@@ -318,6 +321,10 @@ func (m Model) footer() string {
 	if m.searching {
 		return styleKey.Render("/") + " " + m.filter + styleTeal.Render("█") + styleFaint.Render("  enter select · esc clear")
 	}
+	if m.confirm != nil {
+		return lipgloss.NewStyle().MaxWidth(m.width).Render(styleKey.Render("y/enter") + styleMuted.Render(" "+m.confirm.verb()) +
+			styleFaint.Render("  ·  ") + styleMuted.Render("any other key cancels"))
+	}
 	if m.toast != "" && m.frame-m.toastAt < toastFrames {
 		return lipgloss.NewStyle().MaxWidth(m.width).Render(styleTeal.Render(m.toast))
 	}
@@ -402,6 +409,7 @@ func Legend(watch bool, notesErr error) string {
 		keyHint("v", "theme")+"  "+keyHint("p", "palette")+"  "+keyHint("/", "find")+"  "+keyHint("t", "replay")+"  "+keyHint("b", "blast radius"),
 		keyHint("a", "apps")+"  "+keyHint("c", "cost")+"  "+keyHint("g", "projects")+"  "+keyHint("s", "producers on top"),
 		keyHint("f", "follow the latest deploy's logs"),
+		keyHint("n N", "pick an instance")+"  "+keyHint("y", "approve it")+"  "+keyHint("d", "deploy it"),
 	)
 	if notesErr != nil {
 		why := "Notes and pinned widgets could not be read: " + clean(notesErr.Error())
