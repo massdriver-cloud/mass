@@ -27,7 +27,7 @@ const (
 )
 
 // Themes lists the theme names, the default first.
-func Themes() []string { return []string{ThemeConstellation, ThemeMetro, ThemeRadar} }
+func Themes() []string { return []string{ThemeConstellation, ThemeMetro, ThemeRadar, ThemePlain} }
 
 // NextTheme is the theme after name, wrapping around.
 func NextTheme(name string) string {
@@ -49,6 +49,8 @@ func layoutTheme(theme string, g *Graph, w, h int, opts LayoutOptions) (map[stri
 		return MetroLayout(g, w, h), nil
 	case ThemeRadar:
 		return RadarLayout(g, w, h, opts.Center), nil
+	case ThemePlain:
+		return PlainLayout(g, w, h), nil
 	}
 	return layout(g, w, h, opts)
 }

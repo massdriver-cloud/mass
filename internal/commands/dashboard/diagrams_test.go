@@ -10,11 +10,11 @@ import (
 )
 
 func TestThemesList(t *testing.T) {
-	if got := dashboard.Themes(); !equal(got, []string{"constellation", "metro", "radar"}) {
+	if got := dashboard.Themes(); !equal(got, []string{"constellation", "metro", "radar", "plain"}) {
 		t.Errorf("Themes = %v", got)
 	}
-	if got := dashboard.NextTheme("radar"); got != "constellation" {
-		t.Errorf("NextTheme(radar) = %s, want it to wrap", got)
+	if got := dashboard.NextTheme("plain"); got != "constellation" {
+		t.Errorf("NextTheme(plain) = %s, want it to wrap", got)
 	}
 }
 
@@ -68,7 +68,7 @@ func TestThemesRender(t *testing.T) {
 
 func TestThemeKey(t *testing.T) {
 	m := loaded(t, fixture(), config(&opener{}), 160, 48)
-	for _, want := range []string{"metro", "radar", "constellation"} {
+	for _, want := range []string{"metro", "radar", "plain", "constellation"} {
 		m = press(m, "v")
 		if m.Theme() != want {
 			t.Errorf("theme = %s, want %s", m.Theme(), want)

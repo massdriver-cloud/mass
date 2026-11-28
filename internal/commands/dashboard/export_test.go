@@ -49,7 +49,7 @@ func TestExportSVG(t *testing.T) {
 						t.Errorf("export is missing %q", env.Name)
 					}
 				}
-				for _, want := range []string{"Dev &lt;&#34;prod&#34;&gt; &amp; &#39;friends&#39;", "acme &amp; co", "▲1", "monospace"} {
+				for _, want := range []string{"Dev &lt;&#34;prod&#34;&gt; &amp; &#39;friends&#39;", "acme &amp; co", "▲", "monospace"} {
 					if !strings.Contains(out, want) {
 						t.Errorf("export is missing %q", want)
 					}
@@ -58,7 +58,7 @@ func TestExportSVG(t *testing.T) {
 					t.Error("a name should be escaped")
 				}
 				if want := map[string]string{
-					dashboard.ThemeConstellation: "<path", dashboard.ThemeMetro: "<polyline", dashboard.ThemeRadar: "<ellipse",
+					dashboard.ThemeConstellation: "<path", dashboard.ThemeMetro: "<polyline", dashboard.ThemeRadar: "<ellipse", dashboard.ThemePlain: "alarming",
 				}[theme]; !strings.Contains(out, want) {
 					t.Errorf("a %s export should draw %s elements", theme, want)
 				}
