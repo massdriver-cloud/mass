@@ -40,6 +40,8 @@ type API interface {
 	Annotations(ctx context.Context, projectID, cursor string) ([]Annotation, string, error)
 	Events(ctx context.Context, since time.Time) (Log, error)
 	History(ctx context.Context, since time.Time) (Log, error)
+	DeploymentLogs(ctx context.Context, deploymentID string) (DeploymentLog, error)
+	StreamDeploymentLogs(ctx context.Context, deploymentID string) (*streaming.Stream[LogBatch], error)
 }
 
 // AuditLister reads one page of the audit log.
@@ -106,6 +108,7 @@ type Provision struct {
 
 // Deployment is an instance's most recent deployment of any kind.
 type Deployment struct {
+	ID        string `json:"id"`
 	Status    string `json:"status"`
 	Action    string `json:"action"`
 	CreatedAt string `json:"createdAt"`
@@ -304,10 +307,11 @@ func drain[T any](ctx context.Context, page func(context.Context, string) ([]T, 
 }
 
 type gqlAPI struct {
-	client graphql.Client
-	audit  AuditLister
-	stash  StashService
-	orgID  string
+	client  graphql.Client
+	audit   AuditLister
+	stash   StashService
+	deploys DeploymentService
+	orgID   string
 
 	mu sync.Mutex
 	// limits is the page size each operation settled on after the API
@@ -319,13 +323,14 @@ type gqlAPI struct {
 // GraphQL transport for the client's profile.
 func NewAPI(c *massdriver.Client) API {
 	cfg := c.Config()
-	return &gqlAPI{client: gql.NewV2Client(cfg), audit: c.AuditLogs, stash: c.Stash, orgID: cfg.OrganizationID}
+	return &gqlAPI{client: gql.NewV2Client(cfg), audit: c.AuditLogs, stash: c.Stash, deploys: c.Deployments, orgID: cfg.OrganizationID}
 }
 
 // NewAPIWithClient returns an [API] that sends queries through client, reads
-// the audit log through audit, and reads the stash through stash.
-func NewAPIWithClient(client graphql.Client, audit AuditLister, stash StashService, orgID string) API {
-	return &gqlAPI{client: client, audit: audit, stash: stash, orgID: orgID}
+// the audit log through audit, reads the stash through stash, and streams
+// deployment logs through deploys.
+func NewAPIWithClient(client graphql.Client, audit AuditLister, stash StashService, deploys DeploymentService, orgID string) API {
+	return &gqlAPI{client: client, audit: audit, stash: stash, deploys: deploys, orgID: orgID}
 }
 
 const (
