@@ -112,6 +112,17 @@ func (k actionKind) verb() string {
 	return "deploy"
 }
 
+func (k actionKind) title() string {
+	switch k {
+	case actionApprove:
+		return "APPROVE DEPLOYMENT"
+	case actionReject:
+		return "REJECT DEPLOYMENT"
+	case actionDeploy:
+	}
+	return "DEPLOY"
+}
+
 type pendingAction struct {
 	kind         actionKind
 	instanceID   string
@@ -300,7 +311,7 @@ func actionError(act pendingAction, err error) string {
 
 func (m Model) confirmBox(h int) string {
 	act := m.confirm
-	title := map[actionKind]string{actionApprove: "APPROVE DEPLOYMENT", actionReject: "REJECT DEPLOYMENT", actionDeploy: "DEPLOY"}[act.kind]
+	title := act.kind.title()
 	verb := strings.ToUpper(act.verb()[:1]) + act.verb()[1:]
 	reach := styleTeal.Render("✸") + " nothing depends on it downstream"
 	if act.envs > 0 || act.insts > 0 {
