@@ -122,8 +122,13 @@ func (x *svg) line(x0, y0, x1, y1 float64, color lipgloss.Color, bold bool) {
 }
 
 func (x *svg) heading(title string) {
-	fmt.Fprintf(&x.b, `<text x="%.1f" y="%.1f" font-size="%.1f" font-weight="bold" fill="%s">%s</text>`+"\n",
-		4*x.k, 9*x.k, x.font(4.2), colorText, esc(title))
+	fs := x.font(4.2)
+	fit := ""
+	if room := x.dotW*x.k - 8*x.k; float64(runewidth.StringWidth(title))*fs*0.62 > room {
+		fit = fmt.Sprintf(` textLength="%.1f" lengthAdjust="spacingAndGlyphs"`, room)
+	}
+	fmt.Fprintf(&x.b, `<text x="%.1f" y="%.1f" font-size="%.1f" font-weight="bold" fill="%s"%s>%s</text>`+"\n",
+		4*x.k, 9*x.k, fs, colorText, fit, esc(title))
 	fmt.Fprintf(&x.b, `<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="%.1f"/>`+"\n",
 		4*x.k, 12*x.k, x.dotW*x.k-4*x.k, 12*x.k, colorPanel, x.k*0.2)
 }
@@ -137,6 +142,13 @@ func (x *svg) legend(y float64) {
 		{colorOrange, "blast radius"}, {colorYellow, "↑ upgrades"},
 	}
 	cx, fs := 4*x.k, x.font(2.8)
+	width := 0.0
+	for _, e := range entries {
+		width += 7*x.k + float64(runewidth.StringWidth(e.label))*fs*0.62
+	}
+	if room := x.dotW*x.k - 8*x.k; width > room {
+		fs *= room / width
+	}
 	for _, e := range entries {
 		fmt.Fprintf(&x.b, `<circle cx="%.1f" cy="%.1f" r="%.1f" fill="%s"/>`, cx+x.k, y-fs*0.35, x.k*0.9, e.color)
 		fmt.Fprintf(&x.b, `<text x="%.1f" y="%.1f" font-size="%.1f" fill="%s">%s</text>`+"\n", cx+3*x.k, y, fs, colorMuted, esc(e.label))

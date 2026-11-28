@@ -57,6 +57,11 @@ func TestExportSVG(t *testing.T) {
 				if strings.Contains(out, `<"prod">`) {
 					t.Error("a name should be escaped")
 				}
+				if want := map[string]string{
+					dashboard.ThemeConstellation: "<path", dashboard.ThemeMetro: "<polyline", dashboard.ThemeRadar: "<ellipse",
+				}[theme]; !strings.Contains(out, want) {
+					t.Errorf("a %s export should draw %s elements", theme, want)
+				}
 			})
 		}
 	}
@@ -132,5 +137,15 @@ func TestModelExports(t *testing.T) {
 				t.Errorf("footer is missing %q:\n%s", tc.wantToast, out)
 			}
 		})
+	}
+}
+
+func TestExportSVGFitsANarrowMap(t *testing.T) {
+	g := dashboard.BuildGraph(fixtureSnapshot(t))
+	scene := dashboard.Scene{Graph: g, Pos: dashboard.Layout(g, 40, 20, dashboard.LayoutOptions{}), Now: fixedNow()}
+	out := dashboard.ExportSVG(scene, 40, 20, strings.Repeat("a very long organization name ", 4))
+	validXML(t, out)
+	if !strings.Contains(out, `lengthAdjust="spacingAndGlyphs"`) {
+		t.Error("a title wider than the map should be squeezed to fit")
 	}
 }
