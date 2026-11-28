@@ -54,12 +54,12 @@ type AuditLister interface {
 
 // Event is one entry in the audit log.
 type Event struct {
-	ID     string
-	At     time.Time
-	Type   string
-	EnvID  string
-	Actor  string
-	Detail string
+	ID     string    `json:"id"`
+	At     time.Time `json:"at"`
+	Type   string    `json:"type"`
+	EnvID  string    `json:"envId,omitempty"`
+	Actor  string    `json:"actor,omitempty"`
+	Detail string    `json:"detail,omitempty"`
 }
 
 // Environment is one environment with the instances it holds.

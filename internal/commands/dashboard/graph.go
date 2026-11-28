@@ -160,11 +160,11 @@ type Link struct {
 
 // FiringAlarm is an alarm whose latest state is ALARM.
 type FiringAlarm struct {
-	InstanceID string
-	EnvID      string
-	Name       string
-	Message    string
-	Since      time.Time
+	InstanceID string    `json:"instanceId"`
+	EnvID      string    `json:"envId"`
+	Name       string    `json:"name"`
+	Message    string    `json:"message,omitempty"`
+	Since      time.Time `json:"since,omitzero"`
 }
 
 // Env returns the environment with id, or nil.

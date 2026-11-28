@@ -190,7 +190,7 @@ func (m Model) takeStash(st Stash, news func(Scope) bool) Model {
 	}
 	m.events = slices.Concat(fresh, kept)
 	m.events = m.events[:min(len(m.events), eventsKept)]
-	return m
+	return m.recordEvents(fresh)
 }
 
 func (m Model) syncSubscriptions() (Model, tea.Cmd) {

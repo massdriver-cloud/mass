@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -31,6 +32,7 @@ func NewCmdDashboard() *cobra.Command {
 	cmd.Flags().String("palette", dashboard.DefaultPalette, "Colors and backdrop: "+strings.Join(dashboard.Palettes(), ", "))
 	cmd.Flags().Bool("watch", false, "Jump to any alarm that starts firing in view while the dashboard is open, and send a desktop notification")
 	cmd.Flags().Bool("read-only", false, "Turn off approving and deploying from the map")
+	cmd.Flags().String("playback", "", "Replay an incident recording written with w, offline")
 	return cmd
 }
 
@@ -82,11 +84,18 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	playback, err := cmd.Flags().GetString("playback")
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	if playback != "" {
+		return playRecording(ctx, playback, dashboard.Options{Config: dashboard.Config{Theme: theme, Render: render, ReadOnly: true}, Palette: palette})
+	}
 	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
 	}
-	ctx := context.Background()
 	return dashboard.Run(ctx, dashboard.NewAPI(mdClient), dashboard.Options{Config: dashboard.Config{
 		Org:       mdClient.Config().OrganizationID,
 		Refresh:   refresh,
@@ -100,4 +109,18 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 		Focus:     focus,
 		Depth:     depth,
 	}, Palette: palette})
+}
+
+func playRecording(ctx context.Context, path string, opts dashboard.Options) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	rec, err := dashboard.LoadRecording(f)
+	if err != nil {
+		return err
+	}
+	opts.Config = rec.PlaybackConfig(opts.Config)
+	return dashboard.Run(ctx, rec.API(), opts)
 }
