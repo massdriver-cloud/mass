@@ -26,6 +26,8 @@ With `--watch`, an alarm that starts firing takes the view to its environment, l
 
 `--theme` changes how the map is drawn: `constellation` (the default) scatters environments like stars, `metro` lays them out as stations on transit lines with producers to the left, and `radar` puts the focus at the center of a sweeping scope with each environment on the ring as many hops out as it is. `v` switches between them. `--palette` changes the colors and backdrop: `night` (the default), `rain`, and `blueprint`. `p` switches between them. `--render blocks` fills the map's dots in as solid blocks, so links and rings draw as solid lines rather than dotted ones. It suits a terminal that draws block characters itself, such as Ghostty; braille works in any terminal.
 
+`e` saves the map as it stands to an SVG in the current directory, named for the organization and the minute, such as `constellation-acme-20261126-0905.svg`. It keeps the theme, the palette, the selection, and its blast radius, and draws in vectors, so it stays sharp on a slide or in an incident write-up.
+
 When the output is not a terminal, `mass dashboard` prints the same data as tables.
 
 ## Examples

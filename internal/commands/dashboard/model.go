@@ -83,7 +83,7 @@ type Config struct {
 	Notify func(title, body string)
 	// ReadOnly turns off approving and deploying.
 	ReadOnly bool
-	// WriteFile writes an incident's write-up and recording.
+	// WriteFile saves incident write-ups, recordings, and map exports.
 	WriteFile func(name string, data []byte) error
 	// Replay starts a replay this far back as soon as the dashboard opens.
 	Replay time.Duration
@@ -469,6 +469,8 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		return m.applyAction(msg)
 	case writtenMsg:
 		return m.applyWritten(msg), nil
+	case exportedMsg:
+		return m.applyExported(msg), nil
 	case openedMsg:
 		m.toast, m.toastAt = "↗ opened "+msg.url, m.frame
 		if msg.err != nil {
@@ -662,6 +664,10 @@ func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 		return m, m.openSelection()
 	case "w":
 		return m.writeIncident()
+	case "e":
+		if m.tab == TabConstellation {
+			return m, m.exportMap()
+		}
 	case "t":
 		if m.tab == TabConstellation {
 			m = m.toggleReplay()

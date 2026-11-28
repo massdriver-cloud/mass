@@ -412,6 +412,7 @@ func Legend(watch bool, notesErr error) string {
 		keyHint("f", "follow the latest deploy's logs"),
 		keyHint("n N", "pick an instance")+"  "+keyHint("y", "approve it")+"  "+keyHint("d", "deploy it"),
 		keyHint("w", "write up the incident"),
+		keyHint("e", "export SVG"),
 	)
 	if notesErr != nil {
 		why := "Notes and pinned widgets could not be read: " + clean(notesErr.Error())
