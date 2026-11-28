@@ -27,7 +27,9 @@ func ExportSVG(scene Scene, w, h int, title string) string {
 		width, height, width, height, svgFonts)
 	fmt.Fprintf(&x.b, "<title>%s</title>\n", esc(title))
 	fmt.Fprintf(&x.b, `<rect width="100%%" height="100%%" fill="%s"/>`+"\n", colorInk)
-	x.backdrop()
+	if scene.Theme != ThemePlain {
+		x.backdrop()
+	}
 	x.heading(title)
 	fmt.Fprintf(&x.b, `<g transform="translate(0 %.1f)">`+"\n", x.top)
 	switch scene.Theme {
@@ -35,6 +37,8 @@ func ExportSVG(scene Scene, w, h int, title string) string {
 		x.metro()
 	case ThemeRadar:
 		x.radar()
+	case ThemePlain:
+		x.plain(w, h)
 	default:
 		x.constellation()
 	}

@@ -363,8 +363,6 @@ func (m Model) logsPanel(w, h int) string {
 	return strings.Join(out, "\n")
 }
 
-// wrapLog breaks a log line to the panel's width, indenting what follows
-// the break so each line still reads as one.
 func wrapLog(line string, w int) []string {
 	if w < 8 || runewidth.StringWidth(line) <= w {
 		return []string{clip(line, w)}
