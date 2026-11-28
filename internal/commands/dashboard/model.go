@@ -83,7 +83,7 @@ type Config struct {
 	Notify func(title, body string)
 	// ReadOnly turns off approving and deploying.
 	ReadOnly bool
-	// WriteFile writes an incident's write-up and recording.
+	// WriteFile saves incident write-ups, recordings, and map exports.
 	WriteFile func(name string, data []byte) error
 	// Replay starts a replay this far back as soon as the dashboard opens.
 	Replay time.Duration
@@ -441,18 +441,8 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		return m.reload()
 	case eventPollMsg:
 		return m, m.fetchEvents(false)
-	case stashPollMsg:
-		return m.pollStash()
-	case stashMsg:
-		return m.applyStash(msg)
-	case subscribedMsg:
-		return m.applySubscribed(msg)
-	case stashEventsMsg:
-		return m.applyStashEvents(msg)
-	case stashClosedMsg:
-		return m.applyStashClosed(msg)
-	case resubscribeMsg:
-		return m.applyResubscribe(msg)
+	case stashPollMsg, stashMsg, subscribedMsg, stashEventsMsg, stashClosedMsg, resubscribeMsg:
+		return m.updateFeed(msg)
 	case logsMsg:
 		return m.updateLogs(msg)
 	case refocusMsg:
@@ -469,6 +459,8 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		return m.applyAction(msg)
 	case writtenMsg:
 		return m.applyWritten(msg), nil
+	case exportedMsg:
+		return m.applyExported(msg), nil
 	case openedMsg:
 		m.toast, m.toastAt = "↗ opened "+msg.url, m.frame
 		if msg.err != nil {
@@ -476,6 +468,24 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		}
 	case tea.KeyMsg:
 		return m.handleKey(msg)
+	}
+	return m, nil
+}
+
+func (m Model) updateFeed(msg tea.Msg) (Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case stashPollMsg:
+		return m.pollStash()
+	case stashMsg:
+		return m.applyStash(msg)
+	case subscribedMsg:
+		return m.applySubscribed(msg)
+	case stashEventsMsg:
+		return m.applyStashEvents(msg)
+	case stashClosedMsg:
+		return m.applyStashClosed(msg)
+	case resubscribeMsg:
+		return m.applyResubscribe(msg)
 	}
 	return m, nil
 }
@@ -662,6 +672,10 @@ func (m Model) handleViewKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 		return m, m.openSelection()
 	case "w":
 		return m.writeIncident()
+	case "e":
+		if m.tab == TabConstellation {
+			return m, m.exportMap()
+		}
 	case "t":
 		if m.tab == TabConstellation {
 			m = m.toggleReplay()
