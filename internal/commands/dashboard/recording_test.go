@@ -15,7 +15,7 @@ func recorded(t *testing.T) *dashboard.Recording {
 	d := &disk{}
 	m := incidentScenario(t, d)
 	writeUp(t, m)
-	rec, err := dashboard.LoadRecording(strings.NewReader(d.files["incident-care-dev-app-20261126-0001.json"]))
+	rec, err := dashboard.LoadRecording(strings.NewReader(d.files["incident-care-dev-app-latency-p99-20261126-0001.json"]))
 	if err != nil {
 		t.Fatal(err)
 	}

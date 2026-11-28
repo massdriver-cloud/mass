@@ -106,7 +106,27 @@ func (m Model) incidentToWrite() (incidentRecord, bool) {
 }
 
 func incidentName(r incidentRecord) string {
-	return "incident-" + fileSafe(r.alarm.InstanceID) + "-" + r.started.UTC().Format("20060102-1504")
+	name := "incident-" + fileSafe(r.alarm.InstanceID)
+	// Two alarms that fire on one instance in the same minute write separate files.
+	if slug := slugOf(r.alarm.Name); slug != "" {
+		name += "-" + slug
+	}
+	return name + "-" + r.started.UTC().Format("20060102-1504")
+}
+
+func slugOf(s string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(fileSafe(s)) {
+		if r == '-' && (b.Len() == 0 || strings.HasSuffix(b.String(), "-")) {
+			continue
+		}
+		b.WriteRune(r)
+	}
+	slug := strings.TrimSuffix(b.String(), "-")
+	if len(slug) > 32 {
+		slug = strings.TrimSuffix(slug[:32], "-")
+	}
+	return slug
 }
 
 func fileSafe(s string) string {
