@@ -80,6 +80,28 @@ func pinnedWidget(c StashChange, annotations []Annotation, st Stash, now time.Ti
 	return ""
 }
 
+// Newsworthy reports whether a stash change belongs on the ticker, and the
+// emoji it rises as: only keys a widget draws, well-known or pinned by an
+// annotation, are news. Other keys are a script's own bookkeeping.
+func Newsworthy(c StashChange, annotations []Annotation) (string, bool) {
+	for _, spec := range widgetSpecs {
+		if spec.key == c.Key {
+			return StashEmoji(c.Key, c.Entry == nil), true
+		}
+	}
+	for _, a := range annotations {
+		if a.Kind != "WIDGET" || !readsKey(a.Inputs, c.Scope, c.Key) {
+			continue
+		}
+		for _, surface := range a.Surfaces {
+			if spec, ok := widgetSpecs[surface]; ok {
+				return StashEmoji(spec.key, c.Entry == nil), true
+			}
+		}
+	}
+	return "", false
+}
+
 func readsKey(inputs Values, scope Scope, key string) bool {
 	want := scopeOf(scope.Kind, scope.ID)
 	for _, in := range inputs {
