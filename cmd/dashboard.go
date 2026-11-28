@@ -30,6 +30,7 @@ func NewCmdDashboard() *cobra.Command {
 	cmd.Flags().String("render", dashboard.DefaultRender, "How the map's dots are drawn: braille dots, or solid blocks for terminals that draw block characters themselves, such as Ghostty")
 	cmd.Flags().String("palette", dashboard.DefaultPalette, "Colors and backdrop: "+strings.Join(dashboard.Palettes(), ", "))
 	cmd.Flags().Bool("watch", false, "Jump to any alarm that starts firing in view while the dashboard is open, and send a desktop notification")
+	cmd.Flags().Bool("read-only", false, "Turn off approving and deploying from the map")
 	return cmd
 }
 
@@ -77,6 +78,10 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	readOnly, err := cmd.Flags().GetBool("read-only")
+	if err != nil {
+		return err
+	}
 	mdClient, err := newMassdriverClient(cmd)
 	if err != nil {
 		return fmt.Errorf("error initializing massdriver client: %w", err)
@@ -88,6 +93,7 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 		EventPoll: events,
 		StashPoll: stash,
 		Watch:     watch,
+		ReadOnly:  readOnly,
 		Links:     dashboard.NewLinks(mdClient.URLs.Helper(ctx)),
 		Theme:     theme,
 		Render:    render,

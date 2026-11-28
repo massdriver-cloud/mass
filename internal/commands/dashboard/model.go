@@ -81,6 +81,8 @@ type Config struct {
 	Watch bool
 	// Notify tells someone away from the dashboard that an alarm started firing.
 	Notify func(title, body string)
+	// ReadOnly turns off approving and deploying.
+	ReadOnly bool
 }
 
 type (
@@ -191,6 +193,8 @@ type Model struct {
 	flashes       map[string]Flash
 	toast         string
 	toastAt       int
+	picked        string
+	confirm       *pendingAction
 	pos           map[string]Point
 	layoutKey     layoutKey
 	logs          logView
@@ -274,6 +278,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	next, cmd := m.update(msg)
 	if next.graph != nil {
 		next = next.withLayout(next.canvasSize())
+	}
+	if next.selected != m.selected {
+		next.picked = ""
 	}
 	if next.logs.open && (next.selected != next.logs.env || next.tab != TabConstellation) {
 		next = next.closeLogs()
@@ -446,6 +453,8 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		return m.applyEvents(msg)
 	case historyMsg:
 		return m.applyHistory(msg), nil
+	case actionMsg:
+		return m.applyAction(msg)
 	case openedMsg:
 		m.toast, m.toastAt = "↗ opened "+msg.url, m.frame
 		if msg.err != nil {
@@ -597,6 +606,9 @@ func (m Model) firstSelection() string {
 }
 
 func (m Model) handleKey(msg tea.KeyMsg) (Model, tea.Cmd) {
+	if m.confirm != nil {
+		return m.handleConfirmKey(msg)
+	}
 	if len(m.watch.open) > 0 && msg.String() == "esc" && !m.watch.acked && !m.searching && !m.replay.picking {
 		m.watch.acked = true
 		return m, nil
@@ -688,6 +700,12 @@ func (m Model) handleConstellationKey(key string) Model {
 		_ = UsePalette(NextPalette(paletteName))
 	case "/":
 		m.searching, m.filter, m.searchFrom = true, "", m.selected
+	case "n", "N":
+		m = m.pickInstance(key)
+	case "y":
+		m = m.ask(actionApprove)
+	case "d":
+		m = m.ask(actionDeploy)
 	}
 	return m
 }
