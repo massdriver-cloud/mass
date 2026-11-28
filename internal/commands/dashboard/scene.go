@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/stash"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -82,6 +83,27 @@ func EventEmoji(eventType string) string {
 		return "🌍"
 	default:
 		return "✨"
+	}
+}
+
+// StashEmoji is the emoji that stands for a change to a stash key: the
+// widget's subject for a well-known key, or a pin for any other.
+func StashEmoji(key string, deleted bool) string {
+	switch {
+	case deleted:
+		return "🗑"
+	case key == stash.KeyHealthV1:
+		return "🩺"
+	case key == stash.KeyUsageV1:
+		return "📊"
+	case key == stash.KeyTrafficV1:
+		return "📈"
+	case key == stash.KeyBannerV1:
+		return "📣"
+	case key == stash.KeyLinksV1:
+		return "🔗"
+	default:
+		return "📌"
 	}
 }
 
