@@ -441,18 +441,8 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		return m.reload()
 	case eventPollMsg:
 		return m, m.fetchEvents(false)
-	case stashPollMsg:
-		return m.pollStash()
-	case stashMsg:
-		return m.applyStash(msg)
-	case subscribedMsg:
-		return m.applySubscribed(msg)
-	case stashEventsMsg:
-		return m.applyStashEvents(msg)
-	case stashClosedMsg:
-		return m.applyStashClosed(msg)
-	case resubscribeMsg:
-		return m.applyResubscribe(msg)
+	case stashPollMsg, stashMsg, subscribedMsg, stashEventsMsg, stashClosedMsg, resubscribeMsg:
+		return m.updateFeed(msg)
 	case logsMsg:
 		return m.updateLogs(msg)
 	case refocusMsg:
@@ -478,6 +468,24 @@ func (m Model) update(msg tea.Msg) (Model, tea.Cmd) {
 		}
 	case tea.KeyMsg:
 		return m.handleKey(msg)
+	}
+	return m, nil
+}
+
+func (m Model) updateFeed(msg tea.Msg) (Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case stashPollMsg:
+		return m.pollStash()
+	case stashMsg:
+		return m.applyStash(msg)
+	case subscribedMsg:
+		return m.applySubscribed(msg)
+	case stashEventsMsg:
+		return m.applyStashEvents(msg)
+	case stashClosedMsg:
+		return m.applyStashClosed(msg)
+	case resubscribeMsg:
+		return m.applyResubscribe(msg)
 	}
 	return m, nil
 }
