@@ -121,7 +121,7 @@ func (m Model) pickInstance(key string) Model {
 		return m
 	}
 	env := m.graph.Env(m.selected)
-	if env == nil || len(env.Instances) == 0 {
+	if env == nil || env.Restricted || env.Unloaded || len(env.Instances) == 0 {
 		return m
 	}
 	idx := slices.IndexFunc(env.Instances, func(i *InstNode) bool { return i.ID == m.picked })
@@ -178,6 +178,10 @@ func (m Model) handleConfirmKey(msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "y", "enter":
 	default:
 		return m.say(act.verb() + " cancelled"), nil
+	}
+	// The map may have refreshed while the box was open.
+	if inst := m.graph.Instance(act.instanceID); act.kind == actionDeploy && inst != nil && inst.Deploying() {
+		return m.say(act.instanceID + " started deploying; nothing was sent"), nil
 	}
 	api, ctx := m.api, m.ctx()
 	return m, func() tea.Msg {
