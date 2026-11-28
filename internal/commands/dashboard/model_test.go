@@ -30,7 +30,7 @@ func (o *opener) open(url string) error {
 }
 
 func config(o *opener) dashboard.Config {
-	return dashboard.Config{Org: "acme", EventPoll: time.Millisecond, Now: fixedNow, Links: fakeLinks{}, Open: o.open}
+	return dashboard.Config{Org: "acme", EventPoll: time.Millisecond, Now: fixedNow, Links: fakeLinks{}, Open: o.open, Flashes: dashboard.FlashWords}
 }
 
 // pump runs commands and feeds their messages back, as bubbletea would, for
@@ -103,7 +103,7 @@ func TestModelLoads(t *testing.T) {
 	out := view(m)
 	for _, want := range []string{
 		"acme", "1 Constellation", "3 environments · 3 projects", "⟳ 1 deploying", "↑ 1", "$1.2k/mo", "1 alarming",
-		"BLAST RADIUS", "b blast ●", "LIVE", "waiting for activity", "o open",
+		"BLAST RADIUS", "n pick instance", "LIVE", "waiting for activity", "o open",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("view is missing %q:\n%s", want, out)
@@ -129,7 +129,7 @@ func TestModelKeys(t *testing.T) {
 		{name: "find then clear", keys: []string{"/", "z", "z", "backspace", "esc"}, wantSelected: "care-dev"},
 		{
 			name: "toggles", keys: []string{"b", "a", "c", "g", "s"},
-			wantView: []string{"b blast ○", "a apps ○", "c cost ●", "g projects ●", "s producers on top ●"},
+			wantView: []string{"blast ○", "apps ○", "cost ●", "projects ●", "producers on top ●"},
 		},
 		{name: "legend", keys: []string{"?"}, wantView: []string{"WHAT MOVES", "Blast radius, source to downstream", "deploying", "upgrades", "p palette", "e export SVG"}},
 	}

@@ -242,3 +242,18 @@ func TestActionsFollowTheSelection(t *testing.T) {
 		})
 	}
 }
+
+func TestFooterFollowsThePick(t *testing.T) {
+	m := loaded(t, fixture(), config(&opener{}), 200, 48)
+	if out := view(m); !strings.Contains(out, "n pick instance") || strings.Contains(out, "y approve") {
+		t.Errorf("with nothing picked the footer should offer a pick:\n%s", out)
+	}
+	m = press(m, "n", "n")
+	if out := view(m); !strings.Contains(out, "y approve queue") || !strings.Contains(out, "esc unpick") {
+		t.Errorf("a picked instance awaiting approval should offer y:\n%s", out)
+	}
+	m = press(m, "esc")
+	if out := view(m); !strings.Contains(out, "n pick instance") {
+		t.Errorf("esc should drop the pick:\n%s", out)
+	}
+}

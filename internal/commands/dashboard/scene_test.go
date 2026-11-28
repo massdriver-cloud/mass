@@ -105,3 +105,60 @@ func TestSceneBlocks(t *testing.T) {
 		t.Error("a braille render after a blocks render should still draw braille")
 	}
 }
+
+func TestFlashText(t *testing.T) {
+	g := dashboard.BuildGraph(fixtureSnapshot(t))
+	pos := dashboard.Layout(g, 120, 40, dashboard.LayoutOptions{})
+	tests := map[string]struct {
+		mode     string
+		want     string
+		dontWant string
+	}{
+		"emoji by default": {want: "🚀", dontWant: "deployment started"},
+		"words":            {mode: dashboard.FlashWords, want: "deployment started", dontWant: "🚀"},
+		"off":              {mode: dashboard.FlashOff, dontWant: "deployment started"},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			scene := dashboard.Scene{Graph: g, Pos: pos, FlashText: tc.mode, Flashes: map[string]dashboard.Flash{
+				"care-dev": {Label: "deployment started", Emoji: dashboard.EventEmoji("deployment.started")},
+			}}
+			out := ansi.Strip(scene.Render(120, 40))
+			if tc.want != "" && !strings.Contains(out, tc.want) {
+				t.Errorf("render is missing %q", tc.want)
+			}
+			if strings.Contains(out, tc.dontWant) || (tc.mode == dashboard.FlashOff && strings.Contains(out, "🚀")) {
+				t.Errorf("render should not show %q", tc.dontWant)
+			}
+		})
+	}
+}
+
+func TestEventEmoji(t *testing.T) {
+	tests := map[string]string{
+		"deployment.started": "🚀", "deployment.completed": "✅", "deployment.failed": "💥", "deployment.proposed": "📝",
+		"deployment.rejected": "👎", "alarm.fired": "🚨", "stash.set": "📌", "stash.deleted": "🗑", "stash_entry.set": "📌", "stash_entry.deleted": "🗑", "instance.updated": "🛠",
+	}
+	for eventType, want := range tests {
+		if got := dashboard.EventEmoji(eventType); got != want {
+			t.Errorf("EventEmoji(%s) = %s, want %s", eventType, got, want)
+		}
+	}
+}
+
+func TestStashEmoji(t *testing.T) {
+	tests := []struct {
+		key     string
+		deleted bool
+		want    string
+	}{
+		{key: "md/v1/health", want: "🩺"}, {key: "md/v1/usage", want: "📊"}, {key: "md/v1/traffic", want: "📈"},
+		{key: "md/v1/banner", want: "📣"}, {key: "md/v1/links", want: "🔗"}, {key: "release", want: "📌"},
+		{key: "md/v1/usage", deleted: true, want: "🗑"},
+	}
+	for _, tc := range tests {
+		if got := dashboard.StashEmoji(tc.key, tc.deleted); got != tc.want {
+			t.Errorf("StashEmoji(%s, %v) = %s, want %s", tc.key, tc.deleted, got, tc.want)
+		}
+	}
+}

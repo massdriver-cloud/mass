@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"cmp"
 	"strings"
 	"time"
 
@@ -53,9 +54,13 @@ func (m Model) ticker() string {
 }
 
 func (m Model) tickerItem(ev Event, now time.Time) string {
-	label := lipgloss.NewStyle().Foreground(eventColor(ev)).Render(EventLabel(ev))
+	text := EventLabel(ev)
+	if m.cfg.Flashes != FlashWords {
+		text = cmp.Or(ev.Emoji, EventEmoji(ev.Type))
+	}
+	label := lipgloss.NewStyle().Foreground(eventColor(ev)).Render(text)
 	if f, ok := m.flashes[ev.EnvID]; ok && f.Age < FlashFrames/2 && f.Label == EventLabel(ev) {
-		label = lipgloss.NewStyle().Bold(true).Foreground(colorHighlight).Render(EventLabel(ev))
+		label = lipgloss.NewStyle().Bold(true).Foreground(colorHighlight).Render(text)
 	}
 	where := ev.EnvID
 	if m.graph != nil && ev.EnvID != "" {

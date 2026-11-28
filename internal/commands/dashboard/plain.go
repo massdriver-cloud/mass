@@ -195,7 +195,7 @@ type plainFact struct {
 func (s Scene) plainFacts(env *EnvNode) []plainFact {
 	switch {
 	case env.Unloaded:
-		return []plainFact{{text: "out of view", color: colorFaint}}
+		return nil
 	case env.Restricted:
 		return []plainFact{{text: "no access", color: colorFaint}}
 	}

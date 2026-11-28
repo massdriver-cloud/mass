@@ -28,6 +28,7 @@ func NewCmdDashboard() *cobra.Command {
 	cmd.Flags().String("env", "", "Environment to center on, by id; the most recently deployed one when left out")
 	cmd.Flags().Int("depth", dashboard.DefaultDepth, "How many hops from the focus to read")
 	cmd.Flags().String("theme", dashboard.DefaultTheme, "How the map is drawn: "+strings.Join(dashboard.Themes(), ", "))
+	cmd.Flags().String("flashes", dashboard.FlashEmoji, "What rises over an environment where something happens: "+strings.Join(dashboard.FlashModes(), ", "))
 	cmd.Flags().String("render", dashboard.DefaultRender, "How the map's dots are drawn: braille dots, or solid blocks for terminals that draw block characters themselves, such as Ghostty")
 	cmd.Flags().String("palette", dashboard.DefaultPalette, "Colors and backdrop: "+strings.Join(dashboard.Palettes(), ", "))
 	cmd.Flags().Bool("watch", false, "Jump to any alarm that starts firing in view while the dashboard is open, and send a desktop notification")
@@ -57,6 +58,10 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	theme, err := cmd.Flags().GetString("theme")
+	if err != nil {
+		return err
+	}
+	flashes, err := cmd.Flags().GetString("flashes")
 	if err != nil {
 		return err
 	}
@@ -106,6 +111,7 @@ func runDashboard(cmd *cobra.Command, _ []string) error {
 		Links:     dashboard.NewLinks(mdClient.URLs.Helper(ctx)),
 		Theme:     theme,
 		Render:    render,
+		Flashes:   flashes,
 		Focus:     focus,
 		Depth:     depth,
 	}, Palette: palette})

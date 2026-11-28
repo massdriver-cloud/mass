@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/massdriver-cloud/mass/internal/commands/dashboard"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/streaming"
@@ -232,6 +233,50 @@ func TestLogsWrapLongLines(t *testing.T) {
 	next := rest[strings.Index(rest, "\n")+1:]
 	if cont := next[strings.Index(next, "│")+len("│"):]; !strings.HasPrefix(strings.TrimPrefix(cont, " "), "  ") {
 		t.Errorf("the wrapped part should be indented under the line it continues:\n%s", out)
+	}
+}
+
+func TestLogsScroll(t *testing.T) {
+	api := fixture()
+	batches := make([]dashboard.LogBatch, 0, 300)
+	for i := range 300 {
+		batches = append(batches, batch(i, fmt.Sprintf("line %03d", i)))
+	}
+	api.logReads = map[string][]dashboard.DeploymentLog{"dep-billing": {{Status: "COMPLETED", Batches: batches}}}
+	tests := map[string]struct {
+		keys     []string
+		want     []string
+		dontWant []string
+	}{
+		"follows the tail":     {want: []string{"line 299", "f close logs", "pgup pgdn scroll"}},
+		"a page back":          {keys: []string{"pgup"}, want: []string{"lines back"}, dontWant: []string{"line 299"}},
+		"to the start":         {keys: []string{"home"}, want: []string{"line 000"}},
+		"back to the tail":     {keys: []string{"pgup", "pgup", "end"}, want: []string{"line 299"}, dontWant: []string{"lines back"}},
+		"down past the bottom": {keys: []string{"pgup", "pgdown", "pgdown"}, want: []string{"line 299"}},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			m := loaded(t, api, logConfig(), 200, 48)
+			m, _ = tabTo(t, m, "billing-dev")
+			m, cmd := pressCmd(m, "f")
+			m = drive(t, m, cmd, 10)
+			for _, k := range tc.keys {
+				var next tea.Model
+				next, _ = m.Update(tea.KeyMsg{Type: map[string]tea.KeyType{"pgup": tea.KeyPgUp, "pgdown": tea.KeyPgDown, "home": tea.KeyHome, "end": tea.KeyEnd}[k]})
+				m = next.(dashboard.Model) //nolint:errcheck,forcetypeassert // Update always returns a Model
+			}
+			out := view(m)
+			for _, w := range tc.want {
+				if !strings.Contains(out, w) {
+					t.Errorf("view is missing %q:\n%s", w, out)
+				}
+			}
+			for _, w := range tc.dontWant {
+				if strings.Contains(out, w) {
+					t.Errorf("view should not show %q:\n%s", w, out)
+				}
+			}
+		})
 	}
 }
 

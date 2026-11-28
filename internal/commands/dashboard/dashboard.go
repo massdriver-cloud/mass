@@ -44,6 +44,12 @@ func Run(ctx context.Context, api API, opts Options) error {
 	if !slices.Contains(Themes(), opts.Theme) {
 		return fmt.Errorf("no theme %q; choose %s", opts.Theme, strings.Join(Themes(), ", "))
 	}
+	if opts.Flashes == "" {
+		opts.Flashes = FlashEmoji
+	}
+	if !slices.Contains(FlashModes(), opts.Flashes) {
+		return fmt.Errorf("no flashes %q; choose %s", opts.Flashes, strings.Join(FlashModes(), ", "))
+	}
 	if opts.Render == "" {
 		opts.Render = DefaultRender
 	}
