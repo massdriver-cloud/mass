@@ -281,3 +281,21 @@ func TestStashFlashKeepsItsEmoji(t *testing.T) {
 		t.Errorf("an aging flash should keep its emoji, not turn into words:\n%s", out)
 	}
 }
+
+func TestStashFeedSkipsScriptKeys(t *testing.T) {
+	api := withStash()
+	m := loaded(t, api, config(&opener{}), 200, 48)
+	api.stash = append(api.stash, text(inst("care-dev-app"), "sent_today", "41"))
+	if out := view(refreshed(t, m)); strings.Contains(out, "sent_today") || strings.Contains(out, "41") {
+		t.Errorf("a key no widget draws should stay off the ticker:\n%s", out)
+	}
+}
+
+func TestAuditStashEventsStayOffTheMap(t *testing.T) {
+	api := fixture()
+	m := loaded(t, api, config(&opener{}), 200, 48)
+	m = pollEvents(t, api, m, dashboard.Log{Events: []dashboard.Event{{ID: "s1", Type: "stash_entry.set", EnvID: "care-dev", At: fixedNow()}}})
+	if out := view(m); strings.Contains(out, "stash entry set") {
+		t.Errorf("the stash feed already shows stash changes; the audit log's copy should not:\n%s", out)
+	}
+}

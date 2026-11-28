@@ -126,3 +126,34 @@ func TestTickerWidgetStripsEscapes(t *testing.T) {
 		}
 	}
 }
+
+func TestNewsworthy(t *testing.T) {
+	app := inst("care-dev-app")
+	set := func(e dashboard.StashEntry) dashboard.StashChange {
+		return dashboard.StashChange{Scope: e.Scope, Key: e.Key, Entry: &e}
+	}
+	pinned := []dashboard.Annotation{{
+		Kind: "WIDGET", Surfaces: []string{dashboard.WidgetUsage},
+		Inputs: dashboard.Values{"value": map[string]any{"scope": map[string]any{"instance": "care-dev-app"}, "key": "db/connections"}},
+	}}
+	tests := map[string]struct {
+		change      dashboard.StashChange
+		annotations []dashboard.Annotation
+		want        string
+		ok          bool
+	}{
+		"well-known":       {change: set(text(app, "md/v1/health", "down")), want: "🩺", ok: true},
+		"well-known gone":  {change: dashboard.StashChange{Scope: app, Key: "md/v1/usage"}, want: "🗑", ok: true},
+		"pinned":           {change: set(text(app, "db/connections", "37")), annotations: pinned, want: "📊", ok: true},
+		"a script's own":   {change: set(text(app, "sent_today", "41"))},
+		"pinned elsewhere": {change: set(text(inst("billing-dev-app"), "db/connections", "37")), annotations: pinned},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, ok := dashboard.Newsworthy(tc.change, tc.annotations)
+			if got != tc.want || ok != tc.ok {
+				t.Errorf("Newsworthy = %q, %v; want %q, %v", got, ok, tc.want, tc.ok)
+			}
+		})
+	}
+}

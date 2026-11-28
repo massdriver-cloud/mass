@@ -156,7 +156,7 @@ func (m Model) takeStash(st Stash, news func(Scope) bool) Model {
 	var changes []StashChange
 	if news != nil {
 		for _, c := range st.Changes(m.stash) {
-			if news(c.Scope) {
+			if _, ok := Newsworthy(c, m.snap.Annotations); ok && news(c.Scope) {
 				changes = append(changes, c)
 			}
 		}
@@ -175,6 +175,7 @@ func (m Model) takeStash(st Stash, news func(Scope) bool) Model {
 	}
 	for _, c := range changes {
 		ev := m.graph.StashEvent(c, m.snap.Annotations, m.stash, now)
+		ev.Emoji, _ = Newsworthy(c, m.snap.Annotations)
 		fresh = append(fresh, ev)
 		ids[ev.ID] = true
 		if ev.EnvID != "" && !m.replay.on {
