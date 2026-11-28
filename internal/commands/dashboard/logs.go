@@ -7,10 +7,10 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/platform/deployments"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/streaming"
+	"github.com/mattn/go-runewidth"
 )
 
 const (
@@ -330,16 +330,46 @@ func (m Model) logsPanel(w, h int) string {
 	}
 	head = append(head, "")
 	room := max(h-len(head), 0)
-	body := l.lines[max(len(l.lines)-room, 0):]
+	var body []string
+	for i := len(l.lines) - 1; i >= 0 && len(body) < room; i-- {
+		body = append(wrapLog(l.lines[i], w), body...)
+	}
+	body = body[max(len(body)-room, 0):]
 	out := make([]string, 0, len(head)+len(body)+1)
 	out = append(out, head...)
 	if len(l.lines) == 0 {
 		out = append(out, styleFaint.Render("no logs yet"))
 	}
-	for _, line := range body {
-		out = append(out, lipgloss.NewStyle().MaxWidth(w).Render(clip(line, w)))
-	}
+	out = append(out, body...)
 	return strings.Join(out, "\n")
+}
+
+func wrapLog(line string, w int) []string {
+	if w < 8 || runewidth.StringWidth(line) <= w {
+		return []string{clip(line, w)}
+	}
+	var out []string
+	first := true
+	for line != "" {
+		width, indent := w, ""
+		if !first {
+			width, indent = w-2, "  "
+		}
+		cut, used := 0, 0
+		for i, r := range line {
+			rw := runewidth.RuneWidth(r)
+			if used+rw > width {
+				break
+			}
+			cut, used = i+len(string(r)), used+rw
+		}
+		if cut == 0 {
+			break
+		}
+		out = append(out, indent+line[:cut])
+		line, first = line[cut:], false
+	}
+	return out
 }
 
 func logStatus(status string) string {

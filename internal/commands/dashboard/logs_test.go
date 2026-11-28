@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/massdriver-cloud/mass/internal/commands/dashboard"
 	"github.com/massdriver-cloud/massdriver-sdk-go/massdriver/streaming"
 )
@@ -211,6 +212,26 @@ func TestLogsFollowTheTail(t *testing.T) {
 	out := view(m)
 	if !strings.Contains(out, "line 599") || strings.Contains(out, "line 500") {
 		t.Errorf("the panel should show the newest lines:\n%s", out)
+	}
+}
+
+func TestLogsWrapLongLines(t *testing.T) {
+	api := fixture()
+	long := `aws_ecs_service.main["oncall"]: Still creating... [1m10s elapsed] waiting for the tasks to settle` + " TAIL-END"
+	api.logReads = map[string][]dashboard.DeploymentLog{"dep-billing": {{Status: "COMPLETED", Batches: []dashboard.LogBatch{batch(1, long)}}}}
+	m := loaded(t, api, logConfig(), 120, 48)
+	m, _ = tabTo(t, m, "billing-dev")
+	m, cmd := pressCmd(m, "f")
+	m = drive(t, m, cmd, 10)
+	out := ansi.Strip(m.View())
+	start := strings.Index(out, "aws_ecs_service")
+	if start < 0 || !strings.Contains(out, "TAIL-END") {
+		t.Fatalf("a long log line should wrap rather than be cut:\n%s", out)
+	}
+	rest := out[start:]
+	next := rest[strings.Index(rest, "\n")+1:]
+	if cont := next[strings.Index(next, "│")+len("│"):]; !strings.HasPrefix(strings.TrimPrefix(cont, " "), "  ") {
+		t.Errorf("the wrapped part should be indented under the line it continues:\n%s", out)
 	}
 }
 
