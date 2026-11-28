@@ -98,7 +98,7 @@ func (s Scene) renderPlain(c *Canvas) {
 	sheet := newPlainSheet(s.Graph, c.W, c.H)
 	for _, envs := range plainRows(s.Graph) {
 		if at, ok := sheet.headers[envs[0].ProjectID]; ok {
-			header := cmp.Or(envs[0].ProjectName, envs[0].ProjectID, "Beyond your access")
+			header := cmp.Or(envs[0].ProjectName, envs[0].ProjectID, "More")
 			color := projectColor(s.Graph, envs[0].ProjectID)
 			c.Text(at[0], at[1], clip(header, sheet.colW), lipgloss.NewStyle().Bold(true).Foreground(color))
 			if rule := min(sheet.colW, plainColumn) - runewidth.StringWidth(header) - 1; rule > 0 {
@@ -124,7 +124,7 @@ func (x *svg) plain(w, h int) {
 	advance := func(text string) float64 { return float64(runewidth.StringWidth(text)) * fs * 0.62 / x.k }
 	for _, envs := range plainRows(s.Graph) {
 		if at, ok := sheet.headers[envs[0].ProjectID]; ok {
-			header := cmp.Or(envs[0].ProjectName, envs[0].ProjectID, "Beyond your access")
+			header := cmp.Or(envs[0].ProjectName, envs[0].ProjectID, "More")
 			x.text(cell(at), 0, 0, header, fs, projectColor(s.Graph, envs[0].ProjectID), "start", true)
 		}
 		for _, env := range envs {
